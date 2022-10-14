@@ -81,6 +81,9 @@ spec:
               mountPath: {{ .Values.persistence.mountPath.homeDir }}
             - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-tmp
               mountPath: {{ .Values.persistence.mountPath.tmp }}
+            - name: ansible-agent-setup
+              mountPath: {{ .Values.volumeMounts.mountPath.createAgent.path }}
+              subPath: {{ .Values.volumeMounts.mountPath.createAgent.subPath }}
           # livenessProbe:
           #   tcpSocket:
           #     port: 8080
@@ -115,6 +118,14 @@ spec:
           emptyDir: {}
         - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-tmp
           emptyDir: {}
+        - name: ansible-agent-setup
+          configMap:
+            name: ansible-agent-create
+            items:
+            - key: {{ .Values.volumeMounts.mountPath.createAgent.subPath }}
+              path: {{ .Values.volumeMounts.mountPath.createAgent.subPath }}
+              mode: 0644            
+
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

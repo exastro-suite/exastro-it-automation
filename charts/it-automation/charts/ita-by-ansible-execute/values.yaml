@@ -91,6 +91,12 @@ persistence:
       subPath: httpd-socket
     tmp: /tmp
 
+volumeMounts:
+  mountPath:
+    createAgent: 
+      path: /storage/k8s_pod.yml
+      subPath: k8s_pod.yml
+
 podAnnotations: {}
 
 podSecurityContext: {}

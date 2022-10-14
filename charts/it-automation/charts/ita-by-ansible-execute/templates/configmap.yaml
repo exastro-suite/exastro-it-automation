@@ -21,3 +21,43 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-by-ansible-execute.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ansible-agent-create
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "ita-by-ansible-execute.labels" . | nindent 4 }}
+    k8s_pod.yml: |-
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: it-ansible-agent-{{`{{ unique_name }}`}}
+      spec:
+        containers:
+        - name: it-ansible-agent
+          image: "{{`{{ ansible_agent_image }}`}}"
+          command: [
+            "bash",
+            "-c",
+            "{{`{{ str_shell_command }}`}}",
+          ]
+          env:
+          {{ range $name, $value := .Values.extraEnv -}}
+          - name: {{ $name }}
+            value: {{ $value }}
+          {{ end -}}
+          - name: EXEC_DIR
+            value: {{`{{ container_mount_path_driver }}`}}
+          volumeMounts:
+          - name: volume-subpath
+            mountPath: {{`{{ container_mount_path_driver }}`}}
+            subPath: {{`{{ host_mount_path_driver }}`}}
+          - name: volume-subpath
+            mountPath: {{`{{ container_mount_path_conductor }}`}}
+            subPath: {{`{{ host_mount_path_conductor }}`}}
+        volumes:
+        - name: volume-subpath
+          persistentVolumeClaim:
+            claimName: ita-pvc
+        restartPolicy: Never

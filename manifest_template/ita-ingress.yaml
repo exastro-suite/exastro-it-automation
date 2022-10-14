@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ita-web-server
+  namespace: exastro-it-automation
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ita.example.com
+    http:
+      paths:
+      - path: /test  #temporary setting (replace it after spec is fixed)
+        pathType: Prefix
+        backend:
+          service:
+            name: ita-web-server
+            port:
+              number: 8000
+

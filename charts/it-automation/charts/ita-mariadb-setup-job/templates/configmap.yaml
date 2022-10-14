@@ -1,0 +1,66 @@
+{{/*
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+*/}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-{{ template "ita-mariadb-setup-job.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+data: {{ toYaml .Values.extraEnv | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-server-conf-config-setup
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+data:
+  custom.cnf: |
+{{ .Values.dbSetup.dbConfInfo.customCnf | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-server-initdb-config-setup
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+data: 
+    createdb.sql: |-
+      {{- with .Values.global.databaseDefinition }}
+      CREATE DATABASE IF NOT EXISTS {{ .config.DB_DATADBASE }};
+      CREATE USER '{{ .secret.DB_USER }}'@'%' IDENTIFIED BY '{{ .secret.DB_PASSWORD }}';
+      GRANT ALL PRIVILEGES ON {{ .config.DB_DATADBASE }} . * TO '{{ .secret.DB_USER }}'@'%';
+      FLUSH PRIVILEGES;
+      CREATE TABLE IF NOT EXISTS `{{ .config.DB_DATADBASE }}`.`T_COMN_ORGANIZATION_DB_INFO`
+      (
+          PRIMARY_KEY                     VARCHAR(40),                                -- 主キー
+          ORGANIZATION_ID                 VARCHAR(255),                               -- organizationのID
+          DB_HOST                         VARCHAR(255),                               -- DBホスト
+          DB_PORT                         INT,                                        -- DBポート
+          DB_DATADBASE                    VARCHAR(255),                               -- DBDB名
+          DB_USER                         VARCHAR(255),                               -- DBユーザ
+          DB_PASSWORD                     VARCHAR(255),                               -- DBパスワード
+          DB_ROOT_PASSWORD                VARCHAR(255),                               -- DBRootパスワード
+          GITLAB_USER                     VARCHAR(255),                               -- GitLabユーザ
+          GITLAB_TOKEN                    VARCHAR(255),                               -- GitLabトークン
+          NOTE                            TEXT,                                       -- 備考
+          DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+          LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+          LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+          PRIMARY KEY(PRIMARY_KEY)
+      )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+      {{- end -}}

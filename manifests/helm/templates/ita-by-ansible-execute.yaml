@@ -1,0 +1,94 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ita-ansible-execute-sa-role
+  namespace: exastro-it-automation
+rules:
+  - apiGroups: ["*"]
+    resources: ["services","pods"]
+    verbs: ["get", "create", "update", "patch"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ita-ansible-execute-sa
+  namespace: exastro-it-automation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ita-ansible-execute-sa-rolebinding
+  namespace: exastro-it-automation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ita-ansible-execute-sa-role
+subjects:
+  - kind: ServiceAccount
+    name: ita-ansible-execute-sa
+    namespace: exastro-it-automation
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-by-ansible-execute
+  namespace: exastro-it-automation
+data:
+  EXECUTE_INTERVAL: "1"
+  STORAGEPATH: /storage/
+  CONTAINER_BASE: "kubernetes"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ita-by-ansible-execute
+  namespace: exastro-it-automation
+spec:
+  selector:
+    matchLabels:
+      name: ita-by-ansible-execute
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: ita-by-ansible-execute
+    spec:
+      serviceAccountName: ita-ansible-execute-sa
+      containers:
+        - name: ita-by-ansible-execute
+          image: exastro/it-automation2-test-ita-by-ansible-execute:build.c39041.20220915-113901
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "64Mi" #仮決め
+              cpu: "250m"    #仮決め
+            limits:
+              memory: "64Mi" #仮決め
+              cpu: "250m"    #仮決め
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+          envFrom:
+            - secretRef:
+                name: secret-ita-mariadb
+            - secretRef:
+                name: secret-ita-gitlab
+            - configMapRef:
+                name: params-ita-mariadb
+            - configMapRef:
+                name: params-ita-gitlab
+            - configMapRef:
+                name: params-ita-common
+            - configMapRef:
+                name: params-ita-by-ansible-execute
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: /storage
+      volumes:
+        - name: persistent-storage
+          persistentVolumeClaim:
+            claimName: ita-pvc
+

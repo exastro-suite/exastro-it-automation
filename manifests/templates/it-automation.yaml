@@ -1,0 +1,277 @@
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-common
+  namespace: exastro-it-automation
+data:
+  DEFAULT_LANGUAGE: "ja"
+  LANGUAGE: "en"
+  CONTAINER_BASE: "kubernetes"
+  TZ: "Asia/Tokyo"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-gitlab
+  namespace: exastro-it-automation
+data:
+  # CHANGEME If using external gitlab
+  GITLAB_PROTOCOL: "{{ param01 }}"
+  GITLAB_HOST: "{{ param02 }}"
+  GITLAB_PORT: "{{ param03 }}"
+---
+
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-ita-gitlab
+  namespace: exastro-it-automation
+type: Opaque
+data:
+  GITLAB_ROOT_TOKEN: {{ param04 }}  # CHANGEME gitlab Personal Access Token base64 encode
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-ita-mariadb
+  namespace: exastro-it-automation
+type: Opaque
+data:
+  DB_USER: {{ param05 }}  # CHANGEME ita-mariadb ita user base64 encode
+  DB_PASSWORD: {{ param06 }}  # CHANGEME ita-mariadb ita user password base64 encode
+  DB_ROOT_PASSWORD: {{ param07 }}  # CHANGEME ita-mariadb root user password base64 encode
+---
+
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-api-admin
+  labels:
+    name: ita-api-admin
+  namespace: exastro-it-automation
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    name: ita-api-admin
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-api-organization
+  labels:
+    name: ita-api-organization
+  namespace: exastro-it-automation
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    name: ita-api-organization
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-mariadb
+  namespace: exastro-it-automation
+  labels:
+    name: ita-mariadb
+spec:
+  type: ClusterIP
+  ports:
+    - name: mariadb
+      port: 3306
+      targetPort: 3306
+      protocol: TCP
+  selector:
+    app: mariadb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-web-server
+  labels:
+    name: ita-web-server
+  namespace: exastro-it-automation
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+  selector:
+    name: ita-web-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-by-ansible-execute
+  namespace: exastro-it-automation
+  labels:
+    name: ita-by-ansible-execute
+spec:
+  type: ClusterIP
+  ports:
+    - name: tomcat
+      port: 8000
+      targetPort: 8000
+  selector:
+    name: ita-by-ansible-execute
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-by-ansible-legacy-role-vars-listup
+  namespace: exastro-it-automation
+  labels:
+    name: ita-by-ansible-legacy-role-vars-listup
+spec:
+  type: ClusterIP
+  ports:
+    - name: tomcat
+      port: 8000
+      targetPort: 8000
+  selector:
+    name: ita-by-ansible-legacy-role-vars-listup
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-by-ansible-towermaster-sync
+  namespace: exastro-it-automation
+  labels:
+    name: ita-by-ansible-towermaster-sync
+spec:
+  type: ClusterIP
+  ports:
+    - name: tomcat
+      port: 8000
+      targetPort: 8000
+  selector:
+    name: ita-by-ansible-towermaster-sync
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-by-conductor-synchronize
+  namespace: exastro-it-automation
+  labels:
+    name: ita-by-conductor-synchronize
+spec:
+  type: ClusterIP
+  ports:
+    - name: tomcat
+      port: 8000
+      targetPort: 8000
+  selector:
+    name: ita-by-conductor-synchronize
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-by-menu-create
+  namespace: exastro-it-automation
+  labels:
+    name: ita-by-menu-create
+spec:
+  type: ClusterIP
+  ports:
+    - name: tomcat
+      port: 8000
+      targetPort: 8000
+  selector:
+    name: ita-by-menu-create
+---
+
+
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ita-pvc
+  namespace: exastro-it-automation
+  labels:
+    app: centos-pv-test
+  annotations:
+    "volume.beta.kubernetes.io/storage-class": "slow"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: ita-pv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ita-mariadb
+  namespace: exastro-it-automation
+  labels:
+    app: centos-pv-test
+  annotations:
+    "volume.beta.kubernetes.io/storage-class": "slow"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: ita-mariadb
+---

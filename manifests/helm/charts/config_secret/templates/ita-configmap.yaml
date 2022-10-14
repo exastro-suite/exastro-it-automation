@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.gitlabConnectionInfo.name }}
+  namespace: {{ .Release.Namespace }}
+data:
+  GITLAB_HOST: "{{ .Values.gitlabConnectionInfo.GITLAB_HOST }}"  #環境に合わせて変更
+  GITLAB_PORT: "{{ .Values.gitlabConnectionInfo.GITLAB_PORT }}"  #環境に合わせて変更
+  GITLAB_PROTOCOL: "{{ .Values.gitlabConnectionInfo.GITLAB_PROTOCOL }}"  #環境に合わせて変更

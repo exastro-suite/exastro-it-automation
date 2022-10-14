@@ -1,0 +1,62 @@
+{{/*
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+*/}}
+
+{{/* Custom Exastro IT Automation global config*/}}
+{{- define "common.configmap.ita-global" -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-{{ .Values.global.itaGlobalDefinition.name }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "common.labels" . | nindent 4 }}
+data: {{- toYaml .Values.global.itaGlobalDefinition.config | nindent 2 -}}
+{{- end -}}
+
+{{/* Custom Exastro IT Automation gitlab config */}}
+{{- define "common.configmap.ita-gitlab" -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-{{ .Values.global.gitlabDefinition.name }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "common.labels" . | nindent 4 }}
+data: {{- toYaml .Values.global.gitlabDefinition.config | nindent 2 -}}
+{{- end -}}
+
+{{/* Custom Exastro IT Automation MariaDB config */}}
+{{- define "common.configmap.ita-mariadb" -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-{{ .Values.global.databaseDefinition.name }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "common.labels" . | nindent 4 }}
+data: {{- toYaml .Values.global.databaseDefinition.config | nindent 2 -}}
+{{- end -}}
+
+{{/* Print Exastro IT Automation common configMaps */}}
+{{- if .Values.global.itaGlobalDefinition.enabled -}}
+{{-   include "common.configmap.ita-global" . | nindent 0 -}}
+{{- end -}}
+{{- if .Values.global.gitlabDefinition.enabled -}}
+{{-   include "common.configmap.ita-gitlab" . | nindent 0 -}}
+{{- end -}}
+{{- if .Values.global.databaseDefinition.enabled -}}
+{{-   include "common.configmap.ita-mariadb" . | nindent 0  -}}
+{{- end -}}

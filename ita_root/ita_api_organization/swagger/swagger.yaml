@@ -1,0 +1,4808 @@
+openapi: 3.0.3
+info:
+  title: ITA Version2.0 API
+  description: ITAv2.0用API
+  version: 1.0.0
+servers:
+- url: /
+tags:
+- name: Menu Info
+  description: メニュー情報の取得
+- name: Menu Filter
+  description: レコードの取得
+- name: Menu Maintenance
+  description: レコードの操作（登録/更新/廃止/復活/物理削除）
+- name: Menu MaintenanceAll
+  description: レコードの一括操作（登録/更新/廃止/復活/物理削除）
+- name: Menu Excel
+  description: Excelの取得・操作
+- name: User Info
+  description: ユーザ情報の取得
+- name: System Info
+  description: ITAの情報取得
+- name: Menu Create
+  description: メニュー作成機能
+- name: Conductor Controll
+  description: Conductorの情報取得・操作
+- name: Driver Controll
+  description: Driverの情報取得・操作
+paths:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
+    get:
+      tags:
+      - Menu Info
+      description: メニューの基本情報および項目情報を取得する
+      operationId: get_menu_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/column/:
+    get:
+      tags:
+      - Menu Info
+      description: メニューの項目一覧(REST用項目名)を取得する
+      operationId: get_column_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/pulldown/:
+    get:
+      tags:
+      - Menu Info
+      description: IDColumn項目のプルダウン選択用の一覧を取得する
+      operationId: get_pulldown_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_2'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/search/candidates/{column}/:
+    get:
+      tags:
+      - Menu Info
+      description: 表示フィルタで利用するプルダウン検索の候補一覧を取得する
+      operationId: get_search_candidates
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: REST用項目名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/count/:
+    get:
+      tags:
+      - Menu Filter
+      description: レコード全件の件数を取得する
+      operationId: get_filter_count
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_4'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_filter_controller
+    post:
+      tags:
+      - Menu Filter
+      description: 検索条件を指定し、レコードの件数する
+      operationId: post_filter_count
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/filter_count_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_4'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_filter_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/:
+    get:
+      tags:
+      - Menu Filter
+      description: レコードを全件取得する
+      operationId: get_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_filter_controller
+    post:
+      tags:
+      - Menu Filter
+      description: 検索条件を指定し、レコードを取得する
+      operationId: post_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/menu_filter_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_filter_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/journal/{uuid}/:
+    get:
+      tags:
+      - Menu Filter
+      description: レコードの履歴を取得する
+      operationId: get_journal
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: uuid
+        in: path
+        description: UUID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_filter_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/:
+    post:
+      tags:
+      - Menu Maintenance
+      description: レコードを登録する
+      operationId: maintenance_register
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/menu_maintenance_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_maintenance_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/{uuid}/:
+    patch:
+      tags:
+      - Menu Maintenance
+      description: レコードを更新/廃止/復活する
+      operationId: maintenance_update
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: uuid
+        in: path
+        description: 対象のUUID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 更新する値を設定。廃止/復活は廃止フラグを更新することで実施。
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_maintenance_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/all/:
+    post:
+      tags:
+      - Menu MaintenanceAll
+      description: レコードを一括で登録/更新/廃止/復活する
+      operationId: maintenance_all
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              description: 登録/更新/廃止/復活するidとレコードの値を設定
+              items:
+                $ref: '#/components/schemas/MAINTENANCE_PARAMETERS'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_maintenance_all_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/format/:
+    get:
+      tags:
+      - Menu Excel
+      description: 新規登録用Excelを取得する
+      operationId: get_excel_format
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_excel_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/:
+    get:
+      tags:
+      - Menu Excel
+      description: 全件のExcelを取得する
+      operationId: get_excel_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_excel_controller
+    post:
+      tags:
+      - Menu Excel
+      description: 検索条件を指定し、Excelを取得する
+      operationId: post_excel_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を設定
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_excel_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/maintenance/:
+    post:
+      tags:
+      - Menu Excel
+      description: Excelでレコードを登録/更新/廃止/復活する
+      operationId: post_excel_maintenance
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を設定
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_excel_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/excel/journal/:
+    get:
+      tags:
+      - Menu Excel
+      description: 変更履歴のExcelを取得する
+      operationId: get_excel_journal
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_excel_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/:
+    get:
+      tags:
+      - User Info
+      description: ユーザの権限情報を取得する
+      operationId: get_user_auth
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.user_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/menus/:
+    get:
+      tags:
+      - User Info
+      description: ユーザがアクセス可能なメニューグループ・メニューの一覧を取得する
+      operationId: get_user_menus
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_9'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.user_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/menus/panels/:
+    get:
+      tags:
+      - User Info
+      description: メニューグループの画像を取得する
+      operationId: get_menu_group_panels
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_10'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.user_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/version/:
+    get:
+      tags:
+      - System Info
+      description: ITAのバージョン情報を取得する
+      operationId: get_ita_version
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.system_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/execute/:
+    post:
+      tags:
+      - Menu Create
+      description: メニュー作成実行
+      operationId: execute_menu_create
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 作成対象のメニュー定義一覧IDを指定(複数指定可)
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/execute/:
+    post:
+      tags:
+      - Menu Create
+      description: メニュー定義および作成の実行
+      operationId: define_and_execute_menu_create
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: メニュー定義用パラメータ
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/:
+    get:
+      tags:
+      - Menu Create
+      description: メニュー定義・作成(新規)用の情報取得
+      operationId: get_menu_create_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/{menu_create}/:
+    get:
+      tags:
+      - Menu Create
+      description: メニュー定義・作成(既存)用の情報取得
+      operationId: get_exist_menu_create_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu_create
+        in: path
+        description: 「メニュー定義一覧」の「メニュー名(REST)」
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/pulldown/initial/{menu}/{column}/:
+    get:
+      tags:
+      - Menu Create
+      description: 「プルダウン選択」項目で選択した対象の「初期値」候補一覧取得
+      operationId: get_pulldown_initial
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: 「プルダウン選択」で指定した対象のメニュー名(rest用)
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: 「プルダウン選択」で指定した対象のカラム名(rest用)
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/reference/item/{menu}/{column}/:
+    get:
+      tags:
+      - Menu Create
+      description: 「プルダウン選択」項目で選択した対象の「参照項目」候補一覧取得
+      operationId: get_reference_item
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: 「プルダウン選択」で指定した対象のメニュー名(rest用)
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: 「プルダウン選択」で指定した対象のカラム名(rest用)
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/info/:
+    get:
+      tags:
+      - Conductor Controll
+      description: ConductorClassの基本情報取得
+      operationId: get_conductor_class_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_13'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/{conductor_class_id}/:
+    get:
+      tags:
+      - Conductor Controll
+      description: ConductorClassの情報取得
+      operationId: get_conductor_class_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_class_id
+        in: path
+        description: Conductor Class ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/maintenance/:
+    post:
+      tags:
+      - Conductor Controll
+      description: Conductorの新規登録
+      operationId: post_conductor_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 登録するConductorの構成情報
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/maintenance/{conductor_class_id}/:
+    patch:
+      tags:
+      - Conductor Controll
+      description: Conductorの更新
+      operationId: patch_conductor_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_class_id
+        in: path
+        description: Conductor Class ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 更新するConductorの構成情報
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/info/:
+    get:
+      tags:
+      - Conductor Controll
+      description: "Conductor,Operationのメニューの基本情報および項目情報を取得する"
+      operationId: get_conductor_execute_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_14'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/filter/{target}/:
+    post:
+      tags:
+      - Conductor Controll
+      description: "Conductor,Operationを対象に、検索条件を指定し、レコードを取得する"
+      operationId: post_execute_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: conductor_list or operation_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/filter_target_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/filter/{target}/search/candidates/{column}/:
+    get:
+      tags:
+      - Conductor Controll
+      description: 表示フィルタで利用するプルダウン検索の候補一覧を取得する
+      operationId: get_execute_search_candidates
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: conductor_list or operation_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: REST用項目名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/class/info/:
+    get:
+      tags:
+      - Conductor Controll
+      description: ConductorClassの基本情報取得
+      operationId: get_conductor_execute_class_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_13'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/class/{conductor_class_id}/:
+    get:
+      tags:
+      - Conductor Controll
+      description: ConductorClassの情報取得
+      operationId: get_conductor_execute_class_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_class_id
+        in: path
+        description: Conductor Class ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/:
+    post:
+      tags:
+      - Conductor Controll
+      description: Conductor作業実行
+      operationId: post_conductor_excecute
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/conductor_execute_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/info/{conductor_instance_id}/:
+    get:
+      tags:
+      - Conductor Controll
+      description: Conductorの基本情報取得
+      operationId: get_conductor_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_instance_id
+        in: path
+        description: Conductor Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_13'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/:
+    get:
+      tags:
+      - Conductor Controll
+      description: Conductor作業の情報取得
+      operationId: get_conductor_instance_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_instance_id
+        in: path
+        description: Conductor Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_15'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/cancel/:
+    patch:
+      tags:
+      - Conductor Controll
+      description: Conductor作業の予約取り消し
+      operationId: patch_conductor_cancel
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_instance_id
+        in: path
+        description: Conductor Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/scram/:
+    patch:
+      tags:
+      - Conductor Controll
+      description: Conductor作業の緊急停止
+      operationId: patch_conductor_scram
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_instance_id
+        in: path
+        description: Conductor Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  ? /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/node/{node_instance_id}/relese/
+  : patch:
+      tags:
+      - Conductor Controll
+      description: Conductor作業の一時停止解除
+      operationId: patch_conductor_relese
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_instance_id
+        in: path
+        description: Conductor Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: node_instance_id
+        in: path
+        description: Node Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/input_data/:
+    get:
+      tags:
+      - Conductor Controll
+      description: Conductor作業の投入データ
+      operationId: get_conductor_input_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_instance_id
+        in: path
+        description: Conductor Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_16'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/{conductor_instance_id}/result_data/:
+    get:
+      tags:
+      - Conductor Controll
+      description: Conductor作業の結果データ
+      operationId: get_conductor_result_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: conductor_instance_id
+        in: path
+        description: Conductor Instance ID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_17'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.conductor_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/:
+    post:
+      tags:
+      - Driver Controll
+      description: Driver作業実行
+      operationId: post_driver_excecute
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/driver_execute_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_18'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_dry_run/:
+    post:
+      tags:
+      - Driver Controll
+      description: |
+        Driver作業実行（ドライラン）</br>
+        AnsibleDriverの場合はDryRun、TerraformDriverの場合はPlanのみの実行を行う
+      operationId: post_driver_execute_dry_run
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/driver_execute_dry_run_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_18'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_check_parameter/:
+    post:
+      tags:
+      - Driver Controll
+      description: Driver作業実行(実行時に使用するパラメータ確認)
+      operationId: post_driver_execute_check_parameter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/driver_execute_check_parameter_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_18'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/:
+    get:
+      tags:
+      - Driver Controll
+      description: Driver作業実行の状態取得
+      operationId: get_driver_execute_data
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: execution_no
+        in: path
+        description: 実行No
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/cancel/:
+    patch:
+      tags:
+      - Driver Controll
+      description: Driver作業実行の予約取消
+      operationId: post_driver_cancel
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: execution_no
+        in: path
+        description: 実行No
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/scram/:
+    patch:
+      tags:
+      - Driver Controll
+      description: Driver作業実行の緊急停止
+      operationId: post_driver_scram
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: execution_no
+        in: path
+        description: 実行No
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/info/:
+    get:
+      tags:
+      - Driver Controll
+      description: "Movement,Operationのメニューの基本情報および項目情報を取得する"
+      operationId: get_driver_execute_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_19'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/filter/{target}/:
+    post:
+      tags:
+      - Driver Controll
+      description: "Movement,Operationを対象に、検索条件を指定し、レコードを取得する"
+      operationId: post_driver_execute_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: movement_list or operation_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/filter_target_body_1'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute/filter/{target}/search/candidates/{column}/:
+    get:
+      tags:
+      - Driver Controll
+      description: 表示フィルタで利用するプルダウン検索の候補一覧を取得する
+      operationId: get_driver_execute_search_candidates
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: movement_list or operation_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: REST用項目名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
+components:
+  schemas:
+    TABLE:
+      type: object
+      properties:
+        PAGE_NO:
+          type: integer
+        TD:
+          type: object
+        TD_IHP:
+          type: object
+        UNIQUE_VAL:
+          type: object
+      example:
+        TD: {}
+        TD_IHP: {}
+        PAGE_NO: 0
+        UNIQUE_VAL: {}
+    COLUMN_GROUP_INFO:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          column_group_id:
+            type: string
+          column_group_name:
+            type: string
+          parent_column_group_id:
+            type: string
+          parent_column_group_name:
+            type: string
+          columns:
+            type: array
+            items: {}
+        example:
+          parent_column_group_name: parent_column_group_name
+          columns:
+          - ""
+          - ""
+          parent_column_group_id: parent_column_group_id
+          column_group_id: column_group_id
+          column_group_name: column_group_name
+      description: "カラムグループの並び順でg1, g2, g3...というkey名に格納される"
+    COLUMN_INFO:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          column_id:
+            type: string
+            description: 項目ID
+          column_name:
+            type: string
+            description: 表示用項目名
+          column_name_rest:
+            type: string
+            description: REST用項目名
+          column_group_id:
+            type: string
+            description: カラムグループID
+          column_group_name:
+            type: string
+            description: カラムグループ名
+          column_type:
+            type: integer
+            description: カラムタイプ
+          column_disp_seq:
+            type: integer
+            description: 表示順
+          description:
+            type: string
+            description: 項目説明
+          ref_table_name:
+            type: string
+            description: ID連携テーブル名
+          ref_pkey_name:
+            type: string
+            description: ID連携テーブルPK
+          ref_col_name:
+            type: string
+            description: ID連携項目名
+          ref_sort_conditions:
+            type: string
+            description: ID連携ソート条件
+          ref_multi_lang:
+            type: string
+            description: ID連携多言語対応有無
+          col_name:
+            type: string
+            description: データベース上のカラム名
+          save_type:
+            type: string
+            description: データベース上の保存形式
+          auto_input:
+            type: integer
+            description: 自動入力フラグ
+          input_item:
+            type: integer
+            description: 入力対象フラグ
+          view_item:
+            type: string
+            description: 出力対象フラグ
+          unique_item:
+            type: integer
+            description: 必須入力フラグ
+          required_item:
+            type: integer
+            description: 一意制約フラグ
+          initial_value:
+            type: string
+            description: 入力欄初期値
+          validate_option:
+            type: object
+            description: バリデーション値
+          before_validate_register:
+            type: object
+            description: 個別バリデーション(前)
+          after_validate_register:
+            type: object
+            description: 個別バリデーション(後)
+        example:
+          initial_value: initial_value
+          column_disp_seq: 6
+          required_item: 2
+          ref_table_name: ref_table_name
+          save_type: save_type
+          column_name: column_name
+          unique_item: 5
+          description: description
+          input_item: 5
+          before_validate_register: {}
+          col_name: col_name
+          column_name_rest: column_name_rest
+          column_id: column_id
+          ref_multi_lang: ref_multi_lang
+          validate_option: {}
+          ref_pkey_name: ref_pkey_name
+          auto_input: 1
+          view_item: view_item
+          ref_col_name: ref_col_name
+          column_group_id: column_group_id
+          after_validate_register: {}
+          column_type: 0
+          column_group_name: column_group_name
+          ref_sort_conditions: ref_sort_conditions
+      description: "column_disp_seqの順番で、c1, c2, c3...というkey名に格納される"
+    MENU_INFO:
+      type: object
+      properties:
+        menu_info:
+          type: string
+          description: メニューの説明
+        menu_group_id:
+          type: string
+          description: メニューグループID
+        menu_group_name:
+          type: string
+          description: メニューグループの名称
+        parent_menu_group_id:
+          type: string
+          description: 親メニューグループID
+        parent_menu_group_name:
+          type: string
+          description: 親メニューグループの名称
+        menu_id:
+          type: string
+          description: メニューID
+        menu_name:
+          type: string
+          description: メニューの名称
+        sheet_type:
+          type: string
+          description: シートタイプ
+        history_table_flag:
+          type: boolean
+          description: 履歴テーブル有無
+        table_name:
+          type: string
+          description: テーブル名
+        view_name:
+          type: string
+          description: ビュー名
+        pk_column_name_rest:
+          type: string
+          description: PK項目名(REST）
+        inherit:
+          type: boolean
+          description: 継承フラグ
+        vertical:
+          type: boolean
+          description: 縦型フラグ
+        row_insert_flag:
+          type: boolean
+          description: 登録許可フラグ
+        row_update_flag:
+          type: boolean
+          description: 更新許可フラグ
+        row_disuse_flag:
+          type: boolean
+          description: 廃止許可フラグ
+        row_reuse_flag:
+          type: boolean
+          description: 復活許可フラグ
+        login_necessity:
+          type: boolean
+          description: 認証有無
+        auto_filter_flg:
+          type: boolean
+          description: オートフィルタフラグ
+        initial_filter_flg:
+          type: boolean
+          description: 初回フィルタフラグ
+        web_print_limit:
+          type: integer
+          description: Web表示最大行数
+        web_print_confirm:
+          type: integer
+          description: Web表示前確認行数
+        xls_print_limit:
+          type: integer
+          description: Excel出力最大行数
+        sort_key:
+          type: string
+          description: ソートキー
+        privilege:
+          type: integer
+          description: メニューに対する権限
+        columns:
+          type: array
+          description: メニュー表示用のカラムおよびカラムグループの並び順
+          items: {}
+      example:
+        sheet_type: sheet_type
+        history_table_flag: true
+        row_update_flag: true
+        web_print_limit: 7
+        initial_filter_flg: true
+        columns:
+        - ""
+        - ""
+        row_reuse_flag: true
+        vertical: true
+        row_insert_flag: true
+        privilege: 2
+        row_disuse_flag: true
+        table_name: table_name
+        parent_menu_group_name: parent_menu_group_name
+        menu_name: menu_name
+        menu_group_name: menu_group_name
+        auto_filter_flg: true
+        menu_id: menu_id
+        view_name: view_name
+        web_print_confirm: 9
+        pk_column_name_rest: pk_column_name_rest
+        sort_key: sort_key
+        parent_menu_group_id: parent_menu_group_id
+        menu_group_id: menu_group_id
+        xls_print_limit: 3
+        menu_info: menu_info
+        inherit: true
+        login_necessity: true
+    ERROR_TEMPLATE:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 001-002
+        message:
+          type: string
+    FILTER_REQUEST_PARAMETERS:
+      type: object
+      properties:
+        NORMAL:
+          type: string
+        LIST:
+          type: array
+          items: {}
+        RANGE:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS_RANGE'
+    FILTER_PARAMETERS:
+      type: object
+      properties:
+        parameter:
+          $ref: '#/components/schemas/FILTER_PARAMETERS_parameter'
+        file:
+          $ref: '#/components/schemas/FILTER_PARAMETERS_file'
+      example:
+        file:
+          rest_key_name: base64 encode file
+        parameter:
+          rest_key_name: rest_key_name
+    MAINTENANCE_PARAMETER_P:
+      type: object
+      properties:
+        rest_key_name:
+          type: string
+    MAINTENANCE_PARAMETER_F:
+      type: object
+      properties:
+        rest_key_name:
+          type: string
+          example: base64 encode file
+    MAINTENANCE_PARAMETERS:
+      type: object
+      properties:
+        parameter:
+          $ref: '#/components/schemas/FILTER_PARAMETERS_parameter'
+        file:
+          $ref: '#/components/schemas/FILTER_PARAMETERS_file'
+        type:
+          type: string
+          example: Register/Update
+    CONDUCTOR_INFO_LIST:
+      type: object
+      properties:
+        conductor_status:
+          type: array
+          example:
+          - id: string
+            name: string
+          items: {}
+        node_status:
+          type: array
+          example:
+          - id: string
+            name: string
+          items: {}
+        node_type:
+          type: array
+          example:
+          - id: string
+            name: string
+          items: {}
+        movement:
+          type: array
+          example:
+          - id: string
+            name: string
+          items: {}
+        operation:
+          type: array
+          example:
+          - id: string
+            name: string
+          items: {}
+        conductors:
+          type: array
+          example:
+          - id: string
+            name: string
+          items: {}
+      example:
+        node_status:
+        - id: string
+          name: string
+        node_type:
+        - id: string
+          name: string
+        conductor_status:
+        - id: string
+          name: string
+        movement:
+        - id: string
+          name: string
+        operation:
+        - id: string
+          name: string
+        conductors:
+        - id: string
+          name: string
+    CONDUCTOR_INFO_DICT:
+      type: object
+      properties:
+        conductor_status:
+          type: array
+          example:
+            status_id1: status_name1
+            status_id2: status_name2
+          items: {}
+        node_status:
+          type: array
+          example:
+            status_id1: status_name1
+            status_id2: status_name2
+          items: {}
+        node_type:
+          type: array
+          example:
+            node_type_id1: node_type_name1
+            node_type_id2: node_type_name2
+          items: {}
+        movement:
+          type: array
+          example:
+            movement_id1: movement_name1
+            movement_id2: movement_name2
+          items: {}
+        operation:
+          type: array
+          example:
+            operation_id1: operation_name1
+            operation_id2: operation_name2
+          items: {}
+        conductor:
+          type: array
+          example:
+            conductor_id1: conductor_name1
+            conductor_id2: conductor_name2
+          items: {}
+      example:
+        node_status:
+          status_id1: status_name1
+          status_id2: status_name2
+        node_type:
+          node_type_id1: node_type_name1
+          node_type_id2: node_type_name2
+        conductor_status:
+          status_id1: status_name1
+          status_id2: status_name2
+        movement:
+          movement_id1: movement_name1
+          movement_id2: movement_name2
+        operation:
+          operation_id1: operation_name1
+          operation_id2: operation_name2
+        conductor:
+          conductor_id1: conductor_name1
+          conductor_id2: conductor_name2
+    CONDUCTOR_RESULT:
+      type: object
+      properties:
+        conductor_instance_id:
+          type: string
+          example: ConductorインスタンスID
+        conductor_name:
+          type: string
+          example: Conductor名
+        status_id:
+          type: string
+          example: ステータスID
+        execution_user:
+          type: string
+          example: 作業実行ユーザー
+        abort_execute_flag:
+          type: string
+          example: 緊急停止フラグ
+        operation_id:
+          type: string
+          example: オペレーションID
+        operation_name:
+          type: string
+          example: オペレーション名
+        time_book:
+          type: string
+          example: 予約日時
+        time_start:
+          type: string
+          example: 開始日時
+        time_end:
+          type: string
+          example: 終了日時
+        execution_log:
+          type: string
+          example: 実行ログ
+        remarks:
+          type: string
+          example: 備考
+      example:
+        operation_name: オペレーション名
+        status_id: ステータスID
+        time_start: 開始日時
+        execution_log: 実行ログ
+        execution_user: 作業実行ユーザー
+        abort_execute_flag: 緊急停止フラグ
+        conductor_name: Conductor名
+        operation_id: オペレーションID
+        time_end: 終了日時
+        time_book: 予約日時
+        remarks: 備考
+        conductor_instance_id: ConductorインスタンスID
+    NODE_RESULT:
+      type: object
+      properties:
+        node_name:
+          $ref: '#/components/schemas/NODE_RESULT_node_name'
+      example:
+        node_name:
+          operation_name: オペレーション名
+          status_file: ステータスファイル
+          node_type: Node種別
+          status_id: ステータスID
+          time_start: 開始日時
+          node_name: Node名
+          skip: スキップ
+          operation_id: オペレーションID
+          time_end: 終了日時
+          remarks: 備考
+          node_instance_id: NodeインスタンスID
+          jump:
+            menu_id: メニューID
+            execution_id: 作業ID
+    inline_response_200:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          column_group_info:
+            key:
+              parent_column_group_name: parent_column_group_name
+              columns:
+              - ""
+              - ""
+              parent_column_group_id: parent_column_group_id
+              column_group_id: column_group_id
+              column_group_name: column_group_name
+          menu_info:
+            sheet_type: sheet_type
+            history_table_flag: true
+            row_update_flag: true
+            web_print_limit: 7
+            initial_filter_flg: true
+            columns:
+            - ""
+            - ""
+            row_reuse_flag: true
+            vertical: true
+            row_insert_flag: true
+            privilege: 2
+            row_disuse_flag: true
+            table_name: table_name
+            parent_menu_group_name: parent_menu_group_name
+            menu_name: menu_name
+            menu_group_name: menu_group_name
+            auto_filter_flg: true
+            menu_id: menu_id
+            view_name: view_name
+            web_print_confirm: 9
+            pk_column_name_rest: pk_column_name_rest
+            sort_key: sort_key
+            parent_menu_group_id: parent_menu_group_id
+            menu_group_id: menu_group_id
+            xls_print_limit: 3
+            menu_info: menu_info
+            inherit: true
+            login_necessity: true
+          column_info:
+            key:
+              initial_value: initial_value
+              column_disp_seq: 6
+              required_item: 2
+              ref_table_name: ref_table_name
+              save_type: save_type
+              column_name: column_name
+              unique_item: 5
+              description: description
+              input_item: 5
+              before_validate_register: {}
+              col_name: col_name
+              column_name_rest: column_name_rest
+              column_id: column_id
+              ref_multi_lang: ref_multi_lang
+              validate_option: {}
+              ref_pkey_name: ref_pkey_name
+              auto_input: 1
+              view_item: view_item
+              ref_col_name: ref_col_name
+              column_group_id: column_group_id
+              after_validate_register: {}
+              column_type: 0
+              column_group_name: column_group_name
+              ref_sort_conditions: ref_sort_conditions
+        message: message
+    inline_response_200_1:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example:
+          - column1
+          - column2
+          - column3
+          items: {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+        - column1
+        - column2
+        - column3
+        message: message
+    inline_response_200_2:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example:
+            IDColumn1:
+              id1: name1
+              id2: name2
+              id3: name3
+            IDColumn2:
+              id1: name1
+              id2: name2
+              id3: name3
+            IDColumn3:
+              id1: name1
+              id2: name2
+              id3: name3
+          items: {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          IDColumn1:
+            id1: name1
+            id2: name2
+            id3: name3
+          IDColumn2:
+            id1: name1
+            id2: name2
+            id3: name3
+          IDColumn3:
+            id1: name1
+            id2: name2
+            id3: name3
+        message: message
+    inline_response_200_3:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example:
+            id1: name1
+            id2: name2
+            id3: name3
+          items: {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          id1: name1
+          id2: name2
+          id3: name3
+        message: message
+    inline_response_200_4:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: number
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: 0.80082819046101150206595775671303272247314453125
+        message: message
+    filter_count_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    inline_response_200_5:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FILTER_PARAMETERS'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+        - file:
+            rest_key_name: base64 encode file
+          parameter:
+            rest_key_name: rest_key_name
+        - file:
+            rest_key_name: base64 encode file
+          parameter:
+            rest_key_name: rest_key_name
+        message: message
+    menu_filter_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    menu_maintenance_body:
+      properties:
+        parameter:
+          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
+        file:
+          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
+      description: 登録する値を設定
+    inline_response_200_6:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: object
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: {}
+        message: message
+    inline_response_200_7:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_7_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          TABLE:
+            TD: {}
+            TD_IHP: {}
+            PAGE_NO: 0
+            UNIQUE_VAL: {}
+        message: message
+    inline_response_200_8:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_8_data'
+        message:
+          type: string
+          example: SUCCESS
+      example:
+        result: 000-00000
+        data:
+          user_id: id-xxxxxxxx
+          user_name: User Name
+          roles:
+          - role1
+          - role2
+          - role3
+          workspaces:
+          - workspace1
+          - workspace2
+          - workspace3
+        message: SUCCESS
+    inline_response_200_9:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_9_data'
+        message:
+          type: string
+          example: SUCCESS
+      example:
+        result: 000-00000
+        data:
+          menu_groups:
+          - disp_seq: 10
+            id: "101"
+            parent_id: ""
+            menu_group_name: メニューグループ1
+            menus:
+            - disp_seq: 10
+              id: "10101"
+              menu_name: メニュー1
+              menu_name_rest: menu_1
+            - disp_seq: 20
+              id: "10102"
+              menu_name: メニュー2
+              menu_name_rest: menu_2
+            - disp_seq: 30
+              id: "10103"
+              menu_name: メニュー3
+              menu_name_rest: menu_3
+          - disp_seq: 20
+            id: "102"
+            parent_id: "101"
+            menu_group_name: メニューグループ2
+            menus:
+            - disp_seq: 10
+              id: "10104"
+              menu_name: メニュー4
+              menu_name_rest: menu_4
+            - disp_seq: 20
+              id: "10105"
+              menu_name: メニュー5
+              menu_name_rest: menu_5
+            - disp_seq: 30
+              id: "10106"
+              menu_name: メニュー6
+              menu_name_rest: menu_6
+          - disp_seq: 30
+            id: "103"
+            parent_id: "101"
+            menu_group_name: メニューグループ3
+            menus:
+            - disp_seq: 10
+              id: "10107"
+              menu_name: メニュー7
+              menu_name_rest: menu_7
+            - disp_seq: 20
+              id: "10108"
+              menu_name: メニュー8
+              menu_name_rest: menu_8
+            - disp_seq: 30
+              id: "10109"
+              menu_name: メニュー9
+              menu_name_rest: menu_9
+        message: SUCCESS
+    inline_response_200_10:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: object
+          additionalProperties:
+            type: string
+            properties:
+              panelFileEncoded:
+                description: メニューグループの画像ファイルをbase64エンコードした値
+          description: メニューグループIDがkeyになる
+        message:
+          type: string
+          example: SUCCESS
+      example:
+        result: 000-00000
+        data:
+          key: data
+        message: SUCCESS
+    inline_response_200_11:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: object
+          example:
+            version: string
+            installed_driver:
+            - string
+            - string
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          version: string
+          installed_driver:
+          - string
+          - string
+        message: message
+    inline_response_200_12:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: boolean
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: true
+        message: message
+    inline_response_200_13:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_13_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          dict:
+            node_status:
+              status_id1: status_name1
+              status_id2: status_name2
+            node_type:
+              node_type_id1: node_type_name1
+              node_type_id2: node_type_name2
+            conductor_status:
+              status_id1: status_name1
+              status_id2: status_name2
+            movement:
+              movement_id1: movement_name1
+              movement_id2: movement_name2
+            operation:
+              operation_id1: operation_name1
+              operation_id2: operation_name2
+            conductor:
+              conductor_id1: conductor_name1
+              conductor_id2: conductor_name2
+          list:
+            node_status:
+            - id: string
+              name: string
+            node_type:
+            - id: string
+              name: string
+            conductor_status:
+            - id: string
+              name: string
+            movement:
+            - id: string
+              name: string
+            operation:
+            - id: string
+              name: string
+            conductors:
+            - id: string
+              name: string
+        message: message
+    inline_response_200_14:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_14_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          operation_list: null
+          conductor_list:
+            column_group_info:
+              key:
+                parent_column_group_name: parent_column_group_name
+                columns:
+                - ""
+                - ""
+                parent_column_group_id: parent_column_group_id
+                column_group_id: column_group_id
+                column_group_name: column_group_name
+            menu_info:
+              sheet_type: sheet_type
+              history_table_flag: true
+              row_update_flag: true
+              web_print_limit: 7
+              initial_filter_flg: true
+              columns:
+              - ""
+              - ""
+              row_reuse_flag: true
+              vertical: true
+              row_insert_flag: true
+              privilege: 2
+              row_disuse_flag: true
+              table_name: table_name
+              parent_menu_group_name: parent_menu_group_name
+              menu_name: menu_name
+              menu_group_name: menu_group_name
+              auto_filter_flg: true
+              menu_id: menu_id
+              view_name: view_name
+              web_print_confirm: 9
+              pk_column_name_rest: pk_column_name_rest
+              sort_key: sort_key
+              parent_menu_group_id: parent_menu_group_id
+              menu_group_id: menu_group_id
+              xls_print_limit: 3
+              menu_info: menu_info
+              inherit: true
+              login_necessity: true
+            column_info:
+              key:
+                initial_value: initial_value
+                column_disp_seq: 6
+                required_item: 2
+                ref_table_name: ref_table_name
+                save_type: save_type
+                column_name: column_name
+                unique_item: 5
+                description: description
+                input_item: 5
+                before_validate_register: {}
+                col_name: col_name
+                column_name_rest: column_name_rest
+                column_id: column_id
+                ref_multi_lang: ref_multi_lang
+                validate_option: {}
+                ref_pkey_name: ref_pkey_name
+                auto_input: 1
+                view_item: view_item
+                ref_col_name: ref_col_name
+                column_group_id: column_group_id
+                after_validate_register: {}
+                column_type: 0
+                column_group_name: column_group_name
+                ref_sort_conditions: ref_sort_conditions
+        message: message
+    filter_target_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    conductor_execute_body:
+      type: object
+      properties:
+        conductor_class_name:
+          type: string
+        operation_name:
+          type: string
+        schedule_date:
+          type: string
+          example: YYYY/MM/DD hh:mm
+        conductor_data:
+          type: object
+      description: 作業実行するConductorの構成情報
+    inline_response_200_15:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_15_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          node:
+            node_name:
+              operation_name: オペレーション名
+              status_file: ステータスファイル
+              node_type: Node種別
+              status_id: ステータスID
+              time_start: 開始日時
+              node_name: Node名
+              skip: スキップ
+              operation_id: オペレーションID
+              time_end: 終了日時
+              remarks: 備考
+              node_instance_id: NodeインスタンスID
+              jump:
+                menu_id: メニューID
+                execution_id: 作業ID
+          conductor:
+            operation_name: オペレーション名
+            status_id: ステータスID
+            time_start: 開始日時
+            execution_log: 実行ログ
+            execution_user: 作業実行ユーザー
+            abort_execute_flag: 緊急停止フラグ
+            conductor_name: Conductor名
+            operation_id: オペレーションID
+            time_end: 終了日時
+            time_book: 予約日時
+            remarks: 備考
+            conductor_instance_id: ConductorインスタンスID
+          conductor_class: {}
+        message: message
+    inline_response_200_16:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_16_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          file_name: "InputData_Conductor_{conductor_instance_id}.zip"
+          file_data: All movement input data zip base64 string
+        message: message
+    inline_response_200_17:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_17_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          file_name: "ResultData_Conductor_{conductor_instance_id}.zip"
+          file_data: All movement result data zip base64 string
+        message: message
+    driver_execute_body:
+      type: object
+      properties:
+        movement_name:
+          type: string
+        operation_name:
+          type: string
+        schedule_date:
+          type: string
+          example: YYYY/MM/DD hh:mm
+      description: 作業実行するDriverの構成情報
+    inline_response_200_18:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: object
+          example:
+            execution_no: string
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          execution_no: string
+        message: message
+    driver_execute_dry_run_body:
+      type: object
+      properties:
+        movement_name:
+          type: string
+        operation_name:
+          type: string
+        schedule_date:
+          type: string
+          example: YYYY/MM/DD hh:mm
+      description: 作業実行するDriverの構成情報
+    driver_execute_check_parameter_body:
+      type: object
+      properties:
+        movement_name:
+          type: string
+        operation_name:
+          type: string
+        schedule_date:
+          type: string
+          example: YYYY/MM/DD hh:mm
+      description: 作業実行するDriverの構成情報
+    inline_response_200_19:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_19_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          operation_list: null
+          movement_list:
+            column_group_info:
+              key:
+                parent_column_group_name: parent_column_group_name
+                columns:
+                - ""
+                - ""
+                parent_column_group_id: parent_column_group_id
+                column_group_id: column_group_id
+                column_group_name: column_group_name
+            menu_info:
+              sheet_type: sheet_type
+              history_table_flag: true
+              row_update_flag: true
+              web_print_limit: 7
+              initial_filter_flg: true
+              columns:
+              - ""
+              - ""
+              row_reuse_flag: true
+              vertical: true
+              row_insert_flag: true
+              privilege: 2
+              row_disuse_flag: true
+              table_name: table_name
+              parent_menu_group_name: parent_menu_group_name
+              menu_name: menu_name
+              menu_group_name: menu_group_name
+              auto_filter_flg: true
+              menu_id: menu_id
+              view_name: view_name
+              web_print_confirm: 9
+              pk_column_name_rest: pk_column_name_rest
+              sort_key: sort_key
+              parent_menu_group_id: parent_menu_group_id
+              menu_group_id: menu_group_id
+              xls_print_limit: 3
+              menu_info: menu_info
+              inherit: true
+              login_necessity: true
+            column_info:
+              key:
+                initial_value: initial_value
+                column_disp_seq: 6
+                required_item: 2
+                ref_table_name: ref_table_name
+                save_type: save_type
+                column_name: column_name
+                unique_item: 5
+                description: description
+                input_item: 5
+                before_validate_register: {}
+                col_name: col_name
+                column_name_rest: column_name_rest
+                column_id: column_id
+                ref_multi_lang: ref_multi_lang
+                validate_option: {}
+                ref_pkey_name: ref_pkey_name
+                auto_input: 1
+                view_item: view_item
+                ref_col_name: ref_col_name
+                column_group_id: column_group_id
+                after_validate_register: {}
+                column_type: 0
+                column_group_name: column_group_name
+                ref_sort_conditions: ref_sort_conditions
+        message: message
+    filter_target_body_1:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    FILTER_REQUEST_PARAMETERS_RANGE:
+      type: object
+      properties:
+        START:
+          type: string
+        END:
+          type: string
+    FILTER_PARAMETERS_parameter:
+      type: object
+      properties:
+        rest_key_name:
+          type: string
+      example:
+        rest_key_name: rest_key_name
+    FILTER_PARAMETERS_file:
+      type: object
+      properties:
+        rest_key_name:
+          type: string
+          example: base64 encode file
+      example:
+        rest_key_name: base64 encode file
+    NODE_RESULT_node_name:
+      type: object
+      properties:
+        node_instance_id:
+          type: string
+          example: NodeインスタンスID
+        node_name:
+          type: string
+          example: Node名
+        node_type:
+          type: string
+          example: Node種別
+        status_id:
+          type: string
+          example: ステータスID
+        status_file:
+          type: string
+          example: ステータスファイル
+        skip:
+          type: string
+          example: スキップ
+        remarks:
+          type: string
+          example: 備考
+        time_start:
+          type: string
+          example: 開始日時
+        time_end:
+          type: string
+          example: 終了日時
+        operation_id:
+          type: string
+          example: オペレーションID
+        operation_name:
+          type: string
+          example: オペレーション名
+        jump:
+          type: object
+          example:
+            menu_id: メニューID
+            execution_id: 作業ID
+      example:
+        operation_name: オペレーション名
+        status_file: ステータスファイル
+        node_type: Node種別
+        status_id: ステータスID
+        time_start: 開始日時
+        node_name: Node名
+        skip: スキップ
+        operation_id: オペレーションID
+        time_end: 終了日時
+        remarks: 備考
+        node_instance_id: NodeインスタンスID
+        jump:
+          menu_id: メニューID
+          execution_id: 作業ID
+    inline_response_200_data:
+      type: object
+      properties:
+        column_group_info:
+          $ref: '#/components/schemas/COLUMN_GROUP_INFO'
+        column_info:
+          $ref: '#/components/schemas/COLUMN_INFO'
+        menu_info:
+          $ref: '#/components/schemas/MENU_INFO'
+      example:
+        column_group_info:
+          key:
+            parent_column_group_name: parent_column_group_name
+            columns:
+            - ""
+            - ""
+            parent_column_group_id: parent_column_group_id
+            column_group_id: column_group_id
+            column_group_name: column_group_name
+        menu_info:
+          sheet_type: sheet_type
+          history_table_flag: true
+          row_update_flag: true
+          web_print_limit: 7
+          initial_filter_flg: true
+          columns:
+          - ""
+          - ""
+          row_reuse_flag: true
+          vertical: true
+          row_insert_flag: true
+          privilege: 2
+          row_disuse_flag: true
+          table_name: table_name
+          parent_menu_group_name: parent_menu_group_name
+          menu_name: menu_name
+          menu_group_name: menu_group_name
+          auto_filter_flg: true
+          menu_id: menu_id
+          view_name: view_name
+          web_print_confirm: 9
+          pk_column_name_rest: pk_column_name_rest
+          sort_key: sort_key
+          parent_menu_group_id: parent_menu_group_id
+          menu_group_id: menu_group_id
+          xls_print_limit: 3
+          menu_info: menu_info
+          inherit: true
+          login_necessity: true
+        column_info:
+          key:
+            initial_value: initial_value
+            column_disp_seq: 6
+            required_item: 2
+            ref_table_name: ref_table_name
+            save_type: save_type
+            column_name: column_name
+            unique_item: 5
+            description: description
+            input_item: 5
+            before_validate_register: {}
+            col_name: col_name
+            column_name_rest: column_name_rest
+            column_id: column_id
+            ref_multi_lang: ref_multi_lang
+            validate_option: {}
+            ref_pkey_name: ref_pkey_name
+            auto_input: 1
+            view_item: view_item
+            ref_col_name: ref_col_name
+            column_group_id: column_group_id
+            after_validate_register: {}
+            column_type: 0
+            column_group_name: column_group_name
+            ref_sort_conditions: ref_sort_conditions
+    inline_response_200_7_data:
+      type: object
+      properties:
+        TABLE:
+          $ref: '#/components/schemas/TABLE'
+      example:
+        TABLE:
+          TD: {}
+          TD_IHP: {}
+          PAGE_NO: 0
+          UNIQUE_VAL: {}
+    inline_response_200_8_data:
+      type: object
+      properties:
+        roles:
+          example:
+          - role1
+          - role2
+          - role3
+        user_id:
+          example: id-xxxxxxxx
+        user_name:
+          example: User Name
+        workspaces:
+          example:
+          - workspace1
+          - workspace2
+          - workspace3
+      example:
+        user_id: id-xxxxxxxx
+        user_name: User Name
+        roles:
+        - role1
+        - role2
+        - role3
+        workspaces:
+        - workspace1
+        - workspace2
+        - workspace3
+    inline_response_200_9_data:
+      type: object
+      properties:
+        menu_groups:
+          example:
+          - disp_seq: 10
+            id: "101"
+            parent_id: ""
+            menu_group_name: メニューグループ1
+            menus:
+            - disp_seq: 10
+              id: "10101"
+              menu_name: メニュー1
+              menu_name_rest: menu_1
+            - disp_seq: 20
+              id: "10102"
+              menu_name: メニュー2
+              menu_name_rest: menu_2
+            - disp_seq: 30
+              id: "10103"
+              menu_name: メニュー3
+              menu_name_rest: menu_3
+          - disp_seq: 20
+            id: "102"
+            parent_id: "101"
+            menu_group_name: メニューグループ2
+            menus:
+            - disp_seq: 10
+              id: "10104"
+              menu_name: メニュー4
+              menu_name_rest: menu_4
+            - disp_seq: 20
+              id: "10105"
+              menu_name: メニュー5
+              menu_name_rest: menu_5
+            - disp_seq: 30
+              id: "10106"
+              menu_name: メニュー6
+              menu_name_rest: menu_6
+          - disp_seq: 30
+            id: "103"
+            parent_id: "101"
+            menu_group_name: メニューグループ3
+            menus:
+            - disp_seq: 10
+              id: "10107"
+              menu_name: メニュー7
+              menu_name_rest: menu_7
+            - disp_seq: 20
+              id: "10108"
+              menu_name: メニュー8
+              menu_name_rest: menu_8
+            - disp_seq: 30
+              id: "10109"
+              menu_name: メニュー9
+              menu_name_rest: menu_9
+      example:
+        menu_groups:
+        - disp_seq: 10
+          id: "101"
+          parent_id: ""
+          menu_group_name: メニューグループ1
+          menus:
+          - disp_seq: 10
+            id: "10101"
+            menu_name: メニュー1
+            menu_name_rest: menu_1
+          - disp_seq: 20
+            id: "10102"
+            menu_name: メニュー2
+            menu_name_rest: menu_2
+          - disp_seq: 30
+            id: "10103"
+            menu_name: メニュー3
+            menu_name_rest: menu_3
+        - disp_seq: 20
+          id: "102"
+          parent_id: "101"
+          menu_group_name: メニューグループ2
+          menus:
+          - disp_seq: 10
+            id: "10104"
+            menu_name: メニュー4
+            menu_name_rest: menu_4
+          - disp_seq: 20
+            id: "10105"
+            menu_name: メニュー5
+            menu_name_rest: menu_5
+          - disp_seq: 30
+            id: "10106"
+            menu_name: メニュー6
+            menu_name_rest: menu_6
+        - disp_seq: 30
+          id: "103"
+          parent_id: "101"
+          menu_group_name: メニューグループ3
+          menus:
+          - disp_seq: 10
+            id: "10107"
+            menu_name: メニュー7
+            menu_name_rest: menu_7
+          - disp_seq: 20
+            id: "10108"
+            menu_name: メニュー8
+            menu_name_rest: menu_8
+          - disp_seq: 30
+            id: "10109"
+            menu_name: メニュー9
+            menu_name_rest: menu_9
+    inline_response_200_13_data:
+      type: object
+      properties:
+        list:
+          $ref: '#/components/schemas/CONDUCTOR_INFO_LIST'
+        dict:
+          $ref: '#/components/schemas/CONDUCTOR_INFO_DICT'
+      example:
+        dict:
+          node_status:
+            status_id1: status_name1
+            status_id2: status_name2
+          node_type:
+            node_type_id1: node_type_name1
+            node_type_id2: node_type_name2
+          conductor_status:
+            status_id1: status_name1
+            status_id2: status_name2
+          movement:
+            movement_id1: movement_name1
+            movement_id2: movement_name2
+          operation:
+            operation_id1: operation_name1
+            operation_id2: operation_name2
+          conductor:
+            conductor_id1: conductor_name1
+            conductor_id2: conductor_name2
+        list:
+          node_status:
+          - id: string
+            name: string
+          node_type:
+          - id: string
+            name: string
+          conductor_status:
+          - id: string
+            name: string
+          movement:
+          - id: string
+            name: string
+          operation:
+          - id: string
+            name: string
+          conductors:
+          - id: string
+            name: string
+    inline_response_200_14_data:
+      type: object
+      properties:
+        conductor_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+        operation_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+      example:
+        operation_list: null
+        conductor_list:
+          column_group_info:
+            key:
+              parent_column_group_name: parent_column_group_name
+              columns:
+              - ""
+              - ""
+              parent_column_group_id: parent_column_group_id
+              column_group_id: column_group_id
+              column_group_name: column_group_name
+          menu_info:
+            sheet_type: sheet_type
+            history_table_flag: true
+            row_update_flag: true
+            web_print_limit: 7
+            initial_filter_flg: true
+            columns:
+            - ""
+            - ""
+            row_reuse_flag: true
+            vertical: true
+            row_insert_flag: true
+            privilege: 2
+            row_disuse_flag: true
+            table_name: table_name
+            parent_menu_group_name: parent_menu_group_name
+            menu_name: menu_name
+            menu_group_name: menu_group_name
+            auto_filter_flg: true
+            menu_id: menu_id
+            view_name: view_name
+            web_print_confirm: 9
+            pk_column_name_rest: pk_column_name_rest
+            sort_key: sort_key
+            parent_menu_group_id: parent_menu_group_id
+            menu_group_id: menu_group_id
+            xls_print_limit: 3
+            menu_info: menu_info
+            inherit: true
+            login_necessity: true
+          column_info:
+            key:
+              initial_value: initial_value
+              column_disp_seq: 6
+              required_item: 2
+              ref_table_name: ref_table_name
+              save_type: save_type
+              column_name: column_name
+              unique_item: 5
+              description: description
+              input_item: 5
+              before_validate_register: {}
+              col_name: col_name
+              column_name_rest: column_name_rest
+              column_id: column_id
+              ref_multi_lang: ref_multi_lang
+              validate_option: {}
+              ref_pkey_name: ref_pkey_name
+              auto_input: 1
+              view_item: view_item
+              ref_col_name: ref_col_name
+              column_group_id: column_group_id
+              after_validate_register: {}
+              column_type: 0
+              column_group_name: column_group_name
+              ref_sort_conditions: ref_sort_conditions
+    inline_response_200_15_data:
+      type: object
+      properties:
+        conductor_class:
+          type: object
+        conductor:
+          $ref: '#/components/schemas/CONDUCTOR_RESULT'
+        node:
+          $ref: '#/components/schemas/NODE_RESULT'
+      example:
+        node:
+          node_name:
+            operation_name: オペレーション名
+            status_file: ステータスファイル
+            node_type: Node種別
+            status_id: ステータスID
+            time_start: 開始日時
+            node_name: Node名
+            skip: スキップ
+            operation_id: オペレーションID
+            time_end: 終了日時
+            remarks: 備考
+            node_instance_id: NodeインスタンスID
+            jump:
+              menu_id: メニューID
+              execution_id: 作業ID
+        conductor:
+          operation_name: オペレーション名
+          status_id: ステータスID
+          time_start: 開始日時
+          execution_log: 実行ログ
+          execution_user: 作業実行ユーザー
+          abort_execute_flag: 緊急停止フラグ
+          conductor_name: Conductor名
+          operation_id: オペレーションID
+          time_end: 終了日時
+          time_book: 予約日時
+          remarks: 備考
+          conductor_instance_id: ConductorインスタンスID
+        conductor_class: {}
+    inline_response_200_16_data:
+      type: object
+      properties:
+        file_name:
+          type: string
+          example: "InputData_Conductor_{conductor_instance_id}.zip"
+        file_data:
+          type: string
+          example: All movement input data zip base64 string
+      example:
+        file_name: "InputData_Conductor_{conductor_instance_id}.zip"
+        file_data: All movement input data zip base64 string
+    inline_response_200_17_data:
+      type: object
+      properties:
+        file_name:
+          type: string
+          example: "ResultData_Conductor_{conductor_instance_id}.zip"
+        file_data:
+          type: string
+          example: All movement result data zip base64 string
+      example:
+        file_name: "ResultData_Conductor_{conductor_instance_id}.zip"
+        file_data: All movement result data zip base64 string
+    inline_response_200_19_data:
+      type: object
+      properties:
+        movement_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+        operation_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+      example:
+        operation_list: null
+        movement_list:
+          column_group_info:
+            key:
+              parent_column_group_name: parent_column_group_name
+              columns:
+              - ""
+              - ""
+              parent_column_group_id: parent_column_group_id
+              column_group_id: column_group_id
+              column_group_name: column_group_name
+          menu_info:
+            sheet_type: sheet_type
+            history_table_flag: true
+            row_update_flag: true
+            web_print_limit: 7
+            initial_filter_flg: true
+            columns:
+            - ""
+            - ""
+            row_reuse_flag: true
+            vertical: true
+            row_insert_flag: true
+            privilege: 2
+            row_disuse_flag: true
+            table_name: table_name
+            parent_menu_group_name: parent_menu_group_name
+            menu_name: menu_name
+            menu_group_name: menu_group_name
+            auto_filter_flg: true
+            menu_id: menu_id
+            view_name: view_name
+            web_print_confirm: 9
+            pk_column_name_rest: pk_column_name_rest
+            sort_key: sort_key
+            parent_menu_group_id: parent_menu_group_id
+            menu_group_id: menu_group_id
+            xls_print_limit: 3
+            menu_info: menu_info
+            inherit: true
+            login_necessity: true
+          column_info:
+            key:
+              initial_value: initial_value
+              column_disp_seq: 6
+              required_item: 2
+              ref_table_name: ref_table_name
+              save_type: save_type
+              column_name: column_name
+              unique_item: 5
+              description: description
+              input_item: 5
+              before_validate_register: {}
+              col_name: col_name
+              column_name_rest: column_name_rest
+              column_id: column_id
+              ref_multi_lang: ref_multi_lang
+              validate_option: {}
+              ref_pkey_name: ref_pkey_name
+              auto_input: 1
+              view_item: view_item
+              ref_col_name: ref_col_name
+              column_group_id: column_group_id
+              after_validate_register: {}
+              column_type: 0
+              column_group_name: column_group_name
+              ref_sort_conditions: ref_sort_conditions
+

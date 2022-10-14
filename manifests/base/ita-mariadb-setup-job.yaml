@@ -1,0 +1,135 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ita-mariadb-setup
+  namespace: exastro-it-automation
+spec: 
+  completions: 1
+  template: 
+    spec:
+      initContainers:
+      - name: check-is-db-awake
+        env:
+          - name: MARIADB_PASSWORD
+            value: password 
+          - name: MARIADB_USER
+            value: ITA_USER 
+        envFrom:
+          - configMapRef:
+              name: params-ita-mariadb-setup
+        image: mariadb:10.9
+        command: ["sh", "-c"]
+        args:
+        - |
+          #!/bin/bash
+          i=1
+          str1="mysqld is alive"
+          echo "HOST:"$DB_HOST
+          echo "USER:"$MARIADB_USER
+          echo "pw:"$MARIADB_PASSWORD
+          while true; do
+            result="$(mysqladmin ping --host=$DB_HOST  --user=$MARIADB_USER --password=$MARIADB_PASSWORD)"
+            echo $result
+            case "$result" in 
+              "$str1" ) echo "OK"; exit 0
+                break;;
+              * ) sleep $i;i=$(( i * 2 ));echo $i":NG" 
+            esac
+          done
+          #exit 0
+      restartPolicy: Never
+      containers: # we can have one or more containers
+      - name: mariadb
+        image: mariadb:10.9
+        command: ["sh", "-c"]
+        args:
+        - |
+          mysql --host=$DB_HOST  --user=$MARIADB_USER --password=$MARIADB_PASSWORD  $MARIADB_DATABASE < /docker-entrypoint-initdb.d/createdb.sql
+        ports:
+        - containerPort: 3306 
+        env:
+          - name: MARIADB_ALLOW_EMPTY_ROOT_PASSWORD
+            value: "0" # if it is 1 and root_password is set, root_password takes precedance
+          - name: MARIADB_ROOT_PASSWORD
+            value: password 
+          - name: MARIADB_USER
+            value: ITA_USER 
+          - name: MARIADB_PASSWORD
+            value: password 
+          - name: MARIADB_DATABASE
+            value: ITA_DB 
+        #resources:
+         # requests:
+         #   memory: "64Mi"
+         #   cpu: "250m"
+         # limits:
+         #   memory: "64Mi"
+         #   cpu: "250m"
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities: {}
+          privileged: false 
+          readOnlyRootFilesystem: false
+          seLinuxOptions: {}
+        envFrom:
+          - configMapRef:
+              name: params-ita-mariadb-setup
+        volumeMounts:
+          - name: mysql-server-initdb
+            mountPath: /docker-entrypoint-initdb.d/createdb.sql
+            subPath: createdb.sql 
+          - name: mysql-server-conf
+            mountPath: /etc/mysql/conf.d
+      volumes:
+      - name: mysql-server-initdb
+        configMap:
+          name: mysql-server-initdb-config-setup
+      - name: mysql-server-conf
+        configMap:
+          name: mysql-server-conf-config-setup
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-mariadb-setup
+  namespace: exastro-it-automation
+data:
+  DB_HOST: "ita-mariadb.exastro-it-automation.svc"
+  DB_PORT: "3306"
+  DB_DATADBASE: "ITA_DB"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-server-conf-config-setup
+  namespace: exastro-it-automation
+data:
+  custom.cnf: |
+    [mysqld]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-server-initdb-config-setup
+  namespace: exastro-it-automation
+data:
+  createdb.sql: |
+    CREATE DATABASE IF NOT EXISTS ITA_DB; 
+    CREATE TABLE IF NOT EXISTS `ITA_DB`.`T_COMN_ORGANIZATION_DB_INFO`
+    (
+        PRIMARY_KEY                     VARCHAR(40),                                -- 主キー
+        ORGANIZATION_ID                 VARCHAR(255),                               -- organizationのID
+        DB_HOST                         VARCHAR(255),                               -- DBホスト
+        DB_PORT                         INT,                                        -- DBポート
+        DB_DATADBASE                    VARCHAR(255),                               -- DBDB名
+        DB_USER                         VARCHAR(255),                               -- DBユーザ
+        DB_PASSWORD                     VARCHAR(255),                               -- DBパスワード
+        DB_ROOT_PASSWORD                VARCHAR(255),                               -- DBRootパスワード
+        GITLAB_USER                     VARCHAR(255),                               -- GitLabユーザ
+        GITLAB_TOKEN                    VARCHAR(255),                               -- GitLabトークン
+        NOTE                            TEXT,                                       -- 備考
+        DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+        LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+        LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+        PRIMARY KEY(PRIMARY_KEY)
+    )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;

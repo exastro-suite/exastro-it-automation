@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-web-server
+data:
+  LISTEN_PORT: "8000"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ita-web-server
+  namespace: exastro-it-automation 
+spec:
+  selector:
+    matchLabels:
+      name: ita-web-server 
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        name: ita-web-server 
+    spec:
+      containers:
+      - name: ita-web-server 
+        image: ita-web-server:0.4 
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: secret-ita-maria
+            name: secret-ita-common
+        - configMapRef:
+            name: params-ita-maria
+            name: params-ita-common
+            name: params-ita-web-server 
+        #volumeMounts:
+        #  - name: persistent-storage
+        #    mountPath: /hoge # <--- Please activate this block after correct path to mount is fixed
+      #volumes:
+      #- name: persistent-storage
+      #  persistentVolumeClaim:
+      #    claimName: ita-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-web-server 
+  namespace: exastro-it-automation 
+  labels:
+    name: ita-web-server 
+spec:
+  type: NodePort 
+  ports:
+  - name: tomcat
+    port: 8000
+    targetPort: 8000
+  selector:
+    name: ita-web-server 

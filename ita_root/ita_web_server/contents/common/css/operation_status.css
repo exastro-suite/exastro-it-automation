@@ -1,0 +1,173 @@
+@charset "utf-8";
+/* CSS Document */
+
+.operationStatusContainer {
+overflow: auto;
+height: calc( 100% - 48px );
+}
+.operationStatusContainer .commonSection {
+max-width: 1280px; min-width: 800px;
+margin-bottom: 24px; padding: 0;
+}
+.operationStatusContainer .commonTh {
+width: 160px;
+}
+.movementArea {
+overflow: hidden;
+position: relative;
+z-index: 0;
+height: 100px;
+background: linear-gradient( transparent, transparent 99px, #CCC 99px, #CCC 100px ), linear-gradient( 90deg, transparent, transparent 99px, #CCC 99px, #CCC 100px ), linear-gradient( transparent, transparent 49px, #D0D0D0 49px, #D0D0D0 50px ), linear-gradient( 90deg, transparent, transparent 49px, #D0D0D0 49px, #D0D0D0 50px ), linear-gradient( transparent, transparent 9px, #DDD 9px, #DDD 10px ), linear-gradient( 90deg, transparent, transparent 9px, #DDD 9px, #DDD 10px ), transparent;
+background-color: #F2F2F2;
+background-size: 100px 100px, 100px 100px, 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+border: 1px solid #CCC;
+border-radius: 4px;
+}
+.movementArea::after {
+content: '';
+display: block;
+position: absolute;
+left: 0; top: 50%;
+transform: translateY(-50%);
+width: 100%; height: 13px;
+background-color: #001A3B;
+background-image: linear-gradient( rgba( 255,255,255,0 ), rgba( 255,255,255,.5 ), rgba( 255,255,255,0 ) );
+border-top: 4px solid #EEE;
+border-bottom: 4px solid #EEE;
+}
+.movementArea[data-result="done"] {
+background-color: #EEF8E7;
+border-color: #58B60C;
+}
+.movementArea[data-result="error"] {
+background-color: #FCE6E6;
+border-color: #D00;
+}
+.node {
+left: 50%; top: 50%;
+z-index: 10;
+transform: translate(-50%,-50%);
+cursor: default;
+}
+.node:hover::after {
+display: none!important;
+}
+.node-name > .operationStatusData {
+display: block;
+max-width: none;
+width: 160px;
+overflow: hidden;
+white-space: nowrap;
+text-overflow: ellipsis;
+}
+.node-result[data-result-text="ERROR"]::before {
+background-color: #D00;
+}
+.node-result[data-result-text="DONE"]::before {
+background-color: #58B60C;
+}
+.node-result[data-result-text="STOP"]::before {
+background-color: #FD0;
+text-shadow: none;
+color: #000;
+}
+.animationEnd.node-result::before {
+animation: none!important;
+}
+
+#operationStatus .standby,
+#operationStatus .execute {
+display: none;
+}
+#operationStatus .sectionBody[data-mode="standby"] .standby,
+#operationStatus .sectionBody[data-mode="execute"] .execute {
+display: flex;
+}
+
+.executeLogContainer {
+display: flex;
+flex-direction: column;
+height: 100%;
+}
+.executeLogSelect {
+flex: 0 0 auto;
+min-height: 0;
+padding-bottom: 4px;
+}
+.executeLogSelectList {
+position: relative;
+z-index: 0;
+flex: 0 0 auto;
+display: flex;
+gap: 16px;
+width: 100%; height: 32px;
+min-width: 0;
+}
+.executeLogSelectList::after {
+content: '';
+position: absolute;
+z-index: -1;
+left: 0; bottom: 0;
+width: 100%; height: 1px;
+border-bottom: 1px solid var(--black30);
+}
+.executeLogSelectItem {
+flex: 1 1 auto;
+display: flex;
+align-items: center;
+min-width: 0;
+}
+.executeLogSelectLink {
+overflow: hidden;
+display: flex;
+align-items: center;
+justify-content: center;
+height: 100%;
+padding: 0 16px;
+background-color: var(--baseColor100);
+background-image: linear-gradient(rgba(255,255,255,1), rgba(0,0,0,.075), rgba(255,255,255,0) );
+border: 1px solid var(--black30);
+border-radius: 4px 4px 0 0;
+text-decoration: none;
+text-overflow: ellipsis;
+white-space: nowrap;
+letter-spacing: 1px;
+font-family: "Osaka-mono", "MS Gothic", "monospace";
+font-size: 12px;
+color: var(--black90);
+opacity: .5;
+}
+.executeLogSelectLink:focus,
+.executeLogSelectLink:hover {
+opacity: .7;
+}
+.executeLogSelectLink.logOpen {
+border-bottom-color: var(--baseColor100);
+opacity: 1;
+}
+.executeLogContent {
+flex: 1 1 auto;
+overflow: hidden;
+position: relative;
+min-height: 0;
+}
+.executeLogSection {
+visibility: hidden;
+position: absolute;
+z-index: -1;
+left: 0; top: 100%;
+width: 100%; height: 100%;
+}
+.executeLogSection.logOpen {
+position: static;
+left: auto; top: auto;
+z-index: 0;
+visibility: visible;
+}
+
+.errorLogTab .contentMenuLink.tabOpen .contentMenuLinkInner {
+color: #A00;
+}
+.errorLogTab .contentMenuLink.tabOpen .contentMenuLinkInner::after {
+background-color: #C00;
+}

@@ -1,0 +1,121 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.itaMariadb.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.itaMariadb.serviceType }}
+  ports:
+    - name: {{ .Values.itaMariadb.servicePortsName }}
+      port: {{ .Values.itaMariadb.servicePortsNumber }}
+      targetPort: {{ .Values.itaMariadb.servicePortsTargetNumber }}
+      protocol: {{ .Values.itaMariadb.serviceProtocol }}
+  selector:
+    app: {{ .Values.itaMariadb.appName }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.itaMariadb.name }}
+  labels:
+    app: {{ .Values.itaMariadb.appName }} # service wil look for this label
+  namespace: {{ .Release.Namespace }}
+spec: 
+  replicas: {{ .Values.itaMariadb.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.itaMariadb.appName }} # service wil look for this label
+  template: 
+    metadata:
+      labels:
+        app: {{ .Values.itaMariadb.appName }} # service wil look for this label
+    spec: # specification for pods
+      containers: # we can have one or more containers
+      - name:  {{ .Values.itaMariadb.appName }}
+        image: {{ .Values.itaMariadb.resources.image }}
+        ports:
+        - containerPort: {{ .Values.itaMariadb.resources.dbPortNumber }}
+        env:
+          - name: MARIADB_ALLOW_EMPTY_ROOT_PASSWORD
+            value: "{{ .Values.itaMariadb.MARIADB_ALLOW_EMPTY_ROOT_PASSWORD }}"
+          - name: MARIADB_ROOT_PASSWORD
+            value: {{ .Values.itaMariadb.MARIADB_ROOT_PASSWORD }}
+          - name: MARIADB_USER
+            value: {{ .Values.itaMariadb.MARIADB_USER }}
+          - name: MARIADB_PASSWORD
+            value: {{ .Values.itaMariadb.MARIADB_PASSWORD }}
+          - name: MARIADB_DATABASE
+            value: {{ .Values.itaMariadb.MARIADB_DATABASE }}
+        #resources:
+        #  requests:
+        #    memory: {{ .Values.itaMariadb.resources.resourceRequestsMemory }}
+        #    cpu: {{ .Values.itaMariadb.resources.resourceRequestsCpu }}
+        #  limits:
+        #    memory: {{ .Values.itaMariadb.resources.resourceLimitMemory }}
+        #    cpu: {{ .Values.itaMariadb.resources.resourceLimitCpu }}
+        securityContext:
+          allowPrivilegeEscalation: {{ .Values.itaMariadb.security.allowPrivilegeEscalation }}
+          capabilities: {{ toYaml .Values.itaMariadb.security.capabilities | nindent 12 }}
+          privileged: {{ .Values.itaMariadb.security.privileged }}
+          readOnlyRootFilesystem: {{ .Values.itaMariadb.security.readOnlyRootFilesystem }}
+          seLinuxOptions: {{ toYaml .Values.itaMariadb.security.seLinuxOptions | nindent 12 }}
+          #runAsNonRoot: true
+        volumeMounts:
+          - name: persistent-storage
+            mountPath: {{ .Values.itaMariadb.volume.pvcMountPath }}
+        #    mountPath: /var/lib/mysql
+          - name: mysql-server-initdb
+            mountPath: {{ .Values.itaMariadb.volume.initDbMountPath }}
+            subPath: {{ .Values.itaMariadb.volume.initDbSubPath }}
+          - name: mysql-server-conf
+            mountPath: {{ .Values.itaMariadb.volume.confMountPath }}
+      volumes:
+      - name: persistent-storage
+        persistentVolumeClaim:
+          claimName: {{ .Values.itaMariadb.volume.dbClaimName }}
+      - name: mysql-server-initdb
+        configMap:
+          name: mysql-server-initdb-config
+      - name: mysql-server-conf
+        configMap:
+          name: mysql-server-conf-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-server-initdb-config
+  namespace: {{ .Release.Namespace }}
+data: 
+  createdb.sql: |-
+{{ .Values.itaMariadb.dbInit.createdbSql | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-server-conf-config
+  namespace: exastro-it-automation
+data:
+  custom.cnf: |-
+{{ .Values.itaMariadb.dbConfInfo.customCnf | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-mariadb
+  namespace: {{ .Release.Namespace }}
+data:
+  DB_HOST: "{{ .Values.itaMariadb.dbConnectionInfo.DB_HOST }}" # 環境にあわせて変更
+  DB_PORT: "{{ .Values.itaMariadb.dbConnectionInfo.DB_PORT }}" # 環境にあわせて変更"
+  DB_DATADBASE: "{{ .Values.itaMariadb.dbConnectionInfo.DB_DATADBASE }}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.itaMariadb.dbAccountInfo.name }}
+  namespace: {{ .Release.Namespace }}
+type: {{ .Values.itaMariadb.dbAccountInfo.type }}
+data:
+  DB_PASSWORD: {{ .Values.itaMariadb.dbAccountInfo.DB_PASSWORD }}
+  DB_ROOT_PASSWORD: {{ .Values.itaMariadb.dbAccountInfo.DB_ROOT_PASSWORD }}
+  DB_USER: {{ .Values.itaMariadb.dbAccountInfo.DB_USER }}
+

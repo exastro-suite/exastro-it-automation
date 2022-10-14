@@ -1,0 +1,76 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: Flask",
+        "type": "python",
+        "request": "launch",
+        "program": "/exastro/api.py",
+        "env": {
+            "FLASK_APP": "/exastro/api.py"
+        },
+        "cwd": "/exastro",
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/ita_root/ita_api_organization",
+            "remoteRoot": "/exastro"
+          },
+        ],
+        "args": [
+            "run",
+            "--no-debugger"
+        ],
+        "jinja": true,
+        "justMyCode": true,
+        "noDebug": true,
+      },
+      {
+        "name": "[DEBUG] Python: Flask",
+        "type": "python",
+        "request": "launch",
+        "program": "/exastro/api.py",
+        "env": {
+            "FLASK_APP": "/exastro/api.py"
+        },
+        "cwd": "/exastro",
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/ita_root/ita_api_organization",
+            "remoteRoot": "/exastro"
+          },
+        ],
+        "args": [
+            "run",
+            "--no-debugger"
+        ],
+        "jinja": true,
+        "justMyCode": true
+      },
+      {
+        "name": "[DEBUG] Python: Flask (Attach)",
+        "type": "python",
+        "request": "attach",
+        "connect": {
+          "host": "localhost",
+          "port": 5678
+        },
+        "pathMappings": [
+            {
+                "localRoot": "${workspaceFolder}/ita_root/ita_api_organization",
+                "remoteRoot": "/exastro"
+              },
+              {
+                "localRoot": "${workspaceFolder}/ita_root/common_libs",
+                "remoteRoot": "/exastro/common_libs"
+              },
+              {
+                "localRoot": "${workspaceFolder}/ita_root/messages",
+                "remoteRoot": "/exastro/messages"
+              },
+        ]
+    },
+  ]
+}

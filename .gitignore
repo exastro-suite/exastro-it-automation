@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+/.volumes/
+/.vscode_extensions/*/
+/.vscode_extensions/*
+!/.vscode_extensions/.gitkeep
+.talismanrc
+__pycache__/
+*.session.sql

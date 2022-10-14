@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.itaCommon.name }}
+  namespace: {{ .Release.Namespace }}
+data:
+  DEFAULT_LANGUAGE: "{{ .Values.itaCommon.DEFAULT_LANGUAGE }}"
+  CONTAINER_BASE:  "{{ .Values.itaCommon.CONTAINER_BASE }}"

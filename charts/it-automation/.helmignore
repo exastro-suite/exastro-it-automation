@@ -1,0 +1,11 @@
+.DS_Store
+.git/
+.gitignore
+.talismanrc
+*.swp
+*.bak
+*.bk
+*.tmp
+*~
+.project
+*.tmproj

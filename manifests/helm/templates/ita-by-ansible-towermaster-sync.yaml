@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-by-ansible-towermaster-sync
+  namespace: exastro-it-automation
+data:
+  EXECUTE_INTERVAL: "1"
+  STORAGEPATH: "/storage/"
+  CONTAINER_BASE: "kubernetes"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ita-by-ansible-towermaster-sync 
+  namespace: exastro-it-automation 
+spec:
+  selector:
+    matchLabels:
+      name: ita-by-ansible-towermaster-sync 
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        name: ita-by-ansible-towermaster-sync 
+    spec:
+      containers:
+      - name: ita-by-ansible-towermaster-sync 
+        image: ydkarino/ita_by_ansible_towermaster_sync:0.4
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: "64Mi"  #仮決め
+            cpu: "250m"     #仮決め
+          limits:
+            memory: "64Mi"  #仮決め
+            cpu: "250m"     #仮決め 
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+        envFrom:
+        - secretRef:
+            name: secret-ita-mariadb
+        - configMapRef:
+            name: params-ita-mariadb
+        - configMapRef:
+            name: params-ita-common
+        - configMapRef:
+            name: params-ita-by-ansible-towermaster-sync
+        volumeMounts:
+          - name: persistent-storage
+            mountPath: /storage
+      volumes:
+      - name: persistent-storage
+        persistentVolumeClaim:
+          claimName: ita-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-by-ansible-towermaster-sync 
+  namespace: exastro-it-automation 
+  labels:
+    name: ita-by-ansible-towermaster-sync 
+spec:
+  type: NodePort 
+  ports:
+  - name: tomcat
+    port: 8080
+    targetPort: 8080
+  selector:
+    name: ita-by-ansible-towermaster-sync 

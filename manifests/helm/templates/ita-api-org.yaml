@@ -1,0 +1,75 @@
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.itaApiOrg.paramName }}
+  namespace: {{ .Release.Namespace }}
+data:
+  LISTEN_PORT: "{{ .Values.itaApiOrg.LISTEN_PORT }}"
+  STORAGEPATH: "{{ .Values.itaApiOrg.STORAGEPATH }}"
+  DEFAULT_LANGUAGE: "{{ .Values.itaApiOrg.DEFAULT_LANGUAGE }}"
+  PLATFORM_API_HOST: "{{ .Values.itaApiOrg.PLATFORM_API_HOST }}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.itaApiOrg.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      name: {{ .Values.itaApiOrg.name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: {{ .Values.itaApiOrg.name }}
+    spec:
+      containers:
+        - name: {{ .Values.itaApiOrg.name }}
+          image: {{ .Values.itaApiOrg.resources.image }}
+          imagePullPolicy: {{ .Values.itaApiOrg.resources.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.itaApiOrg.allowPrivilegeEscalation }}
+            readOnlyRootFilesystem: {{ .Values.itaApiOrg.readOnlyRootFilesystem }}
+            runAsUser: {{ .Values.itaApiOrg.runAsUser }}
+            runAsGroup: {{ .Values.itaApiOrg.runAsGroup }}
+            runAsNonRoot: {{ .Values.itaApiOrg.runAsNonRoot }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.global.dbAccountInfo }}
+            - configMapRef:
+                name: {{ .Values.global.dbConnectionInfo }}
+            - configMapRef:
+                name: {{ .Values.global.itaBaseInfo }}
+            - configMapRef:
+                name: {{ .Values.global.itaApiOrg }}
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: {{ .Values.itaApiOrg.volume.pvcMountPath }}
+            - name: contaier-volume
+              mountPath: {{ .Values.itaApiOrg.volume.containerVol1MountPath }}
+              subPath: {{ .Values.itaApiOrg.volume.containerVol1SubPath }}
+            - name: contaier-volume
+              mountPath: {{ .Values.itaApiOrg.volume.containerVol2MountPath }}
+              subPath: {{ .Values.itaApiOrg.volume.containerVol2SubPath }}
+            - name: contaier-volume
+              mountPath: {{ .Values.itaApiOrg.volume.containerVol3MountPath }}
+      volumes:
+        - name: persistent-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.itaApiOrg.volume.claimName }}
+        - name: contaier-volume
+          emptyDir: {{ toYaml .Values.itaApiOrg.emptyDir | nindent 12 }}

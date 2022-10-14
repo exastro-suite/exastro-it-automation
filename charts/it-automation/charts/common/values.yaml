@@ -1,0 +1,43 @@
+# Default values for common.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+global:
+  itaGlobalDefinition:
+    name: ita-global
+    enabled: true
+    config:
+      DEFAULT_LANGUAGE: "ja"
+      LANGUAGE: "en"
+      CONTAINER_BASE: "kubernetes"
+      TZ: "Asia/Tokyo"
+    persistence:
+      enabled: true
+      accessMode: ReadWriteMany
+      size: 10Gi
+      volumeType: hostPath # e.g.) hostPath or AKS
+      storageClass: "-" # e.g.) azurefile or - (None)
+      # matchLabels: 
+      #   release: "stable"
+      # matchExpressions:
+      #   - {key: environment, operator: In, values: [dev]}
+  gitlabDefinition:
+    name: ita-gitlab
+    enabled: true
+    config:
+      GITLAB_PROTOCOL: "http"
+      GITLAB_HOST: "gitlab.exastro-platform.svc"
+      GITLAB_PORT: "80"
+    secret:
+      GITLAB_ROOT_TOKEN: ""
+  databaseDefinition:
+    name: ita-mariadb
+    enabled: true
+    config:
+      DB_ENGINE: mariadb
+      DB_HOST: "mariadb.exastro-platform.svc"
+      DB_PORT: "3306"
+      DB_DATADBASE: "ITA_DB"
+    secret:
+      DB_ROOT_PASSWORD: ""
+      DB_USER: ""
+      DB_PASSWORD: ""

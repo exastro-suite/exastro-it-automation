@@ -1,0 +1,61 @@
+{{/*
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+*/}}
+
+{{/* Custom Exastro IT Automation global PVC */}}
+{{- define "common.pvc.ita-global" -}}
+{{-   $persistence := .Values.global.itaGlobalDefinition.persistence -}}
+---
+{{-   if $persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-{{ .Values.global.itaGlobalDefinition.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels: {{ include "common.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ $persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ $persistence.size | quote }}
+{{-     if $persistence.volumeName }}
+  volumeName: {{ $persistence.volumeName }}
+{{-     end }}
+{{-     if $persistence.storageClass }}
+{{-       if (eq "-" $persistence.storageClass) }}
+  storageClassName: ""
+{{-       else }}
+  storageClassName: "{{ $persistence.storageClass }}"
+{{-       end -}}
+{{-     end }}
+{{-     if and $persistence.matchLabels $persistence.matchExpressions }}
+  selector:
+{{-       if $persistence.matchLabels }}
+    matchLabels: {{ toYaml $persistence.matchLabels | nindent 6 }}
+{{-       end -}}
+{{-       if $persistence.matchExpressions }}
+    matchExpressions: {{ toYaml $persistence.matchExpressions | nindent 6 }}
+{{-       end -}}
+{{-     end }}
+{{-   end }}
+{{- end -}}
+
+{{/* Print Exastro IT Automation common PVCs */}}
+{{- $gitlab := default dict .Values.global.gitlabDefinition -}}
+{{- $ita_global := default dict .Values.global.itaGlobalDefinition.persistence -}}
+{{- if (default false $ita_global.enabled) -}}
+{{-   include "common.pvc.ita-global" . | nindent 0 -}}
+{{- end -}}

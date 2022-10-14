@@ -1,0 +1,66 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/jekyll
+{
+	"name": "it-automation2 - ita-by-conductor-synchronize",
+	"dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml"],
+	"service": "ita-by-conductor-synchronize",
+	// Set *default* container specific settings.json values on container create.
+	"settings": {
+		"terminal.integrated.profiles.linux": {
+			"bash": {
+				"path": "/bin/bash"
+			}
+		},
+		"terminal.integrated.defaultProfile.linux": "bash",
+
+		// git menu setting
+		"git.allowNoVerifyCommit": true,
+
+		// python extension setting
+		"python.linting.pylintEnabled": false,
+		"python.linting.flake8Enabled": true,
+		
+		"python.linting.lintOnSave": true,
+
+		"python.linting.flake8Args": [
+			"--ignore=W293, W504",
+			"--max-line-length=150",
+			"--max-complexity=20",
+		],
+
+		"python.formatting.provider": "autopep8",
+
+		"python.formatting.autopep8Args": [
+			"--aggressive", "--aggressive",
+		],		
+	},
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		"donjayamanne.python-extension-pack",
+		"ms-python.vscode-pylance",
+		"ms-ceintl.vscode-language-pack-ja",
+		"ms-vscode.references-view",
+		"eamodio.gitlens",
+		"mhutchie.git-graph",
+		"redhat.vscode-yaml",
+		"hediet.vscode-drawio",
+		"oderwat.indent-rainbow",
+		"aaron-bond.better-comments",
+		//"sonarsource.sonarlint-vscode",
+		"mechatroner.rainbow-csv",
+		"ryu1kn.partial-diff",
+		"pkief.material-icon-theme",
+		// "mtxr.sqltools",
+		// "mtxr.sqltools-driver-mysql",
+		"mitchdenny.ecdc",
+	],
+	// // Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [
+	// 	8000
+	// ],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "onCreateCommand":"sudo dnf install -y git vim diffutils bind-utils iputils && sudo pip3.9 install flake8 && sudo pip3.9 install autopep8",
+	// "postAttachCommand": "",
+	"workspaceFolder": "/workspace",
+	"overrideCommand": true,
+}

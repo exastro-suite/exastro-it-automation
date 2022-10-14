@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-ita-by-ansible-towermaster-sync
+  namespace: exastro-it-automation
+type: Opaque
+data:
+  STEST: bXpzUWo4VlVfemNTb1Nac1NYX18=
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-by-ansible-towermaster-sync
+  namespace: exastro-it-automation
+data:
+  TEST: "hello"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ita-by-ansible-towermaster-sync 
+  namespace: exastro-it-automation 
+spec:
+  selector:
+    matchLabels:
+      name: ita-by-ansible-towermaster-sync 
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        name: ita-by-ansible-towermaster-sync 
+    spec:
+      containers:
+      - name: ita-by-ansible-towermaster-sync 
+        image: ita-api-admin:0.4 #temporary one ( due to no fixed image)
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: secret-ita-maria
+            name: secret-ita-common
+        - configMapRef:
+            name: params-ita-maria
+            name: params-ita-common
+        #volumeMounts:
+        #  - name: persistent-storage
+        #    mountPath: /hoge # <--- Please activate this block after correct path to mount is fixed
+      #volumes:
+      #- name: persistent-storage
+      #  persistentVolumeClaim:
+      #    claimName: ita-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-by-ansible-towermaster-sync 
+  namespace: exastro-it-automation 
+  labels:
+    name: ita-by-ansible-towermaster-sync 
+spec:
+  type: NodePort 
+  ports:
+  - name: tomcat
+    port: 8080
+    targetPort: 8080
+  selector:
+    name: ita-by-ansible-towermaster-sync 

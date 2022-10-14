@@ -1,0 +1,97 @@
+itaCommon:
+  name: params-ita-common
+  DEFAULT_LANGUAGE: "ja"
+  CONTAINER_BASE: "kubernetes"
+
+gitlabConnectionInfo:
+  name: params-ita-gitlab
+  GITLAB_HOST: "gitlab.exastro-it-automation.svc"  #環境に合わせて変更
+  GITLAB_PORT: "80"  #  環境に合わせて変更
+  GITLAB_PROTOCOL: http 
+
+gitlabTokenInfo:
+  name: secret-ita-gitlab
+  GITLAB_TOKEN: # CHANGEME gitlab Personal Access Tokens base64 encode 
+
+itaMariadb:
+  name: ita-mariadb
+  serviceType: ClusterIP
+  servicePortsName: mariadb
+  servicePortsNumber: 3306
+  servicePortsTargetNumber: 3306
+  serviceProtocol: TCP
+  appName: mariadb
+
+  replicas: 1 
+
+  MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "0"
+  MARIADB_ROOT_PASSWORD: password 
+  MARIADB_USER: ITA_USER 
+  MARIADB_PASSWORD: password 
+  MARIADB_DATABASE: ITA_DB 
+
+  resources:
+    image: mariadb:10.9
+    dbPortNumber: 3306
+    resourceRequestsMemory: "64Mi"  #仮決め
+    resourceRequestsCpu: "250m"     #仮決め
+    resourceLimitMemory: "64Mi"  #仮決め
+    resourceLimitCpu: "250m"     #仮決め
+
+  volume:
+  #  pvcMountPath: /home
+    pvcMountPath: /var/lib/mysql
+    initDbMountPath: /docker-entrypoint-initdb.d/createdb.sql
+    initDbSubPath: createdb.sql 
+    confMountPath: /etc/mysql/conf.d
+    dbClaimName: ita-mariadb
+
+  dbInit:
+    name: mysql-server-initdb-config
+    createdbSql: |-
+      CREATE DATABASE IF NOT EXISTS ITA_DB; 
+      CREATE TABLE IF NOT EXISTS `ITA_DB`.`T_COMN_ORGANIZATION_DB_INFO`
+      (
+          PRIMARY_KEY                     VARCHAR(40),                                -- 主キー
+          ORGANIZATION_ID                 VARCHAR(255),                               -- organizationのID
+          DB_HOST                         VARCHAR(255),                               -- DBホスト
+          DB_PORT                         INT,                                        -- DBポート
+          DB_DATADBASE                    VARCHAR(255),                               -- DBDB名
+          DB_USER                         VARCHAR(255),                               -- DBユーザ
+          DB_PASSWORD                     VARCHAR(255),                               -- DBパスワード
+          DB_ROOT_PASSWORD                VARCHAR(255),                               -- DBRootパスワード
+          GITLAB_USER                     VARCHAR(255),                               -- GitLabユーザ
+          GITLAB_TOKEN                    VARCHAR(255),                               -- GitLabトークン
+          NOTE                            TEXT,                                       -- 備考
+          DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+          LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+          LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+          PRIMARY KEY(PRIMARY_KEY)
+      )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+  dbConfInfo:
+    name: mysql-server-conf-config
+    customCnf: |-
+      [mysqld]
+
+  dbConnectionInfo:
+    name: params-ita-mariadb
+    DB_HOST: "ita-mariadb.exastro-it-automation.svc" # 環境にあわせて変更
+    DB_PORT: "3306"  # 環境にあわせて変更"
+    DB_DATADBASE: "ITA_DB"
+
+  security:
+    allowPrivilegeEscalation: true
+    capabilities: {}
+  #  privileged: false 
+    readOnlyRootFilesystem: false
+    privileged: false
+  #  readOnlyRootFilesystem: true
+    seLinuxOptions: {}
+
+  dbAccountInfo:
+    name: secret-ita-mariadb
+    type: Opaque
+    DB_PASSWORD: # CHANGEME ita-mariadb ita user password base64 encode 
+    DB_ROOT_PASSWORD: # CHANGEME ita-mariadb ita user password base64 encode 
+    DB_USER: # CHANGEME ita-mariadb ita user base64 encode 

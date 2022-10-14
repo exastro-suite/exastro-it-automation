@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ita-gitlab
+  namespace: gitlab 
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: gitlab.gitlab.svc 
+    http:
+      paths:
+      - path: /users/sign_in
+        pathType: Prefix
+        backend:
+          service:
+            name: gitlab-webservice-default 
+            port:
+              number: 8181
+

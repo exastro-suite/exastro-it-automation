@@ -1,0 +1,24 @@
+{
+    "id"    :   "org001",
+    "name"  :   "org001-name",
+    "organization_managers" : [
+        {
+            "username"  :   "admin",
+            "email"     :   "admin@example.com",
+            "firstName" :   "admin",
+            "lastName"  :   "admin",
+            "credentials"   :   [
+                {
+                    "type"      :   "password",
+                    "value"     :   "password",
+                    "temporary" :   true
+                }
+            ],
+            "requiredActions": [
+                "UPDATE_PROFILE"
+            ],
+            "enabled": true
+        }
+    ],
+    "options": {}
+}

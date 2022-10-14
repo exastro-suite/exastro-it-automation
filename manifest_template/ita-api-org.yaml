@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-ita-org
+  namespace: exastro-it-automation
+type: Opaque
+data:
+  STEST: bXpzUWo4VlVfemNTb1Nac1NYX18=
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: params-ita-org
+  namespace: exastro-it-automation
+data:
+  TEST: "hello"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ita-api-organization 
+  namespace: exastro-it-automation 
+spec:
+  selector:
+    matchLabels:
+      name: ita-api-organization 
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        name: ita-api-organization 
+    spec:
+      containers:
+      - name: ita-api-organization 
+        image: ita-api-organization:0.7 
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: secret-ita-maria
+            name: secret-ita-common
+        - configMapRef:
+            name: params-ita-maria
+            name: params-ita-common
+        #volumeMounts:
+        #  - name: persistent-storage
+        #    mountPath: /hoge # <--- Please activate this block after correct path to mount is fixed
+      #volumes:
+      #- name: persistent-storage
+      #  persistentVolumeClaim:
+      #    claimName: ita-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ita-api-organization 
+  namespace: exastro-it-automation 
+  labels:
+    name: ita-api-organization 
+spec:
+  type: NodePort 
+  ports:
+  - name: tomcat
+    port: 8080
+    targetPort: 8080
+  selector:
+    name: ita-api-organization 

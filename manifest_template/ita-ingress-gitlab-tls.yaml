@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ita-gitlab-tls
+  namespace: gitlab 
+  annotations:
+    nginx.org/location-snippets: |
+      proxy_set_header X-Forwarded-Ssl on;
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - gitlab.gitlab.svc 
+    secretName: gitlab-wildcard-tls 
+  rules:
+  - host: gitlab.gitlab.svc 
+    http:
+      paths:
+      # - path: /users/sign_in
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gitlab-webservice-default 
+            port:
+              number: 8181
+

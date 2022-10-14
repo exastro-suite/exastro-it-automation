@@ -1,0 +1,138 @@
+{{/*
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+*/}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "ita-api-organization.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ita-api-organization.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "ita-api-organization.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "ita-api-organization.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ template "ita-api-organization.fullname" . }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- range $define := .Values.global -}}
+            {{-   range $config, $value := $define.config }}
+            - name: {{ $config }}
+              valueFrom:
+                configMapKeyRef:
+                  name: params-{{ $define.name }}
+                  key: {{ $config }}
+            {{-   end -}}
+            {{-   range $secret, $value := $define.secret }}
+            - name: {{ $secret }}
+              valueFrom:
+                secretKeyRef:
+                  name: secret-{{ $define.name }}
+                  key: {{ $secret }}
+            {{-   end }}
+            {{- end -}}
+            {{ range $config, $value := .Values.extraEnv }}
+            - name: {{ $config }}
+              valueFrom:
+                configMapKeyRef:
+                  name: params-{{ template "ita-api-organization.fullname" $ }}
+                  key: {{ $config }}
+            {{- end }}
+          volumeMounts:
+            - name: volume-{{ template "ita-api-organization.fullname" . }}-storage
+              mountPath: {{ .Values.persistence.mountPath.storage }}
+            - name: volume-{{ template "ita-api-organization.fullname" . }}-homedir
+              mountPath: {{ .Values.persistence.mountPath.homeDir }}
+            - name: volume-{{ template "ita-api-organization.fullname" . }}-pid
+              mountPath: {{ .Values.persistence.mountPath.pid.path }}
+              subPath: {{ .Values.persistence.mountPath.pid.subPath }}
+            - name: volume-{{ template "ita-api-organization.fullname" . }}-socket
+              mountPath: {{ .Values.persistence.mountPath.socket.path }}
+              subPath: {{ .Values.persistence.mountPath.socket.subPath }}
+            - name: volume-{{ template "ita-api-organization.fullname" . }}-tmp
+              mountPath: {{ .Values.persistence.mountPath.tmp }}
+          ports:
+            - name: port-http
+              containerPort: {{ .Values.extraEnv.LISTEN_PORT }}
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.extraEnv.LISTEN_PORT }}
+            # httpGet:
+            #   path: /
+            #   port: {{ .Values.extraEnv.LISTEN_PORT }}
+            initialDelaySeconds: 5
+            periodSeconds: 10            
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.extraEnv.LISTEN_PORT }}
+            # httpGet:
+            #   path: /
+            #   port: {{ .Values.extraEnv.LISTEN_PORT }}
+            initialDelaySeconds: 5
+            periodSeconds: 10            
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: volume-{{ template "ita-api-organization.fullname" . }}-storage
+          {{- if and .Values.global.itaGlobalDefinition.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: volume-{{ template "ita-api-organization.fullname" . }}-homedir
+          emptyDir: {}
+        - name: volume-{{ template "ita-api-organization.fullname" . }}-pid
+          emptyDir: {}
+        - name: volume-{{ template "ita-api-organization.fullname" . }}-socket
+          emptyDir: {}
+        - name: volume-{{ template "ita-api-organization.fullname" . }}-tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

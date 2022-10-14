@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  title: ITA Version2.0 admin API
+  description: ITAv2.0 admin用API
+  version: 1.0.0
+servers:
+- url: /
+tags:
+- name: Organization Create
+  description: Organization作成
+- name: Workspace Create
+  description: Workspace作成
+paths:
+  /api/organizations/{organization_id}/ita/:
+    post:
+      tags:
+      - Organization Create
+      description: Organizationを作成する
+      operationId: organization_create
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.organization_create_controller
+    delete:
+      tags:
+      - Organization Create
+      description: Organizationを削除する
+      operationId: organization_delete
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.organization_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/:
+    post:
+      tags:
+      - Workspace Create
+      description: Workspaceを作成する
+      operationId: workspace_create
+      parameters:
+      - name: organization_id
+        in: path
+        description: organizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: ロールID情報
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.workspace_create_controller
+    delete:
+      tags:
+      - Workspace Create
+      description: Workspaceを削除する
+      operationId: workspace_delete
+      parameters:
+      - name: organization_id
+        in: path
+        description: organizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.workspace_create_controller
+components:
+  schemas:
+    ERROR_TEMPLATE:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 001-002
+        message:
+          type: string
+    inline_response_200:
+      type: object
+      properties:
+        status:
+          type: string
+      example:
+        status: status
+

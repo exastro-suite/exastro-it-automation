@@ -49,8 +49,8 @@ global:
 
 extraEnv:
   EXECUTE_INTERVAL: "10"
-  ANSIBLE_AGENT_IMAGE: "exastro/ita_ansible_agent"
-  ANSIBLE_AGENT_IMAGE_TAG: "0.3"
+  ANSIBLE_AGENT_IMAGE: "exastro/exastro-it-automation-ansible-agent"
+  ANSIBLE_AGENT_IMAGE_TAG: "latest"
 
 replicaCount: 1
 

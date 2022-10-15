@@ -10,7 +10,7 @@ spec:
       restartPolicy: "OnFailure"
       initContainers:
       - name: check-is-db-awake
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         command: ["sh", "-c"]
         args:
           - |
@@ -41,7 +41,7 @@ spec:
           {{- end }}
       containers: # we can have one or more containers
       - name: {{ template "ita-database-setup-job.fullname" . }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         command: ["sh", "-c"]
         args:
           - |

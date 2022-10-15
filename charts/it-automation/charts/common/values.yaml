@@ -29,11 +29,11 @@ global:
       GITLAB_PORT: "80"
     secret:
       GITLAB_ROOT_TOKEN: ""
-  databaseDefinition:
+  itaDatabaseDefinition:
     name: ita-mariadb
     enabled: true
     config:
-      DB_ENGINE: mariadb
+      DB_VENDOR: "mariadb"
       DB_HOST: "mariadb.exastro-platform.svc"
       DB_PORT: "3306"
       DB_DATADBASE: "ITA_DB"

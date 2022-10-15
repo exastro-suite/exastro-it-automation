@@ -45,7 +45,7 @@ spec:
         args:
           - | {{ .Values.dbSetup.createDBandTBL | nindent 12 }}
         ports:
-          - containerPort: {{ .Values.global.databaseDefinition.config.DB_PORT }}
+          - containerPort: {{ .Values.global.itaDatabaseDefinition.config.DB_PORT }}
         env:
           {{- range $define := .Values.global -}}
           {{-   range $config, $value := $define.config }}

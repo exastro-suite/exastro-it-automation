@@ -40,7 +40,7 @@ metadata:
   labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
 data: 
     createdb.sql: |-
-      {{- with .Values.global.databaseDefinition }}
+      {{- with .Values.global.itaDatabaseDefinition }}
       CREATE DATABASE IF NOT EXISTS {{ .config.DB_DATADBASE }};
       CREATE USER '{{ .secret.DB_USER }}'@'%' IDENTIFIED BY '{{ .secret.DB_PASSWORD }}';
       GRANT ALL PRIVILEGES ON {{ .config.DB_DATADBASE }} . * TO '{{ .secret.DB_USER }}'@'%';

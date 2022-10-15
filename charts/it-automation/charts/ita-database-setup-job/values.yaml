@@ -1,10 +1,14 @@
-# Default values for ita-mariadb-setup-job.
+# Default values for ita-database-setup-job.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 global:
   itaGlobalDefinition:
     name: ita-global
     enabled: true
+    image:
+      registry: "docker.io"
+      organization: exastro
+      package: exastro-it-automation
     config:
       DEFAULT_LANGUAGE: "ja"
       LANGUAGE: "en"
@@ -22,7 +26,7 @@ global:
       # matchExpressions:
       #   - {key: environment, operator: In, values: [dev]}
   gitlabDefinition:
-    name: ita-gitlab
+    name: gitlab
     enabled: true
     config:
       GITLAB_PROTOCOL: "http"
@@ -31,7 +35,7 @@ global:
     secret:
       GITLAB_ROOT_TOKEN: ""
   itaDatabaseDefinition:
-    name: ita-mariadb
+    name: ita-database
     enabled: true
     config:
       DB_VENDOR: "mariadb"
@@ -78,16 +82,17 @@ dbSetup:
 
 initContainerImage:
   repository: busybox
-  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
+  pullPolicy: IfNotPresent
 
 image:
   repository: mariadb
-  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "10.9"
-imagePullSecrets: []
+  pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 

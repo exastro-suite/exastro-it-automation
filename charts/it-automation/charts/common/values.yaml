@@ -5,11 +5,16 @@ global:
   itaGlobalDefinition:
     name: ita-global
     enabled: true
+    image:
+      registry: "docker.io"
+      organization: exastro
+      package: exastro-it-automation
     config:
       DEFAULT_LANGUAGE: "ja"
       LANGUAGE: "en"
       CONTAINER_BASE: "kubernetes"
       TZ: "Asia/Tokyo"
+      STORAGEPATH: "/storage/"
     persistence:
       enabled: true
       accessMode: ReadWriteMany
@@ -21,7 +26,7 @@ global:
       # matchExpressions:
       #   - {key: environment, operator: In, values: [dev]}
   gitlabDefinition:
-    name: ita-gitlab
+    name: gitlab
     enabled: true
     config:
       GITLAB_PROTOCOL: "http"
@@ -30,7 +35,7 @@ global:
     secret:
       GITLAB_ROOT_TOKEN: ""
   itaDatabaseDefinition:
-    name: ita-mariadb
+    name: ita-database
     enabled: true
     config:
       DB_VENDOR: "mariadb"

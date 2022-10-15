@@ -27,7 +27,7 @@ data: {{- toYaml .Values.global.itaGlobalDefinition.config | nindent 2 -}}
 {{- end -}}
 
 {{/* Custom Exastro IT Automation gitlab config */}}
-{{- define "common.configmap.ita-gitlab" -}}
+{{- define "common.configmap.gitlab" -}}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -39,7 +39,7 @@ data: {{- toYaml .Values.global.gitlabDefinition.config | nindent 2 -}}
 {{- end -}}
 
 {{/* Custom Exastro IT Automation MariaDB config */}}
-{{- define "common.configmap.ita-mariadb" -}}
+{{- define "common.configmap.ita-database" -}}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -55,8 +55,8 @@ data: {{- toYaml .Values.global.itaDatabaseDefinition.config | nindent 2 -}}
 {{-   include "common.configmap.ita-global" . | nindent 0 -}}
 {{- end -}}
 {{- if .Values.global.gitlabDefinition.enabled -}}
-{{-   include "common.configmap.ita-gitlab" . | nindent 0 -}}
+{{-   include "common.configmap.gitlab" . | nindent 0 -}}
 {{- end -}}
 {{- if .Values.global.itaDatabaseDefinition.enabled -}}
-{{-   include "common.configmap.ita-mariadb" . | nindent 0  -}}
+{{-   include "common.configmap.ita-database" . | nindent 0  -}}
 {{- end -}}

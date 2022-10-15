@@ -67,6 +67,21 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Image name
+*/}}
+{{- define "ita-by-ansible-towermaster-sync.repository" -}}
+{{- $registry := .Values.global.itaGlobalDefinition.image.registry -}}
+{{- $organization := .Values.global.itaGlobalDefinition.image.organization -}}
+{{- $package := .Values.global.itaGlobalDefinition.image.package -}}
+{{- $tool := replace "ita-" "" .Chart.Name -}}
+{{- if .Values.global.itaGlobalDefinition.image.registry -}}
+{{ .Values.image.repository | default (printf "%s/%s/%s-%s" $registry $organization $package $tool) }}
+{{- else -}}
+{{ .Values.image.repository | default (printf "%s/%s-%s" $organization $package $tool) }}
+{{- end }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "ita-by-ansible-towermaster-sync.serviceAccountName" -}}

@@ -1,3 +1,17 @@
+#   Copyright 2022 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 apiVersion: v2
 name: it-automation
 description: Exastro IT Automation is an Open Source Framework for digitizing and centrally managing the system configuration.
@@ -36,7 +50,7 @@ keywords:
 home: https://exastro-suite.github.io/
 icon: https://exastro-suite.github.io/docs/asset/logo/exastro/Exastro-logomark2-rgb.svg
 sources:
-- https://github.com/exastro/it-automation2-test/charts/it-automation
+- https://github.com/exastro/exastro-it-automation/charts/it-automation
 maintainers:
 - name: NEC Corporation
   email: contact@exastro.jp.nec.com

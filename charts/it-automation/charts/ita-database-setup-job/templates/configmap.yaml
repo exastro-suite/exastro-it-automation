@@ -17,9 +17,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ template "ita-mariadb-setup-job.fullname" . }}
+  name: params-{{ template "ita-database-setup-job.fullname" . }}
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+  labels: {{ include "ita-database-setup-job.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}
 ---
 apiVersion: v1
@@ -27,7 +27,7 @@ kind: ConfigMap
 metadata:
   name: mysql-server-conf-config-setup
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+  labels: {{ include "ita-database-setup-job.labels" . | nindent 4 }}
 data:
   custom.cnf: |
 {{ .Values.dbSetup.dbConfInfo.customCnf | indent 4 }}
@@ -37,7 +37,7 @@ kind: ConfigMap
 metadata:
   name: mysql-server-initdb-config-setup
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+  labels: {{ include "ita-database-setup-job.labels" . | nindent 4 }}
 data: 
     createdb.sql: |-
       {{- with .Values.global.itaDatabaseDefinition }}

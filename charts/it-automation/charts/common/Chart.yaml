@@ -43,7 +43,7 @@ keywords:
 home: https://exastro-suite.github.io/
 icon: https://exastro-suite.github.io/docs/asset/logo/exastro/Exastro-logomark2-rgb.svg
 sources:
-- https://github.com/exastro/it-automation2-test/charts/it-automation
+- https://github.com/exastro/exastro-it-automation/charts/it-automation
 maintainers:
 - name: NEC Corporation
   email: contact@exastro.jp.nec.com

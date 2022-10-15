@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ template "ita-mariadb-setup-job.fullname" . }}
+  name: {{ template "ita-database-setup-job.fullname" . }}
   namespace: {{ .Release.Namespace }}
 spec: 
   completions: {{ .Values.completionCount }}
@@ -10,64 +10,74 @@ spec:
       restartPolicy: "OnFailure"
       initContainers:
       - name: check-is-db-awake
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ["sh", "-c"]
+        args:
+          - |
+            {{- .Values.dbSetup.livenessCheck | nindent 12 }}
         env:
           {{- range $define := .Values.global -}}
           {{-   range $config, $value := $define.config }}
+          {{     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
           - name: {{ $config }}
             valueFrom:
               configMapKeyRef:
                 name: params-{{ $define.name }}
                 key: {{ $config }}
+          {{-     end -}}
           {{-   end -}}
           {{-   range $secret, $value := $define.secret }}
+          {{     if or (eq $define.name "ita-database") }}
           - name: {{ $secret }}
             valueFrom:
               secretKeyRef:
                 name: secret-{{ $define.name }}
                 key: {{ $secret }}
+          {{-     end }}
           {{-   end }}
           {{- end -}}
           {{ range $config, $value := .Values.extraEnv }}
           - name: {{ $config }}
             valueFrom:
               configMapKeyRef:
-                name: params-{{ template "ita-mariadb-setup-job.fullname" $ }}
+                name: params-{{ template "ita-database-setup-job.fullname" $ }}
                 key: {{ $config }}
           {{- end }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-        command: ["sh", "-c"]
-        args:
-          - | {{ .Values.dbSetup.livenessCheck | nindent 12 }}
       containers: # we can have one or more containers
-      - name: {{ template "ita-mariadb-setup-job.fullname" . }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+      - name: {{ template "ita-database-setup-job.fullname" . }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         command: ["sh", "-c"]
         args:
-          - | {{ .Values.dbSetup.createDBandTBL | nindent 12 }}
+          - |
+            {{- .Values.dbSetup.createDBandTBL | nindent 12 }}
         ports:
-          - containerPort: {{ .Values.global.databaseDefinition.config.DB_PORT }}
+          - containerPort: {{ .Values.global.itaDatabaseDefinition.config.DB_PORT }}
         env:
           {{- range $define := .Values.global -}}
           {{-   range $config, $value := $define.config }}
+          {{     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
           - name: {{ $config }}
             valueFrom:
               configMapKeyRef:
                 name: params-{{ $define.name }}
                 key: {{ $config }}
+          {{-     end -}}
           {{-   end -}}
           {{-   range $secret, $value := $define.secret }}
+          {{     if or (eq $define.name "gitlab") (eq $define.name "ita-database") }}
           - name: {{ $secret }}
             valueFrom:
               secretKeyRef:
                 name: secret-{{ $define.name }}
                 key: {{ $secret }}
+          {{-     end }}
           {{-   end }}
           {{- end -}}
           {{ range $config, $value := .Values.extraEnv }}
           - name: {{ $config }}
             valueFrom:
               configMapKeyRef:
-                name: params-{{ template "ita-mariadb-setup-job.fullname" $ }}
+                name: params-{{ template "ita-database-setup-job.fullname" $ }}
                 key: {{ $config }}
           {{- end }}
         resources: 

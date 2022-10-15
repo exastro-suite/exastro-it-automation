@@ -23,7 +23,7 @@ metadata:
     {{- include "ita-by-ansible-towermaster-sync.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: "{{ .Values.replicaCount }}"
   {{- end }}
   selector:
     matchLabels:
@@ -48,23 +48,27 @@ spec:
         - name: {{ template "ita-by-ansible-towermaster-sync.fullname" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ template "ita-by-ansible-towermaster-sync.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
+            {{     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
                   name: params-{{ $define.name }}
                   key: {{ $config }}
+            {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
+            {{     if or (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
                   name: secret-{{ $define.name }}
                   key: {{ $secret }}
+            {{-     end }}
             {{-   end }}
             {{- end -}}
             {{ range $config, $value := .Values.extraEnv }}

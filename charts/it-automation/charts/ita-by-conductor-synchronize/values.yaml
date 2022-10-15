@@ -5,6 +5,10 @@ global:
   itaGlobalDefinition:
     name: ita-global
     enabled: true
+    image:
+      registry: "docker.io"
+      organization: exastro
+      package: exastro-it-automation
     config:
       DEFAULT_LANGUAGE: "ja"
       LANGUAGE: "en"
@@ -22,7 +26,7 @@ global:
       # matchExpressions:
       #   - {key: environment, operator: In, values: [dev]}
   gitlabDefinition:
-    name: ita-gitlab
+    name: gitlab
     enabled: true
     config:
       GITLAB_PROTOCOL: "http"
@@ -30,11 +34,11 @@ global:
       GITLAB_PORT: "80"
     secret:
       GITLAB_ROOT_TOKEN: ""
-  databaseDefinition:
-    name: ita-mariadb
+  itaDatabaseDefinition:
+    name: ita-database
     enabled: true
     config:
-      DB_ENGINE: mariadb
+      DB_VENDOR: "mariadb"
       DB_HOST: "mariadb.exastro-platform.svc"
       DB_PORT: "3306"
       DB_DATADBASE: "ITA_DB"
@@ -50,15 +54,16 @@ replicaCount: 1
 
 initContainerImage:
   repository: busybox
-  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
+  pullPolicy: IfNotPresent
 
 image:
-  repository: exastro/it-automation2-test-ita-by-conductor-synchronize
-  pullPolicy: IfNotPresent
+  repository: ""
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "Integration-test.13dc22.20221004-213255"
+  tag: ""
+  pullPolicy: IfNotPresent
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""

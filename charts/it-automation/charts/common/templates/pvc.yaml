@@ -54,7 +54,6 @@ spec:
 {{- end -}}
 
 {{/* Print Exastro IT Automation common PVCs */}}
-{{- $gitlab := default dict .Values.global.gitlabDefinition -}}
 {{- $ita_global := default dict .Values.global.itaGlobalDefinition.persistence -}}
 {{- if (default false $ita_global.enabled) -}}
 {{-   include "common.pvc.ita-global" . | nindent 0 -}}

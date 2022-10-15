@@ -23,7 +23,7 @@ metadata:
     {{- include "ita-api-admin.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: "{{ .Values.replicaCount }}"
   {{- end }}
   selector:
     matchLabels:
@@ -47,8 +47,8 @@ spec:
       initContainers:
         # temporary response to organization_create_controller.py  organization_create, os.makedirs(organization_dir)
         - name: setup-storage
-          command: ["sh", "-c", "chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.runAsGroup }} {{ .Values.persistence.mountPath.storage }}"]          
-          image: {{ .Values.initContainerImage.repository }}:{{ .Values.initContainerImage.tag | default "latest" }} 
+          command: ["sh", "-c", "chown -R {{ .Values.securityContext.runAsUser }}:{{ .Values.securityContext.runAsGroup }} {{ .Values.persistence.mountPath.storage }}"]
+          image: {{ .Values.initContainerImage.repository }}:{{ .Values.initContainerImage.tag | default "latest" }}
           imagePullPolicy: {{ .Values.initContainerImage.pullPolicy }}
           volumeMounts:
             - name: volume-{{ template "ita-api-admin.fullname" . }}-storage
@@ -57,23 +57,27 @@ spec:
         - name: {{ template "ita-api-admin.fullname" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ template "ita-api-admin.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
+            {{     if or (eq $define.name "ita-global") (eq $define.name "gitlab") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
                   name: params-{{ $define.name }}
                   key: {{ $config }}
+            {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
+            {{     if or (eq $define.name "gitlab") (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
                   name: secret-{{ $define.name }}
                   key: {{ $secret }}
+            {{-     end }}
             {{-   end }}
             {{- end -}}
             {{ range $config, $value := .Values.extraEnv }}
@@ -107,7 +111,7 @@ spec:
             #   path: /
             #   port: {{ .Values.extraEnv.LISTEN_PORT }}
             initialDelaySeconds: 5
-            periodSeconds: 10            
+            periodSeconds: 10
           readinessProbe:
             tcpSocket:
               port: {{ .Values.extraEnv.LISTEN_PORT }}
@@ -115,7 +119,7 @@ spec:
             #   path: /
             #   port: {{ .Values.extraEnv.LISTEN_PORT }}
             initialDelaySeconds: 5
-            periodSeconds: 10            
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:

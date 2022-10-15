@@ -14,49 +14,24 @@
 #   limitations under the License.
 */}}
 
-{{/* Custom Exastro IT Automation global config*/}}
-{{- define "common.configmap.ita-global" -}}
+{{/* Custom Exastro IT Automation config templates */}}
+{{- define "common.configmap.tpl" -}}
+{{- $top := index . 0 -}}
+{{- $define := index . 1 -}}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ .Values.global.itaGlobalDefinition.name }}
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "common.labels" . | nindent 4 }}
-data: {{- toYaml .Values.global.itaGlobalDefinition.config | nindent 2 -}}
-{{- end -}}
-
-{{/* Custom Exastro IT Automation gitlab config */}}
-{{- define "common.configmap.ita-gitlab" -}}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: params-{{ .Values.global.gitlabDefinition.name }}
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "common.labels" . | nindent 4 }}
-data: {{- toYaml .Values.global.gitlabDefinition.config | nindent 2 -}}
-{{- end -}}
-
-{{/* Custom Exastro IT Automation MariaDB config */}}
-{{- define "common.configmap.ita-mariadb" -}}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: params-{{ .Values.global.databaseDefinition.name }}
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "common.labels" . | nindent 4 }}
-data: {{- toYaml .Values.global.databaseDefinition.config | nindent 2 -}}
+  name: params-{{ $define.name }}
+  namespace: {{ $top.Release.Namespace }} 
+  labels: {{ include "common.labels" $top | nindent 4 }}
+data: {{- toYaml $define.config | nindent 2 -}}
 {{- end -}}
 
 {{/* Print Exastro IT Automation common configMaps */}}
-{{- if .Values.global.itaGlobalDefinition.enabled -}}
-{{-   include "common.configmap.ita-global" . | nindent 0 -}}
-{{- end -}}
-{{- if .Values.global.gitlabDefinition.enabled -}}
-{{-   include "common.configmap.ita-gitlab" . | nindent 0 -}}
-{{- end -}}
-{{- if .Values.global.databaseDefinition.enabled -}}
-{{-   include "common.configmap.ita-mariadb" . | nindent 0  -}}
+{{- $top := . -}}
+{{- range $define := .Values.global -}}
+{{-   if and $define.enabled $define.config -}}
+{{-     include "common.configmap.tpl" (list $top $define) | nindent 0 -}}
+{{-   end -}}
 {{- end -}}

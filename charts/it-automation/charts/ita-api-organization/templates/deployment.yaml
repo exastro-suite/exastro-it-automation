@@ -17,13 +17,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "ita-api-organization.fullname" . }}
+  name: {{ template "ita-api-organization.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ita-api-organization.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: "{{ .Values.replicaCount }}"
+  replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -44,7 +44,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ template "ita-api-organization.fullname" . }}
+        - name: {{ template "ita-api-organization.name" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ template "ita-api-organization.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -52,7 +52,7 @@ spec:
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
-            {{     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
+            {{-     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
@@ -61,7 +61,7 @@ spec:
             {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
-            {{     if or (eq $define.name "ita-database") }}
+            {{-     if or (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
@@ -74,21 +74,21 @@ spec:
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
-                  name: params-{{ template "ita-api-organization.fullname" $ }}
+                  name: params-{{ template "ita-api-organization.name" $ }}
                   key: {{ $config }}
             {{- end }}
           volumeMounts:
-            - name: volume-{{ template "ita-api-organization.fullname" . }}-storage
+            - name: volume-{{ template "ita-api-organization.name" . }}-storage
               mountPath: {{ .Values.persistence.mountPath.storage }}
-            - name: volume-{{ template "ita-api-organization.fullname" . }}-homedir
+            - name: volume-{{ template "ita-api-organization.name" . }}-homedir
               mountPath: {{ .Values.persistence.mountPath.homeDir }}
-            - name: volume-{{ template "ita-api-organization.fullname" . }}-pid
+            - name: volume-{{ template "ita-api-organization.name" . }}-pid
               mountPath: {{ .Values.persistence.mountPath.pid.path }}
               subPath: {{ .Values.persistence.mountPath.pid.subPath }}
-            - name: volume-{{ template "ita-api-organization.fullname" . }}-socket
+            - name: volume-{{ template "ita-api-organization.name" . }}-socket
               mountPath: {{ .Values.persistence.mountPath.socket.path }}
               subPath: {{ .Values.persistence.mountPath.socket.subPath }}
-            - name: volume-{{ template "ita-api-organization.fullname" . }}-tmp
+            - name: volume-{{ template "ita-api-organization.name" . }}-tmp
               mountPath: {{ .Values.persistence.mountPath.tmp }}
           ports:
             - name: port-http
@@ -113,20 +113,20 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: volume-{{ template "ita-api-organization.fullname" . }}-storage
+        - name: volume-{{ template "ita-api-organization.name" . }}-storage
           {{- if and .Values.global.itaGlobalDefinition.persistence.enabled }}
           persistentVolumeClaim:
             claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: volume-{{ template "ita-api-organization.fullname" . }}-homedir
+        - name: volume-{{ template "ita-api-organization.name" . }}-homedir
           emptyDir: {}
-        - name: volume-{{ template "ita-api-organization.fullname" . }}-pid
+        - name: volume-{{ template "ita-api-organization.name" . }}-pid
           emptyDir: {}
-        - name: volume-{{ template "ita-api-organization.fullname" . }}-socket
+        - name: volume-{{ template "ita-api-organization.name" . }}-socket
           emptyDir: {}
-        - name: volume-{{ template "ita-api-organization.fullname" . }}-tmp
+        - name: volume-{{ template "ita-api-organization.name" . }}-tmp
           emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:

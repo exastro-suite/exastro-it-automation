@@ -17,7 +17,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ template "ita-by-ansible-execute.fullname" . }}
+  name: params-{{ template "ita-by-ansible-execute.name" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-by-ansible-execute.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}
@@ -28,6 +28,7 @@ metadata:
   name: ansible-agent-create
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-by-ansible-execute.labels" . | nindent 4 }}
+data: 
     k8s_pod.yml: |-
       apiVersion: v1
       kind: Pod

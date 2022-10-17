@@ -17,13 +17,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "ita-by-conductor-synchronize.fullname" . }}
+  name: {{ template "ita-by-conductor-synchronize.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ita-by-conductor-synchronize.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: "{{ .Values.replicaCount }}"
+  replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -45,7 +45,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ template "ita-by-conductor-synchronize.fullname" . }}
+        - name: {{ template "ita-by-conductor-synchronize.name" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ template "ita-by-conductor-synchronize.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -53,7 +53,7 @@ spec:
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
-            {{     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
+            {{-     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
@@ -62,7 +62,7 @@ spec:
             {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
-            {{     if or (eq $define.name "ita-database") }}
+            {{-     if or (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
@@ -75,15 +75,15 @@ spec:
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
-                  name: params-{{ template "ita-by-conductor-synchronize.fullname" $ }}
+                  name: params-{{ template "ita-by-conductor-synchronize.name" $ }}
                   key: {{ $config }}
             {{- end }}
           volumeMounts:
-            - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-storage
+            - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-storage
               mountPath: {{ .Values.persistence.mountPath.storage }}
-            - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-homedir
+            - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-homedir
               mountPath: {{ .Values.persistence.mountPath.homeDir }}
-            - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-tmp
+            - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-tmp
               mountPath: {{ .Values.persistence.mountPath.tmp }}
           # livenessProbe:
           #   tcpSocket:
@@ -104,20 +104,20 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-storage
+        - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-storage
           {{- if and .Values.global.itaGlobalDefinition.persistence.enabled }}
           persistentVolumeClaim:
             claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-homedir
+        - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-homedir
           emptyDir: {}
-        - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-pid
+        - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-pid
           emptyDir: {}
-        - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-socket
+        - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-socket
           emptyDir: {}
-        - name: volume-{{ template "ita-by-conductor-synchronize.fullname" . }}-tmp
+        - name: volume-{{ template "ita-by-conductor-synchronize.name" . }}-tmp
           emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:

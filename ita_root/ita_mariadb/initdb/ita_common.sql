@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `ITA_DB`.`T_COMN_ORGANIZATION_DB_INFO`
     ORGANIZATION_ID                 VARCHAR(255),                               -- organizationのID
     DB_HOST                         VARCHAR(255),                               -- DBホスト
     DB_PORT                         INT,                                        -- DBポート
-    DB_DATABASE                    VARCHAR(255),                               -- DBDB名
+    DB_DATABASE                     VARCHAR(255),                               -- DBDB名
     DB_USER                         VARCHAR(255),                               -- DBユーザ
     DB_PASSWORD                     VARCHAR(255),                               -- DBパスワード
     DB_ROOT_PASSWORD                VARCHAR(255),                               -- DBRootパスワード

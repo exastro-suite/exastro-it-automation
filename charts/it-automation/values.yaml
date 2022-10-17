@@ -54,56 +54,77 @@ service:
   type: ClusterIP
 
 ita-api-admin:
+  replicaCount: 1
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-api-admin"
+    tag: "2.0.0"
+    pullPolicy: Always
 
 ita-api-organization:
+  replicaCount: 1
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-api-organization"
+    tag: "2.0.0"
+    pullPolicy: Always
 
 ita-by-ansible-execute:
+  replicaCount: 1
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-by-ansible-execute"
+    tag: "2.0.0"
+    pullPolicy: Always
+  extraEnv:
+    EXECUTE_INTERVAL: "10"
+    ANSIBLE_AGENT_IMAGE: "exastro/exastro-it-automation-by-ansible-agent"
+    ANSIBLE_AGENT_IMAGE_TAG: "2.0.0"
 
 ita-by-ansible-legacy-role-vars-listup:
+  replicaCount: 1
+  extraEnv:
+    EXECUTE_INTERVAL: "10"
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-by-ansible-legacy-role-vars-listup"
+    tag: "2.0.0"
+    pullPolicy: Always
 
 ita-by-ansible-towermaster-sync:
+  replicaCount: 1
+  extraEnv:
+    EXECUTE_INTERVAL: "10"
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-by-ansible-towermaster-sync"
+    tag: "2.0.0"
+    pullPolicy: Always
 
 ita-by-conductor-synchronize:
+  replicaCount: 1
+  extraEnv:
+    EXECUTE_INTERVAL: "10"
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-by-conductor-synchronize"
+    tag: "2.0.0"
+    pullPolicy: Always
 
 ita-by-menu-create:
+  replicaCount: 1
+  extraEnv:
+    EXECUTE_INTERVAL: "10"
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-by-menu-create"
+    tag: "2.0.0"
+    pullPolicy: Always
 
 ita-database-setup-job:
   image:
     repository: ""
     tag: ""
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
 ita-web-server:
+  replicaCount: 1
   image:
-    repository: ""
-    tag: ""
-    pullPolicy: IfNotPresent
+    repository: "exastro/exastro-it-automation-web-server"
+    tag: "2.0.0"
+    pullPolicy: Always
+
 

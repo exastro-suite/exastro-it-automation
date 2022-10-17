@@ -41,7 +41,7 @@ global:
       DB_VENDOR: "mariadb"
       DB_HOST: "mariadb.exastro-platform.svc"
       DB_PORT: "3306"
-      DB_DATADBASE: "ITA_DB"
+      DB_DATABASE: "ITA_DB"
     secret:
       DB_ROOT_PASSWORD: ""
       DB_USER: ""

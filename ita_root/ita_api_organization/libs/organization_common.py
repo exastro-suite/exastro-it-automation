@@ -89,7 +89,7 @@ def before_request_handler():
         g.db_connect_info["ORGDB_USER"] = orgdb_connect_info["DB_USER"]
         g.db_connect_info["ORGDB_PASSWORD"] = orgdb_connect_info["DB_PASSWORD"]
         g.db_connect_info["ORGDB_ROOT_PASSWORD"] = orgdb_connect_info["DB_ROOT_PASSWORD"]
-        g.db_connect_info["ORGDB_DATADBASE"] = orgdb_connect_info["DB_DATADBASE"]
+        g.db_connect_info["ORGDB_DATABASE"] = orgdb_connect_info["DB_DATABASE"]
         # gitlab connect info
         g.gitlab_connect_info = {}
         g.gitlab_connect_info["GITLAB_USER"] = orgdb_connect_info["GITLAB_USER"]
@@ -108,7 +108,7 @@ def before_request_handler():
         g.db_connect_info["WSDB_PORT"] = str(wsdb_connect_info["DB_PORT"])
         g.db_connect_info["WSDB_USER"] = wsdb_connect_info["DB_USER"]
         g.db_connect_info["WSDB_PASSWORD"] = wsdb_connect_info["DB_PASSWORD"]
-        g.db_connect_info["WSDB_DATADBASE"] = wsdb_connect_info["DB_DATADBASE"]
+        g.db_connect_info["WSDB_DATABASE"] = wsdb_connect_info["DB_DATABASE"]
 
         ws_db = DBConnectWs(workspace_id)  # noqa: F405
         g.applogger.info("WS_DB:{} can be connected".format(workspace_id))

@@ -50,7 +50,7 @@ class DBConnectOrg(DBConnectCommon):
         self._port = int(connect_info['DB_PORT'])
         self._db_user = connect_info['DB_USER']
         self._db_passwd = connect_info['DB_PASSWORD']
-        self._db = connect_info['DB_DATADBASE']
+        self._db = connect_info['DB_DATABASE']
 
         # connect database
         self.db_connect()
@@ -72,7 +72,7 @@ class DBConnectOrg(DBConnectCommon):
             or
             get failure: (bool)False
         """
-        isnot_register_db_connect_info = "db_connect_info" not in g or "WSDB_DATADBASE" not in g.db_connect_info
+        isnot_register_db_connect_info = "db_connect_info" not in g or "WSDB_DATABASE" not in g.db_connect_info
         isnot_same_workspace = g.get('WORKSPACE_ID') and g.get('WORKSPACE_ID') != workspace_id
         if isnot_register_db_connect_info or isnot_same_workspace:
             where = "WHERE `WORKSPACE_ID`=%s and `DISUSE_FLAG`=0 LIMIT 1"
@@ -88,7 +88,7 @@ class DBConnectOrg(DBConnectCommon):
             "DB_PORT": g.db_connect_info["WSDB_PORT"],
             "DB_USER": g.db_connect_info["WSDB_USER"],
             "DB_PASSWORD": g.db_connect_info["WSDB_PASSWORD"],
-            "DB_DATADBASE": g.db_connect_info["WSDB_DATADBASE"]
+            "DB_DATABASE": g.db_connect_info["WSDB_DATABASE"]
         }
 
 

@@ -16,7 +16,7 @@ services:
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - DB_DATADBASE=${DB_DATADBASE}
+      - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
@@ -38,7 +38,7 @@ services:
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - DB_DATADBASE=${DB_DATADBASE}
+      - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
@@ -88,7 +88,7 @@ services:
       - TZ=Asia/Tokyo
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - DB_DATADBASE=${DB_DATADBASE}
+      - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
@@ -115,7 +115,7 @@ services:
       - TZ=Asia/Tokyo
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - DB_DATADBASE=${DB_DATADBASE}
+      - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
@@ -133,7 +133,7 @@ services:
       - TZ=Asia/Tokyo
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - DB_DATADBASE=${DB_DATADBASE}
+      - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
@@ -151,7 +151,7 @@ services:
       - TZ=Asia/Tokyo
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - DB_DATADBASE=${DB_DATADBASE}
+      - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
@@ -169,7 +169,7 @@ services:
       - TZ=Asia/Tokyo
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
-      - DB_DATADBASE=${DB_DATADBASE}
+      - DB_DATABASE=${DB_DATABASE}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}

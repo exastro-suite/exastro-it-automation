@@ -54,7 +54,7 @@ class DBConnectWs(DBConnectCommon):
         self._port = int(connect_info['DB_PORT'])
         self._db_user = connect_info['DB_USER']
         self._db_passwd = connect_info['DB_PASSWORD']
-        self._db = connect_info['DB_DATADBASE']
+        self._db = connect_info['DB_DATABASE']
 
         # connect database
         self.db_connect()

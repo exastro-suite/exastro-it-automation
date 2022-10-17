@@ -17,7 +17,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "ita-api-organization.fullname" . }}
+  name: {{ include "ita-api-organization.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ita-api-organization.labels" . | nindent 4 }}

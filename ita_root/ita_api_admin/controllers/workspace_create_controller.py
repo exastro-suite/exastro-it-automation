@@ -107,7 +107,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             'DB_PORT': int(connect_info['DB_PORT']),
             'DB_USER': username,
             'DB_PASSWORD': ky_encrypt(user_password),
-            'DB_DATADBASE': ws_db_name,
+            'DB_DATABASE': ws_db_name,
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
@@ -126,7 +126,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         g.db_connect_info["WSDB_PORT"] = str(data["DB_PORT"])
         g.db_connect_info["WSDB_USER"] = data["DB_USER"]
         g.db_connect_info["WSDB_PASSWORD"] = data["DB_PASSWORD"]
-        g.db_connect_info["WSDB_DATADBASE"] = data["DB_DATADBASE"]
+        g.db_connect_info["WSDB_DATABASE"] = data["DB_DATABASE"]
         ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
 
         sql_list = [
@@ -220,7 +220,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
 
     # drop ws-db and ws-db-user
     org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
-    org_root_db.database_drop(connect_info['DB_DATADBASE'])
+    org_root_db.database_drop(connect_info['DB_DATABASE'])
     org_root_db.user_drop(connect_info['DB_USER'])
     org_root_db.db_disconnect()
 

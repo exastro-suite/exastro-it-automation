@@ -51,7 +51,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info["ORGDB_USER"] = organization_info["DB_USER"]
         g.db_connect_info["ORGDB_PASSWORD"] = organization_info["DB_PASSWORD"]
         g.db_connect_info["ORGDB_ROOT_PASSWORD"] = organization_info["DB_ROOT_PASSWORD"]
-        g.db_connect_info["ORGDB_DATADBASE"] = organization_info["DB_DATADBASE"]
+        g.db_connect_info["ORGDB_DATABASE"] = organization_info["DB_DATABASE"]
         # gitlab connect info
         g.gitlab_connect_info = {}
         g.gitlab_connect_info["GITLAB_USER"] = organization_info["GITLAB_USER"]
@@ -98,7 +98,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info["WSDB_PORT"] = str(workspace_info["DB_PORT"])
         g.db_connect_info["WSDB_USER"] = workspace_info["DB_USER"]
         g.db_connect_info["WSDB_PASSWORD"] = workspace_info["DB_PASSWORD"]
-        g.db_connect_info["WSDB_DATADBASE"] = workspace_info["DB_DATADBASE"]
+        g.db_connect_info["WSDB_DATABASE"] = workspace_info["DB_DATABASE"]
 
         ws_db = DBConnectWs(workspace_id)  # noqa: F405
         g.applogger.debug("WS_DB:{} can be connected".format(workspace_id))
@@ -122,7 +122,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WSDB_PORT")
         g.db_connect_info.pop("WSDB_USER")
         g.db_connect_info.pop("WSDB_PASSWORD")
-        g.db_connect_info.pop("WSDB_DATADBASE")
+        g.db_connect_info.pop("WSDB_DATABASE")
 
 
 def app_exception(e):

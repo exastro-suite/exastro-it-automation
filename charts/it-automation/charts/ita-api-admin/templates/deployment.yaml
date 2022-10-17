@@ -17,13 +17,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "ita-api-admin.fullname" . }}
+  name: {{ template "ita-api-admin.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ita-api-admin.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: "{{ .Values.replicaCount }}"
+  replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -51,10 +51,10 @@ spec:
           image: {{ .Values.initContainerImage.repository }}:{{ .Values.initContainerImage.tag | default "latest" }}
           imagePullPolicy: {{ .Values.initContainerImage.pullPolicy }}
           volumeMounts:
-            - name: volume-{{ template "ita-api-admin.fullname" . }}-storage
+            - name: volume-{{ template "ita-api-admin.name" . }}-storage
               mountPath: {{ .Values.persistence.mountPath.storage }}
       containers:
-        - name: {{ template "ita-api-admin.fullname" . }}
+        - name: {{ template "ita-api-admin.name" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ template "ita-api-admin.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -62,7 +62,7 @@ spec:
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
-            {{     if or (eq $define.name "ita-global") (eq $define.name "gitlab") (eq $define.name "ita-database") }}
+            {{-     if or (eq $define.name "ita-global") (eq $define.name "gitlab") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
@@ -71,7 +71,7 @@ spec:
             {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
-            {{     if or (eq $define.name "gitlab") (eq $define.name "ita-database") }}
+            {{-     if or (eq $define.name "gitlab") (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
@@ -84,21 +84,21 @@ spec:
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
-                  name: params-{{ template "ita-api-admin.fullname" $ }}
+                  name: params-{{ template "ita-api-admin.name" $ }}
                   key: {{ $config }}
             {{- end }}
           volumeMounts:
-            - name: volume-{{ template "ita-api-admin.fullname" . }}-storage
+            - name: volume-{{ template "ita-api-admin.name" . }}-storage
               mountPath: {{ .Values.persistence.mountPath.storage }}
-            - name: volume-{{ template "ita-api-admin.fullname" . }}-homedir
+            - name: volume-{{ template "ita-api-admin.name" . }}-homedir
               mountPath: {{ .Values.persistence.mountPath.homeDir }}
-            - name: volume-{{ template "ita-api-admin.fullname" . }}-pid
+            - name: volume-{{ template "ita-api-admin.name" . }}-pid
               mountPath: {{ .Values.persistence.mountPath.pid.path }}
               subPath: {{ .Values.persistence.mountPath.pid.subPath }}
-            - name: volume-{{ template "ita-api-admin.fullname" . }}-socket
+            - name: volume-{{ template "ita-api-admin.name" . }}-socket
               mountPath: {{ .Values.persistence.mountPath.socket.path }}
               subPath: {{ .Values.persistence.mountPath.socket.subPath }}
-            - name: volume-{{ template "ita-api-admin.fullname" . }}-tmp
+            - name: volume-{{ template "ita-api-admin.name" . }}-tmp
               mountPath: {{ .Values.persistence.mountPath.tmp }}
           ports:
             - name: port-http
@@ -123,20 +123,20 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: volume-{{ template "ita-api-admin.fullname" . }}-storage
+        - name: volume-{{ template "ita-api-admin.name" . }}-storage
           {{- if and .Values.global.itaGlobalDefinition.persistence.enabled }}
           persistentVolumeClaim:
             claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: volume-{{ template "ita-api-admin.fullname" . }}-homedir
+        - name: volume-{{ template "ita-api-admin.name" . }}-homedir
           emptyDir: {}
-        - name: volume-{{ template "ita-api-admin.fullname" . }}-pid
+        - name: volume-{{ template "ita-api-admin.name" . }}-pid
           emptyDir: {}
-        - name: volume-{{ template "ita-api-admin.fullname" . }}-socket
+        - name: volume-{{ template "ita-api-admin.name" . }}-socket
           emptyDir: {}
-        - name: volume-{{ template "ita-api-admin.fullname" . }}-tmp
+        - name: volume-{{ template "ita-api-admin.name" . }}-tmp
           emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:

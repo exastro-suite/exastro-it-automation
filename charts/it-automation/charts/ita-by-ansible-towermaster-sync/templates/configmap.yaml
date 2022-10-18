@@ -17,7 +17,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ template "ita-by-ansible-towermaster-sync.fullname" . }}
+  name: params-{{ template "ita-by-ansible-towermaster-sync.name" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-by-ansible-towermaster-sync.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}

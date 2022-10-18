@@ -17,7 +17,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ template "ita-by-ansible-execute.fullname" . }}-sa-role
+  name: {{ template "ita-by-ansible-execute.name" . }}-sa-role
   namespace: {{ .Release.Namespace }}
 rules:
   - apiGroups: {{ (default (list "*") .Values.role.apiGroups | toJson) }}

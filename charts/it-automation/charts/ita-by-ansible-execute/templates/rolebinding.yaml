@@ -17,15 +17,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ template "ita-by-ansible-execute.fullname" . }}-sa-rolebinding
+  name: {{ template "ita-by-ansible-execute.name" . }}-sa-rolebinding
   namespace: {{ .Release.Namespace }}
 
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name:  {{ template "ita-by-ansible-execute.fullname" . }}-sa-role
+  name:  {{ template "ita-by-ansible-execute.name" . }}-sa-role
 
 subjects:
   - kind: ServiceAccount
-    name: {{ template "ita-by-ansible-execute.fullname" . }}-sa
+    name: {{ template "ita-by-ansible-execute.name" . }}-sa
     namespace: {{ .Release.Namespace }}

@@ -17,7 +17,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "ita-database-setup-job.name" -}}
+{{- define "ita-setup.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -26,7 +26,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "ita-database-setup-job.fullname" -}}
+{{- define "ita-setup.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -42,16 +42,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "ita-database-setup-job.chart" -}}
+{{- define "ita-setup.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "ita-database-setup-job.labels" -}}
-helm.sh/chart: {{ include "ita-database-setup-job.chart" . }}
-{{ include "ita-database-setup-job.selectorLabels" . }}
+{{- define "ita-setup.labels" -}}
+helm.sh/chart: {{ include "ita-setup.chart" . }}
+{{ include "ita-setup.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -61,15 +61,15 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "ita-database-setup-job.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "ita-database-setup-job.name" . }}
+{{- define "ita-setup.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "ita-setup.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Image name
 */}}
-{{- define "ita-database-setup-job.repository" -}}
+{{- define "ita-setup.repository" -}}
 {{- $registry := .Values.global.itaGlobalDefinition.image.registry -}}
 {{- $organization := .Values.global.itaGlobalDefinition.image.organization -}}
 {{- $package := .Values.global.itaGlobalDefinition.image.package -}}
@@ -84,9 +84,9 @@ Image name
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "ita-database-setup-job.serviceAccountName" -}}
+{{- define "ita-setup.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "ita-database-setup-job.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "ita-setup.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

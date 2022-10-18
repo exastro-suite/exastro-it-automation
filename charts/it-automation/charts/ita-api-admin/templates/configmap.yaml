@@ -17,7 +17,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ template "ita-api-admin.fullname" . }}
+  name: params-{{ template "ita-api-admin.name" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-api-admin.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}

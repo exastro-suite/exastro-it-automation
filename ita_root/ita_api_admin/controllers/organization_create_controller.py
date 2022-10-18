@@ -64,7 +64,7 @@ def organization_create(body, organization_id):  # noqa: E501
             'DB_PORT': int(os.environ.get('DB_PORT')),
             'DB_USER': username,
             'DB_PASSWORD': ky_encrypt(user_password),
-            'DB_DATADBASE': org_db_name,
+            'DB_DATABASE': org_db_name,
             'DB_ROOT_PASSWORD': ky_encrypt(os.environ.get('DB_ROOT_PASSWORD')),
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
@@ -76,7 +76,7 @@ def organization_create(body, organization_id):  # noqa: E501
         g.db_connect_info["ORGDB_USER"] = data['DB_USER']
         g.db_connect_info["ORGDB_PASSWORD"] = data['DB_PASSWORD']
         g.db_connect_info["ORGDB_ROOT_PASSWORD"] = data['DB_ROOT_PASSWORD']
-        g.db_connect_info["ORGDB_DATADBASE"] = data['DB_DATADBASE']
+        g.db_connect_info["ORGDB_DATABASE"] = data['DB_DATABASE']
         org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
         # create workspace-databse
         org_root_db.database_create(org_db_name)
@@ -149,7 +149,7 @@ def organization_delete(organization_id):  # noqa: E501
     g.db_connect_info["ORGDB_USER"] = connect_info["DB_USER"]
     g.db_connect_info["ORGDB_PASSWORD"] = connect_info["DB_PASSWORD"]
     g.db_connect_info["ORGDB_ROOT_PASSWORD"] = connect_info["DB_ROOT_PASSWORD"]
-    g.db_connect_info["ORGDB_DATADBASE"] = connect_info["DB_DATADBASE"]
+    g.db_connect_info["ORGDB_DATABASE"] = connect_info["DB_DATABASE"]
 
     # get ws-db connect infomation
     org_db = DBConnectOrg(organization_id)  # noqa: F405
@@ -158,7 +158,7 @@ def organization_delete(organization_id):  # noqa: E501
     org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
     for workspace_data in workspace_data_list:
         # drop ws-db and ws-db-user
-        org_root_db.database_drop(workspace_data['DB_DATADBASE'])
+        org_root_db.database_drop(workspace_data['DB_DATABASE'])
         org_root_db.user_drop(workspace_data['DB_USER'])
 
         # disuse ws-db connect infomation
@@ -172,7 +172,7 @@ def organization_delete(organization_id):  # noqa: E501
     org_db.db_disconnect()
 
     # drop org-db and org-db-user
-    org_root_db.database_drop(connect_info['DB_DATADBASE'])
+    org_root_db.database_drop(connect_info['DB_DATABASE'])
     org_root_db.user_drop(connect_info['DB_USER'])
     org_root_db.db_disconnect()
 

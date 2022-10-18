@@ -17,41 +17,40 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ template "ita-mariadb-setup-job.fullname" . }}
+  name: params-{{ template "ita-setup.name" . }}
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+  labels: {{ include "ita-setup.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mysql-server-conf-config-setup
+  name: mysqld-conf
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+  labels: {{ include "ita-setup.labels" . | nindent 4 }}
 data:
-  custom.cnf: |
-{{ .Values.dbSetup.dbConfInfo.customCnf | indent 4 }}
+  custom.cnf: |- {{- .Values.database.databaseConfig.customCnf | nindent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: mysql-server-initdb-config-setup
+  name: createdb-sql
   namespace: {{ .Release.Namespace }}
-  labels: {{ include "ita-mariadb-setup-job.labels" . | nindent 4 }}
+  labels: {{ include "ita-setup.labels" . | nindent 4 }}
 data: 
     createdb.sql: |-
-      {{- with .Values.global.databaseDefinition }}
-      CREATE DATABASE IF NOT EXISTS {{ .config.DB_DATADBASE }};
-      CREATE USER '{{ .secret.DB_USER }}'@'%' IDENTIFIED BY '{{ .secret.DB_PASSWORD }}';
-      GRANT ALL PRIVILEGES ON {{ .config.DB_DATADBASE }} . * TO '{{ .secret.DB_USER }}'@'%';
+      {{- with .Values.global.itaDatabaseDefinition }}
+      CREATE DATABASE IF NOT EXISTS {{ .config.DB_DATABASE }} DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+      CREATE USER IF NOT EXISTS '{{ .secret.DB_USER }}'@'%' IDENTIFIED BY '{{ .secret.DB_PASSWORD }}';
+      GRANT ALL PRIVILEGES ON {{ .config.DB_DATABASE }} . * TO '{{ .secret.DB_USER }}'@'%';
       FLUSH PRIVILEGES;
-      CREATE TABLE IF NOT EXISTS `{{ .config.DB_DATADBASE }}`.`T_COMN_ORGANIZATION_DB_INFO`
+      CREATE TABLE IF NOT EXISTS `{{ .config.DB_DATABASE }}`.`T_COMN_ORGANIZATION_DB_INFO`
       (
           PRIMARY_KEY                     VARCHAR(40),                                -- 主キー
           ORGANIZATION_ID                 VARCHAR(255),                               -- organizationのID
           DB_HOST                         VARCHAR(255),                               -- DBホスト
           DB_PORT                         INT,                                        -- DBポート
-          DB_DATADBASE                    VARCHAR(255),                               -- DBDB名
+          DB_DATABASE                     VARCHAR(255),                               -- DBDB名
           DB_USER                         VARCHAR(255),                               -- DBユーザ
           DB_PASSWORD                     VARCHAR(255),                               -- DBパスワード
           DB_ROOT_PASSWORD                VARCHAR(255),                               -- DBRootパスワード

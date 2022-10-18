@@ -15,7 +15,7 @@ version: '3.1'
 services:
   platform-auth:
     user: 1000:1000
-    image: exastro/exastro-common-auth-platform-auth:Integration-test.64653e.20220922-181308
+    image: exastro/exastro-common-auth-platform-auth:1.0.1
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=38000
@@ -47,7 +47,7 @@ services:
       - PLATFORM_API_PROTOCOL=http
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-      - DB_ADDR=platform-db
+      - DB_HOST=platform-db
       - DB_DATABASE=platform
       - DB_USER=app_user
       - DB_PASSWORD=password
@@ -55,7 +55,9 @@ services:
       - "0.0.0.0:38000:38000"
       - "0.0.0.0:38001:38001"
   keycloak:
-    image: exastro/exastro-common-auth-keycloak:Integration-test.64653e.20220922-181417
+    image: exastro/exastro-common-auth-keycloak:1.0.1
+    healthcheck:
+      test: curl http://localhost:8080/auth/realms/master
     environment:
       - TZ=Asia/Tokyo
       - KEYCLOAK_USER=admin
@@ -70,7 +72,7 @@ services:
       platform-db:
         condition: service_healthy
   platform-db:
-    image: exastro/exastro-common-auth-platform-db:Integration-test.64653e.20220922-181307
+    image: exastro/exastro-common-auth-platform-db:1.0.1
     healthcheck:
       test: mysqladmin ping --silent && mysql -u $${KEYCLOAK_DB_USER} -p$${KEYCLOAK_DB_PASSWORD} -D $${KEYCLOAK_DB_DATABASE} -e 'select 1;'
     volumes:
@@ -83,14 +85,14 @@ services:
       - KEYCLOAK_DB_PASSWORD=password
   platform-web:
     user: 1000:1000
-    image: exastro/exastro-common-auth-platform-web:Integration-test.64653e.20220922-181307
+    image: exastro/exastro-common-auth-platform-web:1.0.1
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=80
 
   platform-api:
     user: 1000:1000
-    image: exastro/exastro-common-auth-platform-api:Integration-test.64653e.20220922-181431
+    image: exastro/exastro-common-auth-platform-api:1.0.1
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8000
@@ -103,9 +105,31 @@ services:
       - ITA_API_ADMIN_PROTOCOL=http
       - ITA_API_ADMIN_HOST=ita-api-admin
       - ITA_API_ADMIN_PORT=8079
+      - DB_HOST=platform-db
+      - DB_DATABASE=platform
+      - DB_USER=app_user
+      - DB_PASSWORD=password
+      - DB_ROOT_PASSWORD=password
+
+  platform-job:
+    user: 1000:1000
+    image: exastro/exastro-common-auth-platform-job:0.1.0-20221017-1730
+    command: python3 /app/platform_init.py
+    environment:
+      - TZ=Asia/Tokyo
+      - PYTHONIOENCODING=utf-8
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=password
+      - API_KEYCLOAK_HOST=keycloak
+      - API_KEYCLOAK_PROTOCOL=http
+      - API_KEYCLOAK_PORT=8080
       - DB_ADDR=platform-db
       - DB_DATABASE=platform
       - DB_USER=app_user
       - DB_PASSWORD=password
-      - MYSQL_ROOT_PASSWORD=password
-
+      - DB_ROOT_PASSWORD=password
+    depends_on:
+      platform-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy

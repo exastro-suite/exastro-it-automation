@@ -17,7 +17,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "ita-by-ansible-execute.fullname" . }}
+  name: {{ template "ita-by-ansible-execute.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ita-by-ansible-execute.labels" . | nindent 4 }}
@@ -45,41 +45,45 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ template "ita-by-ansible-execute.fullname" . }}
+        - name: {{ template "ita-by-ansible-execute.name" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ template "ita-by-ansible-execute.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
+            {{-     if or (eq $define.name "ita-global") (eq $define.name "gitlab") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
                   name: params-{{ $define.name }}
                   key: {{ $config }}
+            {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
+            {{-     if or (eq $define.name "gitlab") (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
                   name: secret-{{ $define.name }}
                   key: {{ $secret }}
+            {{-     end }}
             {{-   end }}
             {{- end -}}
             {{ range $config, $value := .Values.extraEnv }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
-                  name: params-{{ template "ita-by-ansible-execute.fullname" $ }}
+                  name: params-{{ template "ita-by-ansible-execute.name" $ }}
                   key: {{ $config }}
             {{- end }}
           volumeMounts:
-            - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-storage
+            - name: volume-{{ template "ita-by-ansible-execute.name" . }}-storage
               mountPath: {{ .Values.persistence.mountPath.storage }}
-            - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-homedir
+            - name: volume-{{ template "ita-by-ansible-execute.name" . }}-homedir
               mountPath: {{ .Values.persistence.mountPath.homeDir }}
-            - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-tmp
+            - name: volume-{{ template "ita-by-ansible-execute.name" . }}-tmp
               mountPath: {{ .Values.persistence.mountPath.tmp }}
             - name: ansible-agent-setup
               mountPath: {{ .Values.volumeMounts.mountPath.createAgent.path }}
@@ -103,20 +107,20 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-storage
+        - name: volume-{{ template "ita-by-ansible-execute.name" . }}-storage
           {{- if and .Values.global.itaGlobalDefinition.persistence.enabled }}
           persistentVolumeClaim:
             claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-homedir
+        - name: volume-{{ template "ita-by-ansible-execute.name" . }}-homedir
           emptyDir: {}
-        - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-pid
+        - name: volume-{{ template "ita-by-ansible-execute.name" . }}-pid
           emptyDir: {}
-        - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-socket
+        - name: volume-{{ template "ita-by-ansible-execute.name" . }}-socket
           emptyDir: {}
-        - name: volume-{{ template "ita-by-ansible-execute.fullname" . }}-tmp
+        - name: volume-{{ template "ita-by-ansible-execute.name" . }}-tmp
           emptyDir: {}
         - name: ansible-agent-setup
           configMap:

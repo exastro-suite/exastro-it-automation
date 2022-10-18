@@ -31,7 +31,7 @@ docker-compose -p devcontainer pause keycloak
 
 # import db
 docker cp ${PARAM_DUMPFILE_PATH} devcontainer-platform-db-1:${TMPPATH}/${PARAM_DUMPFILE}
-docker exec -it devcontainer-platform-db-1 bash -c "mysql -u root --password=\${MYSQL_ROOT_PASSWORD} < ${TMPPATH}/${PARAM_DUMPFILE}"
+docker exec -it devcontainer-platform-db-1 bash -c "mysql -u root --password=\${DB_ROOT_PASSWORD} < ${TMPPATH}/${PARAM_DUMPFILE}"
 
 # restart keycloak
 docker-compose -p devcontainer restart keycloak

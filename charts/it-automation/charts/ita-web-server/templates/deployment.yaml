@@ -17,7 +17,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "ita-web-server.fullname" . }}
+  name: {{ template "ita-web-server.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ita-web-server.labels" . | nindent 4 }}
@@ -45,45 +45,49 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ template "ita-web-server.fullname" . }}
+        - name: {{ template "ita-web-server.name" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ template "ita-web-server.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
+            {{-     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
                   name: params-{{ $define.name }}
                   key: {{ $config }}
+            {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
+            {{-     if or (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
                   name: secret-{{ $define.name }}
                   key: {{ $secret }}
+            {{-     end }}
             {{-   end }}
             {{- end -}}
             {{ range $config, $value := .Values.extraEnv }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
-                  name: params-{{ template "ita-web-server.fullname" $ }}
+                  name: params-{{ template "ita-web-server.name" $ }}
                   key: {{ $config }}
             {{- end }}
           volumeMounts:
-            - name: volume-{{ template "ita-web-server.fullname" . }}-homedir
+            - name: volume-{{ template "ita-web-server.name" . }}-homedir
               mountPath: {{ .Values.persistence.mountPath.homeDir }}
-            - name: volume-{{ template "ita-web-server.fullname" . }}-pid
+            - name: volume-{{ template "ita-web-server.name" . }}-pid
               mountPath: {{ .Values.persistence.mountPath.pid.path }}
               subPath: {{ .Values.persistence.mountPath.pid.subPath }}
-            - name: volume-{{ template "ita-web-server.fullname" . }}-socket
+            - name: volume-{{ template "ita-web-server.name" . }}-socket
               mountPath: {{ .Values.persistence.mountPath.socket.path }}
               subPath: {{ .Values.persistence.mountPath.socket.subPath }}
-            - name: volume-{{ template "ita-web-server.fullname" . }}-tmp
+            - name: volume-{{ template "ita-web-server.name" . }}-tmp
               mountPath: {{ .Values.persistence.mountPath.tmp }}
           ports:
             - name: port-http
@@ -108,13 +112,13 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: volume-{{ template "ita-web-server.fullname" . }}-homedir
+        - name: volume-{{ template "ita-web-server.name" . }}-homedir
           emptyDir: {}
-        - name: volume-{{ template "ita-web-server.fullname" . }}-pid
+        - name: volume-{{ template "ita-web-server.name" . }}-pid
           emptyDir: {}
-        - name: volume-{{ template "ita-web-server.fullname" . }}-socket
+        - name: volume-{{ template "ita-web-server.name" . }}-socket
           emptyDir: {}
-        - name: volume-{{ template "ita-web-server.fullname" . }}-tmp
+        - name: volume-{{ template "ita-web-server.name" . }}-tmp
           emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:

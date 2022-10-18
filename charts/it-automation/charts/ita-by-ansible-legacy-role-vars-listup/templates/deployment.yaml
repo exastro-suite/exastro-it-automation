@@ -17,7 +17,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}
+  name: {{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "ita-by-ansible-legacy-role-vars-listup.labels" . | nindent 4 }}
@@ -45,41 +45,45 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}
+        - name: {{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ template "ita-by-ansible-legacy-role-vars-listup.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- range $define := .Values.global -}}
             {{-   range $config, $value := $define.config }}
+            {{-     if or (eq $define.name "ita-global") (eq $define.name "ita-database") }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
                   name: params-{{ $define.name }}
                   key: {{ $config }}
+            {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
+            {{-     if or (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:
                   name: secret-{{ $define.name }}
                   key: {{ $secret }}
+            {{-     end }}
             {{-   end }}
             {{- end -}}
             {{ range $config, $value := .Values.extraEnv }}
             - name: {{ $config }}
               valueFrom:
                 configMapKeyRef:
-                  name: params-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" $ }}
+                  name: params-{{ template "ita-by-ansible-legacy-role-vars-listup.name" $ }}
                   key: {{ $config }}
             {{- end }}
           volumeMounts:
-            - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-storage
+            - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-storage
               mountPath: {{ .Values.persistence.mountPath.storage }}
-            - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-homedir
+            - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-homedir
               mountPath: {{ .Values.persistence.mountPath.homeDir }}
-            - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-tmp
+            - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-tmp
               mountPath: {{ .Values.persistence.mountPath.tmp }}
           # livenessProbe:
           #   tcpSocket:
@@ -100,20 +104,20 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-storage
+        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-storage
           {{- if and .Values.global.itaGlobalDefinition.persistence.enabled }}
           persistentVolumeClaim:
             claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
           {{- else }}
           emptyDir: {}
           {{- end }}
-        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-homedir
+        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-homedir
           emptyDir: {}
-        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-pid
+        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-pid
           emptyDir: {}
-        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-socket
+        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-socket
           emptyDir: {}
-        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.fullname" . }}-tmp
+        - name: volume-{{ template "ita-by-ansible-legacy-role-vars-listup.name" . }}-tmp
           emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:

@@ -17,7 +17,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ template "ita-by-menu-create.fullname" . }}
+  name: params-{{ template "ita-by-menu-create.name" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-by-menu-create.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}

@@ -17,7 +17,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: params-{{ template "ita-by-conductor-synchronize.fullname" . }}
+  name: params-{{ template "ita-by-conductor-synchronize.name" . }}
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-by-conductor-synchronize.labels" . | nindent 4 }}
 data: {{ toYaml .Values.extraEnv | nindent 2 }}

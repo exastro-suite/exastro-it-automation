@@ -41,7 +41,7 @@ class DBConnectCommon:
         if self._db_con is not None and self._db_con.open is True:
             return True
 
-        self._db = os.environ.get('DB_DATADBASE')
+        self._db = os.environ.get('DB_DATABASE')
         self._host = os.environ.get('DB_HOST')
         self._port = int(os.environ.get('DB_PORT'))
         self._db_user = os.environ.get('DB_USER')
@@ -528,7 +528,7 @@ class DBConnectCommon:
             'DB_PASSWORD': self._db_passwd
         }
         if self._db:
-            connect_info['DB_DATADBASE'] = self._db
+            connect_info['DB_DATABASE'] = self._db
 
         return connect_info
 
@@ -543,7 +543,7 @@ class DBConnectCommon:
             or
             get failure: (bool)False
         """
-        isnot_register_db_connect_info = "db_connect_info" not in g or "ORGDB_DATADBASE" not in g.db_connect_info
+        isnot_register_db_connect_info = "db_connect_info" not in g or "ORGDB_DATABASE" not in g.db_connect_info
         isnot_same_organization = g.get('ORGANIZATION_ID') and g.get('ORGANIZATION_ID') != organization_id
         if isnot_register_db_connect_info or isnot_same_organization:
             where = "WHERE `ORGANIZATION_ID`=%s and `DISUSE_FLAG`=0 LIMIT 1"
@@ -560,5 +560,5 @@ class DBConnectCommon:
             "DB_USER": g.db_connect_info["ORGDB_USER"],
             "DB_PASSWORD": g.db_connect_info["ORGDB_PASSWORD"],
             "DB_ROOT_PASSWORD": g.db_connect_info["ORGDB_ROOT_PASSWORD"],
-            "DB_DATADBASE": g.db_connect_info["ORGDB_DATADBASE"]
+            "DB_DATABASE": g.db_connect_info["ORGDB_DATABASE"]
         }

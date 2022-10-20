@@ -71,6 +71,9 @@ ita-by-ansible-execute:
     EXECUTE_INTERVAL: "10"
     ANSIBLE_AGENT_IMAGE: "exastro/exastro-it-automation-by-ansible-agent"
     ANSIBLE_AGENT_IMAGE_TAG: "2.0.0"
+  serviceAccount:
+    create: false
+    name: "ita-by-ansible-execute-sa"
 
 ita-by-ansible-legacy-role-vars-listup:
   replicaCount: 1

@@ -244,7 +244,7 @@ class KubernetesMode(AnsibleAgent):
         # create path string
         driver_path = "{}/{}/driver/ansible/legacy_role/{}".format(self._organization_id, self._workspace_id, execution_no)
         _conductor_instance_no = conductor_instance_no if conductor_instance_no else "dummy"
-        conductor_path = "{}/{}/driver/conducotr/{}".format(self._organization_id, self._workspace_id, _conductor_instance_no)
+        conductor_path = "{}/{}/driver/conductor/{}".format(self._organization_id, self._workspace_id, _conductor_instance_no)
 
         ansible_agent_image = "{}:{}".format(os.environ.get('ANSIBLE_AGENT_IMAGE'), os.environ.get('ANSIBLE_AGENT_IMAGE_TAG'))
 

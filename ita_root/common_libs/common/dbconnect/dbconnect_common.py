@@ -559,6 +559,7 @@ class DBConnectCommon:
             "DB_PORT": g.db_connect_info["ORGDB_PORT"],
             "DB_USER": g.db_connect_info["ORGDB_USER"],
             "DB_PASSWORD": g.db_connect_info["ORGDB_PASSWORD"],
-            "DB_ROOT_PASSWORD": g.db_connect_info["ORGDB_ROOT_PASSWORD"],
+            "DB_ADMIN_USER": g.db_connect_info["ORGDB_ADMIN_USER"],
+            "DB_ADMIN_PASSWORD": g.db_connect_info["ORGDB_ADMIN_PASSWORD"],
             "DB_DATABASE": g.db_connect_info["ORGDB_DATABASE"]
         }

@@ -116,8 +116,8 @@ class DBConnectOrgRoot(DBConnectOrg):
 
         self._host = connect_info['DB_HOST']
         self._port = int(connect_info['DB_PORT'])
-        self._db_user = 'root'
-        self._db_passwd = connect_info['DB_ROOT_PASSWORD']
+        self._db_user = connect_info['DB_ADMIN_USER']
+        self._db_passwd = connect_info['DB_ADMIN_PASSWORD']
 
         # connect database
         self.db_connect()

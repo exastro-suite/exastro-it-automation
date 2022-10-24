@@ -107,7 +107,7 @@ database:
     exit 0
 
   initializeDatabase: |-
-    mysql --host=${DB_HOST} --user=root --password=${DB_ADMIN_PASSWORD} < /createdb.sql
+    mysql --host=${DB_HOST} --user=${DB_ADMIN_USER} --password=${DB_ADMIN_PASSWORD} < /createdb.sql
 
   databaseConfig:
     name: mysqld-conf

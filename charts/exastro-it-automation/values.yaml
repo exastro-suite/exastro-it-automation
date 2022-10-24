@@ -43,7 +43,8 @@ global:
       DB_PORT: "3306"
       DB_DATABASE: "ITA_DB"
     secret:
-      DB_ROOT_PASSWORD: ""
+      DB_ADMIN_USER: ""
+      DB_ADMIN_PASSWORD: ""
       DB_USER: ""
       DB_PASSWORD: ""
 
@@ -51,21 +52,21 @@ ita-api-admin:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-api-admin"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent
 
 ita-api-organization:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-api-organization"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent
 
 ita-by-ansible-execute:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-by-ansible-execute"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent
   extraEnv:
     EXECUTE_INTERVAL: "10"
@@ -81,7 +82,7 @@ ita-by-ansible-legacy-role-vars-listup:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-ansible-legacy-role-vars-listup"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent
 
 ita-by-ansible-towermaster-sync:
@@ -90,7 +91,7 @@ ita-by-ansible-towermaster-sync:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-ansible-towermaster-sync"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent
 
 ita-by-conductor-synchronize:
@@ -99,7 +100,7 @@ ita-by-conductor-synchronize:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-conductor-synchronize"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent
 
 ita-by-menu-create:
@@ -108,7 +109,7 @@ ita-by-menu-create:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-menu-create"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent
 
 ita-database-setup-job:
@@ -121,5 +122,5 @@ ita-web-server:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-web-server"
-    tag: "2.0.0"
+    tag: "2.0.1"
     pullPolicy: IfNotPresent

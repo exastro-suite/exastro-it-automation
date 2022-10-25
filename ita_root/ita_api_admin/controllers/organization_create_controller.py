@@ -65,7 +65,8 @@ def organization_create(body, organization_id):  # noqa: E501
             'DB_USER': username,
             'DB_PASSWORD': ky_encrypt(user_password),
             'DB_DATABASE': org_db_name,
-            'DB_ROOT_PASSWORD': ky_encrypt(os.environ.get('DB_ROOT_PASSWORD')),
+            'DB_ADMIN_USER': os.environ.get('DB_ADMIN_USER'),
+            'DB_ADMIN_PASSWORD': ky_encrypt(os.environ.get('DB_ADMIN_PASSWORD')),
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
@@ -75,7 +76,8 @@ def organization_create(body, organization_id):  # noqa: E501
         g.db_connect_info["ORGDB_PORT"] = str(data['DB_PORT'])
         g.db_connect_info["ORGDB_USER"] = data['DB_USER']
         g.db_connect_info["ORGDB_PASSWORD"] = data['DB_PASSWORD']
-        g.db_connect_info["ORGDB_ROOT_PASSWORD"] = data['DB_ROOT_PASSWORD']
+        g.db_connect_info["ORGDB_ADMIN_USER"] = data['DB_ADMIN_USER']
+        g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = data['DB_ADMIN_PASSWORD']
         g.db_connect_info["ORGDB_DATABASE"] = data['DB_DATABASE']
         org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
         # create workspace-databse
@@ -148,7 +150,8 @@ def organization_delete(organization_id):  # noqa: E501
     g.db_connect_info["ORGDB_PORT"] = str(connect_info["DB_PORT"])
     g.db_connect_info["ORGDB_USER"] = connect_info["DB_USER"]
     g.db_connect_info["ORGDB_PASSWORD"] = connect_info["DB_PASSWORD"]
-    g.db_connect_info["ORGDB_ROOT_PASSWORD"] = connect_info["DB_ROOT_PASSWORD"]
+    g.db_connect_info["ORGDB_ADMIN_USER"] = connect_info['DB_ADMIN_USER']
+    g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = connect_info['DB_ADMIN_PASSWORD']
     g.db_connect_info["ORGDB_DATABASE"] = connect_info["DB_DATABASE"]
 
     # get ws-db connect infomation

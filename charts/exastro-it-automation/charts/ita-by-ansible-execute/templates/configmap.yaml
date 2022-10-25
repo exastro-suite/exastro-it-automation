@@ -33,10 +33,10 @@ data:
       apiVersion: v1
       kind: Pod
       metadata:
-        name: it-ansible-agent-{{`{{ unique_name }}`}}
+        name: ita-by-ansible-agent-{{`{{ unique_name }}`}}
       spec:
         containers:
-        - name: it-ansible-agent
+        - name: ita-by-ansible-agent
           image: "{{`{{ ansible_agent_image }}`}}"
           command: [
             "bash",
@@ -46,7 +46,7 @@ data:
           env:
           {{ range $name, $value := .Values.extraEnv -}}
           - name: {{ $name }}
-            value: {{ $value }}
+            value: "{{ $value }}"
           {{ end -}}
           - name: EXEC_DIR
             value: {{`{{ container_mount_path_driver }}`}}
@@ -60,5 +60,5 @@ data:
         volumes:
         - name: volume-subpath
           persistentVolumeClaim:
-            claimName: ita-pvc
+            claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
         restartPolicy: Never

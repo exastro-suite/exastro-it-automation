@@ -43,6 +43,7 @@ global:
       DB_PORT: "3306"
       DB_DATABASE: "ITA_DB"
     secret:
-      DB_ROOT_PASSWORD: ""
+      DB_ADMIN_USER: ""
+      DB_ADMIN_PASSWORD: ""
       DB_USER: ""
       DB_PASSWORD: ""

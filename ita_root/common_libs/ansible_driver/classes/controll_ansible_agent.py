@@ -244,7 +244,7 @@ class KubernetesMode(AnsibleAgent):
         # create path string
         driver_path = "{}/{}/driver/ansible/legacy_role/{}".format(self._organization_id, self._workspace_id, execution_no)
         _conductor_instance_no = conductor_instance_no if conductor_instance_no else "dummy"
-        conductor_path = "{}/{}/driver/conducotr/{}".format(self._organization_id, self._workspace_id, _conductor_instance_no)
+        conductor_path = "{}/{}/driver/conductor/{}".format(self._organization_id, self._workspace_id, _conductor_instance_no)
 
         ansible_agent_image = "{}:{}".format(os.environ.get('ANSIBLE_AGENT_IMAGE'), os.environ.get('ANSIBLE_AGENT_IMAGE_TAG'))
 
@@ -345,7 +345,7 @@ class KubernetesMode(AnsibleAgent):
         # create command string
         unique_name = self.get_unique_name(execution_no)
         unique_name = re.sub(r'_', '-', unique_name).lower()
-        command = ["/usr/local/bin/kubectl", "get", "pod", "-n", KubernetesMode.NAMESPACE, 'it-ansible-agent-' + unique_name, "-o", "json"]
+        command = ["/usr/local/bin/kubectl", "get", "pod", "-n", KubernetesMode.NAMESPACE, 'ita-by-ansible-agent-' + unique_name, "-o", "json"]
 
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
         if cp.returncode != 0:

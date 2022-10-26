@@ -17,6 +17,7 @@ global:
       STORAGEPATH: "/storage/"
     persistence:
       enabled: true
+      reinstall: true
       accessMode: ReadWriteMany
       size: 10Gi
       volumeType: hostPath # e.g.) hostPath or AKS
@@ -54,6 +55,12 @@ extraEnv:
 
 completionCount: 1
 
+initContainerImage:
+  repository: busybox
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
 nameOverride: ""
 fullnameOverride: ""
 
@@ -78,6 +85,13 @@ volumeMounts:
       subPath: createdb.sql
     conf: 
       path: /etc/mysql/conf.d
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
 
 database:
   initContainerImage:

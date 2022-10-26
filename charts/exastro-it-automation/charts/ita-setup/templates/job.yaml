@@ -25,6 +25,23 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       restartPolicy: "OnFailure"
       initContainers:
+        - name: remove-data
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.initContainerImage.repository }}:{{ .Values.initContainerImage.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.initContainerImage.pullPolicy }}
+          command: ["sh", "-c"]
+          args:
+            - |
+              {{- if .Values.global.itaGlobalDefinition.persistence.reinstall }}
+              echo "Removing data for Exastro IT Automation persistence..."
+              rm -rf {{ .Values.global.itaGlobalDefinition.config.STORAGEPATH }}/*
+              {{- else }}
+              echo "Leave data for Exastro IT Automation persistence."
+              {{- end }}
+          volumeMounts:
+            - name: volume-{{ template "ita-setup.name" . }}-storage
+              mountPath: {{ .Values.global.itaGlobalDefinition.config.STORAGEPATH }}
         - name: database-alive-check
           securityContext:
             {{- toYaml .Values.database.securityContext | nindent 12 }}
@@ -114,6 +131,13 @@ spec:
             - |
               echo "Installation completed!!"
       volumes:
+        - name: volume-{{ template "ita-setup.name" . }}-storage
+          {{- if and .Values.global.itaGlobalDefinition.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: pvc-{{ .Values.global.itaGlobalDefinition.name }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         - name: mysql-server-initdb
           configMap:
             name: createdb-sql

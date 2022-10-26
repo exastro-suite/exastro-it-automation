@@ -17,6 +17,7 @@ global:
       STORAGEPATH: "/storage/"
     persistence:
       enabled: true
+      reinstall: false
       accessMode: ReadWriteMany
       size: 10Gi
       volumeType: hostPath # e.g.) hostPath or AKS

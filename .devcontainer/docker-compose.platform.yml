@@ -15,7 +15,7 @@ version: '3.1'
 services:
   platform-auth:
     user: 1000:1000
-    image: exastro/exastro-common-auth-platform-auth:1.0.1
+    image: exastro/exastro-platform-auth:${PLATFORM_VERSION:-latest}
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=38000
@@ -55,7 +55,7 @@ services:
       - "0.0.0.0:38000:38000"
       - "0.0.0.0:38001:38001"
   keycloak:
-    image: exastro/exastro-common-auth-keycloak:1.0.1
+    image: exastro/keycloak:${PLATFORM_VERSION:-latest}
     healthcheck:
       test: curl http://localhost:8080/auth/realms/master
     environment:
@@ -85,14 +85,14 @@ services:
       - KEYCLOAK_DB_PASSWORD=password
   platform-web:
     user: 1000:1000
-    image: exastro/exastro-common-auth-platform-web:1.0.1
+    image: exastro/exastro-platform-web:${PLATFORM_VERSION:-latest}
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=80
 
   platform-api:
     user: 1000:1000
-    image: exastro/exastro-common-auth-platform-api:1.0.1
+    image: exastro/exastro-platform-api:${PLATFORM_VERSION:-latest}
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8000
@@ -109,11 +109,12 @@ services:
       - DB_DATABASE=platform
       - DB_USER=app_user
       - DB_PASSWORD=password
-      - DB_ROOT_PASSWORD=password
+      - DB_ADMIN_USER=root
+      - DB_ADMIN_PASSWORD=password
 
   platform-job:
     user: 1000:1000
-    image: exastro/exastro-common-auth-platform-job:0.1.0-20221017-1730
+    image: exastro/exastro-platform-job:${PLATFORM_VERSION:-latest}
     command: python3 /app/platform_init.py
     environment:
       - TZ=Asia/Tokyo
@@ -123,11 +124,12 @@ services:
       - API_KEYCLOAK_HOST=keycloak
       - API_KEYCLOAK_PROTOCOL=http
       - API_KEYCLOAK_PORT=8080
-      - DB_ADDR=platform-db
+      - DB_HOST=platform-db
       - DB_DATABASE=platform
       - DB_USER=app_user
       - DB_PASSWORD=password
-      - DB_ROOT_PASSWORD=password
+      - DB_ADMIN_USER=root
+      - DB_ADMIN_PASSWORD=password
     depends_on:
       platform-db:
         condition: service_healthy

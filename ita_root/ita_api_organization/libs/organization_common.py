@@ -88,7 +88,8 @@ def before_request_handler():
         g.db_connect_info["ORGDB_PORT"] = str(orgdb_connect_info["DB_PORT"])
         g.db_connect_info["ORGDB_USER"] = orgdb_connect_info["DB_USER"]
         g.db_connect_info["ORGDB_PASSWORD"] = orgdb_connect_info["DB_PASSWORD"]
-        g.db_connect_info["ORGDB_ROOT_PASSWORD"] = orgdb_connect_info["DB_ROOT_PASSWORD"]
+        g.db_connect_info["ORGDB_ADMIN_USER"] = orgdb_connect_info["DB_ADMIN_USER"]
+        g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = orgdb_connect_info["DB_ADMIN_PASSWORD"]
         g.db_connect_info["ORGDB_DATABASE"] = orgdb_connect_info["DB_DATABASE"]
         # gitlab connect info
         g.gitlab_connect_info = {}

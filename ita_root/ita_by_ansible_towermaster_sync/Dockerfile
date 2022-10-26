@@ -94,5 +94,8 @@ COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
+USER root
+RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
+USER $USERNAME
 
-ENTRYPOINT ["backyard/entrypoint.sh"]
+ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]

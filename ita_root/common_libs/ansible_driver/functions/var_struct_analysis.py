@@ -8,18 +8,18 @@ from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
 
 
-def put_var_struct_analysis(objdbca, option, pkey_id, TPF_var_name, var_struct_string, vars_list, array_vars_list, LCA_vars_use, array_vars_use, GBL_vars_info, var_val_list):
+def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, var_struct_string, vars_list, array_vars_list, LCA_vars_use, array_vars_use, GBL_vars_info, var_val_list):
     retBool = True
     msg = ""
     jsonStr = ''
 
-    vars_list       = []
+    vars_list = []
     array_vars_list = []
-    GBL_vars_info   = {}
     GBL_vars_info = {}
-    var_val_list     = []
-    LCA_vars_use    = False
-    array_vars_use  = False
+    GBL_vars_info = {}
+    var_val_list = []
+    LCA_vars_use = False
+    array_vars_use = False
     # 変数定義を一時ファイルに保存
     tmp_file_name = "{}/TemplateVarList_{}.yaml".format(get_AnsibleDriverTmpPath(), os.getpid())
     fd = open(tmp_file_name, 'w')
@@ -80,6 +80,103 @@ def put_var_struct_analysis(objdbca, option, pkey_id, TPF_var_name, var_struct_s
     # 一時ファイル削除
     os.remove(tmp_file_name)
     if retBool is True:
-        obj = VarStructAnalJsonConv()
-        jsonStr = obj.TemplateVarStructAnalJsonDumps(vars_list, array_vars_list, LCA_vars_use, array_vars_use, ITA2User_var_list, GBL_vars_info, var_val_list)
+        retBool, msg = chkTemplateVarNameLength(vars_list, array_vars_list)
+        if retBool is True:
+            obj = VarStructAnalJsonConv()
+            jsonStr = obj.TemplateVarStructAnalJsonDumps(vars_list, array_vars_list, LCA_vars_use, array_vars_use, ITA2User_var_list, GBL_vars_info, var_val_list)
     return retBool, msg, jsonStr, vars_list, array_vars_list, LCA_vars_use, array_vars_use, ITA2User_var_list, GBL_vars_info, var_val_list
+
+
+def chkTemplateVarNameLength(vars_list, array_vars_list):
+    """
+    テンプレート管理で定義されている変数名の文字数を判定
+    Arguments:
+      vars_list: 多段変数以外の変数情報
+      array_vars_list: 多段変数情報
+    Returns:
+      True/false, エラーメッセージ
+    """
+    maxLength = 255
+    result_code = True
+    error_msg = ""
+    # 親変数名の文字数確認
+    for var_name, var_type in vars_list.items():
+        # 変数名が数値の場合の判定
+        if not isinstance(var_name, str):
+            var_name = str(var_name)
+        # 255文字以上ある場合はエラー
+        if len(var_name) > maxLength:
+            if len(error_msg):
+                error_msg += "\n"
+            error_msg += var_name
+            result_code = False
+    # メンバー変数名の文字数確認
+    for var_name, var_info in array_vars_list.items():
+        # 変数名が数値の場合の判定
+        if not isinstance(var_name, str):
+            var_name = str(var_name)
+        # メンバー変数の有無判定
+        if 'CHAIN_ARRAY' in array_vars_list[var_name]:
+            # メンバー変数名取得
+            for chlvar_info in array_vars_list[var_name]['CHAIN_ARRAY']:
+                chlvar_name = chlvar_info['VARS_NAME']
+                if not isinstance(chlvar_name, str):
+                    chlvar_name = str(chlvar_name)
+                # 255文字以上ある場合はエラー
+                if len(chlvar_name) > maxLength:
+                    if len(error_msg):
+                        error_msg += "\n"
+                    error_msg += var_name + "->" + chlvar_name
+                    result_code = False
+    if result_code is False:
+        error_msg = g.appmsg.get_api_message("MSG-10901", [error_msg])
+    return result_code, error_msg
+
+def chkRolePackageVarNameLength(vars_list, array_vars_list):
+    """
+    ロールパッケージ管理で定義されている変数名の文字数を判定
+    Arguments:
+      vars_list: 多段変数以外の変数情報
+      array_vars_list: 多段変数情報
+    Returns:
+      True/false, エラーメッセージ
+    """
+    maxLength = 255
+    result_code = True
+    error_msg = ""
+    # ロール名の取得
+    for role_name, var_info in vars_list.items():
+        # 親変数名の文字数確認
+        for var_name, var_type in var_info.items():
+            # 変数名が数値の場合の判定
+            if not isinstance(var_name, str):
+                var_name = str(var_name)
+            # 255文字以上ある場合はエラー
+            if len(var_name) > maxLength:
+                if len(error_msg):
+                    error_msg += "\n"
+                error_msg += role_name + "->" + var_name
+                result_code = False
+    # ロール名の取得
+    for role_name, var_info in array_vars_list.items():
+        # メンバー変数名の文字数確認
+        for var_name, var_info in var_info.items():
+            # 変数名が数値の場合の判定
+            if not isinstance(var_name, str):
+                var_name = str(var_name)
+            # メンバー変数の有無判定
+            if 'CHAIN_ARRAY' in array_vars_list[role_name][var_name]:
+                # メンバー変数名取得
+                for chlvar_info in array_vars_list[role_name][var_name]['CHAIN_ARRAY']:
+                    chlvar_name = chlvar_info['VARS_NAME']
+                    if not isinstance(chlvar_name, str):
+                        chlvar_name = str(chlvar_name)
+                    # 255文字以上ある場合はエラー
+                    if len(chlvar_name) > maxLength:
+                        if len(error_msg):
+                            error_msg += "\n"
+                        error_msg += role_name + "->" + var_name + "->" + chlvar_name
+                        result_code = False
+    if result_code is False:
+        error_msg = g.appmsg.get_api_message("MSG-10901", [error_msg])
+    return result_code, error_msg

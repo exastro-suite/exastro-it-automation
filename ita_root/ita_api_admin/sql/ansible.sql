@@ -359,7 +359,6 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_ENGINE_VIRTUALENV_NAME,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -384,7 +383,6 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_ENGINE_VIRTUALENV_NAME,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -617,7 +615,6 @@ CREATE TABLE T_ANSR_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ENGINE_VIRTUALENV_NAME        VARCHAR(255),                               -- Movement/Ansible-Core利用情報/virtualenv
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -659,7 +656,6 @@ CREATE TABLE T_ANSR_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ENGINE_VIRTUALENV_NAME        VARCHAR(255),                               -- Movement/Ansible-Core利用情報/virtualenv
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -697,8 +693,8 @@ CREATE TABLE T_ANSR_NESTVAR_MEMBER
     COL_SEQ_NEED                    INT,                                        -- 列順序有無
     MEMBER_DISP                     INT,                                        -- 代入値管理系の表示有無
     MAX_COL_SEQ                     INT,                                        -- 最大繰返数
-    VRAS_NAME_PATH                  VARCHAR(512),                               -- メンバー変数の階層パス
-    VRAS_NAME_ALIAS                 VARCHAR(1024),                              -- 代入値管理系の表示メンバー変数名
+    VRAS_NAME_PATH                  TEXT,                                       -- メンバー変数の階層パス
+    VRAS_NAME_ALIAS                 TEXT,                                       -- 代入値管理系の表示メンバー変数名
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時

@@ -261,7 +261,7 @@
     "MSG-10163": "Syntax of localaction parameter of dialog file is invalid. (host:{} Dialog file:{} line:{})",
     "MSG-10164": "The specific value of the variable used in the inventory file addition option of the device list is not registered in the Substitution value list. (variable:{} host:{})",
     "MSG-10165": "Could not find a valid record for role package list. Skips reaping variables defined in Invent file addition options. (Role package management:{} item number:{} variable list:{})",
-    "MSG-10166": "The file in the file upload column of the parameter sheet could not be specified. Skip this record. (menu name:{} column name:{} item no:{] file path:{})",
+    "MSG-10166": "The file in the file upload column of the parameter sheet could not be specified. Skip this record. (menu name:{} column name:{} item no:{} file path:{})",
     "MSG-10167": "Failed to back up the file upload column of Substitution value list. \n{}",
     "MSG-10168": "Failed to restore the file upload column of Substitution value list. \n{}",
     "MSG-10169": "Failed to create the directory for the file upload column of Substitution value list. \n{}",
@@ -991,6 +991,7 @@
     "MSG-10898": "A variable name different to the Movement name: Variable name and Movement name: Variable name: Member variable is selected.",
     "MSG-10899": "Non-vertical menus does not require Substitute order.",
     "MSG-10900": "The data of Menu-Column link list is invalid. (ID: {})",
+    "MSG-10901": "A variable name longer than 255 bytes is defined.  \n{}",
     "MSG-20001": "Main menu",
     "MSG-20002": "[Main Menu] can not be set.",
     "MSG-20003": "Menu name is required.",
@@ -1351,5 +1352,10 @@
     "BKY-20212": "-",
     "BKY-20213": "-",
     "BKY-20214": "-",
-    "BKY-20215": "-"
+    "BKY-20215": "-",
+    "BKY-30001": "-",
+    "BKY-30002": "-",
+    "BKY-30003": "-",
+    "BKY-30004": "-",
+    "BKY-30005": "-"
 }

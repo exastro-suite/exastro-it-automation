@@ -664,7 +664,7 @@ initEvents() {
                       }).catch(function( error ){
                           cd.menuButtonDisabled( false );
                           fn.messageClear();
-                          cd.message('danger', getMessage.FTE02029);
+                          cd.message('danger', getMessage.FTE02029, error.message );
                       });
                   }
               });
@@ -4186,7 +4186,7 @@ movementListHtml() {
         <thead>
           <tr>
             <th class="movement-list-orchestrator" title="Orchestrator"><div class="movement-list-sort" data-sort="orchestra_id" data-sort-type="number">+<span class="movementSortMark"></span></div></th>
-            <th class="movement-list-name" title="Movement Name"><div class="movement-list-sort" data-sort="name" data-sort-type="string">Movement名<span class="movementSortMark"></span></div></th>
+            <th class="movement-list-name" title="Movement Name"><div class="movement-list-sort" data-sort="name" data-sort-type="string">${getMessage.FTE02163}<span class="movementSortMark"></span></div></th>
           </tr>
         </thead>
         <tbody class="movement-list-rows">
@@ -6239,7 +6239,7 @@ loadConductor( loadConductorData ) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//   作業確認　Conductor画面とパネルの情報を更新
+//   作業確認　Conducotr画面とパネルの情報を更新
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

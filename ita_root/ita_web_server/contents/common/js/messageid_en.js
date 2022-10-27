@@ -63,8 +63,8 @@ const getMessage = ( function() {
         'FTE00026' : "Display",
         'FTE00027' : "Historical view",
         'FTE00028' : "History reset",
-        'FTE00029' : "Target",
-        'FTE00030' : "and enter",
+        'FTE00029' : "Target ",
+        'FTE00030' : " and enter",
         'FTE00031' : "press the history display.",
         'FTE00032' : "Select",
         'FTE00033' : "Division",
@@ -117,6 +117,9 @@ const getMessage = ( function() {
         'FTE00080' : "Check execution status",
         'FTE00081' : "Execution log",
         'FTE00082' : "Error log",
+        'FTE00083' : "Bulk registration confirmation",
+        'FTE00084' : "Bulk registration in progress",
+        'FTE00085' : function( result, limit ){ return `line count for Excel output: ${result}lines\n\nDownload will be canceled because the Maximum line count for Excel output(${limit}lines) has been exceeded.`},
         
         // Create menu
         'FTE01001' : "Item",
@@ -270,6 +273,7 @@ const getMessage = ( function() {
         'FTE01149' : "Exit full screen",
         'FTE01150' : "Enter the maximum number of bytes.\nThe maximum size is 255 bytes.\nFor editing, it is possible to increase it from the original value.\nThe byte count of half-width alphanumeric characters are equivalent to the number of characters.\nFor full-width characters, the number of characters x 3 + 2 bytes is required.",
         'FTE01151' : "Create(New)",
+        'FTE01152' : "There are no items available for reference.",
         
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
@@ -314,7 +318,7 @@ const getMessage = ( function() {
         'FTE02040' : "Update failed.",
         'FTE02041' : "Are you sure you want to refresh?",
         'FTE02042' : "Reloaded.",
-        'FTE02043' : "Cancel a reservation?",
+        'FTE02043' : "Cancel a Conductor reservation?",
         'FTE02044' : "Do you want an emergency stop?",
         'FTE02045' : "Normal end",
         'FTE02046' : "Abend",
@@ -434,6 +438,7 @@ const getMessage = ( function() {
         'FTE02160' : "Arrow key",
         'FTE02161' : "Now loading",
         'FTE02162' : "Data in the process of being edited has been read from local storage.",
+        'FTE02163' : "Movement name",
         
         // Execution
         'FTE05001' : "Execution No.",

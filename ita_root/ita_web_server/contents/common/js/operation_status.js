@@ -206,7 +206,8 @@ operationStatusInit() {
               type = $button.attr('data-type');
         
         if ( !fn.checkContentLoading() ) {
-        
+            
+            $button.prop('disabled', true );
             fn.contentLoadingStart();
             clearTimeout( op.timerId );
         
@@ -225,6 +226,7 @@ operationStatusInit() {
 
                         }).catch(function( error ){
                             alert( error.message );
+                            $button.prop('disabled', false );
                         }).then(function(){
                             fn.contentLoadingEnd();
                             op.monitoring();
@@ -240,6 +242,7 @@ operationStatusInit() {
                         fn.fetch( op.rest.scram, null, 'PATCH', {}).then(function(){
                         }).catch(function( error ){
                             alert( error.message );
+                            $button.prop('disabled', false );
                         }).then(function(){
                               fn.contentLoadingEnd();
                               op.monitoring();
@@ -443,17 +446,6 @@ operationStatus() {
                         <tr class="commonTr">
                             <th class="commonTh">` + getMessage.FTE05032 + `</th>
                             <td class="commonTd"><span class="operationStatusData" data-type="ansible_cfg"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="commonSubTitle">` + getMessage.FTE05033 + `</div>
-            <div class="commonBody">
-                <table class="commonTable">
-                    <tbody class="commonTbody">
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05034 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="ansible_core_virtualenv"></span></td>
                         </tr>
                     </tbody>
                 </table>

@@ -97,8 +97,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         g.applogger.debug("set initial material")
 
         # make workspace-db connect infomation
-        username, user_password = org_db.userinfo_generate("ITA_WS")
-        ws_db_name = username
+        ws_db_name, username, user_password = org_db.userinfo_generate("ITA_WS")
         connect_info = org_db.get_connect_info()
 
         data = {

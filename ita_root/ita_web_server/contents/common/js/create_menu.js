@@ -1418,6 +1418,8 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
     
     titleInputChange( $addColumnInput );
     titleInputChange( $addColumnRestInput );
+    
+    emptyCheck();
     columnHeightUpdate();
     
     if ( previewFlag === true ) {
@@ -1431,12 +1433,6 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
     if ( editorWindowWidth < tableWidth ) {
         $menuEditWindow.children().stop(0,0).animate({'scrollLeft': tableWidth - editorWindowWidth }, 200 );
     }
-
-    //日付と時日時の初期値入力欄にdatetimepickerを設定
-    //$addColumn.find(".callDateTimePicker").datetimepicker({format:'Y/m/d H:i:s', step:5, lang:LangStream});
-    //$addColumn.find(".callDateTimePicker2").datetimepicker({timepicker:false, format:'Y/m/d', lang:LangStream});
-
-    emptyCheck();
 
 };
 
@@ -2143,9 +2139,9 @@ const emptyCheck = function() {
     } else {
       $menuTable.find('.no-set').remove();
     }
-  };
-  // リピートがあるかチェックする
-  const repeatCheck = function() {
+};
+// リピートがあるかチェックする
+const repeatCheck = function() {
     const $repeatButton = $('.menu-editor-menu-button[data-type="newColumnRepeat"]'),
           type = $('#create-menu-type').val();
     // パラメータシートかつ、縦メニュー利用有無チェック
@@ -2501,27 +2497,7 @@ const previewTable = function(){
                     };
                 }
             }
-
           // Item end
-        /*
-        } else if ( $column.is('.menu-column-repeat') ) {
-          // リピート
-            const repeatNumber = $column.find('.menu-column-repeat-number-input').val();
-            if ( $column.find('.menu-column, .menu-column-group').length ) {
-                for ( let i = 1; i <= repeatNumber; i++ ) {
-                  repeatCount = i;
-                  tableAnalysis( $column.children('.menu-column-repeat-body'), repeatCount );
-                }
-                repeatCount = 0;
-            } else {
-                const rowspan = maxLevel - currentFloor;
-                for ( let i = 1; i <= repeatNumber; i++ ) {
-                  tableArray[ currentFloor ].push('<th class="empty" rowspan="' + rowspan + '">Empty</th>');
-                  tbodyArray.push('<td class="empty">Empty</td>');
-                }
-            }
-          // Repeat end
-        */
         } else if ( $column.is('.menu-column-group') ) {
           // グループ
             const colspan = childColumnCount( $column, 'group' ),
@@ -3095,47 +3071,42 @@ function setRerefenceItemSelectModalBody( itemList, initData, okCallback, cancel
 
   // 入力値を取得する
   const checkList = ( initData !== null || initData !== undefined )? initData.split(','): [''];
-
-  if(itemList != null){
-      //const itemLength = itemList.length;
-      //if(itemLength != 0){
-          itemSelectHTML = '<div class="modal-table-wrap">'
-                            + '<form id="modal-reference-item-select">'
-                            + '<table class="modal-table modal-select-table">'
-                              + '<thead>'
-                                + '<th class="selectTh">Select</th><th class="name">' + getMessage.FTE01146 + '</th><th class="name">' + getMessage.FTE01147 + '</th>'
-                              + '</thead>'
-                              + '<tbody>';
+  
+  if ( itemList && itemList.length !== 0 ) {
+      itemSelectHTML = '<div class="modal-table-wrap">'
+      + '<form id="modal-reference-item-select">'
+      + '<table class="modal-table modal-select-table">'
+        + '<thead>'
+          + '<th class="selectTh">Select</th><th class="name">' + getMessage.FTE01146 + '</th><th class="name">' + getMessage.FTE01147 + '</th>'
+        + '</thead>'
+        + '<tbody>';
 
 
-          itemList.forEach(itemName => {
-            const itemID = itemName['reference_id'],
-                  //checkValue = ( valueType === 'name')? itemName: itemID,
-                  checkValue = itemName,
-                  checkedFlag = ( checkList.indexOf( checkValue['column_name_rest'] ) !== -1 )? ' checked': '',
-                  //value = ( valueType === 'name')? itemName: itemID;
-                  value = itemID;
-            itemSelectHTML += '<tr>'
-            + '<th><input value="' + itemName['column_name_rest'] + '" class="modal-checkbox" type="checkbox"' + checkedFlag + '></th>'
-            + '<td>' + itemName['column_name'] + '</td><td>' + itemName['column_name_rest'] + '</td></tr>';
-          });
+      itemList.forEach(itemName => {
+        const itemID = itemName['reference_id'],
+              //checkValue = ( valueType === 'name')? itemName: itemID,
+              checkValue = itemName,
+              checkedFlag = ( checkList.indexOf( checkValue['column_name_rest'] ) !== -1 )? ' checked': '',
+              //value = ( valueType === 'name')? itemName: itemID;
+              value = itemID;
+        itemSelectHTML += '<tr>'
+        + '<th><input value="' + itemName['column_name_rest'] + '" class="modal-checkbox" type="checkbox"' + checkedFlag + '></th>'
+        + '<td>' + itemName['column_name'] + '</td><td>' + itemName['column_name_rest'] + '</td></tr>';
+      });
 
-          itemSelectHTML += ''
-              + '</tbody>'
-            + '</table>'
-            + '</form>'
-          + '</div>';
-      /*}else{
-          //ボタンを「閉じる」に変更
-          $modalFooterMenu.children().remove();
-          $modalFooterMenu.append('<li class="editor-modal-footer-menu-item"><button class="editor-modal-footer-menu-button negative" data-button-type="close">閉じる</li>');
-          itemSelectHTML = '<p class="modal-one-message">getSomeMessage("ITACREPAR_1251")</p>';*/
-      //}
-  }else{
-      //ボタンを「閉じる」に変更
+      itemSelectHTML += ''
+          + '</tbody>'
+        + '</table>'
+        + '</form>'
+      + '</div>';
+  } else {
+      // ボタンを「閉じる」に変更
       $modalFooterMenu.children().remove();
       $modalFooterMenu.append('<li class="editor-modal-footer-menu-item"><button class="editor-modal-footer-menu-button negative" data-button-type="close">' + getMessage.FTE01050 + '</li>');
-      itemSelectHTML = '<p class="modal-one-message">' + getMessage.FTE01139 + '</p>';
+      
+      // 表示メッセージ
+      const noDataMessage = ( itemList.length === 0 )? getMessage.FTE01152: getMessage.FTE01139;
+      itemSelectHTML = '<p class="modal-one-message">' + noDataMessage + '</p>';
   }
 
   $modalBody.html( itemSelectHTML );

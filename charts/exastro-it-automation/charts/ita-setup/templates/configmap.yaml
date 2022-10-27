@@ -58,7 +58,7 @@ data:
           GITLAB_USER                     VARCHAR(255),                               -- GitLabユーザ
           GITLAB_TOKEN                    VARCHAR(255),                               -- GitLabトークン
           NOTE                            TEXT,                                       -- 備考
-          DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+          DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
           LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
           LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
           PRIMARY KEY(PRIMARY_KEY)

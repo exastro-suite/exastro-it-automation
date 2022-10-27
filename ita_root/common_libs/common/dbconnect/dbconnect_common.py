@@ -493,11 +493,14 @@ class DBConnectCommon:
         Arguments:
             db_name: database name(uuid)
         Returns:
-            user_name and user_password: tuple
+            db_name, user_name, user_password: tuple
         """
-        user_name = prefix + "_" + str(self._uuid_create()).upper()
+        db_name = prefix + "_" + str(self._uuid_create()).upper()
+        # mysql>=5.7はユーザ名32文字まで
+        # 利用可能文字 https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
+        user_name = prefix + "_" + generate_secrets(20, "-_$+")
         user_password = self.password_generate()
-        return user_name, user_password
+        return db_name, user_name, user_password
 
     def password_generate(self):
         """

@@ -2912,7 +2912,7 @@ border-bottom-color: rgba( 0,0,0,.3 );
 }
 .errorTableContainer {
 overflow: auto;
-height: calc( 100% - 6px );
+height: 100%;
 }
 .errorTitle {
 height: 40px;

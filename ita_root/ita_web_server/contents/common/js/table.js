@@ -1105,13 +1105,13 @@ setTableEvents() {
                         file = tb.option.before[ id ].file[ rest ];
                     }
                 } else {
-                    if ( params !== undefined && params.file[rest] !== undefined && params.file[rest] !== null ) {
+                    if ( params.file[rest] !== undefined && params.file[rest] !== null ) {
                         file = params.file[rest];
                     }
                 }            
             }
-            
-            if ( file ) {
+
+            if ( file !== undefined && file !== null ) {
                 fn.download('base64', file, fileName );
             }            
         });
@@ -1970,10 +1970,12 @@ requestTbody() {
             // リミットチェック
             if ( printLimitNum !== -1 && tb.data.count > printLimitNum ) {
                 alert(getMessage.FTE00067);
+                tb.limitSetBody();
                 return false;
             //表示確認
             } else if ( printConfirmNum !== -1 && tb.data.count >= printConfirmNum ) {
                 if ( !confirm(getMessage.FTE00066) ) {
+                    tb.limitSetBody();
                     return false;
                 }
             }
@@ -2232,6 +2234,23 @@ setTbody() {
     
     tb.filterDownloadButtonCheck();
     tb.stickyWidth();
+}
+/*
+##################################################
+   表示可能件数を超えた場合の表示
+##################################################
+*/
+limitSetBody() {
+    const tb = this;
+    
+    tb.$.container.addClass('noData');
+    tb.$.message.html(`<div class="noDataMessage">`
+    + fn.html.icon('stop')
+    + getMessage.FTE00067
+    + `</div>`);
+    
+    tb.workEnd();
+    tb.$.table.addClass('tableReady');
 }
 /*
 ##################################################
@@ -2602,7 +2621,7 @@ viewCellHtml( item, columnKey, journal ) {
         // ファイル名がリンクになっていてダウンロード可能
         case 'FileUploadColumn': {
             const id = ( tb.mode !== 'history')? parameter[ tb.idNameRest ]: parameter.journal_id;
-            if ( file[ columnName ] ) {
+            if ( file[ columnName ] !== null ) {
                 return checkJournal(`<a href="${value}" class="tableViewDownload" data-id="${id}" data-rest="${columnName}">${value}</a>`);
             } else {
                 return checkJournal( value );
@@ -3492,7 +3511,7 @@ execute( type ) {
             fn.fetch( executeConfig.rest, null, 'POST', postData ).then(function( result ){
                 window.location.href = `?menu=check_operation_status_ansible_role&execution_no=${result.execution_no}`;
             }).catch(function( error ){
-                fn.gotoErrPage( error.message );
+                if ( error.message ) alert( error.message );
             }).then(function(){
                 tb.workEnd();
             });

@@ -692,7 +692,7 @@ createMenuGroupList() {
         };
     } else {
         ui.currentGroup = {
-            title: 'メインメニュー'
+            title: getMessage.FTE10001
         };
     }
 }
@@ -701,10 +701,10 @@ createMenuGroupList() {
    panel image
 ##################################################
 */
-getPanelImage( title, icon, panel ) {
+getPanelImage( title, panel ) {
     return ( fn.cv( panel, false ) )?
     `<img class="menuTitleIconImage" src="data:;base64,${panel}" alt="${title}">`:
-    `<span class="icon icon-${icon}"></span>`;
+    `<img class="menuTitleIconImage" src="/_/ita/imgs/icon_default.png" alt="${title}">`;
 }
 /*
 ##################################################
@@ -714,7 +714,7 @@ getPanelImage( title, icon, panel ) {
 sideMenuBody( title, icon, list, panel ) {
     const ui = this;
     
-    const iconImage = ui.getPanelImage( title, icon, panel );
+    const iconImage = ui.getPanelImage( title, panel );
     
     return `
     <div class="menuTitle">
@@ -873,7 +873,7 @@ menuGroup() {
         if ( menuGroup.parent_id === null ) {
             const title = fn.cv( menuGroup.menu_group_name, '', true ),
                   id =  fn.cv( menuGroup.id, ''),
-                  panel = ui.getPanelImage( title, 'unkown', ui.rest.panel[ id ] );
+                  panel = ui.getPanelImage( title, ui.rest.panel[ id ] );
             list.push(`<li class="menuItem"><a class="menuGroupLink menuLink" data-id="${id}" data-num="${i}" href="${ui.params.path}?menu=${menuGroup.main_menu_rest}"><span class="menuGroupPanel">${panel}</span><span class="menuGroupTitle">${title}</span></a></li>`);
         }
     }
@@ -1049,7 +1049,7 @@ mainMenu() {
         if ( menuGroup.parent_id === null ) {
             const title = fn.cv( menuGroup.menu_group_name, '', true ),
                   id =  fn.cv( menuGroup.id, ''),
-                  panel = ui.getPanelImage( title, 'unkown', ui.rest.panel[ id ] );
+                  panel = ui.getPanelImage( title, ui.rest.panel[ id ] );
             
             list.push(`<li class="dashboardMenuGroupItem"><a class="dashboardMenuGroupLink" href="${ui.params.path}?menu=${menuGroup.main_menu_rest}"><span class="dashboardMenuGroupPanel">${panel}</span><span class="dashboardMenuGroupTitle">${title}</span></a></li>`);
         }
@@ -1172,7 +1172,7 @@ defaultMenu( sheetType ) {
                 fn.fetch(`/menu/${ui.params.menuNameRest}/filter/count/`).then(function( result ){
                     const limit = ui.rest.info.menu_info.xls_print_limit;
                     if ( limit && ui.rest.info.menu_info.xls_print_limit < result ) {
-                        alert(`Excel出力行数：${result}行\n\nExcel出力最大行数（${limit}行）を超過しているためダウンロードを中止します。`);
+                        alert( getMessage.FTE00085( result, limit) );
                     } else {
                         downloadFile('excel', `/menu/${ui.params.menuNameRest}/excel/`, ui.currentPage.title + '_all');
                     }
@@ -1279,10 +1279,10 @@ fileRegister( $button, type ) {
             }
         }
         
-        fn.alert('一括登録確認', fn.html.table( table, 'fileSelectTable', 1 ), 'confirm', buttons ).then( function( flag ){
+        fn.alert( getMessage.FTE00083, fn.html.table( table, 'fileSelectTable', 1 ), 'confirm', buttons ).then( function( flag ){
             if ( flag ) {
             
-                const processing = fn.processingModal('一括登録処理中');
+                const processing = fn.processingModal( getMessage.FTE00084 );
                 
                 // POST（登録）
                 fn.fetch(`/menu/${ui.params.menuNameRest}/${restUrl}`, null, 'POST', postData ).then(function( result ){
@@ -1293,7 +1293,7 @@ fileRegister( $button, type ) {
                     });
                 }).catch(function( error ){
                     // 登録失敗
-                    fn.errorModal( error, ui.currentPage.title );
+                    fn.errorModal( error, ui.currentPage.title, ui.rest.info );
                 }).then(function(){
                     // ボタンを戻す
                     fn.disabledTimer( $button, false, 1000 );

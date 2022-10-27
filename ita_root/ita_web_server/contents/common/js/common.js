@@ -1579,8 +1579,26 @@ html: {
             selectOption.push(`<option value=""></option>`);
         }
         
-        for ( const key in list ) {
-            const val = cmn.escape( list[ key ] ),
+        // listを名称順にソートする
+        const sortList = Object.keys( list ).map(function(key){
+            return list[key];
+        });
+        sortList.sort(function( a, b ){
+            a = a.toLowerCase();
+            b = b.toLowerCase();
+            
+            if ( a < b ) {
+                return -1;
+            } else if ( a > b ) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+        
+        
+        for ( const item of sortList ) {
+            const val = cmn.escape( item ),
                   optAttr = [`value="${val}"`];
             if ( value === val ) optAttr.push('selected', 'selected');
             selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
@@ -1834,14 +1852,16 @@ resultModal: function( result ) {
    登録失敗エラーモーダル
 ##################################################
 */
-errorModal: function( error, pageName ) {
+errorModal: function( errors, pageName, info ) {
+    console.log( info )
     return new Promise(function( resolve ){
         let errorMessage;
         try {
-            errorMessage = JSON.parse(error.message);
+            errorMessage = JSON.parse(errors.message);
         } catch ( e ) {
             //JSONを作成
-            errorMessage = {"0":{"共通":[error.message]}};
+            errorMessage = {'0':{}};
+            errorMessage['0'][ getMessage.FTE00064 ] = [ errors.message ];
         }
         const errorHtml = [];
         for ( const item in errorMessage ) {
@@ -1850,9 +1870,15 @@ errorModal: function( error, pageName ) {
                       name = cmn.cv( error, '', true ),
                       body = cmn.cv( errorMessage[item][error].join(''), '?', true );
 
+                const columnId = Object.keys( info.column_info ).find(function( key ){
+                    return info.column_info[ key ].column_name_rest === name;
+                });
+                
+                const columnName = ( columnId )? info.column_info[ columnId ].column_name: error;
+                
                 errorHtml.push(`<tr class="tBodyTr tr">`
                 + cmn.html.cell( number, ['tBodyTh', 'tBodyLeftSticky'], 'th')
-                + cmn.html.cell( name, 'tBodyTd')
+                + cmn.html.cell( columnName, 'tBodyTd')
                 + cmn.html.cell( body, 'tBodyTd')
                 + `</tr>`);
             }
@@ -1864,7 +1890,7 @@ errorModal: function( error, pageName ) {
                 <thead class="thead">
                     <tr class="tHeadTr tr">
                         <th class="tHeadTh tHeadLeftSticky th"><div class="ci">No.</div></th>
-                        <th class="tHeadTh th"><div class="ci">${getMessage.FTE10043}</div></th>
+                        <th class="tHeadTh th"><div class="ci">${getMessage.FTE10044}</div></th>
                         <th class="tHeadTh th"><div class="ci">${getMessage.FTE10045}</div></th>
                     </tr>
                 </thead>
@@ -2214,13 +2240,15 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
     return new Promise(function( resolve ){
         const funcs = {
             ok: function(){
+                const $dialog = modalInstance[ modalId ].$.dbody;
                 modalInstance[ modalId ].hide();
                 resolve({
                     selectName: executeConfig.selectName,
                     selectId: executeConfig.selectId,
-                    id: modalInstance[ modalId ].$.dbody.find('.executeOperetionId').text(),
-                    name: modalInstance[ modalId ].$.dbody.find('.executeOperetionName').text(),
-                    schedule:  modalInstance[ modalId ].$.dbody.find('.executeSchedule').val()
+                    id: $dialog.find('.executeOperetionId').text(),
+                    name: $dialog.find('.executeOperetionName').text(),
+                    schedule: $dialog.find('.executeSchedule').val(),
+                    instance: modalInstance[ modalId ]
                 });
             },
             cancel: function(){

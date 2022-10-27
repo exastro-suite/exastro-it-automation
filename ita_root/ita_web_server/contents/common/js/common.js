@@ -2247,8 +2247,7 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
                     selectId: executeConfig.selectId,
                     id: $dialog.find('.executeOperetionId').text(),
                     name: $dialog.find('.executeOperetionName').text(),
-                    schedule: $dialog.find('.executeSchedule').val(),
-                    instance: modalInstance[ modalId ]
+                    schedule: $dialog.find('.executeSchedule').val()
                 });
             },
             cancel: function(){

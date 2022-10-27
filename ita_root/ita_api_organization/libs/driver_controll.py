@@ -20,6 +20,7 @@ from common_libs.loadtable import *  # noqa: F403
 import re
 import os
 import datetime
+import json
 from common_libs.common.exception import AppException
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.functions.util import *
@@ -162,25 +163,28 @@ def get_execution_info(objdbca, target, execution_no):
     execution_info['progress']['execution_log']['exec_log'] = {}
     path = getAnsibleExecutDirPath(AnscConst.DF_LEGACY_ROLE_DRIVER_ID, execution_no)
 
-    if table_row['MULTIPLELOG_MODE'] == '1':
-        list_log = table_row['LOGFILELIST_JSON'].split(',') 
+    if table_row['MULTIPLELOG_MODE'] == 1:
+        if not table_row['LOGFILELIST_JSON']:
+            list_log = []
+        else:
+            list_log = json.loads(table_row['LOGFILELIST_JSON'])
         for log in list_log:
             log_file_path = path + '/out/' + log
             if os.path.isfile(log_file_path):
                 lcstr = Path(log_file_path).read_text(encoding="utf-8")
                 execution_info['progress']['execution_log']['exec_log'][log] = lcstr
-    else:
-        log_file_path = path + '/out/exec.log'
+
+    log_file_path = path + '/out/exec.log'
+    if os.path.isfile(log_file_path):
         if os.path.isfile(log_file_path):
-            if os.path.isfile(log_file_path):
-                lcstr = Path(log_file_path).read_text(encoding="utf-8")
-                execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
-    
+            lcstr = Path(log_file_path).read_text(encoding="utf-8")
+            execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
+
     log_file_path = path + '/out/error.log'
     if os.path.isfile(log_file_path):
         lcstr = Path(log_file_path).read_text(encoding="utf-8")
         execution_info['progress']['execution_log']['error_log'] = lcstr
-    
+
     # 状態監視周期・進行状態表示件数
     where = ""
     tmp_data_list = objdbca.table_select("T_ANSC_IF_INFO", where)

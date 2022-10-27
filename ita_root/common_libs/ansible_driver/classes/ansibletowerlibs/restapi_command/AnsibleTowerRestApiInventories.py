@@ -121,11 +121,11 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
 
         if "instanceGroupId" in param and param['instanceGroupId']:
             content_2 = {}
-            content_2['id'] = int(param['instanceGroupId'])
+            content_2['id'] = param['instanceGroupId']
 
             # REST APIアクセス
             method = "POST"
-            response_array_2 = RestApiCaller.restCall(method, '%s%s/' % (cls.API_PATH, inventoryId), content_2)
+            response_array_2 = RestApiCaller.restCall(method, '%s%s/%s' % (cls.API_PATH, inventoryId, cls.API_SUB_PATH), content_2)
 
             # REST失敗
             if response_array_2['statusCode'] != 204:

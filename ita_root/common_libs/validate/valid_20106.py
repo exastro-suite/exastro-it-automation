@@ -4,7 +4,7 @@ import os
 from flask import g
 
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
-from common_libs.ansible_driver.functions.var_struct_analysis import put_var_struct_analysis
+from common_libs.ansible_driver.functions.var_struct_analysis import Template_variable_define_analysis
 from common_libs.ansible_driver.functions.commn_vars_used_list_update import CommnVarsUsedListUpdate, CommnVarsUsedListDisuseSet
 from common_libs.ansible_driver.classes.CheckAnsibleRoleFiles import DefaultVarsFileAnalysis, VarStructAnalysisFileAccess
 
@@ -73,7 +73,7 @@ def external_valid_menu_after(objdbca, objtable, option):
         VarVal_list = retAry[5]
         del obj
     elif option["cmd_type"] == "Register" or option["cmd_type"] == "Update":
-        ret = put_var_struct_analysis(objdbca, option, PkeyID, strVarName, strVarsList, Vars_list, Array_vars_list, LCA_vars_use, Array_vars_use, GBL_vars_info, VarVal_list)
+        ret = Template_variable_define_analysis(objdbca, option, PkeyID, strVarName, strVarsList, Vars_list, Array_vars_list, LCA_vars_use, Array_vars_use, GBL_vars_info, VarVal_list)
         if ret[0] is False:
             retBool = False
             msg = ret[1]

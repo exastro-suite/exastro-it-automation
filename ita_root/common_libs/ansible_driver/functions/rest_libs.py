@@ -152,11 +152,6 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     # Movement/Ansible利用情報/ヘッダーセクション
     ExecStsInstTableConfig[RestNameConfig["I_ANS_PLAYBOOK_HED_DEF"]] = movement_row["ANS_PLAYBOOK_HED_DEF"]
 
-    if ExecMode == objAnsc.DF_EXEC_MODE_ANSIBLE:
-        # Movement/Ansible-Core利用情報/virtualenv
-        # ゴミになるので実行エンジンがansibleの場合のみ設定
-        ExecStsInstTableConfig[RestNameConfig["I_ENGINE_VIRTUALENV_NAME"]] = movement_row["ANS_ENGINE_VIRTUALENV_NAME"]
-
     if ExecMode == objAnsc.DF_EXEC_MODE_AAC:
         # Movement/AnsibleAutomationController利用情報/実行環境
         # ゴミになるので実行エンジンがAnsibleAutomationControllerの場合のみ設定

@@ -119,9 +119,6 @@ def external_valid_menu_after(objDBCA, objtable, option):
                 return retBool, retStrBody, option
 
             # 変数名の文字数確認
-            print("-----------------------")
-            print(def_vars_list)
-            print(def_array_vars_list)
             retBool, retStrBody = chkRolePackageVarNameLength(def_vars_list, def_array_vars_list)
             if retBool is False:
                 return retBool, retStrBody, option

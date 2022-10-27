@@ -1518,9 +1518,6 @@ class loadTable():
                 entry_parameter = tmp_target_menu_option.get('entry_parameter').get('parameter')
                 entry_file = tmp_target_menu_option.get('entry_parameter').get('file')
 
-            # 不要パラメータの除外(個別処理で追加されたキーも対象か確認)
-            entry_parameter = self.exclusion_parameter(cmd_type, entry_parameter)
-
             # レコード操作前エラー確認
             if self.get_message_count(MSG_LEVEL_ERROR) > 0:
                 retBool = False
@@ -2255,7 +2252,7 @@ class loadTable():
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                     tmp_col_name = self.get_col_name(tmp_keys)
                     if input_item != '1':
-                        if tmp_col_name not in column_list:
+                        if tmp_col_name not in primary_key_list:
                             if tmp_keys in parameter:
                                 del parameter[tmp_keys]
 

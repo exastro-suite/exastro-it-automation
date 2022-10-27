@@ -43,13 +43,14 @@ global:
       DB_PORT: "3306"
       DB_DATABASE: "ITA_DB"
     secret:
-      DB_ROOT_PASSWORD: ""
+      DB_ADMIN_USER: ""
+      DB_ADMIN_PASSWORD: ""
       DB_USER: ""
       DB_PASSWORD: ""
 
 extraEnv:
   EXECUTE_INTERVAL: "10"
-  ANSIBLE_AGENT_IMAGE: "exastro/exastro-it-automation-ansible-agent"
+  ANSIBLE_AGENT_IMAGE: "exastro/exastro-it-automation-by-ansible-agent"
   ANSIBLE_AGENT_IMAGE_TAG: "latest"
 
 replicaCount: 1
@@ -82,7 +83,7 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "ita-by-ansible-execute-sa"
 
 persistence:
   mountPath:
@@ -99,7 +100,7 @@ persistence:
 volumeMounts:
   mountPath:
     createAgent: 
-      path: /storage/k8s_pod.yml
+      path: /exastro/templates/k8s_pod.yml
       subPath: k8s_pod.yml
 
 podAnnotations: {}
@@ -132,13 +133,13 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources:
-  requests:
-    memory: "64Mi"
-    cpu: "250m"
-  limits:
-    memory: "64Mi"
-    cpu: "250m"
+resources: {}
+  # requests:
+  #   memory: "64Mi"
+  #   cpu: "250m"
+  # limits:
+  #   memory: "64Mi"
+  #   cpu: "250m"
 
 autoscaling:
   enabled: false

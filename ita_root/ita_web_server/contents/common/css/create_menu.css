@@ -1539,3 +1539,30 @@ outline: none;
 #menu-editor[data-editor-mode="view"] .editor-header {
 display: none;
 }
+
+#property tr.parameter-sheet,
+#property tr.parameter-operation,
+#property tr.data-sheet,
+#property tr.operation,
+#property tr.host,
+#property tr.host-group,
+#property #vertical-menu {
+display: none;
+}
+#property[data-menu-type="1"] tr.parameter-sheet,
+#property[data-menu-type="2"] tr.data-sheet,
+#property[data-menu-type="3"] tr.parameter-operation,
+#property[data-host-type="1"] tr.host,
+#property[data-host-type="2"] tr.host-group {
+display: table-row;
+}
+#property[data-menu-type="2"] .host,
+#property[data-menu-type="2"] .host-group
+{
+display: none!important;
+}
+#property[data-menu-type="1"][data-vertical-menu="true"] #vertical-menu,
+#property[data-menu-type="3"][data-vertical-menu="true"] #vertical-menu
+{
+display: block;
+}

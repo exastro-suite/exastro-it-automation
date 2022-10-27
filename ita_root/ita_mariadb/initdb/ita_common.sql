@@ -1,15 +1,16 @@
 -- ITA_DB OrganizationDB管理テーブル
 -- DROP TABLE IF EXISTS `ITA_DB`.`T_COMN_ORGANIZATION_DB_INFO`;
-CREATE TABLE IF NOT EXISTS `ITA_DB`.`T_COMN_ORGANIZATION_DB_INFO`
+CREATE TABLE T_COMN_ORGANIZATION_DB_INFO
 (
     PRIMARY_KEY                     VARCHAR(40),                                -- 主キー
     ORGANIZATION_ID                 VARCHAR(255),                               -- organizationのID
     DB_HOST                         VARCHAR(255),                               -- DBホスト
     DB_PORT                         INT,                                        -- DBポート
-    DB_DATABASE                     VARCHAR(255),                               -- DBDB名
+    DB_DATABASE                     VARCHAR(255),                               -- DB名
     DB_USER                         VARCHAR(255),                               -- DBユーザ
     DB_PASSWORD                     VARCHAR(255),                               -- DBパスワード
-    DB_ROOT_PASSWORD                VARCHAR(255),                               -- DBRootパスワード
+    DB_ADMIN_USER                   VARCHAR(255),                               -- DBadminユーザ
+    DB_ADMIN_PASSWORD               VARCHAR(255),                               -- DBadminパスワード
     GITLAB_USER                     VARCHAR(255),                               -- GitLabユーザ
     GITLAB_TOKEN                    VARCHAR(255),                               -- GitLabトークン
     NOTE                            TEXT,                                       -- 備考

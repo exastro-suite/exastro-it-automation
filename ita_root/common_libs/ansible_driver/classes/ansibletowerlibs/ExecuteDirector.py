@@ -1922,6 +1922,7 @@ class ExecuteDirector():
                 stdout = JobDetail['stdout']
                 JobId = JobData['id']
                 jobName = JobData['name']
+                jobNo = JobData['name'][-10:]
                 if self.workflowJobAry[wfJobId]['is_sliced_job'] is True:
                     # ジョブスライス数
                     job_slice_count = JobData['job_slice_count']
@@ -1942,7 +1943,9 @@ class ExecuteDirector():
                 result_stdout += stdout
 
                 # オリジナルログファイル
-                jobFileFullPath = "%s/%s_%s.txt.org" % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # jobFileFullPath = "%s/%s_%s.txt.org" % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # ファイル名を短くする。
+                jobFileFullPath = "%s/exec_%s_%s.log.org" % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
                     pathlib.Path(jobFileFullPath).write_text(result_stdout)
 
@@ -1960,7 +1963,9 @@ class ExecuteDirector():
 
                 # jobログを加工
                 result_stdout = self.LogReplacement(result_stdout)
-                jobFileFullPath = '%s/%s_%s.txt' % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # jobFileFullPath = '%s/%s_%s.txt' % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # ファイル名を短くする。
+                jobFileFullPath = '%s/exec_%s_%s.log' % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
                     pathlib.Path(jobFileFullPath).write_text(result_stdout)
 

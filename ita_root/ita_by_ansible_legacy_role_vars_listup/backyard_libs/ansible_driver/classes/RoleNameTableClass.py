@@ -80,9 +80,10 @@ class RoleNameTable(TableBase):
         discard_list = []
         for key in for_discard_keys:
             discard_item = stored_records_by_tuple_key[key]
-            discard_item['DISUSE_FLAG'] = '1'
-            discard_item['LAST_UPDATE_USER'] = user_id
-            discard_list.append(discard_item)
+            if discard_item['DISUSE_FLAG'] == '0':
+                discard_item['DISUSE_FLAG'] = '1'
+                discard_item['LAST_UPDATE_USER'] = user_id
+                discard_list.append(discard_item)
 
         ret = self._ws_db.table_update(self.table_name, discard_list, self.pkey, False)
         if ret is False:

@@ -73,6 +73,7 @@ class TableBase:
 
         data_list = self._ws_db.table_select(self.table_name, where, [])
 
+        self._stored_records = {}
         for data in data_list:
             self._stored_records[data[self.pkey]] = data
 

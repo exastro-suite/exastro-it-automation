@@ -1276,7 +1276,7 @@ class loadTable():
         return status_code, result, msg,
 
     # [maintenance]:メニューのレコード操作
-    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True):
+    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False):
         """
             RESTAPI[filter]:メニューのレコード操作
             ARGS:
@@ -1349,12 +1349,13 @@ class loadTable():
                     target_jnls = self.get_target_jnl_uuids(target_uuid)
 
             # 処理種別の権限確認(メッセージ集約せずに、400系エラーを返却)
-            if auth_check == True:
+            if auth_check is True:
                 exec_authority = self.check_authority_cmd(cmd_type)
                 if exec_authority[0] is not True:
                     return exec_authority
             # 不要パラメータの除外
-            entry_parameter = self.exclusion_parameter(cmd_type, entry_parameter)
+            if inner_mode is False:
+                entry_parameter = self.exclusion_parameter(cmd_type, entry_parameter)
             # 必須項目チェック
             self.chk_required(cmd_type, entry_parameter)
 

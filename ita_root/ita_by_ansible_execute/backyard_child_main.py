@@ -1269,7 +1269,7 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
         "type": "Update"
     }
     objmenu = load_table.loadTable(wsDb, MenuName)
-    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False)
+    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)
     result = retAry[0]
     if result is False:
         return False, str(retAry)

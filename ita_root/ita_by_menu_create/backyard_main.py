@@ -1187,7 +1187,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                     "AUTOREG_HIDE_ITEM": 1,  # True
                     "AUTOREG_ONLY_ITEM": 0,  # False
                     "INITIAL_VALUE": None,
-                    "VALIDATE_OPTION": None,
+                    "VALIDATE_OPTION": "{\"int_min\": 1, \"int_max\": 2147483647}",
                     "VALIDATE_REG_EXP": None,
                     "BEFORE_VALIDATE_REGISTER": None,
                     "AFTER_VALIDATE_REGISTER": None,
@@ -1358,6 +1358,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                         reference_link_id = ref_item_record.get('LINK_ID')
                         reference_column_name_rest = ref_item_record.get('COLUMN_NAME_REST')
                         sensitive_flag = ref_item_record.get('SENSITIVE_FLAG')
+                        org_ref_column_class = ref_item_record.get('COLUMN_CLASS')
                         
                         # ColumnClassを選定
                         ref_column_class = column_class
@@ -1370,9 +1371,9 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                             if not res_valid:
                                 raise Exception(msg)
                             
-                            # カラムクラスが「5:日時」「6:日付」の場合は代入値自動登録対象外とするため、autoreg_hide_itemを1とする。
+                            # 参照元のカラムクラスが「5:日時」「6:日付」の場合は代入値自動登録対象外とするため、autoreg_hide_itemを1とする。
                             autoreg_hide_item = 0
-                            if column_class == "5" or column_class == "6":
+                            if org_ref_column_class == "5" or org_ref_column_class == "6":
                                 autoreg_hide_item = 1
                             
                             data_list = {

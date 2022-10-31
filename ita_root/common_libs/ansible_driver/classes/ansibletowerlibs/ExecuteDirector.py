@@ -975,10 +975,7 @@ class ExecuteDirector():
 
                 else:
                     src_file = self.getAnsibleTowerSshKeyFileContent(row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
-                    sshKeyFile = (
-                        '%s/in/ssh_key_files/AnsibleTower_%s_%s'
-                    ) % getAnsibleExecutDirPath(self.driver_id, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE']
-
+                    sshKeyFile = '%s/in/ssh_key_files/AnsibleTower_%s_%s' % (getAnsibleExecutDirPath(self.driver_id, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
                     try:
                         shutil.copy(src_file, sshKeyFile)
 

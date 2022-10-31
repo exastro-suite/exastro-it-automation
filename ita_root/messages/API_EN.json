@@ -73,7 +73,7 @@
     "MSG-00006": "The combination is incorrect. (Combination: {}, Target ID: {})",
     "MSG-00007": "Target record does not exist (target ID: {})",
     "MSG-00008": "Character length error (threshold:Value<={}byte, Value:{}byte)",
-    "MSG-00009": "Regular expression error (Threshold:{},Value:{})",
+    "MSG-00009": "Regular expression error ({},Value:{})",
     "MSG-00010": "Byte count exceeded (Threshold:{},Value:{})",
     "MSG-00011": "Failed to base64 decode file.",
     "MSG-00012": "No base64 string for {}.",

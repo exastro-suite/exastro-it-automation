@@ -143,12 +143,16 @@ def app_exception(e):
         else:
             is_arg = True
 
+    # catch - other all error
+    t = traceback.format_exc()
+    log_err(arrange_stacktrace_format(t))
+
     # catch - raise AppException("xxx-xxxxx", log_format), and get message
     result_code, log_msg_args, api_msg_args = args
     log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
     log_err(log_msg)
-
-
+    
+    
 def exception(e):
     '''
     called when Exception occured
@@ -169,6 +173,118 @@ def exception(e):
     # catch - other all error
     t = traceback.format_exc()
     log_err(arrange_stacktrace_format(t))
+
+
+def validation_exception(e):
+    '''
+    called when AppException occured
+    
+    Argument:
+        e: AppException
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            args = args[0].args
+        elif isinstance(args[0], Exception):
+            return exception(args[0])
+        else:
+            is_arg = True
+
+    # catch - other all error
+    t = traceback.format_exc()
+    log_err(arrange_stacktrace_format(t))
+
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    log_err(log_msg)
+
+
+def app_exception_driver_log(e, logfile=None):
+    '''
+    called when AppException occured
+    
+    Argument:
+        e: AppException
+        logfile: If you want exception file output
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            args = args[0].args
+        elif isinstance(args[0], Exception):
+            return exception(args[0])
+        else:
+            is_arg = True
+
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+
+    if logfile:
+        f = open(logfile, "a")
+        t = traceback.format_exc()
+        f.write(arrange_stacktrace_format(t) + "\n\n")
+        f.write(log_msg + "\n")
+        f.close()
+
+
+def exception_driver_log(e, logfile=None):
+    '''
+    called when Exception occured
+    
+    Argument:
+        e: Exception
+        logfile: If you want exception file output
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            return app_exception(args[0])
+        elif isinstance(args[0], Exception):
+            args = args[0].args
+        else:
+            is_arg = True
+
+    if logfile:
+        f = open(logfile, "a")
+        t = traceback.format_exc()
+        f.write(arrange_stacktrace_format(t) + "\n\n")
+        f.close()
+
+
+def validation_exception_driver_log(e, logfile=None):
+    '''
+    called when AppException occured
+    
+    Argument:
+        e: AppException
+        logfile: If you want exception file output
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            args = args[0].args
+        elif isinstance(args[0], Exception):
+            return exception(args[0])
+        else:
+            is_arg = True
+
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    
+    if logfile:
+        f = open(logfile, "a")
+        t = traceback.format_exc()
+        f.write(arrange_stacktrace_format(t) + "\n\n")
+        f.write(log_msg + "\n")
+        f.close()
 
 
 def log_err(msg=""):

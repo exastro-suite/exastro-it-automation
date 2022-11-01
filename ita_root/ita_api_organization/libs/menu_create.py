@@ -227,7 +227,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
             if column_class_name == "FloatColumn":
                 col_detail["decimal_maximum_value"] = record.get('FLOAT_MAX')  # 小数 最大値
                 col_detail["decimal_minimum_value"] = record.get('FLOAT_MIN')  # 小数 最小値
-                col_detail["decimal_digit"] = record.get('decimal_digit')  # 小数 桁数
+                col_detail["decimal_digit"] = record.get('FLOAT_DIGIT')  # 小数 桁数
                 col_detail["decimal_default_value"] = record.get('FLOAT_DEFAULT_VALUE')  # 小数 初期値
             
             # カラムクラス「日時」用のパラメータを追加

@@ -3317,8 +3317,8 @@ border-left: 1px solid rgba( 0,0,0,.2 );
 .popupBlock {
 position: fixed;
 z-index: 99999;
-max-width: 480px;
-padding: 8px 0;
+max-width: 496px;
+padding: 8px;
 animation: popup .3s forwards;
 pointer-events: none;
 }
@@ -3371,7 +3371,7 @@ bottom: -8px;
 border-bottom-color: #FFF;
 }
 
-.popupBlock.darkPopup {
+.darkPopup .popupInner {
 background-color: #000;
 background-image: linear-gradient( rgba( 255,255,255,.2 ), rgba( 255,255,255,0) );
 box-shadow: 0 0 16px 4px rgba( 0,0,0,.3 );

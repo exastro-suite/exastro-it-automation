@@ -2026,6 +2026,7 @@ setCommonEvents: function() {
                 $p.addClass('popupTop');
             }
             if ( wW < pL + pW ) pL = wW - pW;
+            if ( pL <= 0 ) pL = 0;
             
             $p.css({
                 'width': pW,
@@ -2061,6 +2062,8 @@ setCommonEvents: function() {
                 $p.addClass('popupHide');
             }
             
+            
+            // ホイールでポップアップ内をスクロール
             $t.on('wheel.popup', function( e ){
                 e.preventDefault();
                 
@@ -2077,9 +2080,10 @@ setCommonEvents: function() {
                 const $p = $body.find('.popupBlock'),
                       title = ttl;
                 $p.remove();
-                $t.off('pointerleave.popup click.popup').attr('title', title );
+                $t.off('pointerleave.popup click.popup wheel.popup').attr('title', title );
             });
             
+            // data-popupがclickの場合クリック時に一旦非表示
             $t.on('click.popup', function(){
                 if ( $t.attr('data-popup') === 'click') {
                    if ( $t.is('.popupHide') ) {

@@ -2,9 +2,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -89,7 +89,7 @@ class FileUploadColumn(Column):
                     return retBool, msg
 
                 # 禁止拡張子
-                forbidden_extension_arry = self.objdbca.table_select("T_COMN_SYSTEM_CONFIG", "WHERE CONFIG_ID = %s", bind_value_list=['FORBIDDEN_UPLOAD'])
+                forbidden_extension_arry = self.objdbca.table_select("T_COMN_SYSTEM_CONFIG", "WHERE CONFIG_ID = %s", bind_value_list=['FORBIDDEN_UPLOAD'])  # noqa:E501
                 
                 forbidden_extension = forbidden_extension_arry[0]["VALUE"]
                 
@@ -312,10 +312,11 @@ class FileUploadColumn(Column):
                                 tmp_recovery_path = get_upload_file_path(workspace_id, menu_id, uuid, rest_name, jnl_val, jnl_id)   # noqa:F405
                             else:
                                 tmp_recovery_path = get_upload_file_path_specify(workspace_id, ret, uuid, jnl_val, jnl_id)   # noqa:F405
-                            retmp_recovery_pathc = tmp_recovery_path.get('old_file_path')
-                            if retmp_recovery_pathc is not None:
-                                if os.path.isfile(retmp_recovery_pathc) is True:
-                                    os.symlink(retmp_recovery_pathc, dir_path)
+                            recovery_path = tmp_recovery_path.get('file_path')
+                            old_recovery_path = tmp_recovery_path.get('old_file_path')
+                            if old_recovery_path is not None:
+                                if os.path.isfile(old_recovery_path) is True:
+                                    os.symlink(old_recovery_path, recovery_path)
                                     break
                     except Exception:
                         retBool = False

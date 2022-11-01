@@ -242,7 +242,7 @@
     "MSG-10163": "Syntax of localaction parameter of dialog file is invalid. (host:{} Dialog file:{} line:{})",
     "MSG-10164": "The specific value of the variable used in the inventory file addition option of the device list is not registered in the Substitution value list. (variable:{} host:{})",
     "MSG-10165": "Could not find a valid record for role package list. Skips reaping variables defined in Invent file addition options. (Role package management:{} item number:{} variable list:{})",
-    "MSG-10166": "The file in the file upload column of the parameter sheet could not be specified. Skip this record. (menu name:{} column name:{} item no:{] file path:{})",
+    "MSG-10166": "The file in the file upload column of the parameter sheet could not be specified. Skip this record. (menu name:{} column name:{} item no:{} file path:{})",
     "MSG-10167": "Failed to back up the file upload column of Substitution value list. \n{}",
     "MSG-10168": "Failed to restore the file upload column of Substitution value list. \n{}",
     "MSG-10169": "Failed to create the directory for the file upload column of Substitution value list. \n{}",
@@ -958,6 +958,7 @@
     "MSG-10884": "Organization name",
     "MSG-10885": "Authentication token",
     "MSG-10886": "System error has occurred.",
+    "MSG-10901": "A variable name longer than 255 bytes is defined.  \n{}",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",
@@ -1028,5 +1029,10 @@
     "BKY-20210": "There is no record of the parent column group of the target column group in \"Column group list\". (column_group_name: {})",
     "BKY-20211": "The same combination of \"Menu ID\" and \"Column name (rest)\" exists in \"Menu-Column link list\". (menuID: {}, Column name rest: {})",
     "BKY-20212": "Invalid value for \"Reference item\". (Reference item: {})",
-    "BKY-20213": "Abnormal parent-child relationship of records in \"Column group creation info\"."
+    "BKY-20213": "Abnormal parent-child relationship of records in \"Column group creation info\".",
+    "BKY-30001": "table_name is None,",
+    "BKY-30002": "pkey is None,",
+    "BKY-30003": "Insert record to `{}` was failed.,",
+    "BKY-30004": "Update(restore) record to `{}` was failed.,",
+    "BKY-30005": "Update(discard) record to `{}` was failed."
 }

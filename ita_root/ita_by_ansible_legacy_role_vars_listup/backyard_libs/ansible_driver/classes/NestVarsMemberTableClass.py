@@ -12,6 +12,7 @@
 # limitations under the License.
 #
 from flask import g
+import copy
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.common.exception import AppException
@@ -57,8 +58,9 @@ class NestVarsMemberTable(TableBase):
 
                 link_id = mov_vars_link_id_dict[(movement_id, mov_vars_item.var_name)]
                 for var_chain_array in mov_vars_item.var_struct['CHAIN_ARRAY']:
-                    var_chain_array['MVMT_VAR_LINK_ID'] = link_id
-                    extracted_records.append(var_chain_array)
+                    var_chain_array_copy = copy.deepcopy(var_chain_array)
+                    var_chain_array_copy['MVMT_VAR_LINK_ID'] = link_id
+                    extracted_records.append(var_chain_array_copy)
 
         user_id = g.get('USER_ID')
 
@@ -91,8 +93,9 @@ class NestVarsMemberTable(TableBase):
         # 廃止
         discard_list = self._a_minus_b(list_a=self._stored_records.values(), list_b=extracted_records)
         for record in discard_list:
-            record['DISUSE_FLAG'] = '1'
-            record['LAST_UPDATE_USER'] = user_id
+            if record['DISUSE_FLAG'] == '0':
+                record['DISUSE_FLAG'] = '1'
+                record['LAST_UPDATE_USER'] = user_id
 
         ret = self._ws_db.table_update(self.table_name, discard_list, self.pkey, False)
         if ret is False:

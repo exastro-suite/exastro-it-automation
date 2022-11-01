@@ -21,6 +21,7 @@ import yaml
 import glob
 import inspect
 import copy
+import traceback
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException, ValidationException
@@ -150,7 +151,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     ans_if_info = result
 
     # ansible実行に必要なファイル群を生成するクラス
-    ansdrv = CreateAnsibleExecFiles(driver_id, ans_if_info, execution_no, execute_data['I_ENGINE_VIRTUALENV_NAME'], execute_data['I_ANSIBLE_CONFIG_FILE'], wsDb)  # noqa: E501
+    ansdrv = CreateAnsibleExecFiles(driver_id, ans_if_info, execution_no, "", execute_data['I_ANSIBLE_CONFIG_FILE'], wsDb)  # noqa: E501
 
     # 	処理区分("1")、パラメータ確認、作業実行、ドライラン
     # 		代入値自動登録とパラメータシートからデータを抜く
@@ -160,6 +161,8 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     try:
         sub_value_auto_reg.GetDataFromParameterSheet("1", execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
     except ValidationException as e:
+        # backtrace出力
+        print(traceback.format_exc())
         err_msg = g.appmsg.get_log_message(e)
         ansdrv.LocalLogPrint(
             os.path.basename(inspect.currentframe().f_code.co_filename),
@@ -423,14 +426,16 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
                 TowerProjectsScpPath,
                 TowerInstanceDirPath,
                 wsDb)
-            err_msg = g.appmsg.get_log_message("BKY-00004", ["AnsibleTowerExecution(DF_EXECUTION_FUNCTION)", e])
+            # backtrace出力
+            print(traceback.format_exc())
+            err_msg = g.appmsg.get_log_message("MSG-10886", [])
             ansdrv.LocalLogPrint(
                 os.path.basename(inspect.currentframe().f_code.co_filename),
                 str(inspect.currentframe().f_lineno), err_msg)
             return False, execute_data, err_msg
 
         # マルチログか判定
-        if multiple_log_mark and execute_data['MULTIPLELOG_MODE'] != multiple_log_mark:
+        if multiple_log_mark and str(execute_data['MULTIPLELOG_MODE']) != multiple_log_mark:
             execute_data['MULTIPLELOG_MODE'] = multiple_log_mark
 
     return True, execute_data, tower_host_list
@@ -494,7 +499,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             wsDb)
 
         # マルチログか判定
-        if multiple_log_mark and execute_data['MULTIPLELOG_MODE'] != multiple_log_mark:
+        if multiple_log_mark and str(execute_data['MULTIPLELOG_MODE']) != multiple_log_mark:
             execute_data['MULTIPLELOG_MODE'] = multiple_log_mark
             db_update_need = True
         # マルチログファイルリスト
@@ -562,35 +567,38 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
 
     # statusによって処理を分岐
     if status != -1:
-        execute_data["STATUS_ID"] = status
-        execute_data["TIME_END"] = get_timestamp()
-    else:
-        # 遅延を判定
-        # 遅延タイマを取得
-        time_limit = int(execute_data['I_TIME_LIMIT']) if execute_data['I_TIME_LIMIT'] else None
-        delay_flag = 0
+        if status == ansc_const.PROCESSING and execute_data["STATUS_ID"] == ansc_const.PROCESS_DELAYED:
+            pass
+        else:
+            execute_data["STATUS_ID"] = status
+            execute_data["TIME_END"] = get_timestamp()
 
-        # ステータスが実行中(3)、かつ制限時間が設定されている場合のみ遅延判定する
-        if execute_data["STATUS_ID"] == ansc_const.PROCESSING and time_limit:
-            # 開始時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
-            rec_time_start = execute_data['TIME_START']
-            starttime_unixtime = rec_time_start.timestamp()
-            # 開始時刻(マイクロ秒)＋制限時間(分→秒)＝制限時刻(マイクロ秒)
-            limit_unixtime = starttime_unixtime + (time_limit * 60)
-            # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
-            now_unixtime = time.time()
+    # 遅延を判定
+    # 遅延タイマを取得
+    time_limit = int(execute_data['I_TIME_LIMIT']) if execute_data['I_TIME_LIMIT'] else None
+    delay_flag = 0
 
-            # 制限時刻と現在時刻を比較
-            if limit_unixtime < now_unixtime:
-                delay_flag = 1
-                g.applogger.info(g.appmsg.get_log_message("MSG-10707", [execution_no]))
-            else:
-                g.applogger.info(g.appmsg.get_log_message("MSG-10708", [execution_no]))
+    # ステータスが実行中(3)、かつ制限時間が設定されている場合のみ遅延判定する
+    if execute_data["STATUS_ID"] == ansc_const.PROCESSING and time_limit:
+        # 開始時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
+        rec_time_start = execute_data['TIME_START']
+        starttime_unixtime = rec_time_start.timestamp()
+        # 開始時刻(マイクロ秒)＋制限時間(分→秒)＝制限時刻(マイクロ秒)
+        limit_unixtime = starttime_unixtime + (time_limit * 60)
+        # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
+        now_unixtime = time.time()
+        
+        # 制限時刻と現在時刻を比較
+        if limit_unixtime < now_unixtime:
+            delay_flag = 1
+            g.applogger.info(g.appmsg.get_log_message("MSG-10707", [execution_no]))
+        else:
+            g.applogger.info(g.appmsg.get_log_message("MSG-10708", [execution_no]))
 
-        if delay_flag == 1:
-            db_update_need = True
-            # ステータスを「実行中(遅延)」とする
-            execute_data["STATUS_ID"] = ansc_const.PROCESS_DELAYED
+    if delay_flag == 1:
+        db_update_need = True
+        # ステータスを「実行中(遅延)」とする
+        execute_data["STATUS_ID"] = ansc_const.PROCESS_DELAYED
 
     # 実行エンジンを判定
     if ans_exec_mode != ansc_const.DF_EXEC_MODE_ANSIBLE:
@@ -1261,7 +1269,7 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
         "type": "Update"
     }
     objmenu = load_table.loadTable(wsDb, MenuName)
-    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False)
+    retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)
     result = retAry[0]
     if result is False:
         return False, str(retAry)

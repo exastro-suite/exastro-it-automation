@@ -158,7 +158,7 @@ class DBConnectOrgRoot(DBConnectOrg):
         """
         create database
         """
-        sql = "CREATE DATABASE `{}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci".format(db_name)
+        sql = "CREATE DATABASE `{}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin".format(db_name)
         self.sql_execute(sql)
 
     def database_drop(self, db_name):

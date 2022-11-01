@@ -55,8 +55,7 @@ def organization_create(body, organization_id):  # noqa: E501
 
     try:
         # make organization-db connect infomation
-        username, user_password = common_db.userinfo_generate("ITA_ORG")
-        org_db_name = username
+        org_db_name, username, user_password = common_db.userinfo_generate("ITA_ORG")
 
         data = {
             'ORGANIZATION_ID': organization_id,
@@ -94,7 +93,7 @@ def organization_create(body, organization_id):  # noqa: E501
 
         # make gitlab user and token value
         gitlab_agent = GitLabAgent()
-        res = gitlab_agent.create_user(username)
+        res = gitlab_agent.create_user(org_db_name)
         g.applogger.debug("GitLab create_user : {}".format(res))
         data["GITLAB_USER"] = res['username']
         data["GITLAB_TOKEN"] = gitlab_agent.create_personal_access_tokens(res['id'], res['username'])
@@ -112,7 +111,7 @@ def organization_create(body, organization_id):  # noqa: E501
             org_root_db.user_drop(username)
 
         if 'gitlab_agent' in locals():
-            user_list = gitlab_agent.get_user_by_username(username)
+            user_list = gitlab_agent.get_user_by_username(org_db_name)
             for user in user_list:
                 gitlab_agent.delete_user(user['id'])
 

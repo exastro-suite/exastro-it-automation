@@ -18,6 +18,7 @@ from common_libs.ansible_driver.functions.commn_vars_used_list_update import Com
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath
 from common_libs.ansible_driver.classes.CheckAnsibleRoleFiles import VarStructAnalysisFileAccess
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
+from common_libs.ansible_driver.functions.var_struct_analysis import chkRolePackageVarNameLength
 
 
 def external_valid_menu_after(objDBCA, objtable, option):
@@ -113,7 +114,12 @@ def external_valid_menu_after(objDBCA, objtable, option):
             User2ITA_var_list = retAry[8]
             save_vars_array = retAry[9]
             Role_name_list = retAry[10]
-            
+
+            if retBool is False:
+                return retBool, retStrBody, option
+
+            # 変数名の文字数確認
+            retBool, retStrBody = chkRolePackageVarNameLength(def_vars_list, def_array_vars_list)
             if retBool is False:
                 return retBool, retStrBody, option
 

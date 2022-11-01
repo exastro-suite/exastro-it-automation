@@ -1214,7 +1214,7 @@ class CreateAnsibleExecFiles():
                 # enomoto  self.LC_ANS_UNDEFINE_NAMEでチェックしてるなか？
                 # if ina_hostinfolist[host_name]['LOGIN_USER'] != self.LC_ANS_UNDEFINE_NAME):
                 if ina_hostinfolist[host_name]['LOGIN_USER']:
-                    param = "ansible_ssh_user: " + ina_hostinfolist[host_name]['LOGIN_USER']
+                    param = "ansible_user: " + ina_hostinfolist[host_name]['LOGIN_USER']
 
                 # パスワード設定
                 if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_PW or\
@@ -1231,12 +1231,12 @@ class CreateAnsibleExecFiles():
                         if make_vaultpass is False:
                             return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
 
-                        passwd = "ansible_ssh_pass: " + make_vaultpass
+                        passwd = "ansible_password: " + make_vaultpass
 
                 # Winrm接続情報
                 if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_PW_WINRM:
                     # WINRM接続プロトコルよりポート番号が未設定時は、self.LC_WINRM_PORTが設定されている
-                    port = "ansible_ssh_port: " + str(ina_hostinfolist[host_name]['WINRM_PORT'])
+                    port = "ansible_port: " + str(ina_hostinfolist[host_name]['WINRM_PORT'])
                     port += "\n" + indento_sp_param + "ansible_connection: winrm"
 
             ssh_key_file = ''
@@ -1303,16 +1303,16 @@ class CreateAnsibleExecFiles():
             host_name_string = ""
             # ホストアドレス方式がホスト名方式の場合はホスト名をhostsに登録する。
             # hostname:
-            #   ansible_ssh_host: ip/dnshost
+            #   ansible_host: ip/dnshost
             #  1: ip  2: host
             if self.lv_hostaddress_type == "2":
                 host_name_string = indento_sp_host + ina_hostinfolist[host_name]['HOST_NAME'] + ":\n"
-                host_name_string += indento_sp_param + 'ansible_ssh_host: ' + ina_hostinfolist[host_name]['HOST_DNS_NAME'] + "\n"
+                host_name_string += indento_sp_param + 'ansible_host: ' + ina_hostinfolist[host_name]['HOST_DNS_NAME'] + "\n"
                 now_host_name = ina_hostinfolist[host_name]['HOST_DNS_NAME']
             else:
                 # ホストアドレス方式がIPアドレスの場合
                 host_name_string = indento_sp_host + ina_hostinfolist[host_name]['HOST_NAME'] + ":\n"
-                host_name_string += indento_sp_param + 'ansible_ssh_host: ' + ina_hostinfolist[host_name]['IP_ADDRESS'] + "\n"
+                host_name_string += indento_sp_param + 'ansible_host: ' + ina_hostinfolist[host_name]['IP_ADDRESS'] + "\n"
 
             # Pioneerでホスト名がlocalhostの場合に、インベントファイルに
             # ansible_connection: localを追加する
@@ -2682,10 +2682,10 @@ class CreateAnsibleExecFiles():
                 src_dict = mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']]
 
                 add_dict = self.makeHostVarsArray(var_path_array,
-                                            0,
-                                            mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']],
-                                            var_type, row['VARS_ENTRY'],
-                                            row['ASSIGN_SEQ'])
+                                                  0,
+                                                  mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']],
+                                                  var_type, row['VARS_ENTRY'],
+                                                  row['ASSIGN_SEQ'])
                 # 辞書をマージ
                 merge_dict = deepmerge(src_dict, add_dict)
                 mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']] = merge_dict

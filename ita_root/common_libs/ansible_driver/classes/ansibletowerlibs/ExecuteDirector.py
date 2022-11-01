@@ -953,7 +953,7 @@ class ExecuteDirector():
 
         chkobj = AuthTypeParameterRequiredCheck()
         for row in rows:
-            if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] > 0:
+            if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] == 1:
                 node_type = AnscConst.DF_EXECUTE_NODE
 
             else:
@@ -975,10 +975,7 @@ class ExecuteDirector():
 
                 else:
                     src_file = self.getAnsibleTowerSshKeyFileContent(row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
-                    sshKeyFile = (
-                        '%s/in/ssh_key_files/AnsibleTower_%s_%s'
-                    ) % getAnsibleExecutDirPath(self.driver_id, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE']
-
+                    sshKeyFile = '%s/in/ssh_key_files/AnsibleTower_%s_%s' % (getAnsibleExecutDirPath(self.driver_id, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
                     try:
                         shutil.copy(src_file, sshKeyFile)
 
@@ -1038,7 +1035,7 @@ class ExecuteDirector():
     def getHostInfo(self, exeInsRow, inventoryForEachCredentials):
 
         vg_ansible_pho_linkDB = AnsrConst.vg_ansible_pho_linkDB  # "T_ANSR_TGT_HOST"
-        condition = [exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
+        condition = [exeInsRow['EXECUTION_NO'],exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
         cols = self.dbAccess.table_columns_get(vg_ansible_pho_linkDB)
         cols = (',').join(cols[0])
 
@@ -1049,6 +1046,7 @@ class ExecuteDirector():
             "  %s \n"
             "WHERE \n"
             "  DISUSE_FLAG = '0' \n"
+            "  AND EXECUTION_NO=%%s \n"
             "  AND OPERATION_ID=%%s \n"
             "  AND MOVEMENT_ID=%%s \n"
             "FOR UPDATE; \n"
@@ -1143,15 +1141,15 @@ class ExecuteDirector():
             if 'I_ANS_HOST_DESIGNATE_TYPE_ID' not in exeInsRow \
             or not exeInsRow['I_ANS_HOST_DESIGNATE_TYPE_ID'] \
             or exeInsRow['I_ANS_HOST_DESIGNATE_TYPE_ID'] == '1':
-                hostData['ansible_ssh_host'] = hostInfo['IP_ADDRESS']
+                hostData['ansible_host'] = hostInfo['IP_ADDRESS']
             else:
-                hostData['ansible_ssh_host'] = hostInfo['HOST_DNS_NAME']
+                hostData['ansible_host'] = hostInfo['HOST_DNS_NAME']
                 
             # WinRM接続
             # 認証方式:パスワード認証(winrm)
-            hostData['winrm'] = 0
+            hostData['winrm'] = False
             if hostInfo['LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_PW_WINRM:
-                hostData['winrm'] = 1
+                hostData['winrm'] = True
                 if not hostInfo['WINRM_PORT']:
                     hostInfo['WINRM_PORT'] = AnscConst.LC_WINRM_PORT
 
@@ -1320,11 +1318,11 @@ class ExecuteDirector():
             if hostname == 'localhost' and vg_tower_driver_name == "pioneer":
                 variables_array.append("ansible_connection: local")
 
-            variables_array.append("ansible_ssh_host: %s" % hostData['ansible_ssh_host'])
+            variables_array.append("ansible_host: %s" % hostData['ansible_host'])
 
-            if hostData['winrm'] == '1':
+            if hostData['winrm'] == True:
                 variables_array.append("ansible_connection: winrm")
-                variables_array.append("ansible_ssh_port: %s" % (hostData['winrmPort']))
+                variables_array.append("ansible_port: %s" % (hostData['winrmPort']))
                 if 'ansible_winrm_ca_trust_path' in hostData and hostData['ansible_winrm_ca_trust_path'] is not None:
                     variables_array.append("ansible_winrm_ca_trust_path: %s" % (hostData['ansible_winrm_ca_trust_path']))
 
@@ -1921,6 +1919,7 @@ class ExecuteDirector():
                 stdout = JobDetail['stdout']
                 JobId = JobData['id']
                 jobName = JobData['name']
+                jobNo = JobData['name'][-10:]
                 if self.workflowJobAry[wfJobId]['is_sliced_job'] is True:
                     # ジョブスライス数
                     job_slice_count = JobData['job_slice_count']
@@ -1941,7 +1940,9 @@ class ExecuteDirector():
                 result_stdout += stdout
 
                 # オリジナルログファイル
-                jobFileFullPath = "%s/%s_%s.txt.org" % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # jobFileFullPath = "%s/%s_%s.txt.org" % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # ファイル名を短くする。
+                jobFileFullPath = "%s/exec_%s_%s.log.org" % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
                     pathlib.Path(jobFileFullPath).write_text(result_stdout)
 
@@ -1959,7 +1960,9 @@ class ExecuteDirector():
 
                 # jobログを加工
                 result_stdout = self.LogReplacement(result_stdout)
-                jobFileFullPath = '%s/%s_%s.txt' % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # jobFileFullPath = '%s/%s_%s.txt' % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # ファイル名を短くする。
+                jobFileFullPath = '%s/exec_%s_%s.log' % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
                     pathlib.Path(jobFileFullPath).write_text(result_stdout)
 
@@ -1989,66 +1992,49 @@ class ExecuteDirector():
         # 結合 & exec.log差し替え
         ################################################################
         # ファイル入出力排他処理
-        loop = asyncio.get_event_loop()
-        ret = loop.run_until_complete(self.CreateLogsWithSemaphore(execlogFullPath))
+        ## DEL loop = asyncio.get_event_loop()
+        ## DEL ret = loop.run_until_complete(self.CreateLogsWithSemaphore(execlogFullPath))
+        ret = self.AllCreateLogs(execlogFullPath)
 
         return ret
 
-    async def CreateLogsWithSemaphore(self, execlogFullPath):
+    def AllCreateLogs(self, execlogFullPath):
+        # 全ジョブのオリジナルログファイル
+        execlogContent = ""
+        for jobName, jobFileFullPathAry in self.jobOrgLogFileList.items():
+            for jobFileFullPath in jobFileFullPathAry:
+                jobFileContent = pathlib.Path(jobFileFullPath).read_text()
+                if not jobFileContent:
+                    g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
+                    return False
 
-        tryCount = 0
-        semaphore = asyncio.Semaphore(1)
-        while True:
-            if not semaphore.locked():
-                break
+                execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
 
-            time.sleep(0.1)
-            tryCount = tryCount + 1
-            if tryCount > 50:
-                g.applogger.error("Faild to lock file.")
-                return False
-
-        await semaphore.acquire()
+        execlogFullPath_org = '%s.org' % (execlogFullPath)
         try:
-            # 全ジョブのオリジナルログファイル
-            execlogContent = ""
-            for jobName, jobFileFullPathAry in self.jobOrgLogFileList.items():
-                for jobFileFullPath in jobFileFullPathAry:
-                    jobFileContent = pathlib.Path(jobFileFullPath).read_text()
-                    if not jobFileContent:
-                        g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
-                        return False
+            pathlib.Path(execlogFullPath_org).write_text(execlogContent)
 
-                    execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
+        except Exception as e:
+            g.applogger.error("Faild to write file. %s" % (execlogFullPath))
+            return False
 
-            execlogFullPath_org = '%s.org' % (execlogFullPath)
-            try:
-                pathlib.Path(execlogFullPath_org).write_text(execlogContent)
+        # 全ジョブの加工ログファイル
+        execlogContent = ""
+        for jobName, jobFileFullPathAry in self.jobFileList.items():
+            for jobFileFullPath in jobFileFullPathAry:
+                jobFileContent = pathlib.Path(jobFileFullPath).read_text()
+                if not jobFileContent:
+                    g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
+                    return False
 
-            except Exception as e:
-                g.applogger.error("Faild to write file. %s" % (execlogFullPath))
-                return False
+                execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
 
-            # 全ジョブの加工ログファイル
-            execlogContent = ""
-            for jobName, jobFileFullPathAry in self.jobFileList.items():
-                for jobFileFullPath in jobFileFullPathAry:
-                    jobFileContent = pathlib.Path(jobFileFullPath).read_text()
-                    if not jobFileContent:
-                        g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
-                        return False
+        try:
+            pathlib.Path(execlogFullPath).write_text(execlogContent)
 
-                    execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
-
-            try:
-                pathlib.Path(execlogFullPath).write_text(execlogContent)
-
-            except Exception as e:
-                g.applogger.error("Faild to write file. %s" % (execlogFullPath))
-                return False
-
-        finally:
-            semaphore.release()
+        except Exception as e:
+            g.applogger.error("Faild to write file. %s" % (execlogFullPath))
+            return False
 
         return True
 

@@ -1,10 +1,22 @@
+# Copyright 2022 NEC Corporation#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import inspect
 import os
 
 from flask import g
 
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
-from common_libs.ansible_driver.functions.var_struct_analysis import put_var_struct_analysis
+from common_libs.ansible_driver.functions.var_struct_analysis import Template_variable_define_analysis
 from common_libs.ansible_driver.functions.commn_vars_used_list_update import CommnVarsUsedListUpdate, CommnVarsUsedListDisuseSet
 from common_libs.ansible_driver.classes.CheckAnsibleRoleFiles import DefaultVarsFileAnalysis, VarStructAnalysisFileAccess
 
@@ -73,7 +85,7 @@ def external_valid_menu_after(objdbca, objtable, option):
         VarVal_list = retAry[5]
         del obj
     elif option["cmd_type"] == "Register" or option["cmd_type"] == "Update":
-        ret = put_var_struct_analysis(objdbca, option, PkeyID, strVarName, strVarsList, Vars_list, Array_vars_list, LCA_vars_use, Array_vars_use, GBL_vars_info, VarVal_list)
+        ret = Template_variable_define_analysis(objdbca, option, PkeyID, strVarName, strVarsList, Vars_list, Array_vars_list, LCA_vars_use, Array_vars_use, GBL_vars_info, VarVal_list)
         if ret[0] is False:
             retBool = False
             msg = ret[1]

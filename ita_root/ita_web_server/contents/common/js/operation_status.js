@@ -222,8 +222,8 @@ operationStatusInit() {
                 case 'cansel':
                     if ( window.confirm(getMessage.FTE02043) ) {
                         
-                        fn.fetch( op.rest.cancel, null, 'PATCH', {}).then(function(){
-
+                        fn.fetch( op.rest.cancel, null, 'PATCH', {}).then(function( result ){
+                            alert( result );
                         }).catch(function( error ){
                             alert( error.message );
                             $button.prop('disabled', false );
@@ -239,7 +239,8 @@ operationStatusInit() {
                 // 緊急停止
                 case 'scram':
                     if ( window.confirm(getMessage.FTE02044) ) {
-                        fn.fetch( op.rest.scram, null, 'PATCH', {}).then(function(){
+                        fn.fetch( op.rest.scram, null, 'PATCH', {}).then(function( result ){
+                            alert( result );
                         }).catch(function( error ){
                             alert( error.message );
                             $button.prop('disabled', false );
@@ -456,7 +457,7 @@ operationStatus() {
                     <tbody class="commonTbody">
                         <tr class="commonTr">
                             <th class="commonTh">` + getMessage.FTE05036 + `</th>
-                            <td class="commonTd"><span class="commonData" data-type="execution_environment"></span></td>
+                            <td class="commonTd"><span class="operationStatusData" data-type="execution_environment"></span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -578,6 +579,9 @@ operationStatusUpdate() {
     
     // ノードの状態を更新する
     switch ( op.info.status_id ) {
+        case '2':
+            op.$.node.addClass('ready');
+        break;
         case '3': case '4':
             op.$.node.addClass('running');
         break;
@@ -655,9 +659,8 @@ executeLogInit() {
                   file = $link.attr('href');
 
             op.$.executeLog.find('.logOpen').removeClass('logOpen').removeAttr('tabindex');
-            $link.addClass('tabOpen').attr('tabindex', -1 );
+            $link.addClass('logOpen').attr('tabindex', -1 );
             op.$.executeLog.find( file ).addClass('logOpen');
-            console.log(op.$.executeLog.find( file ))
         });
 
         op.executeLogUpdate();
@@ -673,7 +676,7 @@ executeLogUpdate() {
                     const executeLogId = 'executeLog_' + filename.replace(/\./, '_'),
                           firstFlag = ( op.$.executeLog.find('.executeLogSection').length === 0 )? true: false;
                     op.executeLog[ filename ] = new Log( executeLogId, op.logMax );
-                    op.$.executeLogSelectList.append(`<li class="executeLogSelectItem"><a class="executeLogSelectLink" href="#${executeLogId}">${filename}</a></li>`);
+                    op.$.executeLogSelectList.append(`<li class="executeLogSelectItem"><a title="${filename}" class="executeLogSelectLink" href="#${executeLogId}">${filename}</a></li>`);
                     op.$.executeLogContent.append( op.executeLog[ filename ].setup('executeLogSection', executeLogId ) );
                     
                     if ( firstFlag ) {

@@ -546,7 +546,6 @@ class Column():
             RETRUN:
                 retBool, msg, parameter, option
         """
-        print("カラムクラス毎の個別処理を実行")
         retBool = True
         msg = ''
         # カラムクラス毎の個別処理

@@ -36,6 +36,7 @@ from common_libs.ansible_driver.classes.CreateAnsibleExecFiles import CreateAnsi
 from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, get_AnsibleDriverTmpPath, getDataRelayStorageDir
 from common_libs.ansible_driver.functions.ansibletowerlibs.AnsibleTowerExecute import AnsibleTowerExecution
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
+from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
 
 from libs import common_functions as cm
 
@@ -43,6 +44,8 @@ from libs import common_functions as cm
 # ansible共通の定数をロード
 ansc_const = AnscConst()
 ansr_const = AnsrConst()
+
+driver_error_log_file = ""
 
 
 def backyard_child_main(organization_id, workspace_id):
@@ -54,6 +57,7 @@ def backyard_child_main(organization_id, workspace_id):
     args = sys.argv
     execution_no = args[3]
     driver_id = args[4]
+    global driver_error_log_file
 
     g.applogger.set_tag("EXECUTION_NO", execution_no)
 
@@ -66,6 +70,23 @@ def backyard_child_main(organization_id, workspace_id):
     #     time.sleep(1)
 
     try:
+        # ディレクトリを生成
+        container_driver_path = getAnsibleExecutDirPath(driver_id, execution_no)
+
+        work_dir = container_driver_path + "/in"
+        if not os.path.isdir(work_dir):
+            os.makedirs(work_dir)
+        work_dir = container_driver_path + "/out"
+        if not os.path.isdir(work_dir):
+            os.makedirs(work_dir)
+        driver_error_log_file = work_dir + "/error.log"
+        work_dir = container_driver_path + "/.tmp"
+        if not os.path.isdir(work_dir):
+            os.makedirs(work_dir)
+        work_dir = getDataRelayStorageDir() + "/driver/conductor/dummy"
+        if not os.path.isdir(work_dir):
+            os.makedirs(work_dir)
+
         result = main_logic(wsDb, execution_no, driver_id)
         if result[0] is True:
             # 正常終了
@@ -76,15 +97,19 @@ def backyard_child_main(organization_id, workspace_id):
             update_status_error(wsDb, execution_no)
             g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
     except AppException as e:
+        # 例外ログ生成
+        app_exception_driver_log(e, driver_error_log_file)
+
         update_status_error(wsDb, execution_no)
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise AppException(e)
     except Exception as e:
+        # 例外ログ生成
+        exception_driver_log(e, driver_error_log_file)
+
         update_status_error(wsDb, execution_no)
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise Exception(e)
-
-
 def update_status_error(wsDb: DBConnectWs, execution_no):
     """
     異常終了と判定した場合のステータス更新
@@ -121,6 +146,8 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
         bool
         err_msg
     """
+    global driver_error_log_file
+
     # 処理対象の作業インスタンス情報取得
     retBool, execute_data = cm.get_execution_process_info(wsDb, execution_no)
     if retBool is False:
@@ -130,19 +157,6 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
     # ディレクトリを生成
     container_driver_path = getAnsibleExecutDirPath(driver_id, execution_no)
-
-    work_dir = container_driver_path + "/in"
-    if not os.path.isdir(work_dir):
-        os.makedirs(work_dir)
-    work_dir = container_driver_path + "/out"
-    if not os.path.isdir(work_dir):
-        os.makedirs(work_dir)
-    work_dir = container_driver_path + "/.tmp"
-    if not os.path.isdir(work_dir):
-        os.makedirs(work_dir)
-    work_dir = getDataRelayStorageDir() + "/driver/conductor/dummy"
-    if not os.path.isdir(work_dir):
-        os.makedirs(work_dir)
 
     # ANSIBLEインタフェース情報を取得
     retBool, result = cm.get_ansible_interface_info(wsDb)
@@ -161,12 +175,15 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     try:
         sub_value_auto_reg.GetDataFromParameterSheet("1", execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
     except ValidationException as e:
-        # backtrace出力
-        print(traceback.format_exc())
-        err_msg = g.appmsg.get_log_message(e)
-        ansdrv.LocalLogPrint(
-            os.path.basename(inspect.currentframe().f_code.co_filename),
-            str(inspect.currentframe().f_lineno), err_msg)
+        # 例外ログ生成
+        global driver_error_log_file
+        
+        validation_exception(e)
+        
+        validation_exception_driver_log(e, driver_error_log_file)
+
+        err_msg = g.appmsg.get_api_message("MSG-10903", [str(e)])
+
         return False, err_msg
 
     # 実行モードが「パラメータ確認」の場合は終了
@@ -411,6 +428,14 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
                 wsDb)
 
         except Exception as e:
+            # 例外ログ生成
+            global driver_error_log_file
+            exception_driver_log(e, driver_error_log_file)
+
+            err_msg = g.appmsg.get_log_message("MSG-10886", [])
+#            driver_error_log(os.path.basename(inspect.currentframe().f_code.co_filename),
+#                                         str(inspect.currentframe().f_lineno), err_msg)
+#
             AnsibleTowerExecution(
                 driver_id,
                 ansc_const.DF_DELETERESOURCE_FUNCTION, 
@@ -426,12 +451,6 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
                 TowerProjectsScpPath,
                 TowerInstanceDirPath,
                 wsDb)
-            # backtrace出力
-            print(traceback.format_exc())
-            err_msg = g.appmsg.get_log_message("MSG-10886", [])
-            ansdrv.LocalLogPrint(
-                os.path.basename(inspect.currentframe().f_code.co_filename),
-                str(inspect.currentframe().f_lineno), err_msg)
             return False, execute_data, err_msg
 
         # マルチログか判定

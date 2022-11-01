@@ -195,7 +195,7 @@ class DockerMode(AnsibleAgent):
 
         # existedしているものを削除
         result_obj = json.loads(cp.stdout)
-        if len(result_obj) > 0 and result_obj[0]['State'] in ['existed']:
+        if len(result_obj) > 0 and result_obj[0]['State'] in ['exited']:
             # docker-compose -p project rm -f
             docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
             command = ["sudo"] + docker_compose_command

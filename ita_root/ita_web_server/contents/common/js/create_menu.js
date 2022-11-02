@@ -3617,10 +3617,10 @@ const createRegistrationData = function( type ){
                   createMenuJSON['column'][key]['decimal_default_value'] = $column.find('.float-default-value').val();
                   break;
                 case '5':
-                  createMenuJSON['column'][key]['detetime_default_value'] = $column.find('.datetime-default-value').val();
+                  createMenuJSON['column'][key]['datetime_default_value'] = $column.find('.datetime-default-value').val();
                   break;
                 case '6':
-                  createMenuJSON['column'][key]['dete_default_value'] = $column.find('.date-default-value').val();
+                  createMenuJSON['column'][key]['date_default_value'] = $column.find('.date-default-value').val();
                   break;
                 case '7':
                   createMenuJSON['column'][key]['pulldown_selection'] = $column.find('.pulldown-select').val();
@@ -3936,10 +3936,10 @@ const loadMenu = function() {
               $item.find('.float-default-value').val( itemData['decimal_default_value'] ).change();
               break;
             case '5':
-              $item.find('.datetime-default-value').val( itemData['detetime_default_value'] ).change();
+              $item.find('.datetime-default-value').val( itemData['datetime_default_value'] ).change();
               break;
             case '6':
-              $item.find('.date-default-value').val( itemData['dete_default_value'] ).change();
+              $item.find('.date-default-value').val( itemData['date_default_value'] ).change();
               break;
             case '7':
               $item.find('.pulldown-select').val( itemData['pulldown_selection'] ).change();

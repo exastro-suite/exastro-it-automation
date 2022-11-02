@@ -235,18 +235,18 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 full_datetime_default_value = record.get('DATETIME_DEFAULT_VALUE')
                 if full_datetime_default_value:
                     datetime_default_value = full_datetime_default_value.strftime('%Y/%m/%d %H:%M:%S')
-                    col_detail["detetime_default_value"] = datetime_default_value  # 日時 初期値
+                    col_detail["datetime_default_value"] = datetime_default_value  # 日時 初期値
                 else:
-                    col_detail["detetime_default_value"] = None
+                    col_detail["datetime_default_value"] = None
             
             # カラムクラス「日付」用のパラメータを追加
             if column_class_name == "DateColumn":
                 full_datet_default_value = record.get('DATE_DEFAULT_VALUE')
                 if full_datet_default_value:
                     date_default_value = full_datet_default_value.strftime('%Y/%m/%d')
-                    col_detail["dete_default_value"] = date_default_value  # 日付 初期値
+                    col_detail["date_default_value"] = date_default_value  # 日付 初期値
                 else:
-                    col_detail["dete_default_value"] = None
+                    col_detail["date_default_value"] = None
             
             # カラムクラス「プルダウン選択」用のパラメータを追加
             if column_class_name == "IDColumn":
@@ -1149,11 +1149,11 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                 
                 # カラムクラス「日時」用のパラメータを追加
                 if column_class == "DateTimeColumn":
-                    parameter["detetime_default_value"] = None if not column_data.get('detetime_default_value') else column_data.get('detetime_default_value')  # 日時 初期値 # noqa: E501
+                    parameter["datetime_default_value"] = None if not column_data.get('datetime_default_value') else column_data.get('datetime_default_value')  # 日時 初期値 # noqa: E501
                 
                 # カラムクラス「日付」用のパラメータを追加
                 if column_class == "DateColumn":
-                    parameter["dete_default_value"] = None if not column_data.get('dete_default_value') else column_data.get('dete_default_value')  # 日付 初期値 # noqa: E501
+                    parameter["date_default_value"] = None if not column_data.get('date_default_value') else column_data.get('date_default_value')  # 日付 初期値 # noqa: E501
                 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
@@ -1425,8 +1425,8 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
                 parameter["decimal_minimum_value"] = None  # 小数 最小値
                 parameter["decimal_digit"] = None  # 小数 桁数
                 parameter["decimal_default_value"] = None  # 小数 初期値
-                parameter["detetime_default_value"] = None  # 日時 初期値
-                parameter["dete_default_value"] = None  # 日付 初期値
+                parameter["datetime_default_value"] = None  # 日時 初期値
+                parameter["date_default_value"] = None  # 日付 初期値
                 parameter["pulldown_selection"] = None  # プルダウン選択 メニューグループ:メニュー:項目
                 parameter["pulldown_selection_default_value"] = None  # プルダウン選択 初期値
                 parameter["reference_item"] = None  # プルダウン選択 参照項目
@@ -1469,11 +1469,11 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
                 
                 # カラムクラス「日時」用のパラメータを追加
                 if column_class == "DateTimeColumn":
-                    parameter["detetime_default_value"] = None if not column_data.get('detetime_default_value') else column_data.get('detetime_default_value')  # 日時 初期値 # noqa: E501
+                    parameter["datetime_default_value"] = None if not column_data.get('datetime_default_value') else column_data.get('datetime_default_value')  # 日時 初期値 # noqa: E501
                 
                 # カラムクラス「日付」用のパラメータを追加
                 if column_class == "DateColumn":
-                    parameter["dete_default_value"] = None if not column_data.get('dete_default_value') else column_data.get('dete_default_value')  # 日付 初期値 # noqa: E501
+                    parameter["date_default_value"] = None if not column_data.get('date_default_value') else column_data.get('date_default_value')  # 日付 初期値 # noqa: E501
                 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":

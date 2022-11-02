@@ -31,6 +31,7 @@ def before_request_handler():
         g.LANGUAGE = os.environ.get("DEFAULT_LANGUAGE")
         # create app log instance and message class instance
         g.applogger = AppLog()
+        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         check_request_body()

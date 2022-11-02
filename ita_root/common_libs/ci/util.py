@@ -15,6 +15,7 @@
 common_libs api common function module
 """
 from flask import g
+import os
 import traceback
 
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -36,7 +37,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None):
         organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])  # noqa: E501
 
     for organization_info in organization_info_list:
-        g.applogger.set_level("DEBUG")
+        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
 
         organization_id = organization_info['ORGANIZATION_ID']
 
@@ -86,7 +87,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         workspace_info_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `WORKSPACE_ID`=%s", [workspace_id])  # noqa: E501
 
     for workspace_info in workspace_info_list:
-        g.applogger.set_level("DEBUG")
+        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
 
         workspace_id = workspace_info['WORKSPACE_ID']
 
@@ -118,6 +119,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             # catch - other all error
             exception(e)
 
+        # delete environment of workspace
         g.pop('WORKSPACE_ID')
         g.db_connect_info.pop("WSDB_HOST")
         g.db_connect_info.pop("WSDB_PORT")

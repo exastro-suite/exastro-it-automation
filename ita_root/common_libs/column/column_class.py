@@ -668,9 +668,19 @@ class Column():
                             json_rows = json.loads(data_json)
                             for jsonkey, jsonval in json_rows.items():
                                 if jsonkey == self.rest_key_name:
-                                    if jsonval == val:
-                                        tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
-                                        retBool = False
+                                    # IDColumn, JsonIDColumnの場合はID変換後の値と比較
+                                    if self.class_name == "IDColumn" or self.class_name == "JsonIDColumn":
+                                        convert_val = val
+                                        tmp_result = self.convert_value_input(val)
+                                        if tmp_result[0] is True:
+                                            convert_val = tmp_result[2]
+                                        if jsonval == convert_val:
+                                            tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                            retBool = False
+                                    else:
+                                        if jsonval == val:
+                                            tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                            retBool = False
                     
                     if not retBool:
                         status_code = 'MSG-00025'

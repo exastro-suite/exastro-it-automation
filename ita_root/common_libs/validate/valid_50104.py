@@ -53,9 +53,9 @@ def menu_column_valid(objdbca, objtable, option):
     # 初期値(小数)
     decimal_default_value = entry_parameter.get("decimal_default_value")
     # 初期値(日時)
-    detetime_default_value = entry_parameter.get("detetime_default_value")
+    datetime_default_value = entry_parameter.get("datetime_default_value")
     # 初期値(日付)
-    dete_default_value = entry_parameter.get("dete_default_value")
+    date_default_value = entry_parameter.get("date_default_value")
     # メニューグループ：メニュー：項目
     pulldown_selection = entry_parameter.get("pulldown_selection")
     # 初期値(プルダウン選択)
@@ -140,11 +140,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20031", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20032", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20033", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -248,11 +248,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20055", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20056", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20057", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -364,11 +364,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20079", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20080", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20081", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -458,11 +458,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20100", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20101", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20102", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -569,7 +569,7 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20125", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20126", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -660,7 +660,7 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20147", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20148", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -747,11 +747,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20168", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20169", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20170", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -917,11 +917,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20194", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20195", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20196", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -1012,11 +1012,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20217", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20218", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20219", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -1107,11 +1107,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20240", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20241", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20242", [])
         # 初期値(プルダウン選択)が設定されている場合、エラー

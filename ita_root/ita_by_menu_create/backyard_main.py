@@ -1928,20 +1928,20 @@ def _create_validate_option(record):
         elif column_class == "3":  # NumColumn
             num_min = record.get('NUM_MIN')
             num_max = record.get('NUM_MAX')
-            if num_min:
+            if num_min is not None:
                 tmp_validate_option["int_min"] = num_min
-            if num_max:
+            if num_max is not None:
                 tmp_validate_option["int_max"] = num_max
             
         elif column_class == "4":  # FloatColumn
             float_min = record.get('FLOAT_MIN')
             float_max = record.get('FLOAT_MAX')
             float_digit = record.get('FLOAT_DIGIT')
-            if float_min:
+            if float_min is not None:
                 tmp_validate_option["float_min"] = float_min
-            if float_max:
+            if float_max is not None:
                 tmp_validate_option["float_max"] = float_max
-            if float_digit:
+            if float_digit is not None:
                 tmp_validate_option["float_digit"] = float_digit
             else:
                 tmp_validate_option["float_digit"] = "14"  # 桁数の指定が無い場合「14」を固定値とする。

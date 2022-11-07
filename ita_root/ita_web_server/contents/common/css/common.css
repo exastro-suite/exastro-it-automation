@@ -2912,7 +2912,7 @@ border-bottom-color: rgba( 0,0,0,.3 );
 }
 .errorTableContainer {
 overflow: auto;
-height: 100%;
+height: calc( 100% - 6px );
 }
 .errorTitle {
 height: 40px;
@@ -3317,7 +3317,14 @@ border-left: 1px solid rgba( 0,0,0,.2 );
 .popupBlock {
 position: fixed;
 z-index: 99999;
-max-width: 480px;
+max-width: 496px;
+padding: 8px;
+animation: popup .3s forwards;
+pointer-events: none;
+}
+.popupInner {
+overflow: auto;
+height: 100%;
 padding: 4px 8px;
 background-color: var(--white100);
 border-radius: 4px;
@@ -3326,8 +3333,6 @@ letter-spacing: .75px;
 line-height: 1.5;
 font-size: 14px;
 color: var(--black90);
-animation: popup .3s forwards;
-pointer-events: none;
 }
 @keyframes popup {
 0% { transform: translateY(-8px); opacity: 0; }
@@ -3350,11 +3355,11 @@ width: 14px; height: 14px;
 border: 7px solid transparent;
 }
 .popupTop .popupArrow {
-bottom: -16px;
+bottom: -8px;
 border-top-color: rgba( 0,0,0,.2 );
 }
 .popupBottom .popupArrow {
-top: -16px;
+top: -8px;
 border-bottom-color: rgba( 0,0,0,.2 );
 }
 .popupTop .popupArrow > span {
@@ -3366,7 +3371,7 @@ bottom: -8px;
 border-bottom-color: #FFF;
 }
 
-.popupBlock.darkPopup {
+.darkPopup .popupInner {
 background-color: #000;
 background-image: linear-gradient( rgba( 255,255,255,.2 ), rgba( 255,255,255,0) );
 box-shadow: 0 0 16px 4px rgba( 0,0,0,.3 );

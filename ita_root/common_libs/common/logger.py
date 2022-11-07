@@ -96,9 +96,7 @@ class AppLog:
         data_list = wsdb_instance.table_select('T_COMN_SYSTEM_CONFIG', 'WHERE `CONFIG_ID`=%s AND `DISUSE_FLAG`=0', ['LOG_LEVEL'])
         if len(data_list) == 1:
             log_level = data_list[0]['VALUE']
-            if log_level in self.__available_log_level:
-                self.set_level(log_level)
-                self.info("my LOG-LEVEL({}) is set".format(log_level))
+            self.set_level(log_level)
         else:
             log_level = False
 
@@ -111,8 +109,11 @@ class AppLog:
         Arguments:
             level: (str) "ERROR" | "INFO" | "DEBUG"
         """
-        self.__logger_obj.setLevel(level)
-        self._config['loggers'][self.__name__]['level'] = level
+        if level in self.__available_log_level:
+            self.__logger_obj.setLevel(level)
+            self._config['loggers'][self.__name__]['level'] = level
+
+            self.debug("LOG-LEVEL({}) is set".format(level))
 
     def critical(self, message):
         """

@@ -2226,6 +2226,7 @@ setTbody() {
         tb.tableMaxWidthCheck('tbody');
     } else {
         tb.$.tbody.find('.textareaAdjustment').each( fn.textareaAdjustment );
+        tb.editModeMenuCheck();
     }
     
     if ( tb.mode === 'edit' || tb.mode === 'view') {
@@ -2595,12 +2596,20 @@ viewCellHtml( item, columnKey, journal ) {
     switch ( columnType ) {
         // そのまま表示
         case 'SingleTextColumn': case 'NumColumn': case 'FloatColumn':
-        case 'IDColumn': case 'HostInsideLinkTextColumn': case 'LinkIDColumn':
+        case 'IDColumn': case 'LinkIDColumn':
         case 'LastUpdateUserColumn': case 'RoleIDColumn':
         case 'EnvironmentIDColumn': case 'TextColumn':
         case 'DateColumn': case 'DateTimeColumn':
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
             return checkJournal( value );
+        
+        // リンク
+        case 'HostInsideLinkTextColumn':
+            if ( value !== '') {
+                return checkJournal(`<a href="${value}" target="_blank">${value}</a>`);
+            } else {
+                return checkJournal( value );
+            }
             
         // 最終更新日    
         case 'LastUpdateDateColumn':
@@ -3165,6 +3174,9 @@ changeEdtiMode( changeMode ) {
     tb.paging.page = 1;
     tb.edit.addId = -1;
     
+    // 選択状態
+    tb.select.edit = tb.select.view.concat();
+    
     tb.$.container.removeClass('viewTable autoFilterStandBy initFilterStandBy');
     tb.$.container.addClass('editTable');
     
@@ -3556,8 +3568,11 @@ editError( error ) {
     for ( const item in errorMessage ) {
         newRowNum = parseInt(item);
         for ( const error in errorMessage[item] ) {
-            const name = fn.cv( tb.data.restNames[ error ], error, true ),
-                  body = fn.cv( errorMessage[item][error].join(''), '?', true );
+            const name = fn.cv( tb.data.restNames[ error ], error, true );
+            let   body = fn.cv( errorMessage[item][error].join(''), '?', true );
+            
+            if ( fn.typeof( body ) === 'string') body = body.replace(/\r?\n/g, '<br>');
+            
             // 編集項目か否か
             if(param[item] != null) {
                 editRowNum = param[item];

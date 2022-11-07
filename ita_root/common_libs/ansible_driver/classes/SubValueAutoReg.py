@@ -367,7 +367,7 @@ class SubValueAutoReg():
             "file": {},
             "type": "Register"
         }
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False)
+        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
             
         result = retAry[0]
         if result is False:
@@ -686,9 +686,9 @@ class SubValueAutoReg():
             
         if not tgt_row['VARS_ENTRY_FILE'] == "":
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
-            parameters["file"] = {in_varsAssignList['VARS_ENTRY']: tgt_row['VARS_ENTRY_FILE']}
+            parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
         
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False)
+        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
             
         result = retAry[0]
         if result is False:
@@ -782,7 +782,7 @@ class SubValueAutoReg():
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
             parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
         
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False)
+        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
         
         result = retAry[0]
         if result is False:
@@ -988,23 +988,24 @@ class SubValueAutoReg():
                     col_name_rest = col_data['COLUMN_NAME_REST']
                     col_filepath = ""
                     col_file_md5 = ""
-                    if col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20":
-                        # メニューID取得
-                        upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
-                        col_filepath = ""
-                        if not col_val == "":
-                            storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
-                            col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
-                            if not os.path.exists(col_filepath):
-                                msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
-                                frame = inspect.currentframe().f_back
-                                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
-                                warning_flag = 1
-                                # 次のデータへ
-                                continue
+                    if col_data['COL_TYPE'] == AnscConst.DF_COL_TYPE_VAL:
+                        if col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20":
+                            # メニューID取得
+                            upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
+                            col_filepath = ""
+                            if not col_val == "":
+                                storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
+                                col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
+                                if not os.path.exists(col_filepath):
+                                    msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
+                                    frame = inspect.currentframe().f_back
+                                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                    warning_flag = 1
+                                    # 次のデータへ
+                                    continue
                                 
-                            col_filepath = col_filepath + "/" + col_val
-                            col_file_md5 = self.md5_file(col_filepath)
+                                col_filepath = col_filepath + "/" + col_val
+                                col_file_md5 = self.md5_file(col_filepath)
 
                     # 代入値管理の登録に必要な情報を生成
                     if exec_flag == 1:
@@ -1032,19 +1033,19 @@ class SubValueAutoReg():
                     
                         idx += 1
         
-        # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
-        for col_data in in_tabColNameToValAssRowList[table_name][col_name].values():
-            chk_flag = False
-            for row in data_list:
-                if col_data["COLUMN_ASSIGN_SEQ"] is not None:
-                    if col_data["COLUMN_ASSIGN_SEQ"] == row["INPUT_ORDER"]:
-                        chk_flag = True
+            # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
+            for col_data in in_tabColNameToValAssRowList[table_name][col_name].values():
+                chk_flag = False
+                for row in data_list:
+                    if col_data["COLUMN_ASSIGN_SEQ"] is not None:
+                        if col_data["COLUMN_ASSIGN_SEQ"] == row["INPUT_ORDER"]:
+                            chk_flag = True
         
-            if chk_flag == 0:
-                msgstr = g.appmsg.get_api_message("MSG-10902", [col_data["COLUMN_ID"]])
-                frame = inspect.currentframe().f_back
-                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
-                warning_flag = 1
+                if chk_flag == 0:
+                    msgstr = g.appmsg.get_api_message("MSG-10902", [col_data["COLUMN_ID"]])
+                    frame = inspect.currentframe().f_back
+                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    warning_flag = 1
 
         return ina_vars_ass_list, ina_array_vars_ass_list, warning_flag
 
@@ -1336,16 +1337,21 @@ class SubValueAutoReg():
 
         out_menu_id = ""
 
-        sql = " SELECT TBL_A.MENU_ID, "
-        sql += "       TBL_A.MENU_NAME_REST "
+        sql = " SELECT TBL_A.MENU_NAME_REST "
         sql += " FROM T_COMN_MENU TBL_A "
-        sql += " WHERE TBL_A.MENU_NAME_JA = ( "
-        sql += "  SELECT TBL_B.MENU_NAME_JA "
-        sql += "  FROM T_COMN_MENU TBL_B "
-        sql += "  WHERE TBL_B.MENU_ID = %s)"
-        sql += " AND TBL_A.MENU_GROUP_ID = '502'"
+        sql += " WHERE TBL_A.MENU_ID = %s "
         
         data_list = WS_DB.sql_execute(sql, [in_menu_id])
+
+        for data in data_list:
+            menu_name_rest = data['MENU_NAME_REST']
+            menu_name_rest = menu_name_rest[:-6]
+        
+        sql = " SELECT TBL_A.MENU_ID "
+        sql += " FROM T_COMN_MENU TBL_A "
+        sql += " WHERE TBL_A.MENU_NAME_REST = %s "
+        
+        data_list = WS_DB.sql_execute(sql, [menu_name_rest])
 
         for data in data_list:
             out_menu_id = data['MENU_ID']

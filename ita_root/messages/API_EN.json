@@ -1248,6 +1248,8 @@
     "MSG-20252": "If \"Menu Group: Menu: Item\" is not selected, \"Reference item\" cannot be set.",
     "MSG-20253": "\"Reference item\" can be entered only in list format.",
     "MSG-20254": "An invalid value has been entered in \"Reference item\". (value: {})",
+    "MSG-20255": "The same name is used for the target item name in \"Reference item\". (item name: {})",
+    "MSG-20256": "You cannot use the same item name (rest) that is used as the item name (rest) for \"Reference item\" when creating a menu. (item name (rest): {})",
     "MSG-30001": "Notes",
     "MSG-30002": "Execution process type",
     "MSG-30003": "●：Required\n○：Optional\n×：Cannot edit",

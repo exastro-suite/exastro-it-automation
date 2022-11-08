@@ -20,12 +20,17 @@ from flask import g
 
 
 def menu_column_valid(objdbca, objtable, option):
+    lang = g.get('LANGUAGE')
     retBool = True
     msg = ''
     menu_name_rest = objtable.get('MENUINFO').get('MENU_NAME_REST')
     entry_parameter = option.get('entry_parameter').get('parameter')
     column_class = entry_parameter.get("column_class")
-
+    menu_create_id = entry_parameter.get('menu_name')
+    item_name_ja = entry_parameter.get('item_name_ja')
+    item_name_en = entry_parameter.get('item_name_en')
+    item_name_rest = entry_parameter.get('item_name_rest')
+    
     # 文字列(単一行)最大バイト数
     single_string_maximum_bytes = entry_parameter.get("single_string_maximum_bytes")
     # 文字列(単一行)正規表現
@@ -783,20 +788,36 @@ def menu_column_valid(objdbca, objtable, option):
             bind_value_list = [pulldown_selection]
             return_values = objdbca.table_select(table_name, where_str, bind_value_list)
             
-            # 入力された値と、「参照項目情報」の値に一致があるかどうかを確認
-            for column_name_rest in reference_item_list:
+            for ref_column_name_rest in reference_item_list:
+                # 入力された値と、「参照項目情報」の値に一致があるかどうかを確認
                 check_bool = False
                 for record in return_values:
-                    check_column_name_rest = record.get('COLUMN_NAME_REST')
-                    if column_name_rest == check_column_name_rest:
+                    check_ref_column_name_rest = record.get('COLUMN_NAME_REST')
+                    if ref_column_name_rest == check_ref_column_name_rest:
                         check_bool = True
+                        target_record = record
                         break
                 
                 if not check_bool:
                     retBool = False
-                    msg = g.appmsg.get_api_message("MSG-20254", [column_name_rest])
+                    msg = g.appmsg.get_api_message("MSG-20254", [ref_column_name_rest])
                     return retBool, msg, option
-
+                else:
+                    # 参照項目の「項目名」と同一の名前が他の項目名で使用されているかを確認
+                    ref_column_name_ja = target_record.get('COLUMN_NAME_JA')
+                    ref_column_name_en = target_record.get('COLUMN_NAME_EN')
+                    table_name = "T_MENU_COLUMN"
+                    where_str = "WHERE DISUSE_FLAG = '0' AND MENU_CREATE_ID = %s AND (COLUMN_NAME_JA = %s OR COLUMN_NAME_EN = %s)"
+                    bind_value_list = [menu_create_id, ref_column_name_ja, ref_column_name_en]
+                    return_values_2 = objdbca.table_select(table_name, where_str, bind_value_list)
+                    if return_values_2:
+                        retBool = False
+                        if lang == "ja":
+                            msg = g.appmsg.get_api_message("MSG-20255", [ref_column_name_ja])
+                        else:
+                            msg = g.appmsg.get_api_message("MSG-20255", [ref_column_name_en])
+                        return retBool, msg, option
+                    
         # 初期値(プルダウン選択)
         if retBool and pulldown_selection_default_value:
             # 他メニュー連携から、必要な情報を取得
@@ -1129,5 +1150,60 @@ def menu_column_valid(objdbca, objtable, option):
             if int(link_maximum_bytes) < int(len(hex_value)) / 2:
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-20245", [])
+    
+    # 同一メニューでプルダウン選択を利用している項目を取得
+    table_name = "T_MENU_COLUMN"
+    where_str = "WHERE DISUSE_FLAG = '0' AND MENU_CREATE_ID = %s AND COLUMN_CLASS = '7'"
+    bind_value_list = [menu_create_id]
+    return_values = objdbca.table_select(table_name, where_str, bind_value_list)
+    if return_values:
+        # プルダウン選択の参照項目の項目名を確認し、同一の項目名を使用していないかをチェックする
+        for record in return_values:
+            pulldown_target_column_name_rest = record.get('COLUMN_NAME_REST')
+            reference_item = record.get('REFERENCE_ITEM')
+            # 参照項目がある場合処理を続行
+            if reference_item:
+                # 参照項目の値をlist型に変換
+                reference_item_list = ast.literal_eval(reference_item)
+                
+                # 参照項目リストを取得
+                target_pulldown_selection = record.get('OTHER_MENU_LINK_ID')
+                table_name = "V_MENU_REFERENCE_ITEM"
+                where_str = "WHERE DISUSE_FLAG = '0' AND LINK_ID = %s"
+                bind_value_list = [target_pulldown_selection]
+                return_values_2 = objdbca.table_select(table_name, where_str, bind_value_list)
+                
+                # 項目名が参照項目と一致しているかどうかを確認
+                check_bool_1 = False
+                for record in return_values_2:
+                    check_column_name_ja = record.get('COLUMN_NAME_JA')
+                    if item_name_ja == check_column_name_ja:
+                        check_bool_1 = True
+                        target_column_name = check_column_name_ja
+                        break
+                    
+                    check_column_name_en = record.get('COLUMN_NAME_EN')
+                    if item_name_en == check_column_name_en:
+                        check_bool_1 = True
+                        target_column_name = check_column_name_en
+                        break
+                
+                if check_bool_1:
+                    retBool = False
+                    msg = g.appmsg.get_api_message("MSG-20255", [target_column_name])
+                    return retBool, msg, option
 
+                # メニュー作成実行時に生成される参照項目用の「項目名(rest)」が他の項目名(rest)で使用されているかを確認
+                check_bool_2 = False
+                for count, ref_column_name_rest in enumerate(reference_item_list, 1):
+                    create_ref_column_name_rest = str(pulldown_target_column_name_rest) + "_ref_" + str(count)
+                    if item_name_rest == create_ref_column_name_rest:
+                        check_bool_2 = True
+                        break
+                
+                if check_bool_2:
+                    retBool = False
+                    msg = g.appmsg.get_api_message("MSG-20256", [item_name_rest])
+                    return retBool, msg, option
+    
     return retBool, msg, option

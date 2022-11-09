@@ -2332,21 +2332,25 @@ class loadTable():
             if len(required_restkey_list) <= len(parameter):
                 for required_restkey in required_restkey_list:
                     if required_restkey not in parameter:
-                        status_code = 'MSG-00024'
+                        status_code = 'MSG-00030'
                         msg_args = [required_restkey]
                         msg = g.appmsg.get_api_message(status_code, [msg_args])
+                        dict_msg = {
+                            'status_code': status_code,
+                            'msg_args': msg_args,
+                            'msg': msg,
+                        }
+                        self.set_message(dict_msg, required_restkey, MSG_LEVEL_ERROR)
             else:
                 status_code = 'MSG-00024'
                 msg_args = [",".join(required_restkey_list)]
                 msg = g.appmsg.get_api_message(status_code, [msg_args])
-
-        if status_code != '':
-            dict_msg = {
-                'status_code': status_code,
-                'msg_args': msg_args,
-                'msg': msg,
-            }
-            self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+                dict_msg = {
+                    'status_code': status_code,
+                    'msg_args': msg_args,
+                    'msg': msg,
+                }
+                self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
 
     def exec_restore_validate(self, cmd_type, target_uuid, current_data, entry_data):
         """

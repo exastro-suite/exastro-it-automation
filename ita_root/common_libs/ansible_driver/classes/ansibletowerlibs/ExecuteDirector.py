@@ -255,7 +255,10 @@ class ExecuteDirector():
 
         # ansible vault認証情報生成
         vault_credentialId = -1
-        vault_password = ky_decrypt(ifInfoRow["ANSIBLE_VAULT_PASSWORD"])
+        if not ifInfoRow['ANSIBLE_VAULT_PASSWORD']:
+            vault_password = AnscConst.DF_ANSIBLE_VAULT_PASSWORD
+        else:
+            vault_password = ky_decrypt(ifInfoRow["ANSIBLE_VAULT_PASSWORD"])
         vault_credentialId = self.createVaultCredential(execution_no, vault_password, OrganizationId)
         if vault_credentialId == -1:
             errorMessage = g.appmsg.get_api_message("MSG-10678")

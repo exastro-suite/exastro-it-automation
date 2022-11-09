@@ -25,7 +25,7 @@ import traceback
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException, ValidationException
-from common_libs.common.util import get_timestamp, file_encode
+from common_libs.common.util import get_timestamp, file_encode, ky_encrypt
 from common_libs.loadtable import load_table
 from common_libs.ci.util import log_err
 
@@ -386,6 +386,8 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     # 実行エンジンを判定
     if ans_exec_mode == ansc_const.DF_EXEC_MODE_ANSIBLE:
         ansible_execute = AnsibleExecute()
+        if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+            ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
         retBool = ansible_execute.execute_construct(driver_id, execution_no, conductor_instance_no, "", "", ans_if_info['ANSIBLE_CORE_PATH'], ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
         
         if retBool is True:

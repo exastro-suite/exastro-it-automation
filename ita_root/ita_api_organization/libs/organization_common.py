@@ -36,6 +36,7 @@ def before_request_handler():
         g.LANGUAGE = os.environ.get("DEFAULT_LANGUAGE")
         # create app log instance and message class instance
         g.applogger = AppLog()
+        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         check_request_body()
@@ -115,7 +116,7 @@ def before_request_handler():
         g.applogger.info("WS_DB:{} can be connected".format(workspace_id))
 
         # set log-level for user setting
-        g.applogger.set_user_setting(ws_db)
+        # g.applogger.set_user_setting(ws_db)
         ws_db.db_disconnect()
     except AppException as e:
         # catch - raise AppException("xxx-xxxxx", log_format, msg_format)

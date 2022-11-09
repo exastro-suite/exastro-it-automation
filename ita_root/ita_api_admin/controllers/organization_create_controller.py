@@ -42,7 +42,7 @@ def organization_create(body, organization_id):  # noqa: E501
     common_db = DBConnectCommon()  # noqa: F405
     connect_info = common_db.get_orgdb_connect_info(organization_id)
     if connect_info:
-        return '', "ALREADY EXISTS"
+        return '', "ALREADY EXISTS", "499-00001", 499
 
     # make storage directory for organization
     strage_path = os.environ.get('STORAGEPATH')
@@ -51,7 +51,7 @@ def organization_create(body, organization_id):  # noqa: E501
         os.makedirs(organization_dir)
         g.applogger.debug("made organization_dir")
     else:
-        return '', "ALREADY EXISTS"
+        return '', "ALREADY EXISTS", "499-00001", 499
 
     try:
         # make organization-db connect infomation
@@ -134,7 +134,7 @@ def organization_delete(organization_id):  # noqa: E501
     common_db = DBConnectCommon()  # noqa: F405
     connect_info = common_db.get_orgdb_connect_info(organization_id)
     if connect_info is False:
-        return '', "ALREADY DELETED"
+        return '', "ALREADY DELETED", "499-00002", 499
 
     # delete storage directory for organization
     strage_path = os.environ.get('STORAGEPATH')
@@ -142,7 +142,7 @@ def organization_delete(organization_id):  # noqa: E501
     if os.path.isdir(organization_dir):
         shutil.rmtree(organization_dir)
     # else:
-    #     return '', "ALREADY DELETED"
+    #     return '', "ALREADY DELETED", "499-00002", 499
 
     g.db_connect_info = {}
     g.db_connect_info["ORGDB_HOST"] = connect_info["DB_HOST"]

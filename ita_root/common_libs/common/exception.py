@@ -61,12 +61,15 @@ class ValidationException(Exception):
             parameter: パラメーター
         """
         msg_code = ""
-        parameter = []
+        log_msg_args = []
+        api_msg_args = []
 
-        if len(args) == 2:
-            msg_code, parameter = args
+        if len(args) == 3:
+            result_code, log_msg_args, api_msg_args = args
+        elif len(args) == 2:
+            result_code, log_msg_args = args
         else:
-            msg_code = args[0]
+            result_code = args[0]
 
         # set args
-        self.args = msg_code, parameter
+        self.args = result_code, log_msg_args, api_msg_args

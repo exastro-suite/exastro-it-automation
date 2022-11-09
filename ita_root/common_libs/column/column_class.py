@@ -424,6 +424,14 @@ class Column():
         """
         retBool = True
         msg = ''
+        
+        # カラムクラス毎個別処理レコード操作前
+        result_0 = self.before_iud_common_action(val, option)
+        if result_0[0] is not True:
+            return result_0
+        else:
+            option = result_0[2]
+        
         # 標準バリデーションレコード操作前
         result_1 = self.before_iud_validate_check(val, option)
         if result_1[0] is not True:
@@ -526,6 +534,22 @@ class Column():
                 msg = tmp_exec[1]
             else:
                 option = tmp_exec[2]
+        return retBool, msg, option,
+
+    # [maintenance] カラムクラスの個別処理 レコード操作前
+    def before_iud_common_action(self, val='', option={}):
+        """
+            カラムクラス毎の個別処理 レコード操作前
+            ARGS:
+                val:値
+                option:オプション
+            RETRUN:
+                retBool, msg, parameter, option
+        """
+        retBool = True
+        msg = ''
+        # カラムクラス毎の個別処理
+
         return retBool, msg, option,
 
     # [maintenance] カラムクラスの個別処理 レコード操作後
@@ -644,9 +668,19 @@ class Column():
                             json_rows = json.loads(data_json)
                             for jsonkey, jsonval in json_rows.items():
                                 if jsonkey == self.rest_key_name:
-                                    if jsonval == val:
-                                        tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
-                                        retBool = False
+                                    # IDColumn, JsonIDColumnの場合はID変換後の値と比較
+                                    if self.class_name == "IDColumn" or self.class_name == "JsonIDColumn":
+                                        convert_val = val
+                                        tmp_result = self.convert_value_input(val)
+                                        if tmp_result[0] is True:
+                                            convert_val = tmp_result[2]
+                                        if jsonval == convert_val:
+                                            tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                            retBool = False
+                                    else:
+                                        if jsonval == val:
+                                            tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                            retBool = False
                     
                     if not retBool:
                         status_code = 'MSG-00025'
@@ -851,7 +885,7 @@ class Column():
                     str_where_s = ' JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) >=  {} '.format(self.get_col_name(), self.get_rest_key_name(), bindkey_s)
                 if end_val is not None:
                     str_where_e = ' JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) <=  {} '.format(self.get_col_name(), self.get_rest_key_name(), bindkey_e)
-                if len(str_where_e) != 0 and len(str_where_e) != 0:
+                if len(str_where_s) != 0 and len(str_where_e) != 0:
                     conjunction = 'and'
                 else:
                     conjunction = ''

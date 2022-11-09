@@ -1018,7 +1018,26 @@ class loadTable():
                                             api_msg_args = [search_key]
                                             raise AppException(status_code, log_msg_args, api_msg_args)
 
-                                        filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
+                                        # 整数カラムの場合は検索する値をint型に変換する
+                                        if objcolumn.__class__.__name__ == "NumColumn":
+                                            convert_search_conf = {}
+                                            for k, v in search_conf.items():
+                                                if str.isnumeric(v):
+                                                    convert_search_conf[k] = int(v)
+                                                else:
+                                                    convert_search_conf[k] = v
+                                            filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
+                                        # 小数カラムの場合は検索する値をfloat型に変換する
+                                        elif objcolumn.__class__.__name__ == "FloatColumn":
+                                            convert_search_conf = {}
+                                            for k, v in search_conf.items():
+                                                try:
+                                                    convert_search_conf[k] = float(v)
+                                                except Exception:
+                                                    convert_search_conf[k] = v
+                                            filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
+                                        else:
+                                            filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
 
                 #  全件
                 where_str = ''
@@ -1036,11 +1055,13 @@ class loadTable():
                             if isinstance(bindkeys, str):
                                 bindkey = bindkeys
                                 tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
+                                if filter_query.get('bindvalue').get(bindkey):
+                                    bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             elif isinstance(bindkeys, list):
                                 for bindkey in bindkeys:
                                     tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                    bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
+                                    if filter_query.get('bindvalue').get(bindkey):
+                                        bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             where_str = where_str + tmp_where_str
 
                 sort_key = self.get_sort_key()

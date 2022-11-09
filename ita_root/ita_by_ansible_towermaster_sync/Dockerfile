@@ -41,6 +41,7 @@ RUN dnf install -y \
     pytz \
     pymysql \
     python-dotenv \
+    pycryptodome \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

@@ -13,6 +13,7 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8000
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
@@ -37,6 +38,7 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8079
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
@@ -90,6 +92,7 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -119,6 +122,7 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -139,6 +143,7 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -159,6 +164,7 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -179,6 +185,7 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}

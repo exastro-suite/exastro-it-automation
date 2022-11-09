@@ -8,7 +8,6 @@ CREATE TABLE T_ANSC_DEVICE
     IP_ADDRESS                      VARCHAR(15),                                -- IPアドレス
     LOGIN_USER                      VARCHAR(255),                               -- ユーザ
     LOGIN_PW                        TEXT,                                       -- パスワード
-    LOGIN_PW_ANSIBLE_VAULT          TEXT,                                       -- vailt暗号化パスワード
     SSH_KEY_FILE                    VARCHAR(255),                               -- ssh秘密鍵ファイル
     SSH_KEY_FILE_PASSPHRASE         TEXT,                                       -- パスフレーズ
     LOGIN_AUTH_TYPE                 VARCHAR(2),                                 -- 認証方式
@@ -40,7 +39,6 @@ CREATE TABLE T_ANSC_DEVICE_JNL
     IP_ADDRESS                      VARCHAR(15),                                -- IPアドレス
     LOGIN_USER                      VARCHAR(255),                               -- ユーザ
     LOGIN_PW                        TEXT,                                       -- パスワード
-    LOGIN_PW_ANSIBLE_VAULT          TEXT,                                       -- vailt暗号化パスワード
     SSH_KEY_FILE                    VARCHAR(255),                               -- ssh秘密鍵ファイル
     SSH_KEY_FILE_PASSPHRASE         TEXT,                                       -- パスフレーズ
     LOGIN_AUTH_TYPE                 VARCHAR(2),                                 -- 認証方式
@@ -67,12 +65,6 @@ CREATE TABLE T_ANSC_IF_INFO
 (
     ANSIBLE_IF_INFO_ID              VARCHAR(40),                                -- 項番
     ANSIBLE_EXEC_MODE               VARCHAR(2),                                 -- 実行エンジン
-    ANSIBLE_HOSTNAME                VARCHAR(255),                               -- ホスト
-    ANSIBLE_PROTOCOL                VARCHAR(8),                                 -- プロトコル
-    ANSIBLE_PORT                    INT,                                        -- ポート
-    ANSIBLE_EXEC_USER               VARCHAR(255),                               -- 実行ユーザー
-    ANSIBLE_ACCESS_KEY_ID           VARCHAR(64),                                -- Access_key_id
-    ANSIBLE_SECRET_ACCESS_KEY       VARCHAR(64),                                -- Secret_access_key
     ANSTWR_HOST_ID                  VARCHAR(40),                                -- 代表ホスト
     ANSTWR_PROTOCOL                 VARCHAR(8),                                 -- プロトコル
     ANSTWR_PORT                     INT,                                        -- ポート
@@ -109,12 +101,6 @@ CREATE TABLE T_ANSC_IF_INFO_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     ANSIBLE_IF_INFO_ID              VARCHAR(40),                                -- 項番
     ANSIBLE_EXEC_MODE               VARCHAR(2),                                 -- 実行エンジン
-    ANSIBLE_HOSTNAME                VARCHAR(255),                               -- ホスト
-    ANSIBLE_PROTOCOL                VARCHAR(8),                                 -- プロトコル
-    ANSIBLE_PORT                    INT,                                        -- ポート
-    ANSIBLE_EXEC_USER               VARCHAR(255),                               -- 実行ユーザー
-    ANSIBLE_ACCESS_KEY_ID           VARCHAR(64),                                -- Access_key_id
-    ANSIBLE_SECRET_ACCESS_KEY       VARCHAR(64),                                -- Secret_access_key
     ANSTWR_HOST_ID                  VARCHAR(40),                                -- 代表ホスト
     ANSTWR_PROTOCOL                 VARCHAR(8),                                 -- プロトコル
     ANSTWR_PORT                     INT,                                        -- ポート

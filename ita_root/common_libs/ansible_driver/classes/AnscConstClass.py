@@ -124,6 +124,8 @@ class AnscConst:
     DF_ITA_LOCAL_DUP_CHECK_ITEM = '__ITA_LOCAL_COLUMN_3__'
     DF_ITA_LOCAL_PKEY = '__ITA_LOCAL_COLUMN_4__'
 
+    # ansible-vault command default password
+    DF_ANSIBLE_VAULT_PASSWORD ="2FP7-DPJ7-6P6B-B7E2"
     ############################################################
     # 変数定義の変数名定義判定配列
     # parant  :親変数名として利用可否

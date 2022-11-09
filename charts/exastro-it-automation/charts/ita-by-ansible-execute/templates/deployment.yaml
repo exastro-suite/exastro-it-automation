@@ -63,7 +63,7 @@ spec:
             {{-     end -}}
             {{-   end -}}
             {{-   range $secret, $value := $define.secret }}
-            {{-     if or (eq $define.name "gitlab") (eq $define.name "ita-database") }}
+            {{-     if or (eq $define.name "ita-global") (eq $define.name "gitlab") (eq $define.name "ita-database") }}
             - name: {{ $secret }}
               valueFrom:
                 secretKeyRef:

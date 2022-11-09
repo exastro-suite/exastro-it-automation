@@ -1969,12 +1969,12 @@ requestTbody() {
 
             // リミットチェック
             if ( printLimitNum !== -1 && tb.data.count > printLimitNum ) {
-                alert(getMessage.FTE00067);
+                alert( getMessage.FTE00067( tb.data.count, printLimitNum ) );
                 tb.limitSetBody();
                 return false;
             //表示確認
             } else if ( printConfirmNum !== -1 && tb.data.count >= printConfirmNum ) {
-                if ( !confirm(getMessage.FTE00066) ) {
+                if ( !confirm( getMessage.FTE00066( tb.data.count, printConfirmNum ) ) ) {
                     tb.limitSetBody();
                     return false;
                 }
@@ -2244,10 +2244,12 @@ setTbody() {
 limitSetBody() {
     const tb = this;
     
+    const limitNumber = Number( fn.cv( tb.info.menu_info.web_print_limit, -1 ) );
+    
     tb.$.container.addClass('noData');
     tb.$.message.html(`<div class="noDataMessage">`
     + fn.html.icon('stop')
-    + getMessage.FTE00067
+    + fn.escape( getMessage.FTE00067( tb.data.count, limitNumber ), true )
     + `</div>`);
     
     tb.workEnd();

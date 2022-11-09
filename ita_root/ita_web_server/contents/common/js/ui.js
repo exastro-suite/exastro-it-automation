@@ -366,7 +366,7 @@ userInfo() {
     return `
     <button class="headerMenuButton">
         <span class="icon icon-user"></span>
-        <span class="userName">${name}</span>
+        <span class="userName"><span class="userNameText">${name}</span></span>
     </button>
     <div class="userInfoContainer">
         <div class="userInfoBlock userInfo">

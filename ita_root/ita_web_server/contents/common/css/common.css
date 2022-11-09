@@ -938,7 +938,7 @@ border-left: 1px solid rgba(255,255,255,.1);
 display: flex;
 gap: 8px;
 align-items: center;
-height: 100%;
+width: 100%; height: 100%;
 margin-left: auto; padding: 0 16px;
 background-color: transparent;
 border: none;
@@ -949,16 +949,33 @@ cursor: pointer;
 .headerMenuButton:hover {
 background-color: rgba(255,255,255,.05);
 }
+.headerMenuButton .userName {
+flex: 1 1 auto;
+min-width: 0;
+}
+.headerMenuButton > .icon {
+flex: 1 1 16px;
+min-width: 16px;
+}
 /*
 ##################################################
   User infomation
 ##################################################
 */
+.userInfomation  {
+max-width: 320px;
+}
 .user {
 height: 100%;
 }
 .userName {
 font-size: 12px;
+}
+.userNameText {
+display: block;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
 }
 .userDetail {
 position: fixed;

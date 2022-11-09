@@ -51,8 +51,8 @@ RUN dnf install -y \
     pymysql \
     python-dotenv \
     chardet \
-&&  pip3.9 install \
     connexion[swagger-ui] \
+    pycryptodome \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \

@@ -29,6 +29,7 @@ from flask import g
 import requests
 import json
 from common_libs.common.exception import AppException
+from common_libs.common.encrypt import *
 
 
 def ky_encrypt(lcstr):
@@ -40,10 +41,11 @@ def ky_encrypt(lcstr):
     Returns:
         Encoded string
     """
-    # BASE64でエンコード
-    tmp_str = base64.b64encode(lcstr.encode())
-    # rot13でエンコード
-    return codecs.encode(tmp_str.decode(), "rot_13")
+
+    if len(lcstr) == 0:
+        return ""
+
+    return encrypt_str(lcstr)
 
 
 def ky_decrypt(lcstr):
@@ -55,10 +57,11 @@ def ky_decrypt(lcstr):
     Returns:
         Decoded string
     """
-    # rot13でデコード
-    tmp_str = codecs.decode(lcstr, "rot_13")
-    # base64でデコード
-    return base64.b64decode(tmp_str.encode()).decode()
+
+    if len(lcstr) == 0:
+        return ""
+
+    return decrypt_str(lcstr)
 
 
 def ky_file_encrypt(src_file, dest_file):

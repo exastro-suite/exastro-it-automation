@@ -52,6 +52,7 @@ RUN dnf install -y \
     dictknife \
     ansible \
     kubernetes \
+    pycryptodome \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

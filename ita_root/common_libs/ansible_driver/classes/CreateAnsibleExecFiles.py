@@ -288,7 +288,6 @@ class CreateAnsibleExecFiles():
         self.lv_ans_if_info = {}
         self.lv_exec_no = ""
         self.lv_vault_pass_list = {}
-        self.lv_vault_pass_update_list = {}
         self.lv_vault_value_list = {}
         self.lv_vault_value_update_list = {}
 
@@ -363,7 +362,6 @@ class CreateAnsibleExecFiles():
         self.lv_ans_if_info = in_ans_if_info
         self.lv_exec_no = in_exec_no
         self.lv_vault_pass_list = {}
-        self.lv_vault_pass_update_list = {}
         self.lv_vault_value_list = {}
         self.lv_vault_value_update_list = {}
         
@@ -1223,9 +1221,10 @@ class CreateAnsibleExecFiles():
                     if ina_hostinfolist[host_name]['LOGIN_PW']:
 
                         # パスワード暗号化
+                        login_pw_ansible_vault = ""
                         make_vaultpass = self.makeAnsibleVaultPassword(
                             ina_hostinfolist[host_name]['LOGIN_PW'],
-                            ina_hostinfolist[host_name]['LOGIN_PW_ANSIBLE_VAULT'],
+                            login_pw_ansible_vault,
                             indento_sp12,
                             ina_hostinfolist[host_name]['SYSTEM_ID'])
                         if make_vaultpass is False:
@@ -1494,9 +1493,10 @@ class CreateAnsibleExecFiles():
                 # ansible-vaultで暗号化された文字列のインデントを調整
                 indento_sp4 = "".ljust(4)
 
+                login_pw_ansible_vault = ""
                 make_vaultpass = self.makeAnsibleVaultPassword(
                     val,
-                    self.lv_hostinfolist[in_host_name]['LOGIN_PW_ANSIBLE_VAULT'],
+                    login_pw_ansible_vault,
                     indento_sp4,
                     self.lv_hostinfolist[in_host_name]['SYSTEM_ID'])
                 if make_vaultpass is False:
@@ -4420,6 +4420,8 @@ class CreateAnsibleExecFiles():
             else:
                 VaultPasswordFilePath = obj.CreateVaultPasswordFilePath()
                 # in_passはrot13+base64で複合化されている
+                if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+                    self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
                 retAry = obj.Vault(self.lv_ans_if_info['ANSIBLE_CORE_PATH'],
                                    self.getAnsibleExecuteUser(),
@@ -4442,18 +4444,7 @@ class CreateAnsibleExecFiles():
                 self.lv_vault_pass_list[in_pass] = out_vaultpass
             out_vaultpass = " !vault |" + out_vaultpass
 
-            # 機器一覧の暗号化パスワードを更新済みか判定
-            if update_key not in self.lv_vault_pass_update_list:
 
-                # 機器一覧にansible-vaultで暗号化した文字列を登録
-                UpData = {}
-                UpData["LOGIN_PW_ANSIBLE_VAULT"] = out_vaultpass
-                UpData["SYSTEM_ID"] = in_system_id
-                ret = self.lv_objDBCA.table_update("T_ANSC_DEVICE", UpData, "SYSTEM_ID", False)
-                # Autocommitがoffになっており、呼び元でトランザクションもoffなのでcommitする。
-                self.lv_objDBCA.db_commit()
-                # 機器一覧の暗号化パスワードを更新済設定
-                self.lv_vault_pass_update_list[update_key] = 'update'
         else:
             out_vaultpass = in_vaultpass
 
@@ -4491,6 +4482,8 @@ class CreateAnsibleExecFiles():
                 # unuse enc_in_pass = in_pass
                 VaultPasswordFilePath = obj.CreateVaultPasswordFilePath()
                 # in_passはrot13+base64で暗号化されている
+                if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+                    self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
                 retAry = obj.Vault(self.lv_ans_if_info['ANSIBLE_CORE_PATH'],
                                    self.getAnsibleExecuteUser(),

@@ -693,7 +693,7 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
             raise Exception(result_code, msg_args)
         
         # 「メニュー項目作成情報」から更新対象のレコードを更新
-        retbool, result_code, msg_args = _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list, type_name)
+        retbool, result_code, msg_args = _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column_data_list, type_name)
         if not retbool:
             raise Exception(result_code, msg_args)
         
@@ -1205,7 +1205,7 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
     return True, None, None
 
 
-def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list, type_name):  # noqa: C901
+def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column_data_list, type_name):  # noqa: C901
     """
         【内部呼び出し用】「メニュー項目作成情報」のレコードを更新する
         ARGS:
@@ -1242,6 +1242,9 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
         
         # loadTableの呼び出し
         objmenu = load_table.loadTable(objdbca, 'menu_item_creation_info')  # noqa: F405
+        
+        # menu_dataから登録用のメニュー名を取得
+        menu_name = menu_data.get('menu_name')
         
         # 「メニュー項目作成情報」更新処理のループスタート
         for column_data in column_data_list.values():
@@ -1393,6 +1396,7 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
                 
                 # 更新用パラメータを作成
                 parameter = {
+                    "menu_name": menu_name,  # メニュー名(「メニュー定義一覧」のメニュー名)
                     "item_name_ja": item_name,  # 項目名(ja)
                     "item_name_en": item_name,  # 項目名(en)
                     "item_name_rest": column_data.get('item_name_rest'),  # 項目名(rest)

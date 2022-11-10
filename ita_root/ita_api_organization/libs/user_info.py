@@ -141,10 +141,6 @@ def collect_menus(objdbca):
 
     menus = {}
     for recode in auth_menu_list:
-        
-        print('== recode ==')
-        print(recode)
-        print('==========')
         menu_group_id = recode.get('MENU_GROUP_ID')
         if menu_group_id not in menus:
             menus[menu_group_id] = []

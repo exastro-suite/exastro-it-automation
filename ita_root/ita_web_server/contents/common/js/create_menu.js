@@ -849,71 +849,6 @@ const menuEditor = function() {
             $body.removeClass('editor-full-screen');
         }
     }
-    
-    
-    
-
-    // テキスト
-const languageText = {
-    '0000':[getMessage.FTE01053,''],
-    '0001':[getMessage.FTE01054,''],
-    //'0002':["文字列(単一行)",''],
-    //'0003':["文字列(複数行)",''],
-    //'0004':["整数",''],
-    //'0005':["小数",''],
-    //'0006':["日時",''],
-    //'0007':["日付",''],
-    //'0008':["プルダウン選択",''],
-    //'0009':["項番",''],
-    //'0010':["自動入力",''],
-    '0011':[getMessage.FTE01055,''],
-    '0012':[getMessage.FTE01056,''],
-    '0013':[getMessage.FTE01057,''],
-    '0014':[getMessage.FTE01058,''],
-    '0015':[getMessage.FTE01059,''],
-    '0016':[getMessage.FTE01060,''],
-    '0017':[getMessage.FTE01061,''],
-    '0018':[getMessage.FTE01062,''],
-    '0019':[getMessage.FTE01063,''],
-    '0020':[getMessage.FTE01064,''],
-    '0021':[getMessage.FTE01065,''],
-    '0022':[getMessage.FTE01066,''],
-    '0023':[getMessage.FTE01067,''],
-    '0024':[getMessage.FTE01068,''],
-    '0025':[getMessage.FTE01069,''],
-    '0026':[getMessage.FTE01070,''],
-    '0027':[getMessage.FTE01071,''],
-    '0028':[getMessage.FTE01072,''],
-    '0029':[getMessage.FTE01073,''],
-    '0030':[getMessage.FTE01074,''],
-    '0031':[getMessage.FTE01075,''],
-    '0032':[getMessage.FTE01076,''],
-    '0033':[getMessage.FTE01077,''],
-    '0034':[getMessage.FTE01078,''],
-    '0035':[getMessage.FTE01079,''],
-    '0036':[getMessage.FTE01080,''],
-    '0037':[getMessage.FTE01081,''],
-    '0038':[getMessage.FTE01082,''],
-    '0039':[getMessage.FTE01083,''],
-    '0040':[getMessage.FTE01084,''],
-    '0041':[getMessage.FTE01085,''],
-    '0042':[getMessage.FTE01086,''],
-    '0043':[getMessage.FTE01087,''],
-    '0044':[getMessage.FTE01088,''],
-    '0045':[getMessage.FTE01089,''],
-    '0046':[getMessage.FTE01090,''],
-    '0047':[getMessage.FTE01091,''],
-    '0048':[getMessage.FTE01092,''],
-    '0049':[getMessage.FTE01093,''],
-    '0050':[getMessage.FTE01094,''],
-    '0051':[getMessage.FTE01095,''],
-    '0052':[getMessage.FTE01096,''],
-}
-
-// テキスト呼び出し用
-const textCode = function( code ) {
-    return languageText[code][0];
-};
 
 // 項目別ダミーテキスト（value:[ja,en,type]）
 const selectDummyText = {
@@ -991,47 +926,63 @@ if ( menuEditorMode === 'edit') onHover = '';
 let disbledCheckbox = '';
 if ( menuEditorMode === 'edit') disbledCheckbox = ' disabled-checkbox';
 
-// HTML
-const columnHeaderHTML = ''
+// 項目ヘッダーHTML
+const getColumnHeaderHTML = function( columnHeaderTitle = '', columnHeaderRest = '' ) {
+    return ''
   + '<div class="menu-column-move" title="' + textEntities(getMessage.FTE01103,1) + '"></div>'
   + '<div class="menu-column-title-wrap">'
       + '<div class="menu-column-title on-hover" title="' + textEntities(getMessage.FTE01104,1) + '">'
-            + '<input class="menu-column-title-input" type="text" value=""'+modeDisabled+'>'
-            + '<span class="menu-column-title-dummy"></span>'
+            + '<input class="menu-column-title-input" type="text" value="' + columnHeaderTitle + '"'+modeDisabled+'>'
+            + '<span class="menu-column-title-dummy">' + columnHeaderTitle + '</span>'
       + '</div>'
       + '<div class="menu-column-title on-hover" title="' + textEntities(getMessage.FTE01105,1) + '">'
-            + '<input class="menu-column-title-rest-input" type="text" value=""'+modeDisabled+'>'
-            + '<span class="menu-column-title-dummy"></span>'
+            + '<input class="menu-column-title-rest-input" type="text" value="' + columnHeaderRest + '"'+modeDisabled+'>'
+            + '<span class="menu-column-title-dummy">' + columnHeaderRest + '</span>'
       + '</div>'
   + '</div>'
   + '<div class="menu-column-function">'
         + '<div class="menu-column-delete on-hover" title="' + textEntities(getMessage.FTE01106,1) + '"></div>'
         + '<div class="menu-column-copy on-hover" title="' + textEntities(getMessage.FTE01107,1) + '"></div>'
   + '</div>';
+};
+const columnHeaderHTML = getColumnHeaderHTML();
 
-  const columnHeaderGroupHTML = ''
+// グループヘッダーHTML
+const getColumnHeaderGroupHTML = function( columnHeaderGroupTitle = '' ) {
+    return ''
   + '<div class="menu-column-move" title="' + textEntities(getMessage.FTE01103,1) + '"></div>'
   + '<div class="menu-column-title on-hover" title="' + textEntities(getMessage.FTE01104,1) + '">'
-    + '<input class="menu-column-title-input" type="text" value=""'+modeDisabled+'>'
-    + '<span class="menu-column-title-dummy"></span>'
+    + '<input class="menu-column-title-input" type="text" value="' + columnHeaderGroupTitle + '"'+modeDisabled+'>'
+    + '<span class="menu-column-title-dummy">' + columnHeaderGroupTitle + '</span>'
   + '</div>'
   + '<div class="menu-column-function">'
     + '<div class="menu-column-delete on-hover" title="' + textEntities(getMessage.FTE01106,1) + '"></div>'
     + '<div class="menu-column-copy on-hover" title="' + textEntities(getMessage.FTE01107,1) + '"></div>'
   + '</div>';
+};
+const columnHeaderGroupHTML = getColumnHeaderGroupHTML();
 
+// EmptyHTML
 const columnEmptyHTML = ''
   + '<div class="column-empty"><p>Empty</p></div>';
 
-const columnGroupHTML = ''
-  + '<div class="menu-column-group" data-group-id="">'
+// グループ枠HTML
+const getColumnGroupHTML = function( columnHeaderGroup = {}, bodyHTML = '') {
+    const sv = function( v, f = true ) { return fn.cv( columnHeaderGroup[v], '', f ); };
+    return ''
+  + '<div class="menu-column-group" data-group-id="' + sv('column_group_id') + '">'
     + '<div class="menu-column-group-header">'
-      + columnHeaderGroupHTML
+      + getColumnHeaderGroupHTML( sv('column_group_name') )
     + '</div>'
     + '<div class="menu-column-group-body">'
+        + bodyHTML
     + '</div>'
   + '</div>';
+};
 
+const columnGroupHTML = getColumnGroupHTML();
+
+// リピートHTML
 const columnRepeatHTML = ''
   + '<div class="menu-column-repeat">'
     + '<div class="menu-column-repeat-header">'
@@ -1050,18 +1001,30 @@ const columnRepeatHTML = ''
 // 入力方式 select
 const selectInputMethodData = menuEditorArray.column_class_list,
     selectInputMethodDataLength = selectInputMethodData.length;
-let inputMethodHTML = '';
-for ( let i = 0; i < selectInputMethodDataLength ; i++ ) {
-    inputMethodHTML += '<option value="' + selectInputMethodData[i].column_class_id + '" data-value="' + selectInputMethodData[i].column_class_name + '">' + selectInputMethodData[i].column_class_disp_name + '</option>';
-}
+
+const getInputMethodHTML = function( selectValue = '' ) {
+    const inputMethodArray = [];
+    for ( let i = 0; i < selectInputMethodDataLength ; i++ ) {
+        const classID = selectInputMethodData[i].column_class_id,
+              selected = ( classID === selectValue )? ' selected="selected"': '';
+        inputMethodArray.push('<option value="' + classID+ '" data-value="' + selectInputMethodData[i].column_class_name + '"' + selected + '>' + selectInputMethodData[i].column_class_disp_name + '</option>');
+    }
+    return inputMethodArray.join('');
+};
 
 // プルダウン選択 select
 const selectPulldownListData = menuEditorArray.pulldown_item_list,
     selectPulldownListDataLength = selectPulldownListData.length;
-let selectPulldownListHTML = '';
-  for ( let i = 0; i < selectPulldownListDataLength ; i++ ) {
-      selectPulldownListHTML += '<option value="' + selectPulldownListData[i].link_id + '">' + selectPulldownListData[i].link_pulldown + '</option>';
-  }
+
+const getPelectPulldownListHTML = function( selectValue = '' ) {
+    const selectPulldownListArray = [];
+    for ( let i = 0; i < selectPulldownListDataLength ; i++ ) {
+        const linkID = selectPulldownListData[i].link_id,
+              selected = ( linkID === selectValue )? ' selected="selected"': '';
+        selectPulldownListArray.push('<option value="' + linkID + '"' + selected + '>' + selectPulldownListData[i].link_pulldown + '</option>');
+    }
+    return selectPulldownListArray.join('');
+};
 
 //パラメータシート参照 select
 /*
@@ -1084,140 +1047,178 @@ if ( menuEditorMode !== 'view') {
     $('#create-menu-type').html( selectParamTargetHTML );
 }
 
-const columnHTML = `
-<div class="menu-column" data-rowpan="1" data-item-id="" style="min-width: 260px;">
-    <div class="menu-column-header">${columnHeaderHTML}</div>
+// 項目HTML
+const getColumnHTML = function( columnData = {}, columnID = '') {
+    
+    const sv = function( v, f = true ) { return fn.cv( columnData[v], '', f ); };    
+    
+    return `
+<div id="${columnID}" class="menu-column" data-rowpan="1" data-item-id="${sv('create_column_id')}" style="min-width: 260px;">
+    <div class="menu-column-header">${getColumnHeaderHTML(sv('item_name'),sv('item_name_rest'))}</div>
     <div class="menu-column-body">
         <div class="menu-column-type" title="${textEntities(getMessage.FTE01109,1)}">
-            <select class="input menu-column-type-select" id="menu-column-type-select"${modeDisabled}${modeKeepData}>${inputMethodHTML}</select>
+            <select class="input menu-column-type-select" id="menu-column-type-select"${modeDisabled}${modeKeepData}>
+                ${getInputMethodHTML(sv('column_class_id'))}
+            </select>
         </div>
         <div class="menu-column-config">
-            <table class="menu-column-config-table" date-select-value="1">
+            <table class="menu-column-config-table" date-select-value="${fn.cv(columnData['column_class_id'], '1')}">
                 <tbody>
-                    <tr class="multiple single link" title="${textEntities(getMessage.FTE01110,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0011') + fn.html.required()}</span></th>
-                        <td class="half-cell"><input class="input config-number max-byte" type="number" data-min="1" data-max="8192" value=""${modeDisabled}></td>
+                    <!-- 最大バイト数 single -->
+                    <tr class="single" title="${textEntities(getMessage.FTE01110,1)}">
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
+                        <td class="half-cell"><input class="input config-number max-byte" type="number" data-min="1" data-max="8192" value="${sv('single_string_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
-                    <tr class="multiple single" title="${textEntities(getMessage.FTE01111,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0012')}</span></th>
-                        <td class="full-body"><input class="input config-text regex" type="text" value=""${modeDisabled}></td>
+                    <!-- 正規表現 single -->
+                    <tr class="single" title="${textEntities(getMessage.FTE01111,1)}">
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01056}</span></th>
+                        <td class="full-body"><input class="input config-text regex" type="text" value="${sv('single_string_regular_expression')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 最大バイト数 multiple -->
+                    <tr class="multiple" title="${textEntities(getMessage.FTE01110,1)}">
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
+                        <td class="half-cell"><input class="input config-number multiple-max-byte" type="number" data-min="1" data-max="8192" value="${sv('multi_string_maximum_bytes')}"${modeDisabled}></td>
+                    </tr>
+                    <!-- 正規表現 multiple -->
+                    <tr class="multiple" title="${textEntities(getMessage.FTE01111,1)}">
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01056}</span></th>
+                        <td class="full-body"><input class="input config-text multiple-regex" type="text" value="${sv('multi_string_regular_expression')}"${modeDisabled}></td>
+                    </tr>
+                    <!-- 最大バイト数 link -->
+                    <tr class="link" title="${textEntities(getMessage.FTE01110,1)}">
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
+                        <td class="half-cell"><input class="input config-number link-max-byte" type="number" data-min="1" data-max="8192" value="${sv('link_maximum_bytes')}"${modeDisabled}></td>
+                    </tr>
+                    <!-- 最小値 int -->
                     <tr class="number-int" title="${textEntities(getMessage.FTE01112,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0013')}</span></th>
-                        <td class="half-cell"><input class="input config-number int-min-number" data-min="-2147483648" data-max="2147483647" type="number" value=""${modeDisabled}></td>
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01057}</span></th>
+                        <td class="half-cell"><input class="input config-number int-min-number" data-min="-2147483648" data-max="2147483647" type="number" value="${sv('integer_minimum_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 最大値 int -->
                     <tr class="number-int" title="${textEntities(getMessage.FTE01113,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0014')}</span></th>
-                        <td class="half-cell"><input class="input config-number int-max-number" data-min="-2147483648" data-max="2147483647"  type="number" value=""${modeDisabled}></td>
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01058}</span></th>
+                        <td class="half-cell"><input class="input config-number int-max-number" data-min="-2147483648" data-max="2147483647" type="number" value="${sv('integer_maximum_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 最小値 froat -->
                     <tr class="number-float" title="${textEntities(getMessage.FTE01114,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0013')}</span></th>
-                        <td class="half-cell"><input class="input config-number float-min-number" data-min="-99999999999999" data-max="99999999999999"  type="number" value=""${modeDisabled}></td>
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01057}</span></th>
+                        <td class="half-cell"><input class="input config-number float-min-number" data-min="-99999999999999" data-max="99999999999999" type="number" value="${sv('decimal_minimum_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 最大値 froat -->
                     <tr class="number-float" title="'${textEntities(getMessage.FTE01115,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0014')}</span></th>
-                        <td class="half-cell"><input class="input config-number float-max-number" data-min="-99999999999999" data-max="99999999999999"  type="number" value=""${modeDisabled}></td>
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01058}</span></th>
+                        <td class="half-cell"><input class="input config-number float-max-number" data-min="-99999999999999" data-max="99999999999999" type="number" value="${sv('decimal_maximum_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 桁数 -->
                     <tr class="number-float" title="${textEntities(getMessage.FTE01116,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0015')}</span></th>
-                        <td class="half-cell"><input class="input config-number digit-number" data-min="1" data-max="14" type="number" value=""${modeDisabled}></td>
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01059}</span></th>
+                        <td class="half-cell"><input class="input config-number digit-number" data-min="1" data-max="14" type="number" value="${sv('decimal_digit')}"${modeDisabled}></td>
                     </tr>
+                    <!-- プルダウン選択項目 -->
                     <tr class="select-option" title="${textEntities(getMessage.FTE01117,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0016') + fn.html.required()}</span></th>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01060 + fn.html.required()}</span></th>
                         <td class="full-body">
-                            <select class="input config-select pulldown-select"${modeDisabled}${modeKeepData}>${selectPulldownListHTML}</select>
+                            <select class="input config-select pulldown-select"${modeDisabled}${modeKeepData}>${getPelectPulldownListHTML(sv('pulldown_selection'))}</select>
                         </td>
                     </tr>
+                    <!-- 参照項目 -->
                     <tr class="select-option reference" title="${textEntities(getMessage.FTE01118,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0043')}</span></th>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01087}</span></th>
                         <td class="full-body">
                             <div class="reference-block">
                                 <span type="text" class="input config-text reference-item" type="text" data-reference-item-id ${modeDisabled}${modeKeepData}></span>
-                                <button class="itaButton button reference-item-select property-button popup" data-action="normal" title="${textCode('0045')}"${modeDisabled}${modeKeepData}>
+                                <button class="itaButton button reference-item-select property-button popup" data-action="normal" title="${getMessage.FTE01089}"${modeDisabled}${modeKeepData}>
                                     <div class="inner">${fn.html.icon('menuList')}</div>
                                 </button>
                             </div>
                         </td>
                     </tr>
+                    <!-- 最大バイト数 パスワード -->
                     <tr class="password" title="${textEntities(getMessage.FTE01150,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0011') + fn.html.required()}</span></th>
-                        <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="8192" value=""${modeDisabled}></td>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
+                        <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="255" value="${sv('password_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 最大バイト数 ファイル -->
                     <tr class="file" title="${textEntities(getMessage.FTE01119,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0042') + fn.html.required()}</span></th>
-                        <td class="full-body"><input class="input config-number file-max-size" data-min="1" data-max="104857600"  type="number" value=""${modeDisabled}></td>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01086 + fn.html.required()}</span></th>
+                        <td class="full-body"><input class="input config-number file-max-size" data-min="1" data-max="104857600"  type="number" value="${sv('file_upload_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
-                    <tr class="type3" title="${textEntities(getMessage.FTE01120,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0052') + fn.html.required()}</span></th>
-                        <td class="full-body type3-item-area">
-                            <select class="input config-select type3-reference-item"${modeDisabled}${modeKeepData}></select>
-                        </td>
-                    </tr>
+                    <!-- 初期値 -->
                     <tr class="single" title="${textEntities(getMessage.FTE01121,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0050')}</span></th>
-                        <td class="full-body"><input class="input config-text single-default-value" type="text" value=""${modeDisabled}></td>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
+                        <td class="full-body"><input class="input config-text single-default-value" type="text" value="${sv('single_string_default_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 初期値 複数行 -->
                     <tr class="multiple" title="${textEntities(getMessage.FTE01121,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0050')}</span></th>
-                        <td class="full-body"><textarea class="input config-textarea multiple-default-value"${modeDisabled}></textarea></td>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
+                        <td class="full-body"><textarea class="input config-textarea multiple-default-value"${modeDisabled}>${sv('multi_string_default_value', false )}</textarea></td>
                     </tr>
+                    <!-- 初期値 int -->
                     <tr class="number-int" title="${textEntities(getMessage.FTE01122,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0050')}</span></th>
-                        <td class="half-cell"><input class="input config-number int-default-value" data-min="-2147483648" data-max="2147483647" type="number" value=""${modeDisabled}></td>
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01094}</span></th>
+                        <td class="half-cell"><input class="input config-number int-default-value" data-min="-2147483648" data-max="2147483647" type="number" value="${sv('integer_default_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 初期値 float -->
                     <tr class="number-float" title="${textEntities(getMessage.FTE01123,1)}">
-                        <th class="half-cell"><span class="config-title">${textCode('0050')}</span></th>
-                        <td class="half-cell"><input class="input config-number float-default-value" data-min="-99999999999999" data-max="99999999999999" type="number" value=""${modeDisabled}></td>
+                        <th class="half-cell"><span class="config-title">${getMessage.FTE01094}</span></th>
+                        <td class="half-cell"><input class="input config-number float-default-value" data-min="-99999999999999" data-max="99999999999999" type="number" value="${sv('decimal_default_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 初期値 日時 -->
                     <tr class="date-time" title="${textEntities(getMessage.FTE01124,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0050')}</span></th>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
                         <td class="full-body">${( modeDisabled === '')?
                             fn.html.dateInput( true, 'callDateTimePicker datetime-default-value config-text', '', 'dateTime'):
-                            `<input class="input datetime-default-value config-text"${modeDisabled}>`
+                            `<input class="input datetime-default-value config-text" value="${sv('datetime_default_value')}"${modeDisabled}>`
                         }</td>
                     </tr>
+                    <!-- 初期値 日付 -->
                     <tr class="date" title="${textEntities(getMessage.FTE01124,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0050')}</span></th>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
                         <td class="full-body">${( modeDisabled === '')?
                             fn.html.dateInput( false, 'callDateTimePicker date-default-value config-text', '', 'date'):
-                            `<input class="input date-default-value config-text"${modeDisabled}>`
+                            `<input class="input date-default-value config-text" value="${sv('date_default_value')}"${modeDisabled}>`
                         }</td>
                     </tr>
+                    <!-- 初期値 リンク -->
                     <tr class="link" title="${textEntities(getMessage.FTE01125,1)}">
-                        <th class="full-head"><span class="config-title">${textCode('0050')}</span></th>
-                        <td class="full-body"><input class="input config-text link-default-value" type="text" value=""${modeDisabled}></td>
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
+                        <td class="full-body"><input class="input config-text link-default-value" type="text" value="${sv('link_default_value')}"${modeDisabled}></td>
                     </tr>
+                    <!-- 初期値 選択 -->
                     <tr class="select-option" title="${textEntities(getMessage.FTE01126,1)}">
-                        <th class="full-head">${textCode('0050')}</th>
+                        <th class="full-head">${getMessage.FTE01094}</th>
                         <td class="full-body pulldown-default-area">
                             <select class="input config-select pulldown-default-select"${modeDisabled}></select>
                         </td>
                     </tr>
+                    <!-- 必須・一意 -->
                     <tr class="single multiple number-int number-float date-time date password select-option file link">
                         <td colspan="2">
                             <label class="required-label${onHover}" title="${textEntities(getMessage.FTE01127,1)}"${modeDisabled}${modeKeepData}>
-                                <input class="config-checkbox required${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}>
-                                <span></span>${textCode('0017')}
+                                <input class="config-checkbox required${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}${(sv('required') === '1')? ` checked`: ``}>
+                                <span></span>${getMessage.FTE01061}
                             </label>
                             <label class="unique-label${onHover}" title="${textEntities(getMessage.FTE01128,1)}"${modeDisabled}${modeKeepData}>
-                                <input class="config-checkbox unique${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}>
-                                <span></span>${textCode('0018')}
+                                <input class="config-checkbox unique${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}${(sv('uniqued') === '1')? ` checked`: ``}>
+                                <span></span>${getMessage.FTE01062}
                             </label>
                         </td>
                     </tr>
+                    <!-- 説明 -->
                     <tr class="all" title="${textEntities(getMessage.FTE01129,1)}">
                         <td colspan="2">
                             <div class="config-textarea-wrapper">
-                                <textarea class="input config-textarea explanation"${modeDisabled}></textarea>
-                                <span>${textCode('0019')}</span>
+                                <textarea class="input config-textarea explanation${( sv('description') !== '')? ' text-in': ''}"${modeDisabled}>${sv('description', false )}</textarea>
+                                <span>${getMessage.FTE01063}</span>
                             </div>
                         </td>
                     </tr>
+                    <!-- 備考 -->
                     <tr class="all" title="${textEntities(getMessage.FTE01130,1)}">
                         <td colspan="2">
                             <div class="config-textarea-wrapper">
-                                <textarea class="input config-textarea note"${modeDisabled}></textarea>
-                                <span>${textCode('0020')}</span>
+                                <textarea class="input config-textarea note${( sv('remarks') !== '')? ' text-in': ''}"${modeDisabled}>${sv('remarks', false )}</textarea>
+                                <span>${getMessage.FTE01064}</span>
                             </div>
                         </td>
                     </tr>
@@ -1227,6 +1228,9 @@ const columnHTML = `
     </div>
     <div class="column-resize"></div>
 </div>`;
+};
+
+const columnHTML = getColumnHTML();
 
 // カウンター
 let itemCounter = 1,
@@ -1362,13 +1366,13 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
             name = loadData['item_name'];
             name_rest = loadData['item_name_rest'];
             id = 'c' + number;
-            title = textCode('0000');
+            title = getMessage.FTE01053;
             break;
         case 'group':
             html = columnGroupHTML;
             name = loadData['column_group_name']
             id = 'g' + number;
-            title = textCode('0001');
+            title = getMessage.FTE01054;
             break;
         case 'repeat':
             html = columnRepeatHTML;
@@ -1428,10 +1432,13 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
     }
     
     // 追加した項目に合わせスクロールさせる
-    const editorWindowWidth = $menuEditWindow.outerWidth(),
-        tableWidth = $menuEditWindow.find('.menu-table-wrapper').width()
-    if ( editorWindowWidth < tableWidth ) {
-        $menuEditWindow.children().stop(0,0).animate({'scrollLeft': tableWidth - editorWindowWidth }, 200 );
+    const $scrollArea = $menuEditWindow.children(),
+          scrollElement = $scrollArea.get(0),
+          scrollWidth = scrollElement.scrollWidth,
+          clientWidth = scrollElement.clientWidth;
+          
+    if ( clientWidth < scrollWidth ) {
+        $scrollArea.stop(0,0).animate({'scrollLeft': scrollWidth - clientWidth }, 200 );
     }
 
 };
@@ -1444,7 +1451,7 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
 
 //参照項目を選択するモーダル表示イベント
 $menuEditor.on('click', '.reference-item-select', function() {
-    itaModalOpen(textCode('0049'), modalReferenceItemList, 'reference' , $(this));
+    itaModalOpen(getMessage.FTE01093, modalReferenceItemList, 'reference' , $(this));
 });
 
 //選択項目変更時、参照項目を空にする
@@ -1470,7 +1477,7 @@ const setEventPulldownDefaultValue = function($item){
         if($(this).hasClass('pulldown-select')){
             typeId = $item.find('.menu-column-type-select').val();
         }
-
+        
         //「プルダウン選択」時のみ
         if(typeId == 7){
             getpulldownDefaultValueList($item, "");
@@ -1483,7 +1490,7 @@ const getpulldownDefaultValueList = function($item, defaultValue = ""){
   let loadNowSelect = '<option value="">' + getMessage.FTE01131 + '</option>';
   let faildSelect = '<option value="">' + getMessage.FTE01132 + '</option>';
   $item.find('.pulldown-default-select').html(loadNowSelect); //最初に読み込み中メッセージのセレクトボックスを挿入
-
+  
   let menu = "",
       column = ""; 
   //「選択項目」のメニューで初期値として利用可能な値のリストを作成する。
@@ -1506,7 +1513,7 @@ const getpulldownDefaultValueList = function($item, defaultValue = ""){
       }
       */
       let selectPulldownDefaultListHTML = '<option value=""></option>'; //一つ目に空を追加
-      let defaultCheckFlg = false;
+      let defaultCheckFlg = false;console.log(defaultValue)
       for ( let key in selectDefaultValueList ) {
         if(defaultValue == key){
           selectPulldownDefaultListHTML += '<option value="' + key + '" selected>' + selectDefaultValueList[key] + '</option>';
@@ -2194,26 +2201,12 @@ const resetSelect2 = function( $target ) {
     }
 };
 
-// datetimepickerを再適用
-//const resetDatetimepicker = function ( $target ) {
-//    if ( $target.find('.callDateTimePicker').length ) {
-//      //既存の要素を削除
-//      $target.find(".callDateTimePicker").datetimepicker("destroy");
-//      $target.find(".callDateTimePicker2").datetimepicker("destroy");
-//      $('.xdsoft_datetimepicker').remove();
-//      // datetimepickeを再適用
-//      $target.find(".callDateTimePicker").datetimepicker({format:'Y/m/d H:i:s', step:5, lang:LangStream});
-//      $target.find(".callDateTimePicker2").datetimepicker({timepicker:false, format:'Y/m/d', lang:LangStream});
-
-//    }
-//}
-
 $menuEditor.on('click', '.menu-column-copy', function(){
   const $column = $( this ).closest('.menu-column, .menu-column-group');
   
   // リピートを含む要素はコピーできないようにする
   if ( $column.find('.menu-column-repeat').length ) {
-    alert(textCode('0035'));
+    alert(getMessage.FTE01079);
     return false;
   }
   
@@ -2260,6 +2253,25 @@ $menuEditor.on('click', '.menu-column-copy', function(){
 
     history.add();
     previewTable();
+    
+    // コピーした項目に合わせスクロールさせる
+    const $scrollArea = $menuEditWindow.children(),
+          scrollElement = $scrollArea.get(0),
+          scrollAreaWidth = $scrollArea.outerWidth(),
+          scrollLeft = $scrollArea.scrollLeft(),
+          scrollWidth = scrollElement.scrollWidth,
+          clientWidth = scrollElement.clientWidth,
+          editorLeft = scrollElement.getBoundingClientRect().left,
+          cloneLeft = $clone.get(0).getBoundingClientRect().left + scrollLeft - editorLeft,
+          cloneWidth = $clone.outerWidth(),
+          padding = 8;
+    
+    // スクロール可能か？
+    if ( clientWidth < scrollWidth && scrollLeft + scrollAreaWidth < cloneLeft + cloneWidth ) {
+        const left = ( cloneLeft + cloneWidth ) - scrollAreaWidth + padding;
+        $menuEditWindow.children().stop(0,0).animate({'scrollLeft': left }, 200 );
+    }       
+    
   });
 });
 
@@ -2324,21 +2336,21 @@ const sortMark = '<span class="sortMarkWrap"><span class="sortNotSelected"></spa
         + '<th class="tHeadTh tHeadLeftSticky tHeadRowMenu th" rowspan="{{rowspan}}"><div class="ci"><span class="icon icon-ellipsis_v  "></span></div></th>'
         + '<th rowspan="{{rowspan}}" class="tHeadLeftSticky tHeadTh tHeadLeftStickyLast tHeadSort th"><div class="ci">' + getMessage.FTE01010 +'</div></th>',
       tHeadParameterHeaderLeftHTML = ''
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0021') + '</div></th>'
-        + '<th colspan="4" class="tHeadGroup tHeadTh th"><div class="ci">' + textCode('0022') + '</div></th>'
-        + '<th colspan="{{colspan}}" class="tHeadGroup tHeadTh th"><div class="ci">' + textCode('0023') + '</div></th>',
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01065 + '</div></th>'
+        + '<th colspan="4" class="tHeadGroup tHeadTh th"><div class="ci">' + getMessage.FTE01066 + '</div></th>'
+        + '<th colspan="{{colspan}}" class="tHeadGroup tHeadTh th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',
       tHeadOperationrHeaderLeftHTML = ''
-        + '<th colspan="4" class="tHeadTh th"><div class="ci">' + textCode('0022') + '</div></th>'
-        + '<th colspan="{{colspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0023') + '</div></th>',  
+        + '<th colspan="4" class="tHeadTh th"><div class="ci">' + getMessage.FTE01066 + '</div></th>'
+        + '<th colspan="{{colspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',  
       tHeadParameterOpeHeaderLeftHTML = ''
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0024') + '</div></th>'
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0025') + '</div></th>'
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0026') + '</div></th>'
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0027') + '</div></th>',
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01068 + '</div></th>'
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01069 + '</div></th>'
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01070 + '</div></th>'
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01071 + '</div></th>',
       tHeadHeaderRightHTML = ''
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0028') + '</div></th>'
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0029') + '</div></th>'
-        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + textCode('0030') + '</div></th>',
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01072 + '</div></th>'
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01073 + '</div></th>'
+        + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01074 + '</div></th>',
         
       tBodyHeaderLeftHTML = ''
         + '<th class="tBodyLeftSticky tBodyRowSelect tBodyTh th"><div class="ci"><div class="checkboxWrap"><input type="checkbox" class="tBodyRowCheck checkbox"><label class="checkboxLabel"></label></div></div></th>'
@@ -2346,19 +2358,19 @@ const sortMark = '<span class="sortMarkWrap"><span class="sortNotSelected"></spa
         + '<th class="tBodyLeftSticky tBodyTh th"><div class="ci">XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</div></th>',
       tBodyParameterHeaderLeftHTML = ''
         + '<td class="tBodyTd td"><div class="ci">192.168.0.1</td>'
-        + '<td class="tBodyTd td"><div class="ci">' + textCode('0031') + '</div></td>'
+        + '<td class="tBodyTd td"><div class="ci">' + getMessage.FTE01075 + '</div></td>'
         + '<td class="tBodyTd td"><div class="ci">2020/01/01 00:00</div></td>'
         + '<td class="tBodyTd td"><div class="ci">2020/01/01 00:00</div></td>'
         + '<td class="tBodyTd td"><div class="ci"></td>',
       tBodyOperationHeaderLeftHTML = ''
-        + '<td class="tBodyTd td"><div class="ci">' + textCode('0031') + '</div></td>'
+        + '<td class="tBodyTd td"><div class="ci">' + getMessage.FTE01075 + '</div></td>'
         + '<td class="tBodyTd td"><div class="ci">2020/01/01 00:00</div></td>'
         + '<td class="tBodyTd td"><div class="ci">2020/01/01 00:00</div></td>'
         + '<td class="tBodyTd td"><div class="ci"></div></td>',
       tBodyHeaderRightHTML = ''
         + '<td class="tBodyTd td"><div class="ci"></div></td>'
         + '<td class="tBodyTd td"><div class="ci">2020/01/01 00:00:00</div></td>'
-        + '<td class="tBodyTd td"><div class="ci">' + textCode('0032') + '</div></td>';
+        + '<td class="tBodyTd td"><div class="ci">' + getMessage.FTE01076 + '</div></td>';
 
 // リピートを含めた子の列数を返す
 const childColumnCount = function( $column, type ) {
@@ -2492,7 +2504,7 @@ const previewTable = function(){
                     const referenceItemNameAry = referenceItemName.split(',');
                     const referenceItemLength = referenceItemAry.length;
                     for ( let i = 0; i < referenceItemLength; i++ ) {
-                        const referenceItemHTML = '<td class="tBodyTd td reference"><div class="ci">' + textCode('0044') + '</div></td>';
+                        const referenceItemHTML = '<td class="tBodyTd td reference"><div class="ci">' + getMessage.FTE01088 + '</div></td>';
                         tbodyArray.push(referenceItemHTML);
                     };
                 }
@@ -2625,7 +2637,7 @@ const repeatRemoveConfirm = function() {
     // リピートを使用しているか？
     const $repeat = $menuEditor.find('.menu-column-repeat').eq(0);
     if ( $repeat.length ) {
-      if ( confirm( textCode('0034')) ) {
+      if ( confirm( getMessage.FTE01078 ) ) {
         // リピートが空か？
         if ( $repeat.children('.menu-column-repeat-body').children('.column-empty').length ) {
           $repeat.remove();
@@ -2782,7 +2794,7 @@ const menuGroupBody = function() {
     const menuGroupData = menuEditorArray.target_menu_group_list,
           menuListRowLength = menuGroupData.length,
           menuGroupType = ['for-input','for-substitution','for-reference'],
-          menuGroupAbbreviation = [textCode('0036'),textCode('0037'),textCode('0038')],
+          menuGroupAbbreviation = [getMessage.FTE01080,getMessage.FTE01081,getMessage.FTE01082],
           menuGroupTypeLength = menuGroupType.length;
   
     let html = ''
@@ -2797,7 +2809,7 @@ const menuGroupBody = function() {
     }
     // header Title
     html += '<th class="id">ID</th>'
-          + '<th class="name">' + textCode('0039') + '</th>';
+          + '<th class="name">' + getMessage.FTE01083 + '</th>';
   
     html += '</tr></thead><tbody><tr>';
   
@@ -2915,7 +2927,7 @@ $menuGroupSlectButton.on('click', function() {
   } else {
     type = 'data-sheet';
   }
-  itaModalOpen( textCode('0033'), menuGroupBody, type );
+  itaModalOpen( getMessage.FTE01077, menuGroupBody, type );
 });
 
 // 縦メニューヘルプ
@@ -2924,7 +2936,7 @@ const verticalMenuHelp = function() {
   $modalBody.html( $('#vertical-menu-description').html() );
 };
 $('#vertical-menu-help').on('click', function() {
-  itaModalOpen( textCode('0040'), verticalMenuHelp, 'help');
+  itaModalOpen( getMessage.FTE01084, verticalMenuHelp, 'help');
 });
 
 // カンマ区切りロールIDリストからロールNAMEリストを返す
@@ -2994,7 +3006,7 @@ const modalRoleList = function() {
 // ロールセレクトモーダルを開く
 const $roleSlectButton = $('#permission-role-select');
 $roleSlectButton.on('click', function() {
-    itaModalOpen(textCode('0048'), modalRoleList, 'role');
+    itaModalOpen(getMessage.FTE01092, modalRoleList, 'role');
 });
 
 //参照項目セレクト
@@ -3207,7 +3219,7 @@ const modalUniqueConstraint = function() {
 // 一意制約(複数項目)選択のモーダルを開く
 const $multiSetUniqueSlectButton = $('#unique-constraint-select');
 $multiSetUniqueSlectButton.on('click', function() {
-    itaModalOpen( textCode('0047'), modalUniqueConstraint, 'unique' );
+    itaModalOpen( getMessage.FTE01091, modalUniqueConstraint, 'unique' );
 });
 
 //一意制約の登録用のcolumnID連結文字列と、表示用の項目名を作成する
@@ -3433,19 +3445,11 @@ const updateUniqueConstraintDispData = function(){
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 const createRegistrationData = function( type ){
-
-    // Emptyが一つでもある場合は終了
-    //if ( $menuTable.find('.column-empty').length ) {
-    //  alert('Empty error.');
-    //  return false;
-    //}
   
     let createMenuJSON = {
       'menu'   : {},
       'group'  : {},
       'column' : {},
-      //'item' : {},
-      //'repeat' : {},
       'type'   : {}
     };
     
@@ -3457,35 +3461,6 @@ const createRegistrationData = function( type ){
     if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit') {
       createMenuJSON['menu']['last_update_date_time'] = menuEditorArray.menu_info['menu']['last_update_date_time'];
     }
-    
-    // CREATE_ITEM_IDからKEYを返す
-    const CREATE_ITEM_ID_to_KEY = function( itemID ) {
-      for ( let key in menuEditorArray.menu_info['column'] ) {
-        // CREATE_ITEM_ID ⇒ create_column_id
-        if ( menuEditorArray.menu_info['column'][ key ]['create_column_id'] === itemID ) {
-          return menuEditorArray.menu_info['column'][ key ]['item_name'];
-        }
-      }
-    }
-    // リピート項目チェック（名前とグループからCREATE_ITEM_IDとLAST_UPDATE_TIMESTAMPを返す）
-    /*
-    const repeatItemCheckID = function( groupID, itemName ) {
-      for ( let key in menuEditorArray.selectMenuInfo['item'] ) {
-        if ( menuEditorArray.selectMenuInfo['item'][ key ]['col_group_id'] === groupID &&
-            menuEditorArray.selectMenuInfo['item'][ key ]['item_name'] === itemName ) {
-          // リピートで作成された項目かチェック
-          if ( menuEditorArray.selectMenuInfo['item'][ key ]['REPEAT_ITEM'] === true ) {
-            return [
-              menuEditorArray.selectMenuInfo['item'][ key ]['CREATE_ITEM_ID'],
-              menuEditorArray.selectMenuInfo['item'][ key ]['LAST_UPDATE_TIMESTAMP']
-            ];
-          }
-        }
-      }
-      // 見つからない場合はnullを返す
-      return [ null, null ];
-    }
-    */
 
     // COL_GROUP_IDからKEYを返す
     const COL_GROUP_ID_to_KEY = function( groupID ) {
@@ -3495,21 +3470,6 @@ const createRegistrationData = function( type ){
         }
       }
     }
-    // リピート項目チェック（名前からCREATE_ITEM_IDとLAST_UPDATE_TIMESTAMPを返す）
-    /*
-    const repeatGroupCheckID = function( groupName ) {
-      for ( let key in menuEditorArray.selectMenuInfo['group'] ) {
-        if ( menuEditorArray.selectMenuInfo['group'][ key ]['col_group_name'] === groupName ) {
-          // リピートで作成された項目かチェック
-          if ( menuEditorArray.selectMenuInfo['group'][ key ]['REPEAT_GROUP'] === true ) {
-            return menuEditorArray.selectMenuInfo['group'][ key ]['col_group_id'];
-          }
-        }
-      }
-      // 見つからない場合はnullを返す
-      return [ null, null ];
-    }
-    */
     
     const tableAnalysis = function( $cols, repeatCount ) {
       
@@ -3527,15 +3487,14 @@ const createRegistrationData = function( type ){
                   LAST_UPDATE_TIMESTAMP = null;
 
               let select = document.getElementById('menu-column-type-select');
-              //let idx = select.selectedIndex;
               let column_class  = select.options[selectTypeValue - 1].dataset.value;
 
               if ( CREATE_ITEM_ID === '') CREATE_ITEM_ID = null;
               if ( menuEditorMode === 'diversion') CREATE_ITEM_ID = null;
               if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                if ( menuEditorArray.menu_info['column'][key] ) {
-                  LAST_UPDATE_TIMESTAMP = menuEditorArray.menu_info['column'][key]['last_update_date_time'];
-                }
+                  if ( menuEditorArray.menu_info['column'][key] ) {
+                      LAST_UPDATE_TIMESTAMP = menuEditorArray.menu_info['column'][key]['last_update_date_time'];
+                  }
               }
               // 親カラムグループ
               let parentArray = [];
@@ -3548,21 +3507,7 @@ const createRegistrationData = function( type ){
               // 項目名
               let itemName = $column.find('.menu-column-title-input').val();
               let itemNameRest = $column.find('.menu-column-title-rest-input').val();
-              /*
-              if ( repeatCount > 1 ) {
-                itemName += '[' + repeatCount + ']';
-                repeatFlag = true;
-                key = key + '[' + repeatCount + ']';
-  
-                // 更新時のリピート項目チェック
-                if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                  const originalBeforeName = CREATE_ITEM_ID_to_KEY( CREATE_ITEM_ID ),
-                        repeatItemData = repeatItemCheckID( parentsID, originalBeforeName + '[' + repeatCount + ']');
-                  CREATE_ITEM_ID = repeatItemData[0];
-                  LAST_UPDATE_TIMESTAMP = repeatItemData[1];
-                }
-              }
-              */
+
               let required = $column.find('.config-checkbox.required').prop('checked');
               if ( required === false ){
                 required = "False";
@@ -3579,19 +3524,17 @@ const createRegistrationData = function( type ){
 
               // JSONデータ
               createMenuJSON['column'][key] = {
-                'create_column_id' : CREATE_ITEM_ID,
-                'item_name' : itemName,
-                'item_name_rest' : itemNameRest,
-                'display_order' : order,
-                'required' : required, //パラメータシート参照の場合「必須」はfalse
-                'uniqued' : uniqued, //パラメータシート参照の場合「一意制約」はfalse
-                'column_group' : parents,
-                'column_class' : column_class,
-                'description' : $column.find('.explanation').val(),
-                'remarks' : $column.find('.note').val(),
-                //'REPEAT_ITEM' : repeatFlag,
-                //'MIN_WIDTH' : $column.css('min-width'),
-                'last_update_date_time' : LAST_UPDATE_TIMESTAMP
+                  'create_column_id' : CREATE_ITEM_ID,
+                  'item_name' : itemName,
+                  'item_name_rest' : itemNameRest,
+                  'display_order' : order,
+                  'required' : required, //パラメータシート参照の場合「必須」はfalse
+                  'uniqued' : uniqued, //パラメータシート参照の場合「一意制約」はfalse
+                  'column_group' : parents,
+                  'column_class' : column_class,
+                  'description' : $column.find('.explanation').val(),
+                  'remarks' : $column.find('.note').val(),
+                  'last_update_date_time' : LAST_UPDATE_TIMESTAMP
               }
               // 項目タイプ
               switch ( selectTypeValue ) {
@@ -3601,8 +3544,8 @@ const createRegistrationData = function( type ){
                   createMenuJSON['column'][key]['single_string_default_value'] = $column.find('.single-default-value').val();
                   break;
                 case '2':
-                  createMenuJSON['column'][key]['multi_string_maximum_bytes'] = $column.find('.max-byte').val();
-                  createMenuJSON['column'][key]['multi_string_regular_expression'] = $column.find('.regex').val();
+                  createMenuJSON['column'][key]['multi_string_maximum_bytes'] = $column.find('.multiple-max-byte').val();
+                  createMenuJSON['column'][key]['multi_string_regular_expression'] = $column.find('.multiple-regex').val();
                   createMenuJSON['column'][key]['multi_string_default_value'] = $column.find('.multiple-default-value').val();
                   break;
                 case '3':
@@ -3647,43 +3590,11 @@ const createRegistrationData = function( type ){
                   createMenuJSON['column'][key]['file_upload_maximum_bytes'] = $column.find('.file-max-size').val();
                   break;
                 case '10':
-                  createMenuJSON['column'][key]['link_maximum_bytes'] = $column.find('.max-byte').val();
+                  createMenuJSON['column'][key]['link_maximum_bytes'] = $column.find('.link-max-byte').val();
                   createMenuJSON['column'][key]['link_default_value'] = $column.find('.link-default-value').val();
                   break;
-                //case '11':
-                //  createMenuJSON['column'][key]['TYPE3_REFERENCE'] = $column.find('.type3-reference-item').val();
-                //  break;
               }
             // Item end
-          /*
-          } else if ( $column.is('.menu-column-repeat') ) {
-            // リピート
-              const repeatNumber = $column.find('.menu-column-repeat-number-input').val();
-              if ( $column.find('.menu-column, .menu-column-group').length ) {
-                  // リピートの回数繰り返す
-                  for ( let i = 1; i <= repeatNumber; i++ ) {
-                    repeatCount = i;
-                    tableAnalysis( $column.children('.menu-column-repeat-body'), repeatCount );
-                  }
-                  repeatCount = 0;
-                  // リピート内項目リスト
-                  let columns = [];
-                  $column.children('.menu-column-repeat-body').children().each( function() {
-                    columns.push( $( this ).attr('id') );
-                  });
-                  // リピートJSON
-                  createMenuJSON['repeat']['r1'] = {
-                    'COLUMNS' : columns,
-                    'REPEAT_CNT' : repeatNumber
-                  }
-                  if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                    if ( menuEditorArray.selectMenuInfo['repeat']['r1'] && menuEditorArray.selectMenuInfo['repeat']['r1']['LAST_UPDATE_TIMESTAMP'] ) {
-                      createMenuJSON['repeat']['LAST_UPDATE_TIMESTAMP'] = menuEditorArray.selectMenuInfo['repeat']['r1']['LAST_UPDATE_TIMESTAMP'];
-                    }
-                  }
-              }
-            // Repeat end
-          */
           } else if ( $column.is('.menu-column-group') ) {
             // グループ
               let groupID = $column.attr('data-group-id'),
@@ -3694,22 +3605,6 @@ const createRegistrationData = function( type ){
                   columns = [],
                   repeatFlag = false;
               if ( menuEditorMode === 'diversion') groupID = null;
-               // グループ名
-              /*
-              if ( repeatCount > 1 ) {
-                groupName += '[' + repeatCount + ']';
-                repeatFlag = true;
-                key = key + '[' + repeatCount + ']';
-  
-                // 更新時のリピート項目チェック
-                if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                  const originalBeforeName = COL_GROUP_ID_to_KEY( groupID ),
-                        repeatGroupID = repeatGroupCheckID( originalBeforeName + '[' + repeatCount + ']');
-                  groupID = repeatGroupID;
-                }
-  
-              }
-              */
               // 親グループ
               $column.parents('.menu-column-group').each( function() {
                 parentArray.unshift( $( this ).find('.menu-column-title-input').val() );
@@ -3725,7 +3620,6 @@ const createRegistrationData = function( type ){
                 'col_group_name' : groupName,
                 'parent_full_col_group_name' : parents,
                 'columns' : columns,
-                //'REPEAT_GROUP' : repeatFlag,
               }
               tableAnalysis( $column.children('.menu-column-group-body'), repeatCount );
             // Group end
@@ -3746,13 +3640,9 @@ const createRegistrationData = function( type ){
     createMenuJSON['type'] = type;
   
     // 解析スタート
-    tableAnalysis ( $menuTable, 0 );
+    tableAnalysis( $menuTable, 0 );
     
-    // JSON変換
-    //const menuData = JSON.stringify( createMenuJSON );
-    const menuData = createMenuJSON;
-    
-    fn.fetch('/create/define/execute/', null, 'POST', menuData ).then(function(result){
+    fn.fetch('/create/define/execute/', null, 'POST', createMenuJSON ).then(function(result){
       let id  = result['history_id'];
       let string = getMessage.FTE01140;
       let log = string + id;
@@ -3816,137 +3706,89 @@ const errorFormat = function( error ) {
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const loadMenu = function() {
-    
-    const loadJSON = menuEditorArray.menu_info;
+const setMenu = function() {
+
+    // メニューデータ
+    const menuInfo = menuEditorArray.menu_info;
+
     // 流用新規時に引き継がない項目
     if ( menuEditorMode === 'diversion' ){
-      loadJSON['menu']['menu_create_id'] = null;
-      loadJSON['menu']['menu_name'] = null;
-      loadJSON['menu']['menu_name_rest'] = null;
-      loadJSON['menu']['disp_seq'] = null;
-      loadJSON['menu']['last_update_date_time'] = null;
-      // loadJSON['menu']['LAST_UPDATE_TIMESTAMP_FOR_DISPLAY'] = null;
-      // loadJSON['menu']['LAST_UPDATE_USER'] = null;
-      loadJSON['menu']['description'] = null;
-      loadJSON['menu']['remarks'] = null;
+        menuInfo['menu']['menu_create_id'] = null;
+        menuInfo['menu']['menu_name'] = null;
+        menuInfo['menu']['menu_name_rest'] = null;
+        menuInfo['menu']['disp_seq'] = null;
+        menuInfo['menu']['last_update_date_time'] = null;
+        menuInfo['menu']['description'] = null;
+        menuInfo['menu']['remarks'] = null;
     }
-
+    
     // パネル情報表示
-    setPanelParameter( loadJSON );
+    setPanelParameter( menuInfo );
     
-    // エディタクリア
-    $menuTable.html('');
+    let setMenuHTML = '';
+    const setMenuTable = function( columns ) {
+        if ( columns ) {
+            for ( const id of columns ) {
+                const type = id.substr(0,1),
+                      number = id.substr(1);
+                switch ( type ) {
+                    // グループ
+                    case 'g': {
+                        const groupData = menuInfo['group'][id];
+                              
+                        // グループ枠HTML
+                        const sv = function( v, f = true ) { return fn.cv( groupData[v], '', f ); };
+                        
+                        setMenuHTML += ''
+                          + '<div class="menu-column-group" data-group-id="' + sv('column_group_id') + '">'
+                            + '<div class="menu-column-group-header">'
+                              + getColumnHeaderGroupHTML( sv('column_group_name') )
+                            + '</div>'
+                            + '<div class="menu-column-group-body">';
+                        
+                        setMenuTable( groupData.columns );
+                        
+                        setMenuHTML += '</div>'
+                          + '</div>';
+                    } break;
+                    // 項目
+                    default: {
+                        const itemData = menuInfo['column'][id];
+                        setMenuHTML += getColumnHTML( itemData, id );
+                    }
+                }
+            }
+        }
+    };
+    setMenuTable( menuInfo.menu.columns );
     
-    // エディタ表示
-    const recursionMenuTable = function( $target, column ) {
-      
-      let columns = ('columns' in column )? 'columns' : '';
-      let length;
-
-      if ( columns === ''){
-        length = 0;
-      } else {
-        length = column[ columns ].length;
-      }
-
-      for ( let i = 0; i < length; i++ ) {
-
-        const id = column[ columns ][i],
-              type = id.substr(0,1),
-              number = id.substr(1);
-
-        if ( type === 'g' ) {
-          // グループ
-          addColumn( $target, 'group', number, loadJSON['group'][id], false, false );
-          const groupData = loadJSON['group'][id],
-                $group = $('#' + id );
-          
-          $group.attr('data-group-id', groupData['column_group_id'] );
-          
-          recursionMenuTable( $group.children('.menu-column-group-body'), groupData );
-          
-        /*
-        } else if ( type === 'r' ) {
-          // リピート
-          addColumn( $target, 'repeat', number, loadJSON['repeat'][id], false, false );
-          const repeatData = loadJSON['repeat'][id],
-                $repeat = $('#' + id );
-          
-          $repeat.find('.menu-column-repeat-number-input').val( repeatData['REPEAT_CNT'] ).change();
-          
-          recursionMenuTable( $repeat.children('.menu-column-repeat-body'), repeatData );
-        */
-        } else {
-          // 項目
-          addColumn( $target, 'column', number, loadJSON['column'][id], false );
-          const itemData = loadJSON['column'][id],
-                $item = $('#' + id );
-
-          // 該当するものがない
-          // $item.css('min-width', itemData['min-width'] );
-
-          let required;
-          let uniqued;
-          if ( itemData['required'] === '0'){
-            required = false;
-          } else {
-            required = true;
-          }
-
-          if ( itemData['uniqued'] === '0'){
-            uniqued = false;
-          } else {
-            uniqued = true;
-          }
-
-          $item.attr('data-item-id', itemData['create_column_id'] );
-          $item.find('.menu-column-type-select').val( itemData['column_class_id'] ).change();
-          $item.find('.required').prop('checked', required ).change();
-          $item.find('.unique').prop('checked', uniqued ).change();
-
-          let descriptionText = itemData['description'] === null ? '' : itemData['description'];
-          let noteText = itemData['remarks'] === null ? '' : itemData['remarks'];
-
-          $item.find('.explanation').val( descriptionText ).change();
-          if ( descriptionText !== '' ) $item.find('.explanation').addClass('text-in');
-          $item.find('.note').val( noteText ).change();
-          if ( noteText !== '' ) $item.find('.note').addClass('text-in');
-
-          switch ( itemData['column_class_id'] ) {
-            case '1':
-              $item.find('.max-byte').val( itemData['single_string_maximum_bytes'] ).change();
-              $item.find('.regex').val( itemData['single_string_regular_expression'] ).change();
-              $item.find('.single-default-value').val( itemData['single_string_default_value'] ).change();
-              break;
-            case '2':
-              $item.find('.max-byte').val( itemData['multi_string_maximum_bytes'] ).change();
-              $item.find('.regex').val( itemData['multi_string_regular_expression'] ).change();
-              $item.find('.multiple-default-value').val( itemData['multi_string_default_value'] ).change();
-              break;
-            case '3':
-              $item.find('.int-min-number').val( itemData['integer_minimum_value'] ).change();
-              $item.find('.int-max-number').val( itemData['integer_maximum_value'] ).change();
-              $item.find('.int-default-value').val( itemData['integer_default_value'] ).change();
-              break;
-            case '4':
-              $item.find('.float-min-number').val( itemData['decimal_minimum_value'] ).change();
-              $item.find('.float-max-number').val( itemData['decimal_maximum_value'] ).change();
-              $item.find('.digit-number').val( itemData['decimal_digit'] ).change();
-              $item.find('.float-default-value').val( itemData['decimal_default_value'] ).change();
-              break;
-            case '5':
-              $item.find('.datetime-default-value').val( itemData['datetime_default_value'] ).change();
-              break;
-            case '6':
-              $item.find('.date-default-value').val( itemData['date_default_value'] ).change();
-              break;
-            case '7':
-              $item.find('.pulldown-select').val( itemData['pulldown_selection'] ).change();
-              getpulldownDefaultValueList($item, itemData['pulldown_selection_default_value']); //「プルダウン選択」の初期値として選べる値を取得し、初期値に設定されているものをselectedにする。
-              $item.find('.reference-item').attr('data-reference-item-id', itemData['reference_item']).change();
-              //newItemListのIDから項目名に変換
-              if(itemData['reference_item'] != null){
+    // HTMLセット
+    $menuTable.html( setMenuHTML );
+    
+    // select2
+    $menuTable.find('.config-select').select2();
+    
+    // 各種設定
+    $menuTable.find('.menu-column-title-input, .menu-column-title-rest-input').each( function(){
+        titleInputChange( $(this) );
+    });
+    
+    // プルダウン選択
+    $menuTable.find('.menu-column').each(function(){
+        const $item = $( this ),
+              columnID = $item.attr('id'),
+              type = $item.find('.menu-column-config-table').attr('date-select-value'),
+              itemData = menuInfo['column'][ columnID ];
+        
+        // プルダウン選択初期値設定
+        if ( type === '7') {
+            // 選択項目
+            getpulldownDefaultValueList( $item, fn.cv( itemData['pulldown_selection_default_value'], '') );
+            
+            // 参照項目
+            $item.find('.reference-item').attr('data-reference-item-id', itemData['reference_item'] );
+            //newItemListのIDから項目名に変換
+            if( itemData['reference_item'] !== null ){
                 const newItemListArray = itemData['reference_item'];
                 const newItemNameListArray = [];
                 newItemListArray.forEach(function(data){
@@ -3955,41 +3797,21 @@ const loadMenu = function() {
                 //重複を排除
                 let setNewItemNameList = new Set(newItemNameListArray);
                 let setNewItemNameListArray = Array.from(setNewItemNameList);
-                //カンマ区切りの文字列に変換に参照項目上に表示
+                
+                //カンマ区切りの文字列に変換し参照項目上に表示
                 var newItemNameList = setNewItemNameListArray.join(',');
-                $item.find('.reference-item').html( newItemNameList ).change();
-              }
-              break;
-            case '8':
-              $item.find('.password-max-byte').val( itemData['password_maximum_bytes'] ).change();
-              break;
-            case '9':
-              $item.find('.file-max-size').val( itemData['file_upload_maximum_bytes'] ).change();
-              break;
-            case '10':
-              $item.find('.max-byte').val( itemData['link_maximum_bytes'] ).change();
-              $item.find('.link-default-value').val( itemData['link_default_value'] ).change();
-              break;
-            //case '11':
-            //  let type3ReferenceMenuId = menuEditorArray.referenceSheetType3ItemData[itemData['TYPE3_REFERENCE']];
-            //  $item.find('.type3-reference-menu').val( type3ReferenceMenuId ).change();
-            //  getpulldownParameterSheetReferenceList($item, itemData['TYPE3_REFERENCE']); //「プルダウン選択」の初期値として選べる値を取得し、初期値に設定されているものをselectedにする。
-            //  break;          
-          }
-          //プルダウン選択の初期値を取得するイベントを設定
-          setEventPulldownDefaultValue($item);
-          //パラメータシート参照の選択項目を取得するイベントを設定
-          setEventPulldownParameterSheetReference($item);
+                $item.find('.reference-item').html( newItemNameList );
+            }            
         }
-
-      }
-    };
-    recursionMenuTable( $menuTable, loadJSON['menu'] );
-
+        
+        setEventPulldownDefaultValue( $item );
+        setEventPulldownParameterSheetReference( $item );
+    });
+    
     history.clear();
     emptyCheck();
+    columnHeightUpdate();
     previewTable();
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4178,7 +4000,7 @@ const setPanelParameter = function( setData ) {
       /*
       if ( setData['menu']['PURPOSE'] === '2' ) {
         if ( menuEditorMode === 'view') {
-          $('#create-menu-use-host-group').text(textCode('0041'));
+          $('#create-menu-use-host-group').text(getMessage.FTE01085);
         } else {
           $('#create-menu-use-host-group').prop('checked', true );
         }
@@ -4188,7 +4010,7 @@ const setPanelParameter = function( setData ) {
     // 縦メニュー利用有無
     if ( setData['menu']['vertical'] === '1') {
       if ( menuEditorMode === 'view') {
-        $('#create-menu-use-vertical').text(textCode('0041'));
+        $('#create-menu-use-vertical').text(getMessage.FTE01085);
       } else {
         $('#create-menu-use-vertical').prop('checked', true );
       }
@@ -4226,7 +4048,7 @@ const setPanelParameter = function( setData ) {
       //「編集」ボタンを削除
       $menuEditor.find('[data-type="edit"]').closest('.operationMenuItem').remove();
       
-      const buttonText = ( menuEditorMode === 'view')? getMessage.FTE01151: textCode('0046');
+      const buttonText = ( menuEditorMode === 'view')? getMessage.FTE01151: getMessage.FTE01090;
       
       //「初期化」「作成(初期化)」ボタンを「作成」に名称変更
       const $initialize = $menuEditor.find('[data-type="initialize"], [data-type="update-initialize"]');
@@ -4304,7 +4126,7 @@ if ( menuEditorMode === 'new' ) {
     //パラメータシート参照の選択項目を取得するイベントを設定
     setEventPulldownParameterSheetReference($newColumnTarget);
 } else {
-    loadMenu();
+    setMenu();
 }
 repeatCheck();
 history.clear();

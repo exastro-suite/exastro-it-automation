@@ -190,6 +190,49 @@ def check_auth_menu(menu, wsdb_istc=None):
     return res
 
 
+def get_auth_menus(menu_rest_names, wsdb_istc=None):
+    """
+    get_auth_menus
+
+    Arguments:
+        menu_rest_names: (list)menu_name_rest
+        wsdb_istc: (class)DBConnectWs Instance
+    Returns:
+        (list) 権限のあるメニューレコード
+    """
+    if not wsdb_istc:
+        wsdb_istc = DBConnectWs(g.get('WORKSPACE_ID'))  # noqa: F405
+
+    role_id_list = g.get('ROLES')
+    prepared_role_id_list = list(map(lambda a: "%s", role_id_list))
+    prepared_menu_rest_names = list(map(lambda a: "%s", menu_rest_names))
+
+    query_str = textwrap.dedent("""
+        SELECT TAB_A.`PRIVILEGE`, TAB_B.*
+        FROM `T_COMN_ROLE_MENU_LINK` TAB_A
+            LEFT JOIN `T_COMN_MENU` TAB_B ON ( TAB_A.`MENU_ID` = TAB_B.`MENU_ID`)
+        WHERE TAB_B.`MENU_NAME_REST` IN ({}) AND
+              TAB_A.`ROLE_ID` IN ({}) AND
+              TAB_A.`DISUSE_FLAG`='0' AND
+              TAB_B.`DISUSE_FLAG`='0'
+    """).strip().format(",".join(prepared_menu_rest_names), ",".join(prepared_role_id_list))
+
+    data_list = wsdb_istc.sql_execute(query_str, [*menu_rest_names, *role_id_list])
+
+    menu_list = {}
+    for data in data_list:
+        menu_id = data['MENU_ID']
+        if menu_id not in menu_list:
+            menu_list[menu_id] = {}
+
+        if len(menu_list[menu_id]) == 0:
+            menu_list[menu_id] = data
+        elif not data['PRIVILEGE'] and int(data['PRIVILEGE']) > int(menu_list[menu_id]['PRIVILEGE']):
+            menu_list[menu_id] = data
+
+    return menu_list.values()
+
+
 def check_sheet_type(menu, sheet_type_list, wsdb_istc=None):
     """
     check_sheet_type

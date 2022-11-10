@@ -1134,9 +1134,9 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                         </td>
                     </tr>
                     <!-- 最大バイト数 パスワード -->
-                    <tr class="password" title="${textEntities(getMessage.FTE01150,1)}">
+                    <tr class="password" title="${textEntities(getMessage.FTE01110,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
-                        <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="255" value="${sv('password_maximum_bytes')}"${modeDisabled}></td>
+                        <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="8192" value="${sv('password_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
                     <!-- 最大バイト数 ファイル -->
                     <tr class="file" title="${textEntities(getMessage.FTE01119,1)}">

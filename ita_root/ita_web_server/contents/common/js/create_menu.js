@@ -1136,7 +1136,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <!-- 最大バイト数 パスワード -->
                     <tr class="password" title="${textEntities(getMessage.FTE01150,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01055 + fn.html.required()}</span></th>
-                        <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="8192" value="${sv('password_maximum_bytes')}"${modeDisabled}></td>
+                        <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="255" value="${sv('password_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
                     <!-- 最大バイト数 ファイル -->
                     <tr class="file" title="${textEntities(getMessage.FTE01119,1)}">
@@ -1151,7 +1151,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <!-- 初期値 複数行 -->
                     <tr class="multiple" title="${textEntities(getMessage.FTE01121,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
-                        <td class="full-body"><textarea class="input config-textarea multiple-default-value"${modeDisabled}></textarea></td>
+                        <td class="full-body"><textarea class="input config-textarea multiple-default-value"${modeDisabled}>${sv('multi_string_default_value', false )}</textarea></td>
                     </tr>
                     <!-- 初期値 int -->
                     <tr class="number-int" title="${textEntities(getMessage.FTE01122,1)}">
@@ -1195,11 +1195,11 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <tr class="single multiple number-int number-float date-time date password select-option file link">
                         <td colspan="2">
                             <label class="required-label${onHover}" title="${textEntities(getMessage.FTE01127,1)}"${modeDisabled}${modeKeepData}>
-                                <input class="config-checkbox required${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}${(sv('required') === 'True')? ` checked`: ``}>
+                                <input class="config-checkbox required${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}${(sv('required') === '1')? ` checked`: ``}>
                                 <span></span>${getMessage.FTE01061}
                             </label>
                             <label class="unique-label${onHover}" title="${textEntities(getMessage.FTE01128,1)}"${modeDisabled}${modeKeepData}>
-                                <input class="config-checkbox unique${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}${(sv('uniqued') === 'True')? ` checked`: ``}>
+                                <input class="config-checkbox unique${disbledCheckbox}" type="checkbox"${modeDisabled}${modeKeepData}${(sv('uniqued') === '1')? ` checked`: ``}>
                                 <span></span>${getMessage.FTE01062}
                             </label>
                         </td>
@@ -1208,7 +1208,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <tr class="all" title="${textEntities(getMessage.FTE01129,1)}">
                         <td colspan="2">
                             <div class="config-textarea-wrapper">
-                                <textarea class="input config-textarea explanation"${modeDisabled}>${sv('description', false )}</textarea>
+                                <textarea class="input config-textarea explanation${( sv('description') !== '')? ' text-in': ''}"${modeDisabled}>${sv('description', false )}</textarea>
                                 <span>${getMessage.FTE01063}</span>
                             </div>
                         </td>
@@ -1217,7 +1217,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <tr class="all" title="${textEntities(getMessage.FTE01130,1)}">
                         <td colspan="2">
                             <div class="config-textarea-wrapper">
-                                <textarea class="input config-textarea note"${modeDisabled}>${sv('remarks', false )}</textarea>
+                                <textarea class="input config-textarea note${( sv('remarks') !== '')? ' text-in': ''}"${modeDisabled}>${sv('remarks', false )}</textarea>
                                 <span>${getMessage.FTE01064}</span>
                             </div>
                         </td>
@@ -1432,10 +1432,13 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
     }
     
     // 追加した項目に合わせスクロールさせる
-    const editorWindowWidth = $menuEditWindow.outerWidth(),
-        tableWidth = $menuEditWindow.find('.menu-table-wrapper').width()
-    if ( editorWindowWidth < tableWidth ) {
-        $menuEditWindow.children().stop(0,0).animate({'scrollLeft': tableWidth - editorWindowWidth }, 200 );
+    const $scrollArea = $menuEditWindow.children(),
+          scrollElement = $scrollArea.get(0),
+          scrollWidth = scrollElement.scrollWidth,
+          clientWidth = scrollElement.clientWidth;
+          
+    if ( clientWidth < scrollWidth ) {
+        $scrollArea.stop(0,0).animate({'scrollLeft': scrollWidth - clientWidth }, 200 );
     }
 
 };
@@ -2198,20 +2201,6 @@ const resetSelect2 = function( $target ) {
     }
 };
 
-// datetimepickerを再適用
-//const resetDatetimepicker = function ( $target ) {
-//    if ( $target.find('.callDateTimePicker').length ) {
-//      //既存の要素を削除
-//      $target.find(".callDateTimePicker").datetimepicker("destroy");
-//      $target.find(".callDateTimePicker2").datetimepicker("destroy");
-//      $('.xdsoft_datetimepicker').remove();
-//      // datetimepickeを再適用
-//      $target.find(".callDateTimePicker").datetimepicker({format:'Y/m/d H:i:s', step:5, lang:LangStream});
-//      $target.find(".callDateTimePicker2").datetimepicker({timepicker:false, format:'Y/m/d', lang:LangStream});
-
-//    }
-//}
-
 $menuEditor.on('click', '.menu-column-copy', function(){
   const $column = $( this ).closest('.menu-column, .menu-column-group');
   
@@ -2264,6 +2253,25 @@ $menuEditor.on('click', '.menu-column-copy', function(){
 
     history.add();
     previewTable();
+    
+    // コピーした項目に合わせスクロールさせる
+    const $scrollArea = $menuEditWindow.children(),
+          scrollElement = $scrollArea.get(0),
+          scrollAreaWidth = $scrollArea.outerWidth(),
+          scrollLeft = $scrollArea.scrollLeft(),
+          scrollWidth = scrollElement.scrollWidth,
+          clientWidth = scrollElement.clientWidth,
+          editorLeft = scrollElement.getBoundingClientRect().left,
+          cloneLeft = $clone.get(0).getBoundingClientRect().left + scrollLeft - editorLeft,
+          cloneWidth = $clone.outerWidth(),
+          padding = 8;
+    
+    // スクロール可能か？
+    if ( clientWidth < scrollWidth && scrollLeft + scrollAreaWidth < cloneLeft + cloneWidth ) {
+        const left = ( cloneLeft + cloneWidth ) - scrollAreaWidth + padding;
+        $menuEditWindow.children().stop(0,0).animate({'scrollLeft': left }, 200 );
+    }       
+    
   });
 });
 
@@ -3437,19 +3445,11 @@ const updateUniqueConstraintDispData = function(){
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 const createRegistrationData = function( type ){
-
-    // Emptyが一つでもある場合は終了
-    //if ( $menuTable.find('.column-empty').length ) {
-    //  alert('Empty error.');
-    //  return false;
-    //}
   
     let createMenuJSON = {
       'menu'   : {},
       'group'  : {},
       'column' : {},
-      //'item' : {},
-      //'repeat' : {},
       'type'   : {}
     };
     
@@ -3461,35 +3461,6 @@ const createRegistrationData = function( type ){
     if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit') {
       createMenuJSON['menu']['last_update_date_time'] = menuEditorArray.menu_info['menu']['last_update_date_time'];
     }
-    
-    // CREATE_ITEM_IDからKEYを返す
-    const CREATE_ITEM_ID_to_KEY = function( itemID ) {
-      for ( let key in menuEditorArray.menu_info['column'] ) {
-        // CREATE_ITEM_ID ⇒ create_column_id
-        if ( menuEditorArray.menu_info['column'][ key ]['create_column_id'] === itemID ) {
-          return menuEditorArray.menu_info['column'][ key ]['item_name'];
-        }
-      }
-    }
-    // リピート項目チェック（名前とグループからCREATE_ITEM_IDとLAST_UPDATE_TIMESTAMPを返す）
-    /*
-    const repeatItemCheckID = function( groupID, itemName ) {
-      for ( let key in menuEditorArray.selectMenuInfo['item'] ) {
-        if ( menuEditorArray.selectMenuInfo['item'][ key ]['col_group_id'] === groupID &&
-            menuEditorArray.selectMenuInfo['item'][ key ]['item_name'] === itemName ) {
-          // リピートで作成された項目かチェック
-          if ( menuEditorArray.selectMenuInfo['item'][ key ]['REPEAT_ITEM'] === true ) {
-            return [
-              menuEditorArray.selectMenuInfo['item'][ key ]['CREATE_ITEM_ID'],
-              menuEditorArray.selectMenuInfo['item'][ key ]['LAST_UPDATE_TIMESTAMP']
-            ];
-          }
-        }
-      }
-      // 見つからない場合はnullを返す
-      return [ null, null ];
-    }
-    */
 
     // COL_GROUP_IDからKEYを返す
     const COL_GROUP_ID_to_KEY = function( groupID ) {
@@ -3499,21 +3470,6 @@ const createRegistrationData = function( type ){
         }
       }
     }
-    // リピート項目チェック（名前からCREATE_ITEM_IDとLAST_UPDATE_TIMESTAMPを返す）
-    /*
-    const repeatGroupCheckID = function( groupName ) {
-      for ( let key in menuEditorArray.selectMenuInfo['group'] ) {
-        if ( menuEditorArray.selectMenuInfo['group'][ key ]['col_group_name'] === groupName ) {
-          // リピートで作成された項目かチェック
-          if ( menuEditorArray.selectMenuInfo['group'][ key ]['REPEAT_GROUP'] === true ) {
-            return menuEditorArray.selectMenuInfo['group'][ key ]['col_group_id'];
-          }
-        }
-      }
-      // 見つからない場合はnullを返す
-      return [ null, null ];
-    }
-    */
     
     const tableAnalysis = function( $cols, repeatCount ) {
       
@@ -3531,15 +3487,14 @@ const createRegistrationData = function( type ){
                   LAST_UPDATE_TIMESTAMP = null;
 
               let select = document.getElementById('menu-column-type-select');
-              //let idx = select.selectedIndex;
               let column_class  = select.options[selectTypeValue - 1].dataset.value;
 
               if ( CREATE_ITEM_ID === '') CREATE_ITEM_ID = null;
               if ( menuEditorMode === 'diversion') CREATE_ITEM_ID = null;
               if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                if ( menuEditorArray.menu_info['column'][key] ) {
-                  LAST_UPDATE_TIMESTAMP = menuEditorArray.menu_info['column'][key]['last_update_date_time'];
-                }
+                  if ( menuEditorArray.menu_info['column'][key] ) {
+                      LAST_UPDATE_TIMESTAMP = menuEditorArray.menu_info['column'][key]['last_update_date_time'];
+                  }
               }
               // 親カラムグループ
               let parentArray = [];
@@ -3552,21 +3507,7 @@ const createRegistrationData = function( type ){
               // 項目名
               let itemName = $column.find('.menu-column-title-input').val();
               let itemNameRest = $column.find('.menu-column-title-rest-input').val();
-              /*
-              if ( repeatCount > 1 ) {
-                itemName += '[' + repeatCount + ']';
-                repeatFlag = true;
-                key = key + '[' + repeatCount + ']';
-  
-                // 更新時のリピート項目チェック
-                if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                  const originalBeforeName = CREATE_ITEM_ID_to_KEY( CREATE_ITEM_ID ),
-                        repeatItemData = repeatItemCheckID( parentsID, originalBeforeName + '[' + repeatCount + ']');
-                  CREATE_ITEM_ID = repeatItemData[0];
-                  LAST_UPDATE_TIMESTAMP = repeatItemData[1];
-                }
-              }
-              */
+
               let required = $column.find('.config-checkbox.required').prop('checked');
               if ( required === false ){
                 required = "False";
@@ -3583,19 +3524,17 @@ const createRegistrationData = function( type ){
 
               // JSONデータ
               createMenuJSON['column'][key] = {
-                'create_column_id' : CREATE_ITEM_ID,
-                'item_name' : itemName,
-                'item_name_rest' : itemNameRest,
-                'display_order' : order,
-                'required' : required, //パラメータシート参照の場合「必須」はfalse
-                'uniqued' : uniqued, //パラメータシート参照の場合「一意制約」はfalse
-                'column_group' : parents,
-                'column_class' : column_class,
-                'description' : $column.find('.explanation').val(),
-                'remarks' : $column.find('.note').val(),
-                //'REPEAT_ITEM' : repeatFlag,
-                //'MIN_WIDTH' : $column.css('min-width'),
-                'last_update_date_time' : LAST_UPDATE_TIMESTAMP
+                  'create_column_id' : CREATE_ITEM_ID,
+                  'item_name' : itemName,
+                  'item_name_rest' : itemNameRest,
+                  'display_order' : order,
+                  'required' : required, //パラメータシート参照の場合「必須」はfalse
+                  'uniqued' : uniqued, //パラメータシート参照の場合「一意制約」はfalse
+                  'column_group' : parents,
+                  'column_class' : column_class,
+                  'description' : $column.find('.explanation').val(),
+                  'remarks' : $column.find('.note').val(),
+                  'last_update_date_time' : LAST_UPDATE_TIMESTAMP
               }
               // 項目タイプ
               switch ( selectTypeValue ) {
@@ -3651,43 +3590,11 @@ const createRegistrationData = function( type ){
                   createMenuJSON['column'][key]['file_upload_maximum_bytes'] = $column.find('.file-max-size').val();
                   break;
                 case '10':
-                  createMenuJSON['column'][key]['link_maximum_bytes'] = $column.find('.max-byte').val();
+                  createMenuJSON['column'][key]['link_maximum_bytes'] = $column.find('.link-max-byte').val();
                   createMenuJSON['column'][key]['link_default_value'] = $column.find('.link-default-value').val();
                   break;
-                //case '11':
-                //  createMenuJSON['column'][key]['TYPE3_REFERENCE'] = $column.find('.type3-reference-item').val();
-                //  break;
               }
             // Item end
-          /*
-          } else if ( $column.is('.menu-column-repeat') ) {
-            // リピート
-              const repeatNumber = $column.find('.menu-column-repeat-number-input').val();
-              if ( $column.find('.menu-column, .menu-column-group').length ) {
-                  // リピートの回数繰り返す
-                  for ( let i = 1; i <= repeatNumber; i++ ) {
-                    repeatCount = i;
-                    tableAnalysis( $column.children('.menu-column-repeat-body'), repeatCount );
-                  }
-                  repeatCount = 0;
-                  // リピート内項目リスト
-                  let columns = [];
-                  $column.children('.menu-column-repeat-body').children().each( function() {
-                    columns.push( $( this ).attr('id') );
-                  });
-                  // リピートJSON
-                  createMenuJSON['repeat']['r1'] = {
-                    'COLUMNS' : columns,
-                    'REPEAT_CNT' : repeatNumber
-                  }
-                  if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                    if ( menuEditorArray.selectMenuInfo['repeat']['r1'] && menuEditorArray.selectMenuInfo['repeat']['r1']['LAST_UPDATE_TIMESTAMP'] ) {
-                      createMenuJSON['repeat']['LAST_UPDATE_TIMESTAMP'] = menuEditorArray.selectMenuInfo['repeat']['r1']['LAST_UPDATE_TIMESTAMP'];
-                    }
-                  }
-              }
-            // Repeat end
-          */
           } else if ( $column.is('.menu-column-group') ) {
             // グループ
               let groupID = $column.attr('data-group-id'),
@@ -3698,22 +3605,6 @@ const createRegistrationData = function( type ){
                   columns = [],
                   repeatFlag = false;
               if ( menuEditorMode === 'diversion') groupID = null;
-               // グループ名
-              /*
-              if ( repeatCount > 1 ) {
-                groupName += '[' + repeatCount + ']';
-                repeatFlag = true;
-                key = key + '[' + repeatCount + ']';
-  
-                // 更新時のリピート項目チェック
-                if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                  const originalBeforeName = COL_GROUP_ID_to_KEY( groupID ),
-                        repeatGroupID = repeatGroupCheckID( originalBeforeName + '[' + repeatCount + ']');
-                  groupID = repeatGroupID;
-                }
-  
-              }
-              */
               // 親グループ
               $column.parents('.menu-column-group').each( function() {
                 parentArray.unshift( $( this ).find('.menu-column-title-input').val() );
@@ -3729,7 +3620,6 @@ const createRegistrationData = function( type ){
                 'col_group_name' : groupName,
                 'parent_full_col_group_name' : parents,
                 'columns' : columns,
-                //'REPEAT_GROUP' : repeatFlag,
               }
               tableAnalysis( $column.children('.menu-column-group-body'), repeatCount );
             // Group end
@@ -3750,13 +3640,9 @@ const createRegistrationData = function( type ){
     createMenuJSON['type'] = type;
   
     // 解析スタート
-    tableAnalysis ( $menuTable, 0 );
+    tableAnalysis( $menuTable, 0 );
     
-    // JSON変換
-    //const menuData = JSON.stringify( createMenuJSON );
-    const menuData = createMenuJSON;
-    
-    fn.fetch('/create/define/execute/', null, 'POST', menuData ).then(function(result){
+    fn.fetch('/create/define/execute/', null, 'POST', createMenuJSON ).then(function(result){
       let id  = result['history_id'];
       let string = getMessage.FTE01140;
       let log = string + id;
@@ -3895,7 +3781,6 @@ const setMenu = function() {
               itemData = menuInfo['column'][ columnID ];
         
         // プルダウン選択初期値設定
-        console.log(type)
         if ( type === '7') {
             // 選択項目
             getpulldownDefaultValueList( $item, fn.cv( itemData['pulldown_selection_default_value'], '') );
@@ -3912,7 +3797,8 @@ const setMenu = function() {
                 //重複を排除
                 let setNewItemNameList = new Set(newItemNameListArray);
                 let setNewItemNameListArray = Array.from(setNewItemNameList);
-                //カンマ区切りの文字列に変換に参照項目上に表示
+                
+                //カンマ区切りの文字列に変換し参照項目上に表示
                 var newItemNameList = setNewItemNameListArray.join(',');
                 $item.find('.reference-item').html( newItemNameList );
             }            
@@ -3926,195 +3812,6 @@ const setMenu = function() {
     emptyCheck();
     columnHeightUpdate();
     previewTable();
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const loadMenu = function() {
-    
-    const loadJSON = menuEditorArray.menu_info;
-    // 流用新規時に引き継がない項目
-    if ( menuEditorMode === 'diversion' ){
-      loadJSON['menu']['menu_create_id'] = null;
-      loadJSON['menu']['menu_name'] = null;
-      loadJSON['menu']['menu_name_rest'] = null;
-      loadJSON['menu']['disp_seq'] = null;
-      loadJSON['menu']['last_update_date_time'] = null;
-      // loadJSON['menu']['LAST_UPDATE_TIMESTAMP_FOR_DISPLAY'] = null;
-      // loadJSON['menu']['LAST_UPDATE_USER'] = null;
-      loadJSON['menu']['description'] = null;
-      loadJSON['menu']['remarks'] = null;
-    }
-
-    // パネル情報表示
-    setPanelParameter( loadJSON );
-    
-    // エディタクリア
-    $menuTable.html('');
-    
-    // エディタ表示
-    const recursionMenuTable = function( $target, column ) {
-      
-      let columns = ('columns' in column )? 'columns' : '';
-      let length;
-
-      if ( columns === ''){
-        length = 0;
-      } else {
-        length = column[ columns ].length;
-      }
-
-      for ( let i = 0; i < length; i++ ) {
-
-        const id = column[ columns ][i],
-              type = id.substr(0,1),
-              number = id.substr(1);
-
-        if ( type === 'g' ) {
-          // グループ
-          addColumn( $target, 'group', number, loadJSON['group'][id], false, false );
-          const groupData = loadJSON['group'][id],
-                $group = $('#' + id );
-          
-          $group.attr('data-group-id', groupData['column_group_id'] );
-          
-          recursionMenuTable( $group.children('.menu-column-group-body'), groupData );
-          
-        /*
-        } else if ( type === 'r' ) {
-          // リピート
-          addColumn( $target, 'repeat', number, loadJSON['repeat'][id], false, false );
-          const repeatData = loadJSON['repeat'][id],
-                $repeat = $('#' + id );
-          
-          $repeat.find('.menu-column-repeat-number-input').val( repeatData['REPEAT_CNT'] ).change();
-          
-          recursionMenuTable( $repeat.children('.menu-column-repeat-body'), repeatData );
-        */
-        } else {
-          // 項目
-          addColumn( $target, 'column', number, loadJSON['column'][id], false );
-          const itemData = loadJSON['column'][id],
-                $item = $('#' + id );
-
-          // 該当するものがない
-          // $item.css('min-width', itemData['min-width'] );
-
-          let required;
-          let uniqued;
-          if ( itemData['required'] === '0'){
-            required = false;
-          } else {
-            required = true;
-          }
-
-          if ( itemData['uniqued'] === '0'){
-            uniqued = false;
-          } else {
-            uniqued = true;
-          }
-
-          $item.attr('data-item-id', itemData['create_column_id'] );
-          $item.find('.menu-column-type-select').val( itemData['column_class_id'] ).change();
-          $item.find('.required').prop('checked', required ).change();
-          $item.find('.unique').prop('checked', uniqued ).change();
-
-          let descriptionText = itemData['description'] === null ? '' : itemData['description'];
-          let noteText = itemData['remarks'] === null ? '' : itemData['remarks'];
-
-          $item.find('.explanation').val( descriptionText ).change();
-          if ( descriptionText !== '' ) $item.find('.explanation').addClass('text-in');
-          $item.find('.note').val( noteText ).change();
-          if ( noteText !== '' ) $item.find('.note').addClass('text-in');
-
-          switch ( itemData['column_class_id'] ) {
-            case '1':
-              $item.find('.max-byte').val( itemData['single_string_maximum_bytes'] ).change();
-              $item.find('.regex').val( itemData['single_string_regular_expression'] ).change();
-              $item.find('.single-default-value').val( itemData['single_string_default_value'] ).change();
-              break;
-            case '2':
-              $item.find('.max-byte').val( itemData['multi_string_maximum_bytes'] ).change();
-              $item.find('.regex').val( itemData['multi_string_regular_expression'] ).change();
-              $item.find('.multiple-default-value').val( itemData['multi_string_default_value'] ).change();
-              break;
-            case '3':
-              $item.find('.int-min-number').val( itemData['integer_minimum_value'] ).change();
-              $item.find('.int-max-number').val( itemData['integer_maximum_value'] ).change();
-              $item.find('.int-default-value').val( itemData['integer_default_value'] ).change();
-              break;
-            case '4':
-              $item.find('.float-min-number').val( itemData['decimal_minimum_value'] ).change();
-              $item.find('.float-max-number').val( itemData['decimal_maximum_value'] ).change();
-              $item.find('.digit-number').val( itemData['decimal_digit'] ).change();
-              $item.find('.float-default-value').val( itemData['decimal_default_value'] ).change();
-              break;
-            case '5':
-              $item.find('.datetime-default-value').val( itemData['datetime_default_value'] ).change();
-              break;
-            case '6':
-              $item.find('.date-default-value').val( itemData['date_default_value'] ).change();
-              break;
-            case '7':
-              $item.find('.pulldown-select').val( itemData['pulldown_selection'] ).change();
-              getpulldownDefaultValueList($item, itemData['pulldown_selection_default_value']); //「プルダウン選択」の初期値として選べる値を取得し、初期値に設定されているものをselectedにする。
-              $item.find('.reference-item').attr('data-reference-item-id', itemData['reference_item']).change();
-            //newItemListのIDから項目名に変換
-            if(itemData['reference_item'] != null){
-              const newItemListArray = itemData['reference_item'];
-              const newItemNameListArray = [];
-              newItemListArray.forEach(function(data){
-                    newItemNameListArray.push(data);
-              });
-              //重複を排除
-              let setNewItemNameList = new Set(newItemNameListArray);
-              let setNewItemNameListArray = Array.from(setNewItemNameList);
-              //カンマ区切りの文字列に変換に参照項目上に表示
-              var newItemNameList = setNewItemNameListArray.join(',');
-              $item.find('.reference-item').html( newItemNameList ).change();
-            }
-              break;
-            case '8':
-              $item.find('.password-max-byte').val( itemData['password_maximum_bytes'] ).change();
-              break;
-            case '9':
-              $item.find('.file-max-size').val( itemData['file_upload_maximum_bytes'] ).change();
-              break;
-            case '10':
-              $item.find('.max-byte').val( itemData['link_maximum_bytes'] ).change();
-              $item.find('.link-default-value').val( itemData['link_default_value'] ).change();
-              break;
-            //case '11':
-            //  let type3ReferenceMenuId = menuEditorArray.referenceSheetType3ItemData[itemData['TYPE3_REFERENCE']];
-            //  $item.find('.type3-reference-menu').val( type3ReferenceMenuId ).change();
-            //  getpulldownParameterSheetReferenceList($item, itemData['TYPE3_REFERENCE']); //「プルダウン選択」の初期値として選べる値を取得し、初期値に設定されているものをselectedにする。
-            //  break;          
-          }
-          //プルダウン選択の初期値を取得するイベントを設定
-          setEventPulldownDefaultValue($item);
-          //パラメータシート参照の選択項目を取得するイベントを設定
-          setEventPulldownParameterSheetReference($item);
-        }
-
-      }
-    };
-    recursionMenuTable( $menuTable, loadJSON['menu'] );
-
-    history.clear();
-    emptyCheck();
-    previewTable();
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

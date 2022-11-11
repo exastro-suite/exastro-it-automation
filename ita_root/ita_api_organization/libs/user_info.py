@@ -14,7 +14,7 @@
 
 from common_libs.common import *  # noqa: F403
 from flask import g
-from libs.organization_common import check_auth_menu
+from libs.organization_common import check_auth_menu, get_auth_menus
 from common_libs.common.exception import AppException
 
 
@@ -26,7 +26,6 @@ def collect_menu_group_panels(objdbca):
         RETRUN:
             panels_data
     """
-    
     # テーブル名
     t_common_menu = 'T_COMN_MENU'
     t_common_menu_group = 'T_COMN_MENU_GROUP'
@@ -39,20 +38,16 @@ def collect_menu_group_panels(objdbca):
     # 『メニュー管理』テーブルからメニューの一覧を取得
     ret = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
     
-    menu_groups = []
+    menu_rest_names = []
     for recode in ret:
-        # メニューに対する権限があるかどうかをチェック
-        menu_name_rest = recode.get('MENU_NAME_REST')
-        try:
-            check_auth_menu(menu_name_rest)
-        except AppException as e:
-            if e.args[0] == '401-00001':
-                continue
-            else:
-                raise e
-        
+        menu_rest_names.append(recode.get('MENU_NAME_REST'))
+
+    auth_menu_list = get_auth_menus(menu_rest_names, objdbca)
+
+    menu_groups = []
+    for menu_item in auth_menu_list:
         # 権限のあるメニューのメニューグループを格納
-        menu_group_id = recode.get('MENU_GROUP_ID')
+        menu_group_id = menu_item.get('MENU_GROUP_ID')
         menu_groups.append(menu_group_id)
         
     # 重複を除外
@@ -138,18 +133,14 @@ def collect_menus(objdbca):
     ret = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
     
     # メニューグループごとのメニュー一覧を作成
-    menus = {}
+    menu_rest_names = []
     for recode in ret:
-        # メニューに対する権限があるかどうかをチェック
-        menu_name_rest = recode.get('MENU_NAME_REST')
-        try:
-            check_auth_menu(menu_name_rest)
-        except AppException as e:
-            if e.args[0] == '401-00001':
-                continue
-            else:
-                raise e
-        
+        menu_rest_names.append(recode.get('MENU_NAME_REST'))
+
+    auth_menu_list = get_auth_menus(menu_rest_names, objdbca)
+
+    menus = {}
+    for recode in auth_menu_list:
         menu_group_id = recode.get('MENU_GROUP_ID')
         if menu_group_id not in menus:
             menus[menu_group_id] = []

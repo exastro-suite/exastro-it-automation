@@ -502,15 +502,26 @@ class ConductorCommonLibs():
         """
         err_msg_args = []
 
+        chk_id_name_flg = True
+
         if 'movement_id' not in node_blcok or not node_blcok['movement_id']:
-            # err_msg_args.append('movement_id')
-            err_msg_args.append(g.appmsg.get_api_message('MSG-40014'))
+            chk_id_name_flg = False
         else:
             data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s', [node_blcok['movement_id']])
             if len(data_list) == 0:
-                # err_msg_args.append('movement_id is not available')
+                chk_id_name_flg = False
+
+        # 名称で検索
+        if chk_id_name_flg is False:
+            if 'movement_name' not in node_blcok or not node_blcok['movement_name']:
+                # err_msg_args.append('movement_id')
                 err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
-                
+            else:
+                data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [node_blcok['movement_name']])
+                if len(data_list) == 0:
+                    # err_msg_args.append('movement_id is not available')
+                    err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
+
             # if 'movement_name' not in node_blcok:
             #    # err_msg_args.append('movement_name')
             #    err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
@@ -519,14 +530,30 @@ class ConductorCommonLibs():
             # err_msg_args.append('skip_flag')
             err_msg_args.append(g.appmsg.get_api_message('MSG-40015'))
 
-        if 'operation_id' not in node_blcok:
-            # err_msg_args.append('operation_id')
-            err_msg_args.append(g.appmsg.get_api_message('MSG-40016'))
-        elif node_blcok['operation_id']:
-            data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [node_blcok['operation_id']])
-            if len(data_list) == 0:
-                # err_msg_args.append('operation_id is not available')
-                err_msg_args.append(g.appmsg.get_api_message('MSG-40016', [node_blcok.get('operation_id'), node_blcok.get('operation_name')]))
+        if 'operation_id' not in node_blcok and 'operation_name' not in node_blcok:
+            pass
+        elif node_blcok.get('operation_id') is None and node_blcok.get('operation_name') is None:
+            pass
+        elif node_blcok.get('operation_id') == "" and node_blcok.get('operation_name') == "":
+            pass
+        else:
+            chk_id_name_flg = True
+            if 'operation_id' not in node_blcok:
+                chk_id_name_flg = False
+            elif node_blcok['operation_id']:
+                data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [node_blcok['operation_id']])
+                if len(data_list) == 0:
+                    chk_id_name_flg = False
+
+            if chk_id_name_flg is False:
+                if 'operation_name' not in node_blcok:
+                    # err_msg_args.append('operation_id')
+                    err_msg_args.append(g.appmsg.get_api_message('MSG-40016', [node_blcok.get('operation_id'), node_blcok.get('operation_name')]))
+                elif node_blcok['operation_name']:
+                    data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [node_blcok['operation_name']])  # noqa E501
+                    if len(data_list) == 0:
+                        # err_msg_args.append('operation_id is not available')
+                        err_msg_args.append(g.appmsg.get_api_message('MSG-40016', [node_blcok.get('operation_id'), node_blcok.get('operation_name')]))
 
             # if 'operation_name' not in node_blcok:
             #    # err_msg_args.append('operation_name')
@@ -554,38 +581,53 @@ class ConductorCommonLibs():
         """
         err_msg_args = []
 
+        chk_id_name_flg = True
         if 'call_conductor_id' not in node_blcok or not node_blcok['call_conductor_id']:
-            # err_msg_args.append('call_conductor_id')
-            err_msg_args.append(g.appmsg.get_api_message('MSG-40018'))
+            chk_id_name_flg = False
         else:
             data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [node_blcok['call_conductor_id']])  # noqa E501
             if len(data_list) == 0:
-                # err_msg_args.append('call_conductor_id is not available')
-                tmp_msg = g.appmsg.get_api_message('MSG-40018', [node_blcok.get('call_conductor_id'), node_blcok.get('call_conductor_name')])
-                err_msg_args.append(tmp_msg)
-            if 'call_conductor_name' not in node_blcok:
-                pass
-                # err_msg_args.append('call_conductor_name')
-                # tmp_msg = g.appmsg.get_api_message('MSG-40018', [node_blcok.get('call_conductor_id'), node_blcok.get('call_conductor_name')])
-                # err_msg_args.append(tmp_msg)
+                chk_id_name_flg = False
+
+        if chk_id_name_flg is False:
+            if 'call_conductor_name' not in node_blcok or not node_blcok['call_conductor_name']:
+                # err_msg_args.append('movement_id')
+                err_msg_args.append(g.appmsg.get_api_message('MSG-40018', [node_blcok.get('call_conductor_id'), node_blcok.get('call_conductor_name')]))  # noqa E501
+            else:
+                data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [node_blcok['call_conductor_name']])  # noqa E501
+                if len(data_list) == 0:
+                    # err_msg_args.append('movement_id is not available')
+                    err_msg_args.append(g.appmsg.get_api_message('MSG-40018', [node_blcok.get('call_conductor_id'), node_blcok.get('call_conductor_name')]))  # noqa E501
 
         if 'skip_flag' not in node_blcok:
             # err_msg_args.append('skip_flag')
             err_msg_args.append(g.appmsg.get_api_message('MSG-40015'))
 
-        if 'operation_id' not in node_blcok:
-            # err_msg_args.append('operation_id')
-            err_msg_args.append(g.appmsg.get_api_message('MSG-40016'))
-        elif node_blcok['operation_id']:
-            data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [node_blcok['operation_id']])
-            if len(data_list) == 0:
-                # err_msg_args.append('operation_id is not available')
-                err_msg_args.append(g.appmsg.get_api_message('MSG-40016', [node_blcok.get('operation_id'), node_blcok.get('operation_name')]))
-            if 'operation_name' not in node_blcok:
-                pass
-                # err_msg_args.append('operation_name')
-                # err_msg_args.append(g.appmsg.get_api_message('MSG-40016', [node_blcok.get('operation_id'), node_blcok.get('operation_name')]))
-                
+        if 'operation_id' not in node_blcok and 'operation_name' not in node_blcok:
+            pass
+        elif node_blcok.get('operation_id') is None and node_blcok.get('operation_name') is None:
+            pass
+        elif node_blcok.get('operation_id') == "" and node_blcok.get('operation_name') == "":
+            pass
+        else:
+            chk_id_name_flg = True
+            if 'operation_id' not in node_blcok:
+                chk_id_name_flg = False
+            elif node_blcok['operation_id']:
+                data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [node_blcok['operation_id']])
+                if len(data_list) == 0:
+                    chk_id_name_flg = False
+
+            if chk_id_name_flg is False:
+                if 'operation_name' not in node_blcok:
+                    # err_msg_args.append('operation_id')
+                    err_msg_args.append(g.appmsg.get_api_message('MSG-40016', [node_blcok.get('operation_id'), node_blcok.get('operation_name')]))
+                elif node_blcok['operation_name']:
+                    data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [node_blcok['operation_name']])  # noqa E501
+                    if len(data_list) == 0:
+                        # err_msg_args.append('operation_id is not available')
+                        err_msg_args.append(g.appmsg.get_api_message('MSG-40016', [node_blcok.get('operation_id'), node_blcok.get('operation_name')]))
+
         if len(err_msg_args) != 0:
             return False, '\n'.join(err_msg_args)
         else:
@@ -951,20 +993,48 @@ class ConductorCommonLibs():
 
                 if node_type == 'movement':
                     # movement_name
-                    data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s', [block_1['movement_id']])
-                    block_1['movement_name'] = data_list[0]['MOVEMENT_NAME']
+                    if block_1.get('movement_id'):
+                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s', [block_1['movement_id']])
+                        if 0 in data_list:
+                            block_1['movement_name'] = data_list[0]['MOVEMENT_NAME']
+                        else:
+                            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [block_1['movement_name']])  # noqa E501
+                            block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
+                    elif block_1.get('movement_name'):
+                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [block_1['movement_name']])  # noqa E501
+                        block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
                     # operation_name
-                    if block_1['operation_id']:
+                    if block_1.get('operation_id'):
                         data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
                         block_1['operation_name'] = data_list[0]['OPERATION_NAME']
+                    elif block_1.get('operation_name'):
+                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
+                        block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                    else:
+                        block_1['operation_id'] = None
+                        
                 elif node_type == 'call':
                     # call_conductor_name
-                    data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [block_1['call_conductor_id']])  # noqa E501
-                    block_1['call_conductor_name'] = data_list[0]['CONDUCTOR_NAME']
+                    if block_1.get('call_conductor_id'):
+                        data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [block_1['call_conductor_id']])  # noqa E501
+                        if isinstance(data_list, list):
+                            if len(data_list) == 1:
+                                block_1['call_conductor_name'] = data_list[0]['CONDUCTOR_NAME']
+                            else:
+                                data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
+                                block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
+                    else:
+                        data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
+                        block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
                     # operation_name
-                    if block_1['operation_id']:
+                    if block_1.get('operation_id'):
                         data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
                         block_1['operation_name'] = data_list[0]['OPERATION_NAME']
+                    elif block_1.get('operation_name'):
+                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
+                        block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                    else:
+                        block_1['operation_id'] = None
 
         except Exception as e:
             g.applogger.error(e)
@@ -1170,12 +1240,22 @@ class ConductorCommonLibs():
     # Callループチェック処理
     def chk_loop_base_1(self, chk_conductor_id, c_data={}, call_conductor_id_List={}):
         try:
-            table_name = 'T_COMN_CONDUCTOR_CLASS'
-            where_str = 'WHERE `CONDUCTOR_CLASS_ID` = %s AND `DISUSE_FLAG`= 0 '
             # 最上位以外DBから取得 + 構造整理
             if c_data == {}:
+                table_name = 'T_COMN_CONDUCTOR_CLASS'
+                where_str = 'WHERE `CONDUCTOR_CLASS_ID` = %s AND `DISUSE_FLAG`= 0 '
                 retArray = self.__db.table_select(table_name, where_str, [chk_conductor_id])
-                tmpNodeLists = retArray[0]
+                if len(retArray) == 1:
+                    tmpNodeLists = retArray[0]
+                else:
+                    table_name = 'T_COMN_CONDUCTOR_CLASS'
+                    where_str = 'WHERE `CONDUCTOR_NAME` = %s AND `DISUSE_FLAG`= 0 '
+                    retArray = self.__db.table_select(table_name, where_str, [chk_conductor_id])
+                    if len(retArray) == 1:
+                        tmpNodeLists = retArray[0]
+                        chk_conductor_id = tmpNodeLists.get('CONDUCTOR_CLASS_ID')
+                    else:
+                        tmpNodeLists = {"SETTING": json.dumps(c_data)}
             else:
                 tmpNodeLists = {"SETTING": json.dumps(c_data)}
             arrCallLists = {}
@@ -1188,12 +1268,27 @@ class ConductorCommonLibs():
                 if 'node-' in key2:
                     node_type = val2.get('type')
                     if node_type == 'call':
-                        call_canductor_id = val2.get('call_conductor_id')
-                        if isinstance(call_canductor_id, list):
-                            call_canductor_id = val2.get('call_conductor_id')[0]
-                        arrCallLists.setdefault(call_canductor_id, call_canductor_id)
+                        call_conductor_id = val2.get('call_conductor_id')
+                        call_canductor_name = val2.get('call_conductor_name')
+                        table_name = 'T_COMN_CONDUCTOR_CLASS'
+                        where_str = 'WHERE `CONDUCTOR_NAME` = %s AND `DISUSE_FLAG`= 0 '
+                        if call_conductor_id:
+                            pass
+                        else:
+                            retArray = self.__db.table_select(table_name, where_str, [call_canductor_name])
+                            if len(retArray) == 1:
+                                tmpNodeLists = retArray[0]
+                                call_conductor_id = tmpNodeLists.get('CONDUCTOR_CLASS_ID')
+                            else:
+                                raise Exception()
+                        if isinstance(call_conductor_id, list):
+                            call_conductor_id = val2.get('call_conductor_id')[0]
+                        arrCallLists.setdefault(call_conductor_id, call_conductor_id)
             # loop chk
             if len(arrCallLists) != 0:
+                # 自身をcallしている場合
+                if chk_conductor_id in arrCallLists:
+                    raise Exception()
                 for call_conductor_id in arrCallLists:
                     if chk_conductor_id is not None:
                         call_conductor_id_List.setdefault(chk_conductor_id, {call_conductor_id: call_conductor_id})
@@ -1212,6 +1307,6 @@ class ConductorCommonLibs():
                         else:
                             raise Exception()
 
-        except Exception:
+        except Exception as e:
             return False
         return call_conductor_id_List

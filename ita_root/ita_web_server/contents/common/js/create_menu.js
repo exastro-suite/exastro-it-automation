@@ -3252,8 +3252,8 @@ const getUniqueConstraintDispData = function(uniqueConstraintArrayData){
             for (let columnId in uniqueConstraintArrayData[i][j]){
               if( uniquechangecount === 0 && uniquedeletecount === 0 ){
                 if ( 'menu_info' in menuEditorArray){
-                  for (const column  in columnList){
-                    if ( columnId === columnList[column]['item_name_rest'] ){
+                  for (const column in columnList ){
+                    if ( uniqueConstraintArrayData[i][j][columnId] === columnList[column]['item_name_rest'] ){
                       columnKey = column;
                       break;
                     }

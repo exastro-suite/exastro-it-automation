@@ -181,8 +181,6 @@ class AnscConst:
     # WINRM接続ポート デフォルト値
     LC_WINRM_PORT = 5985
 
-    TOWER_VER35 = 1        # Towerバージョン3.5(以下)
-    TOWER_VER36 = 2        # Towerバージョン3.6(以上)
     
     # ITA独自変数名
     ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME = "__loginprotocol__"

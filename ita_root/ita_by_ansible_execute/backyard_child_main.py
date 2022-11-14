@@ -92,9 +92,8 @@ def backyard_child_main(organization_id, workspace_id):
             # 正常終了
             g.applogger.info(g.appmsg.get_log_message("MSG-10721", [execution_no]))
         else:
-            if len(result) == 2:
+            if len(result) == 2:            
                 log_err("main_logic:" + str(result[1]))
-            update_status_error(wsDb, execution_no)
             g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
     except AppException as e:
         # 例外ログ生成
@@ -103,6 +102,17 @@ def backyard_child_main(organization_id, workspace_id):
         update_status_error(wsDb, execution_no)
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise AppException(e)
+
+    except ValidationException as e:
+        # 例外ログ生成
+        validation_exception(e)
+        
+        validation_exception_driver_log(e, driver_error_log_file)
+
+        update_status_error(wsDb, execution_no)
+
+        g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+
     except Exception as e:
         # 例外ログ生成
         exception_driver_log(e, driver_error_log_file)
@@ -110,6 +120,7 @@ def backyard_child_main(organization_id, workspace_id):
         update_status_error(wsDb, execution_no)
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise Exception(e)
+
 def update_status_error(wsDb: DBConnectWs, execution_no):
     """
     異常終了と判定した場合のステータス更新
@@ -151,7 +162,9 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     # 処理対象の作業インスタンス情報取得
     retBool, execute_data = cm.get_execution_process_info(wsDb, execution_no)
     if retBool is False:
-        return False, g.appmsg.get_log_message(execute_data, [execution_no])
+        err_log = g.appmsg.get_log_message(execute_data, [execution_no])
+        raise Exception(err_log)
+
     execution_no = execute_data["EXECUTION_NO"]
     run_mode = execute_data['RUN_MODE']
 
@@ -161,7 +174,9 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     # ANSIBLEインタフェース情報を取得
     retBool, result = cm.get_ansible_interface_info(wsDb)
     if retBool is False:
-        return False, g.appmsg.get_log_message(result, [execution_no])
+        err_log = g.appmsg.get_log_message(execute_data, [execution_no])
+        raise Exception(err_log)
+
     ans_if_info = result
 
     # ansible実行に必要なファイル群を生成するクラス
@@ -175,36 +190,23 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     try:
         sub_value_auto_reg.GetDataFromParameterSheet("1", execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
     except ValidationException as e:
-        # 例外ログ生成
-        global driver_error_log_file
-        
-        validation_exception(e)
-        
-        validation_exception_driver_log(e, driver_error_log_file)
-
-        err_msg = g.appmsg.get_api_message("MSG-10903", [str(e)])
-
-        return False, err_msg
-
+        raise ValidationException(e)
+    
     # 実行モードが「パラメータ確認」の場合は終了
     if run_mode == ansc_const.CHK_PARA:
+        timestamp = get_timestamp()
         wsDb.db_transaction_start()
         data = {
             "EXECUTION_NO": execution_no,
             "STATUS_ID": ansc_const.COMPLETE,
-            "TIME_END": get_timestamp(),
+            "TIME_START": timestamp,
+            "TIME_END": timestamp,
         }
         result = cm.update_execution_record(wsDb, data)
         if result[0] is True:
             wsDb.db_commit()
             g.applogger.info(g.appmsg.get_log_message("MSG-10735", [execution_no]))
         return True,
-
-    # # Conductorインタフェース情報を取得
-    # retBool, result = cm.get_conductor_interface_info(wsDb)
-    # if retBool is False:
-    #     return False, g.appmsg.get_log_message(result, [execution_no])
-    # conductor_interface_info = result
 
     # 投入オペレーションの最終実施日を更新する
     wsDb.db_transaction_start()
@@ -218,25 +220,26 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     retBool, execute_data, result_data = instance_execution(wsDb, ansdrv, ans_if_info, execute_data, driver_id)
 
     # 実行結果から、処理対象の作業インスタンスのステータス更新
-    if retBool is True:
-        wsDb.db_transaction_start()
-        if execute_data['FILE_INPUT']:
-            zip_tmp_save_path = get_AnsibleDriverTmpPath() + "/" + execute_data['FILE_INPUT']
-        else:
-            zip_tmp_save_path = ''
-            
-        result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, 'FILE_INPUT', zip_tmp_save_path)
+    if retBool is False:
+        # ステータスを想定外エラーに設定
+        execute_data["STATUS_ID"] = ansc_const.EXCEPTION
+        execute_data["TIME_START"] = get_timestamp()
+        execute_data["TIME_END"] = get_timestamp()
 
-        if result[0] is True:
-            wsDb.db_commit()
-            g.applogger.info(g.appmsg.get_log_message("BKY-10004", [execute_data["STATUS_ID"], execution_no]))
-        else:
-            wsDb.db_rollback()
-            return False, "InstanceRecodeUpdate->" + str(result[1])
+    wsDb.db_transaction_start()
+    if execute_data['FILE_INPUT']:
+        zip_tmp_save_path = get_AnsibleDriverTmpPath() + "/" + execute_data['FILE_INPUT']
     else:
-        # 失敗
-        return False, result_data
-    
+        zip_tmp_save_path = ''
+    result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, 'FILE_INPUT', zip_tmp_save_path)
+
+    if result[0] is True:
+        wsDb.db_commit()
+        g.applogger.info(g.appmsg.get_log_message("BKY-10004", [execute_data["STATUS_ID"], execution_no]))
+    else:
+        wsDb.db_rollback()
+        return False, "InstanceRecodeUpdate->" + str(result[1])
+
     # ステータスが実行中以外は終了
     if execute_data["STATUS_ID"] != ansc_const.PROCESSING:
         return False, g.appmsg.get_log_message("BKY-10005", [execute_data["STATUS_ID"], execution_no])
@@ -290,7 +293,6 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
     return True,
 
-
 def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id):
     tower_host_list = {}
 
@@ -325,8 +327,11 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
     # データベースからansibleで実行する情報取得し実行ファイル作成
     result = call_CreateAnsibleExecFiles(ansdrv, execute_data, driver_id, winrm_id)  # noqa: E501
-
     if result[0] is False:
+        # ステータスを想定外エラーに設定
+        execute_data["STATUS_ID"] = ansc_const.EXCEPTION
+        execute_data["TIME_START"] = get_timestamp()
+        execute_data["TIME_END"] = get_timestamp()
         return False, execute_data, result[1]
 
     # ansible-playbookのオプションパラメータを確認
@@ -352,6 +357,11 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
             wsDb,
             option_parameter)
         if result[0] is False:
+            # ステータスを想定外エラーに設定
+            execute_data["STATUS_ID"] = ansc_const.EXCEPTION
+            execute_data["TIME_START"] = get_timestamp()
+            execute_data["TIME_END"] = get_timestamp()
+
             err_msg_ary = result[1]
             for err_msg in err_msg_ary:
                 ansdrv.LocalLogPrint(
@@ -379,7 +389,8 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
         execute_data["FILE_INPUT"] = zip_input_file
     else:
         # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
-        g.applogger.warn(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
+        execute_data["FILE_INPUT"] = None
+        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
 
     # 準備で異常がなければ実行にうつる
     g.applogger.debug(g.appmsg.get_log_message("MSG-10761", [execution_no]))
@@ -389,11 +400,16 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
         if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
             ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
         retBool = ansible_execute.execute_construct(driver_id, execution_no, conductor_instance_no, "", "", ans_if_info['ANSIBLE_CORE_PATH'], ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
-        
+
         if retBool is True:
             execute_data["STATUS_ID"] = ansc_const.PROCESSING
             execute_data["TIME_START"] = get_timestamp()
         else:
+            # ステータスを想定外エラーに設定
+            execute_data["STATUS_ID"] = ansc_const.EXCEPTION
+            execute_data["TIME_START"] = get_timestamp()
+            execute_data["TIME_END"] = get_timestamp()
+
             err_msg = ansible_execute.getLastError()
             if not isinstance(err_msg, str):
                 err_msg = str(err_msg)
@@ -435,9 +451,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
             exception_driver_log(e, driver_error_log_file)
 
             err_msg = g.appmsg.get_log_message("MSG-10886", [])
-#            driver_error_log(os.path.basename(inspect.currentframe().f_code.co_filename),
-#                                         str(inspect.currentframe().f_lineno), err_msg)
-#
+
             AnsibleTowerExecution(
                 driver_id,
                 ansc_const.DF_DELETERESOURCE_FUNCTION, 
@@ -1257,8 +1271,13 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
 
     # 実行中の場合
     if update_column_name == "FILE_INPUT":
-        ExecStsInstTableConfig[RestNameConfig["FILE_INPUT"]] = execute_data["FILE_INPUT"]  # 入力データ/投入データ
+        if execute_data["FILE_INPUT"]:
+            ExecStsInstTableConfig[RestNameConfig["FILE_INPUT"]] = execute_data["FILE_INPUT"]  # 入力データ/投入データ
+
         ExecStsInstTableConfig[RestNameConfig["TIME_START"]] = execute_data['TIME_START'].strftime('%Y/%m/%d %H:%M:%S')
+        # 終了時間が設定されていない場合がある
+        if execute_data['TIME_END']:
+            ExecStsInstTableConfig[RestNameConfig["TIME_END"]] = execute_data['TIME_END'].strftime('%Y/%m/%d %H:%M:%S')
         if "MULTIPLELOG_MODE" in execute_data:
             ExecStsInstTableConfig[RestNameConfig["MULTIPLELOG_MODE"]] = execute_data["MULTIPLELOG_MODE"]
         if "LOGFILELIST_JSON" in execute_data:
@@ -1266,7 +1285,9 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
 
     # 実行終了の場合
     if update_column_name == "FILE_RESULT":
-        ExecStsInstTableConfig[RestNameConfig["FILE_RESULT"]] = execute_data["FILE_RESULT"]  # 出力データ/結果データ
+        if execute_data["FILE_RESULT"]:
+            ExecStsInstTableConfig[RestNameConfig["FILE_RESULT"]] = execute_data["FILE_RESULT"]  # 出力データ/結果データ
+
         ExecStsInstTableConfig[RestNameConfig["TIME_END"]] = execute_data['TIME_END'].strftime('%Y/%m/%d %H:%M:%S')
         # MULTIPLELOG_MODEとLOGFILELIST_JSONが廃止レコードになっているので0にする
         if "MULTIPLELOG_MODE" in execute_data:

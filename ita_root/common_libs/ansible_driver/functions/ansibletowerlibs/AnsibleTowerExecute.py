@@ -36,11 +36,10 @@ def AnsibleTowerExecution(
     # 業務処理開始
     restApiCaller = None
     process_has_error = False
+    process_was_scrammed = False
 
     try:
         tgt_execution_no = toProcessRow['EXECUTION_NO']
-        db_access_user_id = '20102'
-
         if 'ANSTWR_HOSTNAME' not in ansibleTowerIfInfo and 'ANSTWR_HOST_ID' in ansibleTowerIfInfo:
             cols = dbAccess.table_columns_get("T_ANSC_TOWER_HOST")
             pkey = cols[1][0]
@@ -90,78 +89,67 @@ def AnsibleTowerExecution(
             director = ExecuteDirector(driver_id, restApiCaller, None, dbAccess, exec_out_dir, ansibleTowerIfInfo, JobTemplatePropertyParameterAry, JobTemplatePropertyNameAry, TowerProjectsScpPath, TowerInstanceDirPath)
             GitObj = GitLabAgent()
 
-        # Tower 接続確認
-        if not process_has_error:
-            # TowerのRestAPIのv2ページに接続できるか確認
-            response_array = restApiCaller.restCall('GET', '')
-            if response_array['statusCode'] != 200:
-                # TowerのRestAPIのv2ページに接続出来ない場合はインターフェース情報設定ミスとする
-                process_has_error = True
-                error_flag = 1
-                errorMessage = g.appmsg.get_api_message("MSG-10075", [tgt_execution_no])
-                director.errorLogOut(errorMessage)
+        if function == AnscConst.DF_EXECUTION_FUNCTION:
+            # Tower 接続確認
+            if not process_has_error:
+                # TowerのRestAPIのv2ページに接続できるか確認
+                response_array = restApiCaller.restCall('GET', '')
+                if response_array['statusCode'] != 200:
+                    # TowerのRestAPIのv2ページに接続出来ない場合はインターフェース情報設定ミスとする
+                    process_has_error = True
+                    error_flag = 1
+                    errorMessage = g.appmsg.get_api_message("MSG-10075", [tgt_execution_no])
+                    director.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    director.RestResultLog(restApiCaller.getRestResultList())
 
-        # Tower version確認
-        if not process_has_error:
-            response_array = AnsibleTowerRestApiConfig.get(restApiCaller)
-            if not response_array['success']:
-                # Tower config情報の取得
-                process_has_error = True
-                error_flag = 1
-                errorMessage = g.appmsg.get_api_message("MSG-10074", [tgt_execution_no])
-                director.errorLogOut(errorMessage)
-
-            else:
-                if 'responseContents' in response_array \
-                and 'version' in response_array['responseContents'] and response_array['responseContents']['version'] is not None:
-                    version = response_array['responseContents']['version']
-                    ary = version.split('.')
-                    if len(ary) == 3:
-                        if int(ary[0]) < 4:
-                            pass
-                            """
-                            if ansibleTowerIfInfo['ANSIBLE_EXEC_MODE'] != AnscConst.DF_EXEC_MODE_TOWER:
+            # Tower version確認
+            if not process_has_error:
+                response_array = AnsibleTowerRestApiConfig.get(restApiCaller)
+                if not response_array['success']:
+                    # Tower config情報の取得
+                    process_has_error = True
+                    error_flag = 1
+                    errorMessage = g.appmsg.get_api_message("MSG-10074", [tgt_execution_no])
+                    director.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    director.RestResultLog(restApiCaller.getRestResultList())
+                else:
+                    if 'responseContents' in response_array \
+                    and 'version' in response_array['responseContents'] and response_array['responseContents']['version'] is not None:
+                        version = response_array['responseContents']['version']
+                        ary = version.split('.')
+                        if len(ary) == 3:
+                            if int(ary[0]) == 4:
+                                pass
+                            else:
                                 process_has_error = True
                                 error_flag = 1
                                 errorMessage = g.appmsg.get_api_message("MSG-10022", [version])
                                 director.errorLogOut(errorMessage)
-                            """
-
                         else:
-                            if ansibleTowerIfInfo['ANSIBLE_EXEC_MODE'] != AnscConst.DF_EXEC_MODE_AAC:
-                                process_has_error = True
-                                error_flag = 1
-                                errorMessage = g.appmsg.get_api_message("MSG-10022", [version])
-                                director.errorLogOut(errorMessage)
-
-                        version = '%s%s' % (str(ary[0]).zfill(3), str(ary[1]).zfill(3))
-                        # Towerのバージョンが3.5以下かを判定する
-                        if int(version) <= int("003005"):
-                            version = AnscConst.TOWER_VER35
-
-                        else:
-                            version = AnscConst.TOWER_VER36
-
-                        # Towerのバージョン退避
-                        restApiCaller.setTowerVersion(version)
-                        director.setTowerVersion(version)
+                            process_has_error = True
+                            error_flag = 1
+                            errorMessage = g.appmsg.get_api_message("MSG-10073", [tgt_execution_no])
+                            director.errorLogOut(errorMessage)
 
                     else:
+                        # Tower config情報の取得
                         process_has_error = True
                         error_flag = 1
                         errorMessage = g.appmsg.get_api_message("MSG-10073", [tgt_execution_no])
                         director.errorLogOut(errorMessage)
 
-                else:
-                    # Tower config情報の取得
-                    process_has_error = True
-                    error_flag = 1
-                    errorMessage = g.appmsg.get_api_message("MSG-10073", [tgt_execution_no])
-                    director.errorLogOut(errorMessage)
 
-        if function == AnscConst.DF_EXECUTION_FUNCTION:
+            if process_has_error:
+                # 実行ステータスを想定外エラーに設定　1系に合わせる
+                toProcessRow['TIME_START'] = get_timestamp()
+                toProcessRow['TIME_END'] = get_timestamp()
+                toProcessRow['STATUS_ID'] = AnscConst.EXCEPTION
+                status = AnscConst.EXCEPTION
+                return False, TowerHostList, toProcessRow, MultipleLogMark, MultipleLogFileJsonAry, status, error_flag, warning_flag
+
             if not process_has_error:
-                process_was_scrammed = False
                 wfId = -1
 
                 ################################################################
@@ -200,27 +188,6 @@ def AnsibleTowerExecution(
                             else:
                                 g.applogger.debug("execution start up complated. (exec_no: %s)" % (tgt_execution_no))
 
-                # 実行結果登録
-                toProcessRow['LAST_UPDATE_USER'] = db_access_user_id
-                if process_was_scrammed:
-                    # 緊急停止時
-                    toProcessRow['TIME_START'] = get_timestamp()
-                    toProcessRow['TIME_END'] = get_timestamp()
-                    toProcessRow['STATUS_ID'] = AnscConst.SCRAM
-
-                elif process_has_error:
-                    # 異常時
-                    toProcessRow['TIME_START'] = get_timestamp()
-                    toProcessRow['TIME_END'] = get_timestamp()
-                    toProcessRow['STATUS_ID'] = AnscConst.FAILURE
-                    status = AnscConst.FAILURE
-
-                else:
-                    # 正常時
-                    toProcessRow['TIME_START'] = get_timestamp()
-                    toProcessRow['STATUS_ID'] = AnscConst.PROCESSING
-                    status = AnscConst.PROCESSING
-
                 # 実行失敗時にはここで消す、成功時には確認君で確認して消す
                 if (process_was_scrammed or process_has_error) \
                 and ansibleTowerIfInfo['ANSTWR_DEL_RUNTIME_DATA'] == '1' \
@@ -229,10 +196,32 @@ def AnsibleTowerExecution(
                     ret = director.delete(GitObj, tgt_execution_no, TowerHostList)
                     if not ret:
                         warning_flag = 1
-                        g.applogger.error("Faild to cleanup Ansible Automation Controller environment. (exec_no: %s)" % (tgt_execution_no))
+                        g.applogger.debug("Faild to cleanup Ansible Automation Controller environment. (exec_no: %s)" % (tgt_execution_no))
 
                     else:
                         g.applogger.debug("Cleanup Ansible Automation Controller environment SUCCEEDED. (exec_no: %s)" % (tgt_execution_no))
+
+            # 実行ステータス設定
+            toProcessRow['LAST_UPDATE_USER'] = g.USER_ID
+            if process_was_scrammed:
+                # 緊急停止時
+                toProcessRow['TIME_START'] = get_timestamp()
+                toProcessRow['TIME_END'] = get_timestamp()
+                toProcessRow['STATUS_ID'] = AnscConst.SCRAM
+                status = AnscConst.SCRAM
+
+            elif process_has_error:
+                # 異常時
+                toProcessRow['TIME_START'] = get_timestamp()
+                toProcessRow['TIME_END'] = get_timestamp()
+                toProcessRow['STATUS_ID'] = AnscConst.FAILURE
+                status = AnscConst.FAILURE
+
+            else:
+                # 正常時
+                toProcessRow['TIME_START'] = get_timestamp()
+                toProcessRow['STATUS_ID'] = AnscConst.PROCESSING
+                status = AnscConst.PROCESSING
 
         elif function == AnscConst.DF_CHECKCONDITION_FUNCTION:
             if not process_has_error:

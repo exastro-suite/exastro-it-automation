@@ -97,7 +97,7 @@
     "MSG-10018": "{}\n[Update SCM operation] Failed to create Git repository which would be linked to the Ansible Automation Controller.",
     "MSG-10019": "A required item in the Ansible common interface information has not been input.(item:{})",
     "MSG-10020": "Failed to connect to the Project's Git.",
-    "MSG-10021": "Failed to acquire Project's Git link results.",
+    "MSG-10021": "Failed to acquire Project's Git link results. ({})",
     "MSG-10022": "The execution engine selected in the \"Ansible common interface information\" is not compatible with the Ansible Automation Controller version. (Ansible Automation Controller version:{})If the version is 3.x.x, select Ansible Tower for your Execution engine.If the version is 4.x.x, select Ansible Automation Controller for your Execution engine.",
     "MSG-10023": "Error occurred ([FILE]{}[LINE]{}[ETC-Code]{})",
     "MSG-10024": "[Warning] Lock the target record has failed. (Execution No.:{})",

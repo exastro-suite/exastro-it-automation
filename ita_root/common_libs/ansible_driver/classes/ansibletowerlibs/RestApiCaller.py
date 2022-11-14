@@ -39,19 +39,11 @@ class RestApiCaller():
         self.baseURI = '%s://%s:%s%s' % (protocol, hostName, portNo, self.API_BASE_PATH)
         self.directURI = '%s://%s:%s' % (protocol, hostName, portNo)
         self.decryptedAuthToken = ky_decrypt(encryptedAuthToken)
-        self.UIErrorMsg = {}
         self.proxySetting = proxySetting
-        self.version = None
         self.accessToken = None
+        self.RestResultList = []
 
-    def setTowerVersion(self, version):
-
-        self.version = version
-
-    def getTowerVersion(self):
-
-        return self.version
-
+        
     def authorize(self):
 
         self.accessToken = self.decryptedAuthToken
@@ -67,6 +59,8 @@ class RestApiCaller():
         httpContext = {}
         headers = {}
         ssl_context = None
+
+        self.RestResultList = []
 
         response_array = {}
 
@@ -115,12 +109,6 @@ class RestApiCaller():
         httpContext['ssl']['verify_peer'] = False
         httpContext['ssl']['verify_peer_name'] = False
 
-        print_backtrace = "-------------------------backtrace----------------------\n"
-        trace = inspect.currentframe()
-        while trace:
-            print_backtrace += '%s: line:%s\n' % (trace.f_code.co_filename, trace.f_lineno)
-            trace = trace.f_back
-
         if DirectUrl == False:
             url = '%s%s' % (self.baseURI, apiUri)
 
@@ -149,45 +137,49 @@ class RestApiCaller():
                 http_response_header = resp.getheaders()
                 responseContents = resp.read().decode('utf-8')
 
+                print_HttpStatusCode = "http ststus code: %s" % (str(status_code))
+                print_HttpResponsHeader = "http response header\n%s" % (str(http_response_header))
+                print_ResponseContents = "http response contents\n%s" % (str(responseContents))
         except urllib.error.HTTPError as e:
             # 返却用のArrayを編集
             response_array['statusCode'] = -2
             response_array['responseContents'] = {"errorMessage":"HTTP access error "}
 
-            g.applogger.error(print_backtrace)
-            g.applogger.error(print_url)
-            g.applogger.error(print_HttpContext)
-            g.applogger.error("http response header\n%s\n%s\n%s" % (e.code, e.headers, e.reason))
+            print_Except = "Except HTTPError\nhttp status code: %s\nhttp response contents: %s\nhttp response headers: %s" % (e.code, e.reason, e.headers)
+            self.apperrorloger(self.backtrace())
+            self.apperrorloger(print_url)
+            self.apperrorloger(print_HttpContext)
+            self.apperrorloger(print_Except)
 
         except urllib.error.URLError as e:
             # 返却用のArrayを編集
             response_array['statusCode'] = -2
             response_array['responseContents'] = {"errorMessage":"HTTP access error "}
 
-            g.applogger.error(print_backtrace)
-            g.applogger.error(print_url)
-            g.applogger.error(print_HttpContext)
-            g.applogger.error(e.reason)
+            print_Except = "Except URLError\nhttp response contents: %s" % (e.reason)
+            self.apperrorloger(self.backtrace())
+            self.apperrorloger(print_url)
+            self.apperrorloger(print_HttpContext)
+            self.apperrorloger(print_Except)
 
         else:
             response_array = {}
             if not isinstance(http_response_header, list):
-                print_HttpResponsHeader = "http response header\n%s" % (http_response_header)
-
                 # 返却用のArrayを編集
                 response_array['statusCode'] = -2
                 response_array['responseContents'] = {"errorMessage":"HTTP access error "}
 
-                g.applogger.error(print_backtrace)
-                g.applogger.error(print_url)
-                g.applogger.error(print_HttpContext)
-                g.applogger.error(print_HttpResponsHeader)
-                g.applogger.error(responseContents)
+                self.apperrorloger(self.backtrace())
+                self.apperrorloger(print_url)
+                self.apperrorloger(print_HttpContext)
+                self.apperrorloger(print_HttpStatusCode)
+                self.apperrorloger(print_HttpResponsHeader)
+                self.apperrorloger(print_ResponseContents)
 
             else:
                 # 通信結果を判定
                 if len(http_response_header) > 0:
-                    print_HttpResponsHeader = "http response header\n%s\n" % (status_code)
+                    print_HttpResponsHeader = "http response header\n"
                     for t in http_response_header:
                         print_HttpResponsHeader += '%s: %s\n' % (t[0], t[1])
 
@@ -197,11 +189,12 @@ class RestApiCaller():
                         response_array['responseHeaders'] = http_response_header
                         response_array['responseContents'] = {"errorMessage":responseContents}
 
-                        g.applogger.error(print_backtrace)
-                        g.applogger.error(print_url)
-                        g.applogger.error(print_HttpContext)
-                        g.applogger.error(print_HttpResponsHeader)
-                        g.applogger.error('http response content\n%s' % (response_array['responseContents']))
+                        self.apperrorloger(self.backtrace())
+                        self.apperrorloger(print_url)
+                        self.apperrorloger(print_HttpContext)
+                        self.apperrorloger(print_HttpStatusCode)
+                        self.apperrorloger(print_HttpResponsHeader)
+                        self.apperrorloger(print_ResponseContents)
 
                     else:
                         response_array['responseHeaders'] = http_response_header
@@ -215,25 +208,26 @@ class RestApiCaller():
                                     except json.JSONDecodeError as e:
                                         response_array['responseContents'] = None
 
-                        # g.applogger.debug(print_backtrace)
-                        # g.applogger.debug(print_url)
-                        # g.applogger.debug(print_HttpContext)
-                        # g.applogger.debug(print_HttpResponsHeader)
-                        # g.applogger.debug('http response content\n%s' % (response_array['responseContents']))
-
+                        # 正常時
+                        self.apperrorloger(self.backtrace(), False)
+                        self.apperrorloger(print_url, False)
+                        self.apperrorloger(print_HttpContext, False)
+                        self.apperrorloger(print_HttpStatusCode, False)
+                        self.apperrorloger(print_HttpResponsHeader, False)
+                        self.apperrorloger(print_ResponseContents, False)
                 else:
+                    print_HttpResponsHeader = "http response header\n%s" % (http_response_header)
+
                     # 返却用のArrayを編集
                     response_array['statusCode'] = -2
                     response_array['responseContents'] = {"errorMessage":"HTTP Socket Timeout"}
 
-                    g.applogger.error(print_backtrace)
-                    g.applogger.error(print_url)
-                    g.applogger.error(print_HttpContext)
-
-        self.UIErrorMsg = {}
-        self.UIErrorMsg['URL'] = print_url
-        self.UIErrorMsg['METHOD'] = method
-        self.UIErrorMsg['HTTP_STATUS'] = response_array['statusCode']
+                    self.apperrorloger(self.backtrace())
+                    self.apperrorloger(print_url)
+                    self.apperrorloger(print_HttpContext)
+                    self.apperrorloger(print_HttpStatusCode)
+                    self.apperrorloger(print_HttpResponsHeader)
+                    self.apperrorloger(print_ResponseContents)
 
         return response_array
 
@@ -248,10 +242,20 @@ class RestApiCaller():
         return False
 
     def getAccessToken(self):
-
         return self.accessToken
 
-    def getLastErrorMsg(self):
+    def apperrorloger(self, msg, stdout=True):
+        if stdout is True:
+            g.applogger.error(msg)
+        self.RestResultList.append(msg)
 
-        return self.UIErrorMsg
+    def getRestResultList(self):
+        return self.RestResultList
 
+    def backtrace(self):
+        print_backtrace = "-------------------------backtrace----------------------\n"
+        trace = inspect.currentframe()
+        while trace:
+            print_backtrace += '%s: line:%s\n' % (trace.f_code.co_filename, trace.f_lineno)
+            trace = trace.f_back
+        return print_backtrace

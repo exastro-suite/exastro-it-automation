@@ -279,8 +279,9 @@ def validation_exception_driver_log(e, logfile=None):
 
     # catch - raise AppException("xxx-xxxxx", log_format), and get message
     result_code, log_msg_args, api_msg_args = args
-    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-    
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args) + "\n\n"
+    log_msg += g.appmsg.get_api_message("MSG-10903", [])
+
     if logfile:
         f = open(logfile, "a")
         t = traceback.format_exc()

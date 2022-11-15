@@ -6,6 +6,7 @@
 	"service": "ita-api-admin",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
+		"files.trimTrailingWhitespace": true,
 		"terminal.integrated.profiles.linux": {
 			"bash": {
 				"path": "/bin/bash"

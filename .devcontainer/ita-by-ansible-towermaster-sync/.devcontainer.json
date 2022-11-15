@@ -6,6 +6,7 @@
 	"service": "ita-by-ansible-towermaster-sync",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
+		"files.trimTrailingWhitespace": true,
 		"terminal.integrated.profiles.linux": {
 			"bash": {
 				"path": "/bin/bash"
@@ -19,7 +20,7 @@
 		// python extension setting
 		"python.linting.pylintEnabled": false,
 		"python.linting.flake8Enabled": true,
-		
+
 		"python.linting.lintOnSave": true,
 
 		"python.linting.flake8Args": [
@@ -32,7 +33,7 @@
 
 		"python.formatting.autopep8Args": [
 			"--aggressive", "--aggressive",
-		],		
+		],
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [

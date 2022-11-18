@@ -53,6 +53,8 @@ global:
 
 extraEnv:
   LISTEN_PORT: "8080"
+  PLATFORM_API_HOST: "platform-api.exastro-platform.svc"
+  PLATFORM_API_PORT: "8000"
 
 replicaCount: 1
 

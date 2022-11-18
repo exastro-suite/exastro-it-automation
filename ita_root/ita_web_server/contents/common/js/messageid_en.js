@@ -31,7 +31,7 @@
 // Ui common           10001～11000
 
 
-const getMessage = ( function() {
+getMessage = ( function() {
 
     const message = {
         // Default menu

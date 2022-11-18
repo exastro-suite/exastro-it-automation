@@ -117,7 +117,7 @@ getCommonParams: function() {
 ##################################################
 */
 loadAssets: function( assets ){
-    const f = function( type, url ){
+    const f = function( type, url, id ){
         return new Promise(function( resolve, reject ){
             type = ( type === 'css')? 'link': 'script';
             
@@ -127,10 +127,12 @@ loadAssets: function( assets ){
             switch ( type ) {
                 case 'script':
                     asset.src = url;
+                    if ( id ) asset.id = id;
                 break;
                 case 'link':
                     asset.href = url;
                     asset.rel = 'stylesheet';
+                    if ( id ) asset.id = id;
                 break;
             }            
             
@@ -148,9 +150,11 @@ loadAssets: function( assets ){
     if ( typeofValue( assets ) === 'array') {
         return Promise.all(
             assets.map(function( asset ){
-                return f( asset.type, asset.url );
+                return f( asset.type, asset.url, asset.id );
             })
         );
+    } else {
+        return f( assets.type, assets.url, assets.id );
     }
 },
 /*
@@ -577,8 +581,16 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
                 reader.readAsDataURL( file );
 
                 reader.onload = function(){
+                    let resultText = reader.result;
+                    if ( resultText !== '' ) {
+                        if ( resultText === 'data:') {
+                            resultText = '';
+                        } else {
+                            resultText = resultText.split(';base64,')[1];
+                        }
+                    }
                     resolve({
-                        base64: reader.result.replace(/^data:.*\/.*;base64,|^data:$/, ''),
+                        base64: resultText,
                         name: file.name,
                         size: file.size
                     });
@@ -1584,16 +1596,7 @@ html: {
             return list[key];
         });
         sortList.sort(function( a, b ){
-            a = a.toLowerCase();
-            b = b.toLowerCase();
-            
-            if ( a < b ) {
-                return -1;
-            } else if ( a > b ) {
-                return 1;
-            } else {
-                return 0;
-            }
+            return a.localeCompare( b );
         });
         
         

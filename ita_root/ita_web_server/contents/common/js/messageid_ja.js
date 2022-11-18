@@ -31,7 +31,7 @@
 // UI共通              10001～11000
 
 
-const getMessage = ( function() {
+getMessage = ( function() {
 
     const message = {
         // 標準メニュー

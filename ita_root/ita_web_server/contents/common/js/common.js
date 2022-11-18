@@ -2415,7 +2415,7 @@ gotoErrPage: function( message ) {
         } else {
             window.alert('Unknown error.');
         }
-        // window.location.href = './system_error/';
+        window.location.href = './system_error/';
     } else {
         if ( message ) {
             console.error( message );

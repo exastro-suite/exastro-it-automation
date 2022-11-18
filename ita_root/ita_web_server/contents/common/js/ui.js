@@ -627,8 +627,6 @@ menuGroup() {
     const list = [],
           length = ui.menuGroupList.length;
     
-    console.log( ui.menuGroupList );
-    
     for ( let i = 0; i < length; i++ ) {
         const menuGroup = ui.menuGroupList[i];
         if ( menuGroup.parent_id === null ) {
@@ -759,10 +757,9 @@ setMenu() {
             mn.headerMenu();
             mn.sheetType();
         }).catch(function( error ){
+            window.console.error( error );
             if ( error.message !== 'Failed to fetch') {
                 fn.gotoErrPage( error.message );
-            } else {
-                window.console.error( error.message );
             }
         });
     } else {

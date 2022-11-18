@@ -3219,7 +3219,8 @@ border-right: none;
 line-height: 1.4;
 white-space: normal;
 word-break: break-all;
-font-size: 14px;
+font-family: "Osaka-mono", "MS Gothic", "monospace";
+font-size: 12px;
 }
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
 display: block;
@@ -3244,9 +3245,8 @@ min-height: 30px;
 line-height: 1.4;
 white-space: normal;
 word-break: break-all;
-letter-spacing: .75px;
 font-family: "Osaka-mono", "MS Gothic", "monospace";
-font-size: 14px;
+font-size: 12px;
 }
 body > .select2-container .select2-search__field {
 border-radius: 4px;
@@ -3258,7 +3258,6 @@ background-color: var(--focusBackgroundColor);
 border-color: var(--focusColor);
 }
 .select2-selection__rendered {
-letter-spacing: .75px;
 font-family: "Osaka-mono", "MS Gothic", "monospace";
 }
 .select2-container--default.select2-container--focus .select2-selection--multiple {

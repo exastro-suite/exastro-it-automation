@@ -2065,6 +2065,12 @@ clearFilter() {
 */
 filterSelectBoxHtml( list, name, rest ) {
     const select = [];
+    
+    // listをソートする
+    list.sort(function( a, b ){
+        return a.localeCompare( b );
+    });
+    
     for ( const item of list ) {
         const value = fn.cv( item, '', true );
         select.push(`<option value="${value}">${value}</option>`)

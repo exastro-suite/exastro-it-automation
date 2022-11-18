@@ -3321,8 +3321,8 @@ reflectEdits() {
     const config = {
         mode: 'modeless',
         className: 'reflectEditsModal',
-        width: '100%',
-        height: '100%',
+        position: 'center',
+        width: 'auto',
         header: {
             title: getMessage.FTE00011,
         }

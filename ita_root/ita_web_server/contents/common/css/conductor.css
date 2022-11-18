@@ -1752,6 +1752,7 @@ top: 0;
 z-index: 2;
 background-color: #333;
 box-shadow: 0 0 0 1px #111;
+white-space: nowrap;
 }
 .node-table tbody th {
 width: 32px;

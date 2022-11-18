@@ -52,6 +52,8 @@ services:
       - GITLAB_HOST=${GITLAB_HOST}
       - GITLAB_PORT=${GITLAB_PORT}
       - GITLAB_ROOT_TOKEN=${GITLAB_ROOT_TOKEN}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
   ita-web-server:
     user: 1000:1000
     build:

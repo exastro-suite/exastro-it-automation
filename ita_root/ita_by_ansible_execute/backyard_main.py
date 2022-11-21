@@ -21,7 +21,11 @@ from flask import g
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.util import get_timestamp
 from common_libs.ci.util import log_err
-from common_libs.ansible_driver.classes.AnsrConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
+from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
+from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
 from libs import common_functions as cm
 
@@ -78,10 +82,11 @@ def main_logic(organization_id, workspace_id, wsDb):
 def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
     """
     実行中の子プロの起動確認
-    
+
     Returns:
         bool
     """
+    global ansc_const
     # psコマンドでbackyard_child_init.pyの起動プロセスリストを作成
     # psコマンドがマレに起動プロセスリストを取りこぼすことがあるので3回分を作成
     # command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no, driver_id]
@@ -97,6 +102,8 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
         driver_id = rec["DRIVER_ID"]
         driver_name = rec["DRIVER_NAME"]
         execution_no = rec["EXECUTION_NO"]
+
+        ansc_const = getAnsibleConst(driver_id)
 
         # 子プロ起動確認
         is_running = False
@@ -125,7 +132,7 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
             log_err(g.appmsg.get_log_message("MSG-10056", [driver_name, execution_no]))
 
             # 情報を再取得して、想定外エラーにする
-            result = cm.get_execution_process_info(wsDb, execution_no)
+            result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
             if result[0] is False:
                 log_err(g.appmsg.get_log_message(result[1], [execution_no]))
                 return False
@@ -143,7 +150,7 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
                     "TIME_END": time_stamp,
                     "TIME_START": time_stamp,
                 }
-                result = cm.update_execution_record(wsDb, data)
+                result = cm.update_execution_record(wsDb, ansc_const, data)
                 if result[0] is True:
                     wsDb.db_commit()
                     g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [driver_name, execution_no]))
@@ -152,11 +159,11 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
             # ゴミ掃除に失敗しても処理は続ける
             result = ansibleAg.is_container_running(execution_no)
             if result[0] is True:
-                result = ansibleAg.container_kill(execution_no)
+                result = ansibleAg.container_kill(ansc_const, execution_no)
                 if result[0] is False:
                     log_err(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
             else:
-                result = ansibleAg.container_clean(execution_no)
+                result = ansibleAg.container_clean(ansc_const, execution_no)
                 if result[0] is False:
                     log_err(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
 
@@ -166,7 +173,7 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
 def child_process_exist_check_ps():
     """
     実行中の子プロのpsコマンド取得結果
-    
+
     Returns:
         stdout row
     """
@@ -209,10 +216,12 @@ def child_process_exist_check_ps():
 def get_running_process(wsDb):
     """
     実行中の作業データを取得
-    
+
     Returns:
         records
     """
+    global ansc_const
+
     status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED]
     prepared_list = list(map(lambda a: "%s", status_id_list))
 
@@ -225,11 +234,13 @@ def get_running_process(wsDb):
 def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organization_id, workspace_id):
     """
     未実行（実行待ち）の作業を実行
-    
+
     Returns:
         bool
         err_msg
     """
+    global ansc_const
+
     condition = """WHERE `DISUSE_FLAG`=0 AND (
         ( `TIME_BOOK` IS NULL AND `STATUS_ID` = %s ) OR
         ( `TIME_BOOK` <= NOW(6) AND `STATUS_ID` = %s )
@@ -244,9 +255,8 @@ def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organizati
     # 実行順リストを作成する
     execution_info_datalist = {}
     execution_order_list = []
-    
+
     for rec in records:
-        # print(rec)
         execution_no = rec["EXECUTION_NO"]
 
         # 予約時間or最終更新日+ソート用カラム+作業番号（判別用）でリスト生成
@@ -257,9 +267,7 @@ def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organizati
         execution_order_list.append(id)
         execution_info_datalist[id] = rec
     # ソート
-    # print(execution_order_list)
     execution_order_list.sort()
-    # print(execution_order_list)
 
     # ANSIBLEインタフェース情報
     retBool, result = cm.get_ansible_interface_info(wsDb)
@@ -289,17 +297,21 @@ def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organizati
 def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     """
     作業実行するための子プロセスの準備・実行
-    
+
     Returns:
         bool
         err_msg
     """
+    # global ansc_const
+
     driver_id = execute_data["DRIVER_ID"]
     driver_name = execute_data["DRIVER_NAME"]
     execution_no = execute_data["EXECUTION_NO"]
 
+    ansc_const = getAnsibleConst(driver_id)
+
     # 処理対象の作業インスタンス情報取得(再取得)
-    retBool, result = cm.get_execution_process_info(wsDb, execution_no)
+    retBool, result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
     if retBool is False:
         return False, g.appmsg.get_log_message(result, [execution_no])
     execute_data = result
@@ -316,7 +328,8 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
         "EXECUTION_NO": execution_no,
         "STATUS_ID": ansc_const.PREPARE,
     }
-    result = cm.update_execution_record(wsDb, data)
+
+    result = cm.update_execution_record(wsDb, ansc_const, data)
     if result[0] is True:
         wsDb.db_commit()
 

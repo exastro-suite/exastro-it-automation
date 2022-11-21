@@ -47,7 +47,7 @@ from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.Ansible
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiWorkflowJobs import AnsibleTowerRestApiWorkflowJobs
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiJobs import AnsibleTowerRestApiJobs
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath, getInputDataTempDir, getDataRelayStorageDir, get_AnsibleDriverTmpPath, get_AnsibleDriverShellPath, getAnsibleExecutDirPath, getAACListSSHPrivateKeyUploadDirPath
+from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath, getInputDataTempDir, getDataRelayStorageDir, get_AnsibleDriverTmpPath, get_AnsibleDriverShellPath, getAnsibleExecutDirPath, getAACListSSHPrivateKeyUploadDirPath, getAnsibleConst
 
 
 class ExecuteDirector():
@@ -58,7 +58,6 @@ class ExecuteDirector():
     """
 
     def __init__(self, driver_id, restApiCaller, logger, dbAccess, exec_out_dir, ifInfoRow, JobTemplatePropertyParameterAry={}, JobTemplatePropertyNameAry={}, TowerProjectsScpPath={}, TowerInstanceDirPath={}):
-
         self.restApiCaller = restApiCaller
         self.dbAccess = dbAccess
         self.exec_out_dir = exec_out_dir
@@ -84,8 +83,7 @@ class ExecuteDirector():
         self.php_array = lambda x: x.items() if isinstance(x, dict) else enumerate(x)
 
         self.driver_id = driver_id
-        if driver_id == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            self.AnsConstObj = AnsrConst()
+        self.AnsConstObj = getAnsibleConst(driver_id)
 
     def build(self, GitObj, exeInsRow, ifInfoRow, TowerHostList):
         vg_tower_driver_name = AnsrConst.vg_tower_driver_name
@@ -141,7 +139,7 @@ class ExecuteDirector():
                 self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
-            if ('responseContents' not in response_array or response_array['responseContents'] is None 
+            if ('responseContents' not in response_array or response_array['responseContents'] is None
                 or (type(response_array['responseContents']) in (list, dict) and len(response_array['responseContents']) <= 0)) \
             or ("id" not in response_array['responseContents'][0]):
                 g.applogger.error("No inventory id. (prepare)")
@@ -337,19 +335,18 @@ class ExecuteDirector():
         return allResult
 
     def delete(self, GitObj, execution_no, TowerHostList):
-
         vg_tower_driver_name = AnsrConst.vg_tower_driver_name
         allResult = True
 
         # Gitリポジトリ削除
         try:
-            project_id = self.getGitProjectId(self.driver_id, execution_no)
+            project_id = self.getGitProjectId(execution_no)
             GitObj.delete_project(project_id)
         except Exception as e:
             # Gitリポジトリ削除に失敗した場合、ログを出力してエラーとして扱わない
             log = str(e)
             g.applogger.error(log)
-            
+
         # Ansible Automation Controller側の/var/lib/exastro配下の該当ディレクトリ削除
         ret = self.MaterialsDelete("ExastroPath", execution_no, TowerHostList)
         if not ret:
@@ -437,7 +434,6 @@ class ExecuteDirector():
         ret = self.cleanUpInventory(execution_no)
         if not ret:
             allResult = False
-
         return allResult
 
     def launchWorkflow(self, wfJobTplId):
@@ -483,8 +479,8 @@ class ExecuteDirector():
         # src  path: /storage/org1/workspace-1/driver/ansible/legacy_role/作業番号/in
         # dest path: /storage/org1/workspace-1/tmp/driver/ansible/legacy_role_作業番号
         ###########################################################
-        src_path = getAnsibleExecutDirPath(self.driver_id, execution_no) + "/in"
-        dest_path = tmp_path        
+        src_path = getAnsibleExecutDirPath(self.AnsConstObj, execution_no) + "/in"
+        dest_path = tmp_path
         cmd = ["/bin/cp", "-rfp", src_path, dest_path]
         try:
             ret = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -593,7 +589,7 @@ class ExecuteDirector():
             cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
             try:
                 with open(tmp_log_file, 'a') as fp:
-                    
+
                     ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
             except Exception:
@@ -985,7 +981,7 @@ class ExecuteDirector():
 
                 else:
                     src_file = self.getAnsibleTowerSshKeyFileContent(row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
-                    sshKeyFile = '%s/in/ssh_key_files/AnsibleTower_%s_%s' % (getAnsibleExecutDirPath(self.driver_id, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
+                    sshKeyFile = '%s/in/ssh_key_files/AnsibleTower_%s_%s' % (getAnsibleExecutDirPath(self.AnsConstObj, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
                     try:
                         shutil.copy(src_file, sshKeyFile)
 
@@ -1156,7 +1152,7 @@ class ExecuteDirector():
                 hostData['ansible_host'] = hostInfo['IP_ADDRESS']
             else:
                 hostData['ansible_host'] = hostInfo['HOST_DNS_NAME']
-                
+
             # WinRM接続
             # 認証方式:パスワード認証(winrm)
             hostData['winrm'] = False
@@ -1535,7 +1531,6 @@ class ExecuteDirector():
         return True
 
     def monitoring(self, toProcessRow, ansibleTowerIfInfo):
-
         vg_tower_driver_name = AnsrConst.vg_tower_driver_name
         execution_no = toProcessRow['EXECUTION_NO']
         self.dataRelayStoragePath = ansibleTowerIfInfo['ANSIBLE_STORAGE_PATH_LNX']
@@ -1544,7 +1539,8 @@ class ExecuteDirector():
         self.workflowJobAry = {}
         ret = self.getworkflowJobs(execution_no)
         if not ret:
-            g.applogger.error("Faild to get workflow jobs.")
+            errorMessage = "Faild to get workflow jobs."
+            g.applogger.error(errorMessage)
             return AnscConst.EXCEPTION
 
         result_code = {}
@@ -1555,6 +1551,8 @@ class ExecuteDirector():
         for wfJobId, workflowJobData in self.workflowJobAry.items():
             ret = self.searchworkflowJobNodesJobDetail(execution_no, wfJobId)
             if not ret:
+                errorMessage = "Faild to get workflow job nodes."
+                g.applogger.error(errorMessage)
                 return AnscConst.EXCEPTION
 
             # AnsibleTower Status チェック
@@ -1668,8 +1666,11 @@ class ExecuteDirector():
         query = "%s/workflow_nodes/" % (wfJobId)
         response_array = AnsibleTowerRestApiWorkflowJobs.getAll(self.restApiCaller, query)
         if not response_array['success']:
-            g.applogger.error("Faild to rest api access get workflow job nodes.")
-            g.applogger.error(response_array)
+            errorMessage = "Faild to rest api access get workflow job nodes."
+            g.applogger.error(errorMessage)
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return False
 
         for workflowJobNodeData in response_array['responseContents']:
@@ -1704,8 +1705,11 @@ class ExecuteDirector():
                 # /api/v2/jobs/(job id)/
                 response_array = AnsibleTowerRestApiJobs.get(self.restApiCaller, JobId)
                 if not response_array['success']:
-                    g.applogger.error("Faild to rest api access get job detail.")
-                    g.applogger.error(response_array)
+                    errorMessage = "Faild to rest api access get job detail."
+                    g.applogger.error(errorMessage)
+                    self.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return False
 
                 # データがなくてもエラーにしない
@@ -1716,8 +1720,11 @@ class ExecuteDirector():
 
                 response_array = AnsibleTowerRestApiJobs.getStdOut(self.restApiCaller, JobId)
                 if not response_array['success']:
-                    g.applogger.error("Faild to get job stdout. (job id:%s)" % (JobId))
-                    g.applogger.error(response_array)
+                    errorMessage = "Faild to get job stdout. (job id:%s)" % (JobId)
+                    g.applogger.error(errorMessage)
+                    self.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return False
 
                 stdout = response_array['responseContents']
@@ -1739,8 +1746,11 @@ class ExecuteDirector():
         # /api/v2/workflow_jobs/?name__startswith=ita_(drive_name)_executions&name__contains=(execution_no)
         response_array = AnsibleTowerRestApiWorkflowJobs.NameSearch(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.error("Faild to rest api access get workflow job.")
-            g.applogger.error(response_array)
+            errorMessage = "Faild to rest api access get workflow job."
+            g.applogger.error(errorMessage)
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return False
 
         for workflowJobData in response_array['responseContents']:
@@ -1749,8 +1759,11 @@ class ExecuteDirector():
 
         # workflow jobが取得出来ない場合はエラー
         if len(self.workflowJobAry) <= 0:
-            g.applogger.error("Not found to workflow jobs.")
-            g.applogger.error(response_array)
+            errorMessage = "Not found to workflow jobs."
+            g.applogger.error(errorMessage)
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return False
 
         return True
@@ -1759,7 +1772,11 @@ class ExecuteDirector():
 
         workflowJobData = self.workflowJobAry[wfJobId]
         if "id" not in workflowJobData or "status" not in workflowJobData or "failed" not in workflowJobData:
-            g.applogger.debug("Not expected data.")
+            errorMessage = "Not expected data."
+            g.applogger.error(errorMessage)
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return AnscConst.EXCEPTION
 
         wfJobId = workflowJobData['id']
@@ -1779,6 +1796,11 @@ class ExecuteDirector():
             status = AnscConst.SCRAM
 
         else:
+            errorMessage = "Status not expected data."
+            g.applogger.error(errorMessage)
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             status = AnscConst.EXCEPTION
 
         return status
@@ -1804,7 +1826,7 @@ class ExecuteDirector():
 
         execlogFilename = "exec.log"
         joblistFilename = "joblist.txt"
-        outDirectoryPath = '%s/out' % getAnsibleExecutDirPath(self.driver_id, execution_no)
+        outDirectoryPath = '%s/out' % getAnsibleExecutDirPath(self.AnsConstObj, execution_no)
 
         execlogFullPath = '%s/%s' % (outDirectoryPath, execlogFilename)
         joblistFullPath = '%s/%s' % (outDirectoryPath, joblistFilename)
@@ -1843,7 +1865,11 @@ class ExecuteDirector():
 
                 response_array = AnsibleTowerRestApiProjects.get(self.restApiCaller, JobData['project'])
                 if not response_array['success']:
-                    g.applogger.error("Faild to get project. %s" % (response_array['responseContents']['errorMessage']))
+                    errorMessage = "Faild to get project. %s" % (response_array['responseContents']['errorMessage'])
+                    g.applogger.error(errorMessage)
+                    self.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return False
 
                 projectData = response_array['responseContents']
@@ -1855,7 +1881,11 @@ class ExecuteDirector():
                     if CredentialArray['kind'] != 'vault':
                         response_array = AnsibleTowerRestApiCredentials.get(self.restApiCaller, CredentialArray['id'])
                         if not response_array['success']:
-                            g.applogger.error("Faild to get credential. %s" % (response_array['responseContents']['errorMessage']))
+                            errorMessage = "Faild to get credential. %s" % (response_array['responseContents']['errorMessage'])
+                            g.applogger.error(errorMessage)
+                            self.errorLogOut(errorMessage)
+                            # HTTPの情報をUIに表示
+                            self.RestResultLog(self.restApiCaller.getRestResultList())
 
                         credentialData = response_array['responseContents']
 
@@ -1873,7 +1903,11 @@ class ExecuteDirector():
                 query = "%s/instance_groups/" % (JobData['inventory'])
                 response_array = AnsibleTowerRestApiInventories.getAll(self.restApiCaller, query)
                 if not response_array['success']:
-                    g.applogger.error("Faild to get inventory. %s" % (response_array['responseContents']['errorMessage']))
+                    errorMessage = "Faild to get inventory. %s" % (response_array['responseContents']['errorMessage'])
+                    g.applogger.error(errorMessage)
+                    self.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return False
 
                 instance_group = ""
@@ -1885,15 +1919,22 @@ class ExecuteDirector():
 
                 response_array = AnsibleTowerRestApiInventories.get(self.restApiCaller, JobData['inventory'])
                 if not response_array['success']:
-                    g.applogger.error("Faild to get inventory. %s" % (response_array['responseContents']['errorMessage']))
+                    errorMessage = "Faild to get inventory. %s" % (response_array['responseContents']['errorMessage'])
+                    g.applogger.error(errorMessage)
+                    self.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return False
 
                 inventoryData = response_array['responseContents']
 
                 response_array = AnsibleTowerRestApiInventoryHosts.getAllEachInventory(self.restApiCaller, JobData['inventory'])
-
                 if not response_array['success']:
-                    g.applogger.error("Faild to get hosts. %s" % (response_array['responseContents']['errorMessage']))
+                    errorMessage = "Faild to get hosts. %s" % (response_array['responseContents']['errorMessage'])
+                    g.applogger.error(errorMessage)
+                    self.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return False
 
                 hostsData = response_array['responseContents']
@@ -2046,7 +2087,6 @@ class ExecuteDirector():
             self.errorLogOut(message)
 
     def errorLogOut(self, message):
-
         if self.exec_out_dir and os.path.isdir(self.exec_out_dir):
             errorLogfile = '%s/error.log' % (self.exec_out_dir)
             if not message.endswith('\n'):
@@ -2148,7 +2188,7 @@ class ExecuteDirector():
             if 'id' in response:
                 # 文字列に変換して保存
                 project_id  = str(response['id'])
-                self.saveGitProjectId(self.driver_id, execution_no, project_id)
+                self.saveGitProjectId(execution_no, project_id)
 
         except Exception as e:
             log = g.appmsg.get_api_message("MSG-10018", [str(e)])
@@ -2202,19 +2242,19 @@ class ExecuteDirector():
 
         return True
 
-    def saveGitProjectId(self, driver_id, execution_no, project_id):
-        execute_path = getAnsibleExecutDirPath(driver_id, execution_no)
+    def saveGitProjectId(self, execution_no, project_id):
+        execute_path = getAnsibleExecutDirPath(self.AnsConstObj, execution_no)
         filePath = "{}/tmp/GitlabProjectId.txt".format(execute_path)
         with open(filePath, 'w') as fd:
             fd.write(project_id)
 
-    def getGitProjectId(self, driver_id, execution_no):
-        execute_path = getAnsibleExecutDirPath(driver_id, execution_no)
+    def getGitProjectId(self, execution_no):
+        execute_path = getAnsibleExecutDirPath(self.AnsConstObj, execution_no)
         filePath = "{}/tmp/GitlabProjectId.txt".format(execute_path)
         with open(filePath) as fd:
             project_id = fd.read()
         return project_id
-    
+
     def deleteMaterialsTransferTempDir(self, execution_no):
 
         vg_tower_driver_name = AnsrConst.vg_tower_driver_name

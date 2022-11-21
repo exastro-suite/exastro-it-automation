@@ -23,6 +23,9 @@ import datetime
 import json
 from common_libs.common.exception import AppException
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
+from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.functions.util import *
 from common_libs.ansible_driver.functions.rest_libs import insert_execution_list, execution_scram
 
@@ -126,7 +129,7 @@ def get_execution_info(objdbca, target, execution_no):
         RETRUN:
             data
     """
-    
+
     # 該当の作業管理を取得(ID変換のためloadTableで取得)
     objmenu = load_table.loadTable(objdbca, target['execution_list'])
     filter_parameter = {
@@ -161,7 +164,8 @@ def get_execution_info(objdbca, target, execution_no):
     execution_info['progress'] = {}
     execution_info['progress']['execution_log'] = {}
     execution_info['progress']['execution_log']['exec_log'] = {}
-    path = getAnsibleExecutDirPath(AnscConst.DF_LEGACY_ROLE_DRIVER_ID, execution_no)
+
+    path = getAnsibleExecutDirPath(target['ansConstObj'], execution_no)
 
     if table_row['MULTIPLELOG_MODE'] == 1:
         if not table_row['LOGFILELIST_JSON']:
@@ -193,29 +197,36 @@ def get_execution_info(objdbca, target, execution_no):
         execution_info['number_of_rows_to_display_progress_status'] = tmp_row['ANSIBLE_TAILLOG_LINES']
 
     return execution_info
-    
-def reserve_cancel(objdbca, execution_no):
+
+def reserve_cancel(objdbca, driver_id, execution_no):
     """
         予約取消
         ARGS:
             objdbca:DB接続クラス  DBConnectWs()
+            driver_id: ドライバ区分
             execution_no: 作業実行No
         RETRUN:
             status: SUCCEED
             execution_no: 作業No
     """
-    
+    TableDict = {}
+    TableDict["TABLE_NAME"] = {}
+    TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_DRIVER_ID] = "Not supported"
+    TableDict["TABLE_NAME"][AnscConst.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = AnsrConst.vg_exe_ins_msg_table_name
+    TableName = TableDict["TABLE_NAME"][driver_id]
+
     # 該当の作業実行のステータス取得
     where = "WHERE EXECUTION_NO = %s"
-    objdbca.table_lock(["T_ANSR_EXEC_STS_INST"])
-    data_list = objdbca.table_select("T_ANSR_EXEC_STS_INST", where, [execution_no])
-    
+    objdbca.table_lock([ TableName ])
+    data_list = objdbca.table_select(TableName, where, [execution_no])
+
     # 該当する作業実行が存在しない
     if len(data_list) is None or len(data_list) == 0:
         log_msg_args = [execution_no]
         api_msg_args = [execution_no]
         raise AppException("499-00903", log_msg_args, api_msg_args)
-    
+
     for row in data_list:
         # ステータスが未実行(予約)でない
         if not row['STATUS_ID'] == AnscConst.RESERVE:
@@ -227,14 +238,14 @@ def reserve_cancel(objdbca, execution_no):
                     status = tmp_row['EXEC_STATUS_NAME_JA']
                 else:
                     status = tmp_row['EXEC_STATUS_NAME_EN']
-                
+
             log_msg_args = [status]
             api_msg_args = [status]
             raise AppException("499-00910", log_msg_args, api_msg_args)
-        
+
         # ステータスを予約取消に変更
         update_list = {'EXECUTION_NO': execution_no, 'STATUS_ID': AnscConst.RESERVE_CANCEL}
-        ret = objdbca.table_update('T_ANSR_EXEC_STS_INST', update_list, 'EXECUTION_NO', True)
+        ret = objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
         objdbca.db_commit()
-        
+
     return {"status": "SUCCEED", "execution_no": execution_no}

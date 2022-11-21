@@ -14,7 +14,10 @@
 from flask import g
 import os
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
+
 """
   Ansible共通モジュール
 """
@@ -180,22 +183,16 @@ def get_AnsibleDriverShellPath():
     return "{}common_libs/ansible_driver/shells".format(os.environ["PYTHONPATH"])
 
 
-def getAnsibleExecutDirPath(driver_id, execute_no):
+def getAnsibleExecutDirPath(ansConstObj, execute_no):
     """
       ansibe作業実行ディレクトリパス取得
       Arguments:
-        driver_id: ドライバID
+        ansConstObj: ansible共通定数オブジェクト
         execute_no: 作業番号
       Returns:
         ansibe作業実行ディレクトリパスを取得
     """
-    AnscObj = AnscConst()
-    if driver_id == AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
-        del AnscObj
-        AnscObj = AnsrConst()
-        driver_dir_name = AnscObj.vg_OrchestratorSubId_dir
-        
-    return getDataRelayStorageDir() + "/driver/ansible/{}/{}".format(driver_dir_name, execute_no)
+    return getDataRelayStorageDir() + "/driver/ansible/{}/{}".format(ansConstObj.vg_OrchestratorSubId_dir, execute_no)
 
 
 def getDataRelayStorageDir():
@@ -217,3 +214,20 @@ def getInputDataTempDir(EcecuteNo, DriverName):
     tgtPath = basePath + "/{}_{}".format(DriverName, EcecuteNo)
     ary["DIR_NAME"] = tgtPath
     return ary
+
+
+def getAnsibleConst(driver_id):
+    """
+    ansible共通定数オブジェクト生成
+    Arguments
+        driver_id: ドライバ区分
+    Returns:
+        bool
+    """
+    if driver_id == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+        ansc_const = AnsrConst()
+    elif driver_id == AnscConst.DF_LEGACY_DRIVER_ID:
+        ansc_const = AnslConst()
+    elif driver_id == AnscConst.DF_PIONEER_DRIVER_ID:
+        ansc_const = AnspConst()
+    return ansc_const

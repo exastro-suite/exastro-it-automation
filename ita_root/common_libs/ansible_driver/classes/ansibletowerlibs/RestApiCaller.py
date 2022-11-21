@@ -43,7 +43,6 @@ class RestApiCaller():
         self.accessToken = None
         self.RestResultList = []
 
-        
     def authorize(self):
 
         self.accessToken = self.decryptedAuthToken

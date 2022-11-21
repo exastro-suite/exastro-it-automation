@@ -19,7 +19,11 @@ from common_libs.api import api_filter
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import driver_controll, menu_info, menu_filter
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
+from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.functions.rest_libs import insert_execution_list, execution_scram
+from common_libs.ansible_driver.functions.util import getAnsibleConst
 
 @api_filter
 def get_driver_execute_data(organization_id, workspace_id, menu, execution_no):  # noqa: E501
@@ -38,10 +42,9 @@ def get_driver_execute_data(organization_id, workspace_id, menu, execution_no): 
 
     :rtype: InlineResponse20011
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -51,9 +54,9 @@ def get_driver_execute_data(organization_id, workspace_id, menu, execution_no): 
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
-    target = {'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role', 'table_name': 'T_ANSR_EXEC_STS_INST'}}
+    target = {'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role', 'table_name': AnsrConst.vg_exe_ins_msg_table_name, 'ansConstObj': AnsrConst()}}
 
     result = driver_controll.get_execution_info(objdbca, target[menu], execution_no)
 
@@ -75,10 +78,9 @@ def get_driver_execute_info(organization_id, workspace_id, menu):  # noqa: E501
 
     :rtype: InlineResponse20018
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -88,7 +90,7 @@ def get_driver_execute_info(organization_id, workspace_id, menu):  # noqa: E501
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 作業実行メニューとMovement一覧の対応
     movement_target = {'execution_ansible_role': 'movement_list_ansible_role'}
 
@@ -120,10 +122,9 @@ def get_driver_execute_search_candidates(organization_id, workspace_id, menu, ta
 
     :rtype: InlineResponse2003
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -133,7 +134,7 @@ def get_driver_execute_search_candidates(organization_id, workspace_id, menu, ta
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 作業実行メニューとMovement一覧の対応
     movement_target = {'execution_ansible_role': 'movement_list_ansible_role'}
 
@@ -168,7 +169,7 @@ def post_driver_cancel(organization_id, workspace_id, menu, execution_no, body=N
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -178,8 +179,10 @@ def post_driver_cancel(organization_id, workspace_id, menu, execution_no, body=N
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
-    result = driver_controll.reserve_cancel(objdbca, execution_no)
+
+    target = {'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID }
+
+    result = driver_controll.reserve_cancel(objdbca, target[menu], execution_no)
 
     return result,
 
@@ -200,10 +203,9 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
 
     :rtype: InlineResponse20017
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -213,7 +215,7 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     parameter = {}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
@@ -231,18 +233,19 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
     # オペレーションチェック
     operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
 
+    target = {'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID }
+
     # トランザクション開始
     objdbca.db_transaction_start()
 
     # 作業管理に登録
-    objAnsc = AnscConst()
     conductor_id = None
     conductor_name = None
     run_mode = "1"
-    result = insert_execution_list(objdbca, run_mode, objAnsc.DF_LEGACY_ROLE_DRIVER_ID, operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    result = insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
     # コミット・トランザクション終了
     objdbca.db_transaction_end(True)
- 
+
     return result,
 
 
@@ -263,10 +266,9 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
 
     :rtype: InlineResponse20017
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -276,7 +278,7 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     parameter = {}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
@@ -294,6 +296,8 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
     # オペレーションチェック
     operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
 
+    target = {'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID }
+
     # トランザクション開始
     objdbca.db_transaction_start()
 
@@ -302,7 +306,7 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
     conductor_id = None
     conductor_name = None
     run_mode = "3"
-    result = insert_execution_list(objdbca, run_mode, objAnsc.DF_LEGACY_ROLE_DRIVER_ID, operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    result = insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
     # コミット・トランザクション終了
     objdbca.db_transaction_end(True)
 
@@ -321,15 +325,14 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
     :type workspace_id: str
     :param menu: メニュー名
     :type menu: str
-    :param body: 
+    :param body:
     :type body: dict | bytes
 
     :rtype: InlineResponse20017
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -339,7 +342,7 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     parameter = {}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
@@ -357,6 +360,8 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
     # オペレーションチェック
     operation_row =driver_controll.operation_registr_check(objdbca, parameter, Required)
 
+    target = {'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID }
+
     # トランザクション開始
     objdbca.db_transaction_start()
 
@@ -365,7 +370,7 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
     conductor_id = None
     conductor_name = None
     run_mode = "2"
-    result = insert_execution_list(objdbca, run_mode, objAnsc.DF_LEGACY_ROLE_DRIVER_ID, operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    result = insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
 
     # コミット・トランザクション終了
     objdbca.db_transaction_end(True)
@@ -387,12 +392,11 @@ def post_driver_execute_filter(organization_id, workspace_id, menu, target, body
     :type menu: str
     :param target: movement_list or operation_list
     :type target: str
-    :param body: 
+    :param body:
     :type body: dict | bytes
 
     :rtype: InlineResponse2005
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -405,7 +409,7 @@ def post_driver_execute_filter(organization_id, workspace_id, menu, target, body
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 作業実行メニューとMovement一覧の対応
     movement_target = {'execution_ansible_role': 'movement_list_ansible_role'}
 
@@ -415,12 +419,12 @@ def post_driver_execute_filter(organization_id, workspace_id, menu, target, body
         log_msg_args = []
         api_msg_args = []
         raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     filter_parameter = {}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
         filter_parameter = body
-        
+
     # メニューのカラム情報を取得
     result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
     return result_data,
@@ -443,10 +447,9 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
 
     :rtype: InlineResponse20011
     """
-
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -459,13 +462,13 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
 
     objdbca.db_transaction_start()
 
-    objAnsc = AnscConst()
+    target = {'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID }
 
-    result = execution_scram(objdbca, objAnsc.DF_LEGACY_ROLE_DRIVER_ID, execution_no)
-    
+    result = execution_scram(objdbca, target[menu], execution_no)
+
     objdbca.db_transaction_end(False)  # roleback
-    
-    # 緊急停止しました。
+
+    # 緊急停止を受付ました
     result_msg = g.appmsg.get_api_message("MSG-10891", [execution_no])
 
     return result_msg,

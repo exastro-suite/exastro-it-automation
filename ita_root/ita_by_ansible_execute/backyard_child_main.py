@@ -29,11 +29,15 @@ from common_libs.common.util import get_timestamp, file_encode, ky_encrypt
 from common_libs.loadtable import load_table
 from common_libs.ci.util import log_err
 
-from common_libs.ansible_driver.classes.AnsrConstClass import AnscConst, AnsrConst
+from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
+from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansible_execute import AnsibleExecute
 from common_libs.ansible_driver.classes.SubValueAutoReg import SubValueAutoReg
 from common_libs.ansible_driver.classes.CreateAnsibleExecFiles import CreateAnsibleExecFiles
 from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, get_AnsibleDriverTmpPath, getDataRelayStorageDir
+from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.ansibletowerlibs.AnsibleTowerExecute import AnsibleTowerExecution
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
@@ -43,10 +47,8 @@ from libs import common_functions as cm
 
 # ansible共通の定数をロード
 ansc_const = AnscConst()
-ansr_const = AnsrConst()
 
 driver_error_log_file = ""
-
 
 def backyard_child_main(organization_id, workspace_id):
     """
@@ -57,6 +59,7 @@ def backyard_child_main(organization_id, workspace_id):
     args = sys.argv
     execution_no = args[3]
     driver_id = args[4]
+    global ansc_const
     global driver_error_log_file
 
     g.applogger.set_tag("EXECUTION_NO", execution_no)
@@ -70,8 +73,10 @@ def backyard_child_main(organization_id, workspace_id):
     #     time.sleep(1)
 
     try:
+        ansc_const = getAnsibleConst(driver_id)
+
         # ディレクトリを生成
-        container_driver_path = getAnsibleExecutDirPath(driver_id, execution_no)
+        container_driver_path = getAnsibleExecutDirPath(ansc_const, execution_no)
 
         work_dir = container_driver_path + "/in"
         if not os.path.isdir(work_dir):
@@ -92,24 +97,24 @@ def backyard_child_main(organization_id, workspace_id):
             # 正常終了
             g.applogger.info(g.appmsg.get_log_message("MSG-10721", [execution_no]))
         else:
-            if len(result) == 2:            
+            if len(result) == 2:
                 log_err("main_logic:" + str(result[1]))
             g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
     except AppException as e:
         # 例外ログ生成
         app_exception_driver_log(e, driver_error_log_file)
 
-        update_status_error(wsDb, execution_no)
+        update_status_error(wsDb, ansc_const, execution_no)
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise AppException(e)
 
     except ValidationException as e:
         # 例外ログ生成
         validation_exception(e)
-        
+
         validation_exception_driver_log(e, driver_error_log_file)
 
-        update_status_error(wsDb, execution_no)
+        update_status_error(wsDb, ansc_const, execution_no)
 
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
@@ -121,16 +126,18 @@ def backyard_child_main(organization_id, workspace_id):
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise Exception(e)
 
-def update_status_error(wsDb: DBConnectWs, execution_no):
+def update_status_error(wsDb: DBConnectWs, ansConstObj, execution_no):
     """
     異常終了と判定した場合のステータス更新
-    
+
     Arguments:
         wsDb: DBConnectWs
+        ansConstObj: ansible共通定数オブジェクト
         execution_no: 作業実行番号
     Returns:
-        
+
     """
+    global ansc_const
     timestamp = get_timestamp()
     wsDb.db_transaction_start()
     data = {
@@ -139,7 +146,7 @@ def update_status_error(wsDb: DBConnectWs, execution_no):
         "TIME_START": timestamp,
         "TIME_END": timestamp,
     }
-    result = cm.update_execution_record(wsDb, data)
+    result = cm.update_execution_record(wsDb, ansConstObj, data)
     if result[0] is True:
         wsDb.db_commit()
         g.applogger.info(g.appmsg.get_log_message("MSG-10735", [execution_no]))
@@ -148,7 +155,7 @@ def update_status_error(wsDb: DBConnectWs, execution_no):
 def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     """
     main logic
-    
+
     Arguments:
         wsDb: DBConnectWs
         execution_no: 作業実行番号
@@ -157,10 +164,11 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
         bool
         err_msg
     """
+    global ansc_const
     global driver_error_log_file
 
     # 処理対象の作業インスタンス情報取得
-    retBool, execute_data = cm.get_execution_process_info(wsDb, execution_no)
+    retBool, execute_data = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
     if retBool is False:
         err_log = g.appmsg.get_log_message(execute_data, [execution_no])
         raise Exception(err_log)
@@ -169,7 +177,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     run_mode = execute_data['RUN_MODE']
 
     # ディレクトリを生成
-    container_driver_path = getAnsibleExecutDirPath(driver_id, execution_no)
+    container_driver_path = getAnsibleExecutDirPath(ansc_const, execution_no)
 
     # ANSIBLEインタフェース情報を取得
     retBool, result = cm.get_ansible_interface_info(wsDb)
@@ -191,7 +199,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
         sub_value_auto_reg.GetDataFromParameterSheet("1", execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
     except ValidationException as e:
         raise ValidationException(e)
-    
+
     # 実行モードが「パラメータ確認」の場合は終了
     if run_mode == ansc_const.CHK_PARA:
         timestamp = get_timestamp()
@@ -202,7 +210,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
             "TIME_START": timestamp,
             "TIME_END": timestamp,
         }
-        result = cm.update_execution_record(wsDb, data)
+        result = cm.update_execution_record(wsDb, ansc_const, data)
         if result[0] is True:
             wsDb.db_commit()
             g.applogger.info(g.appmsg.get_log_message("MSG-10735", [execution_no]))
@@ -255,7 +263,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
         time.sleep(check_interval)
 
         # 処理対象の作業インスタンス情報取得
-        retBool, execute_data = cm.get_execution_process_info(wsDb, execution_no)
+        retBool, execute_data = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
         if retBool is False:
             return False, execute_data
         clone_execute_data = execute_data
@@ -265,7 +273,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
         # ステータスが更新されたか判定
         if db_update_need is True:
-            # 処理対象の作業インスタンスのステータス更新           
+            # 処理対象の作業インスタンスのステータス更新
             wsDb.db_transaction_start()
             if clone_execute_data['FILE_RESULT']:
                 zip_tmp_save_path = get_AnsibleDriverTmpPath() + "/" + clone_execute_data['FILE_RESULT']
@@ -294,6 +302,8 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     return True,
 
 def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id):
+    global ansc_const
+
     tower_host_list = {}
 
     execution_no = execute_data["EXECUTION_NO"]
@@ -371,7 +381,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
         retBool, err_msg_ary, JobTemplatePropertyParameterAry, JobTemplatePropertyNameAry, param_arry_exc = result
 
-    tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansr_const.vg_OrchestratorSubId_dir, execution_no)
+    tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansc_const.vg_OrchestratorSubId_dir, execution_no)
     zip_data_source_dir = tmp_array_dirs[3]
 
     # ansible-playbookコマンド実行時のオプションパラメータを共有ディレクトリのファイルに出力
@@ -399,7 +409,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
         ansible_execute = AnsibleExecute()
         if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
             ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
-        retBool = ansible_execute.execute_construct(driver_id, execution_no, conductor_instance_no, "", "", ans_if_info['ANSIBLE_CORE_PATH'], ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
+        retBool = ansible_execute.execute_construct(ansc_const, execution_no, conductor_instance_no, "", "", ans_if_info['ANSIBLE_CORE_PATH'], ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
 
         if retBool is True:
             execute_data["STATUS_ID"] = ansc_const.PROCESSING
@@ -454,7 +464,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
             AnsibleTowerExecution(
                 driver_id,
-                ansc_const.DF_DELETERESOURCE_FUNCTION, 
+                ansc_const.DF_DELETERESOURCE_FUNCTION,
                 ans_if_info,
                 [],
                 execute_data,
@@ -477,6 +487,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
 
 def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id, tower_host_list):
+    global ansc_const
     db_update_need = False
 
     TowerProjectsScpPath = ansdrv.getTowerProjectsScpPath()
@@ -499,7 +510,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
     error_flag = 0
     if ans_exec_mode == ansc_const.DF_EXEC_MODE_ANSIBLE:
         ansible_execute = AnsibleExecute()
-        status = ansible_execute.execute_statuscheck(driver_id, execution_no)
+        status = ansible_execute.execute_statuscheck(ansc_const, execution_no)
 
         # 想定外エラーはログを出す
         if status == ansc_const.EXCEPTION:
@@ -584,7 +595,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
                 TowerInstanceDirPath,
                 wsDb)
 
-        tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansr_const.vg_OrchestratorSubId_dir, execution_no)
+        tmp_array_dirs = ansdrv.getAnsibleWorkingDirectories(ansc_const.vg_OrchestratorSubId_dir, execution_no)
         zip_data_source_dir = tmp_array_dirs[4]
 
         # 結果データ用ZIPファイル作成
@@ -622,7 +633,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
         limit_unixtime = starttime_unixtime + (time_limit * 60)
         # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
         now_unixtime = time.time()
-        
+
         # 制限時刻と現在時刻を比較
         if limit_unixtime < now_unixtime:
             delay_flag = 1
@@ -709,7 +720,7 @@ def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, dr
     def_vars_list = {}
     def_array_vars_list = {}
 
-    result = ansdrv.CreateAnsibleWorkingDir(ansr_const.vg_OrchestratorSubId_dir, execution_no, operation_id, hostaddres_type,
+    result = ansdrv.CreateAnsibleWorkingDir(ansc_const.vg_OrchestratorSubId_dir, execution_no, operation_id, hostaddres_type,
                                             winrm_id,
                                             movement_id,
                                             role_rolenamelist,
@@ -861,7 +872,7 @@ def getAnsiblePlaybookOptionParameter(wsDb, option_parameter):
                     if re.match(key_string, chk_param_string):
                         hit = True
                         break
-        
+
         if hit is False:
             err_msg_arr.append(g.appmsg.get_log_message("MSG-10634", [chk_param_string.strip()]));
 
@@ -914,10 +925,10 @@ def getAnsiblePlaybookOptionParameter(wsDb, option_parameter):
                             break
                         j = j + 1
                     i = i + 1
-                    
+
             if retBool is False:
                 res_retBool = False
-            
+
             # 除外リストの初期化
             excist_list = []
 
@@ -951,10 +962,10 @@ def getAnsiblePlaybookOptionParameter(wsDb, option_parameter):
                             break
                         j = j + 1
                     i = i + 1
-                    
+
             if retBool is False:
                 res_retBool = False
-            
+
         # KEY SHORTのチェック
         k = 0
         if len(key_short_chk) >= 2:
@@ -1152,7 +1163,7 @@ def makeExtraVarsParameter(ext_var_string):
         return True
     except json.JSONDecodeError:
         pass
-    
+
     # YAML形式のチェック
     try:
         yaml.safe_load(ext_var_string)
@@ -1221,17 +1232,17 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
 
     TableDict = {}
     TableDict["MENU_REST"] = {}
-    TableDict["MENU_REST"][AnscConst.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["MENU_REST"][AnscConst.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["MENU_REST"][AnscConst.DF_LEGACY_DRIVER_ID] = "execution_list_ansible_legacy"
+    TableDict["MENU_REST"][AnscConst.DF_PIONEER_DRIVER_ID] = "execution_list_ansible_pioneer"
     TableDict["MENU_REST"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = "execution_list_ansible_role"
     TableDict["MENU_ID"] = {}
-    TableDict["MENU_ID"][AnscConst.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["MENU_ID"][AnscConst.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["MENU_ID"][AnscConst.DF_LEGACY_DRIVER_ID] = "20210"
+    TableDict["MENU_ID"][AnscConst.DF_PIONEER_DRIVER_ID] = "20312"
     TableDict["MENU_ID"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = "20412"
     TableDict["TABLE"] = {}
-    TableDict["TABLE"][AnscConst.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["TABLE"][AnscConst.DF_PIONEER_DRIVER_ID] = "Not supported"
-    TableDict["TABLE"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = "T_ANSR_EXEC_STS_INST"
+    TableDict["TABLE"][AnscConst.DF_LEGACY_DRIVER_ID] = AnslConst.vg_exe_ins_msg_table_name
+    TableDict["TABLE"][AnscConst.DF_PIONEER_DRIVER_ID] = AnspConst.vg_exe_ins_msg_table_name
+    TableDict["TABLE"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = AnsrConst.vg_exe_ins_msg_table_name
     MenuName = TableDict["MENU_REST"][driver_id]
     MenuId = TableDict["MENU_ID"][driver_id]
 

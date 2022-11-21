@@ -125,7 +125,7 @@ class AnscConst:
     DF_ITA_LOCAL_PKEY = '__ITA_LOCAL_COLUMN_4__'
 
     # ansible-vault command default password
-    DF_ANSIBLE_VAULT_PASSWORD ="2FP7-DPJ7-6P6B-B7E2"
+    DF_ANSIBLE_VAULT_PASSWORD = "2FP7-DPJ7-6P6B-B7E2"
     ############################################################
     # 変数定義の変数名定義判定配列
     # parant  :親変数名として利用可否
@@ -181,7 +181,6 @@ class AnscConst:
     # WINRM接続ポート デフォルト値
     LC_WINRM_PORT = 5985
 
-    
     # ITA独自変数名
     ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME = "__loginprotocol__"
     ITA_SP_VAR_ANS_USERNAME_VAR_NAME = "__loginuser__"

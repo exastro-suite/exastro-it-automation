@@ -162,6 +162,6 @@ class AnsibleTowerRestApiInventoryHosts(AnsibleTowerRestApiBase):
             for inventoryHostData in pickup_response_array_2['responseContents']:
                 response_array = AnsibleTowerRestApiHosts.delete(RestApiCaller, inventoryHostData['id'])
                 if not response_array['success']:
-                    response_array
+                    return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま

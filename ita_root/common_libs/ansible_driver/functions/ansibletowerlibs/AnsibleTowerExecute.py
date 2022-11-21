@@ -243,7 +243,7 @@ def AnsibleTowerExecution(
                 # トレースメッセージ
                 g.applogger.debug("monitoring environment (exec_no: %s)" % (tgt_execution_no))
 
-                director = ExecuteDirector(driver_id, restApiCaller, None, dbAccess, "", ansibleTowerIfInfo, TowerProjectsScpPath=TowerProjectsScpPath, TowerInstanceDirPath=TowerInstanceDirPath)
+                director = ExecuteDirector(driver_id, restApiCaller, None, dbAccess, exec_out_dir, ansibleTowerIfInfo, JobTemplatePropertyParameterAry, JobTemplatePropertyNameAry, TowerProjectsScpPath, TowerInstanceDirPath)
                 status = director.monitoring(toProcessRow, ansibleTowerIfInfo)
 
                 # マルチログかを取得する

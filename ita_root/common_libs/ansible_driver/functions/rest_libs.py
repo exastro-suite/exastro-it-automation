@@ -44,15 +44,20 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     user_id = g.USER_ID
     objAnsc = AnscConst()
     TableDict = {}
-    TableDict["MENU"] = {}
-    TableDict["MENU"][objAnsc.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["MENU"][objAnsc.DF_PIONEER_DRIVER_ID] = "Not supported"
-    TableDict["MENU"][objAnsc.DF_LEGACY_ROLE_DRIVER_ID] = "execution_list_ansible_role"
-    MenuName = TableDict["MENU"][driver_id]
+    TableDict["MENU_NAME"] = {}
+    TableDict["MENU_NAME"][objAnsc.DF_LEGACY_DRIVER_ID] = "Not supported"
+    TableDict["MENU_NAME"][objAnsc.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["MENU_NAME"][objAnsc.DF_LEGACY_ROLE_DRIVER_ID] = "execution_list_ansible_role"
+    TableDict["MENU_ID"] = {}
+    TableDict["MENU_ID"][objAnsc.DF_LEGACY_DRIVER_ID] = "Not supported"
+    TableDict["MENU_ID"][objAnsc.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["MENU_ID"][objAnsc.DF_LEGACY_ROLE_DRIVER_ID] = "20412"
+    MenuName = TableDict["MENU_NAME"][driver_id]
+    MenuId = TableDict["MENU_ID"][driver_id]
 
     # loadtyable.pyで使用するCOLUMN_NAME_RESTを取得
     RestNameConfig = {}
-    sql = "SELECT COL_NAME,COLUMN_NAME_REST FROM T_COMN_MENU_COLUMN_LINK WHERE MENU_ID = '20412' and DISUSE_FLAG = '0'"
+    sql = "SELECT COL_NAME,COLUMN_NAME_REST FROM T_COMN_MENU_COLUMN_LINK WHERE MENU_ID = '%s' and DISUSE_FLAG = '0'" % (MenuId)
     restcolnamerow = objdbca.sql_execute(sql, [])
     for row in restcolnamerow:
         RestNameConfig[row["COL_NAME"]] = row["COLUMN_NAME_REST"]
@@ -62,7 +67,7 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     if isinstance(scheduled_date, datetime.datetime):
         # yyyy-mm-dd hh:mm:ss -> yyyy/mm/dd hh:mm:ss
         scheduled_date = scheduled_date.strftime('%Y/%m/%d %H:%M:%S')
-        
+
     # ansibleインターフェース情報取得
     sql = "SELECT * FROM T_ANSC_IF_INFO WHERE DISUSE_FLAG='0'"
     inforow = objdbca.sql_execute(sql, [])
@@ -70,9 +75,9 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     inforow = inforow[0]
 
     nowTime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-    
+
     # 作業管理に追加するレコード生成
-    
+
     # 実行種別
     if g.LANGUAGE == 'ja':
         sql = "SELECT EXEC_MODE_NAME_JA AS NAME FROM T_ANSC_EXEC_MODE WHERE EXEC_MODE_ID = %s AND DISUSE_FLAG = '0'"
@@ -96,7 +101,7 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     # マスタなので件数チェックしない
     row = rows[0]
     ExecStsInstTableConfig[RestNameConfig["STATUS_ID"]] = row["NAME"]
-    
+
     # 実行エンジン
     sql = "SELECT NAME FROM T_ANSC_EXEC_ENGINE WHERE ID = %s AND DISUSE_FLAG = '0'"
     ExecMode = inforow['ANSIBLE_EXEC_MODE']
@@ -171,12 +176,12 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
         if AnsibleCfgData is False:
             # エンコード失敗
             raise AppException("499-00909", [], [])
-        
+
         uploadfiles = {RestNameConfig["I_ANSIBLE_CONFIG_FILE"]: AnsibleCfgData}
 
     # オペレーション/No.
     ExecStsInstTableConfig[RestNameConfig["OPERATION_ID"]] = operation_row["OPERATION_ID"]
-    
+
     # オペレーション/名称
     ExecStsInstTableConfig[RestNameConfig["I_OPERATION_NAME"]] = operation_row["OPERATION_NAME"]
 
@@ -202,7 +207,7 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     # ExecStsInstTableConfig[RestNameConfig["COLLECT_LOG"]]
     # Conductorインスタンス番号
 
-    if conductor_id:                           
+    if conductor_id:
         ExecStsInstTableConfig[RestNameConfig["CONDUCTOR_INSTANCE_NO"]] = conductor_id
 
     # オプションパラメータ
@@ -246,20 +251,15 @@ def execution_scram(objdbca, driver_id, execution_no):
         緊急停止
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            driver_id: ドライバ区分　AnscConst().DF_LEGACY_ROLE_DRIVER_ID
+            driver_id: ドライバ区分
             execution_no: 作業番号
         RETRUN:
             True
     """
     user_id = g.USER_ID
-    objAnsc = AnscConst()
-    TableDict = {}
-    TableDict["TABLE"] = {}
-    TableDict["TABLE"][objAnsc.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["TABLE"][objAnsc.DF_PIONEER_DRIVER_ID] = "Not supported"
-    TableDict["TABLE"][objAnsc.DF_LEGACY_ROLE_DRIVER_ID] = "T_ANSR_EXEC_STS_INST"
-    
-    TableName = TableDict["TABLE"][driver_id]
+    target = { AnscConst.DF_LEGACY_ROLE_DRIVER_ID: AnsrConst.vg_exe_ins_msg_table_name }
+
+    TableName = target[driver_id]
 
     # ステータスを確認するのでテーブルをロック
     objdbca.table_lock(TableName)
@@ -273,7 +273,7 @@ def execution_scram(objdbca, driver_id, execution_no):
     else:
         execrow = execrows[0]
         # ステータスが実行中か実行中(遅延)かを判定
-        if execrow["STATUS_ID"] != objAnsc.PROCESSING and execrow["STATUS_ID"] != objAnsc.PROCESS_DELAYED:
+        if execrow["STATUS_ID"] != AnsrConst.PROCESSING and execrow["STATUS_ID"] != AnsrConst.PROCESS_DELAYED:
             if g.LANGUAGE == 'ja':
                 sql = "SELECT EXEC_STATUS_NAME_JA AS NAME FROM T_ANSC_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
             else:
@@ -283,7 +283,7 @@ def execution_scram(objdbca, driver_id, execution_no):
             #  緊急停止できる状態ではない
             raise AppException("499-00904", [row["NAME"]], [row["NAME"]])
 
-        if execrow["EXEC_MODE"] == objAnsc.DF_EXEC_MODE_ANSIBLE:
+        if execrow["EXEC_MODE"] == AnsrConst.DF_EXEC_MODE_ANSIBLE:
             objAnsCore = AnsibleExecute()
             # Ansible-Core 緊急停止
             objAnsCore.execute_abort(driver_id, execution_no)
@@ -349,5 +349,5 @@ def search_user_list(objdbca):
         pf_users = get_exastro_platform_users()
 
         users_list.update(pf_users)
-        
+
     return users_list

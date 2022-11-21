@@ -37,7 +37,7 @@ metadata:
   name: createdb-sql
   namespace: {{ .Release.Namespace }}
   labels: {{ include "ita-setup.labels" . | nindent 4 }}
-data: 
+data:
     createdb.sql: |-
       {{- with .Values.global.itaDatabaseDefinition }}
       CREATE DATABASE IF NOT EXISTS {{ .config.DB_DATABASE }} DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -59,6 +59,16 @@ data:
           GITLAB_TOKEN                    VARCHAR(255),                               -- GitLabトークン
           NOTE                            TEXT,                                       -- 備考
           DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+          LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+          LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+          PRIMARY KEY(PRIMARY_KEY)
+      )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+      CREATE TABLE IF NOT EXISTS `{{ .config.DB_DATABASE }}`.`T_COMN_INITIAL_DATA`
+      (
+          PRIMARY_KEY                     VARCHAR(40),                                -- 主キー
+          INITIAL_DATA_ANSIBLE_IF         LONGTEXT,                                   -- Ansible IF初期設定データ
+          NOTE                            TEXT,                                       -- 備考
+          DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
           LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
           LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
           PRIMARY KEY(PRIMARY_KEY)

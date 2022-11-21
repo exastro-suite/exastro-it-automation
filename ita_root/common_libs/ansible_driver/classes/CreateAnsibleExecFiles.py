@@ -288,7 +288,6 @@ class CreateAnsibleExecFiles():
         self.lv_ans_if_info = {}
         self.lv_exec_no = ""
         self.lv_vault_pass_list = {}
-        self.lv_vault_pass_update_list = {}
         self.lv_vault_value_list = {}
         self.lv_vault_value_update_list = {}
 
@@ -363,7 +362,6 @@ class CreateAnsibleExecFiles():
         self.lv_ans_if_info = in_ans_if_info
         self.lv_exec_no = in_exec_no
         self.lv_vault_pass_list = {}
-        self.lv_vault_pass_update_list = {}
         self.lv_vault_value_list = {}
         self.lv_vault_value_update_list = {}
         
@@ -1214,7 +1212,7 @@ class CreateAnsibleExecFiles():
                 # enomoto  self.LC_ANS_UNDEFINE_NAMEでチェックしてるなか？
                 # if ina_hostinfolist[host_name]['LOGIN_USER'] != self.LC_ANS_UNDEFINE_NAME):
                 if ina_hostinfolist[host_name]['LOGIN_USER']:
-                    param = "ansible_ssh_user: " + ina_hostinfolist[host_name]['LOGIN_USER']
+                    param = "ansible_user: " + ina_hostinfolist[host_name]['LOGIN_USER']
 
                 # パスワード設定
                 if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_PW or\
@@ -1223,20 +1221,21 @@ class CreateAnsibleExecFiles():
                     if ina_hostinfolist[host_name]['LOGIN_PW']:
 
                         # パスワード暗号化
+                        login_pw_ansible_vault = ""
                         make_vaultpass = self.makeAnsibleVaultPassword(
                             ina_hostinfolist[host_name]['LOGIN_PW'],
-                            ina_hostinfolist[host_name]['LOGIN_PW_ANSIBLE_VAULT'],
+                            login_pw_ansible_vault,
                             indento_sp12,
                             ina_hostinfolist[host_name]['SYSTEM_ID'])
                         if make_vaultpass is False:
                             return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
 
-                        passwd = "ansible_ssh_pass: " + make_vaultpass
+                        passwd = "ansible_password: " + make_vaultpass
 
                 # Winrm接続情報
                 if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_PW_WINRM:
                     # WINRM接続プロトコルよりポート番号が未設定時は、self.LC_WINRM_PORTが設定されている
-                    port = "ansible_ssh_port: " + str(ina_hostinfolist[host_name]['WINRM_PORT'])
+                    port = "ansible_port: " + str(ina_hostinfolist[host_name]['WINRM_PORT'])
                     port += "\n" + indento_sp_param + "ansible_connection: winrm"
 
             ssh_key_file = ''
@@ -1303,16 +1302,16 @@ class CreateAnsibleExecFiles():
             host_name_string = ""
             # ホストアドレス方式がホスト名方式の場合はホスト名をhostsに登録する。
             # hostname:
-            #   ansible_ssh_host: ip/dnshost
+            #   ansible_host: ip/dnshost
             #  1: ip  2: host
             if self.lv_hostaddress_type == "2":
                 host_name_string = indento_sp_host + ina_hostinfolist[host_name]['HOST_NAME'] + ":\n"
-                host_name_string += indento_sp_param + 'ansible_ssh_host: ' + ina_hostinfolist[host_name]['HOST_DNS_NAME'] + "\n"
+                host_name_string += indento_sp_param + 'ansible_host: ' + ina_hostinfolist[host_name]['HOST_DNS_NAME'] + "\n"
                 now_host_name = ina_hostinfolist[host_name]['HOST_DNS_NAME']
             else:
                 # ホストアドレス方式がIPアドレスの場合
                 host_name_string = indento_sp_host + ina_hostinfolist[host_name]['HOST_NAME'] + ":\n"
-                host_name_string += indento_sp_param + 'ansible_ssh_host: ' + ina_hostinfolist[host_name]['IP_ADDRESS'] + "\n"
+                host_name_string += indento_sp_param + 'ansible_host: ' + ina_hostinfolist[host_name]['IP_ADDRESS'] + "\n"
 
             # Pioneerでホスト名がlocalhostの場合に、インベントファイルに
             # ansible_connection: localを追加する
@@ -1494,9 +1493,10 @@ class CreateAnsibleExecFiles():
                 # ansible-vaultで暗号化された文字列のインデントを調整
                 indento_sp4 = "".ljust(4)
 
+                login_pw_ansible_vault = ""
                 make_vaultpass = self.makeAnsibleVaultPassword(
                     val,
-                    self.lv_hostinfolist[in_host_name]['LOGIN_PW_ANSIBLE_VAULT'],
+                    login_pw_ansible_vault,
                     indento_sp4,
                     self.lv_hostinfolist[in_host_name]['SYSTEM_ID'])
                 if make_vaultpass is False:
@@ -2682,10 +2682,10 @@ class CreateAnsibleExecFiles():
                 src_dict = mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']]
 
                 add_dict = self.makeHostVarsArray(var_path_array,
-                                            0,
-                                            mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']],
-                                            var_type, row['VARS_ENTRY'],
-                                            row['ASSIGN_SEQ'])
+                                                  0,
+                                                  mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']],
+                                                  var_type, row['VARS_ENTRY'],
+                                                  row['ASSIGN_SEQ'])
                 # 辞書をマージ
                 merge_dict = deepmerge(src_dict, add_dict)
                 mt_MultiArray_vars_list[row['VARS_NAME']][row['HOST_NAME']] = merge_dict
@@ -4420,6 +4420,8 @@ class CreateAnsibleExecFiles():
             else:
                 VaultPasswordFilePath = obj.CreateVaultPasswordFilePath()
                 # in_passはrot13+base64で複合化されている
+                if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+                    self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
                 retAry = obj.Vault(self.lv_ans_if_info['ANSIBLE_CORE_PATH'],
                                    self.getAnsibleExecuteUser(),
@@ -4442,18 +4444,7 @@ class CreateAnsibleExecFiles():
                 self.lv_vault_pass_list[in_pass] = out_vaultpass
             out_vaultpass = " !vault |" + out_vaultpass
 
-            # 機器一覧の暗号化パスワードを更新済みか判定
-            if update_key not in self.lv_vault_pass_update_list:
 
-                # 機器一覧にansible-vaultで暗号化した文字列を登録
-                UpData = {}
-                UpData["LOGIN_PW_ANSIBLE_VAULT"] = out_vaultpass
-                UpData["SYSTEM_ID"] = in_system_id
-                ret = self.lv_objDBCA.table_update("T_ANSC_DEVICE", UpData, "SYSTEM_ID", False)
-                # Autocommitがoffになっており、呼び元でトランザクションもoffなのでcommitする。
-                self.lv_objDBCA.db_commit()
-                # 機器一覧の暗号化パスワードを更新済設定
-                self.lv_vault_pass_update_list[update_key] = 'update'
         else:
             out_vaultpass = in_vaultpass
 
@@ -4491,6 +4482,8 @@ class CreateAnsibleExecFiles():
                 # unuse enc_in_pass = in_pass
                 VaultPasswordFilePath = obj.CreateVaultPasswordFilePath()
                 # in_passはrot13+base64で暗号化されている
+                if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
+                    self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
                 retAry = obj.Vault(self.lv_ans_if_info['ANSIBLE_CORE_PATH'],
                                    self.getAnsibleExecuteUser(),

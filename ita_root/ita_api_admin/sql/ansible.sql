@@ -8,7 +8,6 @@ CREATE TABLE T_ANSC_DEVICE
     IP_ADDRESS                      VARCHAR(15),                                -- IPアドレス
     LOGIN_USER                      VARCHAR(255),                               -- ユーザ
     LOGIN_PW                        TEXT,                                       -- パスワード
-    LOGIN_PW_ANSIBLE_VAULT          TEXT,                                       -- vailt暗号化パスワード
     SSH_KEY_FILE                    VARCHAR(255),                               -- ssh秘密鍵ファイル
     SSH_KEY_FILE_PASSPHRASE         TEXT,                                       -- パスフレーズ
     LOGIN_AUTH_TYPE                 VARCHAR(2),                                 -- 認証方式
@@ -40,7 +39,6 @@ CREATE TABLE T_ANSC_DEVICE_JNL
     IP_ADDRESS                      VARCHAR(15),                                -- IPアドレス
     LOGIN_USER                      VARCHAR(255),                               -- ユーザ
     LOGIN_PW                        TEXT,                                       -- パスワード
-    LOGIN_PW_ANSIBLE_VAULT          TEXT,                                       -- vailt暗号化パスワード
     SSH_KEY_FILE                    VARCHAR(255),                               -- ssh秘密鍵ファイル
     SSH_KEY_FILE_PASSPHRASE         TEXT,                                       -- パスフレーズ
     LOGIN_AUTH_TYPE                 VARCHAR(2),                                 -- 認証方式
@@ -67,12 +65,6 @@ CREATE TABLE T_ANSC_IF_INFO
 (
     ANSIBLE_IF_INFO_ID              VARCHAR(40),                                -- 項番
     ANSIBLE_EXEC_MODE               VARCHAR(2),                                 -- 実行エンジン
-    ANSIBLE_HOSTNAME                VARCHAR(255),                               -- ホスト
-    ANSIBLE_PROTOCOL                VARCHAR(8),                                 -- プロトコル
-    ANSIBLE_PORT                    INT,                                        -- ポート
-    ANSIBLE_EXEC_USER               VARCHAR(255),                               -- 実行ユーザー
-    ANSIBLE_ACCESS_KEY_ID           VARCHAR(64),                                -- Access_key_id
-    ANSIBLE_SECRET_ACCESS_KEY       VARCHAR(64),                                -- Secret_access_key
     ANSTWR_HOST_ID                  VARCHAR(40),                                -- 代表ホスト
     ANSTWR_PROTOCOL                 VARCHAR(8),                                 -- プロトコル
     ANSTWR_PORT                     INT,                                        -- ポート
@@ -109,12 +101,6 @@ CREATE TABLE T_ANSC_IF_INFO_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     ANSIBLE_IF_INFO_ID              VARCHAR(40),                                -- 項番
     ANSIBLE_EXEC_MODE               VARCHAR(2),                                 -- 実行エンジン
-    ANSIBLE_HOSTNAME                VARCHAR(255),                               -- ホスト
-    ANSIBLE_PROTOCOL                VARCHAR(8),                                 -- プロトコル
-    ANSIBLE_PORT                    INT,                                        -- ポート
-    ANSIBLE_EXEC_USER               VARCHAR(255),                               -- 実行ユーザー
-    ANSIBLE_ACCESS_KEY_ID           VARCHAR(64),                                -- Access_key_id
-    ANSIBLE_SECRET_ACCESS_KEY       VARCHAR(64),                                -- Secret_access_key
     ANSTWR_HOST_ID                  VARCHAR(40),                                -- 代表ホスト
     ANSTWR_PROTOCOL                 VARCHAR(8),                                 -- プロトコル
     ANSTWR_PORT                     INT,                                        -- ポート
@@ -359,7 +345,6 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_ENGINE_VIRTUALENV_NAME,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -384,7 +369,6 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_ENGINE_VIRTUALENV_NAME,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -617,7 +601,6 @@ CREATE TABLE T_ANSR_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ENGINE_VIRTUALENV_NAME        VARCHAR(255),                               -- Movement/Ansible-Core利用情報/virtualenv
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -659,7 +642,6 @@ CREATE TABLE T_ANSR_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ENGINE_VIRTUALENV_NAME        VARCHAR(255),                               -- Movement/Ansible-Core利用情報/virtualenv
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -697,8 +679,8 @@ CREATE TABLE T_ANSR_NESTVAR_MEMBER
     COL_SEQ_NEED                    INT,                                        -- 列順序有無
     MEMBER_DISP                     INT,                                        -- 代入値管理系の表示有無
     MAX_COL_SEQ                     INT,                                        -- 最大繰返数
-    VRAS_NAME_PATH                  VARCHAR(512),                               -- メンバー変数の階層パス
-    VRAS_NAME_ALIAS                 VARCHAR(1024),                              -- 代入値管理系の表示メンバー変数名
+    VRAS_NAME_PATH                  TEXT,                                       -- メンバー変数の階層パス
+    VRAS_NAME_ALIAS                 TEXT,                                       -- 代入値管理系の表示メンバー変数名
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -1487,6 +1469,46 @@ FROM
 T_ANSR_NESTVAR_MEMBER_COL_COMB TAB_A
 LEFT JOIN
 T_ANSR_MVMT_VAR_LINK TAB_B ON (TAB_A.MVMT_VAR_LINK_ID = TAB_B.MVMT_VAR_LINK_ID);
+
+
+
+-- INDEX定義
+CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_01 ON T_ANSC_COMVRAS_USLIST(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_02 ON T_ANSC_COMVRAS_USLIST(FILE_ID,VRA_ID,CONTENTS_ID,VAR_NAME);
+CREATE INDEX IND_T_ANSC_COMVRAS_USLIST_03 ON T_ANSC_COMVRAS_USLIST(FILE_ID,CONTENTS_ID);
+CREATE INDEX IND_T_ANSC_CONTENTS_FILE_01 ON T_ANSC_CONTENTS_FILE(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_CONTENTS_FILE_02 ON T_ANSC_CONTENTS_FILE(CONTENTS_FILE_VARS_NAME,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_DEVICE_01 ON T_ANSC_DEVICE(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_DEVICE_02 ON T_ANSC_DEVICE(HOST_NAME,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_GLOBAL_VAR_01 ON T_ANSC_GLOBAL_VAR(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_IF_INFO_01 ON T_ANSC_IF_INFO(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_01 ON T_ANSC_TEMPLATE_FILE(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_TEMPLATE_FILE_02 ON T_ANSC_TEMPLATE_FILE(ANS_TEMPLATE_VARS_NAME,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_TOWER_HOST_01 ON T_ANSC_TOWER_HOST(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSC_UNMANAGED_VARLIST_01 ON T_ANSC_UNMANAGED_VARLIST(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_EXEC_STS_INST_01 ON T_ANSR_EXEC_STS_INST(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_MATL_COLL_01 ON T_ANSR_MATL_COLL(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_01 ON T_ANSR_MVMT_MATL_LINK (DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_MVMT_MATL_LINK (MOVEMENT_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_03 ON T_ANSR_MVMT_MATL_LINK (MVMT_MATL_LINK_ID,MOVEMENT_ID,ROLE_PACKAGE_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_01 ON T_ANSR_MVMT_VAR_LINK (DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_MVMT_VAR_LINK_02 ON T_ANSR_MVMT_VAR_LINK (MOVEMENT_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_01 ON T_ANSR_NESTVAR_MEMBER (DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_02 ON T_ANSR_NESTVAR_MEMBER (MVMT_VAR_LINK_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_01 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_02 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (COL_SEQ_COMBINATION_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_COL_COMB_03 ON T_ANSR_NESTVAR_MEMBER_COL_COMB (MVMT_VAR_LINK_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_NESTVAR_MEMBER_MAX_COL_01 ON T_ANSR_NESTVAR_MEMBER_MAX_COL (DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_ROLE_NAME_01 ON T_ANSR_ROLE_NAME (DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_TGT_HOST_01 ON T_ANSR_TGT_HOST(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_MVMT_MATL_LINK_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_TGT_HOST_02 ON T_ANSR_TGT_HOST (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,SYSTEM_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_VALUE_01 ON T_ANSR_VALUE(DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_VALUE_02 ON T_ANSR_VALUE (EXECUTION_NO,VARS_ENTRY_USE_TPFVARS,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_VALUE_03 ON T_ANSR_VALUE (EXECUTION_NO,OPERATION_ID,MOVEMENT_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_01 ON T_ANSR_VALUE_AUTOREG (DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_02 ON T_ANSR_VALUE_AUTOREG (MOVEMENT_ID,DISUSE_FLAG);
+CREATE INDEX IND_T_ANSR_VALUE_AUTOREG_03 ON T_ANSR_VALUE_AUTOREG (COLUMN_ID,MENU_ID,MOVEMENT_ID,MVMT_VAR_LINK_ID,COL_SEQ_COMBINATION_ID,ASSIGN_SEQ,DISUSE_FLAG);
 
 
 

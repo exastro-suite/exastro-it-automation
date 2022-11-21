@@ -227,7 +227,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
             if column_class_name == "FloatColumn":
                 col_detail["decimal_maximum_value"] = record.get('FLOAT_MAX')  # 小数 最大値
                 col_detail["decimal_minimum_value"] = record.get('FLOAT_MIN')  # 小数 最小値
-                col_detail["decimal_digit"] = record.get('decimal_digit')  # 小数 桁数
+                col_detail["decimal_digit"] = record.get('FLOAT_DIGIT')  # 小数 桁数
                 col_detail["decimal_default_value"] = record.get('FLOAT_DEFAULT_VALUE')  # 小数 初期値
             
             # カラムクラス「日時」用のパラメータを追加
@@ -235,18 +235,18 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 full_datetime_default_value = record.get('DATETIME_DEFAULT_VALUE')
                 if full_datetime_default_value:
                     datetime_default_value = full_datetime_default_value.strftime('%Y/%m/%d %H:%M:%S')
-                    col_detail["detetime_default_value"] = datetime_default_value  # 日時 初期値
+                    col_detail["datetime_default_value"] = datetime_default_value  # 日時 初期値
                 else:
-                    col_detail["detetime_default_value"] = None
+                    col_detail["datetime_default_value"] = None
             
             # カラムクラス「日付」用のパラメータを追加
             if column_class_name == "DateColumn":
                 full_datet_default_value = record.get('DATE_DEFAULT_VALUE')
                 if full_datet_default_value:
                     date_default_value = full_datet_default_value.strftime('%Y/%m/%d')
-                    col_detail["dete_default_value"] = date_default_value  # 日付 初期値
+                    col_detail["date_default_value"] = date_default_value  # 日付 初期値
                 else:
-                    col_detail["dete_default_value"] = None
+                    col_detail["date_default_value"] = None
             
             # カラムクラス「プルダウン選択」用のパラメータを追加
             if column_class_name == "IDColumn":
@@ -693,7 +693,7 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
             raise Exception(result_code, msg_args)
         
         # 「メニュー項目作成情報」から更新対象のレコードを更新
-        retbool, result_code, msg_args = _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list, type_name)
+        retbool, result_code, msg_args = _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column_data_list, type_name)
         if not retbool:
             raise Exception(result_code, msg_args)
         
@@ -1149,11 +1149,11 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                 
                 # カラムクラス「日時」用のパラメータを追加
                 if column_class == "DateTimeColumn":
-                    parameter["detetime_default_value"] = None if not column_data.get('detetime_default_value') else column_data.get('detetime_default_value')  # 日時 初期値 # noqa: E501
+                    parameter["datetime_default_value"] = None if not column_data.get('datetime_default_value') else column_data.get('datetime_default_value')  # 日時 初期値 # noqa: E501
                 
                 # カラムクラス「日付」用のパラメータを追加
                 if column_class == "DateColumn":
-                    parameter["dete_default_value"] = None if not column_data.get('dete_default_value') else column_data.get('dete_default_value')  # 日付 初期値 # noqa: E501
+                    parameter["date_default_value"] = None if not column_data.get('date_default_value') else column_data.get('date_default_value')  # 日付 初期値 # noqa: E501
                 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
@@ -1205,7 +1205,7 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
     return True, None, None
 
 
-def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list, type_name):  # noqa: C901
+def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column_data_list, type_name):  # noqa: C901
     """
         【内部呼び出し用】「メニュー項目作成情報」のレコードを更新する
         ARGS:
@@ -1242,6 +1242,9 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
         
         # loadTableの呼び出し
         objmenu = load_table.loadTable(objdbca, 'menu_item_creation_info')  # noqa: F405
+        
+        # menu_dataから登録用のメニュー名を取得
+        menu_name = menu_data.get('menu_name')
         
         # 「メニュー項目作成情報」更新処理のループスタート
         for column_data in column_data_list.values():
@@ -1393,6 +1396,7 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
                 
                 # 更新用パラメータを作成
                 parameter = {
+                    "menu_name": menu_name,  # メニュー名(「メニュー定義一覧」のメニュー名)
                     "item_name_ja": item_name,  # 項目名(ja)
                     "item_name_en": item_name,  # 項目名(en)
                     "item_name_rest": column_data.get('item_name_rest'),  # 項目名(rest)
@@ -1425,8 +1429,8 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
                 parameter["decimal_minimum_value"] = None  # 小数 最小値
                 parameter["decimal_digit"] = None  # 小数 桁数
                 parameter["decimal_default_value"] = None  # 小数 初期値
-                parameter["detetime_default_value"] = None  # 日時 初期値
-                parameter["dete_default_value"] = None  # 日付 初期値
+                parameter["datetime_default_value"] = None  # 日時 初期値
+                parameter["date_default_value"] = None  # 日付 初期値
                 parameter["pulldown_selection"] = None  # プルダウン選択 メニューグループ:メニュー:項目
                 parameter["pulldown_selection_default_value"] = None  # プルダウン選択 初期値
                 parameter["reference_item"] = None  # プルダウン選択 参照項目
@@ -1469,11 +1473,11 @@ def _update_t_menu_column(objdbca, current_t_menu_column_list, column_data_list,
                 
                 # カラムクラス「日時」用のパラメータを追加
                 if column_class == "DateTimeColumn":
-                    parameter["detetime_default_value"] = None if not column_data.get('detetime_default_value') else column_data.get('detetime_default_value')  # 日時 初期値 # noqa: E501
+                    parameter["datetime_default_value"] = None if not column_data.get('datetime_default_value') else column_data.get('datetime_default_value')  # 日時 初期値 # noqa: E501
                 
                 # カラムクラス「日付」用のパラメータを追加
                 if column_class == "DateColumn":
-                    parameter["dete_default_value"] = None if not column_data.get('dete_default_value') else column_data.get('dete_default_value')  # 日付 初期値 # noqa: E501
+                    parameter["date_default_value"] = None if not column_data.get('date_default_value') else column_data.get('date_default_value')  # 日付 初期値 # noqa: E501
                 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":

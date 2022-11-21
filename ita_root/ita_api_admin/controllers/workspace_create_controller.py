@@ -25,7 +25,7 @@ import shutil
 from common_libs.api import api_filter, check_request_body_key
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import ky_encrypt, get_timestamp
-
+from libs.admin_common import initial_settings_ansible
 
 @api_filter
 def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
@@ -51,7 +51,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     org_db = DBConnectOrg(organization_id)  # noqa: F405
     connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if connect_info:
-        return '', "ALREADY EXISTS"
+        return '', "ALREADY EXISTS", "499-00001", 499
 
     # make storage directory for workspace
     strage_path = os.environ.get('STORAGEPATH')
@@ -60,7 +60,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         os.makedirs(workspace_dir)
         g.applogger.debug("made workspace_dir")
     else:
-        return '', "ALREADY EXISTS"
+        return '', "ALREADY EXISTS", "499-00001", 499
 
     try:
         # make storage directory for workspace job
@@ -167,6 +167,14 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             g.applogger.debug("executed " + dml_file)
             ws_db.db_commit()
 
+        # 初期データ設定(ansible)
+        common_db = DBConnectCommon()
+        data_list = common_db.table_select('T_COMN_INITIAL_DATA')
+        if len(data_list) != 0:
+            ws_db.db_transaction_start()
+            initial_settings_ansible(ws_db, json.loads(data_list[0]['INITIAL_DATA_ANSIBLE_IF']))
+            ws_db.db_commit()
+
         # register workspace-db connect infomation
         org_db.db_transaction_start()
         org_db.table_insert("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
@@ -207,7 +215,13 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     org_db = DBConnectOrg(organization_id)  # noqa: F405
     connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if connect_info is False:
-        return '', "ALREADY DELETED"
+        return '', "ALREADY DELETED", "499-00002", 499
+
+    # drop ws-db and ws-db-user
+    org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
+    org_root_db.database_drop(connect_info['DB_DATABASE'])
+    org_root_db.user_drop(connect_info['DB_USER'])
+    org_root_db.db_disconnect()
 
     # delete storage directory for workspace
     strage_path = os.environ.get('STORAGEPATH')
@@ -215,13 +229,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     if os.path.isdir(workspace_dir):
         shutil.rmtree(workspace_dir)
     else:
-        return '', "ALREADY DELETED"
-
-    # drop ws-db and ws-db-user
-    org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
-    org_root_db.database_drop(connect_info['DB_DATABASE'])
-    org_root_db.user_drop(connect_info['DB_USER'])
-    org_root_db.db_disconnect()
+        return '', "ALREADY DELETED", "499-00002", 499
 
     # disuse ws-db connect infomation
     data = {

@@ -15,6 +15,8 @@ global:
       CONTAINER_BASE: "kubernetes"
       TZ: "Asia/Tokyo"
       STORAGEPATH: "/storage/"
+    secret:
+      ENCRYPT_KEY: ""
     persistence:
       enabled: true
       accessMode: ReadWriteMany

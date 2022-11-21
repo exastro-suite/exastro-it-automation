@@ -60,7 +60,7 @@ CREATE TABLE T_COMN_CONDUCTOR_CLASS_JNL
 CREATE TABLE T_COMN_CONDUCTOR_INSTANCE
 (
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
-    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductorインスタンス名
+    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     I_CONDUCTOR_CLASS_ID            VARCHAR(40),                                -- インスタンス元のクラスID
     I_CONDUCTOR_NAME                VARCHAR(255),                               -- インスタンス元のクラス名
     I_CLASS_JSON                    TEXT,                                       -- インスタンス元の設定
@@ -70,9 +70,9 @@ CREATE TABLE T_COMN_CONDUCTOR_INSTANCE
     I_OPERATION_NAME                VARCHAR(255),                               -- 実行時のオペレーション名
     EXECUTION_USER                  VARCHAR(255),                               -- 作業実行ユーザー
     PARENT_CONDUCTOR_INSTANCE_ID    VARCHAR(40),                                -- 親ConductorインスタンスID
-    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductorインスタンス名
+    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductor名称
     TOP_CONDUCTOR_INSTANCE_ID       VARCHAR(40),                                -- 最上位ConductorインスタンスID
-    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位Conductorインスタンス名
+    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位Conductor名称
     NOTICE_INFO                     TEXT,                                       -- 通知設定
     NOTICE_DEFINITION               TEXT,                                       -- 通知定義
     STATUS_ID                       VARCHAR(40),                                -- ステータスID
@@ -96,7 +96,7 @@ CREATE TABLE T_COMN_CONDUCTOR_INSTANCE_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
-    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductorインスタンス名
+    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     I_CONDUCTOR_CLASS_ID            VARCHAR(40),                                -- インスタンス元のクラスID
     I_CONDUCTOR_NAME                VARCHAR(255),                               -- インスタンス元のクラス名
     I_CLASS_JSON                    TEXT,                                       -- インスタンス元の設定
@@ -106,9 +106,9 @@ CREATE TABLE T_COMN_CONDUCTOR_INSTANCE_JNL
     I_OPERATION_NAME                VARCHAR(255),                               -- 実行時のオペレーション名
     EXECUTION_USER                  VARCHAR(255),                               -- 作業実行ユーザー
     PARENT_CONDUCTOR_INSTANCE_ID    VARCHAR(40),                                -- 親ConductorインスタンスID
-    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductorインスタンス名
+    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductor名称
     TOP_CONDUCTOR_INSTANCE_ID       VARCHAR(40),                                -- 最上位ConductorインスタンスID
-    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位Conductorインスタンス名
+    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位Conductor名称
     NOTICE_INFO                     TEXT,                                       -- 通知設定
     NOTICE_DEFINITION               TEXT,                                       -- 通知定義
     STATUS_ID                       VARCHAR(40),                                -- ステータスID
@@ -144,9 +144,9 @@ CREATE TABLE T_COMN_CONDUCTOR_NODE_INSTANCE
     I_CONDUCTOR_CLASS_JSON          TEXT,                                       -- インスタンス元のConductor情報
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     PARENT_CONDUCTOR_INSTANCE_ID    VARCHAR(40),                                -- 親ConductorインスタンスID
-    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductorインスタンス名
+    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductor名称
     TOP_CONDUCTOR_INSTANCE_ID       VARCHAR(40),                                -- 最上位のConductorインスタンスID
-    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位のConductorインスタンス名
+    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位のConductor名称
     EXECUTION_ID                    VARCHAR(40),                                -- 作業実行ID
     STATUS_ID                       VARCHAR(40),                                -- ステータスID
     STATUS_FILE                     VARCHAR(40),                                -- ステータスファイル
@@ -183,9 +183,9 @@ CREATE TABLE T_COMN_CONDUCTOR_NODE_INSTANCE_JNL
     I_CONDUCTOR_CLASS_JSON          TEXT,                                       -- インスタンス元のConductor情報
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     PARENT_CONDUCTOR_INSTANCE_ID    VARCHAR(40),                                -- 親ConductorインスタンスID
-    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductorインスタンス名
+    PARENT_CONDUCTOR_INSTANCE_NAME  VARCHAR(255),                               -- 親Conductor名称
     TOP_CONDUCTOR_INSTANCE_ID       VARCHAR(40),                                -- 最上位のConductorインスタンスID
-    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位のConductorインスタンス名
+    TOP_CONDUCTOR_INSTANCE_NAME     VARCHAR(255),                               -- 最上位のConductor名称
     EXECUTION_ID                    VARCHAR(40),                                -- 作業実行ID
     STATUS_ID                       VARCHAR(40),                                -- ステータスID
     STATUS_FILE                     VARCHAR(40),                                -- ステータスファイル
@@ -253,6 +253,21 @@ CREATE TABLE T_COMN_CONDUCTOR_NODE
     PRIMARY KEY(NODE_TYPE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
+
+
+
+-- インデックス
+CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_01 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG);
+CREATE INDEX IND_T_COMN_CONDUCTOR_CLASS_02 ON T_COMN_CONDUCTOR_CLASS (DISUSE_FLAG,CONDUCTOR_NAME);
+CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_01 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG);
+CREATE INDEX IND_T_COMN_CONDUCTOR_INSTANCE_02 ON T_COMN_CONDUCTOR_INSTANCE (DISUSE_FLAG,STATUS_ID,TIME_BOOK,TIME_REGISTER);
+CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_01 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG);
+CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_02 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID );
+CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_INSTANCE_03 ON T_COMN_CONDUCTOR_NODE_INSTANCE (DISUSE_FLAG,CONDUCTOR_INSTANCE_ID,NODE_TYPE_ID,EXECUTION_ID );
+CREATE INDEX IND_T_COMN_CONDUCTOR_STATUS_01 ON T_COMN_CONDUCTOR_STATUS (DISUSE_FLAG);
+CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_STATUS_01 ON T_COMN_CONDUCTOR_NODE_STATUS (DISUSE_FLAG);
+CREATE INDEX IND_T_COMN_CONDUCTOR_NODE_01 ON T_COMN_CONDUCTOR_NODE (DISUSE_FLAG);
+CREATE INDEX IND_T_COMN_CONDUCTOR_IF_INFO_01 ON T_COMN_CONDUCTOR_IF_INFO (DISUSE_FLAG);
 
 
 

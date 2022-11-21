@@ -1187,7 +1187,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                     "AUTOREG_HIDE_ITEM": 1,  # True
                     "AUTOREG_ONLY_ITEM": 0,  # False
                     "INITIAL_VALUE": None,
-                    "VALIDATE_OPTION": None,
+                    "VALIDATE_OPTION": "{\"int_min\": 1, \"int_max\": 2147483647}",
                     "VALIDATE_REG_EXP": None,
                     "BEFORE_VALIDATE_REGISTER": None,
                     "AFTER_VALIDATE_REGISTER": None,
@@ -1358,6 +1358,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                         reference_link_id = ref_item_record.get('LINK_ID')
                         reference_column_name_rest = ref_item_record.get('COLUMN_NAME_REST')
                         sensitive_flag = ref_item_record.get('SENSITIVE_FLAG')
+                        org_ref_column_class = ref_item_record.get('COLUMN_CLASS')
                         
                         # ColumnClassを選定
                         ref_column_class = column_class
@@ -1370,9 +1371,9 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                             if not res_valid:
                                 raise Exception(msg)
                             
-                            # カラムクラスが「5:日時」「6:日付」の場合は代入値自動登録対象外とするため、autoreg_hide_itemを1とする。
+                            # 参照元のカラムクラスが「5:日時」「6:日付」の場合は代入値自動登録対象外とするため、autoreg_hide_itemを1とする。
                             autoreg_hide_item = 0
-                            if column_class == "5" or column_class == "6":
+                            if org_ref_column_class == "5" or org_ref_column_class == "6":
                                 autoreg_hide_item = 1
                             
                             data_list = {
@@ -1927,20 +1928,20 @@ def _create_validate_option(record):
         elif column_class == "3":  # NumColumn
             num_min = record.get('NUM_MIN')
             num_max = record.get('NUM_MAX')
-            if num_min:
+            if num_min is not None:
                 tmp_validate_option["int_min"] = num_min
-            if num_max:
+            if num_max is not None:
                 tmp_validate_option["int_max"] = num_max
             
         elif column_class == "4":  # FloatColumn
             float_min = record.get('FLOAT_MIN')
             float_max = record.get('FLOAT_MAX')
             float_digit = record.get('FLOAT_DIGIT')
-            if float_min:
+            if float_min is not None:
                 tmp_validate_option["float_min"] = float_min
-            if float_max:
+            if float_max is not None:
                 tmp_validate_option["float_max"] = float_max
-            if float_digit:
+            if float_digit is not None:
                 tmp_validate_option["float_digit"] = float_digit
             else:
                 tmp_validate_option["float_digit"] = "14"  # 桁数の指定が無い場合「14」を固定値とする。

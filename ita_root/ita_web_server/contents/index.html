@@ -51,15 +51,14 @@
     </div>
     <script src="/_/ita/js/ui.js"></script>
     <script>
-        CommonUi.init();
-        CommonAuth.onAuthSuccess(() => {
-            let lang = CommonAuth.getLanguage();
-            let head = document.getElementsByTagName('head')[0];
-            let script = document.createElement('script');
-            script.src = "/_/ita/js/messageid_" + lang + ".js";
-            head.appendChild(script);
-            new CommonUi(`#container`);
-        });
+        let getMessage;
+        (function () {
+            const ui = new CommonUi();
+            ui.init();
+            CommonAuth.onAuthSuccess(() => {
+                ui.setUi();
+            });
+        }());
     </script>
 </body>
 </html>

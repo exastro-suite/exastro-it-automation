@@ -1105,13 +1105,13 @@ setTableEvents() {
                         file = tb.option.before[ id ].file[ rest ];
                     }
                 } else {
-                    if ( params !== undefined && params.file[rest] !== undefined && params.file[rest] !== null ) {
+                    if ( params.file[rest] !== undefined && params.file[rest] !== null ) {
                         file = params.file[rest];
                     }
                 }            
             }
-            
-            if ( file ) {
+
+            if ( file !== undefined && file !== null ) {
                 fn.download('base64', file, fileName );
             }            
         });
@@ -1969,11 +1969,13 @@ requestTbody() {
 
             // リミットチェック
             if ( printLimitNum !== -1 && tb.data.count > printLimitNum ) {
-                alert(getMessage.FTE00067);
+                alert( getMessage.FTE00067( tb.data.count, printLimitNum ) );
+                tb.limitSetBody();
                 return false;
             //表示確認
             } else if ( printConfirmNum !== -1 && tb.data.count >= printConfirmNum ) {
-                if ( !confirm(getMessage.FTE00066) ) {
+                if ( !confirm( getMessage.FTE00066( tb.data.count, printConfirmNum ) ) ) {
+                    tb.limitSetBody();
                     return false;
                 }
             }
@@ -2063,6 +2065,12 @@ clearFilter() {
 */
 filterSelectBoxHtml( list, name, rest ) {
     const select = [];
+    
+    // listをソートする
+    list.sort(function( a, b ){
+        return a.localeCompare( b );
+    });
+    
     for ( const item of list ) {
         const value = fn.cv( item, '', true );
         select.push(`<option value="${value}">${value}</option>`)
@@ -2224,6 +2232,7 @@ setTbody() {
         tb.tableMaxWidthCheck('tbody');
     } else {
         tb.$.tbody.find('.textareaAdjustment').each( fn.textareaAdjustment );
+        tb.editModeMenuCheck();
     }
     
     if ( tb.mode === 'edit' || tb.mode === 'view') {
@@ -2232,6 +2241,25 @@ setTbody() {
     
     tb.filterDownloadButtonCheck();
     tb.stickyWidth();
+}
+/*
+##################################################
+   表示可能件数を超えた場合の表示
+##################################################
+*/
+limitSetBody() {
+    const tb = this;
+    
+    const limitNumber = Number( fn.cv( tb.info.menu_info.web_print_limit, -1 ) );
+    
+    tb.$.container.addClass('noData');
+    tb.$.message.html(`<div class="noDataMessage">`
+    + fn.html.icon('stop')
+    + fn.escape( getMessage.FTE00067( tb.data.count, limitNumber ), true )
+    + `</div>`);
+    
+    tb.workEnd();
+    tb.$.table.addClass('tableReady');
 }
 /*
 ##################################################
@@ -2576,12 +2604,20 @@ viewCellHtml( item, columnKey, journal ) {
     switch ( columnType ) {
         // そのまま表示
         case 'SingleTextColumn': case 'NumColumn': case 'FloatColumn':
-        case 'IDColumn': case 'HostInsideLinkTextColumn': case 'LinkIDColumn':
+        case 'IDColumn': case 'LinkIDColumn':
         case 'LastUpdateUserColumn': case 'RoleIDColumn':
         case 'EnvironmentIDColumn': case 'TextColumn':
         case 'DateColumn': case 'DateTimeColumn':
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
             return checkJournal( value );
+        
+        // リンク
+        case 'HostInsideLinkTextColumn':
+            if ( value !== '') {
+                return checkJournal(`<a href="${value}" target="_blank">${value}</a>`);
+            } else {
+                return checkJournal( value );
+            }
             
         // 最終更新日    
         case 'LastUpdateDateColumn':
@@ -2602,7 +2638,7 @@ viewCellHtml( item, columnKey, journal ) {
         // ファイル名がリンクになっていてダウンロード可能
         case 'FileUploadColumn': {
             const id = ( tb.mode !== 'history')? parameter[ tb.idNameRest ]: parameter.journal_id;
-            if ( file[ columnName ] ) {
+            if ( file[ columnName ] !== null ) {
                 return checkJournal(`<a href="${value}" class="tableViewDownload" data-id="${id}" data-rest="${columnName}">${value}</a>`);
             } else {
                 return checkJournal( value );
@@ -3146,6 +3182,9 @@ changeEdtiMode( changeMode ) {
     tb.paging.page = 1;
     tb.edit.addId = -1;
     
+    // 選択状態
+    tb.select.edit = tb.select.view.concat();
+    
     tb.$.container.removeClass('viewTable autoFilterStandBy initFilterStandBy');
     tb.$.container.addClass('editTable');
     
@@ -3288,8 +3327,8 @@ reflectEdits() {
     const config = {
         mode: 'modeless',
         className: 'reflectEditsModal',
-        width: '100%',
-        height: '100%',
+        position: 'center',
+        width: 'auto',
         header: {
             title: getMessage.FTE00011,
         }
@@ -3492,7 +3531,7 @@ execute( type ) {
             fn.fetch( executeConfig.rest, null, 'POST', postData ).then(function( result ){
                 window.location.href = `?menu=check_operation_status_ansible_role&execution_no=${result.execution_no}`;
             }).catch(function( error ){
-                fn.gotoErrPage( error.message );
+                if ( error.message ) alert( error.message );
             }).then(function(){
                 tb.workEnd();
             });
@@ -3537,8 +3576,11 @@ editError( error ) {
     for ( const item in errorMessage ) {
         newRowNum = parseInt(item);
         for ( const error in errorMessage[item] ) {
-            const name = fn.cv( tb.data.restNames[ error ], error, true ),
-                  body = fn.cv( errorMessage[item][error].join(''), '?', true );
+            const name = fn.cv( tb.data.restNames[ error ], error, true );
+            let   body = fn.cv( errorMessage[item][error].join(''), '?', true );
+            
+            if ( fn.typeof( body ) === 'string') body = body.replace(/\r?\n/g, '<br>');
+            
             // 編集項目か否か
             if(param[item] != null) {
                 editRowNum = param[item];

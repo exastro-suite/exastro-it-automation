@@ -10,6 +10,8 @@ tags:
   description: Organization作成
 - name: Workspace Create
   description: Workspace作成
+- name: Initial Settings Ansible
+  description: 初期データ設定(Ansible)
 paths:
   /api/organizations/{organization_id}/ita/:
     post:
@@ -170,6 +172,64 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.workspace_create_controller
+  /api/ita/initial-settings/ansible/:
+    get:
+      tags:
+      - Initial Settings Ansible
+      description: Ansibleの初期データを取得する
+      operationId: get_initial_setting
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.initial_settings_ansible_controller
+    post:
+      tags:
+      - Initial Settings Ansible
+      description: Ansibleの初期データを登録・更新する
+      operationId: post_initial_setting
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/initialsettings_ansible_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.initial_settings_ansible_controller
 components:
   schemas:
     ERROR_TEMPLATE:
@@ -177,14 +237,366 @@ components:
       properties:
         result:
           type: string
-          example: 001-002
+          example: 001-00002
         message:
           type: string
     inline_response_200:
       type: object
       properties:
-        status:
+        result:
+          type: string
+          example: 000-00000
+        message:
           type: string
       example:
-        status: status
+        result: 000-00000
+        message: message
+    inline_response_200_1:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_1_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          execution_engine_list:
+          - execution_engine_list
+          - execution_engine_list
+          initial_data:
+            interface_info_ansible:
+              parameter:
+                proxy_port: proxy_port
+                execution_engine: execution_engine
+                representative_server: representative_server
+                delete_runtime_data: delete_runtime_data
+                ansible_automation_controller_port: ansible_automation_controller_port
+                authentication_token: authentication_token
+                proxy_address: proxy_address
+                organization_name: organization_name
+                ansible_automation_controller_protocol: ansible_automation_controller_protocol
+            ansible_automation_controller_host_list:
+            - file:
+                ssh_private_key_file: ssh_private_key_file
+              parameter:
+                authentication_method: authentication_method
+                password: password
+                isolated_tower: isolated_tower
+                host: host
+                ssh_private_key_file: ssh_private_key_file
+                passphrase: passphrase
+                user: user
+                remarks: remarks
+            - file:
+                ssh_private_key_file: ssh_private_key_file
+              parameter:
+                authentication_method: authentication_method
+                password: password
+                isolated_tower: isolated_tower
+                host: host
+                ssh_private_key_file: ssh_private_key_file
+                passphrase: passphrase
+                user: user
+                remarks: remarks
+          input_limit_setting: true
+        message: message
+    apiitainitialsettingsansible_initial_data_file:
+      type: object
+      properties:
+        ssh_private_key_file:
+          type: string
+          nullable: true
+      example:
+        ssh_private_key_file: ssh_private_key_file
+    apiitainitialsettingsansible_initial_data_parameter:
+      type: object
+      properties:
+        host:
+          type: string
+          nullable: true
+        user:
+          type: string
+          nullable: true
+        password:
+          type: string
+          nullable: true
+        ssh_private_key_file:
+          type: string
+          nullable: true
+        passphrase:
+          type: string
+          nullable: true
+        isolated_tower:
+          type: string
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+    apiitainitialsettingsansible_initial_data_ansible_automation_controller_host_list:
+      properties:
+        file:
+          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_file'
+        parameter:
+          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_parameter'
+    apiitainitialsettingsansible_initial_data_interface_info_ansible_parameter:
+      type: object
+      properties:
+        execution_engine:
+          type: string
+          nullable: true
+        ansible_automation_controller_protocol:
+          type: string
+          nullable: true
+        ansible_automation_controller_port:
+          type: string
+          nullable: true
+        organization_name:
+          type: string
+          nullable: true
+        authentication_token:
+          type: string
+          nullable: true
+        delete_runtime_data:
+          type: string
+          nullable: true
+        proxy_address:
+          type: string
+          nullable: true
+        proxy_port:
+          type: string
+          nullable: true
+    apiitainitialsettingsansible_initial_data_interface_info_ansible:
+      type: object
+      properties:
+        parameter:
+          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_interface_info_ansible_parameter'
+    apiitainitialsettingsansible_initial_data:
+      type: object
+      properties:
+        ansible_automation_controller_host_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_ansible_automation_controller_host_list'
+        interface_info_ansible:
+          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_interface_info_ansible'
+    initialsettings_ansible_body:
+      type: object
+      properties:
+        input_limit_setting:
+          type: boolean
+        execution_engine_list:
+          type: array
+          items:
+            type: string
+        initial_data:
+          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data'
+    inline_response_200_1_data_initial_data_parameter:
+      type: object
+      properties:
+        host:
+          type: string
+          nullable: true
+        authentication_method:
+          type: string
+          nullable: true
+        user:
+          type: string
+          nullable: true
+        password:
+          type: string
+          nullable: true
+        ssh_private_key_file:
+          type: string
+          nullable: true
+        passphrase:
+          type: string
+          nullable: true
+        isolated_tower:
+          type: string
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+      example:
+        authentication_method: authentication_method
+        password: password
+        isolated_tower: isolated_tower
+        host: host
+        ssh_private_key_file: ssh_private_key_file
+        passphrase: passphrase
+        user: user
+        remarks: remarks
+    inline_response_200_1_data_initial_data_ansible_automation_controller_host_list:
+      properties:
+        file:
+          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_file'
+        parameter:
+          $ref: '#/components/schemas/inline_response_200_1_data_initial_data_parameter'
+      example:
+        file:
+          ssh_private_key_file: ssh_private_key_file
+        parameter:
+          authentication_method: authentication_method
+          password: password
+          isolated_tower: isolated_tower
+          host: host
+          ssh_private_key_file: ssh_private_key_file
+          passphrase: passphrase
+          user: user
+          remarks: remarks
+    inline_response_200_1_data_initial_data_interface_info_ansible_parameter:
+      type: object
+      properties:
+        execution_engine:
+          type: string
+          nullable: true
+        representative_server:
+          type: string
+          nullable: true
+        ansible_automation_controller_protocol:
+          type: string
+          nullable: true
+        ansible_automation_controller_port:
+          type: string
+          nullable: true
+        organization_name:
+          type: string
+          nullable: true
+        authentication_token:
+          type: string
+          nullable: true
+        delete_runtime_data:
+          type: string
+          nullable: true
+        proxy_address:
+          type: string
+          nullable: true
+        proxy_port:
+          type: string
+          nullable: true
+      example:
+        proxy_port: proxy_port
+        execution_engine: execution_engine
+        representative_server: representative_server
+        delete_runtime_data: delete_runtime_data
+        ansible_automation_controller_port: ansible_automation_controller_port
+        authentication_token: authentication_token
+        proxy_address: proxy_address
+        organization_name: organization_name
+        ansible_automation_controller_protocol: ansible_automation_controller_protocol
+    inline_response_200_1_data_initial_data_interface_info_ansible:
+      type: object
+      properties:
+        parameter:
+          $ref: '#/components/schemas/inline_response_200_1_data_initial_data_interface_info_ansible_parameter'
+      example:
+        parameter:
+          proxy_port: proxy_port
+          execution_engine: execution_engine
+          representative_server: representative_server
+          delete_runtime_data: delete_runtime_data
+          ansible_automation_controller_port: ansible_automation_controller_port
+          authentication_token: authentication_token
+          proxy_address: proxy_address
+          organization_name: organization_name
+          ansible_automation_controller_protocol: ansible_automation_controller_protocol
+    inline_response_200_1_data_initial_data:
+      type: object
+      properties:
+        ansible_automation_controller_host_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/inline_response_200_1_data_initial_data_ansible_automation_controller_host_list'
+        interface_info_ansible:
+          $ref: '#/components/schemas/inline_response_200_1_data_initial_data_interface_info_ansible'
+      example:
+        interface_info_ansible:
+          parameter:
+            proxy_port: proxy_port
+            execution_engine: execution_engine
+            representative_server: representative_server
+            delete_runtime_data: delete_runtime_data
+            ansible_automation_controller_port: ansible_automation_controller_port
+            authentication_token: authentication_token
+            proxy_address: proxy_address
+            organization_name: organization_name
+            ansible_automation_controller_protocol: ansible_automation_controller_protocol
+        ansible_automation_controller_host_list:
+        - file:
+            ssh_private_key_file: ssh_private_key_file
+          parameter:
+            authentication_method: authentication_method
+            password: password
+            isolated_tower: isolated_tower
+            host: host
+            ssh_private_key_file: ssh_private_key_file
+            passphrase: passphrase
+            user: user
+            remarks: remarks
+        - file:
+            ssh_private_key_file: ssh_private_key_file
+          parameter:
+            authentication_method: authentication_method
+            password: password
+            isolated_tower: isolated_tower
+            host: host
+            ssh_private_key_file: ssh_private_key_file
+            passphrase: passphrase
+            user: user
+            remarks: remarks
+    inline_response_200_1_data:
+      type: object
+      properties:
+        input_limit_setting:
+          type: boolean
+        execution_engine_list:
+          type: array
+          items:
+            type: string
+        initial_data:
+          $ref: '#/components/schemas/inline_response_200_1_data_initial_data'
+      example:
+        execution_engine_list:
+        - execution_engine_list
+        - execution_engine_list
+        initial_data:
+          interface_info_ansible:
+            parameter:
+              proxy_port: proxy_port
+              execution_engine: execution_engine
+              representative_server: representative_server
+              delete_runtime_data: delete_runtime_data
+              ansible_automation_controller_port: ansible_automation_controller_port
+              authentication_token: authentication_token
+              proxy_address: proxy_address
+              organization_name: organization_name
+              ansible_automation_controller_protocol: ansible_automation_controller_protocol
+          ansible_automation_controller_host_list:
+          - file:
+              ssh_private_key_file: ssh_private_key_file
+            parameter:
+              authentication_method: authentication_method
+              password: password
+              isolated_tower: isolated_tower
+              host: host
+              ssh_private_key_file: ssh_private_key_file
+              passphrase: passphrase
+              user: user
+              remarks: remarks
+          - file:
+              ssh_private_key_file: ssh_private_key_file
+            parameter:
+              authentication_method: authentication_method
+              password: password
+              isolated_tower: isolated_tower
+              host: host
+              ssh_private_key_file: ssh_private_key_file
+              passphrase: passphrase
+              user: user
+              remarks: remarks
+        input_limit_setting: true
 

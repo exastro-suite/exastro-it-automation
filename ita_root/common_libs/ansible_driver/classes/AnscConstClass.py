@@ -124,6 +124,8 @@ class AnscConst:
     DF_ITA_LOCAL_DUP_CHECK_ITEM = '__ITA_LOCAL_COLUMN_3__'
     DF_ITA_LOCAL_PKEY = '__ITA_LOCAL_COLUMN_4__'
 
+    # ansible-vault command default password
+    DF_ANSIBLE_VAULT_PASSWORD ="2FP7-DPJ7-6P6B-B7E2"
     ############################################################
     # 変数定義の変数名定義判定配列
     # parant  :親変数名として利用可否
@@ -179,8 +181,6 @@ class AnscConst:
     # WINRM接続ポート デフォルト値
     LC_WINRM_PORT = 5985
 
-    TOWER_VER35 = 1        # Towerバージョン3.5(以下)
-    TOWER_VER36 = 2        # Towerバージョン3.6(以上)
     
     # ITA独自変数名
     ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME = "__loginprotocol__"

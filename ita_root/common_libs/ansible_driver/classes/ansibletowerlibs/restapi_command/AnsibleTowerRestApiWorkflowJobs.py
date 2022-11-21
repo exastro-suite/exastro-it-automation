@@ -164,7 +164,8 @@ class AnsibleTowerRestApiWorkflowJobs(AnsibleTowerRestApiBase):
         wfJobTplId = pickup_response_array['responseContents'][0]['id']
 
         # データ絞り込み(本体)
-        query = "?workflow_job_template=" % (wfJobTplId)
+        query = "?workflow_job_template=" + str(wfJobTplId)
+
         pickup_response_array_2 = cls.getAll(RestApiCaller, query)
         if not pickup_response_array_2['success']:
             return pickup_response_array_2

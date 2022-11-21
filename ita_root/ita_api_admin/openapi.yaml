@@ -9,6 +9,8 @@ tags:
     description: Organization作成
   - name: Workspace Create
     description: Workspace作成
+  - name: Initial Settings Ansible
+    description: 初期データ設定(Ansible)
 paths:
   /api/organizations/{organization_id}/ita/:
     post:
@@ -31,7 +33,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
                     type: string
         '401':
           description: Unauthorized
@@ -65,7 +70,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
                     type: string
         '401':
           description: Unauthorized
@@ -112,7 +120,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
                     type: string
         '401':
           description: Unauthorized
@@ -152,7 +163,233 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/ita/initial-settings/ansible/:
+    get:
+      tags:
+        - Initial Settings Ansible
+      description: Ansibleの初期データを取得する
+      operationId: getInitialSetting
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    properties:
+                      input_limit_setting:
+                        type: boolean
+                      execution_engine_list:
+                        type: array
+                        items:
+                          type: "string"
+                      initial_data:
+                        type: object
+                        properties:
+                          ansible_automation_controller_host_list:
+                            items:
+                              properties:
+                                file:
+                                  type: object
+                                  properties:
+                                    ssh_private_key_file:
+                                      type: string
+                                      nullable: true
+                                parameter:
+                                  type: object
+                                  properties:
+                                    host:
+                                      type: string
+                                      nullable: true
+                                    authentication_method:
+                                      type: string
+                                      nullable: true
+                                    user:
+                                      type: string
+                                      nullable: true
+                                    password:
+                                      type: string
+                                      nullable: true
+                                    ssh_private_key_file:
+                                      type: string
+                                      nullable: true
+                                    passphrase:
+                                      type: string
+                                      nullable: true
+                                    isolated_tower:
+                                      type: string
+                                      nullable: true
+                                    remarks:
+                                      type: string
+                                      nullable: true
+                          interface_info_ansible:
+                            type: object
+                            properties:
+                              parameter:
+                                type: object
+                                properties:
+                                  execution_engine:
+                                    type: string
+                                    nullable: true
+                                  representative_server:
+                                    type: string
+                                    nullable: true
+                                  ansible_automation_controller_protocol:
+                                    type: string
+                                    nullable: true
+                                  ansible_automation_controller_port:
+                                    type: string
+                                    nullable: true
+                                  organization_name:
+                                    type: string
+                                    nullable: true
+                                  authentication_token:
+                                    type: string
+                                    nullable: true
+                                  delete_runtime_data:
+                                    type: string
+                                    nullable: true
+                                  proxy_address:
+                                    type: string
+                                    nullable: true
+                                  proxy_port:
+                                    type: string
+                                    nullable: true
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+    post:
+      tags:
+        - Initial Settings Ansible
+      description: Ansibleの初期データを登録・更新する
+      operationId: postInitialSetting
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input_limit_setting:
+                  type: boolean
+                execution_engine_list:
+                  type: array
+                  items:
+                    type: "string"
+                initial_data:
+                  type: object
+                  properties:
+                    ansible_automation_controller_host_list:
+                      items:
+                        properties:
+                          file:
+                            type: object
+                            properties:
+                              ssh_private_key_file:
+                                type: string
+                                nullable: true
+                          parameter:
+                            type: object
+                            properties:
+                              host:
+                                type: string
+                                nullable: true
+                              user:
+                                type: string
+                                nullable: true
+                              password:
+                                type: string
+                                nullable: true
+                              ssh_private_key_file:
+                                type: string
+                                nullable: true
+                              passphrase:
+                                type: string
+                                nullable: true
+                              isolated_tower:
+                                type: string
+                                nullable: true
+                              remarks:
+                                type: string
+                                nullable: true
+                    interface_info_ansible:
+                      type: object
+                      properties:
+                        parameter:
+                          type: object
+                          properties:
+                            execution_engine:
+                              type: string
+                              nullable: true
+                            ansible_automation_controller_protocol:
+                              type: string
+                              nullable: true
+                            ansible_automation_controller_port:
+                              type: string
+                              nullable: true
+                            organization_name:
+                              type: string
+                              nullable: true
+                            authentication_token:
+                              type: string
+                              nullable: true
+                            delete_runtime_data:
+                              type: string
+                              nullable: true
+                            proxy_address:
+                              type: string
+                              nullable: true
+                            proxy_port:
+                              type: string
+                              nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
                     type: string
         '401':
           description: Unauthorized
@@ -174,6 +411,6 @@ components:
       properties:
         result:
           type: string
-          example: 001-002
+          example: 001-00002
         message:
           type: string

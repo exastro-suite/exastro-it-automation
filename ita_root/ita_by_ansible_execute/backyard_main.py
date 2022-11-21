@@ -141,9 +141,8 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
                     "EXECUTION_NO": execution_no,
                     "STATUS_ID": ansc_const.EXCEPTION,
                     "TIME_END": time_stamp,
+                    "TIME_START": time_stamp,
                 }
-                if not execute_data["TIME_START"]:
-                    data["TIME_START"] = time_stamp
                 result = cm.update_execution_record(wsDb, data)
                 if result[0] is True:
                     wsDb.db_commit()
@@ -317,8 +316,6 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
         "EXECUTION_NO": execution_no,
         "STATUS_ID": ansc_const.PREPARE,
     }
-    if not execute_data["TIME_START"]:
-        data["TIME_START"] = get_timestamp()
     result = cm.update_execution_record(wsDb, data)
     if result[0] is True:
         wsDb.db_commit()

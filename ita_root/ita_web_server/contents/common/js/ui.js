@@ -77,16 +77,20 @@ init() {
         ui.setSideMenuEvents();
         
         // Session storageにデータがある場合は先に表示する
-        ui.storageLang = fn.storage.get('lang', 'session'),
-        ui.storageMenuGroups = fn.storage.get('restMenuGroups', 'session'),
+        ui.storageLang = fn.storage.get('lang', 'session');
+        ui.storageMenuGroups = fn.storage.get('restMenuGroups', 'session');
         ui.storagePanel = fn.storage.get('restPanel', 'session');
+        ui.storageUser = fn.storage.get('restUser', 'session');
         
-        if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel ) {
+        if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel && ui.storageUser ) {
             ui.lang = ui.storageLang;
             fn.loadAssets({type:'script', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
                 ui.rest.menuGroups = ui.storageMenuGroups;
                 ui.rest.panel = ui.storagePanel;
+                ui.rest.user = ui.storageUser;
+                
                 ui.setSideMenu();
+                ui.headerMenu();
             });
         }
         
@@ -744,27 +748,31 @@ topicPath() {
 */
 setMenu() {
     const mn = this;
+      
+    const urls = ['/user/'];
     
-    if ( mn.params.menuNameRest ) { 
+    if ( mn.params.menuNameRest ) urls.push(`/menu/${mn.params.menuNameRest}/info/`);
+
+    fn.fetch( urls ).then(function( result ){
+        // ユーザ情報に変更があれば更新
+        if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) ) { 
+            mn.rest.user = result[0];
+            mn.headerMenu();
+            
+            fn.storage.set('restUser', mn.rest.user, 'session');
+        }
         
-        const urls = ['/user/', `/menu/${mn.params.menuNameRest}/info/`];
-        
-        fn.fetch( urls ).then(function( result ){
-            mn.user = result[0];
+        if ( mn.params.menuNameRest ) {
             mn.info = result[1];
             mn.title = fn.cv( mn.info.menu_info.menu_name, '', true );
-            
-            mn.headerMenu();
             mn.sheetType();
-        }).catch(function( error ){
-            window.console.error( error );
-            if ( error.message !== 'Failed to fetch') {
-                fn.gotoErrPage( error.message );
-            }
-        });
-    } else {
-        //mn.mainMenu();
-    }
+        }
+    }).catch(function( error ){
+        window.console.error( error );
+        if ( error.message !== 'Failed to fetch') {
+            fn.gotoErrPage( error.message );
+        }
+    });
 }
 /*
 ##################################################
@@ -895,10 +903,10 @@ headerMenu() {
 userInfo() {
     const mn = this,
           $user = mn.$.header.find('.userIndo'),
-          name = fn.cv( mn.user.user_name, '', true ),
-          id = fn.cv( mn.user.user_id, '', true ),
-          roles = fn.cv( mn.user.roles, []),
-          workspaces = fn.cv( mn.user.workspaces, []);
+          name = fn.cv( mn.rest.user.user_name, '', true ),
+          id = fn.cv( mn.rest.user.user_id, '', true ),
+          roles = fn.cv( mn.rest.user.roles, []),
+          workspaces = fn.cv( mn.rest.user.workspaces, []);
     
     const workspaceList = [];
     
@@ -1430,7 +1438,7 @@ createMenu( mode ) {
     ];
     
     fn.loadAssets( assets ).then(function(){
-        const createMenu = new CreateMenu('#content', mn.user );
+        const createMenu = new CreateMenu('#content', mn.rest.user );
         createMenu.setup();
         
         mn.onReady();

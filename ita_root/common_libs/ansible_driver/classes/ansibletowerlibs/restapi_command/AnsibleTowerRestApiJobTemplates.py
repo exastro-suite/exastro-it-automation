@@ -202,68 +202,52 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
 
-    @classmethod
-    def deleteRelatedCurrnetExecutionForPrepare(cls, RestApiCaller, execution_no):
-
-        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
-
-        # データ絞り込み
-        filteringName = cls.PREPARE_BUILD_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
-        query = "?name=%s" % (filteringName)
-        pickup_response_array = cls.getAll(RestApiCaller, query)
-        if not pickup_response_array['success']:
-            return pickup_response_array
-
-        count = 0 if 'responseContents' not in pickup_response_array else len(pickup_response_array['responseContents'])
-        if count == 0:  # 対象なし
-            return pickup_response_array
-
-        elif count == 1:  # SUCCESS
-            pass
-
-        else:  # 2つ以上取得できる場合は異常
-            pickup_response_array['success'] = False
-            if 'errorMessage' not in pickup_response_array['responseContents']:
-                pickup_response_array['responseContents']['errorMessage'] = ''
-
-            pickup_response_array['responseContents']['errorMessage'] = "Exception! More than one prepare job template for one execution."
-            return pickup_response_array
-
-        jobTplData = pickup_response_array['responseContents'][0]
-
-        response_array = cls.delete(RestApiCaller, jobTplData['id'])
-        if not response_array['success']:
-            return response_array
-
-        # データ絞り込み
-        filteringName = cls.CLEANUP_PREPARED_BUILD_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
-        query = "?name=%s" % (filteringName)
-        pickup_response_array = cls.getAll(RestApiCaller, query)
-        if not pickup_response_array['success']:
-            return pickup_response_array
-
-        count = len(pickup_response_array['responseContents'])
-        if count == 0:  # 対象なし
-            return pickup_response_array
-
-        elif count == 1:  # SUCCESS
-            pass
-
-        else:  # 2つ以上取得できる場合は異常
-            pickup_response_array['success'] = False
-            if 'errorMessage' not in pickup_response_array['responseContents']:
-                pickup_response_array['responseContents']['errorMessage'] = ''
-
-            pickup_response_array['responseContents']['errorMessage'] = "Exception! More than one prepare job template for one execution."
-            return pickup_response_array
-
-        jobTplData = pickup_response_array['responseContents'][0]
-
-        response_array = cls.delete(RestApiCaller, jobTplData['id'])
-        if not response_array['success']:
-            return response_array
-
-        return response_array
+    # @classmethod
+    # def deleteRelatedCurrnetExecutionForPrepare(cls, RestApiCaller, execution_no):
+    #     OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
+    #     # データ絞り込み
+    #     filteringName = cls.PREPARE_BUILD_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
+    #     query = "?name=%s" % (filteringName)
+    #     pickup_response_array = cls.getAll(RestApiCaller, query)
+    #     if not pickup_response_array['success']:
+    #         return pickup_response_array
+    #     count = 0 if 'responseContents' not in pickup_response_array else len(pickup_response_array['responseContents'])
+    #     if count == 0:  # 対象なし
+    #         return pickup_response_array
+    #     elif count == 1:  # SUCCESS
+    #         pass
+    #     else:  # 2つ以上取得できる場合は異常
+    #         pickup_response_array['success'] = False
+    #         if 'errorMessage' not in pickup_response_array['responseContents']:
+    #             pickup_response_array['responseContents']['errorMessage'] = ''
+    #         pickup_response_array['responseContents']['errorMessage'] = "Exception! More than one prepare job template for one execution."
+    #         return pickup_response_array
+    #     jobTplData = pickup_response_array['responseContents'][0]
+    #     response_array = cls.delete(RestApiCaller, jobTplData['id'])
+    #     if not response_array['success']:
+    #         return response_array
+    #     # データ絞り込み
+    #     filteringName = cls.CLEANUP_PREPARED_BUILD_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
+    #     query = "?name=%s" % (filteringName)
+    #     pickup_response_array = cls.getAll(RestApiCaller, query)
+    #     if not pickup_response_array['success']:
+    #         return pickup_response_array
+    #     count = len(pickup_response_array['responseContents'])
+    #     if count == 0:  # 対象なし
+    #         return pickup_response_array
+    #     elif count == 1:  # SUCCESS
+    #         pass
+    #     else:  # 2つ以上取得できる場合は異常
+    #         pickup_response_array['success'] = False
+    #         if 'errorMessage' not in pickup_response_array['responseContents']:
+    #             pickup_response_array['responseContents']['errorMessage'] = ''
+    #         pickup_response_array['responseContents']['errorMessage'] = "Exception! More than one prepare job template for one execution."
+    #         return pickup_response_array
+    #     jobTplData = pickup_response_array['responseContents'][0]
+    #     response_array = cls.delete(RestApiCaller, jobTplData['id'])
+    #     if not response_array['success']:
+    #         return response_array
+    #     return response_array
 
     @classmethod
     def launch(cls, RestApiCaller, param):

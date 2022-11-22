@@ -204,7 +204,7 @@ def getInputDataTempDir(EcecuteNo, DriverName):
       Ansible Gitリポジトリ用 tmpバスを取得する。
       Arguments:
         EcecuteNo: 作業番号
-        DriverName: オケストレータID  vg_tower_driver_name
+        DriverName: オケストレータID
       Returns:
         Ansible Gitリポジトリ用 tmpバス
     """

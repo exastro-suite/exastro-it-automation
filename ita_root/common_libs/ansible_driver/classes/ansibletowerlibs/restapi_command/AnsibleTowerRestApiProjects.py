@@ -11,7 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import os
+import inspect
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
@@ -77,14 +78,14 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
     @classmethod
     def post(cls, RestApiCaller, param):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}
         response_array = {}
 
         if 'scm_type' in param and param['scm_type'] is not None:
-            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']))
+            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']))
             if param['scm_type'] == cls.SCMTYPE_GIT:  # SCM_TYPE = git
                 content['scm_type'] = param['scm_type']
                 if 'scm_url' in param and param['scm_url']:
@@ -98,9 +99,9 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
                     }
                     return response_array
             else:
-                # SCM_TYPE = "" (手動) 
+                # SCM_TYPE = "" (手動)
                 if 'execution_no' in param and param['execution_no']:
-                    content['local_path'] = cls.SCM_LOCALPATH_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']))
+                    content['local_path'] = cls.SCM_LOCALPATH_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']))
 
                 else:
                     # 必須のためNG返す
@@ -172,10 +173,10 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み
-        filteringName = cls.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name=%s" % (filteringName)
         pickup_response_array = cls.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:

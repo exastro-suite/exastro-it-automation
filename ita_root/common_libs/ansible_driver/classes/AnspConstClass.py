@@ -40,10 +40,8 @@ class AnspConst(AnscConst):
     vg_ansible_vars_assignDB = "T_ANSP_VALUE"
     vg_ansible_nestvar_memberDB = ""
     vg_ansible_nestvar_member_col_combDB = ""
-    
+
     # AnsibleTowerのita_executions_prepare_buildで使用している変数
-    vg_tower_driver_name = "pioneer"
+    vg_OrchestratorSubId_dir = "pioneer"
     # 親Playbookのファイル名
     vg_parent_playbook_name = "playbook.yml"
-    
-    vg_OrchestratorSubId_dir = vg_tower_driver_name

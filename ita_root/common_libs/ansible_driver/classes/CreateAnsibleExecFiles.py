@@ -176,6 +176,7 @@ from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath
 from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath
 from common_libs.ansible_driver.functions.util import getDataRelayStorageDir
 from common_libs.ansible_driver.functions.util import getInputDataTempDir
+from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.common.util import ky_encrypt, ky_decrypt, ky_file_encrypt, ky_file_decrypt
 """
 Ansibleの実行に必要な情報をデータベースから取得しAnsible実行ディレクトリを作成するモジュール
@@ -316,22 +317,8 @@ class CreateAnsibleExecFiles():
 
         # 実行エンジンを退避
         self.lv_exec_mode = in_ans_if_info['ANSIBLE_EXEC_MODE']
-
-        self.AnscObj = AnscConst()
         self.setAnsibleDriverID(in_driver_id)
-        if in_driver_id == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
-            del self.AnscObj
-            self.AnscObj = AnsrConst()
-        elif in_driver_id == self.AnscObj.DF_LEGACY_DRIVER_ID:
-            del self.AnscObj
-            self.AnscObj = AnslConst()
-        elif in_driver_id == self.AnscObj.DF_PIONEER_DRIVER_ID:
-            del self.AnspObj
-            self.AnscObj = AnspConst()
-        else:
-            msgstr = g.appmsg.get_api_message("MSG-10082", [os.path.basename(__file__), self.lineno()])
-            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename) + str(inspect.currentframe().f_lineno), msgstr)
-            return False
+        self.AnscObj = getAnsibleConst(in_driver_id)
 
         # ansible作業実行用ベースディレクトリ
         # ansible_ita_base_dir: /storage/{organization_id}/{workspace_id}/driver
@@ -378,7 +365,7 @@ class CreateAnsibleExecFiles():
         self.setTowerProjectDirPath()
 
         # Gitリポジトリ用ディレクトリ取得
-        self.lv_GitRepo_temporary_DirAry = getInputDataTempDir(in_exec_no, self.AnscObj.vg_tower_driver_name)
+        self.lv_GitRepo_temporary_DirAry = getInputDataTempDir(in_exec_no, self.AnscObj.vg_OrchestratorSubId_dir)
 
     def getAnsibleWorkingDirectories(self, in_oct_id, in_execno):
         """

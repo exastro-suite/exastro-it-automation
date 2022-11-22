@@ -41,10 +41,8 @@ class AnsrConst(AnscConst):
     vg_ansible_vars_assignDB = "T_ANSR_VALUE"
     vg_ansible_nestvar_memberDB = "T_ANSR_NESTVAR_MEMBER"
     vg_ansible_nestvar_member_col_combDB = "T_ANSR_NESTVAR_MEMBER_COL_COMB"
-    
+
     # AnsibleTowerのita_executions_prepare_buildで使用している変数
-    vg_tower_driver_name = "legacy_role"
+    vg_OrchestratorSubId_dir = "legacy_role"
     # 親Playbookのファイル名
     vg_parent_playbook_name = "site.yml"
-    
-    vg_OrchestratorSubId_dir = vg_tower_driver_name

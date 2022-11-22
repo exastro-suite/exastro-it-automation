@@ -11,7 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import os
+import inspect
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
@@ -76,7 +77,7 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
     @classmethod
     def post(cls, RestApiCaller, param):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}
@@ -84,7 +85,7 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
 
         if  'execution_no' in param and param['execution_no'] \
         and 'loopCount' in param and param['loopCount']:
-            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
+            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
 
         else:
             # 必須のためNG返す
@@ -163,10 +164,10 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み
-        filteringName = cls.IDENTIFIED_NAME_PREFIX_DEL % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no)) + '_'
+        filteringName = cls.IDENTIFIED_NAME_PREFIX_DEL % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no)) + '_'
         query = "?name__startswith=%s" % (filteringName)
         pickup_response_array = cls.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:

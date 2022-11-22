@@ -989,7 +989,10 @@ class loadTable():
                                             convert_search_conf = {}
                                             for k, v in search_conf.items():
                                                 if str.isnumeric(v):
-                                                    convert_search_conf[k] = int(v)
+                                                    if int(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = int(v)
                                                 else:
                                                     convert_search_conf[k] = v
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
@@ -998,7 +1001,10 @@ class loadTable():
                                             convert_search_conf = {}
                                             for k, v in search_conf.items():
                                                 try:
-                                                    convert_search_conf[k] = float(v)
+                                                    if float(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = float(v)
                                                 except Exception:
                                                     convert_search_conf[k] = v
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))

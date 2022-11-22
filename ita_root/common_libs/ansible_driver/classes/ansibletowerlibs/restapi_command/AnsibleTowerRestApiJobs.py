@@ -11,7 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import os
+import inspect
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
@@ -100,10 +101,10 @@ class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み(親)
-        filteringName = AnsibleTowerRestApiJobTemplates.SEARCH_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = AnsibleTowerRestApiJobTemplates.SEARCH_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name__startswith=%s" % (filteringName)
         pickup_response_array = AnsibleTowerRestApiJobTemplates.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -127,10 +128,10 @@ class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
     @classmethod
     def deleteRelatedCurrnetExecutionForPrepare(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み(親)
-        filteringName = AnsibleTowerRestApiJobTemplates.PREPARE_BUILD_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = AnsibleTowerRestApiJobTemplates.PREPARE_BUILD_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name=%s" % (filteringName)
         pickup_response_array = AnsibleTowerRestApiJobTemplates.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -166,7 +167,7 @@ class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
                 return response_array
 
         # データ絞り込み(親)
-        filteringName = AnsibleTowerRestApiJobTemplates.CLEANUP_PREPARED_BUILD_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = AnsibleTowerRestApiJobTemplates.CLEANUP_PREPARED_BUILD_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name=%s" % (filteringName)
         pickup_response_array = AnsibleTowerRestApiJobTemplates.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -246,10 +247,10 @@ class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
     @classmethod
     def cancelRelatedCurrnetExecutionForPrepare(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み(親)
-        filteringName = AnsibleTowerRestApiJobTemplates.CLEANUP_PREPARED_BUILD_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = AnsibleTowerRestApiJobTemplates.CLEANUP_PREPARED_BUILD_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name=%s" % (filteringName)
         pickup_response_array = AnsibleTowerRestApiJobTemplates.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:

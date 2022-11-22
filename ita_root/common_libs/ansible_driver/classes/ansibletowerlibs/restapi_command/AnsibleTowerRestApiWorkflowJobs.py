@@ -11,9 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
-
 import os
+import inspect
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
@@ -120,14 +119,12 @@ class AnsibleTowerRestApiWorkflowJobs(AnsibleTowerRestApiBase):
     @classmethod
     def NameSearch(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
-        if os.environ.get('TOWER_DRIVER_NAME'):
-            vg_tower_driver_name = os.environ.get('TOWER_DRIVER_NAME')
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # ジョブスライスが設定されるとワークフロージョブ名はワークフロージョブ名の場合とテンプレート名の場合がある
         # テンプレート名:ita_(driver_name)_executions_jobtpl_(execution_no)
         # ワークフロージョブ名名:ita_(driver_name)_executions_workflowtpl_(execution_no)
-        filteringName = cls.NAME_SEARCH % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = cls.NAME_SEARCH % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?%s" % (filteringName)
         pickup_response_array = cls.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -138,12 +135,10 @@ class AnsibleTowerRestApiWorkflowJobs(AnsibleTowerRestApiBase):
     @classmethod
     def getByExecutionNo(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
-        if os.environ.get('TOWER_DRIVER_NAME'):  # ToDo TOWER_DRIVER_NAME
-            vg_tower_driver_name = os.environ.get('TOWER_DRIVER_NAME')
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み(親)
-        filteringName = AnsibleTowerRestApiWorkflowJobTemplates.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = AnsibleTowerRestApiWorkflowJobTemplates.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name=%s" % (filteringName)
         pickup_response_array = AnsibleTowerRestApiWorkflowJobTemplates.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:

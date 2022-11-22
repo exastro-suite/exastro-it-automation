@@ -72,7 +72,8 @@ def AnsibleTowerExecution(
             ansibleTowerIfInfo['ANSTWR_HOSTNAME'],
             ansibleTowerIfInfo['ANSTWR_PORT'],
             ansibleTowerIfInfo['ANSTWR_AUTH_TOKEN'],
-            proxySetting
+            proxySetting,
+            driver_id
         )
 
         response_array = restApiCaller.authorize()

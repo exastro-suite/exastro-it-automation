@@ -22,6 +22,7 @@ import inspect
 from flask import g
 
 from common_libs.common.util import ky_decrypt
+from common_libs.ansible_driver.functions.util import getAnsibleConst
 
 
 class RestApiCaller():
@@ -34,7 +35,7 @@ class RestApiCaller():
     API_BASE_PATH = "/api/v2/"
     API_TOKEN_PATH = "authtoken/"
 
-    def __init__(self, protocol, hostName, portNo, encryptedAuthToken, proxySetting):
+    def __init__(self, protocol, hostName, portNo, encryptedAuthToken, proxySetting, driver_id=None):
 
         self.baseURI = '%s://%s:%s%s' % (protocol, hostName, portNo, self.API_BASE_PATH)
         self.directURI = '%s://%s:%s' % (protocol, hostName, portNo)
@@ -42,6 +43,13 @@ class RestApiCaller():
         self.proxySetting = proxySetting
         self.accessToken = None
         self.RestResultList = []
+
+        self.AnsConstObj = None
+        if driver_id:
+            self.AnsConstObj = getAnsibleConst(driver_id)
+
+    def getOrchestratorSubId_dir(self):
+        return self.AnsConstObj.vg_OrchestratorSubId_dir
 
     def authorize(self):
 

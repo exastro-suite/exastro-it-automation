@@ -86,9 +86,9 @@ class ExecuteDirector():
         self.AnsConstObj = getAnsibleConst(driver_id)
 
     def build(self, GitObj, exeInsRow, ifInfoRow, TowerHostList):
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         execution_no = exeInsRow['EXECUTION_NO']
-        proj_name = '%s_%s' % (vg_tower_driver_name, execution_no)
+        proj_name = '%s_%s' % (OrchestratorSubId_dir, execution_no)
         virtualenv_name = ''  # exeInsRow['I_VIRTUALENV_NAME']
         # AACの実行環境確認
         # 実行エンジンがAAC以外はI_EXECUTION_ENVIRONMENT_NAMEは空なので、実行エンジンのチェックはしない
@@ -186,7 +186,7 @@ class ExecuteDirector():
 
         # Gitリポジトリに展開する資材を作業ディレクトリに作成
         # tmp_path_ary["DIR_NAME"]: /storage/org1/workspace-1/tmp/driver/ansible/legacy_role_作業番号
-        tmp_path_ary = getInputDataTempDir(execution_no, vg_tower_driver_name)
+        tmp_path_ary = getInputDataTempDir(execution_no, OrchestratorSubId_dir)
         ret = self.createMaterialsTransferTempDir(execution_no, ifInfoRow, TowerHostList, tmp_path_ary["DIR_NAME"])
         if not ret:
             return -1, TowerHostList
@@ -199,7 +199,7 @@ class ExecuteDirector():
             if ret is False:
                 return -1, TowerHostList
 
-        tmp_path_ary = getInputDataTempDir(execution_no, vg_tower_driver_name)
+        tmp_path_ary = getInputDataTempDir(execution_no, OrchestratorSubId_dir)
         ret = self.MaterialsTransferToTower(execution_no, ifInfoRow, TowerHostList, tmp_path_ary['DIR_NAME'])
         if not ret:
             errorMessage = g.appmsg.get_api_message("MSG-10683")
@@ -324,8 +324,7 @@ class ExecuteDirector():
         return workflowTplId, TowerHostList
 
     def transfer(self, execution_no, TowerHostList):
-
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         allResult = True
 
         ret = self.ResultFileTransfer(execution_no, TowerHostList)
@@ -335,7 +334,7 @@ class ExecuteDirector():
         return allResult
 
     def delete(self, GitObj, execution_no, TowerHostList):
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         allResult = True
 
         # Gitリポジトリ削除
@@ -357,7 +356,7 @@ class ExecuteDirector():
 
         # Ansible Automation Controllerと連携するGitリポジトリを削除
         if self.AnsibleExecMode == AnscConst.DF_EXEC_MODE_AAC:
-            repositories_base_path = "%s/driver/ansible/git_repositories/%s_%s" % (getDataRelayStorageDir(), self.AnsConstObj.vg_tower_driver_name, execution_no)
+            repositories_base_path = "%s/driver/ansible/git_repositories/%s_%s" % (getDataRelayStorageDir(), self.AnsConstObj.vg_OrchestratorSubId_dir, execution_no)
             self.GitRepoDirDelete(repositories_base_path)
 
         # ジョブテンプレート名でジョブテンプレートを抽出
@@ -1165,7 +1164,7 @@ class ExecuteDirector():
 
                 # username/password delete
                 if 'WINRM_SSL_CA_FILE' in hostInfo and hostInfo['WINRM_SSL_CA_FILE'] is not None and len(hostInfo['WINRM_SSL_CA_FILE']) > 0:
-                    filePath = "winrm_ca_files/%s-%s" % (FuncCommonLib.addPadding(hostInfo['SYSTEM_ID']), hostInfo['WINRM_SSL_CA_FILE'])
+                    filePath = "winrm_ca_files/%s-%s" % (hostInfo['SYSTEM_ID'], hostInfo['WINRM_SSL_CA_FILE'])
                     hostData['ansible_winrm_ca_trust_path'] = filePath
 
             hostData['hosts_extra_args'] = hostInfo['HOSTS_EXTRA_ARGS']
@@ -1288,8 +1287,7 @@ class ExecuteDirector():
         return vault_credentialId
 
     def createEachInventory(self, execution_no, loopCount, inventory, OrganizationId):
-
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
 
         if "hosts" not in inventory or not inventory['hosts']:
             g.applogger.debug("%s no hosts." % (inspect.currentframe().f_code.co_name))
@@ -1323,7 +1321,7 @@ class ExecuteDirector():
             variables_array = []
 
             # ホスト名がlocalhostでpioneer実行の場合、インベントリオプションにansible_connection: localを追加
-            if hostname == 'localhost' and vg_tower_driver_name == "pioneer":
+            if hostname == 'localhost' and OrchestratorSubId_dir == "pioneer":
                 variables_array.append("ansible_connection: local")
 
             variables_array.append("ansible_host: %s" % hostData['ansible_host'])
@@ -1531,7 +1529,7 @@ class ExecuteDirector():
         return True
 
     def monitoring(self, toProcessRow, ansibleTowerIfInfo):
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         execution_no = toProcessRow['EXECUTION_NO']
         self.dataRelayStoragePath = ansibleTowerIfInfo['ANSIBLE_STORAGE_PATH_LNX']
 
@@ -1836,8 +1834,7 @@ class ExecuteDirector():
         return ret
 
     def CreateLogs(self, execution_no, wfJobId, joblistFullPath, outDirectoryPath, execlogFullPath):
-
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
 
         # ワークフローの情報取得
         workflow_contentArray = {}
@@ -2104,10 +2101,9 @@ class ExecuteDirector():
         return self.vg_TowerInstanceDirPath[PathId]
 
     def LogReplacement(self, log_data):
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
-
-        if vg_tower_driver_name == "pioneer":
+        if OrchestratorSubId_dir == "pioneer":
             # ログ(", ")  =>  (",\n")を改行する
             log_data = re.sub('", "', '",\n"', log_data)
 
@@ -2256,9 +2252,9 @@ class ExecuteDirector():
         return project_id
 
     def deleteMaterialsTransferTempDir(self, execution_no):
+        OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
-        tmp_path_ary = getInputDataTempDir(execution_no, vg_tower_driver_name)
+        tmp_path_ary = getInputDataTempDir(execution_no, OrchestratorSubId_dir)
         src_path = tmp_path_ary["DIR_NAME"]
 
         # Gitリポジトリ用の一時ディレクトリを削除

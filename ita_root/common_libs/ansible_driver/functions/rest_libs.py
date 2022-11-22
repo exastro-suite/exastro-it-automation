@@ -308,7 +308,12 @@ def execution_scram(objdbca, driver_id, execution_no):
             towerrow = towerrows[0]
 
             # Tower緊急停止
-            objTower = RestApiCaller(inforow["ANSTWR_PROTOCOL"], towerrow["ANSTWR_HOSTNAME"], inforow["ANSTWR_PORT"], inforow["ANSTWR_AUTH_TOKEN"], proxySetting)
+            objTower = RestApiCaller(inforow["ANSTWR_PROTOCOL"],
+                                     towerrow["ANSTWR_HOSTNAME"],
+                                     inforow["ANSTWR_PORT"],
+                                     inforow["ANSTWR_AUTH_TOKEN"],
+                                     proxySetting,
+                                     driver_id)
             objTower.authorize()
             response_array = AnsibleTowerRestApiWorkflowJobs().cancelRelatedCurrnetExecution(objTower, execution_no)
             if response_array['success'] is False:

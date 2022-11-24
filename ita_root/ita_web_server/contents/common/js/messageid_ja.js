@@ -537,6 +537,7 @@ getMessage = ( function() {
         'FTE10057': '必須',
         'FTE10058': 'OK',
         'FTE10059': '確認',
+        'FTE10060' : function( size, limit ){ return `ファイルバイト数がファイル最大バイト数を超えています。\n\nファイルバイト数: ${ Number( size ).toLocaleString() } Byte\nファイル最大バイト数: ${ Number( limit ).toLocaleString() } Byte`},
     };
 
     return message;

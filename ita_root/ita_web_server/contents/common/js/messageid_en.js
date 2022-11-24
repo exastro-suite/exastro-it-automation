@@ -537,6 +537,7 @@ getMessage = ( function() {
         'FTE10057': 'Required',
         'FTE10058': 'OK',
         'FTE10059': 'Confirmation',
+        'FTE10060' : function( size, limit ){ return `File bytes size exceeds the maximum file bytes size.\n\nFile bytes size: ${ Number( size ).toLocaleString() } Byte\nMaximum file bytes size: ${ Number( limit ).toLocaleString() } Byte`},
     };
 
     return message;

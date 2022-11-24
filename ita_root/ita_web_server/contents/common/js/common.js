@@ -572,8 +572,8 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
             
             cancelFlag = false;
 
-            if ( limitFileSize && file.size >= limitFileSize ) {
-                reject('File size limit over.');
+            if ( limitFileSize && file.size > limitFileSize ) {
+                reject( getMessage.FTE10060( file.size, limitFileSize ) );
                 return false;
             }
             

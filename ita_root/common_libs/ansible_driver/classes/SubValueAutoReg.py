@@ -185,10 +185,12 @@ class SubValueAutoReg():
                 continue
             
             # 代入値管理に具体値を登録
-            ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, WS_DB)
-            if ret == 0:
-                error_flag = 1
-                raise ValidationException("MSG-10466")
+            # 項目なしの場合はスキップ
+            if not varsAssRecord['STATUS'] == 'skip':
+                ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, WS_DB)
+                if ret == 0:
+                    error_flag = 1
+                    raise ValidationException("MSG-10466")
             
             # 作業対象ホストに登録が必要な情報を退避
             if varsAssRecord['OPERATION_ID'] not in lv_phoLinkList:
@@ -211,10 +213,13 @@ class SubValueAutoReg():
             if varsAssRecord['STATUS'] == 0:
                 continue
             
-            ret = self.addStg1ArrayVarsAssign(varsAssRecord, lv_tableNameToMenuIdList, execution_no, WS_DB)
-            if ret == 0:
-                error_flag = 1
-                raise ValidationException("MSG-10441")
+            # 代入値管理に具体値を登録
+            # 項目なしの場合はスキップ
+            if not varsAssRecord['STATUS'] == 'skip':
+                ret = self.addStg1ArrayVarsAssign(varsAssRecord, lv_tableNameToMenuIdList, execution_no, WS_DB)
+                if ret == 0:
+                    error_flag = 1
+                    raise ValidationException("MSG-10441")
             
             # 作業対象ホストに登録が必要な情報を退避
             if varsAssRecord['OPERATION_ID'] not in lv_phoLinkList:
@@ -855,7 +860,6 @@ class SubValueAutoReg():
         
         continue_flg = 0
         idx = 0
-        
         for table_name, sql in in_tableNameToSqlList.items():
             if continue_flg == 1:
                 continue
@@ -937,6 +941,7 @@ class SubValueAutoReg():
 
                     for tmp_table_name, value in in_tableNameToMenuNameRestList.items():
                         if tmp_table_name == table_name:
+                            # 縦メニューの場合
                             if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
                                 if row["INPUT_ORDER"] == col_data["COLUMN_ASSIGN_SEQ"]:
                                     # パラメータシートから値を取得
@@ -948,8 +953,14 @@ class SubValueAutoReg():
                                         parameter = parameters["parameter"]
                                         if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"]:
                                             if row["INPUT_ORDER"] == parameter["input_order"]:
-                                                col_val = parameter[col_data['COLUMN_NAME_REST']]
-                            
+                                                # 項目なしは対象外
+                                                if col_data['COL_GROUP_ID'] is None:
+                                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name, 'OPERATION_ID': operation_id, 'MOVEMENT_ID': col_data['MOVEMENT_ID'], 'SYSTEM_ID': host_id, 'STATUS': 'skip'}
+                                                    idx += 1
+                                                    continue
+                                                else:
+                                                    col_val = parameter[col_data['COLUMN_NAME_REST']]
+
                                                 # TPF/CPF変数カラム判定
                                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
@@ -973,7 +984,13 @@ class SubValueAutoReg():
                                 status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
                                 parameter = tmp_result[0]['parameter']
                             
-                                col_val = parameter[col_data['COLUMN_NAME_REST']]
+                                # 項目なしは対象外
+                                if col_data['COL_GROUP_ID'] is None:
+                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,'OPERATION_ID': operation_id, 'MOVEMENT_ID': col_data['MOVEMENT_ID'], 'SYSTEM_ID': host_id, 'STATUS': 'skip'}                                    
+                                    idx += 1
+                                    continue
+                                else:
+                                    col_val = parameter[col_data['COLUMN_NAME_REST']]
                             
                                 # TPF/CPF変数カラム判定
                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
@@ -1034,18 +1051,19 @@ class SubValueAutoReg():
                         idx += 1
         
             # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
-            for col_data in in_tabColNameToValAssRowList[table_name][col_name].values():
-                chk_flag = False
-                for row in data_list:
-                    if col_data["COLUMN_ASSIGN_SEQ"] is not None:
-                        if col_data["COLUMN_ASSIGN_SEQ"] == row["INPUT_ORDER"]:
-                            chk_flag = True
+            if 'col_name' in locals():
+                for col_data in in_tabColNameToValAssRowList[table_name][col_name].values():
+                    chk_flag = False
+                    for row in data_list:
+                        if col_data["COLUMN_ASSIGN_SEQ"] is not None:
+                            if col_data["COLUMN_ASSIGN_SEQ"] == row["INPUT_ORDER"]:
+                                chk_flag = True
         
-                if chk_flag == 0:
-                    msgstr = g.appmsg.get_api_message("MSG-10902", [col_data["COLUMN_ID"]])
-                    frame = inspect.currentframe().f_back
-                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
-                    warning_flag = 1
+                    if chk_flag == 0:
+                        msgstr = g.appmsg.get_api_message("MSG-10902", [col_data["COLUMN_ID"]])
+                        frame = inspect.currentframe().f_back
+                        g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                        warning_flag = 1
 
         return ina_vars_ass_list, ina_array_vars_ass_list, warning_flag
 
@@ -1569,6 +1587,7 @@ class SubValueAutoReg():
         sql += "   TBL_B.COLUMN_NAME_JA                                        ,  \n"
         sql += "   TBL_B.COLUMN_NAME_EN                                        ,  \n"
         sql += "   TBL_B.COLUMN_NAME_REST                                      ,  \n"
+        sql += "   TBL_B.COL_GROUP_ID                                          ,  \n"
         sql += "   TBL_B.REF_TABLE_NAME                                        ,  \n"
         sql += "   TBL_B.REF_PKEY_NAME                                         ,  \n"
         sql += "   TBL_B.REF_COL_NAME                                          ,  \n"
@@ -1578,6 +1597,7 @@ class SubValueAutoReg():
         sql += "   TBL_B.DISUSE_FLAG  AS COL_DISUSE_FLAG                       ,  \n"
         sql += "   TBL_A.COL_TYPE                                              ,  \n"
         sql += "   TBL_A.COLUMN_ASSIGN_SEQ                                     ,  \n"
+        sql += "   TBL_A.DISUSE_FLAG                                           ,  \n"
         sql += "   TBL_E.VARS_NAME                                             ,  \n"
         sql += "   TBL_E.VARS_ATTRIBUTE_01                                     ,  \n"
         
@@ -1737,7 +1757,6 @@ class SubValueAutoReg():
         sql += lv_val_assign_tbl + "  TBL_A                                       \n"
         sql += "   LEFT JOIN T_COMN_MENU_COLUMN_LINK TBL_B ON                     \n"
         sql += "          (TBL_A.COLUMN_LIST_ID = TBL_B.COLUMN_DEFINITION_ID)     \n"
-        sql += "          OR (TBL_B.AUTOREG_ONLY_ITEM = 1)                        \n"
         sql += "   LEFT JOIN T_COMN_MENU_TABLE_LINK          TBL_C ON             \n"
         sql += "          (TBL_B.MENU_ID        = TBL_C.MENU_ID)                  \n"
         sql += "   LEFT JOIN T_COMN_MENU   TBL_D ON                               \n"
@@ -1757,6 +1776,7 @@ class SubValueAutoReg():
         inout_tabColNameToValAssRowList = {}
         inout_tableNameToMenuNameRestList = {}
         idx = 0
+        
         for data in data_list:
             # SHEET_TYPEが1(ホスト・オペレーション)で廃止レコードでないかを判定
             if data['ANSIBLE_TARGET_TABLE'] != '0':
@@ -1797,7 +1817,9 @@ class SubValueAutoReg():
             # カラムタイプにより処理分岐
             
             if col_type == AnscConst.DF_COL_TYPE_VAL:
-                ret = self.valAssColumnValidate("Value",
+                # 項目なしはスキップ
+                if data['COL_GROUP_ID'] is not None:
+                    ret = self.valAssColumnValidate("Value",
                                                 val_vars_attr,
                                                 data,
                                                 "MVMT_VAR_LINK_ID",
@@ -1809,13 +1831,21 @@ class SubValueAutoReg():
                                                 "ASSIGN_SEQ",
                                                 "VAL_ASSIGN_SEQ_NEED")
             
-                if ret[0] == 0:
-                    continue
+                    if ret[0] == 0:
+                        continue
                 
-                val_vars_attr = ret[1]
+                    val_vars_attr = ret[1]
+                else:
+                    # 代入値自動登録選択項目フラグがOFFの場合はスキップ
+                    if data['AUTOREG_ONLY_ITEM'] == '0':
+                        continue
+                    if data['VARS_ATTRIBUTE_01'] in [AnscConst.GC_VARS_ATTR_STD, AnscConst.GC_VARS_ATTR_LIST, AnscConst.GC_VARS_ATTR_M_ARRAY]:
+                        val_vars_attr = data['VARS_ATTRIBUTE_01']
             
             if col_type == AnscConst.DF_COL_TYPE_KEY:
-                ret = self.valAssColumnValidate("Key",
+                # 項目なしはスキップ
+                if data['COL_GROUP_ID'] is not None:
+                    ret = self.valAssColumnValidate("Key",
                                                 key_vars_attr,
                                                 data,
                                                 "MVMT_VAR_LINK_ID",
@@ -1827,10 +1857,16 @@ class SubValueAutoReg():
                                                 "ASSIGN_SEQ",
                                                 "KEY_ASSIGN_SEQ_NEED")
             
-                if ret[0] == 0:
-                    continue
+                    if ret[0] == 0:
+                        continue
                 
-                key_vars_attr = ret[1]
+                    key_vars_attr = ret[1]
+                else:
+                    # 代入値自動登録選択項目フラグがOFFの場合はスキップ
+                    if data['AUTOREG_ONLY_ITEM'] == '0':
+                        continue
+                    if data['VARS_ATTRIBUTE_01'] in [AnscConst.GC_VARS_ATTR_STD, AnscConst.GC_VARS_ATTR_LIST, AnscConst.GC_VARS_ATTR_M_ARRAY]:
+                        key_vars_attr = data['VARS_ATTRIBUTE_01']
 
             inout_tableNameToMenuIdList[data['TABLE_NAME']] = data['MENU_ID']
             inout_tableNameToMenuNameRestList[data['TABLE_NAME']] = data['MENU_NAME_REST']
@@ -1854,6 +1890,7 @@ class SubValueAutoReg():
                                                                             'COLUMN_NAME_JA': data['COLUMN_NAME_JA'],
                                                                             'COLUMN_NAME_EN': data['COLUMN_NAME_EN'],
                                                                             'COLUMN_NAME_REST': data['COLUMN_NAME_REST'],
+                                                                            'COL_GROUP_ID': data['COL_GROUP_ID'],
                                                                             'REF_TABLE_NAME': data['REF_TABLE_NAME'],
                                                                             'REF_PKEY_NAME': data['REF_PKEY_NAME'],
                                                                             'REF_COL_NAME': data['REF_COL_NAME'],
@@ -1908,7 +1945,7 @@ class SubValueAutoReg():
             return False, inout_vars_attr
         
         # 変数が作業パターン変数紐付にあるか判定
-        if row[in_ptn_vars_link_cnt] is None or len(str(row[in_ptn_vars_link_cnt])) == 0:
+        if row[in_ptn_vars_link_cnt] is None or row[in_ptn_vars_link_cnt] == 0:
             msgstr = g.appmsg.get_api_message("MSG-10348", [row['COLUMN_ID'], in_col_type])
             g.applogger.debug(msgstr)
             return False, inout_vars_attr

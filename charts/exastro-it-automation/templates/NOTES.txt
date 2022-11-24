@@ -1,0 +1,2 @@
+1. Get the ENCRYPT_KEY by running these commands:
+  kubectl get secret secret-ita-global -n {{ .Release.Namespace }} -o jsonpath='{.data.ENCRYPT_KEY}' | base64 -d

@@ -40,6 +40,9 @@ services:
       - ITA_API_PROTOCOL=http
       - ITA_API_HOST=ita-api-organization
       - ITA_API_PORT=8000
+      - ITA_API_ADMIN_PROTOCOL=http
+      - ITA_API_ADMIN_HOST=ita-api-admin
+      - ITA_API_ADMIN_PORT=8079
       #- PLATFORM_WEB_LOCATION=/*/platform/
       - PLATFORM_WEB_PROTOCOL=http
       - PLATFORM_WEB_HOST=platform-web
@@ -51,6 +54,7 @@ services:
       - DB_DATABASE=platform
       - DB_USER=app_user
       - DB_PASSWORD=password
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
     ports:
       - "0.0.0.0:38000:38000"
       - "0.0.0.0:38001:38001"
@@ -111,7 +115,7 @@ services:
       - DB_PASSWORD=password
       - DB_ADMIN_USER=root
       - DB_ADMIN_PASSWORD=password
-
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
   platform-job:
     user: 1000:1000
     image: exastro/exastro-platform-job:${PLATFORM_VERSION:-latest}
@@ -130,6 +134,7 @@ services:
       - DB_PASSWORD=password
       - DB_ADMIN_USER=root
       - DB_ADMIN_PASSWORD=password
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
     depends_on:
       platform-db:
         condition: service_healthy

@@ -15,6 +15,8 @@ global:
       CONTAINER_BASE: "kubernetes"
       TZ: "Asia/Tokyo"
       STORAGEPATH: "/storage/"
+    secret:
+      ENCRYPT_KEY: ""
     persistence:
       enabled: true
       reinstall: false
@@ -22,7 +24,7 @@ global:
       size: 10Gi
       volumeType: hostPath # e.g.) hostPath or AKS
       storageClass: "-" # e.g.) azurefile or - (None)
-      # matchLabels: 
+      # matchLabels:
       #   release: "stable"
       # matchExpressions:
       #   - {key: environment, operator: In, values: [dev]}
@@ -52,7 +54,7 @@ global:
 extraEnv:
   LISTEN_PORT: "8080"
   PLATFORM_API_HOST: "platform-api.exastro-platform.svc"
-  PLATFORM_API_PORT: "8000"                
+  PLATFORM_API_PORT: "8000"
 
 replicaCount: 1
 

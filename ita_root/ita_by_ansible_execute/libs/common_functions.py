@@ -90,6 +90,15 @@ def update_execution_record(wsDb, data):
         record:
     """
     try:
+        sql = "SELECT * FROM {} WHERE EXECUTION_NO=%s".format("T_ANSR_EXEC_STS_INST")
+        rows = wsDb.sql_execute(sql, [data['EXECUTION_NO']])
+        row = rows[0]
+        if "TIME_START" in data:
+            if row["TIME_START"]:
+                del data["TIME_START"]
+        if "TIME_END" in data:
+            if row["TIME_END"]:
+                del data["TIME_END"]
         if "LAST_UPDATE_USER" not in data:
             data["LAST_UPDATE_USER"] = g.USER_ID
         result = wsDb.table_update('T_ANSR_EXEC_STS_INST', [data], 'EXECUTION_NO')

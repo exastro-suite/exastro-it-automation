@@ -31,7 +31,7 @@
 // Ui common           10001～11000
 
 
-const getMessage = ( function() {
+getMessage = ( function() {
 
     const message = {
         // Default menu
@@ -100,8 +100,8 @@ const getMessage = ( function() {
         'FTE00063' : " records",
         'FTE00064' : "Share",
         'FTE00065' : "Validation error",
-        'FTE00066' : "The number of items displayed has exceeded the recommended number of items to be displayed.",
-        'FTE00067' : "The maximum number of items that can be displayed has been exceeded.",
+        'FTE00066' : function( result, limit ){ return `The maximum number of items has been exceeded.\nMay I display it?\n(Maximum number of items: ${limit}, Record count: ${result})`},
+        'FTE00067' : function( result, limit ){ return `The maximum number of items that can be displayed has been exceeded.\nPlease refine your filter criteria.\n(Maximum number of items: ${limit}, Record count: ${result})`},
         'FTE00068' : "Validation errors occurred.",
         'FTE00069' : "Register",
         'FTE00070' : "Error string",
@@ -225,8 +225,8 @@ const getMessage = ( function() {
         'FTE01101' : "Link",
         'FTE01102' : "[Referenced value]",
         'FTE01103' : "Move item.",
-        'FTE01104' : "Enter the item name to be displayed on the menu. \nThe maximum size is 256 bytes.\nDo not use \"/\" in the item names.\n\"Names [numbers] used in the repeat frame\" cannot be used for item names outside the repeat frame.",
-        'FTE01105' : "Enter the name of the item (for REST API).",
+        'FTE01104' : "Enter the item name to be displayed on the menu.\nThe maximum size is 255bytes.\nDo not use \"/\" in the item names.",
+        'FTE01105' : "Enter the name of the item (for REST API).\nThe maximum size is 255bytes.\nOnly alphanumeric characters and _- are allowed.",
         'FTE01106' : "Delete the item.",
         'FTE01107' : "Copy the item.",
         'FTE01108' : "Enter the number of repeats.\nInteger value from 2 to 99 can be entered.",
@@ -537,6 +537,7 @@ const getMessage = ( function() {
         'FTE10057': 'Required',
         'FTE10058': 'OK',
         'FTE10059': 'Confirmation',
+        'FTE10060' : function( size, limit ){ return `File bytes size exceeds the maximum file bytes size.\n\nFile bytes size: ${ Number( size ).toLocaleString() } Byte\nMaximum file bytes size: ${ Number( limit ).toLocaleString() } Byte`},
     };
 
     return message;

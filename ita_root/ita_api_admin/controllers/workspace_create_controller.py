@@ -25,7 +25,7 @@ import shutil
 from common_libs.api import api_filter, check_request_body_key
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import ky_encrypt, get_timestamp
-
+from libs.admin_common import initial_settings_ansible
 
 @api_filter
 def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
@@ -165,6 +165,14 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
                     ws_db.sql_execute(sql, prepared_list)
             g.applogger.debug("executed " + dml_file)
+            ws_db.db_commit()
+
+        # 初期データ設定(ansible)
+        common_db = DBConnectCommon()
+        data_list = common_db.table_select('T_COMN_INITIAL_DATA')
+        if len(data_list) != 0:
+            ws_db.db_transaction_start()
+            initial_settings_ansible(ws_db, json.loads(data_list[0]['INITIAL_DATA_ANSIBLE_IF']))
             ws_db.db_commit()
 
         # register workspace-db connect infomation

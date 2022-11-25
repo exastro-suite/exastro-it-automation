@@ -980,8 +980,15 @@ class SubValueAutoReg():
                                 host_data_list = WS_DB.sql_execute(sql, [row['HOST_ID']])
                                 for host_data in host_data_list:
                                     host_name = host_data['HOST_NAME']
+
+                                # オペレーション名取得
+                                sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
+
+                                ope_data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
+                                for ope_data in ope_data_list:
+                                    ope_name = ope_data['OPERATION_NAME']
                                 mode = "inner"
-                                filter_parameter = {"host_name": {"LIST": [host_name]},"discard": {"LIST": ["0"]}}
+                                filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]},"discard": {"LIST": ["0"]}}
                                 status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
                                 parameter = tmp_result[0]['parameter']
 
@@ -1027,29 +1034,53 @@ class SubValueAutoReg():
 
                     # 代入値管理の登録に必要な情報を生成
                     if exec_flag == 1:
-                        ret = self.makeVarsAssignData(table_name,
-                                            col_name,
-                                            col_val,
-                                            col_row_id,
-                                            col_class,
-                                            col_filepath,
-                                            col_file_md5,
-                                            col_data['NULL_DATA_HANDLING_FLG'],
-                                            operation_id,
-                                            host_id,
-                                            col_data,
-                                            ina_vars_ass_list,
-                                            lv_varsAssChkList,
-                                            ina_array_vars_ass_list,
-                                            lv_arrayVarsAssChkList,
-                                            in_tableNameToMenuIdList[table_name],
-                                            row[AnscConst.DF_ITA_LOCAL_PKEY],
-                                            WS_DB)
+                        # 同一登録データがある場合はスキップ
+                        skip_flag = False
+                        for ina_vars_ass_list_value in ina_vars_ass_list.values():
+                            if len(ina_vars_ass_list_value) > 0:
+                                if operation_id == ina_vars_ass_list_value['OPERATION_ID']:
+                                    if host_id == ina_vars_ass_list_value['SYSTEM_ID']:
+                                        if col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID']:
+                                            if col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID']:
+                                                if col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
+                                                    if col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
+                                                        skip_flag = True
 
-                        ina_vars_ass_list[idx] = ret[0]
-                        ina_array_vars_ass_list[idx] = ret[2]
+                        for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
+                            if len(ina_array_vars_ass_list_value) > 0:
+                                if operation_id == ina_array_vars_ass_list_value['OPERATION_ID']:
+                                    if host_id == ina_array_vars_ass_list_value['SYSTEM_ID']:
+                                        if col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID']:
+                                            if col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID']:
+                                                if col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
+                                                    if col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
+                                                        skip_flag = True
 
-                        idx += 1
+                        if skip_flag == 0:
+                            ret = self.makeVarsAssignData(table_name,
+                                                col_name,
+                                                col_val,
+                                                col_row_id,
+                                                col_class,
+                                                col_filepath,
+                                                col_file_md5,
+                                                col_data['NULL_DATA_HANDLING_FLG'],
+                                                operation_id,
+                                                host_id,
+                                                col_data,
+                                                ina_vars_ass_list,
+                                                lv_varsAssChkList,
+                                                ina_array_vars_ass_list,
+                                                lv_arrayVarsAssChkList,
+                                                in_tableNameToMenuIdList[table_name],
+                                                row[AnscConst.DF_ITA_LOCAL_PKEY],
+                                                WS_DB)
+
+                            ina_vars_ass_list[idx] = ret[0]
+                            ina_array_vars_ass_list[idx] = ret[2]
+
+                            idx += 1
+                            skip_flag = False
 
             # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
             if 'col_name' in locals():

@@ -29,9 +29,9 @@ def backyard_main(organization_id, workspace_id):
     # if 'LANGUAGE' not in g:
     g.LANGUAGE = 'en'
     # if 'USER_ID' not in g:
-    g.USER_ID = '20401'
+    g.USER_ID = '20201'
 
-    proc_loaded_row_id = 204
+    proc_loaded_row_id = 202
 
     # DB接続準備
     ws_db = DBConnectWs(workspace_id)  # noqa: F405
@@ -76,7 +76,6 @@ def backyard_main(organization_id, workspace_id):
 
     # Movement変数 登録・廃止
     mov_vars_link_table.register_and_discard(mov_vars_dict)
-    registerd_mov_vars_link_records = mov_vars_link_table.get_stored_records()
 
     # DBコミット
     ws_db.db_commit()

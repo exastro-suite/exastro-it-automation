@@ -29,9 +29,9 @@ def backyard_main(organization_id, workspace_id):
     # if 'LANGUAGE' not in g:
     g.LANGUAGE = 'en'
     # if 'USER_ID' not in g:
-    g.USER_ID = '20401'
+    g.USER_ID = '20301'
 
-    proc_loaded_row_id = 204
+    proc_loaded_row_id = 203
 
     # DB接続準備
     ws_db = DBConnectWs(workspace_id)  # noqa: F405
@@ -45,9 +45,6 @@ def backyard_main(organization_id, workspace_id):
     g.applogger.debug("[Trace] Read all related table.")
     tpl_table = TemplateTable(ws_db)  # noqa: F405
     tpl_table.store_dbdata_in_memory()
-
-    device_table = DeviceTable(ws_db)  # noqa: F405
-    device_table.store_dbdata_in_memory()
 
     mov_table = MovementTable(ws_db)  # noqa: F405
     mov_table.store_dbdata_in_memory()
@@ -70,13 +67,11 @@ def backyard_main(organization_id, workspace_id):
     mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records)
 
     # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する、作業対象ホストのインベントリファイル追加オプション）
-    device_varmng_dict = device_table.extract_variable()
     tpl_varmng_dict = tpl_table.extract_variable()
-    mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_dict, ws_db)
+    mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, ws_db)
 
     # Movement変数 登録・廃止
     mov_vars_link_table.register_and_discard(mov_vars_dict)
-    registerd_mov_vars_link_records = mov_vars_link_table.get_stored_records()
 
     # DBコミット
     ws_db.db_commit()

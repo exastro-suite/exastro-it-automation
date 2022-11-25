@@ -67,14 +67,13 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records):
     return mov_vars_dict
 
 
-def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_dict, ws_db):
+def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, ws_db):
     """
     変数を抽出する（実行時相当）
 
     Arguments:
         mov_vars_dict: { (movement_id): VariableManager, ... }
         tpl_varmng_dict: { (tpl_var_name): VariableManager, ... }
-        device_varmng_dict: { (sytem_id): VariableManager, ... }
         ws_db: DBConnectWs
 
     Returns:
@@ -91,13 +90,5 @@ def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_d
     for movement_id, tpl_var_set in template_list.items():
         tpl_var_name = tpl_var_set.keys()[0]
         mov_vars_dict[movement_id].merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
-
-    for movement_id, ope_host_dict in host_list.items():
-        for _, system_dict in ope_host_dict.items():
-            for system_id in system_dict.keys():
-
-                # 作業ホストに解析すべき変数があれば
-                if system_id in device_varmng_dict:
-                    mov_vars_dict[movement_id].merge_variable_list(device_varmng_dict[system_id].export_var_list(), is_option_var=True)
 
     return mov_vars_dict

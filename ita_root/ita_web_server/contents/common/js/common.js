@@ -28,6 +28,9 @@
 const fn = ( function() {
     'use strict';
     
+    // AbortController
+    const controller = new AbortController();
+    
     // インスタンス管理用
     const modalInstance = {},
           operationInstance = {},
@@ -196,7 +199,8 @@ fetch: function( url, token, method = 'GET', json ) {
                 headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json'
-                }
+                },
+                signal: controller.signal
             };
             
             if ( ( method === 'POST' || method === 'PATCH' ) && json !== undefined ) {            
@@ -231,6 +235,7 @@ fetch: function( url, token, method = 'GET', json ) {
                             case 401:
                                 response.json().then(function( result ){
                                     if ( !iframeFlag ) {
+                                        controller.abort();
                                         alert(result.message);
                                         location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
                                     } else {
@@ -244,6 +249,7 @@ fetch: function( url, token, method = 'GET', json ) {
                             case 403:
                                 response.json().then(function( result ){
                                     if ( !iframeFlag ) {
+                                        controller.abort();
                                         alert(result.message);
                                         window.location.href = `/${organization_id}/platform/workspaces`;
                                     } else {
@@ -260,8 +266,10 @@ fetch: function( url, token, method = 'GET', json ) {
                     }
                 }
             }).catch(function( error ){
-                if ( errorCount === 0 ) {
-                    reject( error );
+                if ( error.name !== 'AbortError') {
+                    if ( errorCount === 0 ) {
+                        reject( error );
+                    }
                 }
             });
         });
@@ -2401,6 +2409,7 @@ commonErrorAlert: function( error ) {
 gotoErrPage: function( message ) {
     // windowFlagでWorker内か判定
     if ( windowFlag ) {
+        controller.abort();
         if ( message ) {
             window.alert( message );
         } else {

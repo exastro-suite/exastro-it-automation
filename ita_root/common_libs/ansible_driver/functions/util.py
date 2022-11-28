@@ -194,7 +194,7 @@ def getAnsibleExecutDirPath(driver_id, execute_no):
         del AnscObj
         AnscObj = AnsrConst()
         driver_dir_name = AnscObj.vg_OrchestratorSubId_dir
-        
+
     return getDataRelayStorageDir() + "/driver/ansible/{}/{}".format(driver_dir_name, execute_no)
 
 
@@ -217,3 +217,18 @@ def getInputDataTempDir(EcecuteNo, DriverName):
     tgtPath = basePath + "/{}_{}".format(DriverName, EcecuteNo)
     ary["DIR_NAME"] = tgtPath
     return ary
+
+
+def getPasswordColumnVaule(column_rest_name, option):
+    """
+      パスワードカラム入力値取得
+      Arguments:
+        column_rest_name: カラム名(REST用)
+        option: 個別
+      Returns:
+        Ansible Gitリポジトリ用 tmpバス
+    """
+    str_token = option["current_parameter"]["parameter"][column_rest_name]
+    if column_rest_name in option["entry_parameter"]["parameter"]:
+        str_token = option["entry_parameter"]["parameter"][column_rest_name]
+    return str_token

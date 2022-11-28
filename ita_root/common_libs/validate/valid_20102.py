@@ -13,24 +13,25 @@
 from flask import g
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.functions.util import getPasswordColumnVaule
 
 def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = ''
-    
+
     if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
-        
+
         # 更新前のレコードから、各カラムの値を取得
         str_exec_mode    = option["current_parameter"]["parameter"]["execution_engine"]
 
         str_twr_host_id   = option["current_parameter"]["parameter"]["representative_server"]
-        
+
         str_twr_protocol = option["current_parameter"]["parameter"]['ansible_automation_controller_protocol']
-        
+
         str_twr_port     = option["current_parameter"]["parameter"]['ansible_automation_controller_port']
-        
+
         str_org_name     = option["current_parameter"]["parameter"]['organization_name']
-        
+
         str_token       = option["current_parameter"]["parameter"]['authentication_token']
 
         # 更新前のレコードから、各カラムの値を取得
@@ -39,32 +40,29 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_exec_mode = option["entry_parameter"]["parameter"]["execution_engine"]
         else:
             str_exec_mode = None
-        
+
         if "representative_server" in option["entry_parameter"]["parameter"]:
             str_twr_host_id = option["entry_parameter"]["parameter"]["representative_server"]
         else:
             str_twr_host_id = None
-        
+
         if "ansible_automation_controller_protocol" in option["entry_parameter"]["parameter"]:
             str_twr_protocol = option["entry_parameter"]["parameter"]['ansible_automation_controller_protocol']
         else:
             str_twr_protocol = None
-        
+
         if "ansible_automation_controller_port" in option["entry_parameter"]["parameter"]:
             str_twr_port = option["entry_parameter"]["parameter"]['ansible_automation_controller_port']
         else:
             str_twr_port = None
-        
+
         if "organization_name" in option["entry_parameter"]["parameter"]:
             str_org_name = option["entry_parameter"]["parameter"]['organization_name']
         else:
             str_org_name = None
-        
+
         # PasswordColumn
-        str_token = option["current_parameter"]["parameter"]['authentication_token']
-        if not str_token:
-            if "authentication_token" in option["entry_parameter"]["parameter"]:
-                str_token = option["entry_parameter"]["parameter"]['authentication_token']
+        str_token = getPasswordColumnVaule("authentication_token", option)
 
     if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
         pass
@@ -91,5 +89,5 @@ def external_valid_menu_before(objdbca, objtable, option):
             retBool = False
     if retBool is False:
         msg = ret_str_body
-    
+
     return retBool, msg, option,

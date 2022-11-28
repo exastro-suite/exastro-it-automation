@@ -690,7 +690,7 @@ class SubValueAutoReg():
             "type": "Register"
         }
 
-        if not tgt_row['VARS_ENTRY_FILE'] == "":
+        if in_varsAssignList['COL_FILEUPLOAD_PATH']:
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
             parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
 
@@ -784,7 +784,7 @@ class SubValueAutoReg():
             "type":"Register"
         }
 
-        if not tgt_row['VARS_ENTRY_FILE'] == "":
+        if in_varsAssignList['COL_FILEUPLOAD_PATH']:
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
             parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
 

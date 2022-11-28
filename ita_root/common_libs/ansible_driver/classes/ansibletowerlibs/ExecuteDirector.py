@@ -951,7 +951,6 @@ class ExecuteDirector():
             "  T_ANSC_TOWER_HOST \n"
             "WHERE \n"
             "  DISUSE_FLAG = '0' \n"
-            "FOR UPDATE; \n"
         ) % (cols)
 
         rows = self.dbAccess.sql_execute(sql)
@@ -1054,7 +1053,6 @@ class ExecuteDirector():
             "  AND EXECUTION_NO=%%s \n"
             "  AND OPERATION_ID=%%s \n"
             "  AND MOVEMENT_ID=%%s \n"
-            "FOR UPDATE; \n"
         ) % (cols, vg_ansible_pho_linkDB)
 
         rows = self.dbAccess.sql_execute(sql, condition)
@@ -1692,7 +1690,14 @@ class ExecuteDirector():
                 self.workflowJobNodeIdAry[wfJobId].append(wfJobNodeId)
                 continue
 
-            jobtype = workflowJobNodeData['summary_fields']['job']['type']
+            # workflowJobNodeData['summary_fields']['job']['type']が取得出来ないケースがあり
+            # ガードを入れる
+            jobtype = None
+            if 'summary_fields' in workflowJobNodeData:
+                if 'job' in workflowJobNodeData['summary_fields']:
+                    if 'type' in workflowJobNodeData['summary_fields']['job']:
+                        jobtype = workflowJobNodeData['summary_fields']['job']['type']
+
             # ジョブスライスが設定されているとスライスされた workfolw job (jobtype = workfolw job)
             # の情報がJob情報として表示される
             # typeが workfolw job のjobの情報はworkfolw jobで取得出来ているので無視

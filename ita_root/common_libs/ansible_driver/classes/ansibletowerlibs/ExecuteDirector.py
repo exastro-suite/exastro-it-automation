@@ -141,7 +141,7 @@ class ExecuteDirector():
                 self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
-            if ('responseContents' not in response_array or response_array['responseContents'] is None 
+            if ('responseContents' not in response_array or response_array['responseContents'] is None
                 or (type(response_array['responseContents']) in (list, dict) and len(response_array['responseContents']) <= 0)) \
             or ("id" not in response_array['responseContents'][0]):
                 g.applogger.error("No inventory id. (prepare)")
@@ -349,7 +349,7 @@ class ExecuteDirector():
             # Gitリポジトリ削除に失敗した場合、ログを出力してエラーとして扱わない
             log = str(e)
             g.applogger.error(log)
-            
+
         # Ansible Automation Controller側の/var/lib/exastro配下の該当ディレクトリ削除
         ret = self.MaterialsDelete("ExastroPath", execution_no, TowerHostList)
         if not ret:
@@ -484,7 +484,7 @@ class ExecuteDirector():
         # dest path: /storage/org1/workspace-1/tmp/driver/ansible/legacy_role_作業番号
         ###########################################################
         src_path = getAnsibleExecutDirPath(self.driver_id, execution_no) + "/in"
-        dest_path = tmp_path        
+        dest_path = tmp_path
         cmd = ["/bin/cp", "-rfp", src_path, dest_path]
         try:
             ret = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -593,7 +593,7 @@ class ExecuteDirector():
             cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
             try:
                 with open(tmp_log_file, 'a') as fp:
-                    
+
                     ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
             except Exception:
@@ -956,7 +956,6 @@ class ExecuteDirector():
             "  T_ANSC_TOWER_HOST \n"
             "WHERE \n"
             "  DISUSE_FLAG = '0' \n"
-            "FOR UPDATE; \n"
         ) % (cols)
 
         rows = self.dbAccess.sql_execute(sql)
@@ -1059,7 +1058,6 @@ class ExecuteDirector():
             "  AND EXECUTION_NO=%%s \n"
             "  AND OPERATION_ID=%%s \n"
             "  AND MOVEMENT_ID=%%s \n"
-            "FOR UPDATE; \n"
         ) % (cols, vg_ansible_pho_linkDB)
 
         rows = self.dbAccess.sql_execute(sql, condition)
@@ -1156,7 +1154,7 @@ class ExecuteDirector():
                 hostData['ansible_host'] = hostInfo['IP_ADDRESS']
             else:
                 hostData['ansible_host'] = hostInfo['HOST_DNS_NAME']
-                
+
             # WinRM接続
             # 認証方式:パスワード認証(winrm)
             hostData['winrm'] = False
@@ -1693,7 +1691,13 @@ class ExecuteDirector():
                 self.workflowJobNodeIdAry[wfJobId].append(wfJobNodeId)
                 continue
 
-            jobtype = workflowJobNodeData['summary_fields']['job']['type']
+            # workflowJobNodeData['summary_fields']['job']['type']が取得出来ないケースがあり
+            # ガードを入れる
+            jobtype = None
+            if 'summary_fields' in workflowJobNodeData:
+                if 'job' in workflowJobNodeData['summary_fields']:
+                    if 'type' in workflowJobNodeData['summary_fields']['job']:
+                        jobtype = workflowJobNodeData['summary_fields']['job']['type']
             # ジョブスライスが設定されているとスライスされた workfolw job (jobtype = workfolw job)
             # の情報がJob情報として表示される
             # typeが workfolw job のjobの情報はworkfolw jobで取得出来ているので無視
@@ -2214,7 +2218,7 @@ class ExecuteDirector():
         with open(filePath) as fd:
             project_id = fd.read()
         return project_id
-    
+
     def deleteMaterialsTransferTempDir(self, execution_no):
 
         vg_tower_driver_name = AnsrConst.vg_tower_driver_name

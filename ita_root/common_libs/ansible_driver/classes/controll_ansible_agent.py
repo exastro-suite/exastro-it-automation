@@ -353,15 +353,15 @@ class KubernetesMode(AnsibleAgent):
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
         if cp.returncode != 0:
             # cp.check_returncode()  # 例外を発生
-            return cp.returncode, None, cp.stderr
+            return cp.returncode, "error", cp.stderr
 
         try:
             result_obj = json.loads(cp.stdout)
             status = result_obj['status']['phase']
         except Exception as e:
-            g.applogger.debug(str(e))
-            g.applogger.debug("stdout:\n%s" % cp.stdout.decode('utf-8'))
+            g.applogger.error(str(e))
+            g.applogger.error("stdout:\n%s" % cp.stdout.decode('utf-8'))
 
-            return 1, None, str(e)
+            return 1, "error", str(e)
 
         return cp.returncode, status, ""

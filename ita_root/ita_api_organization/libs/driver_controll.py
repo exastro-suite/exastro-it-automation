@@ -248,4 +248,5 @@ def reserve_cancel(objdbca, driver_id, execution_no):
         ret = objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
         objdbca.db_commit()
 
-    return {"status": "SUCCEED", "execution_no": execution_no}
+    result_msg = g.appmsg.get_api_message("MSG-10904", [execution_no])
+    return result_msg

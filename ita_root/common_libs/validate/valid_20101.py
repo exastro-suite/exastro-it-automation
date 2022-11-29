@@ -24,7 +24,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         objdbca :DB接続クラスインスタンス
         objtable :メニュー情報、カラム紐付、関連情報
         option :パラメータ、その他設定値
-        
+
     RETRUN:
         retBoo :True/ False
         msg :エラーメッセージ
@@ -77,7 +77,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_ssh_key_file = option["entry_parameter"]["parameter"]["ssh_private_key_file"]
         else:
             str_ssh_key_file = None
-        
+
         # インベントリファイル追加オプション取得
         if "inventory_file_additional_option" in option["entry_parameter"]["parameter"]:
             in_string = option["entry_parameter"]["parameter"]["inventory_file_additional_option"]
@@ -93,7 +93,7 @@ def external_valid_menu_before(objdbca, objtable, option):
     elif option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
         # ホスト名
         str_host_name = option["current_parameter"]["parameter"]["host_name"]
-        
+
         # 認証方式の設定値取得
         str_auth_mode = option["current_parameter"]["parameter"]["authentication_method"]
 
@@ -108,7 +108,7 @@ def external_valid_menu_before(objdbca, objtable, option):
 
         # 公開鍵ファイルの設定値取得
         str_ssh_key_file = option["current_parameter"]["parameter"]["ssh_private_key_file"]
-        
+
         # インベントリファイル追加オプション取得
         in_string = option["current_parameter"]["parameter"]["inventory_file_additional_option"]
         if not in_string:
@@ -134,7 +134,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_login_user = option["entry_parameter"]["parameter"]["login_user"]
         else:
             str_login_user = None
-        
+
         if "inventory_file_additional_option" in option["entry_parameter"]["parameter"]:
             in_string = option["entry_parameter"]["parameter"]["inventory_file_additional_option"]
         else:
@@ -143,12 +143,12 @@ def external_valid_menu_before(objdbca, objtable, option):
         # パスワードの設定値取得
         # PasswordColumnはデータの更新がないと$arrayRegDataの設定は空になっているので
         # パスワードが更新されているか判定
-        
+
         if "login_password" in option["entry_parameter"]["parameter"]:
             str_passwd = option["entry_parameter"]["parameter"]["login_password"]
         else:
             str_passwd = None
-        
+
         # 更新されていない場合は設定済みのパスワードoption["current_parameter"]["parameter"]["login_password"]取得
         if not str_passwd:
             str_passwd = option["current_parameter"]["parameter"]["login_password"]
@@ -161,7 +161,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_passphrase = option["entry_parameter"]["parameter"]["passphrase"]
         else:
             str_passphrase = None
-            
+
         if not str_passphrase:
             str_passphrase = option["current_parameter"]["parameter"]["passphrase"]
 
@@ -173,7 +173,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_ssh_key_file = option["entry_parameter"]["parameter"]["ssh_private_key_file"]
         else:
             str_ssh_key_file = None
-        
+
         if not str_ssh_key_file:
             str_ssh_key_file = option["current_parameter"]["parameter"]["ssh_private_key_file"]
 
@@ -187,11 +187,13 @@ def external_valid_menu_before(objdbca, objtable, option):
         driver_id = ""
         chkobj = AuthTypeParameterRequiredCheck()
         ret_str_body = chkobj.DeviceListAuthTypeRequiredParameterCheck(AuthTypeParameterRequiredCheck.chkType_Loadtable_TowerHostList, err_msg_parameter_ary, str_auth_mode, str_login_user, str_passwd, str_ssh_key_file, str_passphrase, driver_id)   # str_protocol_idを後で引数に追加
-    
+
     if ret_str_body[0] is True:
         msg = ""
     else:
-        retBool, msg = False, ret_str_body[1]
+        retBool = False
+        msg = ret_str_body[1]
+
     # ホスト名が数値文字列か判定
     if str_host_name:
         if str_host_name.isdecimal():
@@ -199,9 +201,10 @@ def external_valid_menu_before(objdbca, objtable, option):
             if len(msg) != 0:
                 msg += "\n"
             msg += g.appmsg.get_api_message("MSG-10879")
-    
+
     if in_string is None:
         in_string = ""
+
     # YAMLcheck処理
     tmpFile = "{}/InventryFileAddOptionYamlParse_{}".format(get_AnsibleDriverTmpPath(), os.getpid())
     with open(tmpFile, "w") as fd:
@@ -215,4 +218,5 @@ def external_valid_menu_before(objdbca, objtable, option):
             msg += "\n"
         error_detail = obj.GetLastError()
         msg += g.appmsg.get_api_message("MSG-10887", [error_detail])
+
     return retBool, msg, option

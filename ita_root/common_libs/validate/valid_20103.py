@@ -24,7 +24,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         objdbca :DB接続クラスインスタンス
         objtabl :メニュー情報、カラム紐付、関連情報
         option :パラメータ、その他設定値
-        
+
     RETRUN:
         retBoo :True/ False
         msg :エラーメッセージ
@@ -81,7 +81,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_passwd = option["entry_parameter"]["parameter"]["password"]
         else:
             str_passwd = None
-            
+
         if str_passwd is None:
             str_passwd = option["current_parameter"]["parameter"]["password"]
         # パスフレーズの設定値取得
@@ -92,7 +92,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_passphrase = option["entry_parameter"]["parameter"]["passphrase"]
         else:
             str_passphrase = None
-        
+
         if str_passphrase is None:
             str_passphrase = option["current_parameter"]["parameter"]["passphrase"]
         # 公開鍵ファイルの設定値取得
@@ -114,11 +114,12 @@ def external_valid_menu_before(objdbca, objtable, option):
         chkobj = AuthTypeParameterRequiredCheck()
 
         ret_str_body = chkobj.TowerHostListAuthTypeRequiredParameterCheck(AuthTypeParameterRequiredCheck.chkType_Loadtable_TowerHostList, err_msg_parameter_ary, str_auth_mode, str_passwd, str_ssh_key_file, str_passphrase)
-        
+
         if ret_str_body[0] is True:
             msg = ""
         else:
-            retBool, msg = False, ret_str_body[1]
+            retBool = False
+            msg = ret_str_body[1]
     # ホスト名が数値文字列か判定
     if host_name:
         if host_name.isdecimal():

@@ -1912,7 +1912,7 @@ class ExecuteDirector():
                 contentArray.append("")
                 jobSummaryAry[JobId] = '\n'.join(contentArray)
 
-            contentArray.append("")
+                contentArray.append("")
 
         ################################################################
         # 各WorkflowJobNode分のstdoutをファイル化

@@ -2378,6 +2378,8 @@ class ExecuteDirector():
 
                 errorMessage = g.appmsg.get_api_message("MSG-10020", [ProjectUpdateStdout])
                 self.errorLogOut(errorMessage)
+                # Towerでエラーになるので、レスポンス情報をエラーログに表示
+                self.errorLogOut(str(response_array))
                 return -1
 
             else:

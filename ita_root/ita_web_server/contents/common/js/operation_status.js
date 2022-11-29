@@ -220,8 +220,7 @@ operationStatusInit() {
                 } break;
                 // 予約取消
                 case 'cansel':
-                    if ( window.confirm(getMessage.FTE02043) ) {
-                        
+                    if ( window.confirm(getMessage.FTE05037) ) {
                         fn.fetch( op.rest.cancel, null, 'PATCH', {}).then(function( result ){
                             alert( result );
                         }).catch(function( error ){
@@ -232,6 +231,7 @@ operationStatusInit() {
                             op.monitoring();
                         });
                     } else {
+                        $button.prop('disabled', false );
                         fn.contentLoadingEnd();
                         op.monitoring();
                     }
@@ -249,6 +249,7 @@ operationStatusInit() {
                               op.monitoring();
                         });
                     } else {
+                        $button.prop('disabled', false );
                         fn.contentLoadingEnd();
                         op.monitoring();
                     }

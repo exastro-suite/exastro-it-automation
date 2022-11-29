@@ -477,6 +477,7 @@ getMessage = ( function() {
         'FTE05034' : "virtualenv",
         'FTE05035' : "Ansible Automation Controller利用情報",
         'FTE05036' : "実行環境",
+        'FTE05037' : "予約を取り消してよろしいですか？",
         
         // UI共通
         'FTE10001': 'メインメニュー',

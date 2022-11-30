@@ -902,11 +902,8 @@ class SubValueAutoReg():
         ina_vars_ass_list = {}
         ina_array_vars_ass_list = {}
 
-        continue_flg = 0
         idx = 0
         for table_name, sql in in_tableNameToSqlList.items():
-            if continue_flg == 1:
-                continue
 
             # トレースメッセージ
             traceMsg = g.appmsg.get_api_message("MSG-10806", [in_tableNameToMenuIdList[table_name]])
@@ -965,16 +962,10 @@ class SubValueAutoReg():
                 host_id = row['HOST_ID']
 
                 # 代入値自動登録設定に登録されている変数に対応する具体値を取得する
-                for col_name, col_val in row.items():
-                    # パラメータシート側の項番取得
-                    if AnscConst.DF_ITA_LOCAL_PKEY == col_name:
-                        col_row_id = col_val
+                # パラメータシート側の項番取得
+                col_row_id = row['__ITA_LOCAL_COLUMN_4__']
 
-                # 具体値カラム以外を除外
-                search_list = [AnscConst.DF_ITA_LOCAL_OPERATION_CNT, AnscConst.DF_ITA_LOCAL_HOST_CNT, AnscConst.DF_ITA_LOCAL_DUP_CHECK_ITEM, "OPERATION_ID", "HOST_ID", AnscConst.DF_ITA_LOCAL_PKEY]
-                if col_name in search_list:
-                    continue_flg = 1
-                    continue
+                col_name = 'DATA_JSON'  # 2系からデータの持ち方変わった
 
                 # 再度カラムをチェック
                 if table_name in in_tabColNameToValAssRowList:
@@ -1035,13 +1026,13 @@ class SubValueAutoReg():
                                 for ope_data in ope_data_list:
                                     ope_name = ope_data['OPERATION_NAME']
                                 mode = "inner"
-                                filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]},"discard": {"LIST": ["0"]}}
+                                filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]}, "discard": {"LIST": ["0"]}}
                                 status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
                                 parameter = tmp_result[0]['parameter']
 
                                 # 項目なしは対象外
                                 if col_data['COL_GROUP_ID'] is None:
-                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,'OPERATION_ID': operation_id, 'MOVEMENT_ID': col_data['MOVEMENT_ID'], 'SYSTEM_ID': host_id, 'STATUS': 'skip'}
+                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name, 'OPERATION_ID': operation_id, 'MOVEMENT_ID': col_data['MOVEMENT_ID'], 'SYSTEM_ID': host_id, 'STATUS': 'skip'}
                                     idx += 1
                                     continue
                                 else:

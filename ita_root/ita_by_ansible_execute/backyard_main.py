@@ -16,6 +16,7 @@ import subprocess
 import time
 import re
 import os
+from datetime import datetime
 
 from flask import g
 from common_libs.common.dbconnect import DBConnectWs
@@ -231,6 +232,14 @@ def get_running_process(wsDb):
     return records
 
 
+def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
+    dt = datetime.now().strftime(format)
+    if type == 'str':
+        return '{}'.format(dt)
+    else:
+        return dt
+
+
 def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organization_id, workspace_id):
     """
     未実行（実行待ち）の作業を実行
@@ -240,12 +249,11 @@ def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organizati
         err_msg
     """
     global ansc_const
-
     condition = """WHERE `DISUSE_FLAG`=0 AND (
         ( `TIME_BOOK` IS NULL AND `STATUS_ID` = %s ) OR
-        ( `TIME_BOOK` <= NOW(6) AND `STATUS_ID` = %s )
+        ( `TIME_BOOK` <= %s AND `STATUS_ID` = %s )
     ) ORDER BY TIME_REGISTER ASC"""
-    records = wsDb.table_select('V_ANSC_EXEC_STS_INST', condition, [ansc_const.NOT_YET, ansc_const.RESERVE])
+    records = wsDb.table_select('V_ANSC_EXEC_STS_INST', condition, [ansc_const.NOT_YET, get_now_datetime(), ansc_const.RESERVE])
 
     # 処理対象レコードが0件の場合は処理終了
     if len(records) == 0:

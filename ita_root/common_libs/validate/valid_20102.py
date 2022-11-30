@@ -13,7 +13,7 @@
 from flask import g
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
-from common_libs.ansible_driver.functions.util import getPasswordColumnVaule
+from common_libs.ansible_driver.functions.util import getSpecialColumnVaule
 
 def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
@@ -62,7 +62,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             str_org_name = None
 
         # PasswordColumn
-        str_token = getPasswordColumnVaule("authentication_token", option)
+        str_token = getSpecialColumnVaule("authentication_token", option)
 
     if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
         pass

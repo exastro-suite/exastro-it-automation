@@ -48,6 +48,7 @@ from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.Ansible
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiJobs import AnsibleTowerRestApiJobs
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath, getInputDataTempDir, getDataRelayStorageDir, get_AnsibleDriverTmpPath, get_AnsibleDriverShellPath, getAnsibleExecutDirPath, getAACListSSHPrivateKeyUploadDirPath, getAnsibleConst
+from common_libs.ansible_driver.functions.util import getDeviceListSSHPrivateKeyUploadDirPath
 
 
 class ExecuteDirector():
@@ -1082,7 +1083,7 @@ class ExecuteDirector():
             sshPrivateKey = ""
             if hostInfo['LOGIN_AUTH_TYPE'] in [AnscConst.DF_LOGIN_AUTH_TYPE_KEY, AnscConst.DF_LOGIN_AUTH_TYPE_KEY_PP_USE]:
                 if 'SSH_KEY_FILE' in hostInfo and hostInfo['SSH_KEY_FILE']:
-                    sshPrivateKey = self.getDeviceListSshKeyFileContent(hostInfo['SYSTEM_ID'], hostInfo['CONN_SSH_KEY_FILE'])
+                    sshPrivateKey = self.getDeviceListSshKeyFileContent(hostInfo['SYSTEM_ID'], hostInfo['SSH_KEY_FILE'])
                     # ky_encrptのスクランブルを復号
                     sshPrivateKey = ky_decrypt(sshPrivateKey)
 

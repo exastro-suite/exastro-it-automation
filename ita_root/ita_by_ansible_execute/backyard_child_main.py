@@ -196,7 +196,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     # 一時的に呼ばないようにパッチ
     sub_value_auto_reg = SubValueAutoReg()
     try:
-        sub_value_auto_reg.GetDataFromParameterSheet("1", execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
+        sub_value_auto_reg.get_data_from_parameter_sheet(execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
     except ValidationException as e:
         raise ValidationException(e)
 

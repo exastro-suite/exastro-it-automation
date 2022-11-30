@@ -12,8 +12,6 @@
 # limitations under the License.
 #
 from flask import g
-import json
-import os
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
@@ -104,8 +102,7 @@ def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_d
     g.applogger.debug("[Trace] Call util.extract_variable_for_execute()")
 
     sub_value_auto_reg = SubValueAutoReg()
-    exec_type = '2'
-    _, template_list, host_list = sub_value_auto_reg.GetDataFromParameterSheet(exec_type, WS_DB=ws_db)
+    _, template_list, host_list = sub_value_auto_reg.get_data_from_all_parameter_sheet(WS_DB=ws_db)
     # template_list = { MovementID: { TPF変数名: 0 }, … }
     # host_list = { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 

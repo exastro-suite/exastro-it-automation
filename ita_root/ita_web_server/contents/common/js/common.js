@@ -2367,6 +2367,10 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
         } else {
             modalInstance[ modalId ].btnFn = funcs;
             modalInstance[ modalId ].show();
+            
+            // 選択しているItemをセット
+            modalInstance[ modalId ].$.dbody.find('.selectId').text( executeConfig.selectId );
+            modalInstance[ modalId ].$.dbody.find('.selectName').text( executeConfig.selectName );
         }
     });
 },

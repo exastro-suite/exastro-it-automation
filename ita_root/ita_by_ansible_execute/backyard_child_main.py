@@ -21,7 +21,6 @@ import yaml
 import glob
 import inspect
 import copy
-import traceback
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException, ValidationException
@@ -92,7 +91,7 @@ def backyard_child_main(organization_id, workspace_id):
             # 正常終了
             g.applogger.info(g.appmsg.get_log_message("MSG-10721", [execution_no]))
         else:
-            if len(result) == 2:            
+            if len(result) == 2:
                 log_err("main_logic:" + str(result[1]))
             g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
     except AppException as e:
@@ -106,7 +105,7 @@ def backyard_child_main(organization_id, workspace_id):
     except ValidationException as e:
         # 例外ログ生成
         validation_exception(e)
-        
+
         validation_exception_driver_log(e, driver_error_log_file)
 
         update_status_error(wsDb, execution_no)
@@ -121,15 +120,16 @@ def backyard_child_main(organization_id, workspace_id):
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise Exception(e)
 
+
 def update_status_error(wsDb: DBConnectWs, execution_no):
     """
     異常終了と判定した場合のステータス更新
-    
+
     Arguments:
         wsDb: DBConnectWs
         execution_no: 作業実行番号
     Returns:
-        
+
     """
     timestamp = get_timestamp()
     wsDb.db_transaction_start()
@@ -148,7 +148,7 @@ def update_status_error(wsDb: DBConnectWs, execution_no):
 def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     """
     main logic
-    
+
     Arguments:
         wsDb: DBConnectWs
         execution_no: 作業実行番号
@@ -188,10 +188,10 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     # 一時的に呼ばないようにパッチ
     sub_value_auto_reg = SubValueAutoReg()
     try:
-        sub_value_auto_reg.GetDataFromParameterSheet("1", execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
+        sub_value_auto_reg.get_data_from_parameter_sheet(execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no, wsDb)
     except ValidationException as e:
         raise ValidationException(e)
-    
+
     # 実行モードが「パラメータ確認」の場合は終了
     if run_mode == ansc_const.CHK_PARA:
         timestamp = get_timestamp()
@@ -265,7 +265,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
         # ステータスが更新されたか判定
         if db_update_need is True:
-            # 処理対象の作業インスタンスのステータス更新           
+            # 処理対象の作業インスタンスのステータス更新
             wsDb.db_transaction_start()
             if clone_execute_data['FILE_RESULT']:
                 zip_tmp_save_path = get_AnsibleDriverTmpPath() + "/" + clone_execute_data['FILE_RESULT']
@@ -292,6 +292,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     g.applogger.info(g.appmsg.get_log_message("MSG-10738", [execution_no]))
 
     return True,
+
 
 def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id):
     tower_host_list = {}
@@ -454,7 +455,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 
             AnsibleTowerExecution(
                 driver_id,
-                ansc_const.DF_DELETERESOURCE_FUNCTION, 
+                ansc_const.DF_DELETERESOURCE_FUNCTION,
                 ans_if_info,
                 [],
                 execute_data,
@@ -622,7 +623,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
         limit_unixtime = starttime_unixtime + (time_limit * 60)
         # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
         now_unixtime = time.time()
-        
+
         # 制限時刻と現在時刻を比較
         if limit_unixtime < now_unixtime:
             delay_flag = 1
@@ -861,9 +862,9 @@ def getAnsiblePlaybookOptionParameter(wsDb, option_parameter):
                     if re.match(key_string, chk_param_string):
                         hit = True
                         break
-        
+
         if hit is False:
-            err_msg_arr.append(g.appmsg.get_log_message("MSG-10634", [chk_param_string.strip()]));
+            err_msg_arr.append(g.appmsg.get_log_message("MSG-10634", [chk_param_string.strip()]))
 
     if len(err_msg_arr) != 0:
         # err_msg
@@ -914,10 +915,10 @@ def getAnsiblePlaybookOptionParameter(wsDb, option_parameter):
                             break
                         j = j + 1
                     i = i + 1
-                    
+
             if retBool is False:
                 res_retBool = False
-            
+
             # 除外リストの初期化
             excist_list = []
 
@@ -951,10 +952,10 @@ def getAnsiblePlaybookOptionParameter(wsDb, option_parameter):
                             break
                         j = j + 1
                     i = i + 1
-                    
+
             if retBool is False:
                 res_retBool = False
-            
+
         # KEY SHORTのチェック
         k = 0
         if len(key_short_chk) >= 2:
@@ -1052,6 +1053,7 @@ def getJobTemplateProperty(wsDb):
 
     return res
 
+
 def makeJobTemplateProperty(key_string, property_type, property_name, param_arr, err_msg_arr, excist_list, tag_skip_value_key, verbose_cnt):
     res_retBool = True
 
@@ -1111,6 +1113,7 @@ def makeJobTemplateProperty(key_string, property_type, property_name, param_arr,
 
     return res_retBool, err_msg_arr, excist_list, tag_skip_value_key, verbose_cnt
 
+
 def makeJobTemplatePropertyParameterAry(key_string, property_type, property_name, JobTemplatePropertyParameterAry, param_arr, verbose_cnt):
     retBool = True
 
@@ -1152,7 +1155,7 @@ def makeExtraVarsParameter(ext_var_string):
         return True
     except json.JSONDecodeError:
         pass
-    
+
     # YAML形式のチェック
     try:
         yaml.safe_load(ext_var_string)
@@ -1161,6 +1164,7 @@ def makeExtraVarsParameter(ext_var_string):
         pass
 
     return False
+
 
 def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
     ########################################

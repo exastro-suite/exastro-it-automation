@@ -3674,7 +3674,7 @@ const errorFormat = function( error ) {
     let errMessage = "";
     
     const errorRow = function( m ){
-        return `<div class="error-log-row">${m}</div>`
+        return `<div class="error-log-row">${textEntities(m)}</div>`
     };
     
     try {

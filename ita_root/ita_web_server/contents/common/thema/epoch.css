@@ -1,0 +1,21 @@
+@charset "utf-8";
+/* CSS Document */
+
+:root {
+/* Header color */
+--headerColor: #1F8C78;
+
+/* Main color */
+--mainColor100:#1F8C78;--mainColor95:#2A927F;--mainColor90:#359886;--mainColor85:#419D8C;--mainColor80:#4CA393;--mainColor75:#57A99A;--mainColor70:#62AFA1;--mainColor65:#6DB4A7;--mainColor60:#79BAAE;--mainColor55:#84C0B5;--mainColor50:#8FC6BC;--mainColor45:#9ACBC2;--mainColor40:#A5D1C9;--mainColor35:#B1D7D0;--mainColor30:#BCDDD7;--mainColor25:#C7E2DD;--mainColor20:#D2E8E4;--mainColor15:#DDEEEB;--mainColor10:#E9F4F2;--mainColor5:#F4F9F8;--mainColor0:#FFFFFF;
+
+/* Accent color */ 
+--accentColor100:#F7931E;--accentColor95:#F79829;--accentColor90:#F89E35;--accentColor85:#F8A340;--accentColor80:#F9A94B;--accentColor75:#F9AE56;--accentColor70:#F9B362;--accentColor65:#FAB96D;--accentColor60:#FABE78;--accentColor55:#FBC483;--accentColor50:#FBC98F;--accentColor45:#FBCE9A;--accentColor40:#FCD4A5;--accentColor35:#FCD9B0;--accentColor30:#FDDFBC;--accentColor25:#FDE4C7;--accentColor20:#FDE9D2;--accentColor15:#FEEFDD;--accentColor10:#FEF4E9;--accentColor5:#FFFAF4;--accentColor0:#FFFFFF;
+
+/* Table row color */
+    --rowColor: #FFF;
+    --rowEvenColor: #F2F8F7;
+    --rowHeadColor: #F2F8F7;
+    --rowHeadEvenColor: #E4F1EF;
+    --rowHoverColor: #E4F1EF;
+    --rowHoverHeadColor: #E0EFEC;
+}

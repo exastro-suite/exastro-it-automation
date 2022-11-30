@@ -15,21 +15,15 @@
 代入値自動登録とパラメータシートを抜くmodule
 """
 
-import json
 import os
-import subprocess
 import inspect
 import hashlib
-import re
 
 from flask import g
-from pathlib import Path
-from pprint import pprint
 
-from common_libs.common import *
-from common_libs.loadtable import *
-from common_libs.common.exception import *
-from .AnsibleMakeMessage import AnsibleMakeMessage
+from common_libs.common import *  # noqa F403
+from common_libs.loadtable import *  # noqa F403
+from common_libs.common.exception import *  # noqa F403
 from .AnscConstClass import AnscConst
 from .WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 
@@ -84,12 +78,13 @@ arrayValueTmplOfPhoLnk = {
     "LAST_UPDATE_USER": ""
 }
 
+
 class SubValueAutoReg():
     """
     代入値自動登録とパラメータシートを抜くclass
     """
 
-    def GetDataFromParameterSheet(self, exec_type, operation_id="", movement_id="", execution_no="", WS_DB=None):
+    def get_data_from_parameter_sheet(self, operation_id="", movement_id="", execution_no="", WS_DB=None):
         """
         代入値自動登録とパラメータシートを抜く
         """
@@ -114,7 +109,7 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-        ret = self.readValAssign(movement_id, WS_DB)
+        ret = self.read_val_assign(WS_DB, movement_id)
 
         if ret[0] == 0:
             error_flag = 1
@@ -140,24 +135,6 @@ class SubValueAutoReg():
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]
-
-        # 処理区分が変数抜出処理
-        if exec_type == '2':
-
-            template_list = {} # { MovementID: { TPF変数名: 0 }, … }
-            host_list = {} # { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
-
-            var_extractor = WrappedStringReplaceAdmin()
-
-            # 一般変数・複数具体値変数を紐付けている紐付メニューの具体値からTPF変数を抽出する
-            for varsAssRecord in lv_varsAssList.values():
-                template_list, host_list = self.extract_tpl_vars(var_extractor, varsAssRecord, template_list, host_list)
-
-            # 多次元変数を紐付けている紐付メニューの具体値からTPF変数を抽出する
-            for varsAssRecord in lv_arrayVarsAssList.values():
-                template_list, host_list = self.extract_tpl_vars(var_extractor, varsAssRecord, template_list, host_list)
-
-            return True, template_list, host_list
 
         # トランザクション開始
         traceMsg = g.appmsg.get_api_message("MSG-10785")
@@ -276,6 +253,73 @@ class SubValueAutoReg():
         WS_DB.db_transaction_end(True)
 
         return True
+
+    def get_data_from_all_parameter_sheet(self, WS_DB=None):
+        """
+        代入値自動登録とパラメータシートを抜く
+        """
+
+        global g_null_data_handling_def
+        global warning_flag
+        global error_flag
+
+        # インターフェース情報からNULLデータを代入値管理に登録するかのデフォルト値を取得する。
+        ret = self.getIFInfoDB(WS_DB)
+
+        if ret[0] == 0:
+            error_flag = 1
+            raise ValidationException(ret[2])
+
+        lv_if_info = ret[1]
+        g_null_data_handling_def = lv_if_info["NULL_DATA_HANDLING_FLG"]
+
+        # 代入値自動登録設定からカラム毎の変数の情報を取得
+        # トレースメッセージ
+        traceMsg = g.appmsg.get_api_message("MSG-10804")
+        frame = inspect.currentframe().f_back
+        g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
+
+        ret = self.read_val_assign(WS_DB)
+
+        if ret[0] == 0:
+            error_flag = 1
+            raise ValidationException("MSG-10353")
+
+        lv_tableNameToMenuIdList = ret[1]
+        lv_tabColNameToValAssRowList = ret[2]
+        lv_tableNameToPKeyNameList = ret[3]
+        lv_tableNameToMenuNameRestList = ret[4]
+
+        # 紐付メニューへのSELECT文を生成する。
+        ret = self.createQuerySelectCMDB(lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToPKeyNameList)
+        # 代入値紐付メニュー毎のSELECT文配列
+        lv_tableNameToSqlList = ret
+
+        # 紐付メニューから具体値を取得する。
+        traceMsg = g.appmsg.get_api_message("MSG-10805")
+        frame = inspect.currentframe().f_back
+        g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
+
+        warning_flag = 0
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, WS_DB)
+        lv_varsAssList = ret[0]
+        lv_arrayVarsAssList = ret[1]
+        warning_flag = ret[2]
+
+        template_list = {}  # { MovementID: { TPF変数名: 0 }, … }
+        host_list = {}  # { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
+
+        var_extractor = WrappedStringReplaceAdmin()
+
+        # 一般変数・複数具体値変数を紐付けている紐付メニューの具体値からTPF変数を抽出する
+        for varsAssRecord in lv_varsAssList.values():
+            template_list, host_list = self.extract_tpl_vars(var_extractor, varsAssRecord, template_list, host_list)
+
+        # 多次元変数を紐付けている紐付メニューの具体値からTPF変数を抽出する
+        for varsAssRecord in lv_arrayVarsAssList.values():
+            template_list, host_list = self.extract_tpl_vars(var_extractor, varsAssRecord, template_list, host_list)
+
+        return True, template_list, host_list
 
     def getAnsible_RolePackage_file(self, in_dir, in_pkey, in_filename):
         intNumPadding = 10
@@ -444,7 +488,6 @@ class SubValueAutoReg():
             make_sql += col_sql + " \n "
             make_sql += " FROM `" + table_name + "` TBL_A \n "
             make_sql += " WHERE DISUSE_FLAG = '0' \n "
-            make_sql += " AND OPERATION_ID = %s \n "
 
             # メニューテーブルのSELECT SQL文退避
             inout_tableNameToSqlList[table_name] = make_sql
@@ -870,7 +913,11 @@ class SubValueAutoReg():
             frame = inspect.currentframe().f_back
             g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-            data_list = WS_DB.sql_execute(sql, [AnscConst.DF_ITA_LOCAL_HOST_CNT, AnscConst.DF_ITA_LOCAL_PKEY, operation_id])
+            if operation_id is not None:
+                sql += " AND OPERATION_ID = %s \n "
+                data_list = WS_DB.sql_execute(sql, [AnscConst.DF_ITA_LOCAL_HOST_CNT, AnscConst.DF_ITA_LOCAL_PKEY, operation_id])
+            else:
+                data_list = WS_DB.sql_execute(sql, [AnscConst.DF_ITA_LOCAL_HOST_CNT, AnscConst.DF_ITA_LOCAL_PKEY])
 
             # FETCH行数を取得
             if len(data_list) == 0:
@@ -1587,7 +1634,7 @@ class SubValueAutoReg():
 
         return ina_vars_ass_list, ina_vars_ass_chk_list, ina_array_vars_ass_list, ina_array_vars_ass_chk_list
 
-    def readValAssign(self, movement_id, WS_DB):
+    def read_val_assign(self, WS_DB, movement_id = None):
         """
         代入値自動登録設定からカラム情報を取得する。
 
@@ -1797,12 +1844,16 @@ class SubValueAutoReg():
         sql += "          (TBL_A.MVMT_VAR_LINK_ID    = TBL_E.MVMT_VAR_LINK_ID)    \n"
         sql += " WHERE                                                            \n"
         sql += "   TBL_A.DISUSE_FLAG='0'                                          \n"
-        sql += "   AND TBL_A.MOVEMENT_ID = %s                                     \n"
+        if movement_id is not None:
+            sql += "   AND TBL_A.MOVEMENT_ID = %s                                     \n"
         sql += "   AND TBL_C.DISUSE_FLAG='0'                                      \n"
         sql += "   AND TBL_B.AUTOREG_HIDE_ITEM = '0'                              \n"
         sql += " ORDER BY TBL_A.COLUMN_ID                                         \n"
 
-        data_list = WS_DB.sql_execute(sql, [movement_id])
+        if movement_id is not None:
+            data_list = WS_DB.sql_execute(sql, [movement_id])
+        else:
+            data_list = WS_DB.sql_execute(sql)
 
         inout_tableNameToMenuIdList = {}
         inout_tabColNameToValAssRowList = {}

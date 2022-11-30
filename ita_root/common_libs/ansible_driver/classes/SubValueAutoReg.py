@@ -223,11 +223,6 @@ class SubValueAutoReg():
 
         WS_DB.db_transaction_start()
 
-        # 対象ホスト管理のデータを全件読込
-        lv_PhoLinkRecodes = {}
-        ret = self.getPhoLinkRecodes(WS_DB)
-        lv_PhoLinkRecodes = ret[1]
-
         # 代入値管理で登録したオペ+作業パターン+ホストが作業対象ホストに登録されているか判定し、未登録の場合は登録する
         # トレースメッセージ
         traceMsg = g.appmsg.get_api_message("MSG-10810")
@@ -238,15 +233,13 @@ class SubValueAutoReg():
             for ptn_id, host_list in ptn_list.items():
                 for host_id, access_auth in host_list.items():
                     lv_phoLinkData = {'OPERATION_ID': ope_id, 'MOVEMENT_ID': ptn_id, 'SYSTEM_ID': host_id}
-                    ret = self.addStg1PhoLink(lv_phoLinkData, lv_PhoLinkRecodes, execution_no, WS_DB)
-                    lv_PhoLinkRecodes = ret[1]
+                    ret = self.addStg1PhoLink(lv_phoLinkData, execution_no, WS_DB)
 
-                    if ret[0] == 0:
+                    if ret == 0:
                         error_flag = 1
                         raise ValidationException("MSG-10373")
 
         del lv_phoLinkList
-        del lv_PhoLinkRecodes
 
         # コミット(レコードロックを解除)
         # トランザクション終了
@@ -328,45 +321,16 @@ class SubValueAutoReg():
         file = in_dir + '/' + in_pkey.rjust(intNumPadding, '0') + '/' + in_filename
         return file
 
-    def getPhoLinkRecodes(self, WS_DB):
-        """
-        作業対象ホストの全データ読込
-
-        Arguments:
-            WS_DB: WorkspaceDBインスタンス
-
-        Returns:
-            is success:(bool)
-            in_PhoLinkRecodes: 作業対象ホストの全データ配列
-        """
-        in_PhoLinkRecodes = {}
-
-        where = "WHERE PHO_LINK_ID <> '0'"
-        WS_DB.table_lock(["T_ANSR_TGT_HOST"])
-        data_list = WS_DB.table_select("T_ANSR_TGT_HOST", where)
-
-        for row in data_list:
-            key = row["OPERATION_ID"] + "_"
-            key += row["MOVEMENT_ID"] + "_"
-            key += row["SYSTEM_ID"] + "_"
-            key += row["DISUSE_FLAG"]
-
-            in_PhoLinkRecodes[key] = row
-
-        return True, in_PhoLinkRecodes
-
-    def addStg1PhoLink(self, in_phoLinkData, in_PhoLinkRecodes, execution_no, WS_DB):
+    def addStg1PhoLink(self, in_phoLinkData, execution_no, WS_DB):
         """
         作業対象ホストの廃止レコードを復活または新規レコード追加
 
         Arguments:
             in_phoLinkData: 作業対象ホスト更新情報配列
-            in_PhoLinkRecodes: 作業対象ホストの全データ配列
             WS_DB: WorkspaceDBインスタンス
 
         Returns:
             is success:(bool)
-            in_PhoLinkRecodes: 作業対象ホストの全データ配列
         """
         global strCurTablePhoLnk
         global strJnlTablePhoLnk
@@ -422,7 +386,7 @@ class SubValueAutoReg():
         if result is False:
             raise AppException("499-00701", [retAry], [retAry])
 
-        return True, in_PhoLinkRecodes
+        return True
 
     def createQuerySelectCMDB(self, in_tableNameToMenuIdList, in_tabColNameToValAssRowList, in_tableNameToPKeyNameList):
         """

@@ -63,6 +63,9 @@ constructor() {
 init() {
     const ui = this;
     
+    // UI設定読み込み
+    fn.setUiSetting();
+    
     // UIモード
     if ( window.parent === window ) {
         ui.$.container.addClass('windowMode');
@@ -84,7 +87,7 @@ init() {
         
         if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel && ui.storageUser ) {
             ui.lang = ui.storageLang;
-            fn.loadAssets({type:'script', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
+            fn.loadAssets({type:'js', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
                 ui.rest.menuGroups = ui.storageMenuGroups;
                 ui.rest.panel = ui.storagePanel;
                 ui.rest.user = ui.storageUser;
@@ -130,7 +133,7 @@ setUi() {
         ui.lang = tmpLang;
         
         if ( $lang.length ) $('#lang').remove();
-        fn.loadAssets({type:'script', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
+        fn.loadAssets({type:'js', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
             set();
         });
     } else {
@@ -221,7 +224,7 @@ setSideMenuEvents() {
             + `<div class="menuHeader"></div>`
             + `<div class="menuBody">`
                 +`<div class="menuBlock">`
-                    + ui.sideMenuBody( list.menu_group_name, null, ui.menuSub( list.menus ), ui.rest.panel[ id ] )
+                    + ui.sideMenuBody( list.menu_group_name, null, ui.menuSub( list.menus ), ui.rest.panel[ id ], false )
                 + `</div>`
             + `</div></div>`);
             
@@ -273,6 +276,29 @@ setSideMenuEvents() {
                 $cloneLink.remove();
             });
         }
+    });
+    
+    // メニュー検索
+    ui.$.menu.on('input', '.menuSearchText', function(){
+        const $input = $( this ),
+              $menuLink = $input.closest('.menuBlock').find('.menuLink'),
+              val = $input.val().toLowerCase();
+        
+        $menuLink.each(function(){
+            const $link = $( this ),
+                  text = $link.text().toLowerCase();
+            if ( text.indexOf( val ) === -1 ) {
+                $link.hide();
+            } else {
+                $link.show();
+            } 
+        }); 
+    });
+    
+    // メニュー検索クリア
+    ui.$.menu.on('click', '.menuSearchClear', function(){
+        const $input = $( this ).prev('.menuSearchText');
+        $input.val('').trigger('input');
     });
 }
 /*
@@ -475,7 +501,7 @@ getPanelImage( title, icon, panel ) {
    サイドメニュー各HTML
 ##################################################
 */
-sideMenuBody( title, icon, list, panel ) {
+sideMenuBody( title, icon, list, panel, searchFlag = true ) {
     const ui = this;
     
     const iconImage = ui.getPanelImage( title, icon, panel );
@@ -494,7 +520,7 @@ sideMenuBody( title, icon, list, panel ) {
             ${list}
         </ul>
     </nav>
-    ${ui.serachBlock()}`;
+    ${( searchFlag )? ui.serachBlock(): ''}`;
 }
 /*
 ##################################################
@@ -666,9 +692,11 @@ menuHistory(){
 */
 serachBlock() {
     return `
-    <!--<div class="menuSearch">
+    <div class="menuSearch">
+        <span class="icon icon-search"></span>
         <input class="menuSearchText" data-search="menuMain" placeholder="${getMessage.FTE10007}">
-    </div>-->`;
+        <button class="menuSearchClear"><span class="icon icon-cross"></span></button>
+    </div>`;
 }
 /*
 ##################################################
@@ -874,7 +902,7 @@ headerMenu() {
         window.location.href = fn.getWorkspaceChangeUrl( workspaceId );        
     });
     
-    // ログアウト
+    // ボタン各種
     mn.$.header.find('.userInfoMenuButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
@@ -882,16 +910,26 @@ headerMenu() {
             case 'version':
                 $button.prop('disabled', true );
                 fn.fetch('/version/').then(function( result ){
-                    mn.checkVersion( result ).then(function(){
-                        
+                    mn.checkVersion( result ).then(function(){        
                         $button.prop('disabled', false );
                     });
                 });
             break;
-            case 'logout':
+            case 'setting':
+                $button.prop('disabled', true );
+                fn.uiSetting().then(function(){
+                    $button.prop('disabled', false );
+                });
+            break;
+            case 'platform': {
+                const workspaceListUrl = `/${mn.params.organizationId}/platform/`
+                // window.open( workspaceListUrl );
+                document.location.href = workspaceListUrl;
+            } break;
+            case 'logout': {
                 const url = document.location.href;
                 CommonAuth.logout(url);
-            break;
+            } break;
         }
     });
 }
@@ -935,6 +973,7 @@ userInfo() {
                 <div class="userInfoId">${id}</div>
             </div>
         </div>
+        <!-- ワークスペース -->
         <div class="userInfoBlock userInfoWorkspace">
             <div class="userInfoTitle">${fn.html.icon('workspace')} ${getMessage.FTE10005}</div>
             <div class="userInfoBody">
@@ -943,6 +982,7 @@ userInfo() {
                 </ul>
             </div>
         </div>
+        <!-- ロール -->
         <div class="userInfoBlock userInfoRole">
             <div class="userInfoTitle">${fn.html.icon('role')} ${getMessage.FTE10006}</div>
             <div class="userInfoBody">
@@ -951,11 +991,20 @@ userInfo() {
                 </ul>
             </div>
         </div>
+        <!-- 設定など -->
         <div class="userInfoBlock userInfoMenu">
             <div class="userInfoBody">
                 <ul class="userInfoMenuList">
                     <li class="userInfoMenuItem">
+                        ${fn.html.button( fn.html.icon('gear') + getMessage.FTE10061, ['userInfoMenuButton', 'itaButton'], { type: 'setting', action: 'default'})}
+                    </li>
+                    <li class="userInfoMenuItem">
                         ${fn.html.button( fn.html.icon('note') + getMessage.FTE10033, ['userInfoMenuButton', 'itaButton'], { type: 'version', action: 'default'})}
+                    </li>
+                </ul>
+                <ul class="userInfoMenuList">
+                    <li class="userInfoMenuItem">
+                        ${fn.html.button( fn.html.icon('menuList') + getMessage.FTE10062, ['userInfoMenuButton', 'itaButton'], { type: 'platform', action: 'positive'})}
                     </li>
                     <li class="userInfoMenuItem">
                         ${fn.html.button( fn.html.icon('logout') + getMessage.FTE10034, ['userInfoMenuButton', 'itaButton'], { type: 'logout', action: 'positive'})}
@@ -965,6 +1014,7 @@ userInfo() {
         </div>
     </div>`;
 }
+
 /*
 ##################################################
    バージョン確認

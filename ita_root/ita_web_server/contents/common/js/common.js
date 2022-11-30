@@ -35,7 +35,9 @@ const fn = ( function() {
     const modalInstance = {},
           operationInstance = {},
           conductorInstance = {};
-    let messageInstance = null;
+          
+    let messageInstance = null,
+        uiSettingInstance = null;
     
     // Contentローディングフラグ
     let contentLoadingFlag = false;
@@ -124,7 +126,7 @@ loadAssets: function( assets ){
         return new Promise(function( resolve, reject ){
             type = ( type === 'css')? 'link': 'script';
             
-            const body = document.body,
+            const body = document.getElementById('container'),
                   asset = document.createElement( type );
             
             switch ( type ) {
@@ -2606,6 +2608,122 @@ modalConductor: function( menu, mode, conductorId, option ) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+//  画面設定
+// 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+setUiSetting() {
+    const uiSettingData = cmn.storage.get('ui_setting');
+    if ( uiSettingData ) {
+        if ( uiSettingData.thema ) {
+            const $thema = $('#thema'),
+                  src = `/_/ita/thema/${uiSettingData.thema}.css`;
+            $thema.attr('href', src );
+        }
+    }
+},
+
+uiSetting() {
+    return new Promise(function( resolve ){
+        const funcs = {
+            ok: function(){
+                setUiSettingData();
+                uiSettingInstance.buttonPositiveDisabled( true );
+                uiSettingInstance.hide();
+                resolve();
+            },
+            cancel: function(){
+                uiSettingInstance.buttonPositiveDisabled( true );
+                uiSettingInstance.hide();
+                resolve('cancel');
+            }
+        };
+        const setUiSettingData = function() {
+            const uiSettingData = {};
+            uiSettingInstance.$.dbody.find('.input').each(function(){
+                const $input = $( this ),
+                      type = $input.attr('data-type'),
+                      value = $input.val();
+                uiSettingData[type] = value;
+            });
+            cmn.storage.set('ui_setting', uiSettingData );
+            cmn.setUiSetting();
+        };
+
+        if ( !uiSettingInstance ) {
+            const themaList = {
+                default: getMessage.FTE10065,
+                red: getMessage.FTE10066,
+                green: getMessage.FTE10067,
+                blue: getMessage.FTE10068,
+                orange: getMessage.FTE10069,
+                yellow: getMessage.FTE10070,
+                purple: getMessage.FTE10071,
+                brown: getMessage.FTE10072,
+                gray: getMessage.FTE10073,
+                cool: getMessage.FTE10074,
+                cute: getMessage.FTE10075,
+                natural: getMessage.FTE10076,
+                gorgeous: getMessage.FTE10077,
+                oase: getMessage.FTE10078,
+                epoch: getMessage.FTE10079,
+                darkmode: getMessage.FTE10080,
+            };
+            
+            const uiSettingData = cmn.storage.get('ui_setting'),
+                  thema = ( uiSettingData )? uiSettingData.thema: '';
+            
+            const select = [];
+            for ( const key in themaList ) {
+                const selected = ( thema === key )? ' selected': '';
+                select.push(`<option value="${key}"${selected}>${themaList[key]}</option>`);
+            }
+            
+            const html = `
+            <div class="commonSection">
+                <div class="commonTitle">${getMessage.FTE10063}</div>
+                <div class="commonBody">
+                    <table class="commonTable">
+                        <tbody class="commonTbody">
+                            <tr class="commonTr">
+                                <th class="commonTh">${getMessage.FTE10064}</th>
+                                <td class="commonTd commonTdInput"><select class="input select" data-type="thema">${select.join('')}</select></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+
+            const config = {
+                mode: 'modeless',
+                position: 'center',
+                header: {
+                    title: getMessage.FTE10061
+                },
+                footer: {
+                    button: {
+                        ok: { text: getMessage.FTE10038, action: 'positive', className: 'dialogPositive',  style: `width:200px`},
+                        cancel: { text: getMessage.FTE10043, action: 'normal'}
+                    }
+                }
+            };
+            uiSettingInstance = new Dialog( config, funcs );
+            
+            uiSettingInstance.open( html );
+            
+            uiSettingInstance.$.dbody.find('.input').on('change', function(){
+                uiSettingInstance.buttonPositiveDisabled( false );
+            });
+            
+        } else {
+            uiSettingInstance.btnFn = funcs;
+            uiSettingInstance.show();
+        }
+    });
+},
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 //   画面フルスクリーン
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2663,6 +2781,8 @@ fullScreen( elem ) {
     commonParams.dir = '/_/ita';
     if ( windowFlag ) {
         commonParams.path = cmn.getPathname();
+        commonParams.organizationId = organization_id;
+        commonParams.workspaceId = workspace_id;
     }
 
     return cmn;

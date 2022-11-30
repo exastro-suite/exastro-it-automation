@@ -26,6 +26,16 @@ blockquote:after,blockquote:before,
 q:after,q:before{content:'';content:none}
 table{border-collapse:collapse;border-spacing:0}
 img{max-width:100%;vertical-align: top;}
+
+/*
+##################################################
+   Cunstom properties
+##################################################
+*/
+:root {
+--headerColor:#002B62;--mainColor100:#002B62;--mainColor95:#0D366A;--mainColor90:#1A4072;--mainColor85:#264B7A;--mainColor80:#335581;--mainColor75:#406089;--mainColor70:#4D6B91;--mainColor65:#597599;--mainColor60:#6680A1;--mainColor55:#738AA9;--mainColor50:#7F95B1;--mainColor45:#8CA0B8;--mainColor40:#99AAC0;--mainColor35:#A6B5C8;--mainColor30:#B3BFD0;--mainColor25:#BFCAD8;--mainColor20:#CCD5E0;--mainColor15:#D9DFE7;--mainColor10:#E5EAEF;--mainColor5:#FFF;--accentColor100:#FFA500;--accentColor95:#FFAA0D;--accentColor90:#FFAE1A;--accentColor85:#FFB326;--accentColor80:#FFB733;--accentColor75:#FFBC40;--accentColor70:#FFC04D;--accentColor65:#FFA500;--accentColor60:#FFC559;--accentColor55:#FFCE73;--accentColor50:#FFD280;--accentColor45:#FFD78C;--accentColor40:#FFDB99;--accentColor35:#FFA500;--accentColor30:#FFE4B3;--accentColor25:#FFE9BF;--accentColor20:#FFEDCC;--accentColor15:#FFF2D9;--accentColor10:#FFF6E6;--accentColor5:#FFFBF2;--baseColor100:#F0F0F0;--black100:#1A1B1C;--black95:#252627;--black90:#313233;--black85:#3C3D3E;--black80:#484949;--black75:#535455;--black70:#5F5F60;--black65:#6A6B6B;--black60:#767677;--black55:#818282;--black50:#8D8D8E;--black45:#989899;--black40:#A3A4A4;--black35:#AFAFB0;--black30:#BABBBB;--black25:#C6C6C6;--black20:#D1D1D2;--black15:#DDD;--black10:#E8E8E8;--black5:#F4F4F4;--white100:#FFF;--buttonColor:#FF821E;--focusColor:#0070FF;--focusBackgroundColor:#E5F1FF;--rowColor:#FFF;--rowEvenColor:#F0F2F6;--rowHeadColor:#F0F2F6;--rowHeadEvenColor:#E0E6EC;--rowHoverColor:#E0E6EC;--rowHoverHeadColor:#DBE1E9;--rowDiscardColor:#D1D1D1;--rowDiscardHoverColor:#C7C7C7;--rowDiscardTextColor:#888;
+}
+
 /*
 ##################################################
    General
@@ -33,11 +43,15 @@ img{max-width:100%;vertical-align: top;}
 */
 
 .link:link,
-.link:visited {
+.link:visited,
+.tableViewDownload:link,
+.tableViewDownload:visited {
 	color: #005FD8;
 }
 .link:hover,
-.link:active {
+.link:active,
+.tableViewDownload:hover,
+.tableViewDownload:active {
 	color: #D87900;
 }
 
@@ -497,6 +511,9 @@ text-overflow: ellipsis;
 text-align: left;
 white-space: nowrap;
 }
+.tableEditSelectFile:hover > .inner {
+background-image: none;
+}
 /* Password*/
 .passwordColumn {
 text-align: center;
@@ -665,7 +682,7 @@ position: sticky;
 top: 0;
 z-index: 6;
 height: 48px;
-background-color: var(--mainColor100);
+background-color: var(--headerColor);
 border-bottom: 4px solid var(--accentColor100);
 }
 .containerBody {
@@ -842,22 +859,25 @@ display: flex;
 flex-direction: column;
 gap: 8px;
 padding: 8px;
+border-bottom: 1px solid rgba(0,0,0,.2);
 }
-.userInfoMenuItem {
+.userInfoMenuList:last-child {
+border-bottom: none;
 }
 .userInfoMenuButton {
 width: 100%;
-height: 48px;
-line-height: 48px;
+height: 32px;
+line-height: 31px;
 text-align: left;
+font-size: 13px;
 }
 .userInfoMenuButton > .inner {
-padding: 0 20px;
+padding: 0 16px;
 }
 .userInfoMenuButton .icon {
-margin-right: 16px;
-vertical-align: -5px;
-font-size: 24px;
+margin-right: 12px;
+vertical-align: -2px;
+font-size: 16px;
 opacity: .7;
 }
 
@@ -1220,6 +1240,7 @@ transform: rotate(180deg);
 }
 
 .menuSearch {
+position: relative;
 flex: 0 0 48px;
 display: flex;
 align-items: center;
@@ -1235,6 +1256,28 @@ border-radius: 16px;
 font-size: 11px;
 color: #EEE;
 outline: none;
+}
+.menuSearch > .icon-search {
+position: absolute;
+left: 20px; top: 50%;
+transform: translateY(-50%);
+font-size: 14px;
+color: #888;
+}
+.menuSearchClear {
+position: absolute;
+right: 12px; top: 10px;
+width: 28px; height: 28px;
+background-color: transparent;
+border: none;
+color: #CCC;
+cursor: pointer;
+font-size: 12px;
+outline: none;
+}
+.menuSearchClear:hover,
+.menuSearchClear:focus {
+color: #FFF;
 }
 .menuTitle {
 position: relative;
@@ -4241,6 +4284,9 @@ text-align: left;
 background-color: var(--white100);
 white-space: pre-wrap;
 word-break: break-all;
+}
+.commonTdInput {
+padding: 4px;
 }
 .commonMenuList {
 display: flex;

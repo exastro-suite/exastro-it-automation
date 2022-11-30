@@ -15,6 +15,7 @@
 from flask import g
 
 from common_libs.ansible_driver.classes.menu_required_check import AuthTypeParameterRequiredCheck
+from common_libs.ansible_driver.functions.util import getSpecialColumnVaule
 
 # ITAのメッセージの引き取り
 def external_valid_menu_before(objdbca, objtable, option):
@@ -74,38 +75,14 @@ def external_valid_menu_before(objdbca, objtable, option):
         else:
             str_auth_mode = None
         # パスワードの設定値取得
-        # PasswordColumnはデータの更新がないとoption["entry_parameter"]["parameter"]["password"]の設定は空になっているので
-        # パスワードが更新されているか判定
-        # 更新されていない場合は設定済みのパスワード(["current_parameter"]["parameter"]["password"])取得
-        if "password" in option["entry_parameter"]["parameter"]:
-            str_passwd = option["entry_parameter"]["parameter"]["password"]
-        else:
-            str_passwd = None
+        str_passwd = getSpecialColumnVaule("password", option)
 
-        if str_passwd is None:
-            str_passwd = option["current_parameter"]["parameter"]["password"]
         # パスフレーズの設定値取得
-        # PasswordColumnはデータの更新がないとoption["entry_parameter"]["parameter"]["passphrase"]の設定は空になっているので
-        # パスフレーズが更新されているか判定
-        # 更新されていない場合は設定済みのパスフレーズ(option["current_parameter"]["parameter"]["passphrase"])取得
-        if "passphrase" in option["entry_parameter"]["parameter"]:
-            str_passphrase = option["entry_parameter"]["parameter"]["passphrase"]
-        else:
-            str_passphrase = None
+        str_passphrase = getSpecialColumnVaule("passphrase", option)
 
-        if str_passphrase is None:
-            str_passphrase = option["current_parameter"]["parameter"]["passphrase"]
         # 公開鍵ファイルの設定値取得
-        # FileUploadColumnはファイルの更新がないと$arrayRegDataの設定は空になっているので
-        # ダウンロード済みのファイルが削除されていると$arrayRegData['del_flag_COL_IDSOP_xx']がonになる
-        # 更新されていない場合は設定済みのファイル名($arrayVariant['edit_target_row'])を取得
-        if "ssh_private_key_file" in option["entry_parameter"]["parameter"]:
-            str_ssh_key_file = option["entry_parameter"]["parameter"]["ssh_private_key_file"]
-        else:
-            str_ssh_key_file = None
+        str_ssh_key_file = getSpecialColumnVaule("ssh_private_key_file", option)
 
-        if str_ssh_key_file is None:
-            str_ssh_key_file = option["current_parameter"]["parameter"]["ssh_private_key_file"]
     elif option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
         host_name = option["current_parameter"]["parameter"]["host"]
 

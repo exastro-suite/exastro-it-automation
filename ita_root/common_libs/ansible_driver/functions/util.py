@@ -233,7 +233,7 @@ def getAnsibleConst(driver_id):
     return ansc_const
 
 
-def getPasswordColumnVaule(column_rest_name, option):
+def getSpecialColumnVaule(column_rest_name, option):
     """
       パスワードカラム入力値取得
       Arguments:

@@ -311,7 +311,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「ロール-メニュー紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20012", [target_menu_group_type])
             g.applogger.debug(debug_msg)
-            result, msg = _insert_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_role)
+            result, msg = _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_role)
             if not result:
                 raise Exception(msg)
 
@@ -347,7 +347,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「メニュー-カラム紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20015", [target_menu_group_type])
             g.applogger.debug(debug_msg)
-            result, msg = _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name)  # noqa: E501
+            result, msg = _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name)  # noqa: E501
             if not result:
                 raise Exception(msg)
 
@@ -581,9 +581,9 @@ def _update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
     return True, None, ret_data
 
 
-def _insert_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_role):
+def _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_role):
     """
-        「ロール-メニュー紐付管理」メニューのテーブルにレコードを追加する
+        「ロール-メニュー紐付管理」メニューのテーブルにレコードを追加もしくは復活する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             menu_uuid: 対象のメニュー（「メニュー管理」のレコード）のUUID
@@ -598,15 +598,27 @@ def _insert_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_role):
         if record_t_menu_role:
             for record in record_t_menu_role:
                 role_id = record.get('ROLE_ID')
-                data_list = {
-                    "MENU_ID": menu_uuid,
-                    "ROLE_ID": role_id,
-                    "PRIVILEGE": 1,
-                    "DISUSE_FLAG": "0",
-                    "LAST_UPDATE_USER": g.get('USER_ID')
-                }
-                primary_key_name = 'LINK_ID'
-                objdbca.table_insert(t_comn_role_menu_link, data_list, primary_key_name)
+                # 「ROLE_ID」「MENU_ID」で登録されているレコードを取得する
+                ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND ROLE_ID = %s', [menu_uuid, role_id])
+                if ret:
+                    link_id = ret[0].get('LINK_ID')
+                    data_list = {
+                        "LINK_ID": link_id,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_USER": g.get('USER_ID')
+                    }
+                    primary_key_name = 'LINK_ID'
+                    objdbca.table_update(t_comn_role_menu_link, data_list, primary_key_name)
+                else:
+                    data_list = {
+                        "MENU_ID": menu_uuid,
+                        "ROLE_ID": role_id,
+                        "PRIVILEGE": 1,
+                        "DISUSE_FLAG": "0",
+                        "LAST_UPDATE_USER": g.get('USER_ID')
+                    }
+                    primary_key_name = 'LINK_ID'
+                    objdbca.table_insert(t_comn_role_menu_link, data_list, primary_key_name)
 
     except Exception as msg:
         return False, msg
@@ -793,9 +805,11 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
     return True, None
 
 
-def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name):  # noqa: E501, C901
+def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name):  # noqa: E501, C901
     """
-        「メニュー-カラム紐付管理」メニューのテーブルにレコードを追加する
+        「メニュー-カラム紐付管理」メニューのテーブルに対し、「column_name_rest」を基準として以下の操作を行う
+        1: 同一の「column_name_rest」のレコードがあれば、そのレコードの更新を行う（事前の処理で廃止状態になっているため、復活したうえで更新する）。
+        2: 同一の「column_name_rest」のレコードがなければ、レコードの新規登録をする。
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             sheet_type: シートタイプ
@@ -820,7 +834,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
         disp_seq_num = 10
 
         # 「項番」用のレコードを登録
-        res_valid, msg = _check_column_validation(objdbca, menu_uuid, "uuid")
+        res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "uuid")
         if not res_valid:
             raise Exception(msg)
 
@@ -861,7 +875,11 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
             "LAST_UPDATE_USER": g.get('USER_ID')
         }
         primary_key_name = 'COLUMN_DEFINITION_ID'
-        objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+        if column_definition_id:
+            data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+            objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+        else:
+            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
         # 表示順序を加算
         disp_seq_num = int(disp_seq_num) + 10
@@ -869,7 +887,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
         # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」の場合のみ
         if sheet_type == "1":
             # 「ホスト名」用のレコードを作成
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, "host_name")
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "host_name")
             if not res_valid:
                 raise Exception(msg)
 
@@ -910,7 +928,11 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
@@ -925,7 +947,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
             operation_col_group_id = ret[0].get('COL_GROUP_ID')
 
             # 「オペレーション(日付:オペレーション名)」用のレコードを作成
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, "operation_name_select")
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "operation_name_select")
             if not res_valid:
                 raise Exception(msg)
 
@@ -966,13 +988,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
             # 「オペレーション名」用のレコードを作成
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, "operation_name_disp")
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "operation_name_disp")
             if not res_valid:
                 raise Exception(msg)
 
@@ -1013,13 +1039,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
             # 「オペレーション(基準日時)」用のレコードを作成
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, "base_datetime")
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "base_datetime")
             if not res_valid:
                 raise Exception(msg)
 
@@ -1060,13 +1090,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
             # 「オペレーション(実施予定日)」用のレコードを作成
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, "operation_date")
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "operation_date")
             if not res_valid:
                 raise Exception(msg)
 
@@ -1107,13 +1141,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
             # 「オペレーション(最終実行日時)」用のレコードを作成
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, "last_execute_timestamp")
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "last_execute_timestamp")
             if not res_valid:
                 raise Exception(msg)
 
@@ -1154,14 +1192,18 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
             # 縦メニュー利用ありの場合のみ「代入順序」用のレコードを作成
             if vertical_flag:
-                res_valid, msg = _check_column_validation(objdbca, menu_uuid, "input_order")
+                res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "input_order")
                 if not res_valid:
                     raise Exception(msg)
 
@@ -1202,7 +1244,11 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                     "LAST_UPDATE_USER": g.get('USER_ID')
                 }
                 primary_key_name = 'COLUMN_DEFINITION_ID'
-                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+                if column_definition_id:
+                    data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                    objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+                else:
+                    objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
                 # 表示順序を加算
                 disp_seq_num = int(disp_seq_num) + 10
@@ -1308,7 +1354,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 col_group_id = param_col_group_id
 
             # 「メニュー作成機能で作成した項目」用のレコードを作成
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, column_name_rest)
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, column_name_rest)
             if not res_valid:
                 raise Exception(msg)
 
@@ -1349,7 +1395,11 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
@@ -1372,7 +1422,7 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                         elif column_class == "21" and sensitive_flag == "1":  # 親のプルダウン選択がJsonIDColumnかつsensitive_flagが1(True)なら「26:JsonPasswordIDColumn」とする  # noqa: E501
                             ref_column_class = "26"
                         if target_column_name_rest == reference_column_name_rest and other_menu_link_id == reference_link_id:
-                            res_valid, msg = _check_column_validation(objdbca, menu_uuid, ref_column_name_rest)
+                            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, ref_column_name_rest)
                             if not res_valid:
                                 raise Exception(msg)
 
@@ -1418,14 +1468,18 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                                 "LAST_UPDATE_USER": g.get('USER_ID')
                             }
                             primary_key_name = 'COLUMN_DEFINITION_ID'
-                            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+                            if column_definition_id:
+                                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+                            else:
+                                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
                             # 表示順序を加算
                             disp_seq_num = int(disp_seq_num) + 10
 
         # 「メニュー作成機能で作成した項目」が0件の場合、特殊な項目を作成
         if not record_t_menu_column:
-            res_valid, msg = _check_column_validation(objdbca, menu_uuid, "no_item")
+            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "no_item")
             if not res_valid:
                 raise Exception(msg)
             validate_option = '{"min_length": 0,"max_length": 255}'
@@ -1466,13 +1520,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
             primary_key_name = 'COLUMN_DEFINITION_ID'
-            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+            if column_definition_id:
+                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+            else:
+                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
         # 「備考」用のレコードを作成
-        res_valid, msg = _check_column_validation(objdbca, menu_uuid, "remarks")
+        res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "remarks")
         if not res_valid:
             raise Exception(msg)
 
@@ -1514,13 +1572,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
             "LAST_UPDATE_USER": g.get('USER_ID')
         }
         primary_key_name = 'COLUMN_DEFINITION_ID'
-        objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+        if column_definition_id:
+            data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+            objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+        else:
+            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
         # 表示順序を加算
         disp_seq_num = int(disp_seq_num) + 10
 
         # 「廃止フラグ」用のレコードを作成
-        res_valid, msg = _check_column_validation(objdbca, menu_uuid, "discard")
+        res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "discard")
         if not res_valid:
             raise Exception(msg)
 
@@ -1561,13 +1623,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
             "LAST_UPDATE_USER": g.get('USER_ID')
         }
         primary_key_name = 'COLUMN_DEFINITION_ID'
-        objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+        if column_definition_id:
+            data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+            objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+        else:
+            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
         # 表示順序を加算
         disp_seq_num = int(disp_seq_num) + 10
 
         # 「最終更新日時」用のレコードを作成
-        res_valid, msg = _check_column_validation(objdbca, menu_uuid, "last_update_date_time")
+        res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "last_update_date_time")
         if not res_valid:
             raise Exception(msg)
 
@@ -1608,13 +1674,17 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
             "LAST_UPDATE_USER": g.get('USER_ID')
         }
         primary_key_name = 'COLUMN_DEFINITION_ID'
-        objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+        if column_definition_id:
+            data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+            objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+        else:
+            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
         # 表示順序を加算
         disp_seq_num = int(disp_seq_num) + 10
 
         # 「最終更新者」用のレコードを作成
-        res_valid, msg = _check_column_validation(objdbca, menu_uuid, "last_updated_user")
+        res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "last_updated_user")
         if not res_valid:
             raise Exception(msg)
 
@@ -1655,7 +1725,11 @@ def _insert_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uui
             "LAST_UPDATE_USER": g.get('USER_ID')
         }
         primary_key_name = 'COLUMN_DEFINITION_ID'
-        objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+        if column_definition_id:
+            data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+            objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+        else:
+            objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
     except Exception as msg:
         return False, msg
@@ -2018,23 +2092,36 @@ def _create_initial_value(record):
 def _check_column_validation(objdbca, menu_uuid, column_name_rest):
     """
         「メニュー-カラム紐付管理」メニューのテーブルにレコードを追加する際に、「MENU_ID」と「COLUMN_NAME_REST」で同じ組み合わせがあるかどうかのチェックをする。
+        returnのパターンは以下
+        1: 該当レコードがあり、かつ「廃止」状態ではない場合は False, msg, None
+        2: 該当のレコードがあり、かつ「廃止」状態の場合は True, None, uuid
+        3: 該当のレコードが無い場合は True, None, None
+
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             menu_uuid: メニュー作成の対象となる「メニュー管理」のレコードのID
             column_name_rest: カラム名(rest)
         RETRUN:
-            boolean, msg
+            boolean, msg, column_definition_id
     """
     # テーブル名
     t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
 
     # 「メニュー-カラム紐付管理」に同じメニューIDとカラム名(rest)のレコードが存在する場合はFalseをreturnする。
-    ret = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_uuid, column_name_rest, 0])  # noqa: E501
+    ret = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_NAME_REST = %s', [menu_uuid, column_name_rest])  # noqa: E501
     if ret:
-        msg = g.appmsg.get_log_message("BKY-20211", [menu_uuid, column_name_rest])
-        return False, msg
+        disuse_flag = ret[0].get('DISUSE_FLAG')
+        # 1: 該当レコードがあり、かつ「廃止」状態ではない場合は False, msg, None
+        if str(disuse_flag) == "0":
+            msg = g.appmsg.get_log_message("BKY-20211", [menu_uuid, column_name_rest])
+            return False, msg, None
 
-    return True, None
+        # 2: 該当のレコードがあり、かつ「廃止」状態の場合は True, None, uuid
+        column_definition_id = ret[0].get('COLUMN_DEFINITION_ID')
+        return True, None, column_definition_id
+
+    # 3: 該当のレコードが無い場合は True, None, None
+    return True, None, None
 
 
 def _format_column_group_data(record_t_menu_column_group, record_t_menu_column):
@@ -2165,32 +2252,52 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
         # 対象のメニューIDに紐づいたレコードを廃止
         for menu_id in target_menu_id_list:
             # 「ロール-メニュー紐付管理」にて対象のレコードを廃止
-            data = {
-                'MENU_ID': menu_id,
-                'DISUSE_FLAG': "1"
-            }
-            objdbca.table_update(t_comn_role_menu_link, data, "MENU_ID")
+            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+            ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    link_id = record.get('LINK_ID')
+                    data = {
+                        'LINK_ID': link_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_comn_role_menu_link, data, "LINK_ID")
 
             # 「メニュー-テーブル紐付管理」にて対象のレコードを廃止
-            data = {
-                'MENU_ID': menu_id,
-                'DISUSE_FLAG': "1"
-            }
-            objdbca.table_update(t_comn_menu_table_link, data, "MENU_ID")
+            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+            ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    table_definition_id = record.get('TABLE_DEFINITION_ID')
+                    data = {
+                        'TABLE_DEFINITION_ID': table_definition_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_comn_menu_table_link, data, "TABLE_DEFINITION_ID")
 
             # 「メニュー-カラム紐付管理」にて対象のレコードを廃止
-            data = {
-                'MENU_ID': menu_id,
-                'DISUSE_FLAG': "1"
-            }
-            objdbca.table_update(t_comn_menu_column_link, data, "MENU_ID")
+            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+            ret = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    column_definition_id = record.get('COLUMN_DEFINITION_ID')
+                    data = {
+                        'COLUMN_DEFINITION_ID': column_definition_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_comn_menu_column_link, data, "COLUMN_DEFINITION_ID")
 
             # 「メニュー定義-テーブル紐付管理」にて対象のレコードを廃止
-            data = {
-                'MENU_ID': menu_id,
-                'DISUSE_FLAG': "1"
-            }
-            objdbca.table_update(t_menu_table_link, data, "MENU_ID")
+            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+            ret = objdbca.table_select(t_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    menu_table_link_id = record.get('MENU_TABLE_LINK_ID')
+                    data = {
+                        'MENU_TABLE_LINK_ID': menu_table_link_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_menu_table_link, data, "MENU_TABLE_LINK_ID")
 
             # 「参照項目」にて対象のレコードを廃止
             # 廃止レコードのUUIDを特定するため、VIEWから対象レコードを取得
@@ -2205,11 +2312,16 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
                     objdbca.table_update(t_menu_reference_item, data, "REFERENCE_ID")
 
             # 「他メニュー連携」にて対象のレコードを廃止
-            data = {
-                'MENU_ID': menu_id,
-                'DISUSE_FLAG': "1"
-            }
-            objdbca.table_update(t_menu_other_link, data, "MENU_ID")
+            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+            ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    link_id = record.get('LINK_ID')
+                    data = {
+                        'LINK_ID': link_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_menu_other_link, data, "LINK_ID")
 
     except Exception as msg:
         return False, msg

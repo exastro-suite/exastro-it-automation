@@ -17,6 +17,7 @@ from common_libs.ansible_driver.classes.menu_required_check import AuthTypeParam
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.functions.util import getSpecialColumnVaule
 
 def external_valid_menu_before(objdbca, objtable, option):
     """
@@ -141,44 +142,13 @@ def external_valid_menu_before(objdbca, objtable, option):
             in_string = ""
 
         # パスワードの設定値取得
-        # PasswordColumnはデータの更新がないと$arrayRegDataの設定は空になっているので
-        # パスワードが更新されているか判定
-
-        if "login_password" in option["entry_parameter"]["parameter"]:
-            str_passwd = option["entry_parameter"]["parameter"]["login_password"]
-        else:
-            str_passwd = None
-
-        # 更新されていない場合は設定済みのパスワードoption["current_parameter"]["parameter"]["login_password"]取得
-        if not str_passwd:
-            str_passwd = option["current_parameter"]["parameter"]["login_password"]
+        str_passwd = getSpecialColumnVaule("login_password", option)
 
         # パスフレーズの設定値取得
-        # PasswordColumnはデータの更新がないと$arrayRegDataの設定は空になっているので
-        # パスフレーズが更新されているか判定
-        # 更新されていない場合は設定済みのパスフレーズ($arrayVariant['edit_target_row'])取得
-        if "passphrase" in option["entry_parameter"]["parameter"]:
-            str_passphrase = option["entry_parameter"]["parameter"]["passphrase"]
-        else:
-            str_passphrase = None
-
-        if not str_passphrase:
-            str_passphrase = option["current_parameter"]["parameter"]["passphrase"]
+        str_passphrase = getSpecialColumnVaule("passphrase", option)
 
         # 公開鍵ファイルの設定値取得
-        # FileUploadColumnはファイルの更新がないと["entry_parameter"]["parameter"]の設定は空になっているので
-        # 更新されていない場合は設定済みのファイル名option["current_parameter"]["parameter"]["ssh_private_key_file"]を取得
-        # 公開鍵ファイルが更新されているか判定
-        if "ssh_private_key_file" in option["entry_parameter"]["parameter"]:
-            str_ssh_key_file = option["entry_parameter"]["parameter"]["ssh_private_key_file"]
-        else:
-            str_ssh_key_file = None
-
-        if not str_ssh_key_file:
-            str_ssh_key_file = option["current_parameter"]["parameter"]["ssh_private_key_file"]
-
-        # Pioneerプロトコルの設定値取得
-        # str_protocol_id = option["current_parameter"]["parameter"]["protocol"]
+        str_ssh_key_file = getSpecialColumnVaule("ssh_private_key_file", option)
 
     if option["cmd_type"] == "Register" or option["cmd_type"] == "Update" or option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
         # 選択されている認証方式に応じた必須入力をチェック

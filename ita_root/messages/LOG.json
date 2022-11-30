@@ -960,6 +960,7 @@
     "MSG-10885": "Authentication token",
     "MSG-10886": "System error has occurred.",
     "MSG-10901": "A variable name longer than 255 bytes is defined.  \n{}",
+    "MSG-10904": "We have received your reservation cancellation. Please check your status.  (Execution No.:{})",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",

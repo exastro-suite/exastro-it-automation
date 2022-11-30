@@ -995,6 +995,7 @@
     "MSG-10901": "A variable name longer than 255 bytes is defined.  \n{}",
     "MSG-10902": "The record corresponding to the assigned order is not registered to the target menu. (Substitution value auto-registration setting Item No.:{})",
     "MSG-10903": "Failed to register work target host and substitution value list.",
+    "MSG-10904": "We have received your reservation cancellation. Please check your status.  (Execution No.:{})",
     "MSG-20001": "Main menu",
     "MSG-20002": "[Main Menu] can not be set.",
     "MSG-20003": "Menu name is required.",

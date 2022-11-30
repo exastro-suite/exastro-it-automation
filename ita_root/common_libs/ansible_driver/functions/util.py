@@ -219,7 +219,7 @@ def getInputDataTempDir(EcecuteNo, DriverName):
     return ary
 
 
-def getPasswordColumnVaule(column_rest_name, option):
+def getSpecialColumnVaule(column_rest_name, option):
     """
       パスワードカラム入力値取得
       Arguments:

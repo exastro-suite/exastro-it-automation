@@ -41,7 +41,7 @@ class CreateMenu {
 */
 constructor( target, userInfo ) {
     const cm = this;
-    
+
     cm.target = target;
     menuCreateUserInfo = userInfo;
 }
@@ -52,7 +52,7 @@ constructor( target, userInfo ) {
 */
 setup() {
     const cm = this;
-    
+
     let loadMenuID = '';
     let itaEditorMode = 'new';
     let createManagementMenuID = '';
@@ -71,7 +71,7 @@ setup() {
 
     const html = `
     <div id="menu-editor" class="editor load-wait" data-editor-mode="` + itaEditorMode + `" data-load-menu-id="` + loadMenuID + `">
-        <div class="editor-inner">            
+        <div class="editor-inner">
             <div id="menu-editor-main" class="editor-main">
                 <div id="menu-editor-menu" class="editor-menu">
                     ${cm.editorOperationMenuHtml( itaEditorMode, createManagementMenuID )}
@@ -86,7 +86,7 @@ setup() {
             </div>
         </div>
     </div>`;
-    
+
     // 縦メニュー説明
     /*
     <div id="vertical-menu-description" class="modal-body-html">
@@ -104,10 +104,10 @@ setup() {
     */
 
     cm.$ = {};
-    
+
     // HTMLセット
     $( cm.target ).html( html );
-    
+
     if ( loadMenuID === ''){
         // 必要なデータの読み込み
         fn.fetch('/create/define/').then(function( result ){
@@ -200,7 +200,7 @@ panelContainerHtml( editorMode ) {
         verticalMenu: ''
     };
     let html = '';
-    
+
     if ( editorMode === 'view' ){
         html += `
         <div class="panel-group">
@@ -532,7 +532,7 @@ panelContainerHtml( editorMode ) {
             ${fn.html.textarea(['panel-note', 'panel-textarea', 'popup'], '', 'create-menu-note', null, true )}
         </div>`;
     }
-    
+
     return `
     <div id="panel-container" class="editor-panel">
         <div id="property" data-menu-type="${panelType.menuType}" data-host-type="${panelType.hostType}" data-vertical-menu="${panelType.verticalMenu}" class="editor-block">
@@ -660,9 +660,9 @@ const menuEditorLog = {
 
         const $menuEditorLog = $('.editor-log'),
               $menuEditorLogTable = $menuEditorLog.find('tbody');
-        
+
         const logClass = ( type !== 'log')? ' editor-log-content-level': '';
-        
+
         let logRowHTML = ''
           + '<tr class="editor-log-row ' + type + '">'
             + '<th class="editor-log-number">' + ( menuEditorLogNumber++ ) +'</th><td class="editor-log-content"><div class="editor-log-content-inner' + logClass + '">';
@@ -673,7 +673,7 @@ const menuEditorLog = {
         $menuEditorLogTable.append( logRowHTML );
 
         // 一番下までスクロール
-        const scrollTop = $menuEditorLog.get(0).scrollHeight - $menuEditorLog.get(0).clientHeight;   
+        const scrollTop = $menuEditorLog.get(0).scrollHeight - $menuEditorLog.get(0).clientHeight;
         $menuEditorLog.animate({ scrollTop : scrollTop }, 200 );
     },
     'clear': function() {
@@ -685,7 +685,7 @@ const menuEditorLog = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   モーダル
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // モーダルを開く
@@ -698,9 +698,9 @@ function itaModalOpen( headerTitle, bodyFunc, modalType, target = "" ) {
 
     const $window = $( window ),
           $body = $('body');
-    
+
     let footerHTML;
-    
+
     if ( modalType === 'help' ) {
       footerHTML = ''
       + '<div class="editor-modal-footer">'
@@ -766,7 +766,7 @@ function itaModalOpen( headerTitle, bodyFunc, modalType, target = "" ) {
     if ( modalType === 'help' ) {
         $editorModal.find('.editor-modal-footer-menu-button[data-button-type="close"]').on('click', itaModalClose );
     }
-    
+
     if(target != ""){
         bodyFunc(target);
     }else{
@@ -795,13 +795,13 @@ function itaModalError( message ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   タブ切替初期設定
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function itaTabMenu() {
 
     $('.editor-tab').each( function() {
-    
+
         const $tab = $( this ),
             $tabItem = $tab.find('.editor-tab-menu-item'),
             $tabBody = $tab.find('.editor-tab-body');
@@ -822,7 +822,7 @@ function itaTabMenu() {
 const menuEditor = function() {
 
     'use strict';
-    
+
     // jQueryオブジェキャッシュ
     const $window = $( window ),
         $html = $('html'),
@@ -831,14 +831,14 @@ const menuEditor = function() {
         $menuEditWindow = $('#menu-editor-edit'),
         $menuTable = $menuEditor.find('.menu-table'),
         $property = $('#property');
-    
+
     // タブ
     itaTabMenu();
-    
+
     // 読み込み完了
     $menuEditor.removeClass('load-wait');
     $menuEditor.find('.textareaAdjustment').each( fn.textareaAdjustment );
-    
+
     // --------------------------------------------------
     // フルスクリーン切り替え時のイベントを追加する
     // --------------------------------------------------
@@ -890,7 +890,7 @@ const listIdName = function( type, id ) {
     } else if ( type === 'group') {
         list = menuEditorArray.target_menu_group_list;
         idKey = 'menu_group_id';
-        nameKey = 'menu_group_name';
+        nameKey = 'full_menu_group_name';
     } else if ( type === 'role') {
         list = menuEditorArray.role_list;
         //idKey = 'ROLE_ID';
@@ -911,7 +911,7 @@ const listIdName = function( type, id ) {
             }
         }
     }
-    return null;  
+    return null;
 };
 
 let modeDisabled = '';
@@ -1049,9 +1049,9 @@ if ( menuEditorMode !== 'view') {
 
 // 項目HTML
 const getColumnHTML = function( columnData = {}, columnID = '') {
-    
-    const sv = function( v, f = true ) { return fn.cv( columnData[v], '', f ); };    
-    
+
+    const sv = function( v, f = true ) { return fn.cv( columnData[v], '', f ); };
+
     return `
 <div id="${columnID}" class="menu-column" data-rowpan="1" data-item-id="${sv('create_column_id')}" style="min-width: 260px;">
     <div class="menu-column-header">${getColumnHeaderHTML(sv('item_name'),sv('item_name_rest'))}</div>
@@ -1268,7 +1268,7 @@ const mode = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   取り消し、やり直し
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const $undoButton = $('#button-undo'),
@@ -1303,7 +1303,7 @@ const history = {
         // 履歴追加後の履歴を削除する
         if ( workHistory[ workCounter + 1 ] !== undefined ) {
             workHistory.length = workCounter + 1;
-        } 
+        }
         // 最大履歴数を超えた場合最初の履歴を削除する
         if ( workHistory.length > maxHistroy ) {
             workHistory.shift();
@@ -1345,7 +1345,7 @@ const history = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   列の追加
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const addColumn = function( $target, type, number, loadData, previewFlag, emptyFlag ) {
@@ -1359,7 +1359,7 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
         title = '',
         name,
         name_rest;
-    
+
     switch( type ) {
         case 'column':
             html = columnHTML;
@@ -1387,13 +1387,13 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
     $target.append( $addColumn );
     // プルダウンにselect2を適用する
     $target.find('.config-select').select2();
-    
+
     $addColumn.attr('id', id );
 
     if ( type !== 'column' && emptyFlag === true ) {
         $addColumn.find('.menu-column-group-body, .menu-column-repeat-body').html( columnEmptyHTML );
     }
-    
+
     if ( loadData === false ) {
       // 自動付加する名前が被ってないかチェックする
       const checkName = function( name ) {
@@ -1419,24 +1419,24 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
         $addColumnInput.val( name );
         $addColumnRestInput.val( name_rest );
     }
-    
+
     titleInputChange( $addColumnInput );
     titleInputChange( $addColumnRestInput );
-    
+
     emptyCheck();
     columnHeightUpdate();
-    
+
     if ( previewFlag === true ) {
         history.add();
         previewTable();
     }
-    
+
     // 追加した項目に合わせスクロールさせる
     const $scrollArea = $menuEditWindow.children(),
           scrollElement = $scrollArea.get(0),
           scrollWidth = scrollElement.scrollWidth,
           clientWidth = scrollElement.clientWidth;
-          
+
     if ( clientWidth < scrollWidth ) {
         $scrollArea.stop(0,0).animate({'scrollLeft': scrollWidth - clientWidth }, 200 );
     }
@@ -1446,7 +1446,7 @@ const addColumn = function( $target, type, number, loadData, previewFlag, emptyF
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   参照項目選択
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //参照項目を選択するモーダル表示イベント
@@ -1464,7 +1464,7 @@ $menuEditor.on('change', '.pulldown-select', function(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   プルダウン選択の初期値
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 const setEventPulldownDefaultValue = function($item){
     $item.on('change', '.menu-column-type-select, .pulldown-select', function(){
@@ -1477,7 +1477,7 @@ const setEventPulldownDefaultValue = function($item){
         if($(this).hasClass('pulldown-select')){
             typeId = $item.find('.menu-column-type-select').val();
         }
-        
+
         //「プルダウン選択」時のみ
         if(typeId == 7){
             getpulldownDefaultValueList($item, "");
@@ -1490,9 +1490,9 @@ const getpulldownDefaultValueList = function($item, defaultValue = ""){
   let loadNowSelect = '<option value="">' + getMessage.FTE01131 + '</option>';
   let faildSelect = '<option value="">' + getMessage.FTE01132 + '</option>';
   $item.find('.pulldown-default-select').html(loadNowSelect); //最初に読み込み中メッセージのセレクトボックスを挿入
-  
+
   let menu = "",
-      column = ""; 
+      column = "";
   //「選択項目」のメニューで初期値として利用可能な値のリストを作成する。
   let selectDefaultValueList;
   let value = $item.find('.pulldown-select').val();
@@ -1547,7 +1547,7 @@ const resetEventPulldownDefaultValue = function($menuTable){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   パラメータシート参照の項目取得
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 const setEventPulldownParameterSheetReference = function($item){
     $item.on('change', '.menu-column-type-select, .type3-reference-menu', function(){
@@ -1575,7 +1575,7 @@ const getpulldownParameterSheetReferenceList = function($item, itemId = ""){
     let faildSelect = '<option value="">'+getSomeMessage("ITACREPAR_1300")+'</option>';
     $item.find('.type3-reference-item').html(loadNowSelect); //最初に読み込み中メッセージのセレクトボックスを挿入
     const selectMenuId = $item.find('.type3-reference-menu option:selected').val();
-  
+
     //「選択項目」のメニューで初期値として利用可能な値のリストを作成する。
     let selectParameterSheetReferenceList;
     const printselectParameterSheetReferenceURL = '/common/common_printParameterSheetReference.php?menu_id=' + selectMenuId + '&user_id=' +gLoginUserID;
@@ -1610,7 +1610,7 @@ const getpulldownParameterSheetReferenceList = function($item, itemId = ""){
           $item.find('.type3-reference-item').html(selectParameterSheetReferenceListHTML);
           history.add(); //historyを更新
         }
-  
+
     }).fail( function( result ) {
       selectParameterSheetReferenceList = null;
       //エラーメッセージ入りセレックとボックスを挿入
@@ -1653,7 +1653,7 @@ $menuEditWindow.on('click', '.inputDateCalendarButton', function(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   メニュー
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $menuEditor.find('.menu-editor-menu-button').on('click', function() {
@@ -1717,7 +1717,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
             if(menuEditorArray['menu_info']['menu']['menu_create_done_status_id'] == 1){
                 fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01136 ).then(function( flag ){
                     if ( flag ) createRegistrationData('create_new');
-                });                
+                });
             }else{
                 fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01137 ).then(function( flag ){
                     if ( flag ) createRegistrationData('initialize');
@@ -1791,7 +1791,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   タイトル入力幅調整
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const titleInputChange = function( $input ) {
@@ -1867,7 +1867,7 @@ $menuEditor.on({
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   設定内容をHTMLに反映させる（履歴HTML用）
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $menuEditor.on('change', '.config-text', function() {
@@ -1880,16 +1880,16 @@ $menuEditor.on('change', '.config-number, .menu-column-repeat-number-input, .pro
         min = Number( $input.attr('data-min') ),
         max = Number( $input.attr('data-max') );
     let value = $input.val();
-    
+
     // 桁数が未入力の場合、最大値を入れる
     if ( $input.is('.digit-number') && value === '') {
         value = max;
     }
     if ( min !== undefined && value < min ) value = min;
     if ( max !== undefined && value > max ) value = max;
-    
+
     $input.val( value ).attr('value', value );
-    
+
     previewTable();
     history.add();
 });
@@ -1916,7 +1916,7 @@ $menuEditor.on('change', '.config-select', function() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   項目の種類によって入力項目を切り替える
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $menuEditor.on('change', '.menu-column-type-select', function() {
@@ -1934,19 +1934,19 @@ $menuEditor.on('change', '.menu-column-type-select', function() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   項目、グループの移動
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $menuEditor.on('mousedown', '.menu-column-move', function( e ){
 
     // 左クリックチェック
     if (e.which !== 1 ) return false;
-    
+
     // 選択を解除しておく
     getSelection().removeAllRanges();
-    
+
     mode.columnMove();
-    
+
     const $column = $( this ).closest('.menu-column, .menu-column-group, .menu-column-repeat'),
           $columnClone = $column.clone( false ),
           $targetArea = $('.menu-column, .menu-column-group-header, .menu-column-repeat-header, .menu-column-repeat-footer, .column-empty'),
@@ -1958,20 +1958,20 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
           mousedownPositionY = e.pageY,
           editorX = $menuEditor.offset().left,
           editorWidth = $menuEditWindow.outerWidth();
-    
+
     // 何を移動するか
     const moveColumnType = $column.attr('class');
     $menuTable.attr('data-move-type', moveColumnType );
-          
+
     // スクロール可能か調べる
     const $scrollArea = $menuEditWindow.find('.menu-editor-block-inner'),
           scrollWidth = $scrollArea.get(0).scrollWidth + 2,
           scrollAreaWidth = $scrollArea.outerWidth(),
           scrollFlag = ( scrollWidth > scrollAreaWidth ) ? true : false,
           scrollSpeed = 40;
-          
+
     let scrollTimer = false;
-  
+
     const scrollMove = function( direction ) {
       if ( scrollTimer === false ) {
         scrollTimer = setInterval( function() {
@@ -1981,20 +1981,20 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
         }, 40 );
       }
     };
-    
+
     let $hoverTarget = null,
         hoverTargetWidth, hoverTargetLeft,
         moveX, moveY;
-    
+
     $column.addClass('move-wait');
-    
+
     // 移動用ダミーオブジェ追加
     $menuEditor.append( $columnClone );
     $columnClone.addClass('move').css({
       'left' : ( mousedownPositionX - scrollLeft - knobWidth / 2 ) + 'px',
       'top' : ( mousedownPositionY - scrollTop - knobHeight / 2 ) + 'px'
     });
-    
+
     // ターゲットの左か右かチェックする
     const leftRightCheck = function( mouseX ) {
       if ( $hoverTarget !== null ) {
@@ -2028,7 +2028,7 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
         }
       }
     }
-    
+
     // どこの上にいるか
     $targetArea.on({
       'mouseenter.columnMove' : function( e ){
@@ -2047,7 +2047,7 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
         } else {
           $hoverTarget = null;
         }
-        
+
         leftRightCheck( e.pageX );
       },
       'mouseleave.columnMove' : function(){
@@ -2055,9 +2055,9 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
         $menuTable.find('.hover, .hover-parent, .left, .right').removeClass('hover hover-parent left right');
       }
     });
-    
+
     let moveTime = '';
-    
+
     $window.on({
       'mousemove.columnMove' : function( e ) {
         // 仮移動
@@ -2066,7 +2066,7 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
           moveY = e.pageY - mousedownPositionY;
           $columnClone.css('transform', 'translate(' + moveX + 'px,' + moveY + 'px)');
           leftRightCheck( e.pageX );
-        
+
           // 枠の外に移動
           if ( scrollFlag === true ) {
             if ( editorX > e.pageX ) {
@@ -2078,7 +2078,7 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
               scrollTimer = false;
             }
           }
-  
+
           moveTime = setTimeout( function() {
             moveTime = '';
           }, 16.667 );
@@ -2129,13 +2129,13 @@ $menuEditor.on('mousedown', '.menu-column-move', function( e ){
         previewTable();
       }
     });
-    
+
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   項目、グループの削除
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 項目が空かチェックする
@@ -2162,7 +2162,7 @@ const repeatCheck = function() {
       $repeatButton.prop('disabled', true );
     }
   };
-  
+
   $menuEditor.on('click', '.menu-column-delete', function(){
     const $column = $( this ).closest('.menu-column, .menu-column-group, .menu-column-repeat');
     // 親列グループが空になる場合
@@ -2171,7 +2171,7 @@ const repeatCheck = function() {
       $parentGroup.find('.menu-column-group-body, .menu-column-repeat-body').html( columnEmptyHTML );
     }
     $column.remove();
-    
+
     if ( $menuEditor.find('.menu-column, .menu-column-group, .menu-column-repeat').length ) {
       // 高さ更新
       columnHeightUpdate();
@@ -2187,7 +2187,7 @@ const repeatCheck = function() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   項目、グループの複製
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // select2を再適用
@@ -2203,27 +2203,27 @@ const resetSelect2 = function( $target ) {
 
 $menuEditor.on('click', '.menu-column-copy', function(){
   const $column = $( this ).closest('.menu-column, .menu-column-group');
-  
+
   // リピートを含む要素はコピーできないようにする
   if ( $column.find('.menu-column-repeat').length ) {
     alert(getMessage.FTE01079);
     return false;
   }
-  
+
   const $clone = $column.clone();
-  $column.after( $clone );  
-  
+  $column.after( $clone );
+
   // 追加を待つ
   $clone.ready( function() {
-    
+
     $clone.find('.hover').removeClass('hover');
-    
+
     // IDをプラス・名前にコピー番号を追加
     $clone.find('.menu-column-title-input').each( function() {
       const $input = $( this ),
             title = $input.val(),
             $eachColumn = $input.closest('.menu-column, .menu-column-group');
-      
+
       if ( $eachColumn.is('.menu-column') ) {
         const i = itemCounter++;
         //$input.val( title + '(' + i + ')' );
@@ -2243,7 +2243,7 @@ $menuEditor.on('click', '.menu-column-copy', function(){
       $input.attr('value', $input.val() );
       titleInputChange( $input );
     });
-    
+
     resetSelect2( $clone );
 
     // プルダウン選択の初期値取得eventを再適用する
@@ -2253,7 +2253,7 @@ $menuEditor.on('click', '.menu-column-copy', function(){
 
     history.add();
     previewTable();
-    
+
     // コピーした項目に合わせスクロールさせる
     const $scrollArea = $menuEditWindow.children(),
           scrollElement = $scrollArea.get(0),
@@ -2265,20 +2265,20 @@ $menuEditor.on('click', '.menu-column-copy', function(){
           cloneLeft = $clone.get(0).getBoundingClientRect().left + scrollLeft - editorLeft,
           cloneWidth = $clone.outerWidth(),
           padding = 8;
-    
+
     // スクロール可能か？
     if ( clientWidth < scrollWidth && scrollLeft + scrollAreaWidth < cloneLeft + cloneWidth ) {
         const left = ( cloneLeft + cloneWidth ) - scrollAreaWidth + padding;
         $menuEditWindow.children().stop(0,0).animate({'scrollLeft': left }, 200 );
-    }       
-    
+    }
+
   });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   行数を調べる
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const rowNumberCheck = function(){
@@ -2294,13 +2294,13 @@ const rowNumberCheck = function(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   列の高さ更新
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const columnHeightUpdate = function(){
 
     const maxLevel = rowNumberCheck();
-    
+
     // 列の高さ調整
     $menuTable.find('.menu-column').each( function(){
         const $column = $( this ),
@@ -2314,7 +2314,7 @@ const columnHeightUpdate = function(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   リピート数変更
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $menuTable.on({
@@ -2326,7 +2326,7 @@ $menuTable.on({
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   プレビュー
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // プレビュー用HTML
@@ -2341,7 +2341,7 @@ const sortMark = '<span class="sortMarkWrap"><span class="sortNotSelected"></spa
         + '<th colspan="{{colspan}}" class="tHeadGroup tHeadTh th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',
       tHeadOperationrHeaderLeftHTML = ''
         + '<th colspan="4" class="tHeadTh th"><div class="ci">' + getMessage.FTE01066 + '</div></th>'
-        + '<th colspan="{{colspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',  
+        + '<th colspan="{{colspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',
       tHeadParameterOpeHeaderLeftHTML = ''
         + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01068 + '</div></th>'
         + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01069 + '</div></th>'
@@ -2351,7 +2351,7 @@ const sortMark = '<span class="sortMarkWrap"><span class="sortNotSelected"></spa
         + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01072 + '</div></th>'
         + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01073 + '</div></th>'
         + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01074 + '</div></th>',
-        
+
       tBodyHeaderLeftHTML = ''
         + '<th class="tBodyLeftSticky tBodyRowSelect tBodyTh th"><div class="ci"><div class="checkboxWrap"><input type="checkbox" class="tBodyRowCheck checkbox"><label class="checkboxLabel"></label></div></div></th>'
         + '<th class="tBodyLeftSticky tBodyRowMenu tBodyTh th"><div class="ci"><span class="icon icon-ellipsis_v"></span></div></th>'
@@ -2433,17 +2433,17 @@ const childColumnCount = function( $column, type ) {
 
 // プレビューを表示する
 const previewTable = function(){
-  
+
   let tableArray = [],
       tbodyArray = [],
       theadHTML = '',
       tableHTML = '',
       tbodyNumber = 3,
       maxLevel = rowNumberCheck();
-  
+
   // パラメータシート or データシート
   const previewType = Number( $property.attr('data-menu-type') );
-    
+
   // エディタ要素をTableに変換
   const tableAnalysis = function( $cols, repeatCount ) {
 
@@ -2533,12 +2533,12 @@ const previewTable = function(){
         }
 
     });
-    
+
   };
 
   // 解析スタート
   tableAnalysis ( $menuTable, 0 );
-  
+
   // thead HTMLを生成
   const itemLength = childColumnCount( $menuTable, 'menu' );
 
@@ -2570,7 +2570,7 @@ const previewTable = function(){
       theadHTML += tHeadHeaderRightHTML.replace(/{{rowspan}}/g, maxLevel );
     }
   }
-  
+
   for ( let i = 1; i <= tbodyNumber; i++ ) {
     tableHTML += '<tr class="tBodyTr tr">' + tBodyHeaderLeftHTML.replace('{{id}}', i );
     if ( previewType === 1 ) {
@@ -2581,17 +2581,17 @@ const previewTable = function(){
     }
     tableHTML += tbodyArray.join() + tBodyHeaderRightHTML + '</tr>';
   }
-  
+
   // プレビュー更新
   $('#menu-editor-preview').find('.thead').html( theadHTML );
   $('#menu-editor-preview').find('.tbody').html( tableHTML );
-  
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   パネル関連
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 作成対象セレクト
@@ -2607,8 +2607,8 @@ $('#create-menu-type').on('change', function(){
     } else if ( repeatFlag === false) {
       // 選択を戻す
       $select.val( beforeSelectType );
-      return false; 
-    }    
+      return false;
+    }
   }
   beforeSelectType = menuType;
   $property.attr('data-menu-type', menuType );
@@ -2667,30 +2667,30 @@ const repeatRemoveConfirm = function() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   項目横幅変更
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const $columnResizeLine = $('#column-resize'),
       defMinWidth = 260;
 $menuEditor.on('mousedown', '.column-resize', function( e ) {
-  
+
   // 左クリックチェック
   if ( e.which !== 1 ) return false;
-  
+
   mode.columnResize();
-  
+
   const $column = $( this ).closest('.menu-column'),
         width = $column.outerWidth(),
         positionX = $column.offset().left - $menuEditor.offset().left - 1,
         mouseDownX = e.pageX;
-        
+
   let minWidth;
-  
+
   $columnResizeLine.show().css({
     'left' : positionX,
     'width' : width
   });
-  
+
   $window.on({
     'mousemove.columnResize' : function( e ) {
       const moveX = e.pageX - mouseDownX;
@@ -2717,7 +2717,7 @@ $menuEditor.on('mousedown', '.column-resize', function( e ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   エディタウィンドウリサイズ
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 $('#menu-editor-row-resize').on('mousedown', function( e ){
@@ -2725,33 +2725,33 @@ $('#menu-editor-row-resize').on('mousedown', function( e ){
     // 全ての選択を解除する
     getSelection().removeAllRanges();
     mode.blockResize();
-  
+
     const $resizeBar = $( this ),
           $resizeBlock = $menuEditor.find('.menu-editor-block'),
           $section1 = $resizeBlock.eq(0),
           $section2 = $resizeBlock.eq(1),
           initialPoint = e.clientY,
           minHeight = 64;
-  
+
     let movePoint = 0,
         newSection1Height = 0;
-        
+
     // 高さを一旦固定値に
     $resizeBlock.each( function(){
       $( this ).css('height', $( this ).outerHeight() );
     });
-  
+
     const initialSection1Height = newSection1Height = $section1.outerHeight(),
           initialHeight = initialSection1Height + $section2.outerHeight(),
           maxHeight = initialHeight - minHeight;
-  
+
     $window.on({
       'mousemove.sizeChange' : function( e ){
-  
+
         movePoint = e.clientY - initialPoint;
-        
+
         newSection1Height = initialSection1Height + movePoint;
-        
+
         if ( newSection1Height < minHeight ) {
           newSection1Height = minHeight;
           movePoint = minHeight - initialSection1Height;
@@ -2759,17 +2759,17 @@ $('#menu-editor-row-resize').on('mousedown', function( e ){
           newSection1Height = maxHeight;
           movePoint = maxHeight - initialSection1Height;
         }
-        
+
         $section1.css('height', newSection1Height );
         $section2.css('height', initialHeight - newSection1Height );
         $resizeBar.css('transform','translateY(' + movePoint + 'px)');
-        
+
       },
-  
+
       'mouseup.sizeChange' : function(){
         $window.off('mousemove.sizeChange mouseup.sizeChange');
         mode.clear();
-  
+
         // 高さを割合に戻す
         const section1Ratio = newSection1Height / initialHeight * 100;
         $section1.css('height', section1Ratio + '%' );
@@ -2778,15 +2778,15 @@ $('#menu-editor-row-resize').on('mousedown', function( e ){
           'transform' : 'translateY(0)',
           'top' : section1Ratio + '%'
         });
-  
+
       }
-    });   
+    });
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  メニューグループ選択
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const menuGroupBody = function() {
@@ -2796,38 +2796,38 @@ const menuGroupBody = function() {
           menuGroupType = ['for-input','for-substitution','for-reference'],
           menuGroupAbbreviation = [getMessage.FTE01080,getMessage.FTE01081,getMessage.FTE01082],
           menuGroupTypeLength = menuGroupType.length;
-  
+
     let html = ''
     + '<div id="menu-group-list" class="modal-table-wrap">'
       + '<table class="modal-table">'
         + '<thead>'
           + '<tr>';
-  
+
     // header Radio
     for ( let i = 0; i < menuGroupTypeLength; i++ ) {
-      html += '<th class="th-radio ' + menuGroupType[i] + '" checked>' + menuGroupAbbreviation[i] + '</th>' 
+      html += '<th class="th-radio ' + menuGroupType[i] + '" checked>' + menuGroupAbbreviation[i] + '</th>'
     }
     // header Title
     html += '<th class="id">ID</th>'
           + '<th class="name">' + getMessage.FTE01083 + '</th>';
-  
+
     html += '</tr></thead><tbody><tr>';
-  
+
     // Unselected Radio
     for ( let i = 0; i < menuGroupTypeLength; i++ ) {
       const radioID = 'radio-' + menuGroupType[i] + '-0';
       html += ''
       + '<th class="th-radio ' + menuGroupType[i] + '">'
         + '<span class="menu-group-radio">'
-          + '<input type="radio" class="select-menu radio-number-0" id="' + radioID + '" name="' + menuGroupType[i] + '" value="unselected" data-name="unselected" checked>' 
+          + '<input type="radio" class="select-menu radio-number-0" id="' + radioID + '" name="' + menuGroupType[i] + '" value="unselected" data-name="unselected" checked>'
           + '<label class="select-menu-label" for="' + radioID + '"></label>'
         + '</span>'
-      + '</th>' 
+      + '</th>'
     }
-  
+
     html += '<td class="unselected" >-</td>'
           + '<td class="unselected" >Unselected</td></tr>';
-  
+
     // body List
     for ( let i = 0; i < menuListRowLength; i++ ) {
       html += '<tr>';
@@ -2838,20 +2838,20 @@ const menuGroupBody = function() {
         html += ''
         + '<th class="th-radio ' + menuGroupType[j] + '">'
           + '<span class="menu-group-radio">'
-            + '<input type="radio" class="' + radioClass +'" id="' + radioID + '" name="' + menuGroupType[j] + '" value="' + menuGroupData[i]['menu_group_id'] + '" data-name="' + menuGroupData[i]['menu_group_name'] + '">'
+            + '<input type="radio" class="' + radioClass +'" id="' + radioID + '" name="' + menuGroupType[j] + '" value="' + menuGroupData[i]['menu_group_id'] + '" data-name="' + menuGroupData[i]['full_menu_group_name'] + '">'
             + '<label class="select-menu-label" for="' + radioID + '"></label>'
           + '</span>'
-        + '</th>' 
+        + '</th>'
       }
       // Menu group Data
       html += '<td class="id">' + menuGroupData[i]['menu_group_id'] + '</td>'
-            + '<td class="name">' + textEntities( menuGroupData[i]['menu_group_name'] ) + '</td>';
-  
-      html += '</tr>';      
+            + '<td class="name">' + textEntities( menuGroupData[i]['full_menu_group_name'] ) + '</td>';
+
+      html += '</tr>';
     }
-  
+
     html += '</tbody></table></div>'
-  
+
     // モーダルにBodyをセット
     const $modalBody = $('.editor-modal-body');
     $modalBody.html( html ).on('change', '.select-menu', function(){
@@ -2861,13 +2861,13 @@ const menuGroupBody = function() {
             checkClass = 'checked-row checked-' + neme;
       $('.checked-' + neme ).removeClass( checkClass )
         .find('.select-menu').prop('disabled', false );
-  
+
       if ( menuID !== 'unselected' ) {
         $('.radio-number-' + menuID ).closest('tr').addClass( checkClass )
           .find('.select-menu').not(':checked').prop('disabled', true );
       }
     });
-  
+
     // 選択状態をRadioボタンに反映する
     $('#menu-group').find('.panel-span:visible').each( function(){
       const $item = $( this ),
@@ -2876,8 +2876,8 @@ const menuGroupBody = function() {
       if ( id !== '' ) {
         $modalBody.find('input[name="' + type + '"]').filter('[value="' + id + '"]').prop('checked', true).change();
       }
-    });    
-  
+    });
+
     // 決定・取り消しボタン
     const $modalButton = $('.editor-modal-footer-menu-button');
     $modalButton.on('click', function() {
@@ -2914,7 +2914,7 @@ const menuGroupBody = function() {
           break;
       }
     });
-  
+
 };
 
 // 対象メニューグループ モーダルを開く
@@ -2988,19 +2988,19 @@ const getRoleListValidID = function( roleListText ) {
 const modalRoleList = function() {
     const $input = $('#permission-role-name-list');
     const initRoleList = ( $input.attr('data-role-id') === undefined )? '': $input.attr('data-role-id');
-    // 決定時の処理    
+    // 決定時の処理
     const okEvent = function( newRoleList ) {
       //$input.text( getRoleListIdToName( newRoleList ) ).attr('data-role-id', newRoleList );
       $input.text( newRoleList ).attr('data-role-id', newRoleList );
       itaModalClose();
     };
-    // キャンセル時の処理    
+    // キャンセル時の処理
     const cancelEvent = function( newRoleList ) {
       itaModalClose();
     };
-  
+
     setRoleSelectModalBody( menuEditorArray.role_list, initRoleList, okEvent, cancelEvent );
-    
+
 };
 
 // ロールセレクトモーダルを開く
@@ -3015,7 +3015,7 @@ const modalReferenceItemList = function($target) {
     const initItemList = ( $input.attr('data-reference-item-id') === undefined )? '': $input.attr('data-reference-item-id');
     const selectLinkId = $target.closest('.menu-column-config-table').find('.pulldown-select option:selected').val();
 
-    // 決定時の処理    
+    // 決定時の処理
     const okEvent = function( newItemList, extractItemList ) {
       $input.attr('data-reference-item-id', newItemList );
       //newItemListのIDから項目名に変換
@@ -3028,11 +3028,11 @@ const modalReferenceItemList = function($target) {
       //カンマ区切りの文字列に変換に参照項目上に表示
       var newItemNameList = newItemNameListArray.join(',');
       $input.html(newItemNameList);
-  
+
       previewTable();
       itaModalClose();
     };
-    // キャンセル時の処理    
+    // キャンセル時の処理
     const cancelEvent = function( newItemList ) {
       itaModalClose();
     };
@@ -3044,7 +3044,7 @@ const modalReferenceItemList = function($target) {
     //選択されている「プルダウン選択」で選択可能な参照項目のみを取得する
     let targetReferenceItem;
     let menu = "",
-    column = ""; 
+    column = "";
 
     for (let i = 0; i < menuEditorArray.pulldown_item_list.length; i++) {
       if (menuEditorArray.pulldown_item_list[i].link_id == selectLinkId) {
@@ -3053,20 +3053,20 @@ const modalReferenceItemList = function($target) {
       }
     }
     const printReferenceItemURL = '/create/define/reference/item/' + menu + '/' + column + '/';
-    
+
     //選択可能な参照項目の一覧を取得
     fn.fetch( printReferenceItemURL ).then( function(result) {
         targetReferenceItem = result;
         /*if ( targetReferenceItem[0] == 'redirectOrderForHADACClient' ) {
           window.alert( targetReferenceItem[2] );
           var redirectUrl = targetReferenceItem[1][1] + location.search.replace('?','&');
-          return redirectTo(targetReferenceItem[1][0], redirectUrl, targetReferenceItem[1][2]);   
+          return redirectTo(targetReferenceItem[1][0], redirectUrl, targetReferenceItem[1][2]);
         }*/
         setRerefenceItemSelectModalBody(targetReferenceItem, initItemList, okEvent, cancelEvent, closeEvent);
     }).catch( function( e ) {
       targetReferenceItem = null;
       setRerefenceItemSelectModalBody(targetReferenceItem, initItemList, okEvent, cancelEvent, closeEvent);
-  
+
     });
 }
 
@@ -3083,7 +3083,7 @@ function setRerefenceItemSelectModalBody( itemList, initData, okCallback, cancel
 
   // 入力値を取得する
   const checkList = ( initData !== null || initData !== undefined )? initData.split(','): [''];
-  
+
   if ( itemList && itemList.length !== 0 ) {
       itemSelectHTML = '<div class="modal-table-wrap">'
       + '<form id="modal-reference-item-select">'
@@ -3115,7 +3115,7 @@ function setRerefenceItemSelectModalBody( itemList, initData, okCallback, cancel
       // ボタンを「閉じる」に変更
       $modalFooterMenu.children().remove();
       $modalFooterMenu.append('<li class="editor-modal-footer-menu-item"><button class="editor-modal-footer-menu-button negative" data-button-type="close">' + getMessage.FTE01050 + '</li>');
-      
+
       // 表示メッセージ
       const noDataMessage = ( itemList.length === 0 )? getMessage.FTE01152: getMessage.FTE01139;
       itemSelectHTML = '<p class="modal-one-message">' + noDataMessage + '</p>';
@@ -3190,7 +3190,7 @@ const modalUniqueConstraint = function() {
       i++;
     });
 
-    // 決定時の処理    
+    // 決定時の処理
     const okEvent = function(currentUniqueConstraintArray) {
       const uniqueConstraintData = getUniqueConstraintDispData(currentUniqueConstraintArray);
       const uniqueConstraintConv = uniqueConstraintData.conv;
@@ -3200,10 +3200,10 @@ const modalUniqueConstraint = function() {
 
       //現在の設定値を更新
       menuEditorArray['unique-constraints-current'] = currentUniqueConstraintArray;
-  
+
       itaModalClose();
     };
-    // キャンセル時の処理    
+    // キャンセル時の処理
     const cancelEvent = function() {
       itaModalClose();
     };
@@ -3213,7 +3213,7 @@ const modalUniqueConstraint = function() {
     }
 
     setUniqueConstraintModalBody(columnItemData, initmodalUniqueConstraintList, okEvent, cancelEvent, closeEvent);
-    
+
 };
 
 // 一意制約(複数項目)選択のモーダルを開く
@@ -3228,13 +3228,13 @@ const getUniqueConstraintDispData = function(uniqueConstraintArrayData){
       "conv" : "",
       "name" : ""
     };
-  
+
     let uniqueConstraintLength = uniqueConstraintArrayData.length;
-  
+
     if(uniqueConstraintLength == 0){
       return uniqueConstraintDispData;
     }
-  
+
     let uniqueConstraintConv = "";
     let uniqueConstraintName = "";
     let columnList;
@@ -3242,7 +3242,7 @@ const getUniqueConstraintDispData = function(uniqueConstraintArrayData){
     if ( 'menu_info' in menuEditorArray){
       columnList = menuEditorArray.menu_info.column;
     }
-  
+
     for (let i = 0; i < uniqueConstraintLength; i++){
         let targetIdLength = uniqueConstraintArrayData[i].length;
         let idPatternConv = "";
@@ -3274,23 +3274,23 @@ const getUniqueConstraintDispData = function(uniqueConstraintArrayData){
                   idPatternConv = idPatternConv + "-" + columnId;
                 }
               }
-  
+
               if(idPatternName == ""){
                 idPatternName = uniqueConstraintArrayData[i][j][columnId];
               }else{
                 idPatternName = idPatternName + "," + uniqueConstraintArrayData[i][j][columnId];
               }
-  
+
             }
           }
-  
+
           //columnID部分の文字列を結合
           if(uniqueConstraintConv == ""){
             uniqueConstraintConv = idPatternConv;
           }else{
             uniqueConstraintConv = uniqueConstraintConv + "," + idPatternConv;
           }
-  
+
           //項目名部分の文字列を結合
           if(uniqueConstraintName == ""){
               idPatternName = "[" + idPatternName + "]";
@@ -3302,12 +3302,12 @@ const getUniqueConstraintDispData = function(uniqueConstraintArrayData){
           }
         }
     }
-  
+
     uniqueConstraintDispData.conv = uniqueConstraintConv;
     uniqueConstraintDispData.name = uniqueConstraintName;
-  
+
     return uniqueConstraintDispData;
-  
+
 }
 
 //項目を削除したとき、一意制約(複数項目)にその項目が含まれていた場合削除する。
@@ -3353,7 +3353,7 @@ const deleteUniqueConstraintDispData = function(targetColumnId){
             }
           }
       }
-  
+
       //組み合わせの中身が空になった場合、その配列を除外する。
       let newUniqueConstraintLength = newCurrentUniqueConstraintData.length;
       for (let i = 0; i < newUniqueConstraintLength; i++){
@@ -3363,7 +3363,7 @@ const deleteUniqueConstraintDispData = function(targetColumnId){
           }
         }
       }
-  
+
       //更新後の値をページに反映
       uniquedeletecount = uniquedeletecount + 1;
       const uniqueConstraintData = getUniqueConstraintDispData(newCurrentUniqueConstraintData);
@@ -3372,11 +3372,11 @@ const deleteUniqueConstraintDispData = function(targetColumnId){
       const $input = $('#unique-constraint-list');
       $input.attr('data-unique-list', uniqueConstraintConv); //一意制約のIDの組み合わせをセット
       $input.text(uniqueConstraintName); //一意制約の項目名の組み合わせをセット
-  
+
       //新しい配列をセット
       menuEditorArray['unique-constraints-current'] = newCurrentUniqueConstraintData;
     }
-  
+
 }
 
 //項目名が変更されるアクションがあったとき、一意制約(複数項目)で表示している項目名をセットしなおす。
@@ -3433,7 +3433,7 @@ const updateUniqueConstraintDispData = function(){
       const $input = $('#unique-constraint-list');
       $input.attr('data-unique-list', uniqueConstraintConv); //一意制約のIDの組み合わせをセット
       $input.text(uniqueConstraintName); //一意制約の項目名の組み合わせをセット
-  
+
       //新しい配列をセット
       menuEditorArray['unique-constraints-current'] = newCurrentUniqueConstraintData;
     }
@@ -3442,20 +3442,20 @@ const updateUniqueConstraintDispData = function(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  登録情報作成
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 const createRegistrationData = function( type ){
-  
+
     let createMenuJSON = {
       'menu'   : {},
       'group'  : {},
       'column' : {},
       'type'   : {}
     };
-    
+
     // Order用カウンター
     let itemCount = 0;
-    
+
     // メニュー作成情報
     createMenuJSON['menu'] = getPanelParameter();
     if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit') {
@@ -3470,9 +3470,9 @@ const createRegistrationData = function( type ){
         }
       }
     }
-    
+
     const tableAnalysis = function( $cols, repeatCount ) {
-      
+
       // 子セルを調べる
       $cols.children().each( function(){
         const $column = $( this );
@@ -3623,31 +3623,31 @@ const createRegistrationData = function( type ){
               }
               tableAnalysis( $column.children('.menu-column-group-body'), repeatCount );
             // Group end
-          }     
-  
+          }
+
       });
-  
+
     };
-      
+
     // トップ階層のカラム情報
     let topColumns = [];
     $menuTable.children().each( function() {
       topColumns.push( $( this ).attr('id') );
     });
     createMenuJSON['menu']['columns'] = topColumns;
-  
+
     //メニュー作成タイプを格納
     createMenuJSON['type'] = type;
-  
+
     // 解析スタート
     tableAnalysis( $menuTable, 0 );
-    
+
     fn.fetch('/create/define/execute/', null, 'POST', createMenuJSON ).then(function(result){
       let id  = result['history_id'];
       let string = getMessage.FTE01140;
       let log = string + id;
       menuEditorLog.set( 'done', log );
-      
+
       fn.alert('', fn.escape( log, true ) ).then(function(){
           let url_path = location.pathname,
           splitstr = url_path.split('/'),
@@ -3656,8 +3656,8 @@ const createRegistrationData = function( type ){
           menu_name_rest = result['menu_name_rest'],
           menu = getParam('menu');
           window.location.href = '/' + organization_id + '/workspaces/' + workspace_id + '/ita/?menu=' + menu + '&menu_name_rest=' + menu_name_rest + '&history_id=' + id;
-      });      
-      
+      });
+
     }).catch(function( error ){
       let message = errorFormat(error.message);
       menuEditorLog.clear();
@@ -3672,11 +3672,11 @@ const errorFormat = function( error ) {
     let keyVal;
     let val;
     let errMessage = "";
-    
+
     const errorRow = function( m ){
         return `<div class="error-log-row">${textEntities(m)}</div>`
     };
-    
+
     try {
         errorMessage = JSON.parse(error);
         for ( const key in errorMessage ) {
@@ -3703,7 +3703,7 @@ const errorFormat = function( error ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   再表示
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const setMenu = function() {
@@ -3721,10 +3721,10 @@ const setMenu = function() {
         menuInfo['menu']['description'] = null;
         menuInfo['menu']['remarks'] = null;
     }
-    
+
     // パネル情報表示
     setPanelParameter( menuInfo );
-    
+
     let setMenuHTML = '';
     const setMenuTable = function( columns ) {
         if ( columns ) {
@@ -3735,19 +3735,19 @@ const setMenu = function() {
                     // グループ
                     case 'g': {
                         const groupData = menuInfo['group'][id];
-                              
+
                         // グループ枠HTML
                         const sv = function( v, f = true ) { return fn.cv( groupData[v], '', f ); };
-                        
+
                         setMenuHTML += ''
                           + '<div class="menu-column-group" data-group-id="' + sv('column_group_id') + '">'
                             + '<div class="menu-column-group-header">'
                               + getColumnHeaderGroupHTML( sv('column_group_name') )
                             + '</div>'
                             + '<div class="menu-column-group-body">';
-                        
+
                         setMenuTable( groupData.columns );
-                        
+
                         setMenuHTML += '</div>'
                           + '</div>';
                     } break;
@@ -3761,30 +3761,30 @@ const setMenu = function() {
         }
     };
     setMenuTable( menuInfo.menu.columns );
-    
+
     // HTMLセット
     $menuTable.html( setMenuHTML );
-    
+
     // select2
     $menuTable.find('.config-select').select2();
-    
+
     // 各種設定
     $menuTable.find('.menu-column-title-input, .menu-column-title-rest-input').each( function(){
         titleInputChange( $(this) );
     });
-    
+
     // プルダウン選択
     $menuTable.find('.menu-column').each(function(){
         const $item = $( this ),
               columnID = $item.attr('id'),
               type = $item.find('.menu-column-config-table').attr('date-select-value'),
               itemData = menuInfo['column'][ columnID ];
-        
+
         // プルダウン選択初期値設定
         if ( type === '7') {
             // 選択項目
             getpulldownDefaultValueList( $item, fn.cv( itemData['pulldown_selection_default_value'], '') );
-            
+
             // 参照項目
             $item.find('.reference-item').attr('data-reference-item-id', itemData['reference_item'] );
             //newItemListのIDから項目名に変換
@@ -3797,17 +3797,17 @@ const setMenu = function() {
                 //重複を排除
                 let setNewItemNameList = new Set(newItemNameListArray);
                 let setNewItemNameListArray = Array.from(setNewItemNameList);
-                
+
                 //カンマ区切りの文字列に変換し参照項目上に表示
                 var newItemNameList = setNewItemNameListArray.join(',');
                 $item.find('.reference-item').html( newItemNameList );
-            }            
+            }
         }
-        
+
         setEventPulldownDefaultValue( $item );
         setEventPulldownParameterSheetReference( $item );
     });
-    
+
     history.clear();
     emptyCheck();
     columnHeightUpdate();
@@ -3817,13 +3817,13 @@ const setMenu = function() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   メニューデータ取得・セット
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const getPanelParameter = function() {
     // 入力値を取得する
     const parameterArray = {};
-        
+
     parameterArray['menu_create_id'] = $('#create-menu-id').attr('data-value'); // 項番
     parameterArray['menu_name'] = $('#create-menu-name').val(); // メニュー名
     parameterArray['menu_name_rest'] = $('#create-menu-name-rest').val(); // メニュー名(REST)
@@ -3867,7 +3867,7 @@ const getPanelParameter = function() {
     }
 
     parameterArray['remarks'] = $('#create-menu-note').val(); // 備考
-        
+
     // 作成対象別項目
     //const type = parameterArray['sheet_type_id'];
     const type = $('#create-menu-type').val();
@@ -3916,7 +3916,7 @@ const getPanelParameter = function() {
 
     return parameterArray;
 };
-    
+
 const setPanelParameter = function( setData ) {
   // nullを空白に
   for ( let key in setData['menu'] ) {
@@ -3926,8 +3926,8 @@ const setPanelParameter = function( setData ) {
   }
   // パネルに値をセットする
   const type = setData['menu']['sheet_type_id'];
-        $property.attr('data-menu-type', type );  
-        
+        $property.attr('data-menu-type', type );
+
   if ( menuEditorMode !== 'diversion' ){
     // 項番
     $('#create-menu-id')
@@ -3949,7 +3949,7 @@ const setPanelParameter = function( setData ) {
   $('#permission-role-name-list')
     .attr('data-role-id', roleList )
     .text( getRoleListIdToName( roleList ) );
-    
+
   // 一意制約(複数項目)
   let unique_constraint_current = setData['menu']['unique_constraint_current'];
   let unique_dict = {};
@@ -3974,7 +3974,7 @@ const setPanelParameter = function( setData ) {
     .text(initUniqueConstraintName)
     .attr('data-unique-list', initUniqueConstraintConv);
   menuEditorArray['unique-constraints-current'] = setData['menu']['unique_constraint_current']; //更新用に格納しなおす
-    
+
   // エディットモード別
   if ( menuEditorMode === 'view') {
     $('#create-menu-name').text( setData['menu']['menu_name'] ); // メニュー名
@@ -3990,8 +3990,8 @@ const setPanelParameter = function( setData ) {
     $('#create-menu-order').val( setData['menu']['disp_seq'] ); // 表示順序
     $('#create-menu-explanation').val( setData['menu']['description'] );  // 説明
     $('#create-menu-note').val( setData['menu']['remarks'] ); // 備考
-  } 
-      
+  }
+
   // 作成対象項目別
   if ( type === '1' || type === '3') {
     // パラメータシート
@@ -4034,7 +4034,7 @@ const setPanelParameter = function( setData ) {
       .attr('data-id', setData['menu']['menu_group_for_input_id'] )
       .text( setData['menu']['menu_group_for_input'] );
   }
-    
+
   //「メニュー作成状態」が2(作成済み)の場合は、メニュー名(REST)入力欄を非活性にする。
   if(menuEditorMode != 'diversion'){
     if(setData['menu']['menu_create_done_status_id'] == 2){
@@ -4042,22 +4042,22 @@ const setPanelParameter = function( setData ) {
       $('#create-menu-name-rest').prop('disabled', true);
     }
   }
-    
+
   //「メニュー作成状態」が1（未作成）の場合に各種ボタンを操作
   if(setData['menu']['menu_create_done_status_id'] == 1){
       //「編集」ボタンを削除
       $menuEditor.find('[data-type="edit"]').closest('.operationMenuItem').remove();
-      
+
       const buttonText = ( menuEditorMode === 'view')? getMessage.FTE01151: getMessage.FTE01090;
-      
+
       //「初期化」「作成(初期化)」ボタンを「作成」に名称変更
       const $initialize = $menuEditor.find('[data-type="initialize"], [data-type="update-initialize"]');
       $initialize.attr({
           'data-action': 'positive',
           'title': buttonText
       }).find('.iconButtonBody').text( buttonText )
-          .closest('.operationMenuItem').removeClass('operationMenuSeparate'); 
-      $initialize.find('.icon-clear').removeClass('icon-clear').addClass('icon-plus');   
+          .closest('.operationMenuItem').removeClass('operationMenuSeparate');
+      $initialize.find('.icon-clear').removeClass('icon-clear').addClass('icon-plus');
   }
 
   itemCounter = setData['menu']['number_item'] + 1;
@@ -4068,7 +4068,7 @@ const setPanelParameter = function( setData ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   初期表示
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // メニューグループ初期値
@@ -4080,7 +4080,7 @@ const initialMenuGroup = function() {
           forInputName = listIdName( 'group', forInputID ),
           forSubstitutionName = listIdName( 'group', forSubstitutionID ),
           forReferenceName = listIdName( 'group', forReference );
-    
+
     // 入力用
     if ( forInputName !== null ) {
       $('#create-menu-for-input')
@@ -4173,7 +4173,7 @@ function setRoleSelectModalBody( roleList, initData, okCallback, cancelCallBack,
     }
   }
 
-  roleSelectHTML += ''      
+  roleSelectHTML += ''
       + '</tbody>'
     + '</table>'
     + '</form>'
@@ -4305,7 +4305,7 @@ function setUniqueConstraintModalBody(columnItemData, initmodalUniqueConstraintL
           });
       }
 
-      
+
       if(initUniqueConstraintLength == 0){
           //一意制約の設定値がない場合、メッセージを表示
           $noneMsg.show();

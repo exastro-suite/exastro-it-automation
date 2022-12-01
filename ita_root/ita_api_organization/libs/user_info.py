@@ -29,15 +29,15 @@ def collect_menu_group_panels(objdbca):
     # テーブル名
     t_common_menu = 'T_COMN_MENU'
     t_common_menu_group = 'T_COMN_MENU_GROUP'
-    
+
     # 変数定義
     workspace_id = g.get('WORKSPACE_ID')
     menu_group_list_id = '10102'  # 「メニューグループ管理」メニューのID
     column_name_rest = 'menu_group_icon'  # カラム名
-    
+
     # 『メニュー管理』テーブルからメニューの一覧を取得
     ret = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
-    
+
     menu_rest_names = []
     for recode in ret:
         menu_rest_names.append(recode.get('MENU_NAME_REST'))
@@ -49,31 +49,31 @@ def collect_menu_group_panels(objdbca):
         # 権限のあるメニューのメニューグループを格納
         menu_group_id = menu_item.get('MENU_GROUP_ID')
         menu_groups.append(menu_group_id)
-        
+
     # 重複を除外
     menu_groups = list(set(menu_groups))
-    
+
     # 『メニューグループ管理』テーブルからメニューグループの一覧を取得
     ret = objdbca.table_select(t_common_menu_group, 'WHERE DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [0])
-    
+
     panels_data = {}
     for recode in ret:
         # メニューグループに権限のあるメニューが1つもない場合は除外
         menu_group_id = recode.get('MENU_GROUP_ID')
         if menu_group_id not in menu_groups:
             continue
-        
+
         # 対象ファイルの格納先を取得
         file_name = recode.get('MENU_GROUP_ICON')
         file_paths = get_upload_file_path(workspace_id, menu_group_list_id, menu_group_id, column_name_rest, file_name, '')  # noqa: F405
-        
+
         # 対象ファイルをbase64エンコード
         encoded = file_encode(file_paths.get('file_path'))  # noqa: F405
         if not encoded:
             encoded = None
-        
+
         panels_data[menu_group_id] = encoded
-    
+
     return panels_data
 
 
@@ -88,10 +88,10 @@ def collect_user_auth(objdbca):
 
     # ユーザIDを取得
     user_id = g.get('USER_ID')
-    
+
     # ユーザ名を取得
     user_name = util.get_user_name(user_id)
-    
+
     # workspaceに所属するロールを取得
     workspace_roles = util.get_workspace_roles()
 
@@ -100,17 +100,17 @@ def collect_user_auth(objdbca):
     for user_role in g.ROLES:
         if user_role in workspace_roles:
             roles.append(user_role)
-    
+
     # Workspaceを取得
     workspaces = util.get_exastro_platform_workspaces()[0]
-    
+
     user_auth_data = {
         "user_id": user_id,
         "user_name": user_name,
         "roles": roles,
         "workspaces": workspaces
     }
-    
+
     return user_auth_data
 
 
@@ -125,13 +125,13 @@ def collect_menus(objdbca):
     # テーブル名
     t_common_menu = 'T_COMN_MENU'
     t_common_menu_group = 'T_COMN_MENU_GROUP'
-    
+
     # 変数定義
     lang = g.get('LANGUAGE')
-    
+
     # 『メニュー管理』テーブルからメニューの一覧を取得
     ret = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
-    
+
     # メニューグループごとのメニュー一覧を作成
     menu_rest_names = []
     for recode in ret:
@@ -144,37 +144,53 @@ def collect_menus(objdbca):
         menu_group_id = recode.get('MENU_GROUP_ID')
         if menu_group_id not in menus:
             menus[menu_group_id] = []
-        
+
         add_menu = {}
         add_menu['id'] = recode.get('MENU_ID')
         add_menu['menu_name'] = recode.get('MENU_NAME_' + lang.upper())
         add_menu['menu_name_rest'] = recode.get('MENU_NAME_REST')
         add_menu['disp_seq'] = recode.get('DISP_SEQ')
         menus[menu_group_id].append(add_menu)
-    
+
     # 『メニューグループ管理』テーブルからメニューグループの一覧を取得
     ret = objdbca.table_select(t_common_menu_group, 'WHERE DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [0])
-    
+
     # メニューグループの一覧を作成し、メニュー一覧も格納する
     menu_group_list = []
     for recode in ret:
+        exclusion_flag = False
         # メニューグループに権限のあるメニューが1つもない場合は除外
         menu_group_id = recode.get('MENU_GROUP_ID')
         target_menus = menus.get(menu_group_id)
         if not target_menus:
+            # 自分自身を親メニューグループとしているメニューグループを確認し、そのメニューグループに権限のあるメニューがあるかを確認
+            for recode2 in ret:
+                exclusion_flag = True
+                parent_id = recode2.get('PARENT_MENU_GROUP_ID')
+                if parent_id == menu_group_id:
+                    child_menu_group_id = recode2.get('MENU_GROUP_ID')
+                    child_target_menus = menus.get(child_menu_group_id)
+                    if child_target_menus:
+                        exclusion_flag = False
+                        target_menus = child_target_menus
+                        break
+                else:
+                    continue
+        # exclusion_flagがTrueの場合は除外対象とする
+        if exclusion_flag:
             continue
-        
+
         add_menu_group = {}
         add_menu_group['parent_id'] = recode.get('PARENT_MENU_GROUP_ID')
         add_menu_group['id'] = menu_group_id
         add_menu_group['menu_group_name'] = recode.get('MENU_GROUP_NAME_' + lang.upper())
         add_menu_group['disp_seq'] = recode.get('DISP_SEQ')
         add_menu_group['menus'] = target_menus
-        
+
         menu_group_list.append(add_menu_group)
-    
+
     menus_data = {
         "menu_groups": menu_group_list,
     }
-    
+
     return menus_data

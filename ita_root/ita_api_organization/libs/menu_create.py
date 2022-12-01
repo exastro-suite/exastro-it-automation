@@ -60,7 +60,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     # 対象メニューグループのデータを形成
     format_target_menu_group_list = {}
     for target in create_data['target_menu_group_list']:
-        format_target_menu_group_list[target.get('menu_group_id')] = target.get('menu_group_name')
+        format_target_menu_group_list[target.get('menu_group_id')] = target.get('full_menu_group_name')
 
     # シートタイプのデータを形成
     format_sheet_type_list = {}

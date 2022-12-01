@@ -1078,8 +1078,11 @@ class SubValueAutoReg():
                                                 row[AnscConst.DF_ITA_LOCAL_PKEY],
                                                 WS_DB)
 
-                            ina_vars_ass_list[idx] = ret[0]
-                            ina_array_vars_ass_list[idx] = ret[2]
+                            # NULL連携無効で処理対象外になった場合は追加しない
+                            if not ret[0] == 0:
+                                ina_vars_ass_list[idx] = ret[0]
+                            if not ret[2] == 0:
+                                ina_array_vars_ass_list[idx] = ret[2]
 
                             idx += 1
                             skip_flag = False
@@ -1159,7 +1162,7 @@ class SubValueAutoReg():
             # 具体値が空白か判定
             ret = self.validateValueTypeColValue(in_col_val, in_null_data_handling_flg, in_menu_id, in_row_id, in_col_list['COLUMN_NAME_JA'], WS_DB)
             if ret == 0:
-                return ina_vars_ass_list, ina_vars_ass_chk_list, ina_array_vars_ass_list, ina_array_vars_ass_chk_list
+                return False, ina_vars_ass_chk_list, False, ina_array_vars_ass_chk_list
 
             # checkAndCreateVarsAssignDataの戻りは判定しない。
             ret = self.checkAndCreateVarsAssignData(in_table_name,

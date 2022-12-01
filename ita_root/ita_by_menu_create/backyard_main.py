@@ -299,7 +299,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             if create_type == 'initialize' or create_type == 'edit':
                 debug_msg = g.appmsg.get_log_message("BKY-20011", [target_menu_group_type])
                 g.applogger.debug(debug_msg)
-                result, msg, ret_data = _update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column)
+                result, msg, ret_data = _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column)
                 if not result:
                     raise Exception(msg)
 
@@ -318,7 +318,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「メニュー-テーブル紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20013", [target_menu_group_type])
             g.applogger.debug(debug_msg)
-            result, msg = _insert_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, file_upload_only_flag, create_table_name, create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name)  # noqa: E501
+            result, msg = _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, file_upload_only_flag, create_table_name, create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name)  # noqa: E501
             if not result:
                 raise Exception(msg)
 
@@ -516,7 +516,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
     return True, None, ret_data
 
 
-def _update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column):
+def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column):
     """
         「メニュー管理」の対象レコードを更新。対象が無ければレコードを新規登録する。
         ARGS:
@@ -552,7 +552,7 @@ def _update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
             sort_key = '[{{"ASC":"{}"}}]'.format(sort_key_column_name_rest)
 
         # 更新対象のレコードを特定
-        ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_GROUP_ID = %s AND MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [target_menu_group_id, menu_name_rest, 0])  # noqa: E501
+        ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s', [menu_name_rest])  # noqa: E501
         if ret:
             menu_id = ret[0].get('MENU_ID')
             # 「メニュー管理」のレコードを更新
@@ -570,7 +570,7 @@ def _update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
             }
             ret_data = objdbca.table_update(t_comn_menu, data_list, 'MENU_ID')
         else:
-            # 更新対象が無い場合はFalseをReturnし、レコードの新規登録
+            # 更新対象が無い場合はレコードの新規登録
             result, msg, ret_data = _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column)
             if not result:
                 raise Exception(msg)
@@ -626,9 +626,9 @@ def _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_ro
     return True, None
 
 
-def _insert_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, file_upload_only_flag, create_table_name, create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name):  # noqa: E501
+def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, file_upload_only_flag, create_table_name, create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name):  # noqa: E501
     """
-        「メニュー-テーブル紐付管理」メニューのテーブルにレコードを追加する
+        「メニュー-テーブル紐付管理」メニューのテーブルにレコードを追加もしくは復活する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             sheet_type: シートタイプ
@@ -704,29 +704,57 @@ def _insert_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, file_uplo
         if sheet_type == "1" and file_upload_only_flag:
             sheet_type = "4"
 
-        # 「メニュー-テーブル紐付管理」にレコードを登録
-        data_list = {
-            "MENU_ID": menu_uuid,
-            "TABLE_NAME": create_table_name,
-            "VIEW_NAME": create_view_name,
-            "PK_COLUMN_NAME_REST": "uuid",
-            "MENU_INFO_JA": record_t_menu_define.get('DESCRIPTION_JA'),
-            "MENU_INFO_EN": record_t_menu_define.get('DESCRIPTION_EN'),
-            "SHEET_TYPE": sheet_type,
-            "HISTORY_TABLE_FLAG": "1",
-            "INHERIT": "0",
-            "VERTICAL": record_t_menu_define.get('VERTICAL'),
-            "ROW_INSERT_FLAG": row_insert_flag,
-            "ROW_UPDATE_FLAG": row_update_flag,
-            "ROW_DISUSE_FLAG": row_disuse_flag,
-            "ROW_REUSE_FLAG": row_reuse_flag,
-            "SUBSTITUTION_VALUE_LINK_FLAG": substitution_value_link_flag,
-            "UNIQUE_CONSTRAINT": unique_constraint,
-            "DISUSE_FLAG": "0",
-            "LAST_UPDATE_USER": g.get('USER_ID')
-        }
-        primary_key_name = 'TABLE_DEFINITION_ID'
-        objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
+        # 「メニュー-テーブル紐付管理」にレコードを登録もしくは更新する
+        ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s', [menu_uuid])
+        if ret:
+            table_definition_id = ret[0].get('TABLE_DEFINITION_ID')
+            data_list = {
+                "TABLE_DEFINITION_ID": table_definition_id,
+                "MENU_ID": menu_uuid,
+                "TABLE_NAME": create_table_name,
+                "VIEW_NAME": create_view_name,
+                "PK_COLUMN_NAME_REST": "uuid",
+                "MENU_INFO_JA": record_t_menu_define.get('DESCRIPTION_JA'),
+                "MENU_INFO_EN": record_t_menu_define.get('DESCRIPTION_EN'),
+                "SHEET_TYPE": sheet_type,
+                "HISTORY_TABLE_FLAG": "1",
+                "INHERIT": "0",
+                "VERTICAL": record_t_menu_define.get('VERTICAL'),
+                "ROW_INSERT_FLAG": row_insert_flag,
+                "ROW_UPDATE_FLAG": row_update_flag,
+                "ROW_DISUSE_FLAG": row_disuse_flag,
+                "ROW_REUSE_FLAG": row_reuse_flag,
+                "SUBSTITUTION_VALUE_LINK_FLAG": substitution_value_link_flag,
+                "UNIQUE_CONSTRAINT": unique_constraint,
+                "DISUSE_FLAG": "0",
+                "LAST_UPDATE_USER": g.get('USER_ID')
+            }
+            primary_key_name = 'TABLE_DEFINITION_ID'
+            objdbca.table_update(t_comn_menu_table_link, data_list, primary_key_name)
+
+        else:
+            data_list = {
+                "MENU_ID": menu_uuid,
+                "TABLE_NAME": create_table_name,
+                "VIEW_NAME": create_view_name,
+                "PK_COLUMN_NAME_REST": "uuid",
+                "MENU_INFO_JA": record_t_menu_define.get('DESCRIPTION_JA'),
+                "MENU_INFO_EN": record_t_menu_define.get('DESCRIPTION_EN'),
+                "SHEET_TYPE": sheet_type,
+                "HISTORY_TABLE_FLAG": "1",
+                "INHERIT": "0",
+                "VERTICAL": record_t_menu_define.get('VERTICAL'),
+                "ROW_INSERT_FLAG": row_insert_flag,
+                "ROW_UPDATE_FLAG": row_update_flag,
+                "ROW_DISUSE_FLAG": row_disuse_flag,
+                "ROW_REUSE_FLAG": row_reuse_flag,
+                "SUBSTITUTION_VALUE_LINK_FLAG": substitution_value_link_flag,
+                "UNIQUE_CONSTRAINT": unique_constraint,
+                "DISUSE_FLAG": "0",
+                "LAST_UPDATE_USER": g.get('USER_ID')
+            }
+            primary_key_name = 'TABLE_DEFINITION_ID'
+            objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
     except Exception as msg:
         return False, msg

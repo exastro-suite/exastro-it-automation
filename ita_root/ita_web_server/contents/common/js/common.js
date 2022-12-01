@@ -2297,11 +2297,11 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
                         <tbody class="commonTbody">
                             <tr class="commonTr">
                                 <th class="commonTh">ID</th>
-                                <td class="commonTd">${executeConfig.selectId}</td>
+                                <td class="commonTd selectId">${executeConfig.selectId}</td>
                             </tr>
                             <tr class="commonTr">
                                 <th class="commonTh">${getMessage.FTE10055}</th>
-                                <td class="commonTd">${executeConfig.selectName}</td>
+                                <td class="commonTd selectName">${executeConfig.selectName}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2369,6 +2369,10 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
         } else {
             modalInstance[ modalId ].btnFn = funcs;
             modalInstance[ modalId ].show();
+            
+            // 選択しているItemをセット
+            modalInstance[ modalId ].$.dbody.find('.selectId').text( executeConfig.selectId );
+            modalInstance[ modalId ].$.dbody.find('.selectName').text( executeConfig.selectName );
         }
     });
 },

@@ -30,6 +30,7 @@ from common_libs.common import *  # noqa: F403
 from flask import jsonify, session, g
 from copy import copy
 from openpyxl import Workbook
+from openpyxl.cell.cell import MergedCell
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import PatternFill, Border, Side, Alignment
@@ -687,6 +688,46 @@ def create_excel_headerlist(lang, ws, depth, retList_t_common_menu_column_link, 
 
 # 1行目（項目名）のヘッダーを作成し、結合する
 def create_excel_header_firstline(ws, excel_header_list, depth, startRow, startClm, font_wh, al_cc, fill_bl, border):
+    # 縦横に結合する項目があるかチェックする
+    merged_list = []
+    # 横軸の結合範囲を調べる
+    for i, row in enumerate(excel_header_list):
+        startCell = None
+        endCell = None
+        tmp_j_st = None
+        tmp_j_ed = None
+        # 前回ループ時の値との比較用
+        tmp = None
+        for j, data in enumerate(row):
+            if tmp == data and startCell is None:
+                startCell = ws.cell(row=startRow + i, column=startClm + j - 1).coordinate
+                # 結合開始位置を記憶しておく
+                tmp_j_st = j - 1
+            elif tmp != data and startCell is not None:
+                # 横軸の範囲がわかったら、縦軸の結合があるかチェックする
+                tmp_j_ed = j - 1
+                tmp_i_ed = None
+                for y in range(1, depth - i):
+                    next_y_data = excel_header_list[i + y][tmp_j_st]
+                    if tmp == next_y_data:
+                        # 縦軸に結合する要素があった場合
+                        tmp_i_ed = i + y
+                    elif tmp_i_ed is not None:
+                        # 縦軸に結合する要素が無くなった場合
+                        break
+                    elif tmp_i_ed is None:
+                        # 縦軸に結合する要素が1つも無かった場合
+                        break
+                if tmp_i_ed is not None:
+                    endCell = ws.cell(row=startRow + tmp_i_ed, column=startClm + tmp_j_ed).coordinate
+                if startCell is not None and endCell is not None:
+                    if endCell not in merged_list:
+                        ws.merge_cells(startCell + ':' + endCell)
+                        merged_list.append(endCell)
+                    startCell = None
+                    endCell = None
+            tmp = data
+    
     # 1行目（項目名）のヘッダーを作成する
     for i, row in enumerate(excel_header_list):
         # 結合開始位置
@@ -709,6 +750,9 @@ def create_excel_header_firstline(ws, excel_header_list, depth, startRow, startC
                 ws.cell(row=startRow + i, column=startClm + j).alignment = al_cc
                 ws.cell(row=startRow + i, column=startClm + j).fill = fill_bl
                 ws.cell(row=startRow + i, column=startClm + j).border = border
+                if type(ws.cell(row=startRow + i, column=startClm + j)).__name__ == 'MergedCell':
+                    # 結合セルに対して値を入れようとするとエラーになるのでスキップさせる
+                    continue
                 ws.cell(row=startRow + i, column=startClm + j, value=data)
             if tmp == data and startCell is None:
                 startCell = ws.cell(row=startRow + i, column=startClm + j - 1).coordinate

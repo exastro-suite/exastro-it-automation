@@ -128,7 +128,7 @@ class DockerMode(AnsibleAgent):
             return True, cp.stdout
         else:
             # cp.check_returncode()  # 例外を発生させたい場合
-            return False, {"return_code": cp.returncode, "stderr": cp.stderr}
+            return False, {"function": "container_start_up", "return_code": cp.returncode, "stderr": cp.stderr}
 
     def is_container_running(self, execution_no):
         """
@@ -144,14 +144,14 @@ class DockerMode(AnsibleAgent):
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
             # cp.check_returncode()  # 例外を発生させたい場合
-            return False, {"return_code": cp.returncode, "stderr": cp.stderr}
+            return False, {"function": "is_container_running", "return_code": cp.returncode, "stderr": cp.stderr}
 
         # 戻りをjsonデコードして、runningのものが一つだけ存在しているか確認
         result_obj = json.loads(cp.stdout)
         if len(result_obj) > 0 and result_obj[0]['State'] == "running":
             return True, result_obj
 
-        return False, {"return_code": cp.returncode, "stderr": "not running"}
+        return False, {"function": "is_container_running", "return_code": cp.returncode, "stderr": "not running"}
 
     def container_kill(self, execution_no):
         """
@@ -167,7 +167,7 @@ class DockerMode(AnsibleAgent):
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
             # cp.check_returncode()  # 例外を発生させたい場合
-            return False, {"return_code": cp.returncode, "stderr": cp.stderr}
+            return False, {"function": "container_kill->kill", "return_code": cp.returncode, "stderr": cp.stderr}
 
         # docker-compose -p project rm -f
         docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
@@ -176,7 +176,7 @@ class DockerMode(AnsibleAgent):
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
             # cp.check_returncode()  # 例外を発生させたい場合
-            return False, {"return_code": cp.returncode, "stderr": cp.stderr}
+            return False, {"function": "container_kill->rm", "return_code": cp.returncode, "stderr": cp.stderr}
 
         return True, cp.stdout
 
@@ -195,7 +195,7 @@ class DockerMode(AnsibleAgent):
 
         # existedしているものを削除
         result_obj = json.loads(cp.stdout)
-        if len(result_obj) > 0 and result_obj[0]['State'] in ['existed']:
+        if len(result_obj) > 0 and result_obj[0]['State'] in ['exited']:
             # docker-compose -p project rm -f
             docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
             command = ["sudo"] + docker_compose_command
@@ -203,7 +203,7 @@ class DockerMode(AnsibleAgent):
             cp = subprocess.run(command, capture_output=True, text=True)
             if cp.returncode != 0:
                 # cp.check_returncode()  # 例外を発生させたい場合
-                return False, {"return_code": cp.returncode, "stderr": cp.stderr}
+                return False, {"function": "container_clean", "return_code": cp.returncode, "stderr": cp.stderr}
 
         return True, cp.stdout
 
@@ -286,7 +286,7 @@ class KubernetesMode(AnsibleAgent):
             return True, cp.stdout
         else:
             # cp.check_returncode()  # 例外を発生させたい場合
-            return False, {"return_code": cp.returncode, "stderr": cp.stderr}
+            return False, {"function": "container_start_up", "return_code": cp.returncode, "stderr": cp.stderr}
 
     def is_container_running(self, execution_no):
         """
@@ -301,7 +301,7 @@ class KubernetesMode(AnsibleAgent):
         if return_code == 0 and status.lower() in ["running", "pending"]:
             return True,
 
-        return False, {"return_code": return_code, "stderr": "not running"}
+        return False, {"function": "is_container_running", "return_code": return_code, "stderr": "not running"}
 
     def container_kill(self, execution_no):
         """
@@ -319,7 +319,7 @@ class KubernetesMode(AnsibleAgent):
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
         if cp.returncode != 0:
             # cp.check_returncode()  # 例外を発生させたい場合
-            return False, {"return_code": cp.returncode, "stderr": cp.stderr}
+            return False, {"function": "container_kill", "return_code": cp.returncode, "stderr": cp.stderr}
 
         return True, cp.stdout
 
@@ -331,7 +331,10 @@ class KubernetesMode(AnsibleAgent):
 
         return_code, status, errmsg = self._check_status(execution_no)
         if status in ["Succeeded", "Failed"]:
-            return self.container_kill(execution_no)
+            retBool, retCon = self.container_kill(execution_no)
+            if retBool is False:
+                retCon["function"] = "container_clean"
+            return retBool, retCon
 
         g.applogger.debug("not exist completed container, nothing to do.")
         return True,
@@ -350,15 +353,15 @@ class KubernetesMode(AnsibleAgent):
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
         if cp.returncode != 0:
             # cp.check_returncode()  # 例外を発生
-            return cp.returncode, None, cp.stderr
+            return cp.returncode, "error", cp.stderr
 
         try:
             result_obj = json.loads(cp.stdout)
             status = result_obj['status']['phase']
         except Exception as e:
-            g.applogger.debug(str(e))
-            g.applogger.debug("stdout:\n%s" % cp.stdout.decode('utf-8'))
+            g.applogger.error(str(e))
+            g.applogger.error("stdout:\n%s" % cp.stdout.decode('utf-8'))
 
-            return 1, None, str(e)
+            return 1, "error", str(e)
 
         return cp.returncode, status, ""

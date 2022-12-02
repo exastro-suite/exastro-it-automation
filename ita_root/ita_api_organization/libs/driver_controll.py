@@ -20,6 +20,7 @@ from common_libs.loadtable import *  # noqa: F403
 import re
 import os
 import datetime
+import json
 from common_libs.common.exception import AppException
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.functions.util import *
@@ -125,7 +126,7 @@ def get_execution_info(objdbca, target, execution_no):
         RETRUN:
             data
     """
-    
+
     # 該当の作業管理を取得(ID変換のためloadTableで取得)
     objmenu = load_table.loadTable(objdbca, target['execution_list'])
     filter_parameter = {
@@ -162,25 +163,28 @@ def get_execution_info(objdbca, target, execution_no):
     execution_info['progress']['execution_log']['exec_log'] = {}
     path = getAnsibleExecutDirPath(AnscConst.DF_LEGACY_ROLE_DRIVER_ID, execution_no)
 
-    if table_row['MULTIPLELOG_MODE'] == '1':
-        list_log = table_row['LOGFILELIST_JSON'].split(',') 
+    if table_row['MULTIPLELOG_MODE'] == 1:
+        if not table_row['LOGFILELIST_JSON']:
+            list_log = []
+        else:
+            list_log = json.loads(table_row['LOGFILELIST_JSON'])
         for log in list_log:
             log_file_path = path + '/out/' + log
             if os.path.isfile(log_file_path):
                 lcstr = Path(log_file_path).read_text(encoding="utf-8")
                 execution_info['progress']['execution_log']['exec_log'][log] = lcstr
-    else:
-        log_file_path = path + '/out/exec.log'
+
+    log_file_path = path + '/out/exec.log'
+    if os.path.isfile(log_file_path):
         if os.path.isfile(log_file_path):
-            if os.path.isfile(log_file_path):
-                lcstr = Path(log_file_path).read_text(encoding="utf-8")
-                execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
-    
+            lcstr = Path(log_file_path).read_text(encoding="utf-8")
+            execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
+
     log_file_path = path + '/out/error.log'
     if os.path.isfile(log_file_path):
         lcstr = Path(log_file_path).read_text(encoding="utf-8")
         execution_info['progress']['execution_log']['error_log'] = lcstr
-    
+
     # 状態監視周期・進行状態表示件数
     where = ""
     tmp_data_list = objdbca.table_select("T_ANSC_IF_INFO", where)
@@ -189,7 +193,7 @@ def get_execution_info(objdbca, target, execution_no):
         execution_info['number_of_rows_to_display_progress_status'] = tmp_row['ANSIBLE_TAILLOG_LINES']
 
     return execution_info
-    
+
 def reserve_cancel(objdbca, execution_no):
     """
         予約取消
@@ -200,18 +204,18 @@ def reserve_cancel(objdbca, execution_no):
             status: SUCCEED
             execution_no: 作業No
     """
-    
+
     # 該当の作業実行のステータス取得
     where = "WHERE EXECUTION_NO = %s"
     objdbca.table_lock(["T_ANSR_EXEC_STS_INST"])
     data_list = objdbca.table_select("T_ANSR_EXEC_STS_INST", where, [execution_no])
-    
+
     # 該当する作業実行が存在しない
     if len(data_list) is None or len(data_list) == 0:
         log_msg_args = [execution_no]
         api_msg_args = [execution_no]
         raise AppException("499-00903", log_msg_args, api_msg_args)
-    
+
     for row in data_list:
         # ステータスが未実行(予約)でない
         if not row['STATUS_ID'] == AnscConst.RESERVE:
@@ -223,14 +227,15 @@ def reserve_cancel(objdbca, execution_no):
                     status = tmp_row['EXEC_STATUS_NAME_JA']
                 else:
                     status = tmp_row['EXEC_STATUS_NAME_EN']
-                
+
             log_msg_args = [status]
             api_msg_args = [status]
             raise AppException("499-00910", log_msg_args, api_msg_args)
-        
+
         # ステータスを予約取消に変更
         update_list = {'EXECUTION_NO': execution_no, 'STATUS_ID': AnscConst.RESERVE_CANCEL}
         ret = objdbca.table_update('T_ANSR_EXEC_STS_INST', update_list, 'EXECUTION_NO', True)
         objdbca.db_commit()
-        
-    return {"status": "SUCCEED", "execution_no": execution_no}
+
+    result_msg = g.appmsg.get_api_message("MSG-10904", [execution_no])
+    return result_msg

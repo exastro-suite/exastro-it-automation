@@ -13,6 +13,8 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8000
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -36,6 +38,8 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8079
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -48,6 +52,8 @@ services:
       - GITLAB_HOST=${GITLAB_HOST}
       - GITLAB_PORT=${GITLAB_PORT}
       - GITLAB_ROOT_TOKEN=${GITLAB_ROOT_TOKEN}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
   ita-web-server:
     user: 1000:1000
     build:
@@ -88,6 +94,8 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -116,6 +124,8 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -135,6 +145,8 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -154,6 +166,8 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -173,6 +187,8 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}

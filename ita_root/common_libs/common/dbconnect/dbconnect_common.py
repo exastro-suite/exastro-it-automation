@@ -73,7 +73,7 @@ class DBConnectCommon:
                 user=self._db_user,
                 passwd=ky_decrypt(self._db_passwd),
                 database=self._db,
-                charset='utf8',
+                charset='utf8mb4',
                 cursorclass=pymysql.cursors.DictCursor
             )
         except pymysql.Error as e:
@@ -439,7 +439,7 @@ class DBConnectCommon:
     def prepared_val_escape(self, val):
         """
         escape sql statement
-        
+
         Arguments:
             val: str
         Returns:
@@ -453,7 +453,7 @@ class DBConnectCommon:
     def prepared_list_escape(self, str_list):
         """
         escape list of sql statement
-        
+
         Arguments:
             str_list: list of str
         Returns:
@@ -464,7 +464,7 @@ class DBConnectCommon:
     def _uuid_create(self):
         """
         make uuid of version4
-        
+
         Returns:
             uuid
         """
@@ -489,7 +489,7 @@ class DBConnectCommon:
     def userinfo_generate(self, prefix=""):
         """
         create user for workspace
-        
+
         Arguments:
             db_name: database name(uuid)
         Returns:
@@ -505,7 +505,7 @@ class DBConnectCommon:
     def password_generate(self):
         """
         generate password
-        
+
         Arguments:
             escape or not: bool
         Returns:
@@ -538,7 +538,7 @@ class DBConnectCommon:
     def get_orgdb_connect_info(self, organization_id):
         """
         get database connect infomation for organization
-        
+
         Arguments:
             organization_id: organization_id
         Returns:

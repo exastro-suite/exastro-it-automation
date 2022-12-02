@@ -16,6 +16,7 @@ import subprocess
 import time
 import re
 import os
+from datetime import datetime
 
 from flask import g
 from common_libs.common.dbconnect import DBConnectWs
@@ -78,7 +79,7 @@ def main_logic(organization_id, workspace_id, wsDb):
 def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
     """
     実行中の子プロの起動確認
-    
+
     Returns:
         bool
     """
@@ -141,9 +142,8 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
                     "EXECUTION_NO": execution_no,
                     "STATUS_ID": ansc_const.EXCEPTION,
                     "TIME_END": time_stamp,
+                    "TIME_START": time_stamp,
                 }
-                if not execute_data["TIME_START"]:
-                    data["TIME_START"] = time_stamp
                 result = cm.update_execution_record(wsDb, data)
                 if result[0] is True:
                     wsDb.db_commit()
@@ -167,7 +167,7 @@ def child_process_exist_check(wsDb: DBConnectWs, ansibleAg):
 def child_process_exist_check_ps():
     """
     実行中の子プロのpsコマンド取得結果
-    
+
     Returns:
         stdout row
     """
@@ -210,7 +210,7 @@ def child_process_exist_check_ps():
 def get_running_process(wsDb):
     """
     実行中の作業データを取得
-    
+
     Returns:
         records
     """
@@ -223,19 +223,27 @@ def get_running_process(wsDb):
     return records
 
 
+def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
+    dt = datetime.now().strftime(format)
+    if type == 'str':
+        return '{}'.format(dt)
+    else:
+        return dt
+
+
 def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organization_id, workspace_id):
     """
     未実行（実行待ち）の作業を実行
-    
+
     Returns:
         bool
         err_msg
     """
     condition = """WHERE `DISUSE_FLAG`=0 AND (
         ( `TIME_BOOK` IS NULL AND `STATUS_ID` = %s ) OR
-        ( `TIME_BOOK` <= NOW(6) AND `STATUS_ID` = %s )
+        ( `TIME_BOOK` <= %s AND `STATUS_ID` = %s )
     ) ORDER BY TIME_REGISTER ASC"""
-    records = wsDb.table_select('V_ANSC_EXEC_STS_INST', condition, [ansc_const.NOT_YET, ansc_const.RESERVE])
+    records = wsDb.table_select('V_ANSC_EXEC_STS_INST', condition, [ansc_const.NOT_YET, get_now_datetime(), ansc_const.RESERVE])
 
     # 処理対象レコードが0件の場合は処理終了
     if len(records) == 0:
@@ -245,7 +253,7 @@ def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organizati
     # 実行順リストを作成する
     execution_info_datalist = {}
     execution_order_list = []
-    
+
     for rec in records:
         # print(rec)
         execution_no = rec["EXECUTION_NO"]
@@ -290,7 +298,7 @@ def run_unexecuted(wsDb: DBConnectWs, ansibleAg, num_of_run_instance, organizati
 def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     """
     作業実行するための子プロセスの準備・実行
-    
+
     Returns:
         bool
         err_msg
@@ -317,8 +325,6 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
         "EXECUTION_NO": execution_no,
         "STATUS_ID": ansc_const.PREPARE,
     }
-    if not execute_data["TIME_START"]:
-        data["TIME_START"] = get_timestamp()
     result = cm.update_execution_record(wsDb, data)
     if result[0] is True:
         wsDb.db_commit()

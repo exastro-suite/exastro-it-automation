@@ -21,7 +21,7 @@ loggers:
     handlers: [myfile]
     propagate: no
   stdAppLogger:
-    level: DEBUG
+    level: INFO
     handlers: [myconsole]
     propagate: no
 root:

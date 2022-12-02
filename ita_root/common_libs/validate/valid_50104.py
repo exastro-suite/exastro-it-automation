@@ -20,11 +20,16 @@ from flask import g
 
 
 def menu_column_valid(objdbca, objtable, option):
+    lang = g.get('LANGUAGE')
     retBool = True
     msg = ''
     menu_name_rest = objtable.get('MENUINFO').get('MENU_NAME_REST')
     entry_parameter = option.get('entry_parameter').get('parameter')
     column_class = entry_parameter.get("column_class")
+    menu_create_id = entry_parameter.get('menu_name')
+    item_name_ja = entry_parameter.get('item_name_ja')
+    item_name_en = entry_parameter.get('item_name_en')
+    item_name_rest = entry_parameter.get('item_name_rest')
 
     # 文字列(単一行)最大バイト数
     single_string_maximum_bytes = entry_parameter.get("single_string_maximum_bytes")
@@ -53,9 +58,9 @@ def menu_column_valid(objdbca, objtable, option):
     # 初期値(小数)
     decimal_default_value = entry_parameter.get("decimal_default_value")
     # 初期値(日時)
-    detetime_default_value = entry_parameter.get("detetime_default_value")
+    datetime_default_value = entry_parameter.get("datetime_default_value")
     # 初期値(日付)
-    dete_default_value = entry_parameter.get("dete_default_value")
+    date_default_value = entry_parameter.get("date_default_value")
     # メニューグループ：メニュー：項目
     pulldown_selection = entry_parameter.get("pulldown_selection")
     # 初期値(プルダウン選択)
@@ -72,7 +77,7 @@ def menu_column_valid(objdbca, objtable, option):
     link_default_value = entry_parameter.get("link_default_value")
     # パラメータシート参照/メニューグループ：メニュー：項目
     parameter_sheet_reference = entry_parameter.get("parameter_sheet_reference")
-    
+
     # 入力方式が文字列(単一行)の場合
     if column_class == "1":
         # 文字列(単一行)最大バイト数が設定されていない場合、エラー
@@ -140,11 +145,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20031", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20032", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20033", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -248,11 +253,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20055", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20056", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20057", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -364,11 +369,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20079", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20080", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20081", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -458,11 +463,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20100", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20101", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20102", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -569,7 +574,7 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20125", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20126", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -660,7 +665,7 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20147", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20148", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -747,11 +752,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20168", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20169", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20170", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -769,7 +774,7 @@ def menu_column_valid(objdbca, objtable, option):
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-20252", [])
                 return retBool, msg, option
-            
+
             # list形式であることをチェック
             reference_item_list = ast.literal_eval(reference_item)
             if type(reference_item_list) is not list:
@@ -782,20 +787,46 @@ def menu_column_valid(objdbca, objtable, option):
             where_str = "WHERE DISUSE_FLAG = '0' AND LINK_ID = %s"
             bind_value_list = [pulldown_selection]
             return_values = objdbca.table_select(table_name, where_str, bind_value_list)
-            
-            # 入力された値と、「参照項目情報」の値に一致があるかどうかを確認
-            for column_name_rest in reference_item_list:
+
+            for ref_column_name_rest in reference_item_list:
+                # 入力された値と、「参照項目情報」の値に一致があるかどうかを確認
                 check_bool = False
                 for record in return_values:
-                    check_column_name_rest = record.get('COLUMN_NAME_REST')
-                    if column_name_rest == check_column_name_rest:
+                    check_ref_column_name_rest = record.get('COLUMN_NAME_REST')
+                    if ref_column_name_rest == check_ref_column_name_rest:
                         check_bool = True
+                        target_record = record
                         break
-                
+
                 if not check_bool:
                     retBool = False
-                    msg = g.appmsg.get_api_message("MSG-20254", [column_name_rest])
+                    msg = g.appmsg.get_api_message("MSG-20254", [ref_column_name_rest])
                     return retBool, msg, option
+                else:
+                    ref_column_name_ja = target_record.get('COLUMN_NAME_JA')
+                    ref_column_name_en = target_record.get('COLUMN_NAME_EN')
+                    # 自身の「項目名」と参照項目の「項目名」が同一の名前かどうかを確認
+                    if item_name_ja == ref_column_name_ja:
+                        retBool = False
+                        msg = g.appmsg.get_api_message("MSG-20255", [ref_column_name_ja])
+                        return retBool, msg, option
+                    if item_name_en == ref_column_name_en:
+                        retBool = False
+                        msg = g.appmsg.get_api_message("MSG-20255", [ref_column_name_en])
+                        return retBool, msg, option
+
+                    # 参照項目の「項目名」と同一の名前が他の項目名で使用されているかを確認
+                    table_name = "T_MENU_COLUMN"
+                    where_str = "WHERE DISUSE_FLAG = '0' AND MENU_CREATE_ID = %s AND (COLUMN_NAME_JA = %s OR COLUMN_NAME_EN = %s)"
+                    bind_value_list = [menu_create_id, ref_column_name_ja, ref_column_name_en]
+                    return_values_2 = objdbca.table_select(table_name, where_str, bind_value_list)
+                    if return_values_2:
+                        retBool = False
+                        if lang == "ja":
+                            msg = g.appmsg.get_api_message("MSG-20255", [ref_column_name_ja])
+                        else:
+                            msg = g.appmsg.get_api_message("MSG-20255", [ref_column_name_en])
+                        return retBool, msg, option
 
         # 初期値(プルダウン選択)
         if retBool and pulldown_selection_default_value:
@@ -917,11 +948,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20194", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20195", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20196", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -1012,11 +1043,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20217", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20218", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20219", [])
         # 初期値(リンク)が設定されている場合、エラー
@@ -1107,11 +1138,11 @@ def menu_column_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20240", [])
         # 初期値(日時)が設定されている場合、エラー
-        if retBool and detetime_default_value:
+        if retBool and datetime_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20241", [])
         # 初期値(日付)が設定されている場合、エラー
-        if retBool and dete_default_value:
+        if retBool and date_default_value:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20242", [])
         # 初期値(プルダウン選択)が設定されている場合、エラー
@@ -1129,5 +1160,62 @@ def menu_column_valid(objdbca, objtable, option):
             if int(link_maximum_bytes) < int(len(hex_value)) / 2:
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-20245", [])
+
+    # 同一メニューでプルダウン選択を利用している項目を取得
+    table_name = "T_MENU_COLUMN"
+    where_str = "WHERE DISUSE_FLAG = '0' AND MENU_CREATE_ID = %s AND COLUMN_CLASS = '7'"
+    bind_value_list = [menu_create_id]
+    return_values = objdbca.table_select(table_name, where_str, bind_value_list)
+    if return_values:
+        # プルダウン選択の参照項目の項目名を確認し、同一の項目名を使用していないかをチェックする
+        for record in return_values:
+            pulldown_target_column_name_rest = record.get('COLUMN_NAME_REST')
+            reference_item = record.get('REFERENCE_ITEM')
+            # 参照項目がある場合処理を続行
+            if reference_item:
+                # 参照項目の値をlist型に変換
+                reference_item_list = ast.literal_eval(reference_item)
+
+                # 参照項目リストを取得
+                target_pulldown_selection = record.get('OTHER_MENU_LINK_ID')
+                table_name = "V_MENU_REFERENCE_ITEM"
+                where_str = "WHERE DISUSE_FLAG = '0' AND LINK_ID = %s"
+                bind_value_list = [target_pulldown_selection]
+                return_values_2 = objdbca.table_select(table_name, where_str, bind_value_list)
+
+                # 項目名が参照項目と一致しているかどうかを確認
+                check_bool_1 = False
+                for ref_column_name_rest in reference_item_list:
+                    for record in return_values_2:
+                        if ref_column_name_rest == item_name_rest:
+                            check_column_name_ja = record.get('COLUMN_NAME_JA')
+                            if item_name_ja == check_column_name_ja:
+                                check_bool_1 = True
+                                target_column_name = check_column_name_ja
+                                break
+
+                            check_column_name_en = record.get('COLUMN_NAME_EN')
+                            if item_name_en == check_column_name_en:
+                                check_bool_1 = True
+                                target_column_name = check_column_name_en
+                                break
+
+                if check_bool_1:
+                    retBool = False
+                    msg = g.appmsg.get_api_message("MSG-20255", [target_column_name])
+                    return retBool, msg, option
+
+                # メニュー作成実行時に生成される参照項目用の「項目名(rest)」が他の項目名(rest)で使用されているかを確認
+                check_bool_2 = False
+                for count, ref_column_name_rest in enumerate(reference_item_list, 1):
+                    create_ref_column_name_rest = str(pulldown_target_column_name_rest) + "_ref_" + str(count)
+                    if item_name_rest == create_ref_column_name_rest:
+                        check_bool_2 = True
+                        break
+
+                if check_bool_2:
+                    retBool = False
+                    msg = g.appmsg.get_api_message("MSG-20256", [item_name_rest])
+                    return retBool, msg, option
 
     return retBool, msg, option

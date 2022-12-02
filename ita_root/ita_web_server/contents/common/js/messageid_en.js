@@ -31,7 +31,7 @@
 // Ui common           10001～11000
 
 
-const getMessage = ( function() {
+getMessage = ( function() {
 
     const message = {
         // Default menu
@@ -63,8 +63,8 @@ const getMessage = ( function() {
         'FTE00026' : "Display",
         'FTE00027' : "Historical view",
         'FTE00028' : "History reset",
-        'FTE00029' : "Target",
-        'FTE00030' : "and enter",
+        'FTE00029' : "Target ",
+        'FTE00030' : " and enter",
         'FTE00031' : "press the history display.",
         'FTE00032' : "Select",
         'FTE00033' : "Division",
@@ -100,8 +100,8 @@ const getMessage = ( function() {
         'FTE00063' : " records",
         'FTE00064' : "Share",
         'FTE00065' : "Validation error",
-        'FTE00066' : "The number of items displayed has exceeded the recommended number of items to be displayed.",
-        'FTE00067' : "The maximum number of items that can be displayed has been exceeded.",
+        'FTE00066' : function( result, limit ){ return `The maximum number of items has been exceeded.\nMay I display it?\n(Maximum number of items: ${limit}, Record count: ${result})`},
+        'FTE00067' : function( result, limit ){ return `The maximum number of items that can be displayed has been exceeded.\nPlease refine your filter criteria.\n(Maximum number of items: ${limit}, Record count: ${result})`},
         'FTE00068' : "Validation errors occurred.",
         'FTE00069' : "Register",
         'FTE00070' : "Error string",
@@ -117,6 +117,9 @@ const getMessage = ( function() {
         'FTE00080' : "Check execution status",
         'FTE00081' : "Execution log",
         'FTE00082' : "Error log",
+        'FTE00083' : "Bulk registration confirmation",
+        'FTE00084' : "Bulk registration in progress",
+        'FTE00085' : function( result, limit ){ return `line count for Excel output: ${result}lines\n\nDownload will be canceled because the Maximum line count for Excel output(${limit}lines) has been exceeded.`},
         
         // Create menu
         'FTE01001' : "Item",
@@ -222,8 +225,8 @@ const getMessage = ( function() {
         'FTE01101' : "Link",
         'FTE01102' : "[Referenced value]",
         'FTE01103' : "Move item.",
-        'FTE01104' : "Enter the item name to be displayed on the menu. \nThe maximum size is 256 bytes.\nDo not use \"/\" in the item names.\n\"Names [numbers] used in the repeat frame\" cannot be used for item names outside the repeat frame.",
-        'FTE01105' : "Enter the name of the item (for REST API).",
+        'FTE01104' : "Enter the item name to be displayed on the menu.\nThe maximum size is 255bytes.\nDo not use \"/\" in the item names.",
+        'FTE01105' : "Enter the name of the item (for REST API).\nThe maximum size is 255bytes.\nOnly alphanumeric characters and _- are allowed.",
         'FTE01106' : "Delete the item.",
         'FTE01107' : "Copy the item.",
         'FTE01108' : "Enter the number of repeats.\nInteger value from 2 to 99 can be entered.",
@@ -270,6 +273,7 @@ const getMessage = ( function() {
         'FTE01149' : "Exit full screen",
         'FTE01150' : "Enter the maximum number of bytes.\nThe maximum size is 255 bytes.\nFor editing, it is possible to increase it from the original value.\nThe byte count of half-width alphanumeric characters are equivalent to the number of characters.\nFor full-width characters, the number of characters x 3 + 2 bytes is required.",
         'FTE01151' : "Create(New)",
+        'FTE01152' : "There are no items available for reference.",
         
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
@@ -314,7 +318,7 @@ const getMessage = ( function() {
         'FTE02040' : "Update failed.",
         'FTE02041' : "Are you sure you want to refresh?",
         'FTE02042' : "Reloaded.",
-        'FTE02043' : "Cancel a reservation?",
+        'FTE02043' : "Cancel a Conductor reservation?",
         'FTE02044' : "Do you want an emergency stop?",
         'FTE02045' : "Normal end",
         'FTE02046' : "Abend",
@@ -434,6 +438,7 @@ const getMessage = ( function() {
         'FTE02160' : "Arrow key",
         'FTE02161' : "Now loading",
         'FTE02162' : "Data in the process of being edited has been read from local storage.",
+        'FTE02163' : "Movement name",
         
         // Execution
         'FTE05001' : "Execution No.",
@@ -472,6 +477,7 @@ const getMessage = ( function() {
         'FTE05034' : "virtualenv",
         'FTE05035' : "Ansible Automation Controller dedicated information",
         'FTE05036' : "Execution environment",
+        'FTE05037' : "Cancel a reservation?",
         
         // UI common
         'FTE10001': 'Main menu',
@@ -532,6 +538,7 @@ const getMessage = ( function() {
         'FTE10057': 'Required',
         'FTE10058': 'OK',
         'FTE10059': 'Confirmation',
+        'FTE10060' : function( size, limit ){ return `File bytes size exceeds the maximum file bytes size.\n\nFile bytes size: ${ Number( size ).toLocaleString() } Byte\nMaximum file bytes size: ${ Number( limit ).toLocaleString() } Byte`},
     };
 
     return message;

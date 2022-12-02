@@ -138,3 +138,28 @@ class FloatColumn(Column):
                     return retBool, msg
 
         return retBool,
+
+    def before_iud_common_action(self, val="", option={}):
+        """
+            カラムクラス毎の個別処理 レコード操作前
+            ARGS:
+                val:値
+                option:オプション
+            RETRUN:
+                True / エラーメッセージ
+        """
+        retBool = True
+        msg = ''
+        rest_name = self.get_rest_key_name()
+        
+        # 小数点以下の不要な0を削除した値に書き換える
+        try:
+            if str(float(val))[-2:] == '.0':
+                val = str(float(val))[:-2]
+            else:
+                val = str(float(val))
+            option['entry_parameter']['parameter'][rest_name] = val
+        except Exception:
+            pass
+        
+        return retBool, msg, option

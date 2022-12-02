@@ -15,13 +15,15 @@ global:
       CONTAINER_BASE: "kubernetes"
       TZ: "Asia/Tokyo"
       STORAGEPATH: "/storage/"
+    secret:
+      ENCRYPT_KEY: ""
     persistence:
       enabled: true
       accessMode: ReadWriteMany
       size: 10Gi
       volumeType: hostPath # e.g.) hostPath or AKS
       storageClass: "-" # e.g.) azurefile or - (None)
-      # matchLabels: 
+      # matchLabels:
       #   release: "stable"
       # matchExpressions:
       #   - {key: environment, operator: In, values: [dev]}
@@ -52,26 +54,26 @@ ita-api-admin:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-api-admin"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent
 
 ita-api-organization:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-api-organization"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent
 
 ita-by-ansible-execute:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-by-ansible-execute"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent
   extraEnv:
     EXECUTE_INTERVAL: "10"
     ANSIBLE_AGENT_IMAGE: "exastro/exastro-it-automation-by-ansible-agent"
-    ANSIBLE_AGENT_IMAGE_TAG: "2.0.0"
+    ANSIBLE_AGENT_IMAGE_TAG: "2.0.2"
   serviceAccount:
     create: false
     name: "ita-by-ansible-execute-sa"
@@ -82,7 +84,7 @@ ita-by-ansible-legacy-role-vars-listup:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-ansible-legacy-role-vars-listup"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent
 
 ita-by-ansible-towermaster-sync:
@@ -91,7 +93,7 @@ ita-by-ansible-towermaster-sync:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-ansible-towermaster-sync"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent
 
 ita-by-conductor-synchronize:
@@ -100,7 +102,7 @@ ita-by-conductor-synchronize:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-conductor-synchronize"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent
 
 ita-by-menu-create:
@@ -109,7 +111,7 @@ ita-by-menu-create:
     EXECUTE_INTERVAL: "10"
   image:
     repository: "exastro/exastro-it-automation-by-menu-create"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent
 
 ita-database-setup-job:
@@ -122,5 +124,5 @@ ita-web-server:
   replicaCount: 1
   image:
     repository: "exastro/exastro-it-automation-web-server"
-    tag: "2.0.1"
+    tag: "2.0.2"
     pullPolicy: IfNotPresent

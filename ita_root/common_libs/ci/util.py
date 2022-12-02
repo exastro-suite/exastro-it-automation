@@ -15,6 +15,7 @@
 common_libs api common function module
 """
 from flask import g
+import os
 import traceback
 
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -36,7 +37,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None):
         organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])  # noqa: E501
 
     for organization_info in organization_info_list:
-        g.applogger.set_level("DEBUG")
+        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
 
         organization_id = organization_info['ORGANIZATION_ID']
 
@@ -86,7 +87,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         workspace_info_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `WORKSPACE_ID`=%s", [workspace_id])  # noqa: E501
 
     for workspace_info in workspace_info_list:
-        g.applogger.set_level("DEBUG")
+        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
 
         workspace_id = workspace_info['WORKSPACE_ID']
 
@@ -118,6 +119,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             # catch - other all error
             exception(e)
 
+        # delete environment of workspace
         g.pop('WORKSPACE_ID')
         g.db_connect_info.pop("WSDB_HOST")
         g.db_connect_info.pop("WSDB_PORT")
@@ -143,12 +145,16 @@ def app_exception(e):
         else:
             is_arg = True
 
+    # catch - other all error
+    t = traceback.format_exc()
+    log_err(arrange_stacktrace_format(t))
+
     # catch - raise AppException("xxx-xxxxx", log_format), and get message
     result_code, log_msg_args, api_msg_args = args
     log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
     log_err(log_msg)
-
-
+    
+    
 def exception(e):
     '''
     called when Exception occured
@@ -169,6 +175,119 @@ def exception(e):
     # catch - other all error
     t = traceback.format_exc()
     log_err(arrange_stacktrace_format(t))
+
+
+def validation_exception(e):
+    '''
+    called when AppException occured
+    
+    Argument:
+        e: AppException
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            args = args[0].args
+        elif isinstance(args[0], Exception):
+            return exception(args[0])
+        else:
+            is_arg = True
+
+    # catch - other all error
+    t = traceback.format_exc()
+    log_err(arrange_stacktrace_format(t))
+
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    log_err(log_msg)
+
+
+def app_exception_driver_log(e, logfile=None):
+    '''
+    called when AppException occured
+    
+    Argument:
+        e: AppException
+        logfile: If you want exception file output
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            args = args[0].args
+        elif isinstance(args[0], Exception):
+            return exception(args[0])
+        else:
+            is_arg = True
+
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+
+    if logfile:
+        f = open(logfile, "a")
+        t = traceback.format_exc()
+        f.write(arrange_stacktrace_format(t) + "\n\n")
+        f.write(log_msg + "\n")
+        f.close()
+
+
+def exception_driver_log(e, logfile=None):
+    '''
+    called when Exception occured
+    
+    Argument:
+        e: Exception
+        logfile: If you want exception file output
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            return app_exception(args[0])
+        elif isinstance(args[0], Exception):
+            args = args[0].args
+        else:
+            is_arg = True
+
+    if logfile:
+        f = open(logfile, "a")
+        t = traceback.format_exc()
+        f.write(arrange_stacktrace_format(t) + "\n\n")
+        f.close()
+
+
+def validation_exception_driver_log(e, logfile=None):
+    '''
+    called when AppException occured
+    
+    Argument:
+        e: AppException
+        logfile: If you want exception file output
+    '''
+    args = e.args
+    is_arg = False
+    while is_arg is False:
+        if isinstance(args[0], AppException):
+            args = args[0].args
+        elif isinstance(args[0], Exception):
+            return exception(args[0])
+        else:
+            is_arg = True
+
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args) + "\n\n"
+    log_msg += g.appmsg.get_api_message("MSG-10903", [])
+
+    if logfile:
+        f = open(logfile, "a")
+        t = traceback.format_exc()
+        f.write(arrange_stacktrace_format(t) + "\n\n")
+        f.write(log_msg + "\n")
+        f.close()
 
 
 def log_err(msg=""):

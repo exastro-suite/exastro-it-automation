@@ -48,6 +48,7 @@ from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.Ansible
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiJobs import AnsibleTowerRestApiJobs
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath, getInputDataTempDir, getDataRelayStorageDir, get_AnsibleDriverTmpPath, get_AnsibleDriverShellPath, getAnsibleExecutDirPath, getAACListSSHPrivateKeyUploadDirPath
+from common_libs.ansible_driver.functions.util import getDeviceListSSHPrivateKeyUploadDirPath
 
 
 class ExecuteDirector():
@@ -58,8 +59,6 @@ class ExecuteDirector():
     """
 
     def __init__(self, driver_id, restApiCaller, logger, dbAccess, exec_out_dir, ifInfoRow, JobTemplatePropertyParameterAry={}, JobTemplatePropertyNameAry={}, TowerProjectsScpPath={}, TowerInstanceDirPath={}):
-
-        self.version = None
 
         self.restApiCaller = restApiCaller
         self.dbAccess = dbAccess
@@ -89,14 +88,6 @@ class ExecuteDirector():
         if driver_id == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
             self.AnsConstObj = AnsrConst()
 
-    def setTowerVersion(self, version):
-
-        self.version = version
-
-    def getTowerVersion(self):
-
-        return self.version
-
     def build(self, GitObj, exeInsRow, ifInfoRow, TowerHostList):
         vg_tower_driver_name = AnsrConst.vg_tower_driver_name
         execution_no = exeInsRow['EXECUTION_NO']
@@ -112,6 +103,8 @@ class ExecuteDirector():
             if not response_array['success']:
                 errorMessage = g.appmsg.get_api_message("MSG-10685", [execution_environment_name])
                 self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
             if 'responseContents' not in response_array:
@@ -145,9 +138,11 @@ class ExecuteDirector():
                 g.applogger.error(response_array['responseContents']['errorMessage'])
                 errorMessage = g.appmsg.get_api_message("MSG-10671", [OrganizationName])
                 self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
-            if ('responseContents' not in response_array or response_array['responseContents'] is None 
+            if ('responseContents' not in response_array or response_array['responseContents'] is None
                 or (type(response_array['responseContents']) in (list, dict) and len(response_array['responseContents']) <= 0)) \
             or ("id" not in response_array['responseContents'][0]):
                 g.applogger.error("No inventory id. (prepare)")
@@ -174,7 +169,7 @@ class ExecuteDirector():
 
         # 複数の認証情報によりログが分割されるか確認
         if len(inventoryForEachCredentials) != 1:
-            self.settMultipleLogMark(execution_no, ifInfoRow['ANSIBLE_STORAGE_PATH_LNX'])
+            self.settMultipleLogMark()
 
         # AnsibleTowerHost情報取得
         self.dataRelayStoragePath = ifInfoRow['ANSIBLE_STORAGE_PATH_LNX']
@@ -237,13 +232,13 @@ class ExecuteDirector():
             addParam = {}
             addParam["scm_type"] = AnsibleTowerRestApiProjects.SCMTYPE_GIT
             addParam["scm_url"] = GitObj.get_http_repo_url(proj_name)
-            # 不要だから消した
-            # addParam["credential"] = git_credentialId
 
             response_array = self.createProject(execution_no, OrganizationId, virtualenv_name, addParam)
             if response_array == -1:
                 errorMessage = g.appmsg.get_api_message("MSG-10650")
                 self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
             projectId = response_array['responseContents']['id']
@@ -255,11 +250,16 @@ class ExecuteDirector():
 
         # ansible vault認証情報生成
         vault_credentialId = -1
-        vault_password = ky_decrypt(ifInfoRow["ANSIBLE_VAULT_PASSWORD"])
+        if not ifInfoRow['ANSIBLE_VAULT_PASSWORD']:
+            vault_password = AnscConst.DF_ANSIBLE_VAULT_PASSWORD
+        else:
+            vault_password = ky_decrypt(ifInfoRow["ANSIBLE_VAULT_PASSWORD"])
         vault_credentialId = self.createVaultCredential(execution_no, vault_password, OrganizationId)
         if vault_credentialId == -1:
             errorMessage = g.appmsg.get_api_message("MSG-10678")
             self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return -1, TowerHostList
 
         jobTemplateIds = []
@@ -270,6 +270,8 @@ class ExecuteDirector():
             if credentialId == -1:
                 errorMessage = g.appmsg.get_api_message("MSG-10651")
                 self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
             # インベントリ生成
@@ -277,6 +279,8 @@ class ExecuteDirector():
             if inventoryId == -1:
                 errorMessage = g.appmsg.get_api_message("MSG-10652")
                 self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
             # ジョブテンプレート生成
@@ -284,26 +288,29 @@ class ExecuteDirector():
             if jobTemplateId == -1:
                 errorMessage = g.appmsg.get_api_message("MSG-10653")
                 self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1, TowerHostList
 
             #######################################################################
             # JobTemplateにcredentialIdを紐づけ(Ansible Tower3.6～)
             #######################################################################
-            # ---- Ansible Tower Version Check (Not Ver3.5)
-            if self.getTowerVersion() not in [AnscConst.TOWER_VER35, str(AnscConst.TOWER_VER35)]:
+            response_array = AnsibleTowerRestApiJobTemplates.postCredentialsAdd(self.restApiCaller, jobTemplateId, credentialId)
+            if not response_array['success']:
+                errorMessage = g.appmsg.get_api_message("MSG-10679")
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return -1, TowerHostList
 
-                response_array = AnsibleTowerRestApiJobTemplates.postCredentialsAdd(self.restApiCaller, jobTemplateId, credentialId)
-                if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10679")
-                    self.errorLogOut(errorMessage)
-                    return -1, TowerHostList
-
-                response_array = AnsibleTowerRestApiJobTemplates.postCredentialsAdd(self.restApiCaller, jobTemplateId, vault_credentialId)
-                if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10679")
-                    self.errorLogOut(errorMessage)
-                    return -1, TowerHostList
-            # Ansible Tower Version Check (Not Ver3.5) ----
+            response_array = AnsibleTowerRestApiJobTemplates.postCredentialsAdd(self.restApiCaller, jobTemplateId, vault_credentialId)
+            if not response_array['success']:
+                errorMessage = g.appmsg.get_api_message("MSG-10679")
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return -1, TowerHostList
+            # JobTemplateにcredentialIdを紐づけ(Ansible Tower3.6～)  -----
 
             jobTemplateIds.append(jobTemplateId)
             loopCount = loopCount + 1
@@ -313,6 +320,8 @@ class ExecuteDirector():
         if workflowTplId == -1:
             errorMessage = g.appmsg.get_api_message("MSG-10654")
             self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return -1, TowerHostList
 
         return workflowTplId, TowerHostList
@@ -341,7 +350,7 @@ class ExecuteDirector():
             # Gitリポジトリ削除に失敗した場合、ログを出力してエラーとして扱わない
             log = str(e)
             g.applogger.error(log)
-            
+
         # Ansible Automation Controller側の/var/lib/exastro配下の該当ディレクトリ削除
         ret = self.MaterialsDelete("ExastroPath", execution_no, TowerHostList)
         if not ret:
@@ -438,6 +447,8 @@ class ExecuteDirector():
         response_array = AnsibleTowerRestApiWorkflowJobTemplates.launch(self.restApiCaller, param)
         if not response_array['success']:
             g.applogger.error(response_array['responseContents']['errorMessage'])
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return -1
 
         if "id" not in response_array['responseContents']:
@@ -583,7 +594,7 @@ class ExecuteDirector():
             cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
             try:
                 with open(tmp_log_file, 'a') as fp:
-                    
+
                     ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
             except Exception:
@@ -946,14 +957,13 @@ class ExecuteDirector():
             "  T_ANSC_TOWER_HOST \n"
             "WHERE \n"
             "  DISUSE_FLAG = '0' \n"
-            "FOR UPDATE; \n"
         ) % (cols)
 
         rows = self.dbAccess.sql_execute(sql)
 
         chkobj = AuthTypeParameterRequiredCheck()
         for row in rows:
-            if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] > 0:
+            if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] == 1:
                 node_type = AnscConst.DF_EXECUTE_NODE
 
             else:
@@ -975,10 +985,7 @@ class ExecuteDirector():
 
                 else:
                     src_file = self.getAnsibleTowerSshKeyFileContent(row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
-                    sshKeyFile = (
-                        '%s/in/ssh_key_files/AnsibleTower_%s_%s'
-                    ) % getAnsibleExecutDirPath(self.driver_id, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE']
-
+                    sshKeyFile = '%s/in/ssh_key_files/AnsibleTower_%s_%s' % (getAnsibleExecutDirPath(self.driver_id, execution_no), row['ANSTWR_HOST_ID'], row['ANSTWR_LOGIN_SSH_KEY_FILE'])
                     try:
                         shutil.copy(src_file, sshKeyFile)
 
@@ -1038,7 +1045,7 @@ class ExecuteDirector():
     def getHostInfo(self, exeInsRow, inventoryForEachCredentials):
 
         vg_ansible_pho_linkDB = AnsrConst.vg_ansible_pho_linkDB  # "T_ANSR_TGT_HOST"
-        condition = [exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
+        condition = [exeInsRow['EXECUTION_NO'],exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
         cols = self.dbAccess.table_columns_get(vg_ansible_pho_linkDB)
         cols = (',').join(cols[0])
 
@@ -1049,9 +1056,9 @@ class ExecuteDirector():
             "  %s \n"
             "WHERE \n"
             "  DISUSE_FLAG = '0' \n"
+            "  AND EXECUTION_NO=%%s \n"
             "  AND OPERATION_ID=%%s \n"
             "  AND MOVEMENT_ID=%%s \n"
-            "FOR UPDATE; \n"
         ) % (cols, vg_ansible_pho_linkDB)
 
         rows = self.dbAccess.sql_execute(sql, condition)
@@ -1081,7 +1088,7 @@ class ExecuteDirector():
             sshPrivateKey = ""
             if hostInfo['LOGIN_AUTH_TYPE'] in [AnscConst.DF_LOGIN_AUTH_TYPE_KEY, AnscConst.DF_LOGIN_AUTH_TYPE_KEY_PP_USE]:
                 if 'SSH_KEY_FILE' in hostInfo and hostInfo['SSH_KEY_FILE']:
-                    sshPrivateKey = self.getDeviceListSshKeyFileContent(hostInfo['SYSTEM_ID'], hostInfo['CONN_SSH_KEY_FILE'])
+                    sshPrivateKey = self.getDeviceListSshKeyFileContent(hostInfo['SYSTEM_ID'], hostInfo['SSH_KEY_FILE'])
                     # ky_encrptのスクランブルを復号
                     sshPrivateKey = ky_decrypt(sshPrivateKey)
 
@@ -1101,6 +1108,8 @@ class ExecuteDirector():
                     # 組織名未登録
                     errorMessage = g.appmsg.get_api_message("MSG-10675", [hostInfo['ANSTWR_INSTANCE_GROUP_NAME']])
                     self.errorLogOut(errorMessage)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return False, inventoryForEachCredentials
 
                 for info in response_array['responseContents']:
@@ -1143,15 +1152,15 @@ class ExecuteDirector():
             if 'I_ANS_HOST_DESIGNATE_TYPE_ID' not in exeInsRow \
             or not exeInsRow['I_ANS_HOST_DESIGNATE_TYPE_ID'] \
             or exeInsRow['I_ANS_HOST_DESIGNATE_TYPE_ID'] == '1':
-                hostData['ansible_ssh_host'] = hostInfo['IP_ADDRESS']
+                hostData['ansible_host'] = hostInfo['IP_ADDRESS']
             else:
-                hostData['ansible_ssh_host'] = hostInfo['HOST_DNS_NAME']
-                
+                hostData['ansible_host'] = hostInfo['HOST_DNS_NAME']
+
             # WinRM接続
             # 認証方式:パスワード認証(winrm)
-            hostData['winrm'] = 0
+            hostData['winrm'] = False
             if hostInfo['LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_PW_WINRM:
-                hostData['winrm'] = 1
+                hostData['winrm'] = True
                 if not hostInfo['WINRM_PORT']:
                     hostInfo['WINRM_PORT'] = AnscConst.LC_WINRM_PORT
 
@@ -1320,11 +1329,11 @@ class ExecuteDirector():
             if hostname == 'localhost' and vg_tower_driver_name == "pioneer":
                 variables_array.append("ansible_connection: local")
 
-            variables_array.append("ansible_ssh_host: %s" % hostData['ansible_ssh_host'])
+            variables_array.append("ansible_host: %s" % hostData['ansible_host'])
 
-            if hostData['winrm'] == '1':
+            if hostData['winrm'] == True:
                 variables_array.append("ansible_connection: winrm")
-                variables_array.append("ansible_ssh_port: %s" % (hostData['winrmPort']))
+                variables_array.append("ansible_port: %s" % (hostData['winrmPort']))
                 if 'ansible_winrm_ca_trust_path' in hostData and hostData['ansible_winrm_ca_trust_path'] is not None:
                     variables_array.append("ansible_winrm_ca_trust_path: %s" % (hostData['ansible_winrm_ca_trust_path']))
 
@@ -1683,7 +1692,13 @@ class ExecuteDirector():
                 self.workflowJobNodeIdAry[wfJobId].append(wfJobNodeId)
                 continue
 
-            jobtype = workflowJobNodeData['summary_fields']['job']['type']
+            # workflowJobNodeData['summary_fields']['job']['type']が取得出来ないケースがあり
+            # ガードを入れる
+            jobtype = None
+            if 'summary_fields' in workflowJobNodeData:
+                if 'job' in workflowJobNodeData['summary_fields']:
+                    if 'type' in workflowJobNodeData['summary_fields']['job']:
+                        jobtype = workflowJobNodeData['summary_fields']['job']['type']
             # ジョブスライスが設定されているとスライスされた workfolw job (jobtype = workfolw job)
             # の情報がJob情報として表示される
             # typeが workfolw job のjobの情報はworkfolw jobで取得出来ているので無視
@@ -1841,28 +1856,17 @@ class ExecuteDirector():
                 contentArray.append("  project_name: %s" % (projectData['name']))
                 contentArray.append("  project_local_path: %s" % (projectData['local_path']))
 
-                # ---- Ansible Tower Version Check
-                if self.getTowerVersion() in [AnscConst.TOWER_VER35, str(AnscConst.TOWER_VER35)]:
-                    response_array = AnsibleTowerRestApiCredentials.get(self.restApiCaller, JobData['credential'])
-                    if not response_array['success']:
-                        g.applogger.error("Faild to get credential. %s" % (response_array['responseContents']['errorMessage']))
-                        return False
+                for CredentialArray in JobData['summary_fields']['credentials']:
+                    if CredentialArray['kind'] != 'vault':
+                        response_array = AnsibleTowerRestApiCredentials.get(self.restApiCaller, CredentialArray['id'])
+                        if not response_array['success']:
+                            g.applogger.error("Faild to get credential. %s" % (response_array['responseContents']['errorMessage']))
 
-                    credentialData = response_array['responseContents']
+                        credentialData = response_array['responseContents']
 
-                else:
-                    for CredentialArray in JobData['summary_fields']['credentials']:
-                        if CredentialArray['kind'] != 'vault':
-                            response_array = AnsibleTowerRestApiCredentials.get(self.restApiCaller, CredentialArray['id'])
-                            if not response_array['success']:
-                                g.applogger.error("Faild to get credential. %s" % (response_array['responseContents']['errorMessage']))
-
-                            credentialData = response_array['responseContents']
-
-                    if credentialData is None:
-                        g.applogger.error("non set to get credential. %s" % (response_array['responseContents']))
-                        return False
-                # ---- Ansible Tower Version Check
+                if credentialData is None:
+                    g.applogger.error("non set to get credential. %s" % (response_array['responseContents']))
+                    return False
 
                 contentArray.append("  credential_name: %s" % (credentialData['name']))
                 contentArray.append("  credential_type: %s" % (credentialData['credential_type']))
@@ -1909,7 +1913,7 @@ class ExecuteDirector():
                 contentArray.append("")
                 jobSummaryAry[JobId] = '\n'.join(contentArray)
 
-            contentArray.append("")
+                contentArray.append("")
 
         ################################################################
         # 各WorkflowJobNode分のstdoutをファイル化
@@ -1921,6 +1925,7 @@ class ExecuteDirector():
                 stdout = JobDetail['stdout']
                 JobId = JobData['id']
                 jobName = JobData['name']
+                jobNo = JobData['name'][-10:]
                 if self.workflowJobAry[wfJobId]['is_sliced_job'] is True:
                     # ジョブスライス数
                     job_slice_count = JobData['job_slice_count']
@@ -1941,7 +1946,9 @@ class ExecuteDirector():
                 result_stdout += stdout
 
                 # オリジナルログファイル
-                jobFileFullPath = "%s/%s_%s.txt.org" % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # jobFileFullPath = "%s/%s_%s.txt.org" % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # ファイル名を短くする。
+                jobFileFullPath = "%s/exec_%s_%s.log.org" % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
                     pathlib.Path(jobFileFullPath).write_text(result_stdout)
 
@@ -1959,7 +1966,9 @@ class ExecuteDirector():
 
                 # jobログを加工
                 result_stdout = self.LogReplacement(result_stdout)
-                jobFileFullPath = '%s/%s_%s.txt' % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # jobFileFullPath = '%s/%s_%s.txt' % (outDirectoryPath, JobData['name'], job_slice_number_str)
+                # ファイル名を短くする。
+                jobFileFullPath = '%s/exec_%s_%s.log' % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
                     pathlib.Path(jobFileFullPath).write_text(result_stdout)
 
@@ -1983,74 +1992,63 @@ class ExecuteDirector():
 
         # ジョブスライなどでファイルが複数に分かれた場合のマーク
         if len(self.jobLogFileList) > 1:
-            self.settMultipleLogMark(execution_no, outDirectoryPath)
+            self.settMultipleLogMark()
 
         ################################################################
         # 結合 & exec.log差し替え
         ################################################################
         # ファイル入出力排他処理
-        loop = asyncio.get_event_loop()
-        ret = loop.run_until_complete(self.CreateLogsWithSemaphore(execlogFullPath))
+        ## DEL loop = asyncio.get_event_loop()
+        ## DEL ret = loop.run_until_complete(self.CreateLogsWithSemaphore(execlogFullPath))
+        ret = self.AllCreateLogs(execlogFullPath)
 
         return ret
 
-    async def CreateLogsWithSemaphore(self, execlogFullPath):
+    def AllCreateLogs(self, execlogFullPath):
+        # 全ジョブのオリジナルログファイル
+        execlogContent = ""
+        for jobName, jobFileFullPathAry in self.jobOrgLogFileList.items():
+            for jobFileFullPath in jobFileFullPathAry:
+                jobFileContent = pathlib.Path(jobFileFullPath).read_text()
+                if not jobFileContent:
+                    g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
+                    return False
 
-        tryCount = 0
-        semaphore = asyncio.Semaphore(1)
-        while True:
-            if not semaphore.locked():
-                break
+                execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
 
-            time.sleep(0.1)
-            tryCount = tryCount + 1
-            if tryCount > 50:
-                g.applogger.error("Faild to lock file.")
-                return False
-
-        await semaphore.acquire()
+        execlogFullPath_org = '%s.org' % (execlogFullPath)
         try:
-            # 全ジョブのオリジナルログファイル
-            execlogContent = ""
-            for jobName, jobFileFullPathAry in self.jobOrgLogFileList.items():
-                for jobFileFullPath in jobFileFullPathAry:
-                    jobFileContent = pathlib.Path(jobFileFullPath).read_text()
-                    if not jobFileContent:
-                        g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
-                        return False
+            pathlib.Path(execlogFullPath_org).write_text(execlogContent)
 
-                    execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
+        except Exception as e:
+            g.applogger.error("Faild to write file. %s" % (execlogFullPath))
+            return False
 
-            execlogFullPath_org = '%s.org' % (execlogFullPath)
-            try:
-                pathlib.Path(execlogFullPath_org).write_text(execlogContent)
+        # 全ジョブの加工ログファイル
+        execlogContent = ""
+        for jobName, jobFileFullPathAry in self.jobFileList.items():
+            for jobFileFullPath in jobFileFullPathAry:
+                jobFileContent = pathlib.Path(jobFileFullPath).read_text()
+                if not jobFileContent:
+                    g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
+                    return False
 
-            except Exception as e:
-                g.applogger.error("Faild to write file. %s" % (execlogFullPath))
-                return False
+                execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
 
-            # 全ジョブの加工ログファイル
-            execlogContent = ""
-            for jobName, jobFileFullPathAry in self.jobFileList.items():
-                for jobFileFullPath in jobFileFullPathAry:
-                    jobFileContent = pathlib.Path(jobFileFullPath).read_text()
-                    if not jobFileContent:
-                        g.applogger.error("Faild to read file. %s" % (jobFileFullPath))
-                        return False
+        try:
+            pathlib.Path(execlogFullPath).write_text(execlogContent)
 
-                    execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
-
-            try:
-                pathlib.Path(execlogFullPath).write_text(execlogContent)
-
-            except Exception as e:
-                g.applogger.error("Faild to write file. %s" % (execlogFullPath))
-                return False
-
-        finally:
-            semaphore.release()
+        except Exception as e:
+            g.applogger.error("Faild to write file. %s" % (execlogFullPath))
+            return False
 
         return True
+
+    def RestResultLog(self, message_list):
+        for message in message_list:
+            if not isinstance(message, str):
+                message = str(message)
+            self.errorLogOut(message)
 
     def errorLogOut(self, message):
 
@@ -2118,7 +2116,7 @@ class ExecuteDirector():
 
         return self.MultipleLogMark
 
-    def settMultipleLogMark(self, execution_no, dataRelayStoragePath):
+    def settMultipleLogMark(self):
 
         self.MultipleLogMark = "1"
 
@@ -2221,7 +2219,7 @@ class ExecuteDirector():
         with open(filePath) as fd:
             project_id = fd.read()
         return project_id
-    
+
     def deleteMaterialsTransferTempDir(self, execution_no):
 
         vg_tower_driver_name = AnsrConst.vg_tower_driver_name
@@ -2251,9 +2249,11 @@ class ExecuteDirector():
                 time.sleep(5)
                 response_array = AnsibleTowerRestApiProjects.get(self.restApiCaller, projectId)
                 if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021")
+                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
                     g.applogger.error(response_array)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return -1
 
             elif response_array['responseContents']['status'] == "successful":
@@ -2267,26 +2267,32 @@ class ExecuteDirector():
                 url = response_array['responseContents']['related']['project_updates']
                 response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url)
                 if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021")
+                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
                     g.applogger.error(response_array)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return -1
 
                 url = "%s?format=txt" % (response_array['responseContents']['results'][0]['related']['stdout'])
                 response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url, True)
                 if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021")
+                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
                     g.applogger.error(response_array)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return -1
 
                 # 制御ノードにコンテナイメージがロードされていないと、プロジェクト作成でGit連携が失敗する
                 # プロジェクトの更新だとコンテナイメージがロードていなくても問題ないので、プロジェクトを更新する
                 response_array = AnsibleTowerRestApirPassThrough.post(self.restApiCaller, updateUurl)
                 if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021")
+                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
                     g.applogger.error(response_array)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return -1
 
                 ret = self.projectUpdate(response_array)
@@ -2296,7 +2302,7 @@ class ExecuteDirector():
                 return -1
 
             else:
-                errorMessage = g.appmsg.get_api_message("MSG-10021")
+                errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                 self.errorLogOut(errorMessage)
                 g.applogger.error(response_array)
                 return -1
@@ -2309,9 +2315,11 @@ class ExecuteDirector():
         while True:
             response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url)
             if not response_array['success']:
-                errorMessage = g.appmsg.get_api_message("MSG-10021")
+                errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                 self.errorLogOut(errorMessage)
                 g.applogger.error(response_array)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return response_array
 
             if response_array['responseContents']['status'] in ["new", "pending", "waiting", "running"]:
@@ -2325,17 +2333,21 @@ class ExecuteDirector():
                 response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url, True)
                 ProjectUpdateStdout = response_array['responseContents']
                 if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021")
+                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
                     g.applogger.error(response_array)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
                     return -1
 
                 errorMessage = g.appmsg.get_api_message("MSG-10020", [ProjectUpdateStdout])
                 self.errorLogOut(errorMessage)
+                # Towerでエラーになるので、レスポンス情報をエラーログに表示
+                self.errorLogOut(str(response_array))
                 return -1
 
             else:
-                errorMessage = g.appmsg.get_api_message("MSG-10021")
+                errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                 self.errorLogOut(errorMessage)
                 g.applogger.error(response_array)
                 return -1

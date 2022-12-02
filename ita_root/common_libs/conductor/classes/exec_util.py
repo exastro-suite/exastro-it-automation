@@ -1977,7 +1977,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             # 実施中Node数
             exec_node_cnt = len(status_count.get('2')) + len(status_count.get('3')) + len(status_count.get('4')) + len(status_count.get('11'))
             # 正常終了Node数
-            nomal_end_cnt = len(status_count.get('5')) + len(status_count.get('13'))
+            nomal_end_cnt = len(status_count.get('5')) + len(status_count.get('13')) + len(status_count.get('14'))
             # 異常終了系Node数
             # error_node_cnt = len(status_count.get('6')) + len(status_count.get('7')) + len(status_count.get('8')) + len(status_count.get('12'))
 
@@ -2087,6 +2087,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             status_count.setdefault("11", [])
             status_count.setdefault("12", [])
             status_count.setdefault("13", [])
+            status_count.setdefault("14", [])
             
             # ステータス毎振り分け
             node_cnt = 0
@@ -2098,7 +2099,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 node_type = node_info.get('node_type')
                 end_type = node_info.get('end_type')
                 # 完了(正常終了以外)のMomvent,call で次がconditional
-                if status_id in ['6', '7', '8', '12', '14'] and node_type in ['movement', 'call']:
+                if status_id in ['6', '7', '8', '12'] and node_type in ['movement', 'call']:
                     node_name = node_info.get('node_name')
                     target_in_out_node = self.get_in_out_node(conductor_instance_id, node_name)
                     if target_in_out_node is not False:
@@ -2120,7 +2121,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             # 実施中Node数
             exec_node_cnt = len(status_count.get('2')) + len(status_count.get('3')) + len(status_count.get('4')) + len(status_count.get('11'))
             # 正常終了Node数
-            nomal_end_cnt = len(status_count.get('5')) + len(status_count.get('13'))
+            nomal_end_cnt = len(status_count.get('5')) + len(status_count.get('13')) + len(status_count.get('14'))
             # 異常終了系Node数
             # error_node_cnt = len(status_count.get('6')) + len(status_count.get('7')) + len(status_count.get('8')) + len(status_count.get('12'))
             
@@ -2446,6 +2447,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
         result['status'].setdefault("11", [])
         result['status'].setdefault("12", [])
         result['status'].setdefault("13", [])
+        result['status'].setdefault("14", [])
 
         try:
             table_name = 'T_COMN_CONDUCTOR_NODE_INSTANCE'
@@ -3019,7 +3021,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 execution_id = action_options.get('execution_id')
                 # 緊急停止
                 try:
-                    tmp_result = execution_scram(self.objdbca, orchestra_id, execution_id)  # noqa: F405
+                    tmp_result = execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
                 except Exception:
                     pass
 
@@ -3205,7 +3207,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 end_status_list.append(instance_info_data.get('dict').get('node_status').get(tmp_status))
             node_options.setdefault('end_status_list', end_status_list)
             # 正常系ステータス
-            for tmp_status in ['5', '13']:
+            for tmp_status in ['5', '13', '14']:
                 nomal_status_list.append(instance_info_data.get('dict').get('node_status').get(tmp_status))
             node_options.setdefault('nomal_status_list', nomal_status_list)
             
@@ -3862,7 +3864,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     n_status_id = node_options.get('instance_info_data').get('dict').get('node_status').get('6')
                     c_status_id = node_options.get('instance_info_data').get('dict').get('conductor_status').get('7')
                 elif call_status_id == node_options.get('instance_info_data').get('dict').get('conductor_status').get('8'):
-                    n_status_id = node_options.get('instance_info_data').get('dict').get('node_status').get('5')
+                    n_status_id = node_options.get('instance_info_data').get('dict').get('node_status').get('14')
                     c_status_id = node_options.get('instance_info_data').get('dict').get('conductor_status').get('8')
                 elif call_status_id == node_options.get('instance_info_data').get('dict').get('conductor_status').get('9'):
                     n_status_id = node_options.get('instance_info_data').get('dict').get('node_status').get('8')
@@ -4436,4 +4438,3 @@ def load_objcolumn(objdbca, objtable, rest_key, col_class_name='TextColumn', ):
     except Exception:
         return False
     return objcolumn
-

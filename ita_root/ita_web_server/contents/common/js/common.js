@@ -28,6 +28,9 @@
 const fn = ( function() {
     'use strict';
     
+    // AbortController
+    const controller = new AbortController();
+    
     // インスタンス管理用
     const modalInstance = {},
           operationInstance = {},
@@ -117,7 +120,7 @@ getCommonParams: function() {
 ##################################################
 */
 loadAssets: function( assets ){
-    const f = function( type, url ){
+    const f = function( type, url, id ){
         return new Promise(function( resolve, reject ){
             type = ( type === 'css')? 'link': 'script';
             
@@ -127,10 +130,12 @@ loadAssets: function( assets ){
             switch ( type ) {
                 case 'script':
                     asset.src = url;
+                    if ( id ) asset.id = id;
                 break;
                 case 'link':
                     asset.href = url;
                     asset.rel = 'stylesheet';
+                    if ( id ) asset.id = id;
                 break;
             }            
             
@@ -148,9 +153,11 @@ loadAssets: function( assets ){
     if ( typeofValue( assets ) === 'array') {
         return Promise.all(
             assets.map(function( asset ){
-                return f( asset.type, asset.url );
+                return f( asset.type, asset.url, asset.id );
             })
         );
+    } else {
+        return f( assets.type, assets.url, assets.id );
     }
 },
 /*
@@ -192,7 +199,8 @@ fetch: function( url, token, method = 'GET', json ) {
                 headers: {
                   'Authorization': `Bearer ${token}`,
                   'Content-Type': 'application/json'
-                }
+                },
+                signal: controller.signal
             };
             
             if ( ( method === 'POST' || method === 'PATCH' ) && json !== undefined ) {            
@@ -227,6 +235,7 @@ fetch: function( url, token, method = 'GET', json ) {
                             case 401:
                                 response.json().then(function( result ){
                                     if ( !iframeFlag ) {
+                                        controller.abort();
                                         alert(result.message);
                                         location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
                                     } else {
@@ -240,6 +249,7 @@ fetch: function( url, token, method = 'GET', json ) {
                             case 403:
                                 response.json().then(function( result ){
                                     if ( !iframeFlag ) {
+                                        controller.abort();
                                         alert(result.message);
                                         window.location.href = `/${organization_id}/platform/workspaces`;
                                     } else {
@@ -256,8 +266,10 @@ fetch: function( url, token, method = 'GET', json ) {
                     }
                 }
             }).catch(function( error ){
-                if ( errorCount === 0 ) {
-                    reject( error );
+                if ( error.name !== 'AbortError') {
+                    if ( errorCount === 0 ) {
+                        reject( error );
+                    }
                 }
             });
         });
@@ -568,8 +580,8 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
             
             cancelFlag = false;
 
-            if ( limitFileSize && file.size >= limitFileSize ) {
-                reject('File size limit over.');
+            if ( limitFileSize && file.size > limitFileSize ) {
+                reject( getMessage.FTE10060( file.size, limitFileSize ) );
                 return false;
             }
             
@@ -577,8 +589,16 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
                 reader.readAsDataURL( file );
 
                 reader.onload = function(){
+                    let resultText = reader.result;
+                    if ( resultText !== '' ) {
+                        if ( resultText === 'data:') {
+                            resultText = '';
+                        } else {
+                            resultText = resultText.split(';base64,')[1];
+                        }
+                    }
                     resolve({
-                        base64: reader.result.replace(/^data:.*\/.*;base64,|^data:$/, ''),
+                        base64: resultText,
                         name: file.name,
                         size: file.size
                     });
@@ -1579,8 +1599,17 @@ html: {
             selectOption.push(`<option value=""></option>`);
         }
         
-        for ( const key in list ) {
-            const val = cmn.escape( list[ key ] ),
+        // listを名称順にソートする
+        const sortList = Object.keys( list ).map(function(key){
+            return list[key];
+        });
+        sortList.sort(function( a, b ){
+            return a.localeCompare( b );
+        });
+        
+        
+        for ( const item of sortList ) {
+            const val = cmn.escape( item ),
                   optAttr = [`value="${val}"`];
             if ( value === val ) optAttr.push('selected', 'selected');
             selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
@@ -1834,14 +1863,16 @@ resultModal: function( result ) {
    登録失敗エラーモーダル
 ##################################################
 */
-errorModal: function( error, pageName ) {
+errorModal: function( errors, pageName, info ) {
+    console.log( info )
     return new Promise(function( resolve ){
         let errorMessage;
         try {
-            errorMessage = JSON.parse(error.message);
+            errorMessage = JSON.parse(errors.message);
         } catch ( e ) {
             //JSONを作成
-            errorMessage = {"0":{"共通":[error.message]}};
+            errorMessage = {'0':{}};
+            errorMessage['0'][ getMessage.FTE00064 ] = [ errors.message ];
         }
         const errorHtml = [];
         for ( const item in errorMessage ) {
@@ -1850,9 +1881,15 @@ errorModal: function( error, pageName ) {
                       name = cmn.cv( error, '', true ),
                       body = cmn.cv( errorMessage[item][error].join(''), '?', true );
 
+                const columnId = Object.keys( info.column_info ).find(function( key ){
+                    return info.column_info[ key ].column_name_rest === name;
+                });
+                
+                const columnName = ( columnId )? info.column_info[ columnId ].column_name: error;
+                
                 errorHtml.push(`<tr class="tBodyTr tr">`
                 + cmn.html.cell( number, ['tBodyTh', 'tBodyLeftSticky'], 'th')
-                + cmn.html.cell( name, 'tBodyTd')
+                + cmn.html.cell( columnName, 'tBodyTd')
                 + cmn.html.cell( body, 'tBodyTd')
                 + `</tr>`);
             }
@@ -1864,7 +1901,7 @@ errorModal: function( error, pageName ) {
                 <thead class="thead">
                     <tr class="tHeadTr tr">
                         <th class="tHeadTh tHeadLeftSticky th"><div class="ci">No.</div></th>
-                        <th class="tHeadTh th"><div class="ci">${getMessage.FTE10043}</div></th>
+                        <th class="tHeadTh th"><div class="ci">${getMessage.FTE10044}</div></th>
                         <th class="tHeadTh th"><div class="ci">${getMessage.FTE10045}</div></th>
                     </tr>
                 </thead>
@@ -1965,43 +2002,48 @@ setCommonEvents: function() {
 
             const $p = $('<div/>', {
                 'class': 'popupBlock',
-                'html': fn.escape( ttl, true )
+                'html': `<div class="popupInner">${fn.escape( ttl, true )}</div>`
             }).append('<div class="popupArrow"><span></span></div>');
             
-            const $arrow = $p.find('.popupArrow');
+            const $inner = $p.find('.popupInner'),
+                  $arrow = $p.find('.popupArrow');
             
             if( $t.is('.darkPopup') ) $p.addClass('darkPopup');
             
             $body.append( $p );
 
             const r = $t[0].getBoundingClientRect(),
-                  m = 8,
                   wW = $window.width(),
+                  wH = $window.height(),
                   tW = $t.outerWidth(),
                   tH = $t.outerHeight(),
                   tL = r.left,
                   tT = r.top,
+                  tB = wH - tT - tH,
                   pW = $p.outerWidth(),
-                  pH = $p.outerHeight(),
                   wsL = $window.scrollLeft();
 
-            let l = ( tL + tW / 2 ) - ( pW / 2 ) - wsL,
-                t = tT - pH - m;
-
-            if ( t <= 0 ) {
+            let pL = ( tL + tW / 2 ) - ( pW / 2 ) - wsL,
+                pH = $p.outerHeight(),
+                pT = tT - pH;
+            
+            // 上か下か
+            if ( pT <= 0 && tT < tB ) {
                 $p.addClass('popupBottom');
-                t = tT + tH + m;
+                if ( tB < pH ) pH = tB;
+                pT = tT + tH;
             } else {
+                if ( tT < pH ) pH = tT;
                 $p.addClass('popupTop');
             }
-            if ( wW < l + pW ) l = wW - pW - m;
-            if ( l <= 0 ) l = m;
-
+            if ( wW < pL + pW ) pL = wW - pW;
+            if ( pL <= 0 ) pL = 0;
+            
             $p.css({
                 'width': pW,
                 'height': pH,
-                'left': l,
-                'top': t
+                'left': pL,
+                'top': pT
             });
             
             // 矢印の位置
@@ -2023,25 +2065,39 @@ setCommonEvents: function() {
                     if (aL < 20 ) aL = 20;
                 }
             } else {
-                aL = ( tL + ( tW / 2 )) - l - wsL;
+                aL = ( tL + ( tW / 2 )) - pL - wsL;
             }
             $arrow.css('left', aL );
 
             if ( $t.is('.popupHide') ) {
                 $p.addClass('popupHide');
             }
+            
+            
+            // ホイールでポップアップ内をスクロール
+            $t.on('wheel.popup', function( e ){
+                e.preventDefault();
+                
+                const delta = e.originalEvent.deltaY ? - ( e.originalEvent.deltaY ) : e.originalEvent.wheelDelta ? e.originalEvent.wheelDelta : - ( e.originalEvent.detail );
 
+                if ( delta < 0 ) {
+                    $inner.scrollTop( $inner.scrollTop() + 16 );
+                } else {
+                    $inner.scrollTop( $inner.scrollTop() - 16 );
+                }
+            });
+            
             $t.on('pointerleave.popup', function(){
                 const $p = $body.find('.popupBlock'),
                       title = ttl;
                 $p.remove();
-                $t.off('pointerleave.popup click.popup').attr('title', title );
+                $t.off('pointerleave.popup click.popup wheel.popup').attr('title', title );
             });
             
+            // data-popupがclickの場合クリック時に一旦非表示
             $t.on('click.popup', function(){
                 if ( $t.attr('data-popup') === 'click') {
                    if ( $t.is('.popupHide') ) {
-
                         $t.add( $p ).removeClass('popupHide');
                     } else {
                         $t.add( $p ).addClass('popupHide');
@@ -2214,13 +2270,14 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
     return new Promise(function( resolve ){
         const funcs = {
             ok: function(){
+                const $dialog = modalInstance[ modalId ].$.dbody;
                 modalInstance[ modalId ].hide();
                 resolve({
                     selectName: executeConfig.selectName,
                     selectId: executeConfig.selectId,
-                    id: modalInstance[ modalId ].$.dbody.find('.executeOperetionId').text(),
-                    name: modalInstance[ modalId ].$.dbody.find('.executeOperetionName').text(),
-                    schedule:  modalInstance[ modalId ].$.dbody.find('.executeSchedule').val()
+                    id: $dialog.find('.executeOperetionId').text(),
+                    name: $dialog.find('.executeOperetionName').text(),
+                    schedule: $dialog.find('.executeSchedule').val()
                 });
             },
             cancel: function(){
@@ -2238,11 +2295,11 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
                         <tbody class="commonTbody">
                             <tr class="commonTr">
                                 <th class="commonTh">ID</th>
-                                <td class="commonTd">${executeConfig.selectId}</td>
+                                <td class="commonTd selectId">${executeConfig.selectId}</td>
                             </tr>
                             <tr class="commonTr">
                                 <th class="commonTh">${getMessage.FTE10055}</th>
-                                <td class="commonTd">${executeConfig.selectName}</td>
+                                <td class="commonTd selectName">${executeConfig.selectName}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -2310,6 +2367,10 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
         } else {
             modalInstance[ modalId ].btnFn = funcs;
             modalInstance[ modalId ].show();
+            
+            // 選択しているItemをセット
+            modalInstance[ modalId ].$.dbody.find('.selectId').text( executeConfig.selectId );
+            modalInstance[ modalId ].$.dbody.find('.selectName').text( executeConfig.selectName );
         }
     });
 },
@@ -2352,6 +2413,7 @@ commonErrorAlert: function( error ) {
 gotoErrPage: function( message ) {
     // windowFlagでWorker内か判定
     if ( windowFlag ) {
+        controller.abort();
         if ( message ) {
             window.alert( message );
         } else {
@@ -2643,7 +2705,6 @@ setup( className ) {
         Sub: []
     };
     
-    lg.start = 0;
     lg.searchString = '';
     
     const containerClassName = ['operationLogContainer'];
@@ -2787,16 +2848,16 @@ update( log ) {
     lg.$.num.text( lg.lines.toLocaleString() );
     
     // 進行状態表示行数内にする
-    if ( lg.lines - lg.start > lg.max ) {
-        lg.start = lg.lines - lg.max;
+    let start = 0;
+    if ( lg.lines > lg.max ) {
+        start = lg.lines - lg.max;
     }
     
     // HTML
     const logHtml = [];
-    for ( let i = lg.start; i < lg.lines; i++ ) {
+    for ( let i = start; i < lg.lines; i++ ) {
         logHtml.push( lg.logLine( i ) );
     }
-    lg.start = lg.lines;
     
     // スクロールチェック
     const logArea = lg.$.log.get(0),
@@ -2805,7 +2866,7 @@ update( log ) {
           scrollHeight = logArea.scrollHeight,
           scrollFlag = ( logHeight < scrollHeight && scrollTop >= scrollHeight - logHeight )? true: false;
     
-    lg.$.logList.append( logHtml.join('') );  
+    lg.$.logList.html( logHtml.join('') );  
     
     // 追加後進行状態表示行数を超えた部分を削除
     if ( lg.lines > lg.max ) {

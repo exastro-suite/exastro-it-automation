@@ -3,7 +3,28 @@ entries:
   exastro-it-automation:
   - apiVersion: v2
     appVersion: 2.0.2
-    created: "2022-11-18T20:17:52.864742728+09:00"
+    created: "2022-12-02T15:40:49.50229179+09:00"
+    description: Exastro IT Automation is an Open Source Framework for digitizing
+      and centrally managing the system configuration.
+    digest: 1e7507004fafcd125e4790e3f5dde1a97a035624d19d2f00f28499154801b2b1
+    home: https://exastro-suite.github.io/
+    icon: https://exastro-suite.github.io/docs/asset/logo/exastro/Exastro-logomark2-rgb.svg
+    keywords:
+    - exastro
+    - exastro-it-automation
+    maintainers:
+    - email: contact@exastro.jp.nec.com
+      name: NEC Corporation
+    name: exastro-it-automation
+    sources:
+    - https://github.com/exastro-suite/exastro-it-automation
+    type: application
+    urls:
+    - exastro-it-automation-1.0.6.tgz
+    version: 1.0.6
+  - apiVersion: v2
+    appVersion: 2.0.2
+    created: "2022-12-02T15:40:49.48841608+09:00"
     description: Exastro IT Automation is an Open Source Framework for digitizing
       and centrally managing the system configuration.
     digest: bbca882d4019ec2f7f92bc163443912ca0ba910b79fe5b928b3bc1e4e76972ec
@@ -24,7 +45,7 @@ entries:
     version: 1.0.5
   - apiVersion: v2
     appVersion: 2.0.1
-    created: "2022-11-18T20:17:52.855016599+09:00"
+    created: "2022-12-02T15:40:49.474212647+09:00"
     description: Exastro IT Automation is an Open Source Framework for digitizing
       and centrally managing the system configuration.
     digest: 6dba071b78a48359e228264d900adc88064f99b49f025cead4be6b88325e07f6
@@ -45,7 +66,7 @@ entries:
     version: 1.0.4
   - apiVersion: v2
     appVersion: 2.0.1
-    created: "2022-11-18T20:17:52.847573739+09:00"
+    created: "2022-12-02T15:40:49.457967238+09:00"
     description: Exastro IT Automation is an Open Source Framework for digitizing
       and centrally managing the system configuration.
     digest: 5cb5dfe9b6d23d11a25f4f2f2b1b7ceb787760d7adf0e48b6dbfacd7811d745d
@@ -66,7 +87,7 @@ entries:
     version: 1.0.3
   - apiVersion: v2
     appVersion: 2.0.0
-    created: "2022-11-18T20:17:52.837011487+09:00"
+    created: "2022-12-02T15:40:49.424628091+09:00"
     description: Exastro IT Automation is an Open Source Framework for digitizing
       and centrally managing the system configuration.
     digest: e93c774dd5f886e7924314d2de85dc0804b4bf2c2df80a0083f226db3ff9de1f
@@ -87,7 +108,7 @@ entries:
     version: 1.0.2
   - apiVersion: v2
     appVersion: 2.0.0
-    created: "2022-11-18T20:17:52.829636689+09:00"
+    created: "2022-12-02T15:40:49.401461765+09:00"
     description: Exastro IT Automation is an Open Source Framework for digitizing
       and centrally managing the system configuration.
     digest: 37d1086f5d1f2f816bacb6a486f88d7409b3485bba4dbc368bb7a96956e1e88d
@@ -108,7 +129,7 @@ entries:
     version: 1.0.1
   - apiVersion: v2
     appVersion: 2.0.0
-    created: "2022-11-18T20:17:52.813401624+09:00"
+    created: "2022-12-02T15:40:49.39337005+09:00"
     description: Exastro IT Automation is an Open Source Framework for digitizing
       and centrally managing the system configuration.
     digest: 3c5c6fb3b1eb01cafe61d5c4443f06036e336eec098b372bc4c76d0de3c08374
@@ -127,4 +148,4 @@ entries:
     urls:
     - exastro-it-automation-1.0.0.tgz
     version: 1.0.0
-generated: "2022-11-18T20:17:52.806181203+09:00"
+generated: "2022-12-02T15:40:49.38149291+09:00"

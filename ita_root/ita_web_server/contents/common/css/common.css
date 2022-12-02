@@ -62,11 +62,11 @@ background-color: rgba( 255,255,255,.6 );
 /* number */
 .inputNumber {
 text-align: right;
+-moz-appearance: textfield;
 }
 .inputNumber::-webkit-inner-spin-button,
 .inputNumber::-webkit-outer-spin-button {
 -webkit-appearance: none;
--moz-appearance: textfield;
 }
 /* select */
 .select {

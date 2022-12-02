@@ -1490,7 +1490,7 @@ setCommonEvents() {
     const menuInfo = mn.info.menu_info;
     
     const buttons = {
-        cancel: { text: '閉じる', action: 'normal'},
+        cancel: { text: getMessage.FTE00002, action: 'normal'},
         //ok: { text: 'メニュー情報詳細確認', action: 'positive'}
     }
     

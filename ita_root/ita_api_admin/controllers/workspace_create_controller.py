@@ -133,6 +133,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['menu_create.sql', 'menu_create_master.sql'],
             ['conductor.sql', 'conductor_master.sql'],
             ['ansible.sql', 'ansible_master.sql'],
+            ['export_import.sql', 'export_import_master.sql'],
         ]
         last_update_timestamp = str(get_timestamp())
 

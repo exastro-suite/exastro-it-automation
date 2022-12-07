@@ -325,7 +325,10 @@ CREATE TABLE T_ANSC_CMDB_LINK
     VARS_NAME                       VARCHAR(4000),                              -- 変数名
     VRAS_MEMBER_NAME                VARCHAR(4000),                              -- メンバ変数
     PARSE_TYPE_ID                   VARCHAR(2),                                 -- パース形式
+<<<<<<< HEAD
     MENU_ID                         VARCHAR(40),                                -- メニュー
+=======
+>>>>>>> #82 収集機能 メニュー用データ
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
@@ -344,7 +347,10 @@ CREATE TABLE T_ANSC_CMDB_LINK_JNL
     VARS_NAME                       VARCHAR(4000),                              -- 変数名
     VRAS_MEMBER_NAME                VARCHAR(4000),                              -- メンバ変数
     PARSE_TYPE_ID                   VARCHAR(2),                                 -- パース形式
+<<<<<<< HEAD
     MENU_ID                         VARCHAR(40),                                -- メニュー
+=======
+>>>>>>> #82 収集機能 メニュー用データ
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

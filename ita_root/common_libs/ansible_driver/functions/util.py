@@ -134,6 +134,28 @@ def getLegayRoleExecutResultDataUploadDirPath():
     return getDataRelayStorageDir() + "/uploadfiles/20412/result_data"
 
 
+def getLegacyPlaybookUploadDirPath():
+    """
+      Legacy Playbook素材集のPlaybook素材ディレクトリバスを取得する。
+      Arguments:
+        なし
+      Returns:
+        作業管理結果データディレクトリバス
+    """
+    return getDataRelayStorageDir() + "/uploadfiles/20202/playbook_file"
+
+
+def getPioneerDialogUploadDirPath():
+    """
+      Pioneer 対話ファイル素材集の対話ファイル素材ディレクトリバスを取得する。
+      Arguments:
+        なし
+      Returns:
+        作業管理結果データディレクトリバス
+    """
+    return getDataRelayStorageDir() + "/uploadfiles/20304/dialog_file"
+
+
 def to_str(bstr):
     """
       byte型をstr型に変換

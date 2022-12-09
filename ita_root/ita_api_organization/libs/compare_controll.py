@@ -209,9 +209,10 @@ def compare_execute(objdbca, menu, parameter, options={}):
 
         compare_mode = _get_flg(compare_config, "compare_mode")
 
+        # override_column_info_vertical_ver  item1 -> item[input_order:1]
         vertical_compare_flg = _get_flg(compare_config, "vertical_compare_flg")
         if vertical_compare_flg is True:
-            _override_column_info_vertical_ver(objdbca, compare_config, options)
+            # _override_column_info_vertical_ver(objdbca, compare_config, options)
             pass
 
 
@@ -327,6 +328,7 @@ def _set_base_config(parameter):
         "operation_name_disp",
         "base_datetime",
         "operation_date",
+        "input_order",
         "last_execute_timestamp",
         "remarks",
         "discard",
@@ -334,6 +336,21 @@ def _set_base_config(parameter):
         "last_updated_user",
     ]
 
+    # no_input_order_list
+    no_input_order_list = [
+        "uuid",
+        "host_name",
+        "operation_name_select",
+        "operation_name_disp",
+        "base_datetime",
+        "operation_date",
+        "input_order",
+        "last_execute_timestamp",
+        "remarks",
+        "discard",
+        "last_update_date_time",
+        "last_updated_user",
+    ]
 
     compare_config = {}
 
@@ -381,6 +398,9 @@ def _set_base_config(parameter):
 
     # ファイル比較対象(mimetype)
     compare_config.setdefault("accept_compare_file_list", accept_compare_file_list)
+
+    # 代入順序対象外リスト
+    compare_config.setdefault("no_input_order_list", no_input_order_list)
 
     return compare_config
 
@@ -504,11 +524,15 @@ def _execute_compare_data(objdbca, compare_config, options):
         origin_data = compare_config.get("origin_data")
         # get accept_compare_file_list
         accept_compare_file_list = compare_config.get("accept_compare_file_list")
+        # get no_input_order_list
+        no_input_order_list = compare_config.get("no_input_order_list")
         # get compare_mode  normal / file
         compare_mode = _get_flg(compare_config, "compare_mode")
         # get copmare_target_column
         copmare_target_column = compare_config.get("copmare_target_column")
         target_menus = compare_config.get("target_menus_lang")
+        # get vertical_compare_flg
+        vertical_compare_flg = _get_flg(compare_config, "vertical_compare_flg")
 
         result_ptn1 = {}
         result_ptn2 = {}
@@ -552,10 +576,12 @@ def _execute_compare_data(objdbca, compare_config, options):
                 # get col name
                 col_name = tmp_info.get("col_name")
 
-                # compare file flg
+                # compare target flg
                 compare_target_flg = tmp_info.get("compare_target_flg")
                 # compare file flg
                 file_flg = tmp_info.get("file_flg")
+                # no_input_order_flg
+                no_input_order_flg = tmp_info.get("no_input_order_flg")
 
                 # menu rest_name
                 col_name_menu_1 = tmp_info.get("menu_1")
@@ -580,138 +606,164 @@ def _execute_compare_data(objdbca, compare_config, options):
                 else:
                     target_column_flg = False
 
+                # target vertical menu
+                if vertical_compare_flg is True:
+                    input_orders = list(origin_data[target_host].keys())
+                    input_orders = list(set(input_orders))
+                else:
+                    input_orders = ["__no_input_order__"]
+
                 # target filter
                 if target_column_flg is True:
-                    # get target menu data -> uuid value base_datetime operation_name_disp
-                    try:
-                        menu_1_data = origin_data[target_host][input_order_1].get("menu_1")
-                        target_uuid_1 = menu_1_data.get("uuid")
-                        col_val_menu_1 = menu_1_data.get(col_name_menu_1)
-                        base_datetime_1 = menu_1_data.get("base_datetime")
-                        operation_name_disp_1 = menu_1_data.get("operation_name_disp")
-                    except Exception:
-                        pass
-                    try:
-                        menu_2_data = origin_data[target_host][input_order_2].get("menu_2")
-                        target_uuid_2 = menu_2_data.get("uuid")
-                        col_val_menu_2 = menu_2_data.get(col_name_menu_2)
-                        base_datetime_2 = menu_2_data.get("base_datetime")
-                        operation_name_disp_2 = menu_2_data.get("operation_name_disp")
-                    except Exception:
-                        pass
-
-                    # set target key->value
-                    target_data_1.setdefault(col_name, col_val_menu_1)
-                    target_data_2.setdefault(col_name, col_val_menu_2)
-
-                    # compare result[value]
-                    if compare_target_flg is True:
-                        if col_val_menu_1 != col_val_menu_2:
-                            value_compare_flg = True
-
-                    # get file data
-                    if file_flg is True:
-                        # objtable
-                        objtable_1 = compare_config["objtable"]["menu_1"]
-                        objtable_2 = compare_config["objtable"]["menu_2"]
-
-                        tmp_file_data_1 = None
-                        tmp_file_data_2 = None
-                        tmp_file_mimetype_1 = None
-                        tmp_file_mimetype_2 = None
-
-                        file_mimetypes.setdefault(col_name, {"target_data_1": {}, "target_data_2": {}})
-                        # get file base64 string  file mimetype
-                        if col_val_menu_1 is not None:
-                            tmp_file_data_1, tmp_file_mimetype_1 = _get_file_data_columnclass(
-                                objdbca,
-                                objtable_1,
-                                col_name_menu_1,
-                                col_val_menu_1,
-                                target_uuid_1,
-                                column_class_name_1)
-                            file_mimetypes[col_name]["target_data_1"].setdefault(col_val_menu_1, tmp_file_mimetype_1)
-                        if col_val_menu_2 is not None:
-                            tmp_file_data_2, tmp_file_mimetype_2 = _get_file_data_columnclass(
-                                objdbca,
-                                objtable_2,
-                                col_name_menu_2,
-                                col_val_menu_2,
-                                target_uuid_2,
-                                column_class_name_2)
-                            file_mimetypes[col_name]["target_data_2"].setdefault(col_val_menu_2, tmp_file_mimetype_2)
-
-                        # compare result[file]
-                        if tmp_file_data_1 != tmp_file_data_2:
-                            file_compare_flg = True
-                            diff_flg_file.setdefault(col_name, file_compare_flg)
-
-                        # compare file
-                        if compare_mode == "file":
-                            str_rdiff = ""
-                            # get unified diff
-                            if tmp_file_mimetype_1 in accept_compare_file_list and tmp_file_mimetype_2 in accept_compare_file_list:
-                                try:
-                                    tmp_file_data_1_dec = base64.b64decode(tmp_file_data_1.encode()).decode().split()
-                                except Exception:
-                                    err_msg = "read file is faild"  ### MSG化対応
-                                    status_code = "499-00201"
-                                    log_msg_args = [err_msg]
-                                    api_msg_args = [err_msg]
-                                    raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-                                try:
-                                    tmp_file_data_2_dec = base64.b64decode(tmp_file_data_2.encode()).decode().split()
-                                except Exception:
-                                    err_msg = "read file is faild"  ### MSG化対応
-                                    status_code = "499-00201"
-                                    log_msg_args = [err_msg]
-                                    api_msg_args = [err_msg]
-                                    raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-                                rdiff = difflib.unified_diff(tmp_file_data_1_dec, tmp_file_data_2_dec, col_val_menu_2, col_val_menu_2, lineterm='')
-
-                                str_rdiff = '\n'.join(rdiff)
-                            if str_rdiff == "":
-                                compare_config = _set_flg(compare_config, "compare_file", False)
-                            compare_config["unified_diff"]["file_data"].setdefault("menu_1", {"name": col_val_menu_1, "data": tmp_file_data_1, })
-                            compare_config["unified_diff"]["file_data"].setdefault("menu_2", {"name": col_val_menu_2, "data": tmp_file_data_2, })
-                            compare_config["unified_diff"]["diff_result"] = str_rdiff
-                            target_compare_file_info = {}
-                            target_compare_file_info.setdefault("target_host", target_host)
-                            target_compare_file_info.setdefault("operation_1", operation_name_disp_1)
-                            target_compare_file_info.setdefault("base_datetime_1", base_datetime_1)
-                            target_compare_file_info.setdefault("operation_2", operation_name_disp_2)
-                            target_compare_file_info.setdefault("base_datetime_2", base_datetime_2)
-
-                            compare_config["target_compare_file_info"] = target_compare_file_info
-
-
-                        # set compare file endpoin + parameter
-                        endpoint = ("/api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/".format(
-                                    organization_id=g.get("ORGANIZATION_ID"),
-                                    workspace_id=g.get("WORKSPACE_ID"),
-                                    menu="compare_execute",
-                                    ))
-                        file_compare_parameter = compare_config.get("parameter").copy()
-                        file_compare_parameter.setdefault("copmare_file_data", True)
-                        file_compare_parameter.setdefault("copmare_target_column", col_name)
-                        # file_compare_parameter.setdefault("host", target_host)
-                        file_compare_parameter["host"] = target_host
-
-                        # set compare result detail[file]
-                        tmp_file_compare_info["file_name_diff_flg"] = value_compare_flg
-                        tmp_file_compare_info["file_data_diff_flg"] = file_compare_flg
-                        tmp_file_compare_info.setdefault("file_mimetype", file_mimetypes)
-                        tmp_file_compare_info.setdefault("file_name_diff_flg", value_compare_flg)
-                        tmp_file_compare_info.setdefault("file_data_diff_flg", file_compare_flg)
-                        tmp_file_compare_info.setdefault("method", "POST")
-                        tmp_file_compare_info.setdefault("endpoint", endpoint)
-                        tmp_file_compare_info.setdefault("parameter", file_compare_parameter)
-
-                        del tmp_file_data_1
-                        del tmp_file_data_2
-                    else:
+                    for tmp_order in input_orders:
+                        value_compare_flg = False
                         file_compare_flg = False
-                        diff_flg_file.setdefault(col_name, file_compare_flg)
+                        file_mimetypes = {}
+                        other_options = {}
+                        tmp_file_compare_info = {}
+
+                        input_order_1 = tmp_order
+                        input_order_2 = tmp_order
+                        tmp_col_name = "{}".format(col_name)
+                        # get target menu data -> uuid value base_datetime operation_name_disp
+                        try:
+                            menu_1_data = origin_data[target_host][input_order_1].get("menu_1")
+                            target_uuid_1 = menu_1_data.get("uuid")
+                            col_val_menu_1 = menu_1_data.get(col_name_menu_1)
+                            base_datetime_1 = menu_1_data.get("base_datetime")
+                            operation_name_disp_1 = menu_1_data.get("operation_name_disp")
+                        except Exception:
+                            pass
+                        try:
+                            menu_2_data = origin_data[target_host][input_order_2].get("menu_2")
+                            target_uuid_2 = menu_2_data.get("uuid")
+                            col_val_menu_2 = menu_2_data.get(col_name_menu_2)
+                            base_datetime_2 = menu_2_data.get("base_datetime")
+                            operation_name_disp_2 = menu_2_data.get("operation_name_disp")
+                        except Exception:
+                            pass
+
+                        # vertical menu and comare target parameters
+                        if tmp_order != "__no_input_order__":
+                            if no_input_order_flg is False:
+                                tmp_col_name = "{}[{}]".format(col_name, input_order_1)
+                                tmp_col_name = "{}[{}]".format(col_name, input_order_2)
+
+                        # set target key->value
+                        target_data_1.setdefault(tmp_col_name, col_val_menu_1)
+                        target_data_2.setdefault(tmp_col_name, col_val_menu_2)
+
+                        # compare result[value]
+                        if compare_target_flg is True:
+                            if col_val_menu_1 != col_val_menu_2:
+                                value_compare_flg = True
+                            else:
+                                value_compare_flg = False
+                        else:
+                            value_compare_flg = False
+
+                        # get file data
+                        if file_flg is True:
+                            # objtable
+                            objtable_1 = compare_config["objtable"]["menu_1"]
+                            objtable_2 = compare_config["objtable"]["menu_2"]
+
+                            tmp_file_data_1 = None
+                            tmp_file_data_2 = None
+                            tmp_file_mimetype_1 = None
+                            tmp_file_mimetype_2 = None
+
+                            file_mimetypes.setdefault(tmp_col_name, {"target_data_1": {}, "target_data_2": {}})
+                            # get file base64 string  file mimetype
+                            if col_val_menu_1 is not None:
+                                tmp_file_data_1, tmp_file_mimetype_1 = _get_file_data_columnclass(
+                                    objdbca,
+                                    objtable_1,
+                                    col_name_menu_1,
+                                    col_val_menu_1,
+                                    target_uuid_1,
+                                    column_class_name_1)
+                                file_mimetypes[tmp_col_name]["target_data_1"].setdefault(col_val_menu_1, tmp_file_mimetype_1)
+                            if col_val_menu_2 is not None:
+                                tmp_file_data_2, tmp_file_mimetype_2 = _get_file_data_columnclass(
+                                    objdbca,
+                                    objtable_2,
+                                    col_name_menu_2,
+                                    col_val_menu_2,
+                                    target_uuid_2,
+                                    column_class_name_2)
+                                file_mimetypes[col_name]["target_data_2"].setdefault(col_val_menu_2, tmp_file_mimetype_2)
+
+                            # compare result[file]
+                            if tmp_file_data_1 != tmp_file_data_2:
+                                file_compare_flg = True
+                                diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+
+                            # compare file
+                            if compare_mode == "file":
+                                str_rdiff = ""
+                                # get unified diff
+                                if tmp_file_mimetype_1 in accept_compare_file_list and tmp_file_mimetype_2 in accept_compare_file_list:
+                                    try:
+                                        tmp_file_data_1_dec = base64.b64decode(tmp_file_data_1.encode()).decode().split()
+                                    except Exception:
+                                        err_msg = "read file is faild"  ### MSG化対応
+                                        status_code = "499-00201"
+                                        log_msg_args = [err_msg]
+                                        api_msg_args = [err_msg]
+                                        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+                                    try:
+                                        tmp_file_data_2_dec = base64.b64decode(tmp_file_data_2.encode()).decode().split()
+                                    except Exception:
+                                        err_msg = "read file is faild"  ### MSG化対応
+                                        status_code = "499-00201"
+                                        log_msg_args = [err_msg]
+                                        api_msg_args = [err_msg]
+                                        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+                                    rdiff = difflib.unified_diff(tmp_file_data_1_dec, tmp_file_data_2_dec, col_val_menu_2, col_val_menu_2, lineterm='')
+
+                                    str_rdiff = '\n'.join(rdiff)
+                                if str_rdiff == "":
+                                    compare_config = _set_flg(compare_config, "compare_file", False)
+                                compare_config["unified_diff"]["file_data"].setdefault("menu_1", {"name": col_val_menu_1, "data": tmp_file_data_1, })
+                                compare_config["unified_diff"]["file_data"].setdefault("menu_2", {"name": col_val_menu_2, "data": tmp_file_data_2, })
+                                compare_config["unified_diff"]["diff_result"] = str_rdiff
+                                target_compare_file_info = {}
+                                target_compare_file_info.setdefault("target_host", target_host)
+                                target_compare_file_info.setdefault("operation_1", operation_name_disp_1)
+                                target_compare_file_info.setdefault("base_datetime_1", base_datetime_1)
+                                target_compare_file_info.setdefault("operation_2", operation_name_disp_2)
+                                target_compare_file_info.setdefault("base_datetime_2", base_datetime_2)
+
+                                compare_config["target_compare_file_info"] = target_compare_file_info
+
+                            # set compare file endpoin + parameter
+                            endpoint = ("/api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/".format(
+                                        organization_id=g.get("ORGANIZATION_ID"),
+                                        workspace_id=g.get("WORKSPACE_ID"),
+                                        menu="compare_execute",
+                                        ))
+                            file_compare_parameter = compare_config.get("parameter").copy()
+                            file_compare_parameter.setdefault("copmare_file_data", True)
+                            file_compare_parameter.setdefault("copmare_target_column", tmp_col_name)
+                            # file_compare_parameter.setdefault("host", target_host)
+                            file_compare_parameter["host"] = target_host
+
+                            # set compare result detail[file]
+                            tmp_file_compare_info["file_name_diff_flg"] = value_compare_flg
+                            tmp_file_compare_info["file_data_diff_flg"] = file_compare_flg
+                            tmp_file_compare_info.setdefault("file_mimetype", file_mimetypes)
+                            tmp_file_compare_info.setdefault("file_name_diff_flg", value_compare_flg)
+                            tmp_file_compare_info.setdefault("file_data_diff_flg", file_compare_flg)
+                            tmp_file_compare_info.setdefault("method", "POST")
+                            tmp_file_compare_info.setdefault("endpoint", endpoint)
+                            tmp_file_compare_info.setdefault("parameter", file_compare_parameter)
+
+                            del tmp_file_data_1
+                            del tmp_file_data_2
+                        else:
+                            file_compare_flg = False
+                            diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
 
                 # set tmp_file_compare_info
                 file_compare_info.setdefault(col_name, tmp_file_compare_info)
@@ -1356,11 +1408,11 @@ def _set_column_info(objdbca, compare_config, options):
         file_column_list = [9, "9", "FileUploadColumn", "FileUploadEncryptColumn"]
         detail_flg = _get_flg(compare_config, "detail_flg")
         target_menu_info = compare_config.get("target_menu_info")
-        del_parameter_list = compare_config.get("no_compare_parameter_list")
+        del_parameter_list = compare_config.get("del_parameter_list")
         no_compare_parameter_list = compare_config.get("no_compare_parameter_list")
+        no_input_order_list = compare_config.get("no_input_order_list")
 
         compare_config = _set_flg(compare_config, "compare_file", False)
-
 
         # detail_flg: True: use T_COMPARE_DETAIL_LIST / False: use T_COMN_MENU_COLUMN_LINK
         if detail_flg is False:
@@ -1386,19 +1438,27 @@ def _set_column_info(objdbca, compare_config, options):
                     if col_key not in del_parameter_list:
                         column_class = row.get("COLUMN_CLASS")
                         column_class = row.get("COLUMN_CLASS_NAME")
+                        # file comapre target flg
                         file_flg = False
                         if column_class in file_column_list:
                             compare_config = _set_flg(compare_config, "compare_file", True)
                             file_flg = True
+                        # comapre target flg
                         compare_target_flg = False
-                        if col_key in no_compare_parameter_list:
+                        if col_key not in no_compare_parameter_list:
                             compare_target_flg = True
+                        # no input order flg
+                        no_input_order_flg = False
+                        if col_key in no_input_order_list:
+                            no_input_order_flg = True
+
                         tmp_column_info = {
                             "col_name": compare_col_title,
                             "menu_1": col_key,
                             "menu_2": col_key,
                             "file_flg": file_flg,
                             "compare_target_flg": compare_target_flg,
+                            "no_input_order_flg": no_input_order_flg,
                             "column_class_1": column_class,
                             "column_class_2": column_class
                         }
@@ -1421,11 +1481,12 @@ def _set_column_info(objdbca, compare_config, options):
                     if input_order_2 is None:
                         input_order_2 = "__no_input_order__"
 
+                    # file comapre target flg
                     file_flg = False
                     if column_class_1 in file_column_list or column_class_2 in file_column_list:
                         compare_config = _set_flg(compare_config, "compare_file", True)
                         file_flg = True
-
+                    # comapre target flg
                     compare_target_flg = False
                     if col_key_1 is None and col_key_2 is None:
                         compare_target_flg = False
@@ -1433,12 +1494,22 @@ def _set_column_info(objdbca, compare_config, options):
                         compare_target_flg = False
                     else:
                         compare_target_flg = True
+                    # no input order flg
+                    no_input_order_flg = False
+                    if col_key_1 is None and col_key_2 is None:
+                        no_input_order_flg = False
+                    elif col_key_1 in no_input_order_list and col_key_2 in no_input_order_list:
+                        no_input_order_flg = True
+                    else:
+                        no_input_order_flg = False
+
                     tmp_column_info = {
                         "col_name": compare_col_title,
                         "menu_1": col_key_1,
                         "menu_2": col_key_2,
                         "file_flg": file_flg,
                         "compare_target_flg": compare_target_flg,
+                        "no_input_order_flg": no_input_order_flg,
                         "column_class_1": column_class_1,
                         "column_class_2": column_class_2,
                         "input_order_1": input_order_1,

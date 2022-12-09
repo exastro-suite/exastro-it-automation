@@ -134,6 +134,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['conductor.sql', 'conductor_master.sql'],
             ['ansible.sql', 'ansible_master.sql'],
             ['export_import.sql', 'export_import_master.sql'],
+            ['compare.sql', 'compare_master.sql'],
         ]
         last_update_timestamp = str(get_timestamp())
 

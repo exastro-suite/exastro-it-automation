@@ -27,6 +27,8 @@ tags:
     description: Driverの情報取得・操作
   - name: Export Import
     description: データのエクスポート・インポート
+  - name: Compare Controll
+    description: 比較の情報取得・操作
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
@@ -88,7 +90,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/column/:
     get:
       tags:
@@ -143,7 +145,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/pulldown/:
     get:
       tags:
@@ -259,7 +261,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/count/:
     get:
       tags:
@@ -613,7 +615,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/{uuid}/:
     patch:
       tags:
@@ -1253,7 +1255,7 @@ paths:
                     example: 000-00000
                   data:
                     type: object
-                    example: 
+                    example:
                       {
                         version: string,
                         installed_driver: [
@@ -1837,7 +1839,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE' 
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
 
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/info/:
     get:
@@ -2197,11 +2199,11 @@ paths:
               description: 作業実行するConductorの構成情報
               type: object
               properties:
-                conductor_class_name: 
+                conductor_class_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
                 conductor_data:
@@ -2727,11 +2729,11 @@ paths:
               description: 作業実行するDriverの構成情報
               type: object
               properties:
-                movement_name: 
+                movement_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
       responses:
@@ -2797,11 +2799,11 @@ paths:
               description: 作業実行するDriverの構成情報
               type: object
               properties:
-                movement_name: 
+                movement_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
       responses:
@@ -2865,11 +2867,11 @@ paths:
               description: 作業実行するDriverの構成情報
               type: object
               properties:
-                movement_name: 
+                movement_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
       responses:
@@ -3285,6 +3287,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
+
 
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/export/info/:
     get:
@@ -3750,6 +3753,414 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/info/:
+    get:
+      tags:
+        - Compare Controll
+      description: 比較実行の基本情報取得
+      operationId: getComparesInfo
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/info/:
+    get:
+      tags:
+        - Compare Controll
+      description: Compare,Deviceのメニューの基本情報および項目情報を取得する
+      operationId: getCompareExecuteInfo
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    properties:
+                      compare_list:
+                        type: object
+                        properties:
+                          column_group_info:
+                            $ref: '#/components/schemas/COLUMN_GROUP_INFO'
+                          column_info:
+                            $ref: '#/components/schemas/COLUMN_INFO'
+                          menu_info:
+                            $ref: '#/components/schemas/MENU_INFO'
+                      device_list:
+                        type: object
+                        properties:
+                          column_group_info:
+                            $ref: '#/components/schemas/COLUMN_GROUP_INFO'
+                          column_info:
+                            $ref: '#/components/schemas/COLUMN_INFO'
+                          menu_info:
+                            $ref: '#/components/schemas/MENU_INFO'
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/:
+    post:
+      tags:
+        - Compare Controll
+      description: Compare,Deviceを対象に、検索条件を指定し、レコードを取得する
+      operationId: postCopmareExecuteFilter
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+        - name: target
+          in: path
+          description: compare_list or device_list
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を設定
+              properties:
+                rest_key_name:
+                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    items: {
+                      $ref: '#/components/schemas/FILTER_PARAMETERS',
+                    }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/search/candidates/{column}/:
+    get:
+      tags:
+        - Compare Controll
+      description: 表示フィルタで利用するプルダウン検索の候補一覧を取得する
+      operationId: getCompareExecuteSearchCandidates
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+        - name: target
+          in: path
+          description: conductor_list or operation_list
+          required: true
+          schema:
+            type: string
+        - name: column
+          in: path
+          description: REST用項目名
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    items: {}
+                    example: {"id1": "name1", "id2": "name2", "id3": "name3"}
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/:
+    post:
+      tags:
+        - Compare Controll
+      description: 比較実行
+      operationId: postCompareExecute
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 比較条件を設定
+              properties:
+                compare:
+                  type: string
+                  example: "compare_name"
+                base_date_1:
+                  type: string
+                  example: "YYYY/MM/DD hh:mm:ss"
+                base_date_2:
+                  type: string
+                  example: "YYYY/MM/DD hh:mm:ss"
+                host:
+                  items: {
+                    example: host_name
+                  }
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/:
+    post:
+      tags:
+        - Compare Controll
+      description: 比較実行(ファイル)
+      operationId: postCompareExecuteFile
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 比較条件を設定
+              properties:
+                compare:
+                  type: string
+                  example: "compare_name"
+                base_date_1:
+                  type: string
+                  example: "YYYY/MM/DD hh:mm:ss"
+                base_date_2:
+                  type: string
+                  example: "YYYY/MM/DD hh:mm:ss"
+                host:
+                  type: string
+                  example: "host_name"
+                copmare_target_column:
+                  type: string
+                  example: "target_colum"
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
 components:
   schemas:
     TABLE:
@@ -3964,7 +4375,7 @@ components:
               type: string
             END:
               type: string
-  
+
     FILTER_PARAMETERS:
       type: object
       properties:
@@ -4008,7 +4419,7 @@ components:
         type:
           type: string
           example: Register/Update
-  
+
     CONDUCTOR_INFO_LIST:
       type: object
       properties:
@@ -4072,38 +4483,38 @@ components:
                 name: "string"
               }
             ]
-    
+
     CONDUCTOR_INFO_DICT:
       type: object
       properties:
         conductor_status:
           items: {}
-          example: 
+          example:
             "status_id1" : "status_name1"
             "status_id2" : "status_name2"
         node_status:
           items: {}
-          example: 
+          example:
             "status_id1" : "status_name1"
             "status_id2" : "status_name2"
         node_type:
           items: {}
-          example: 
+          example:
             "node_type_id1" : "node_type_name1"
             "node_type_id2" : "node_type_name2"
         movement:
           items: {}
-          example: 
+          example:
             "movement_id1" : "movement_name1"
             "movement_id2" : "movement_name2"
         operation:
           items: {}
-          example: 
+          example:
             "operation_id1" : "operation_name1"
             "operation_id2" : "operation_name2"
         conductor:
           items: {}
-          example: 
+          example:
             "conductor_id1" : "conductor_name1"
             "conductor_id2" : "conductor_name2"
 

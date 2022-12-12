@@ -854,13 +854,34 @@ sheetType() {
                 mn.condcutor('confirmation');
             break;
             // 17 : 比較実行
+            case '17':
+                mn.compare();
+            break;
             // 19 : メニュー作成実行
+            case '19':
+                //
+            break;
+            // 20 : メニューエクスポート
+            case '20':
+                mn.exportImport('menuExport');
+            break;
+            // 21 : メニューインポート
+            case '21':
+                mn.exportImport('menuImport');
+            break;
+            // 22 : Excel一括エクスポート
+            case '22':
+                mn.exportImport('excelExport');
+            break;
+            // 23 : Excel一括エクスポート
+            case '23':
+                mn.exportImport('excelImport');
+            break;
             default:
-            // メインメニュー
-            //mn.mainMenu();
+                // Dashboard
         }
     } else {
-        //mn.mainMenu();
+        // Dashboard
     }
 }
 
@@ -1414,11 +1435,21 @@ executeMenu() {
     mn.setCommonEvents();
     
     fn.fetch(`/menu/${mn.params.menuNameRest}/driver/execute/info/`).then(function( result ){
+        // ドライバ
+        const listNameFunc = function(){
+            switch ( mn.params.menuNameRest ) {
+                case 'execution_ansible_role': return 'ansible_role';
+                case 'execution_ansible_legacy': return 'ansible_legacy';
+                case 'execution_ansible_pioneer': return 'ansible_pioneer';
+            }            
+        };
+        mn.params.operationType = listNameFunc();
+        
         // 実行時に渡す名前のKey
         mn.params.selectNameKey = 'movement_name';
         // Main REST URL
-        mn.params.restFilter = `/menu/${mn.params.menuNameRest}/driver/execute/filter/movement_list_ansible_role/`;
-        mn.params.restFilterPulldown = `/menu/${mn.params.menuNameRest}/driver/execute/filter/movement_list_ansible_role/search/candidates/`;
+        mn.params.restFilter = `/menu/${mn.params.menuNameRest}/driver/execute/filter/movement_list_${mn.params.operationType}/`;
+        mn.params.restFilterPulldown = `/menu/${mn.params.menuNameRest}/driver/execute/filter/movement_list_${mn.params.operationType}/search/candidates/`;
         
         // Operation
         mn.params.operation = {
@@ -1428,7 +1459,7 @@ executeMenu() {
             filterPulldown: `/menu/${mn.params.menuNameRest}/driver/execute/filter/operation_list/search/candidates/`
         };
 
-        mn.mainTable = new DataTable('MT', 'execute', result.movement_list_ansible_role, mn.params, option );
+        mn.mainTable = new DataTable('MT', 'execute', result[`movement_list_${mn.params.operationType}`], mn.params, option );
         mn.$.content.find('.sectionBody').html( mn.mainTable.setup() ).show();
         
         mn.onReady();
@@ -1523,6 +1554,59 @@ condcutor( mode ) {
     fn.loadAssets( assets ).then(function(){
         const conductor = fn.createConductor( mn.params.menuNameRest, '#content', mode, id );
         conductor.setup();
+        
+        mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   比較実行
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+compare() {
+    const mn = this;
+    
+    const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
+    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );
+    mn.setCommonEvents();
+    
+    const assets = [
+        { type: 'js', url: '/_/ita/js/compare.js'},
+        { type: 'js', url: '/_/ita/lib/diff2html/diff2html.min.js'},
+        { type: 'css', url: '/_/ita/css/compare.css'},
+    ];
+    
+    fn.loadAssets( assets ).then(function(){
+        const compare = new Compare( mn.params.menuNameRest );
+        compare.setup();
+        
+        mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   エクスポート・インポート
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+exportImport( type ) {
+    const mn = this;
+    
+    const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
+    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );
+    mn.setCommonEvents();
+    
+    const assets = [
+        { type: 'js', url: '/_/ita/js/export_import.js'},
+        { type: 'css', url: '/_/ita/css/export_import.css'},
+    ];
+    
+    fn.loadAssets( assets ).then(function(){
+        const exportImport =  new ExportImport( mn.params.menuNameRest, type );
+        exportImport.setup();
         
         mn.onReady();
     });

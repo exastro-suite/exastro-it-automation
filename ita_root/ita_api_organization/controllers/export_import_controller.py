@@ -75,9 +75,38 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
 
     :rtype: InlineResponse200
     """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    menu = 'menu_export'
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['20']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
+    body_menu = {}
+    body_mode = {}
+    body_abolished_type = {}
+    body_specified_time = {}
     if connexion.request.is_json:
-        body = ExportExecuteBody.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!',
+        body = dict(connexion.request.get_json())
+        body_menu = check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
+        body_mode = check_request_body_key(body, 'mode')
+        body_abolished_type = check_request_body_key(body, 'abolished_type')
+        if body_mode == "2":
+            body_specified_time = check_request_body_key(body, 'specified_time')
+
+    result_data = export_import.execute_menu_bulk_export(objdbca, menu, body)
+
+    return result_data,
 
 @api_filter
 def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501

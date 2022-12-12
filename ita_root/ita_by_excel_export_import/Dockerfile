@@ -19,20 +19,14 @@ FROM    registry.access.redhat.com/ubi8/ubi-init as common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
-
 ENV PYTHONPATH=/exastro/
-ENV DEFAULT_LANGUAGE=ja
+ENV USER_ID=50101
+ENV EXECUTE_INTERVAL=1
+ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
-ENV LISTEN_PORT             8000
-ENV APACHE_PID_DIR          /var/run_$USERNAME/httpd/pid
-ENV APACHE_SOCKET_DIR       /var/run_$USERNAME/httpd/socket
-ENV APACHE_USERNAME         $USERNAME
-ENV APACHE_GROUPNAME        $GROUPNAME
 
 RUN dnf install -y \
     gcc \
-    httpd \
-    httpd-devel \
     python39 \
     python39-devel \
     python39-mod_wsgi \
@@ -42,26 +36,14 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade pip setuptools \
 &&  pip3.9 install \
     Flask \
-    connexion \
-    six \
     requests \
     pyyaml \
     pytz \
-    markdown \
     pymysql \
     python-dotenv \
-    openpyxl \
-    chardet \
-    connexion[swagger-ui] \
     pycryptodome \
 &&  groupadd $GROUPNAME \
-&&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
-&&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \
-&&  chown $USERNAME:$GROUPNAME /var/log/httpd \
-&&  mkdir -p $APACHE_PID_DIR \
-&&  chown $USERNAME:$GROUPNAME $APACHE_PID_DIR \
-&&  mkdir -p $APACHE_SOCKET_DIR \
-&&  chown $USERNAME:$GROUPNAME $APACHE_SOCKET_DIR
+&&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
 #
 # Build for development
@@ -83,14 +65,6 @@ RUN dnf install -y \
     debugpy \
     flake8 \
     autopep8 \
-    ansible \
-    ansible \
-    psutil \
-    deepdiff \
-    jsonpatch \
-    jsondiff \
-    dictdiffer \
-    pandas \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
@@ -100,14 +74,10 @@ RUN mkdir ~/.config
 
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_api_organization/config/httpd.conf/httpd.conf /etc/httpd/conf/httpd.conf
-COPY ./ita_root/ita_api_organization/config/httpd.conf/wsgi.conf /etc/httpd/conf.d/wsgi.conf
-
-COPY ./ita_root/ita_api_organization/ $APP_PATH/
+COPY ./ita_root/ita_by_excel_export_import/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
-
-CMD ["httpd","-D","FOREGROUND"]
+COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
 #
 # Build for production
@@ -117,15 +87,16 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
+USER $USERNAME
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_api_organization/config/httpd.conf/httpd.conf /etc/httpd/conf/httpd.conf
-COPY ./ita_root/ita_api_organization/config/httpd.conf/wsgi.conf /etc/httpd/conf.d/wsgi.conf
-
-COPY ./ita_root/ita_api_organization/ $APP_PATH/
+COPY ./ita_root/ita_by_excel_export_import/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
+COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
+USER root
+RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
 USER $USERNAME
 
-CMD ["httpd","-D","FOREGROUND"]
+ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]

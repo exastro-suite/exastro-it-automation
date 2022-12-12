@@ -93,7 +93,7 @@ class AnscConst:
     GBL_parent_VarName = r"^\s*GBL_[0-9a-zA-Z_]*\s*$"  # グローバル変数
     TPF_parent_VarName = r"^\s*TPF_[0-9a-zA-Z_]*\s*$"  # テンプレート変数
     CPF_parent_VarName = r"^\s*CPF_[0-9a-zA-Z_]*\s*$"
-    
+
     # 実行エンジン
     DF_EXEC_MODE_ANSIBLE = '1'    # Ansibleで実行
     DF_EXEC_MODE_AAC = '2'        # ansible automation controllerで実行
@@ -104,20 +104,20 @@ class AnscConst:
     DF_LOGIN_AUTH_TYPE_KEY_EXCH = '3'    # 認証方式:鍵認証(鍵交換済み)
     DF_LOGIN_AUTH_TYPE_KEY_PP_USE = '4'  # 認証方式:鍵認証(パスフレーズあり)
     DF_LOGIN_AUTH_TYPE_PW_WINRM = '5'    # 認証方式:パスワード認証(winrm)
-    
+
     # カラムタイプ
     DF_COL_TYPE_VAL = '1'    # Value型
     DF_COL_TYPE_KEY = '2'    # Key型
-    
+
     # 具体値 SENSITIVE設定値
     DF_SENSITIVE_OFF = '0'    # OFF
     DF_SENSITIVE_ON = '1'     # ON
-    
+
     # VARS_ATTRIBUTE_01 の 具体値定義
     GC_VARS_ATTR_STD = '1'       # 一般変数
     GC_VARS_ATTR_LIST = '2'      # 複数具体値
     GC_VARS_ATTR_M_ARRAY = '3'   # 多段変数
-    
+
     # 代入値紐付メニューSELECT時のITA独自カラム名
     DF_ITA_LOCAL_OPERATION_CNT = '__ITA_LOCAL_COLUMN_1__'
     DF_ITA_LOCAL_HOST_CNT = '__ITA_LOCAL_COLUMN_2__'
@@ -162,7 +162,7 @@ class AnscConst:
 
     LC_RUN_MODE_STD = "0"      # 標準
     LC_RUN_MODE_VARFILE = "1"  # 変数定義ファイルの構造チェック
-    
+
     # ステータス定義(DBの値と同期させること)
     NOT_YET = '1'          # 未実行
     PREPARE = '2'          # 準備中
@@ -195,11 +195,13 @@ class AnscConst:
     ITA_SP_VAR_OUT_PARAM_FILE_DIR = "__parameters_file_dir__"
     ITA_SP_VAR_MOVEMENT_STS_FILE = "__movement_status_filepath__"
     ITA_SP_VAR_CONDUCTOR_ID = "__conductor_id__"
+    ITA_SP_VAR_TARGETHOSTNAME_VAR_NAME = "__logintarget__"
     ITA_SP_VAR_CPF_VAR_NAME = "CPF_[0-9a-zA-Z_]*"
     ITA_SP_VAR_TPF_VAR_NAME = "TPF_[0-9a-zA-Z_]*"
     ITA_SP_VAR_GBL_VAR_NAME = "GBL_[0-9a-zA-Z_]*"
 
     # 変数抜出から除外するITA独自変数リスト
+
     Unmanaged_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
                                 ITA_SP_VAR_ANS_USERNAME_VAR_NAME,
                                 ITA_SP_VAR_ANS_PASSWD_VAR_NAME,
@@ -216,3 +218,17 @@ class AnscConst:
                                 ITA_SP_VAR_CPF_VAR_NAME,
                                 ITA_SP_VAR_TPF_VAR_NAME,
                                 ITA_SP_VAR_GBL_VAR_NAME]
+
+    CannotValueAssign_ITA_spvar_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
+                                           ITA_SP_VAR_ANS_USERNAME_VAR_NAME,
+                                           ITA_SP_VAR_ANS_PASSWD_VAR_NAME,
+                                           ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME,
+                                           ITA_SP_VAR_ANS_OUTDIR_VAR_NAME,
+                                           ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME,
+                                           ITA_SP_VAR_OPERATION_VAR_NAME,
+                                           ITA_SP_VAR_IN_PARAM_DIR_EPC,
+                                           ITA_SP_VAR_IN_PARAM_FILE_DIR_EPC,
+                                           ITA_SP_VAR_OUT_PARAM_DIR,
+                                           ITA_SP_VAR_OUT_PARAM_FILE_DIR,
+                                           ITA_SP_VAR_MOVEMENT_STS_FILE,
+                                           ITA_SP_VAR_CONDUCTOR_ID]

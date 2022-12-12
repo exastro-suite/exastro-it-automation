@@ -28,6 +28,8 @@ tags:
   description: Driverの情報取得・操作
 - name: Export Import
   description: データのエクスポート・インポート
+- name: Compare Controll
+  description: 比較の情報取得・操作
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
     get:
@@ -3344,6 +3346,351 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/info/:
+    get:
+      tags:
+      - Compare Controll
+      description: 比較実行の基本情報取得
+      operationId: get_compares_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/info/:
+    get:
+      tags:
+      - Compare Controll
+      description: "Compare,Deviceのメニューの基本情報および項目情報を取得する"
+      operationId: get_compare_execute_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_20'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/:
+    post:
+      tags:
+      - Compare Controll
+      description: "Compare,Deviceを対象に、検索条件を指定し、レコードを取得する"
+      operationId: post_copmare_execute_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: compare_list or device_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/filter_target_body_2'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/search/candidates/{column}/:
+    get:
+      tags:
+      - Compare Controll
+      description: 表示フィルタで利用するプルダウン検索の候補一覧を取得する
+      operationId: get_compare_execute_search_candidates
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: conductor_list or operation_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: REST用項目名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/:
+    post:
+      tags:
+      - Compare Controll
+      description: 比較実行
+      operationId: post_compare_execute
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/compare_execute_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/:
+    post:
+      tags:
+      - Compare Controll
+      description: 比較実行(ファイル)
+      operationId: post_compare_execute_file
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/execute_file_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
 components:
   schemas:
     TABLE:
@@ -4630,6 +4977,126 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
+    inline_response_200_20:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_20_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          device_list: null
+          compare_list:
+            column_group_info:
+              key:
+                parent_column_group_name: parent_column_group_name
+                columns:
+                - ""
+                - ""
+                parent_column_group_id: parent_column_group_id
+                column_group_id: column_group_id
+                column_group_name: column_group_name
+            menu_info:
+              sheet_type: sheet_type
+              history_table_flag: true
+              row_update_flag: true
+              web_print_limit: 7
+              initial_filter_flg: true
+              columns:
+              - ""
+              - ""
+              row_reuse_flag: true
+              vertical: true
+              row_insert_flag: true
+              privilege: 2
+              row_disuse_flag: true
+              table_name: table_name
+              parent_menu_group_name: parent_menu_group_name
+              menu_name: menu_name
+              menu_group_name: menu_group_name
+              auto_filter_flg: true
+              menu_id: menu_id
+              view_name: view_name
+              web_print_confirm: 9
+              pk_column_name_rest: pk_column_name_rest
+              sort_key: sort_key
+              parent_menu_group_id: parent_menu_group_id
+              menu_group_id: menu_group_id
+              xls_print_limit: 3
+              menu_info: menu_info
+              inherit: true
+              login_necessity: true
+            column_info:
+              key:
+                initial_value: initial_value
+                column_disp_seq: 6
+                required_item: 2
+                ref_table_name: ref_table_name
+                save_type: save_type
+                column_name: column_name
+                unique_item: 5
+                description: description
+                input_item: 5
+                before_validate_register: {}
+                col_name: col_name
+                column_name_rest: column_name_rest
+                column_id: column_id
+                ref_multi_lang: ref_multi_lang
+                validate_option: {}
+                ref_pkey_name: ref_pkey_name
+                auto_input: 1
+                view_item: view_item
+                ref_col_name: ref_col_name
+                column_group_id: column_group_id
+                after_validate_register: {}
+                column_type: 0
+                column_group_name: column_group_name
+                ref_sort_conditions: ref_sort_conditions
+        message: message
+    filter_target_body_2:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    compare_execute_body:
+      properties:
+        compare:
+          type: string
+          example: compare_name
+        base_date_1:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        base_date_2:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        host:
+          type: array
+          items:
+            example: host_name
+      description: 比較条件を設定
+    execute_file_body:
+      properties:
+        compare:
+          type: string
+          example: compare_name
+        base_date_1:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        base_date_2:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        host:
+          type: string
+          example: host_name
+        copmare_target_column:
+          type: string
+          example: target_colum
+      description: 比較条件を設定
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:
@@ -5126,6 +5593,81 @@ components:
       example:
         operation_list: null
         movement_list:
+          column_group_info:
+            key:
+              parent_column_group_name: parent_column_group_name
+              columns:
+              - ""
+              - ""
+              parent_column_group_id: parent_column_group_id
+              column_group_id: column_group_id
+              column_group_name: column_group_name
+          menu_info:
+            sheet_type: sheet_type
+            history_table_flag: true
+            row_update_flag: true
+            web_print_limit: 7
+            initial_filter_flg: true
+            columns:
+            - ""
+            - ""
+            row_reuse_flag: true
+            vertical: true
+            row_insert_flag: true
+            privilege: 2
+            row_disuse_flag: true
+            table_name: table_name
+            parent_menu_group_name: parent_menu_group_name
+            menu_name: menu_name
+            menu_group_name: menu_group_name
+            auto_filter_flg: true
+            menu_id: menu_id
+            view_name: view_name
+            web_print_confirm: 9
+            pk_column_name_rest: pk_column_name_rest
+            sort_key: sort_key
+            parent_menu_group_id: parent_menu_group_id
+            menu_group_id: menu_group_id
+            xls_print_limit: 3
+            menu_info: menu_info
+            inherit: true
+            login_necessity: true
+          column_info:
+            key:
+              initial_value: initial_value
+              column_disp_seq: 6
+              required_item: 2
+              ref_table_name: ref_table_name
+              save_type: save_type
+              column_name: column_name
+              unique_item: 5
+              description: description
+              input_item: 5
+              before_validate_register: {}
+              col_name: col_name
+              column_name_rest: column_name_rest
+              column_id: column_id
+              ref_multi_lang: ref_multi_lang
+              validate_option: {}
+              ref_pkey_name: ref_pkey_name
+              auto_input: 1
+              view_item: view_item
+              ref_col_name: ref_col_name
+              column_group_id: column_group_id
+              after_validate_register: {}
+              column_type: 0
+              column_group_name: column_group_name
+              ref_sort_conditions: ref_sort_conditions
+    inline_response_200_20_data:
+      type: object
+      properties:
+        compare_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+        device_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+      example:
+        device_list: null
+        compare_list:
           column_group_info:
             key:
               parent_column_group_name: parent_column_group_name

@@ -3529,7 +3529,7 @@ execute( type ) {
             };
             // 作業実行開始
             fn.fetch( executeConfig.rest, null, 'POST', postData ).then(function( result ){
-                window.location.href = `?menu=check_operation_status_ansible_role&execution_no=${result.execution_no}`;
+                window.location.href = `?menu=check_operation_status_${tb.params.operationType}&execution_no=${result.execution_no}`;
             }).catch(function( error ){
                 if ( error.message ) alert( error.message );
             }).then(function(){

@@ -82,8 +82,8 @@ def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, ws_db):
     g.applogger.debug("[Trace] Call util.extract_variable_for_execute()")
 
     sub_value_auto_reg = SubValueAutoReg()
-    exec_type = '2'
-    _, template_list, host_list = sub_value_auto_reg.GetDataFromParameterSheet(exec_type, WS_DB=ws_db)
+    driver_type = AnscConst.DF_PIONEER_DRIVER_ID
+    _, template_list, host_list = sub_value_auto_reg.get_data_from_all_parameter_sheet(driver_type, WS_DB=ws_db)
     # template_list = { MovementID: { TPF変数名: 0 }, … }
     # host_list = { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 

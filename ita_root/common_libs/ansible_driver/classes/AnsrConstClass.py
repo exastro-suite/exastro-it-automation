@@ -32,7 +32,7 @@ class AnsrConst(AnscConst):
     vg_ansible_master_fileDB = "T_ANSR_MATL_COLL"
     vg_ansible_master_file_pkeyITEM = "ROLE_PACKAGE_ID"
     vg_ansible_master_file_nameITEM = "ROLE_PACKAGE_NAME"
-    vg_ansible_vars_masterDB = ""
+    vg_ansible_vars_masterDB = "T_ANSR_MVMT_VAR_LINK"
     vg_ansible_pattern_linkDB = "T_ANSR_MVMT_MATL_LINK"
     vg_ansible_pattern_vars_linkDB = "T_ANSR_MVMT_VAR_LINK"
     vg_ansible_nestvar_member_max_colDB = "T_ANSR_NESTVAR_MEMBER_MAX_COL"

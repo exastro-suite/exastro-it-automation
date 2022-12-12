@@ -31,7 +31,7 @@ class AnspConst(AnscConst):
     vg_ansible_master_fileDB = "T_ANSP_MATL_COLL"
     vg_ansible_master_file_pkeyITEM = "DIALOG_MATTER_ID"
     vg_ansible_master_file_nameITEM = "DIALOG_MATTER_FILE"
-    vg_ansible_vars_masterDB = ""
+    vg_ansible_vars_masterDB = "T_ANSP_MVMT_VAR_LINK"
     vg_ansible_pattern_linkDB = "T_ANSP_MVMT_MATL_LINK"
     vg_ansible_pattern_vars_linkDB = "T_ANSP_MVMT_VAR_LINK"
     vg_ansible_nestvar_member_max_colDB = ""

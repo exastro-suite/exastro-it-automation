@@ -36,10 +36,28 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    result_data = export_import.execute_excel_bulk_export(objdbca, organization_id, workspace_id)
+    # メニューの存在確認
+    menu = 'bulk_excel_export'
+    check_menu_info(menu, objdbca)
 
-    # return result_data,
-    return 'do some magic!',
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['22']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
+        check_request_body_key(body, 'abolished_type')
+
+    result_data = export_import.execute_excel_bulk_export(objdbca, menu, body)
+
+    return result_data,
 
 @api_filter
 def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa: E501

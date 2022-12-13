@@ -21,13 +21,14 @@ import re
 import os
 import datetime
 import json
+import pathlib
 from common_libs.common.exception import AppException
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
-from common_libs.ansible_driver.functions.util import *
-from common_libs.ansible_driver.functions.rest_libs import insert_execution_list, execution_scram
+from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath
+# from common_libs.ansible_driver.functions.rest_libs import insert_execution_list, execution_scram
 
 
 def movement_registr_check(objdbca, parameter, Required=False):
@@ -104,7 +105,7 @@ def scheduled_format_check(parameter, useed=False):
         else:
             result = True
             # 予約時間のフォーマット確認
-            match = re.findall("^[0-9]{4}/[0-9]{2}/[0-9]{2}[\s][0-9]{2}:[0-9]{2}:[0-9]{2}$", schedule_date)
+            match = re.findall(r"^[0-9]{4}/[0-9]{2}/[0-9]{2}[\s][0-9]{2}:[0-9]{2}:[0-9]{2}$", schedule_date)
             if len(match) == 0:
                 result = False
             else:
@@ -175,18 +176,17 @@ def get_execution_info(objdbca, target, execution_no):
         for log in list_log:
             log_file_path = path + '/out/' + log
             if os.path.isfile(log_file_path):
-                lcstr = Path(log_file_path).read_text(encoding="utf-8")
+                lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
                 execution_info['progress']['execution_log']['exec_log'][log] = lcstr
 
     log_file_path = path + '/out/exec.log'
     if os.path.isfile(log_file_path):
-        if os.path.isfile(log_file_path):
-            lcstr = Path(log_file_path).read_text(encoding="utf-8")
-            execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
+        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+        execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
 
     log_file_path = path + '/out/error.log'
     if os.path.isfile(log_file_path):
-        lcstr = Path(log_file_path).read_text(encoding="utf-8")
+        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
         execution_info['progress']['execution_log']['error_log'] = lcstr
 
     # 状態監視周期・進行状態表示件数
@@ -197,6 +197,7 @@ def get_execution_info(objdbca, target, execution_no):
         execution_info['number_of_rows_to_display_progress_status'] = tmp_row['ANSIBLE_TAILLOG_LINES']
 
     return execution_info
+
 
 def reserve_cancel(objdbca, driver_id, execution_no):
     """
@@ -211,14 +212,14 @@ def reserve_cancel(objdbca, driver_id, execution_no):
     """
     TableDict = {}
     TableDict["TABLE_NAME"] = {}
-    TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["TABLE_NAME"][AnscConst.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_DRIVER_ID] = AnslConst.vg_exe_ins_msg_table_name
+    TableDict["TABLE_NAME"][AnscConst.DF_PIONEER_DRIVER_ID] = AnspConst.vg_exe_ins_msg_table_name
     TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = AnsrConst.vg_exe_ins_msg_table_name
     TableName = TableDict["TABLE_NAME"][driver_id]
 
     # 該当の作業実行のステータス取得
     where = "WHERE EXECUTION_NO = %s"
-    objdbca.table_lock([ TableName ])
+    objdbca.table_lock([TableName])
     data_list = objdbca.table_select(TableName, where, [execution_no])
 
     # 該当する作業実行が存在しない
@@ -245,7 +246,8 @@ def reserve_cancel(objdbca, driver_id, execution_no):
 
         # ステータスを予約取消に変更
         update_list = {'EXECUTION_NO': execution_no, 'STATUS_ID': AnscConst.RESERVE_CANCEL}
-        ret = objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
+        # ret = objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
+        objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
         objdbca.db_commit()
 
     result_msg = g.appmsg.get_api_message("MSG-10904", [execution_no])

@@ -73,6 +73,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['driver', 'terraform'],
             ['uploadfiles'],
             ['tmp', 'driver', 'ansible'],
+            ['tmp', 'driver', 'import_menu'],
+            ['tmp', 'driver', 'import_excel'],
         ]
         for dir in dir_list:
             abs_dir = workspace_dir + "/".join(dir)

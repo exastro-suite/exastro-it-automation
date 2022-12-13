@@ -44,7 +44,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT
     EXECUTION_NO                    VARCHAR(40),                                -- 実行No.
     STATUS                          VARCHAR(40),                                -- ステータス
     EXECUTION_TYPE                  VARCHAR(40),                                -- 処理種別
-    ABOLITION_DATA                  VARCHAR(40),                                -- 廃止情報
+    ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
     FILE_NAME                       VARCHAR(64),                                -- ファイル名
     RESULT_FILE                     VARCHAR(64),                                -- 結果
@@ -63,7 +63,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT_JNL
     EXECUTION_NO                    VARCHAR(40),                                -- 実行No.
     STATUS                          VARCHAR(40),                                -- ステータス
     EXECUTION_TYPE                  VARCHAR(40),                                -- 処理種別
-    ABOLITION_DATA                  VARCHAR(40),                                -- 廃止情報
+    ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
     FILE_NAME                       VARCHAR(64),                                -- ファイル名
     RESULT_FILE                     VARCHAR(64),                                -- 結果

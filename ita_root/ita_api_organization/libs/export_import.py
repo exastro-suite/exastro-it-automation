@@ -185,6 +185,8 @@ def execute_menu_bulk_export(objdbca, menu, body):
         メニュー一括エクスポート実行
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
+            menu:menu_export
+            body:リクエストのbody部
         RETRUN:
             result_data
     """
@@ -255,8 +257,6 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
         abolished_type = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
-        a = json.dumps(body)
-
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -295,21 +295,111 @@ def execute_menu_bulk_export(objdbca, menu, body):
     execution_no = exec_result[1].get('execution_no')
 
     result_data = {'execution_no': execution_no}
-    # return result_data
+
     return result_data
 
 
-def execute_excel_bulk_export(objdbca, organization_id, workspace_id):
+def execute_excel_bulk_export(objdbca, menu, body):
     """
-        Excel一括エクスポート実行
+        メニュー一括エクスポート実行
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
+            menu:menu_export
+            body:リクエストのbody部
         RETRUN:
             result_data
     """
     # 変数定義
+    lang = g.get('LANGUAGE')
+    user_id = g.get('USER_ID')
 
-    return 'do some magic!'
+    # テーブル名
+    t_dp_status_master = 'T_DP_STATUS_MASTER'
+    t_dp_execution_type = 'T_DP_EXECUTION_TYPE'
+    t_dp_abolished_type = 'T_DP_ABOLISHED_TYPE'
+
+    try:
+        # トランザクション開始
+        objdbca.db_transaction_start()
+
+        # loadTableの呼び出し
+        objmenu = load_table.loadTable(objdbca, 'bulk_excel_export_import_list')  # noqa: F405
+        if objmenu.get_objtable() is False:
+            log_msg_args = ["not menu or table"]
+            api_msg_args = ["not menu or table"]
+            raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+
+        body_abolished_type = body.get('abolished_type')
+
+        # 『ステータスマスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_status = objdbca.table_select(t_dp_status_master, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [1, 0])
+        if not ret_dp_status:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        status = ret_dp_status[0].get('TASK_STATUS_NAME_' + lang.upper())
+
+        # 『処理種別マスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_execution_type = objdbca.table_select(t_dp_execution_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [1, 0])
+        if not ret_dp_execution_type:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        execution_type = ret_dp_execution_type[0].get('EXECUTION_TYPE_NAME_' + lang.upper())
+
+        # 『廃止情報マスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_abolished_type = objdbca.table_select(t_dp_abolished_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [body_abolished_type, 0])
+        if not ret_dp_abolished_type:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        abolished_type = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
+
+        # 登録用パラメータを作成
+        parameters = {
+            "parameter": {
+                "status": status,
+                "execution_type": execution_type,
+                "abolished_type": abolished_type,
+                "file_name": None,
+                "result_file": None,
+                "execution_user": user_id,
+                "json_storage_item": json.dumps(body),
+                "discard": "0"
+            },
+            "type": "Register"
+        }
+
+        # 登録を実行
+        exec_result = objmenu.exec_maintenance(parameters, "", "", False, False, True)  # noqa: E999
+        if not exec_result[0]:
+            result_msg = _format_loadtable_msg(exec_result[2])
+            result_msg = json.dumps(result_msg, ensure_ascii=False)
+            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+
+        # コミット/トランザクション終了
+        objdbca.db_transaction_end(True)
+
+    except Exception as e:
+        # ロールバック トランザクション終了
+        objdbca.db_transaction_end(False)
+
+        result_code = e.args[0]
+        msg_args = e.args[1]
+        return False, result_code, msg_args, None
+
+    # 返却用の値を取得
+    execution_no = exec_result[1].get('execution_no')
+
+    result_data = {'execution_no': execution_no}
+
+    return result_data
 
 def _format_loadtable_msg(loadtable_msg):
     """

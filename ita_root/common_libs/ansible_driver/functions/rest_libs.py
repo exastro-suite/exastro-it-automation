@@ -11,13 +11,16 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+from flask import g
 from common_libs.common import *
 from common_libs.loadtable import *
 import os
 import datetime
 from common_libs.common.exception import AppException
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
+from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansible_execute import AnsibleExecute
 from common_libs.common.util import file_encode, get_exastro_platform_users
 from common_libs.ansible_driver.functions.util import *
@@ -45,12 +48,12 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     objAnsc = AnscConst()
     TableDict = {}
     TableDict["MENU_NAME"] = {}
-    TableDict["MENU_NAME"][objAnsc.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["MENU_NAME"][objAnsc.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["MENU_NAME"][objAnsc.DF_LEGACY_DRIVER_ID] = "execution_list_ansible_legacy"
+    TableDict["MENU_NAME"][objAnsc.DF_PIONEER_DRIVER_ID] = "execution_list_ansible_pioneer"
     TableDict["MENU_NAME"][objAnsc.DF_LEGACY_ROLE_DRIVER_ID] = "execution_list_ansible_role"
     TableDict["MENU_ID"] = {}
-    TableDict["MENU_ID"][objAnsc.DF_LEGACY_DRIVER_ID] = "Not supported"
-    TableDict["MENU_ID"][objAnsc.DF_PIONEER_DRIVER_ID] = "Not supported"
+    TableDict["MENU_ID"][objAnsc.DF_LEGACY_DRIVER_ID] = "20210"
+    TableDict["MENU_ID"][objAnsc.DF_PIONEER_DRIVER_ID] = "20312"
     TableDict["MENU_ID"][objAnsc.DF_LEGACY_ROLE_DRIVER_ID] = "20412"
     MenuName = TableDict["MENU_NAME"][driver_id]
     MenuId = TableDict["MENU_ID"][driver_id]
@@ -211,7 +214,8 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
         ExecStsInstTableConfig[RestNameConfig["CONDUCTOR_INSTANCE_NO"]] = conductor_id
 
     # オプションパラメータ
-    # ExecStsInstTableConfig[RestNameConfig["I_ANS_EXEC_OPTIONS"]] = str(inforow['ANSIBLE_EXEC_OPTIONS']) + ' ' + str(movement_row['ANS_EXEC_OPTIONS'])
+    # ExecStsInstTableConfig[RestNameConfig["I_ANS_EXEC_OPTIONS"]] = str(inforow['ANSIBLE_EXEC_OPTIONS']) + ' ' +
+    #                        str(movement_row['ANS_EXEC_OPTIONS'])
     # 分割された実行ログ情報
     # ExecStsInstTableConfig[RestNameConfig["LOGFILELIST_JSON"]]
     # 実行ログ分割フラグ
@@ -256,8 +260,9 @@ def execution_scram(objdbca, driver_id, execution_no):
         RETRUN:
             True
     """
-    user_id = g.USER_ID
-    target = { AnscConst.DF_LEGACY_ROLE_DRIVER_ID: AnsrConst.vg_exe_ins_msg_table_name }
+    target = {{AnscConst.DF_LEGACY_DRIVER_ID: AnslConst.vg_exe_ins_msg_table_name},
+              {AnscConst.DF_PIONEER_DRIVER_ID: AnspConst.vg_exe_ins_msg_table_name},
+              {AnscConst.DF_LEGACY_ROLE_DRIVER_ID: AnsrConst.vg_exe_ins_msg_table_name}}
 
     TableName = target[driver_id]
 

@@ -74,7 +74,26 @@ static string = {
         movementClassName: 'node-ansible-legacy-role',
         movementListMenu: 'movement_list_ansible_role',
         targetHostMenu: 'target_host_ansible_role',
-        substValueMenu: 'subst_value_list_ansible_role'
+        substValueMenu: 'subst_value_list_ansible_role',
+        executionListMenu: 'execution_list_ansible_role'
+    },
+    check_operation_status_ansible_legacy: {
+        movementType: 'Ansible Legacy',
+        movementGem: 'AL',
+        movementClassName: 'node-ansible-legacy',
+        movementListMenu: 'movement_list_ansible_legacy',
+        targetHostMenu: 'target_host_ansible_legacy',
+        substValueMenu: 'subst_value_list_ansible_legacy',
+        executionListMenu: 'execution_list_ansible_legacy'
+    },
+    check_operation_status_ansible_pioneer: {
+        movementType: 'Ansible Pioneer',
+        movementGem: 'AP',
+        movementClassName: 'node-ansible-pioneer',
+        movementListMenu: 'movement_list_ansible_pioneer',
+        targetHostMenu: 'target_host_ansible_pioneer',
+        substValueMenu: 'subst_value_list_ansible_pioneer',
+        executionListMenu: 'execution_list_ansible_pioneer'
     }
 }
 /*
@@ -270,7 +289,7 @@ operationMessage() {
         <div class="contentMessageInner">
             <span class="icon icon-circle_info"></span>` + getMessage.FTE05005 + `<br>
             ` + getMessage.FTE05006 + `<br>
-            <a href="?menu=execution_list_ansible_role">` + getMessage.FTE05007 + `</a>` + getMessage.FTE05008 + `
+            <a href="?menu=${Status.string[op.menu].executionListMenu}">` + getMessage.FTE05007 + `</a>` + getMessage.FTE05008 + `
         </div>
     </div>`;
     

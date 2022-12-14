@@ -96,7 +96,9 @@ RUN dnf install -y \
 
 USER $USERNAME
 
-RUN mkdir ~/.config
+RUN mkdir ~/.config \
+&& mkdir ~/.vscode-server \
+&& mkdir ~/.vscode-server-insiders
 
 WORKDIR $APP_PATH
 

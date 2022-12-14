@@ -19,7 +19,7 @@
 		// python extension setting
 		"python.linting.pylintEnabled": false,
 		"python.linting.flake8Enabled": true,
-		
+
 		"python.linting.lintOnSave": true,
 
 		"python.linting.flake8Args": [
@@ -32,7 +32,7 @@
 
 		"python.formatting.autopep8Args": [
 			"--aggressive", "--aggressive",
-		],		
+		],
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
@@ -61,6 +61,7 @@
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "onCreateCommand":"sudo dnf install -y git vim diffutils bind-utils iputils && sudo pip3.9 install flake8 && sudo pip3.9 install autopep8",
 	// "postAttachCommand": "",
+	"postCreateCommand": "sudo chmod -R 777 /home/app_user/.vscode-server && sudo chmod 777 /home/app_user/.vscode-server-insiders",
 	"workspaceFolder": "/workspace",
 	"overrideCommand": true,
 }

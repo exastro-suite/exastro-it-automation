@@ -315,7 +315,7 @@ class SubValueAutoReg():
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
         warning_flag = 0
-        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, WS_DB)
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, self.ws_db)
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]

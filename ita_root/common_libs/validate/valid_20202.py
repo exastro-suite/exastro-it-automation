@@ -42,10 +42,10 @@ def external_valid_menu_after(objDBCA, objtable, option):
 
     playbook_data = None
     if cmd_type == "Register":
-        playbook_data = option.get('entry_parameter', {}).get('file', {}).get('playbook_files', '')
+        playbook_data = option.get('entry_parameter', {}).get('file', {}).get('playbook_file', '')
 
     elif cmd_type == "Update":
-        playbook_data = option.get('current_parameter', {}).get('file', {}).get('playbook_files', '')
+        playbook_data = option.get('current_parameter', {}).get('file', {}).get('playbook_file', '')
 
     # 廃止/復活時の場合、関連レコードを廃止/復活
     if cmd_type in ["Discard", "Restore"]:

@@ -1041,7 +1041,8 @@ class SubValueAutoReg():
                                 # TPF/CPF変数カラム判定
                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                        col_val = "'{{" + col_val + "}}'"
+                                        if col_val is not None:
+                                            col_val = "'{{" + col_val + "}}'"
 
                                 # オブジェクト解放
                                 del objmenu
@@ -1232,7 +1233,7 @@ class SubValueAutoReg():
             # 具体値が空白か判定
             ret = self.validateKeyTypeColValue(in_col_val, in_menu_id, in_row_id, col_name)
             if ret == 0:
-                return ina_vars_ass_list, ina_vars_ass_chk_list, ina_array_vars_ass_list, ina_array_vars_ass_chk_list
+                return False, ina_vars_ass_chk_list, False, ina_array_vars_ass_chk_list
 
             # checkAndCreateVarsAssignDataの戻りは判定しない。
             ret = self.checkAndCreateVarsAssignData(in_table_name,

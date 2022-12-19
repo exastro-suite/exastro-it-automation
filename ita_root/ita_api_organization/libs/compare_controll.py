@@ -24,25 +24,16 @@ import textwrap
 import sys
 import traceback
 from distutils.util import strtobool
-from pprint import pprint
 import mimetypes
 import base64
+import re
 
-import psutil
 import deepdiff
-import jsonpatch
-import jsondiff
 import dictdiffer
-import pandas
 import difflib
 
 """
 TASK
-### MSG化対応
-### SQL
-### etc
-### format chk
-
 """
 
 
@@ -70,8 +61,6 @@ def get_compares_data(objdbca, menu):
     result.setdefault("execute_parameter_format", {})
     result["execute_parameter_format"].setdefault("compare", compare_parameter_format)
     result["execute_parameter_format"].setdefault("file", compare_parameter_format)
-    # result.setdefault("compare_parameter_format", compare_parameter_format)
-    # result.setdefault("file_compare_parameter_format", file_compare_parameter_format)
     result["list"].setdefault("compare", [])
     result["dict"].setdefault("compare", {})
 
@@ -171,8 +160,8 @@ def compare_execute(objdbca, menu, parameter, options={}):
         # parameter chk
         retBool, compare_config = _chk_parameters(objdbca, compare_config, options)
         if retBool is False:
-            tmp_msg = _get_msg(compare_config, "parameter_error") ### MSG化対応
-            status_code = "499-00201"
+            tmp_msg = _get_msg(compare_config, "parameter_error")
+            status_code = "499-01001"
             log_msg_args = [tmp_msg]
             api_msg_args = [tmp_msg]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -180,11 +169,14 @@ def compare_execute(objdbca, menu, parameter, options={}):
         # set compare mode , parameter format
         compare_config = _set_compare_mode(compare_config, options)
 
+        # set input order lang
+        compare_config = _set_input_order_lang(compare_config, options)
+
         # get compare config
         retBool, compare_config = _set_compare_config_info(objdbca, compare_config, options)
         if retBool is False:
-            tmp_msg = _get_msg(compare_config, "compare_config") ### MSG化対応
-            status_code = "499-00201"
+            tmp_msg = _get_msg(compare_config, "compare_config")
+            status_code = "499-01002"
             log_msg_args = [tmp_msg]
             api_msg_args = [tmp_msg]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -192,8 +184,8 @@ def compare_execute(objdbca, menu, parameter, options={}):
         # get data
         retBool, compare_config = _get_target_datas(objdbca, compare_config, options)
         if retBool is False:
-            tmp_msg = _get_msg(compare_config, "compare_target_menu_error") ### MSG化対応
-            status_code = "499-00201"
+            tmp_msg = _get_msg(compare_config, "compare_target_menu_error")
+            status_code = "499-01004"
             log_msg_args = [tmp_msg]
             api_msg_args = [tmp_msg]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -201,8 +193,8 @@ def compare_execute(objdbca, menu, parameter, options={}):
         # compare data execute
         retBool, compare_config = _execute_compare_data(objdbca, compare_config, options)
         if retBool is False:
-            tmp_msg = _get_msg(compare_config, "execute_compare") ### MSG化対応
-            status_code = "499-00201"
+            tmp_msg = _get_msg(compare_config, "execute_compare")
+            status_code = "499-01005"
             log_msg_args = [tmp_msg]
             api_msg_args = [tmp_msg]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -212,17 +204,13 @@ def compare_execute(objdbca, menu, parameter, options={}):
         # override_column_info_vertical_ver  item1 -> item[input_order:1]
         vertical_compare_flg = _get_flg(compare_config, "vertical_compare_flg")
         if vertical_compare_flg is True:
-            # _override_column_info_vertical_ver(objdbca, compare_config, options)
-            pass
-
+            retBool, compare_config = _override_column_info_vertical_ver(objdbca, compare_config, options)
 
         # set return
         result = {}
         result.setdefault("config", {})
         if compare_mode == "normal":
             result.setdefault("compare_data", {})
-            # result.setdefault("compare_data_ptn1", {})
-            # result.setdefault("compare_data_ptn2", {})
             result.setdefault("compare_diff_flg", {})
             # set result->config
             result["config"].setdefault("target_menus_rest", list(compare_config.get("target_menus").values()))
@@ -234,12 +222,10 @@ def compare_execute(objdbca, menu, parameter, options={}):
             result["compare_diff_flg"] = compare_config.get("result_compare_host")
             # set result->compare_data
             result["compare_data"] = compare_config.get("compare_data_ptn1")
-            # result["compare_data_ptn1"] = compare_config.get("compare_data_ptn1")
-            # result["compare_data_ptn2"] = compare_config.get("compare_data_ptn2")
+
         else:
             # set result->config
-            result["config"].setdefault("target_compare_file_info",  compare_config.get("target_compare_file_info"))
-
+            result["config"].setdefault("target_compare_file_info", compare_config.get("target_compare_file_info"))
             result["config"].setdefault("compare_file", _get_flg(compare_config, "compare_file"))
             # set result->unified_diff
             result.setdefault("unified_diff", {})
@@ -250,7 +236,7 @@ def compare_execute(objdbca, menu, parameter, options={}):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "execute_compare_error", True)
         retBool = False
 
@@ -265,6 +251,7 @@ def _get_base_parameter():
         RETRUN:
             compare_parameter_format, file_compare_parameter_format
     """
+    # base format compare / file compare
     compare_parameter_format = {
         "compare": "",
         "base_date_1": "",
@@ -286,7 +273,7 @@ def _get_base_parameter():
 # config初期設定
 def _set_base_config(parameter):
     """
-        set base config
+        set base config [caller:compare_execute]
         ARGS:
             parameter
             mode: normal, file
@@ -338,6 +325,7 @@ def _set_base_config(parameter):
 
     # no_input_order_list
     no_input_order_list = [
+        "menu",
         "uuid",
         "host_name",
         "operation_name_select",
@@ -351,6 +339,26 @@ def _set_base_config(parameter):
         "last_update_date_time",
         "last_updated_user",
     ]
+
+    # not use rest_key
+    vertical_no_use_rest_key = [
+        "uuid",
+        "operation_name_select",
+        "operation_name_disp",
+        "base_datetime",
+        "operation_date",
+        "input_order",
+        "last_execute_timestamp",
+        "remarks",
+        "discard",
+        "last_update_date_time",
+        "last_updated_user",
+    ]
+
+    input_order_langs = {
+        "ja": "代入順序",
+        "en:": "Input order"
+    }
 
     compare_config = {}
 
@@ -387,20 +395,22 @@ def _set_base_config(parameter):
     # 比較対象データ無し時の項目補完用 {"menu_1":{"key_name":None},"menu_2":{"key_name":None}}
     compare_config.setdefault("base_parameter", {})
     compare_config.setdefault("base_parameter_all", {})
-
     # ファイル比較対象結果(unified_diff)
     compare_config.setdefault("unified_diff", {"file_data": {}, "diff_result": {}})
-
     # 不要項目リスト(rest_key)
     compare_config.setdefault("del_parameter_list", del_parameter_list)
     # 比較対象外項目リスト(rest_key+menu)
     compare_config.setdefault("no_compare_parameter_list", no_compare_parameter_list)
-
+    # 縦型比較不要項目リスト
+    compare_config.setdefault("vertical_no_use_rest_key", vertical_no_use_rest_key)
     # ファイル比較対象(mimetype)
     compare_config.setdefault("accept_compare_file_list", accept_compare_file_list)
-
     # 代入順序対象外リスト
     compare_config.setdefault("no_input_order_list", no_input_order_list)
+    # 代入順序表示用言語
+    compare_config.setdefault("input_order_langs", input_order_langs)
+    # 代入順序付き項目用の代入順序
+    compare_config.setdefault("input_order_lang", None)
 
     return compare_config
 
@@ -408,7 +418,7 @@ def _set_base_config(parameter):
 # 比較種別、対応フォーマット設定
 def _set_compare_mode(compare_config, options):
     """
-        比較種別、対応フォーマット設定
+        set compare mode  [caller:compare_execute]
         ARGS:
             compare_config, flg_key, flg_val
         RETRUN:
@@ -437,6 +447,30 @@ def _set_compare_mode(compare_config, options):
     compare_config = _set_flg(compare_config, "compare_mode", compare_mode)
     # set parameter
     compare_config["parameter"] = base_parameter
+
+    return compare_config
+
+
+# 代入順序表示名設定
+def _set_input_order_lang(compare_config, options):
+    """
+        set input order lang  [caller:compare_execute]
+        ARGS:
+            compare_config, options
+        RETRUN:
+            compare_config
+    """
+    # get language
+    language = compare_config.get("language")
+
+    # get input_order_lang
+    input_order_langs = compare_config.get("input_order_langs")
+    input_order_lang = input_order_langs.get(language)
+
+    input_order_lang = None
+
+    # set input_order_lang
+    compare_config["input_order_lang"] = input_order_lang
 
     return compare_config
 
@@ -509,7 +543,7 @@ def _get_msg(compare_config, key):
 # 比較実行処理
 def _execute_compare_data(objdbca, compare_config, options):
     """
-        execute compare data
+        execute compare data  [caller:compare_execute]
         ARGS:
             objdbca, compare_config, options
         RETRUN:
@@ -522,10 +556,6 @@ def _execute_compare_data(objdbca, compare_config, options):
         column_info = compare_config.get("column_info")
         # get origin_data
         origin_data = compare_config.get("origin_data")
-        # get accept_compare_file_list
-        accept_compare_file_list = compare_config.get("accept_compare_file_list")
-        # get no_input_order_list
-        no_input_order_list = compare_config.get("no_input_order_list")
         # get compare_mode  normal / file
         compare_mode = _get_flg(compare_config, "compare_mode")
         # get copmare_target_column
@@ -534,14 +564,14 @@ def _execute_compare_data(objdbca, compare_config, options):
         # get vertical_compare_flg
         vertical_compare_flg = _get_flg(compare_config, "vertical_compare_flg")
 
+        input_order_lang = compare_config.get("input_order_lang")
+
         result_ptn1 = {}
-        result_ptn2 = {}
-        tmp_result_items = []
 
         menu_name_1 = target_menus.get("menu_1")
         menu_name_2 = target_menus.get("menu_2")
 
-        # for host
+        # for target host
         for target_host in list(origin_data.keys()):
 
             target_data_1 = {}
@@ -549,14 +579,12 @@ def _execute_compare_data(objdbca, compare_config, options):
             diff_flg_data = {}
             diff_flg_file = {}
             file_compare_info = {}
-            origin_data[target_host].setdefault("__no_input_order__", {"menu_1":{}, "menu_2":{}})
+            origin_data[target_host].setdefault("__no_input_order__", {"menu_1": {}, "menu_2": {}})
             origin_data[target_host]["__no_input_order__"]["menu_1"].setdefault("menu", menu_name_1)
             origin_data[target_host]["__no_input_order__"]["menu_2"].setdefault("menu", menu_name_2)
 
             # target col
             for tmp_info in column_info:
-                value_compare_flg = False
-                file_compare_flg = False
                 file_mimetypes = {}
                 other_options = {}
                 tmp_file_compare_info = {}
@@ -589,35 +617,28 @@ def _execute_compare_data(objdbca, compare_config, options):
                 # menu columnclass
                 column_class_name_1 = tmp_info.get("column_class_1")
                 column_class_name_2 = tmp_info.get("column_class_2")
-                # input_order
-                input_order_1 = tmp_info.get("input_order_1")
-                input_order_2 = tmp_info.get("input_order_2")
-                if input_order_1 is None:
-                    input_order_1 = "__no_input_order__"
-                if input_order_2 is None:
-                    input_order_2 = "__no_input_order__"
 
                 # check target column
-                target_column_flg = True
-                if copmare_target_column is None:
-                    pass
-                elif col_name == copmare_target_column:
-                    pass
-                else:
-                    target_column_flg = False
+                target_column_flg = _chk_target_column_flg(copmare_target_column, col_name)
 
                 # target vertical menu
                 if vertical_compare_flg is True:
                     input_orders = list(origin_data[target_host].keys())
                     input_orders = list(set(input_orders))
+                    # get target input order :column item_1[x] -> x
+                    try:
+                        copmare_target_column_io = re.findall(r'\[.*\]', copmare_target_column)
+                        copmare_target_column_io = copmare_target_column_io[0].replace('[', '').replace(']', '')
+                        input_orders = [int(copmare_target_column_io)]
+                        target_column_flg = True
+                    except Exception:
+                        copmare_target_column_io = None
                 else:
                     input_orders = ["__no_input_order__"]
 
                 # target filter
                 if target_column_flg is True:
                     for tmp_order in input_orders:
-                        value_compare_flg = False
-                        file_compare_flg = False
                         file_mimetypes = {}
                         other_options = {}
                         tmp_file_compare_info = {}
@@ -625,171 +646,68 @@ def _execute_compare_data(objdbca, compare_config, options):
                         input_order_1 = tmp_order
                         input_order_2 = tmp_order
                         tmp_col_name = "{}".format(col_name)
+
                         # get target menu data -> uuid value base_datetime operation_name_disp
-                        try:
-                            menu_1_data = origin_data[target_host][input_order_1].get("menu_1")
-                            target_uuid_1 = menu_1_data.get("uuid")
-                            col_val_menu_1 = menu_1_data.get(col_name_menu_1)
-                            base_datetime_1 = menu_1_data.get("base_datetime")
-                            operation_name_disp_1 = menu_1_data.get("operation_name_disp")
-                        except Exception:
-                            pass
-                        try:
-                            menu_2_data = origin_data[target_host][input_order_2].get("menu_2")
-                            target_uuid_2 = menu_2_data.get("uuid")
-                            col_val_menu_2 = menu_2_data.get(col_name_menu_2)
-                            base_datetime_2 = menu_2_data.get("base_datetime")
-                            operation_name_disp_2 = menu_2_data.get("operation_name_disp")
-                        except Exception:
-                            pass
+                        menu_1_data, target_uuid_1, col_val_menu_1, base_datetime_1, operation_name_disp_1 = \
+                            _get_line_values("menu_1", origin_data, target_host, input_order_1, col_name_menu_1)
+                        menu_2_data, target_uuid_2, col_val_menu_2, base_datetime_2, operation_name_disp_2 = \
+                            _get_line_values("menu_2", origin_data, target_host, input_order_2, col_name_menu_2)
 
                         # vertical menu and comare target parameters
-                        if tmp_order != "__no_input_order__":
-                            if no_input_order_flg is False:
-                                tmp_col_name = "{}[{}]".format(col_name, input_order_1)
-                                tmp_col_name = "{}[{}]".format(col_name, input_order_2)
+                        tmp_col_name = _override_col_name_io(
+                            col_name,
+                            tmp_col_name,
+                            tmp_order,
+                            input_order_lang,
+                            no_input_order_flg,
+                            vertical_compare_flg
+                        )
 
-                        # set target key->value
-                        target_data_1.setdefault(tmp_col_name, col_val_menu_1)
-                        target_data_2.setdefault(tmp_col_name, col_val_menu_2)
+                        # check target colname
+                        if tmp_col_name is not None:
+                            # set target key->value
+                            target_data_1.setdefault(tmp_col_name, col_val_menu_1)
+                            target_data_2.setdefault(tmp_col_name, col_val_menu_2)
 
-                        # compare result[value]
-                        if compare_target_flg is True:
-                            if col_val_menu_1 != col_val_menu_2:
-                                value_compare_flg = True
+                            # get file data
+                            if file_flg is True:
+                                # get file compare resut: file_compare_info, diff_flg_file
+                                compare_config, tmp_file_compare_info, diff_flg_file = _get_compare_file_result(
+                                    objdbca,
+                                    compare_config,
+                                    diff_flg_file,
+                                    file_mimetypes,
+                                    target_host,
+                                    tmp_col_name,
+                                    compare_target_flg,
+                                    dict_menu1={
+                                        "col_name_menu": col_name_menu_1,
+                                        "target_uuid": target_uuid_1,
+                                        "col_val_menu": col_val_menu_1,
+                                        "column_class_name": column_class_name_1,
+                                        "operation_name_disp": operation_name_disp_1,
+                                        "base_datetime": base_datetime_1,
+                                    },
+                                    dict_menu2={
+                                        "col_name_menu": col_name_menu_2,
+                                        "target_uuid": target_uuid_2,
+                                        "col_val_menu": col_val_menu_2,
+                                        "column_class_name": column_class_name_2,
+                                        "operation_name_disp": operation_name_disp_2,
+                                        "base_datetime": base_datetime_2,
+                                    }
+                                )
                             else:
-                                value_compare_flg = False
-                        else:
-                            value_compare_flg = False
+                                diff_flg_file.setdefault(tmp_col_name, False)
 
-                        # get file data
-                        if file_flg is True:
-                            # objtable
-                            objtable_1 = compare_config["objtable"]["menu_1"]
-                            objtable_2 = compare_config["objtable"]["menu_2"]
-
-                            tmp_file_data_1 = None
-                            tmp_file_data_2 = None
-                            tmp_file_mimetype_1 = None
-                            tmp_file_mimetype_2 = None
-
-                            file_mimetypes.setdefault(tmp_col_name, {"target_data_1": {}, "target_data_2": {}})
-                            # get file base64 string  file mimetype
-                            if col_val_menu_1 is not None:
-                                tmp_file_data_1, tmp_file_mimetype_1 = _get_file_data_columnclass(
-                                    objdbca,
-                                    objtable_1,
-                                    col_name_menu_1,
-                                    col_val_menu_1,
-                                    target_uuid_1,
-                                    column_class_name_1)
-                                file_mimetypes[tmp_col_name]["target_data_1"].setdefault(col_val_menu_1, tmp_file_mimetype_1)
-                            if col_val_menu_2 is not None:
-                                tmp_file_data_2, tmp_file_mimetype_2 = _get_file_data_columnclass(
-                                    objdbca,
-                                    objtable_2,
-                                    col_name_menu_2,
-                                    col_val_menu_2,
-                                    target_uuid_2,
-                                    column_class_name_2)
-                                file_mimetypes[col_name]["target_data_2"].setdefault(col_val_menu_2, tmp_file_mimetype_2)
-
-                            # compare result[file]
-                            if tmp_file_data_1 != tmp_file_data_2:
-                                file_compare_flg = True
-                                diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
-
-                            # compare file
-                            if compare_mode == "file":
-                                str_rdiff = ""
-                                # get unified diff
-                                if tmp_file_mimetype_1 in accept_compare_file_list and tmp_file_mimetype_2 in accept_compare_file_list:
-                                    try:
-                                        tmp_file_data_1_dec = base64.b64decode(tmp_file_data_1.encode()).decode().split()
-                                    except Exception:
-                                        err_msg = "read file is faild"  ### MSG化対応
-                                        status_code = "499-00201"
-                                        log_msg_args = [err_msg]
-                                        api_msg_args = [err_msg]
-                                        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-                                    try:
-                                        tmp_file_data_2_dec = base64.b64decode(tmp_file_data_2.encode()).decode().split()
-                                    except Exception:
-                                        err_msg = "read file is faild"  ### MSG化対応
-                                        status_code = "499-00201"
-                                        log_msg_args = [err_msg]
-                                        api_msg_args = [err_msg]
-                                        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-                                    rdiff = difflib.unified_diff(tmp_file_data_1_dec, tmp_file_data_2_dec, col_val_menu_2, col_val_menu_2, lineterm='')
-
-                                    str_rdiff = '\n'.join(rdiff)
-                                if str_rdiff == "":
-                                    compare_config = _set_flg(compare_config, "compare_file", False)
-                                compare_config["unified_diff"]["file_data"].setdefault("menu_1", {"name": col_val_menu_1, "data": tmp_file_data_1, })
-                                compare_config["unified_diff"]["file_data"].setdefault("menu_2", {"name": col_val_menu_2, "data": tmp_file_data_2, })
-                                compare_config["unified_diff"]["diff_result"] = str_rdiff
-                                target_compare_file_info = {}
-                                target_compare_file_info.setdefault("target_host", target_host)
-                                target_compare_file_info.setdefault("operation_1", operation_name_disp_1)
-                                target_compare_file_info.setdefault("base_datetime_1", base_datetime_1)
-                                target_compare_file_info.setdefault("operation_2", operation_name_disp_2)
-                                target_compare_file_info.setdefault("base_datetime_2", base_datetime_2)
-
-                                compare_config["target_compare_file_info"] = target_compare_file_info
-
-                            # set compare file endpoin + parameter
-                            endpoint = ("/api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/".format(
-                                        organization_id=g.get("ORGANIZATION_ID"),
-                                        workspace_id=g.get("WORKSPACE_ID"),
-                                        menu="compare_execute",
-                                        ))
-                            file_compare_parameter = compare_config.get("parameter").copy()
-                            file_compare_parameter.setdefault("copmare_file_data", True)
-                            file_compare_parameter.setdefault("copmare_target_column", tmp_col_name)
-                            # file_compare_parameter.setdefault("host", target_host)
-                            file_compare_parameter["host"] = target_host
-
-                            # set compare result detail[file]
-                            tmp_file_compare_info["file_name_diff_flg"] = value_compare_flg
-                            tmp_file_compare_info["file_data_diff_flg"] = file_compare_flg
-                            tmp_file_compare_info.setdefault("file_mimetype", file_mimetypes)
-                            tmp_file_compare_info.setdefault("file_name_diff_flg", value_compare_flg)
-                            tmp_file_compare_info.setdefault("file_data_diff_flg", file_compare_flg)
-                            tmp_file_compare_info.setdefault("method", "POST")
-                            tmp_file_compare_info.setdefault("endpoint", endpoint)
-                            tmp_file_compare_info.setdefault("parameter", file_compare_parameter)
-
-                            del tmp_file_data_1
-                            del tmp_file_data_2
-                        else:
-                            file_compare_flg = False
-                            diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
-
-                # set tmp_file_compare_info
-                file_compare_info.setdefault(col_name, tmp_file_compare_info)
-                other_options.setdefault("file_compare_info", tmp_file_compare_info)
-
-                # result_ptn2 set format
-                tmp_item_result = []
-                tmp_item_result.append(col_name)
-                tmp_item_result.append(col_val_menu_1)
-                tmp_item_result.append(col_val_menu_2)
-                tmp_item_result.append(value_compare_flg)
-                tmp_item_result.append(file_compare_flg)
-                tmp_item_result.append(other_options)
-                # tmp_result_items.append({"key_name": col_name, "key_info": tmp_item_result})
-                tmp_result_items.append(tmp_item_result)
+                            # set tmp_file_compare_info
+                            file_compare_info.setdefault(tmp_col_name, tmp_file_compare_info)
+                            other_options.setdefault("file_compare_info", tmp_file_compare_info)
 
             if compare_mode == "normal":
                 # diff 全体
                 result_ddiff = deepdiff.DeepDiff(target_data_1, target_data_2)
-                # print("DeepDiff", result_ddiff)
-                # result_jsondiff = jsondiff.diff(target_data_1, target_data_2, dump=True, syntax='explicit')
-                # print("jsondiff", result_jsondiff)
-                # result_jsonpatch = jsonpatch.JsonPatch.from_diff(target_data_1, target_data_2)
-                # print("jsonpatch", result_jsonpatch)
                 result_dictdiffer = list(dictdiffer.diff(target_data_1, target_data_2))
-                # print("dictdiffer", result_dictdiffer)
                 tmp_compare_result = False
                 if len(result_ddiff) != 0:
                     tmp_compare_result = True
@@ -802,14 +720,22 @@ def _execute_compare_data(objdbca, compare_config, options):
 
                 # set diff flg[value]
                 for tmp_key in target_data_key:
+                    diff_flg = False
                     if tmp_key in diff_key:
                         diff_flg = True
-                    else:
-                        diff_flg = False
                     diff_flg_data.setdefault(tmp_key, diff_flg)
 
                 # set result_ptn1
-                # {host_name:{"target_data_1":{},"target_data_2":{},"data_compare_flg":{},"file_compare_flg":{},"file_compare_info":{} }}
+                # {
+                #   host_name:{
+                #    "target_data_1":{},
+                #    "target_data_2":{},
+                #    "compare_diff_flg":{},
+                #    "_data_diff_flg":{},
+                #    "_file_compare_execute_flg":{},
+                #    "_file_compare_execute_info":{}
+                #    }
+                # }
                 result_ptn1.setdefault(target_host, {})
                 result_ptn1[target_host].setdefault("target_data_1", target_data_1)
                 result_ptn1[target_host].setdefault("target_data_2", target_data_2)
@@ -819,38 +745,264 @@ def _execute_compare_data(objdbca, compare_config, options):
                 result_ptn1[target_host].setdefault("_file_compare_execute_info", file_compare_info)
                 compare_config["compare_data_ptn1"] = result_ptn1
 
-                # set result_ptn2
-                # {host_name:{"item_name":[value1,value2,diff_flg,file_compare_flg,options]}}
-                # result_ptn2.setdefault(target_host, {})
-                result_ptn2.setdefault(target_host, [])
-                for result_items in tmp_result_items:
-                    # key_name = result_items.get("key_name")
-                    # key_info = result_items.get("key_info")
-                    # result_ptn2[target_host].setdefault(key_name, key_info)
-                    # result_ptn2[target_host].append({key_name: key_info})
-                    result_ptn2[target_host].append(result_items)
-
-                compare_config["compare_data_ptn2"] = result_ptn2
-
-        else:
-            pass
-
     except AppException as _app_e:  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "execute_compare_error", True)
         retBool = False
 
     return retBool, compare_config,
 
 
+# 比較対象項目判定
+def _chk_target_column_flg(copmare_target_column, col_name):
+    """
+        check compare target
+        ARGS:
+            copmare_target_column, col_name,
+        RETRUN:
+            bool
+    """
+    target_column_flg = True
+    if copmare_target_column is None:
+        pass
+    elif col_name == copmare_target_column:
+        pass
+    else:
+        target_column_flg = False
+    return target_column_flg
+
+
+# 値の比較判定
+def _chk_value_compare_flg(compare_target_flg, col_val_menu_1, col_val_menu_2):
+    """
+        check compare value
+        ARGS:
+            compare_target_flg, col_val_menu_1, col_val_menu_2
+        RETRUN:
+            bool
+    """
+    value_compare_flg = False
+    if compare_target_flg is True:
+        if col_val_menu_1 != col_val_menu_2:
+            value_compare_flg = True
+        else:
+            value_compare_flg = False
+    else:
+        value_compare_flg = False
+    return value_compare_flg
+
+
+# 比較対象関連の情報取得[対象行,ID,値,基準日,オペレーション]
+def _get_line_values(target_key, origin_data, target_host, input_order, col_name_menu):
+    """
+        get compare data for target menu line
+        ARGS:
+            target_key, origin_data, target_host, input_order, col_name_menu
+        RETRUN:
+            menu_data, target_uuid, col_val_menu, base_datetime, operation_name_disp
+    """
+    menu_data = {}
+    target_uuid = None
+    col_val_menu = None
+    base_datetime = None
+    operation_name_disp = None
+    try:
+        menu_data = origin_data[target_host][input_order].get(target_key)
+        target_uuid = menu_data.get("uuid")
+        col_val_menu = menu_data.get(col_name_menu)
+        base_datetime = menu_data.get("base_datetime")
+        operation_name_disp = menu_data.get("operation_name_disp")
+    except Exception:
+        pass
+    return menu_data, target_uuid, col_val_menu, base_datetime, operation_name_disp,
+
+
+# ファイル比較結果(string:unified形式)
+def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype_1, mimetype_2, data_1, data_2):
+    """
+        get unified diff data: format string
+        ARGS:
+            accept_compare_file_list, filename_1, filename_2, mimetype_1, mimetype_2, data_1, data_2
+        RETRUN:
+            str_diff
+    """
+    str_rdiff = ""
+    if mimetype_1 in accept_compare_file_list and mimetype_2 in accept_compare_file_list:
+        try:
+            data_1_dec = base64.b64decode(data_1.encode()).decode().split()
+            data_2_dec = base64.b64decode(data_2.encode()).decode().split()
+        except Exception:
+            # read file is faild
+            status_code = "499-01006"
+            log_msg_args = [filename_1, filename_2]
+            api_msg_args = [filename_1, filename_2]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+        rdiff = difflib.unified_diff(
+            data_1_dec,
+            data_2_dec,
+            filename_1,
+            filename_2,
+            lineterm='')
+        str_rdiff = '\n'.join(rdiff)
+    return str_rdiff
+
+
+# 縦型メニュー項目名:代入順序入り変換上書き
+def _override_col_name_io(col_name, col_name_io, input_order, input_order_lang, no_input_order_flg, vertical_compare_flg):
+    """
+        override col_name add input_order
+        ARGS:
+            col_name, col_name_io, input_order, no_input_order_flg, vertical_compare_flg
+        RETRUN:
+            col_name_io
+    """
+    if input_order != "__no_input_order__" and no_input_order_flg is False:
+        col_name_io = "{}[{}]".format(col_name, input_order)
+        col_name_io = _get_col_name_input_order(col_name, input_order, input_order_lang)
+    else:
+        # vertical menu no use target colname: tmp_col_name->None
+        if no_input_order_flg is False and vertical_compare_flg is True:
+            col_name_io = None
+    return col_name_io
+
+
+# ファイル比較結果のフラグ、詳細
+def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimetypes, target_host, tmp_col_name, target_flg, dict_menu1, dict_menu2):
+    """
+        get compare file file_compare_info and set diff_flg_file
+        ARGS:
+            objdbca, compare_config, diff_flg_file, file_mimetypes, target_host, tmp_col_name, target_flg, dict_menu1, dict_menu2
+        RETRUN:
+            compare_config, tmp_file_compare_info, diff_flg_file
+    """
+    # objtable
+    objtable_1 = compare_config["objtable"]["menu_1"]
+    objtable_2 = compare_config["objtable"]["menu_2"]
+
+    compare_mode = _get_flg(compare_config, "compare_mode")
+    accept_compare_file_list = compare_config.get("accept_compare_file_list")
+    tmp_file_data_1 = None
+    tmp_file_data_2 = None
+    tmp_file_mimetype_1 = None
+    tmp_file_mimetype_2 = None
+    col_val_menu_1 = dict_menu1.get("col_val_menu")
+    col_name_menu_1 = dict_menu1.get("col_name_menu")
+    target_uuid_1 = dict_menu1.get("target_uuid")
+    column_class_name_1 = dict_menu1.get("column_class_name")
+    operation_name_disp_1 = dict_menu1.get("operation_name_disp")
+    base_datetime_1 = dict_menu1.get("base_datetime")
+
+    col_val_menu_2 = dict_menu2.get("col_val_menu")
+    col_name_menu_2 = dict_menu2.get("col_name_menu")
+    target_uuid_2 = dict_menu2.get("target_uuid")
+    column_class_name_2 = dict_menu2.get("column_class_name")
+    operation_name_disp_2 = dict_menu2.get("operation_name_disp")
+    base_datetime_2 = dict_menu2.get("base_datetime")
+
+    file_mimetypes.setdefault(tmp_col_name, {"target_data_1": {}, "target_data_2": {}})
+
+    # compare result[value]
+    value_compare_flg = _chk_value_compare_flg(target_flg, col_val_menu_1, col_val_menu_2)
+
+    # get file base64 string  file mimetype
+    if col_val_menu_1 is not None:
+        tmp_file_data_1, tmp_file_mimetype_1 = _get_file_data_columnclass(
+            objdbca,
+            objtable_1,
+            col_name_menu_1,
+            col_val_menu_1,
+            target_uuid_1,
+            column_class_name_1)
+        file_mimetypes[tmp_col_name]["target_data_1"].setdefault(col_val_menu_1, tmp_file_mimetype_1)
+    if col_val_menu_2 is not None:
+        tmp_file_data_2, tmp_file_mimetype_2 = _get_file_data_columnclass(
+            objdbca,
+            objtable_2,
+            col_name_menu_2,
+            col_val_menu_2,
+            target_uuid_2,
+            column_class_name_2)
+        file_mimetypes[tmp_col_name]["target_data_2"].setdefault(col_val_menu_2, tmp_file_mimetype_2)
+
+    # compare result[file]
+    if tmp_file_data_1 != tmp_file_data_2:
+        value_compare_flg = True
+        file_compare_flg = True
+        diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+    else:
+        file_compare_flg = False
+        diff_flg_file.setdefault(tmp_col_name, file_compare_flg)
+
+    # compare file
+    if compare_mode == "file":
+        str_rdiff = _get_unified_diff(
+            accept_compare_file_list,
+            col_val_menu_1,
+            col_val_menu_2,
+            tmp_file_mimetype_1,
+            tmp_file_mimetype_2,
+            tmp_file_data_1,
+            tmp_file_data_2)
+
+        if str_rdiff == "":
+            compare_config = _set_flg(compare_config, "compare_file", False)
+
+        compare_config["unified_diff"]["file_data"].setdefault(
+            "menu_1",
+            {"name": col_val_menu_1, "data": tmp_file_data_1}
+        )
+        compare_config["unified_diff"]["file_data"].setdefault(
+            "menu_2",
+            {"name": col_val_menu_2, "data": tmp_file_data_2}
+        )
+        compare_config["unified_diff"]["diff_result"] = str_rdiff
+        target_compare_file_info = {}
+        target_compare_file_info.setdefault("target_host", target_host)
+        target_compare_file_info.setdefault("operation_1", operation_name_disp_1)
+        target_compare_file_info.setdefault("base_datetime_1", base_datetime_1)
+        target_compare_file_info.setdefault("operation_2", operation_name_disp_2)
+        target_compare_file_info.setdefault("base_datetime_2", base_datetime_2)
+
+        compare_config["target_compare_file_info"] = target_compare_file_info
+
+    # set compare file endpoin + parameter
+    endpoint = ("/api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/".format(
+                organization_id=g.get("ORGANIZATION_ID"),
+                workspace_id=g.get("WORKSPACE_ID"),
+                menu="compare_execute",
+                ))
+    file_compare_parameter = compare_config.get("parameter").copy()
+    file_compare_parameter.setdefault("copmare_file_data", True)
+    file_compare_parameter.setdefault("copmare_target_column", tmp_col_name)
+    # file_compare_parameter.setdefault("host", target_host)
+    file_compare_parameter["host"] = target_host
+
+    # set compare result detail[file]
+    tmp_file_compare_info = {}
+    tmp_file_compare_info["file_name_diff_flg"] = value_compare_flg
+    tmp_file_compare_info["file_data_diff_flg"] = file_compare_flg
+    tmp_file_compare_info.setdefault("file_mimetype", file_mimetypes)
+    tmp_file_compare_info.setdefault("file_name_diff_flg", value_compare_flg)
+    tmp_file_compare_info.setdefault("file_data_diff_flg", file_compare_flg)
+    tmp_file_compare_info.setdefault("method", "POST")
+    tmp_file_compare_info.setdefault("endpoint", endpoint)
+    tmp_file_compare_info.setdefault("parameter", file_compare_parameter)
+
+    del tmp_file_data_1
+    del tmp_file_data_2
+
+    return compare_config, tmp_file_compare_info, diff_flg_file
+
+
 # 対象メニューデータ取得
 def _get_target_datas(objdbca, compare_config, options):
     """
-        get target datas
+        get target datas  [caller:compare_execute]
         ARGS:
             objdbca, compare_config, options
         RETRUN:
@@ -882,11 +1034,11 @@ def _get_target_datas(objdbca, compare_config, options):
             # load load_table
             try:
                 objmenu = load_table.loadTable(objdbca, target_menu)  # noqa: F405
-            except Exception as e:
-                err_msg = "loadTable is faild"  ### MSG化対応
-                status_code = "499-00201"
-                log_msg_args = [err_msg]
-                api_msg_args = [err_msg]
+            except Exception:
+                # loadTable is faild
+                status_code = "401-00003"
+                log_msg_args = [target_menu]
+                api_msg_args = [target_menu]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
             # set objtable base_parameters
@@ -946,7 +1098,7 @@ def _get_target_datas(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
@@ -956,7 +1108,7 @@ def _get_target_datas(objdbca, compare_config, options):
 # 補完用対象項目設定(rest_name)
 def _set_base_parameters(compare_config, restkey_list, target_key):
     """
-        set base parameters
+        set base parameters [caller:_get_target_datas]
         ARGS:
             compare_config, restkey_list, target_key
         RETRUN:
@@ -985,7 +1137,7 @@ def _set_base_parameters(compare_config, restkey_list, target_key):
 # 対象データ非対称補完
 def _complement_target_parameter(compare_config, target_parameter):
     """
-        complement target parameter
+        complement target parameter [caller:_get_target_datas]
         ARGS:
             compare_config, restkey_list, target_key
         RETRUN:
@@ -1033,7 +1185,7 @@ def _complement_target_parameter(compare_config, target_parameter):
 # 対象データ整形
 def _set_target_parameter(compare_config, target_key, vertical, filter_result):
     """
-        set target parameter
+        set target parameter [caller:_get_target_datas]
         ARGS:
             compare_config, restkey_list, target_key
         RETRUN:
@@ -1086,7 +1238,7 @@ def _set_target_parameter(compare_config, target_key, vertical, filter_result):
 # 比較設定取得
 def _set_compare_config_info(objdbca, compare_config, options):
     """
-        set compare_config_info
+        set compare_config_info  [caller:compare_execute]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1111,7 +1263,7 @@ def _set_compare_config_info(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
@@ -1121,7 +1273,7 @@ def _set_compare_config_info(objdbca, compare_config, options):
 # 比較設定取得
 def _set_compare_config(objdbca, compare_config, options):
     """
-        set compare_config
+        set compare_config [caller:_set_compare_config_info]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1163,7 +1315,8 @@ def _set_compare_config(objdbca, compare_config, options):
         rows = objdbca.sql_execute(sql_str, bind_list)
         if len(rows) == 1:
             config_compare_list = rows[0]
-            detail_flg = bool(strtobool(config_compare_list.get("DETAIL_FLG")))
+
+            detail_flg = bool(strtobool(config_compare_list.get("DETAIL_FLAG")))
             compare_config = _set_flg(compare_config, "detail_flg", detail_flg)
             compare_config["config_compare_list"] = config_compare_list
             compare_config["target_menus"]["menu_1"] = config_compare_list.get("TARGET_MENU_NAME_1_REST")
@@ -1188,23 +1341,34 @@ def _set_compare_config(objdbca, compare_config, options):
 
             vertical_1 = target_menu_info.get("menu_1").get("vertical")
             vertical_2 = target_menu_info.get("menu_2").get("vertical")
-            if vertical_1 is not None and vertical_2 is not None:
+            # set vertical_compare_flg　
+            if vertical_1 == "1" and vertical_2 == "1":
                 compare_config = _set_flg(compare_config, "vertical_compare_flg", True)
+            elif vertical_1 == "1" and vertical_1 != vertical_2:
+                # compare_config faild nomal * vertical
+                target_key = "compare_config"
+                msg_code = "MSG-60001"
+                err_msg = g.appmsg.get_api_message(msg_code, [])
+                compare_config = _set_msg(compare_config, target_key, err_msg)
+                status_code = "499-01002"
+                log_msg_args = [compare_name]
+                api_msg_args = [compare_name]
+                raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         else:
             target_key = "compare_config"
-            err_msg = "compare_config faild" ### MSG化対応
+            err_msg = "compare_config faild"
             compare_config = _set_msg(compare_config, target_key, err_msg)
-            status_code = "499-00201"
-            log_msg_args = [err_msg]
-            api_msg_args = [err_msg]
+            status_code = "499-01002"
+            log_msg_args = [compare_name]
+            api_msg_args = [compare_name]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
     except AppException as _app_e:  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_config_error", True)
         retBool = False
 
@@ -1214,7 +1378,7 @@ def _set_compare_config(objdbca, compare_config, options):
 # 比較設定詳細取得
 def _set_compare_detail_config(objdbca, compare_config, options):
     """
-        set compare_detail_config
+        set compare_detail_config  [caller:_set_compare_config_info]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1280,7 +1444,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
                 'TARGET_COLUMN_NAME_2_REST': 'menu',
                 'TARGET_COLUMN_CLASS_2': '1',
                 'TARGET_COLUMN_CLASS_NAME_2': 'SingleTextColumn'
-                }
+            }
             compare_col_title = row.get("COMPARE_COL_TITLE")
             config_compare_detail.setdefault(compare_col_title, row)
             config_compare_disp.append(row)
@@ -1305,7 +1469,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
                 'TARGET_COLUMN_NAME_2_REST': 'uuid',
                 'TARGET_COLUMN_CLASS_2': '1',
                 'TARGET_COLUMN_CLASS_NAME_2': 'SingleTextColumn'
-                }
+            }
             compare_col_title = row.get("COMPARE_COL_TITLE")
             config_compare_detail.setdefault(compare_col_title, row)
             config_compare_disp.append(row)
@@ -1330,7 +1494,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
                 'TARGET_COLUMN_NAME_2_REST': 'operation_name_disp',
                 'TARGET_COLUMN_CLASS_2': '1',
                 'TARGET_COLUMN_CLASS_NAME_2': 'SingleTextColumn'
-                }
+            }
             compare_col_title = row.get("COMPARE_COL_TITLE")
             config_compare_detail.setdefault(compare_col_title, row)
             config_compare_disp.append(row)
@@ -1355,7 +1519,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
                 'TARGET_COLUMN_NAME_2_REST': 'base_datetime',
                 'TARGET_COLUMN_CLASS_2': '1',
                 'TARGET_COLUMN_CLASS_NAME_2': 'SingleTextColumn'
-                }
+            }
             compare_col_title = row.get("COMPARE_COL_TITLE")
             config_compare_detail.setdefault(compare_col_title, row)
             config_compare_disp.append(row)
@@ -1368,11 +1532,11 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             compare_config["config_compare_disp"] = config_compare_disp
         else:
             target_key = "compare_config"
-            err_msg = "compare_config_detail faild" ### MSG化対応
+            err_msg = "compare_config_detail faild"
             compare_config = _set_msg(compare_config, target_key, err_msg)
-            status_code = "499-00201"
-            log_msg_args = [err_msg]
-            api_msg_args = [err_msg]
+            status_code = "499-01003"
+            log_msg_args = []
+            api_msg_args = []
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     except AppException as _app_e:  # noqa: F405
@@ -1380,7 +1544,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_config_error", True)
         retBool = False
 
@@ -1390,7 +1554,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
 # 比較項目設定
 def _set_column_info(objdbca, compare_config, options):
     """
-        set column_info
+        set column_info  [caller:_set_compare_config_info]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1398,10 +1562,6 @@ def _set_column_info(objdbca, compare_config, options):
     """
     retBool = True
     language = compare_config.get("language")
-    # override language
-    # output_language = compare_config.get("parameter").get("other_options").get("output_language")
-    # if output_language in ["en", "ja"]:
-    #     language = output_language
 
     try:
         column_info = []
@@ -1411,6 +1571,7 @@ def _set_column_info(objdbca, compare_config, options):
         del_parameter_list = compare_config.get("del_parameter_list")
         no_compare_parameter_list = compare_config.get("no_compare_parameter_list")
         no_input_order_list = compare_config.get("no_input_order_list")
+        vertical_no_use_rest_key = compare_config.get("vertical_no_use_rest_key")
 
         compare_config = _set_flg(compare_config, "compare_file", False)
 
@@ -1443,14 +1604,21 @@ def _set_column_info(objdbca, compare_config, options):
                         if column_class in file_column_list:
                             compare_config = _set_flg(compare_config, "compare_file", True)
                             file_flg = True
+
                         # comapre target flg
                         compare_target_flg = False
                         if col_key not in no_compare_parameter_list:
                             compare_target_flg = True
+
                         # no input order flg
                         no_input_order_flg = False
                         if col_key in no_input_order_list:
                             no_input_order_flg = True
+
+                        # vertical no use flg
+                        vertical_no_use_flg = False
+                        if col_key in vertical_no_use_rest_key:
+                            vertical_no_use_flg = True
 
                         tmp_column_info = {
                             "col_name": compare_col_title,
@@ -1459,6 +1627,7 @@ def _set_column_info(objdbca, compare_config, options):
                             "file_flg": file_flg,
                             "compare_target_flg": compare_target_flg,
                             "no_input_order_flg": no_input_order_flg,
+                            "vertical_no_use_flg": vertical_no_use_flg,
                             "column_class_1": column_class,
                             "column_class_2": column_class
                         }
@@ -1476,9 +1645,8 @@ def _set_column_info(objdbca, compare_config, options):
                     column_class_2 = column_row.get("TARGET_COLUMN_CLASS_NAME_2")
                     input_order_1 = column_row.get("TARGET_INPUT_ORDER_1")
                     input_order_2 = column_row.get("TARGET_INPUT_ORDER_2")
-                    if input_order_1 is None:
+                    if input_order_1 is None and input_order_2 is None:
                         input_order_1 = "__no_input_order__"
-                    if input_order_2 is None:
                         input_order_2 = "__no_input_order__"
 
                     # file comapre target flg
@@ -1486,22 +1654,23 @@ def _set_column_info(objdbca, compare_config, options):
                     if column_class_1 in file_column_list or column_class_2 in file_column_list:
                         compare_config = _set_flg(compare_config, "compare_file", True)
                         file_flg = True
+
                     # comapre target flg
-                    compare_target_flg = False
-                    if col_key_1 is None and col_key_2 is None:
-                        compare_target_flg = False
-                    elif col_key_1 in no_compare_parameter_list and col_key_2 in no_compare_parameter_list:
-                        compare_target_flg = False
-                    else:
-                        compare_target_flg = True
-                    # no input order flg
+                    compare_target_flg = True
                     no_input_order_flg = False
+                    vertical_no_use_flg = False
                     if col_key_1 is None and col_key_2 is None:
-                        no_input_order_flg = False
-                    elif col_key_1 in no_input_order_list and col_key_2 in no_input_order_list:
-                        no_input_order_flg = True
+                        compare_target_flg = False
                     else:
-                        no_input_order_flg = False
+                        # comapre target flg
+                        if col_key_1 in no_compare_parameter_list and col_key_2 in no_compare_parameter_list:
+                            compare_target_flg = False
+                        # no input order flg
+                        if col_key_1 in no_input_order_list and col_key_2 in no_input_order_list:
+                            no_input_order_flg = True
+                        # vertical no use flg
+                        if col_key_1 in vertical_no_use_rest_key and col_key_2 in vertical_no_use_rest_key:
+                            vertical_no_use_flg = True
 
                     tmp_column_info = {
                         "col_name": compare_col_title,
@@ -1510,6 +1679,7 @@ def _set_column_info(objdbca, compare_config, options):
                         "file_flg": file_flg,
                         "compare_target_flg": compare_target_flg,
                         "no_input_order_flg": no_input_order_flg,
+                        "vertical_no_use_flg": vertical_no_use_flg,
                         "column_class_1": column_class_1,
                         "column_class_2": column_class_2,
                         "input_order_1": input_order_1,
@@ -1519,23 +1689,22 @@ def _set_column_info(objdbca, compare_config, options):
 
         # set column_info
         compare_config["column_info"] = column_info
-        # pprint(column_info)
     except AppException as _app_e:  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
     return retBool, compare_config,
 
 
-# 比較項目設定
+# 比較項目設定(縦メニュー変換 item_1 -> item_1[input_order:X]
 def _override_column_info_vertical_ver(objdbca, compare_config, options):
     """
-        override column_info vertical ver
+        override column_info vertical ver  [caller:compare_execute]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1543,16 +1712,42 @@ def _override_column_info_vertical_ver(objdbca, compare_config, options):
     """
     retBool = True
     base_column_info = compare_config.get("column_info")
+    input_order_lang = compare_config.get("input_order_lang")
 
     try:
         column_info = []
-        detail_flg = _get_flg(compare_config, "detail_flg")
+        origin_data = compare_config.get("origin_data")
+        vertical_compare_flg = _get_flg(compare_config, "vertical_compare_flg")
 
-        if detail_flg is False:
-            for tmp_base_column in base_column_info:
-                pass
-            # set column_info
+        if vertical_compare_flg is True:
+            input_orders = []
+            for target_host in origin_data:
+                tmp_input_orders = list(origin_data[target_host].keys())
+                tmp_input_orders = list(set(tmp_input_orders))
+                input_orders.extend(tmp_input_orders)
+                input_orders = list(set(input_orders))
+
+            if "__no_input_order__" in input_orders:
+                input_orders.remove("__no_input_order__")
+            input_orders.sort()
+            for base_column in base_column_info:
+                col_name = base_column["col_name"]
+                no_input_order_flg = base_column["no_input_order_flg"]
+                vertical_no_use_flg = base_column["vertical_no_use_flg"]
+                if no_input_order_flg is False:
+                    for input_order in input_orders:
+                        tmp_base_column = base_column.copy()
+                        tmp_base_column["col_name"] = "{}[{}:{}]".format(col_name, input_order_lang, input_order)
+                        tmp_base_column["col_name"] = _get_col_name_input_order(col_name, input_order, input_order_lang)
+                        # set column_info
+                        column_info.append(tmp_base_column)
+                elif vertical_no_use_flg is True:
+                    pass
+                else:
+                    # set column_info
+                    column_info.append(base_column)
             compare_config["column_info"] = column_info
+
         else:
             pass
 
@@ -1561,7 +1756,7 @@ def _override_column_info_vertical_ver(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
@@ -1571,7 +1766,7 @@ def _override_column_info_vertical_ver(objdbca, compare_config, options):
 # パラメータチェック
 def _chk_parameters(objdbca, compare_config, options):
     """
-        check parameters: compare,base_date,other_options
+        check parameters: compare,base_date,other_options  [caller:compare_execute]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1595,7 +1790,7 @@ def _chk_parameters(objdbca, compare_config, options):
         tmp_err_flg = _get_flg(compare_config, "parameter_error")
         if tmp_err_flg is True:
             err_msg = _get_msg(compare_config, "parameter_error")
-            status_code = "499-00201"
+            status_code = "499-01000"
             log_msg_args = [err_msg]
             api_msg_args = [err_msg]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -1605,7 +1800,7 @@ def _chk_parameters(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         retBool = False
 
     return retBool, compare_config,
@@ -1614,7 +1809,7 @@ def _chk_parameters(objdbca, compare_config, options):
 #  パラメータチェック:compare
 def _chk_parameter_compare(objdbca, compare_config, options):
     """
-        check parameter:compare
+        check parameter:compare [caller:_chk_parameters]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1634,17 +1829,24 @@ def _chk_parameter_compare(objdbca, compare_config, options):
             rows = objdbca.sql_execute(sql_str, bind_list)
             if len(rows) != 1:
                 target_key = "compare"
-                err_msg = "compare faild" ### MSG化対応
+                # compare faild
+                msg_code = "MSG-60005"
+                msg_args = [target_key, compare]
+                err_msg = g.appmsg.get_api_message(msg_code, msg_args)
                 compare_config = _set_msg(compare_config, target_key, err_msg)
-                status_code = "499-00201"
+
+                status_code = "499-01001"
                 log_msg_args = [err_msg]
                 api_msg_args = [err_msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
         else:
             target_key = "compare"
-            err_msg = "compare faild" ### MSG化対応
+            # compare faild
+            msg_code = "MSG-60005"
+            msg_args = [target_key, compare]
+            err_msg = g.appmsg.get_api_message(msg_code, msg_args)
             compare_config = _set_msg(compare_config, target_key, err_msg)
-            status_code = "499-00201"
+            status_code = "499-01001"
             log_msg_args = [err_msg]
             api_msg_args = [err_msg]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -1654,7 +1856,7 @@ def _chk_parameter_compare(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -1663,7 +1865,7 @@ def _chk_parameter_compare(objdbca, compare_config, options):
 # パラメータチェック:base_date
 def _chk_parameter_base_date(objdbca, compare_config, options):
     """
-        check parameter:base_date
+        check parameter:base_date [caller:_chk_parameters]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1690,7 +1892,7 @@ def _chk_parameter_base_date(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -1699,7 +1901,7 @@ def _chk_parameter_base_date(objdbca, compare_config, options):
 # 日付形式のチェック
 def _chk_date_time_format(key_name, val):
     """
-        check datetime format
+        check datetime format [caller:_chk_parameters]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1715,8 +1917,11 @@ def _chk_date_time_format(key_name, val):
     elif re.match(r'^[0-9]{4}/[0-9]{2}/[0-9]{2}$', val) is not None:
         val = val + ' 00:00:00'
     else:
-        err_msg = "date_time_format_error:{}".format(key_name)   ### MSG化対応
-        status_code = "499-00201"
+        # date_time format error
+        msg_code = "MSG-60006"
+        msg_args = [key_name, val]
+        err_msg = g.appmsg.get_api_message(msg_code, msg_args)
+        status_code = "499-01001"
         log_msg_args = [err_msg]
         api_msg_args = [err_msg]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -1726,7 +1931,7 @@ def _chk_date_time_format(key_name, val):
 # パラメータチェック:host
 def _chk_parameter_host(objdbca, compare_config, options):
     """
-        check parameter:host
+        check parameter:host [caller:_chk_parameters]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1745,10 +1950,13 @@ def _chk_parameter_host(objdbca, compare_config, options):
         else:
             if host is not None:
                 target_key = "host"
-                err_msg = "host faild 1" ### MSG化対応
+                # host format error
+                msg_code = "MSG-60006"
+                msg_args = [target_key, host]
+                err_msg = g.appmsg.get_api_message(msg_code, msg_args)
                 compare_config = _set_msg(compare_config, target_key, err_msg)
                 compare_config = _set_flg(compare_config, "parameter_error", True)
-                status_code = "499-00201"
+                status_code = "499-01001"
                 log_msg_args = [err_msg]
                 api_msg_args = [err_msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -1764,9 +1972,12 @@ def _chk_parameter_host(objdbca, compare_config, options):
                 rows = objdbca.sql_execute(sql_str, bind_list)
                 if len(rows) != 1:
                     target_key = "host"
-                    err_msg = "host faild 2 {} ".format(tmp_host) ### MSG化対応
+                    # host value error
+                    msg_code = "MSG-60005"
+                    msg_args = [target_key, tmp_host]
+                    err_msg = g.appmsg.get_api_message(msg_code, msg_args)
                     compare_config = _set_msg(compare_config, target_key, err_msg)
-                    status_code = "499-00201"
+                    status_code = "499-01001"
                     log_msg_args = [err_msg]
                     api_msg_args = [err_msg]
                     raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -1776,7 +1987,7 @@ def _chk_parameter_host(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -1785,7 +1996,7 @@ def _chk_parameter_host(objdbca, compare_config, options):
 # パラメータチェック:copmare_target_column
 def _chk_parameter_copmare_target_column(objdbca, compare_config, options):
     """
-        check parameter:copmare_target_column
+        check parameter:copmare_target_column [caller:_chk_parameters]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1802,10 +2013,13 @@ def _chk_parameter_copmare_target_column(objdbca, compare_config, options):
         else:
             if copmare_target_column is not None:
                 target_key = "copmare_target_column"
-                err_msg = "copmare_target_column faild 1" ### MSG化対応
+                # copmare_target_column value error
+                msg_code = "MSG-60005"
+                msg_args = [target_key, copmare_target_column]
+                err_msg = g.appmsg.get_api_message(msg_code, msg_args)
                 compare_config = _set_msg(compare_config, target_key, err_msg)
                 compare_config = _set_flg(compare_config, "parameter_error", True)
-                status_code = "499-00201"
+                status_code = "499-01001"
                 log_msg_args = [err_msg]
                 api_msg_args = [err_msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -1815,7 +2029,7 @@ def _chk_parameter_copmare_target_column(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -1824,7 +2038,7 @@ def _chk_parameter_copmare_target_column(objdbca, compare_config, options):
 # パラメータチェック:other_options
 def _chk_parameter_other_options(objdbca, compare_config, options):
     """
-        check parameter:other_options
+        check parameter:other_options [caller:_chk_parameters]
         ARGS:
             compare_config, compare_config, options
         RETRUN:
@@ -1841,23 +2055,30 @@ def _chk_parameter_other_options(objdbca, compare_config, options):
                     if output_language in ["en", "ja"]:
                         pass
                     else:
-                        err_msg = "not accept language:{}".format(output_language)  ### MSG化対応
-                        status_code = "499-00201"
+                        target_key = "other_options.output_language"
+                        # language value error
+                        msg_code = "MSG-60005"
+                        msg_args = [target_key, output_language]
+                        err_msg = g.appmsg.get_api_message(msg_code, msg_args)
+
+                        status_code = "499-01001"
                         log_msg_args = [err_msg]
                         api_msg_args = [err_msg]
                         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
                 else:
                     pass
             pass
-            ### other
-
+            # check other options
         else:
             if other_options is not None:
                 target_key = "other_options"
-                err_msg = "other_options faild" ### MSG化対応
+                # other_options format error
+                msg_code = "MSG-60006"
+                msg_args = [target_key, other_options]
+                err_msg = g.appmsg.get_api_message(msg_code, msg_args)
                 compare_config = _set_msg(compare_config, target_key, err_msg)
                 compare_config = _set_flg(compare_config, "parameter_error", True)
-                status_code = "499-00201"
+                status_code = "499-01001"
                 log_msg_args = [err_msg]
                 api_msg_args = [err_msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
@@ -1867,7 +2088,7 @@ def _chk_parameter_other_options(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -1896,13 +2117,29 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        [print(___msg) for ___msg in list(msg)]
-
-        return False
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
     return file_data, file_mimetype
 
 
-# g.applogger.debug(addline_msg('{}{}'.format(sql_str, sys._getframe().f_code.co_name)))
+# 代入順序付き項目名
+def _get_col_name_input_order(col_name, input_order, input_order_lang=None):
+    """
+        get col_name add input_order
+        ARGS:
+            col_name, input_order, input_order_lang=None
+        RETRUN:
+            col_name_io
+    """
+    if input_order_lang is not None:
+        col_name_io = "{}[{}:{}]".format(col_name, input_order_lang, input_order)
+    elif isinstance(input_order, int):
+        col_name_io = "{}[{}]".format(col_name, input_order)
+    else:
+        col_name_io = "{}".format(col_name)
+    return col_name_io
+
+
+# add filename lineno
 def addline_msg(msg=''):
     import os
     import inspect

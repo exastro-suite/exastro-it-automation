@@ -160,7 +160,7 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  
     return result_data,
 
 
-###  標準のFILTER相当仮 ###
+# 標準のmenu_info相当
 @api_filter
 def get_compare_execute_info(organization_id, workspace_id, menu):  # noqa: E501
     """get_compare_execute_info
@@ -198,6 +198,7 @@ def get_compare_execute_info(organization_id, workspace_id, menu):  # noqa: E501
     return data,
 
 
+# 標準のsearch_candidates相当
 @api_filter
 def get_compare_execute_search_candidates(organization_id, workspace_id, menu, target, column):  # noqa: E501
     """get_execute_search_candidates
@@ -242,6 +243,7 @@ def get_compare_execute_search_candidates(organization_id, workspace_id, menu, t
     return data,
 
 
+# 標準のfilter相当
 @api_filter
 def post_copmare_execute_filter(organization_id, workspace_id, menu, target, body=None):  # noqa: E501
     """post_copmare_execute_filter
@@ -289,6 +291,3 @@ def post_copmare_execute_filter(organization_id, workspace_id, menu, target, bod
     # メニューのカラム情報を取得
     result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
     return result_data,
-
-
-###  標準のFILTER相当仮 ###

@@ -316,7 +316,7 @@ def external_valid_menu_after(objdbca, objtable, option):
 
     # ----変数部分のチェック
     if boolExecuteContinue is True and boolSystemErrorFlag is False:
-        if rg_col_type == '2':
+        if rg_col_type == '2' and rg_vars_link_id is not None:
             vars_link_id = rg_vars_link_id
             assign_seq = rg_assign_seq
             if len(vars_link_id) == 0:
@@ -347,7 +347,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                 del row
 
     if boolExecuteContinue is True and boolSystemErrorFlag is False:
-        if rg_col_type == '1':
+        if rg_col_type == '1' and rg_vars_link_id is not None:
             vars_link_id = rg_vars_link_id
             assign_seq = rg_assign_seq
             if len(vars_link_id) == 0:

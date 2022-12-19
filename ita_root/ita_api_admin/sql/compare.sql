@@ -5,7 +5,7 @@ CREATE TABLE T_COMPARE_CONFG_LIST
     COMPARE_NAME                    VARCHAR(255),                               -- 比較名称
     TARGET_MENU_1                   VARCHAR(40),                                -- 対象メニュー1
     TARGET_MENU_2                   VARCHAR(40),                                -- 対象メニュー2
-    DETAIL_FLG                      VARCHAR(40),                                -- 詳細設定フラグ
+    DETAIL_FLAG                     VARCHAR(40),                                -- 詳細設定フラグ
     NOTE                            VARCHAR(4000),                              -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -22,7 +22,7 @@ CREATE TABLE T_COMPARE_CONFG_LIST_JNL
     COMPARE_NAME                    VARCHAR(255),                               -- 比較名称
     TARGET_MENU_1                   VARCHAR(40),                                -- 対象メニュー1
     TARGET_MENU_2                   VARCHAR(40),                                -- 対象メニュー2
-    DETAIL_FLG                      VARCHAR(40),                                -- 詳細設定フラグ
+    DETAIL_FLAG                     VARCHAR(40),                                -- 詳細設定フラグ
     NOTE                            VARCHAR(4000),                              -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -109,7 +109,7 @@ LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TBL_3` ON (`TBL_1`.`MENU_ID` = `TBL_3`.`MENU
 LEFT JOIN `T_COMPARE_CONFG_LIST` `TBL_4` ON (`TBL_1`.`MENU_ID` = `TBL_4`.`TARGET_MENU_1`)
 WHERE `TBL_3`.`SHEET_TYPE` = "1" 
 AND `TBL_1`.`COL_NAME` = "DATA_JSON"
-AND `TBL_4`.`DETAIL_FLG` = "1"
+AND `TBL_4`.`DETAIL_FLAG` = "1"
 AND `TBL_1`.`DISUSE_FLAG` <> "1" 
 AND `TBL_2`.`DISUSE_FLAG` <> "1"
 AND `TBL_4`.`DISUSE_FLAG` <> "1" 
@@ -138,7 +138,7 @@ LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TBL_3` ON (`TBL_1`.`MENU_ID` = `TBL_3`.`MENU
 LEFT JOIN `T_COMPARE_CONFG_LIST` `TBL_4` ON (`TBL_1`.`MENU_ID` = `TBL_4`.`TARGET_MENU_2`)
 WHERE `TBL_3`.`SHEET_TYPE` = "1" 
 AND `TBL_1`.`COL_NAME` = "DATA_JSON"
-AND `TBL_4`.`DETAIL_FLG` = "1"
+AND `TBL_4`.`DETAIL_FLAG` = "1"
 AND `TBL_1`.`DISUSE_FLAG` <> "1" 
 AND `TBL_2`.`DISUSE_FLAG` <> "1"
 AND `TBL_4`.`DISUSE_FLAG` <> "1" 
@@ -169,7 +169,8 @@ FROM
 LEFT JOIN `T_COMN_MENU` `TBL_2` ON (`TBL_2`.`MENU_ID` = `TBL_1`.`TARGET_MENU_1`)
 LEFT JOIN `T_COMN_MENU` `TBL_3` ON (`TBL_3`.`MENU_ID` = `TBL_1`.`TARGET_MENU_2`)
 WHERE
-    `TBL_1`.`DISUSE_FLAG` <> 1
+    `TBL_1`.`DETAIL_FLAG` <> 0
+AND `TBL_1`.`DISUSE_FLAG` <> 1
 AND `TBL_2`.`DISUSE_FLAG` <> 1
 AND `TBL_3`.`DISUSE_FLAG` <> 1
 ;

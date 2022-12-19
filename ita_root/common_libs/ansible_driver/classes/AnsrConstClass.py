@@ -28,7 +28,6 @@ class AnsrConst(AnscConst):
     vg_ansible_roleDB = "T_ANSR_ROLE_NAME"
     vg_ansible_role_varsDB = "T_ANSR_ROLE_VAR"
     vg_ansible_pattern_listDB = "V_ANSR_MOVEMENT"
-    # vg_ansible_role_packageDB = "T_ANSR_MATL_COLL"
     vg_ansible_master_fileDB = "T_ANSR_MATL_COLL"
     vg_ansible_master_file_pkeyITEM = "ROLE_PACKAGE_ID"
     vg_ansible_master_file_nameITEM = "ROLE_PACKAGE_NAME"

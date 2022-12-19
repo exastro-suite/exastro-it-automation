@@ -22,7 +22,6 @@ import subprocess
 import time
 import json
 import re
-import asyncio
 import datetime
 import sys
 
@@ -438,7 +437,7 @@ class ExecuteDirector():
 
     def launchWorkflow(self, wfJobTplId):
 
-        param = {"wfJobTplId" : wfJobTplId}
+        param = {"wfJobTplId": wfJobTplId}
         response_array = AnsibleTowerRestApiWorkflowJobTemplates.launch(self.restApiCaller, param)
         if not response_array['success']:
             g.applogger.error(response_array['responseContents']['errorMessage'])
@@ -1023,14 +1022,14 @@ class ExecuteDirector():
                 auth_type = "pass"
 
             credential = {
-                "id" : row['ANSTWR_HOST_ID'],
-                "host_name" : row['ANSTWR_HOSTNAME'],
-                "auth_type" : auth_type,
-                "username" : username,
-                "password" : password,
-                "ssh_key_file" : sshKeyFile,
-                "ssh_key_file_pass" : sshKeyFilePass,
-                "node_type" : node_type
+                "id": row['ANSTWR_HOST_ID'],
+                "host_name": row['ANSTWR_HOSTNAME'],
+                "auth_type": auth_type,
+                "username": username,
+                "password": password,
+                "ssh_key_file": sshKeyFile,
+                "ssh_key_file_pass": sshKeyFilePass,
+                "node_type": node_type
             }
 
             TowerHostList.append(credential)
@@ -1039,8 +1038,8 @@ class ExecuteDirector():
 
     def getHostInfo(self, exeInsRow, inventoryForEachCredentials):
 
-        vg_ansible_pho_linkDB = AnsrConst.vg_ansible_pho_linkDB  # "T_ANSR_TGT_HOST"
-        condition = [exeInsRow['EXECUTION_NO'],exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
+        vg_ansible_pho_linkDB = AnsrConst.vg_ansible_pho_linkDB
+        condition = [exeInsRow['EXECUTION_NO'], exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
         cols = self.dbAccess.table_columns_get(vg_ansible_pho_linkDB)
         cols = (',').join(cols[0])
 
@@ -1124,11 +1123,11 @@ class ExecuteDirector():
                 'username_%s_password_%s_sshPrivateKey_%s_sshPrivateKeyPass_%s_instanceGroupId_%s_credential_type_id_%s'
             ) % (username, password, sshPrivateKey, sshPrivateKeyPass, instanceGroupId, credential_type_id)
             credential = {
-                "username" : username,
-                "password" : password,
-                "ssh_private_key" : sshPrivateKey,
-                "ssh_private_key_pass" : sshPrivateKeyPass,
-                "credential_type_id" : credential_type_id,
+                "username": username,
+                "password": password,
+                "ssh_private_key": sshPrivateKey,
+                "ssh_private_key_pass": sshPrivateKeyPass,
+                "credential_type_id": credential_type_id,
             }
 
             inventory = {}
@@ -1177,8 +1176,8 @@ class ExecuteDirector():
             inventory['hosts'][hostInfo['HOST_NAME']] = hostData
 
             inventoryForEachCredentials[key] = {
-                "credential" : credential,
-                "inventory" : inventory,
+                "credential": credential,
+                "inventory": inventory,
             }
 
         return True, inventoryForEachCredentials
@@ -1563,33 +1562,6 @@ class ExecuteDirector():
 
         # ジョブワークフローの状態をマージ
         ststus = self.workflowStatusMerge(result_code)
-        name = "エラー"
-        if ststus == AnscConst.PREPARE:
-            name = "準備中"
-
-        elif ststus == AnscConst.PROCESSING:
-            name = "実行中"
-
-        elif ststus == AnscConst.PROCESS_DELAYED:
-            name = "実行中(遅延)"
-
-        elif ststus == AnscConst.COMPLETE:
-            name = "完了"
-
-        elif ststus == AnscConst.FAILURE:
-            name = "完了(異常)"
-
-        elif ststus == AnscConst.EXCEPTION:
-            name = "想定外エラー"
-
-        elif ststus == AnscConst.SCRAM:
-            name = "緊急停止"
-
-        elif ststus == AnscConst.RESERVE:
-            name = "未実行(予約中)"
-
-        elif ststus == AnscConst.RESERVE_CANCEL:
-            name = "予約取消"
 
         return ststus
 
@@ -1735,8 +1707,8 @@ class ExecuteDirector():
 
                 self.JobDetailAry[wfJobId][wfJobNodeId].append(
                     {
-                        'JobData' : JobDetail,
-                        'stdout' : stdout
+                        'JobData': JobDetail,
+                        'stdout': stdout
                     }
                 )
 
@@ -1914,7 +1886,7 @@ class ExecuteDirector():
                     return False
 
                 instance_group = ""
-                if  'responseContents' in response_array and len(response_array['responseContents']) > 0 \
+                if 'responseContents' in response_array and len(response_array['responseContents']) > 0 \
                 and 'name' in response_array['responseContents'][0] and response_array['responseContents'][0]['name'] is True:
                     instance_group = response_array['responseContents'][0]['name']
 
@@ -2422,8 +2394,6 @@ class ExecuteDirector():
 
     @staticmethod
     def getAnsibleTowerSshKeyFileContent(TowerHostID, sshKeyFileName):
-        filePath = '%s/%s/%s' % ( getAACListSSHPrivateKeyUploadDirPath(), TowerHostID, sshKeyFileName)
+        filePath = '%s/%s/%s' % (getAACListSSHPrivateKeyUploadDirPath(), TowerHostID, sshKeyFileName)
 
         return filePath
-
-

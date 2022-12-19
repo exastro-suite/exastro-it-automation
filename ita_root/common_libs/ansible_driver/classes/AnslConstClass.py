@@ -27,7 +27,7 @@ class AnslConst(AnscConst):
     vg_exe_ins_msg_table_name = "T_ANSL_EXEC_STS_INST"
     vg_ansible_roleDB = "T_ANSL_ROLE_NAME"
     vg_ansible_role_varsDB = "T_ANSL_ROLE_VAR"
-    vg_ansible_pattern_listDB = "V_ANSR_MOVEMENT"
+    vg_ansible_pattern_listDB = "V_ANSL_MOVEMENT"
     vg_ansible_master_fileDB = "T_ANSL_MATL_COLL"
     vg_ansible_master_file_pkeyITEM = "PLAYBOOK_MATTER_ID"
     vg_ansible_master_file_nameITEM = "PLAYBOOK_MATTER_NAME"

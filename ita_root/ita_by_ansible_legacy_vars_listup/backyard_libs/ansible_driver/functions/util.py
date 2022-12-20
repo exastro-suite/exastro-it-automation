@@ -24,7 +24,7 @@ from backyard_libs.ansible_driver.classes.VariableManagerClass import VariableMa
 """
 
 
-def extract_variable_for_movement(mov_records, mov_matl_lnk_records):
+def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_varmgr_dict):
     """
     変数を抽出する（movement）
 

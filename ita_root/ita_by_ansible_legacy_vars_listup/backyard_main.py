@@ -43,6 +43,9 @@ def backyard_main(organization_id, workspace_id):
 
     # 各インスタンス準備
     g.applogger.debug("[Trace] Read all related table.")
+    playbook_table = PlaybookTable(ws_db)  # noqa: F405
+    playbook_table.store_dbdata_in_memory()
+
     tpl_table = TemplateTable(ws_db)  # noqa: F405
     tpl_table.store_dbdata_in_memory()
 
@@ -62,12 +65,14 @@ def backyard_main(organization_id, workspace_id):
     # メイン処理開始
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     g.applogger.debug("[Trace] Start extracting variables.")
+    # Playbook素材集変数チェック
+    playbook_varmgr_dict = playbook_table.extract_variable()
 
     # Movement変数チェック（Movement - Role 変数紐づけ、Movement追加オプション）
     mov_records = mov_table.get_stored_records()
     mov_matl_lnk_records = mov_material_link_table.get_stored_records()
 
-    mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records)
+    mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_varmgr_dict)
 
     # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する、作業対象ホストのインベントリファイル追加オプション）
     device_varmng_dict = device_table.extract_variable()

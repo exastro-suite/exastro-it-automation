@@ -223,7 +223,7 @@ overflow: hidden;
 display: inline-block;
 position: relative;
 z-index: 0;
-width: 18px; height: 18px;
+width: 19px; height: 19px;
 border-radius: 2px;
 }
 .radioWrap {
@@ -258,10 +258,14 @@ opacity: 0;
 }
 .checkbox:checked ~ .checkboxLabel,
 .radio:checked ~ .radioLabel,
-.checkboxText:checked ~ .checkboxTextLabel > .checkboxTextMark {
+.checkboxText:checked ~ .checkboxTextLabel > .checkboxTextMark,
+.radioText:checked ~ .radioTextLabel > .radioTextMark {
 background-color: var(--mainColor80);
 background-image: linear-gradient( rgba(255,255,255,.2), rgba(255,255,255,0) );
 border-color: var(--mainColor100);
+}
+.checkboxTextOneOrMore .checkboxText:checked ~ .checkboxTextLabel > .checkboxTextMark {
+background-color: var(--mainColor10);
 }
 .checkbox:checked ~ .checkboxLabel::after,
 .checkboxText:checked ~ .checkboxTextLabel > .checkboxTextMark::after {
@@ -276,6 +280,12 @@ height: 9px;
 border: 3px solid transparent;
 border-left-color: #FFF;
 border-bottom-color: #FFF;
+}
+.checkboxTextOneOrMore .checkboxText:checked ~ .checkboxTextLabel > .checkboxTextMark::after {
+transform: translate(-50%,-50%);
+width: 12px; height: 2px;
+background-color: var(--mainColor80);
+border: none;
 }
 .radio:checked ~ .radioLabel::after {
 content: '';
@@ -305,22 +315,25 @@ border-width: 2px;
 background-color: var(--accentColor100);
 }
 /* checkbox text */
-.checkboxTextWrap {
+.checkboxTextWrap,
+.radioTextWrap {
 overflow: hidden;
 position: relative;
 z-index: 0;
 }
-.checkboxText {
+.checkboxText,
+.radioText {
 position: absolute;
 left: 0; top: 0;
 z-index: 1;
 opacity: 0;
 cursor: pointer;
 }
-.checkboxTextLabel {
+.checkboxTextLabel,
+.radioTextLabel {
 display: inline-flex;
 align-items: center;
-width: 100%; height: 32px;
+width: 100%; min-height: 32px;
 margin: 0; padding: 0 8px;
 border: 1px solid transparent;
 border-radius: 4px;
@@ -329,34 +342,64 @@ letter-spacing: .75px;
 font-size: 14px;
 cursor: pointer;
 user-select: none;
+word-break: break-all;
 }
-.checkboxTextMark {
+.checkboxTextMark,
+.radioTextMark {
+flex: 0 0 auto;
 position: relative;
 z-index: 0;
 width: 18px; height: 18px;
+min-width: 0;
 margin-right: 8px;
 background-color: var(--white100);
 background-image: linear-gradient(rgba(255,255,255,0), rgba(0,0,0,.075), rgba(255,255,255,0) );
 border: 1px solid var(--black50);
 border-radius: 4px;
 }
-.checkboxText:focus ~ .checkboxTextLabel {
+.radioTextMark {
+border-radius: 50%;
+}
+.radioText:checked ~ .radioTextLabel .radioTextMark::after {
+content: '';
+display: block;
+position: absolute;
+z-index: 2;
+left: 50%; top: 50%;
+transform: translate(-50%,-50%);
+width: 7px; height: 7px;
+background-color: #FFF;
+border-radius: 50%;
+animation: radio .3s;
+}
+.checkboxText:focus ~ .checkboxTextLabel,
+.radioText:focus ~ .radioTextLabel {
 background-color: var(--focusBackColor);
 border-color: var(--focusColor);
 }
-.checkboxText ~ .checkboxTextLabel:hover {
+.checkboxText ~ .checkboxTextLabel:hover,
+.radioText ~ .radioTextLabel:hover {
 background-color: transparent;
 border-color: transparent;
 }
-.checkboxText ~ .checkboxTextLabel:hover > .checkboxTextMark {
+.checkboxText ~ .checkboxTextLabel:hover > .checkboxTextMark,
+.radioText ~ .radioTextLabel:hover > .radioTextMark {
 background-image: none;
 border-color: var(--accentColor100);
 border-width: 2px;
 }
-.checkboxText:checked ~ .checkboxTextLabel:hover > .checkboxTextMark {
+.checkboxText:checked ~ .checkboxTextLabel:hover > .checkboxTextMark,
+.radioText:checked ~ .radioTextLabel:hover > .radioTextMark {
 background-color: var(--accentColor100);
 }
-.checkboxText:disabled ~ .checkboxTextLabel {
+.checkboxTextOneOrMore .checkboxText:checked ~ .checkboxTextLabel:hover > .checkboxTextMark {
+background-color: var(--accentColor10);
+}
+.checkboxTextOneOrMore .checkboxText:checked ~ .checkboxTextLabel:hover > .checkboxTextMark::after {
+background-color: var(--accentColor100);
+}
+.checkboxText:disabled ~ .checkboxTextLabel,
+.radioText:disabled ~ .radioTextLabel {
 cursor: default;
 }
 .checkboxText:disabled ~ .checkboxTextLabel > .checkboxTextMark {
@@ -613,8 +656,10 @@ color: #FFF;
 cursor: no-drop!important;
 }
 .input:disabled {
-background-color: var(--black20);
+background-color: var(--black15);
+border-color: var(--black30);
 color: var(--rowDiscardTextColor)!important;
+opacity: .5!important;
 }
 .tBodyTrDiscard .input[data-key="remarks"] {
 background-color: var(--white100);
@@ -1854,6 +1899,7 @@ display: none!important;
 .noData .tableBody {
 flex: 0 0 auto;
 }
+.commonMessage,
 .initFilterStandBy .tableMessage,
 .historyStandBy .tableMessage,
 .noData .tableMessage {
@@ -1874,10 +1920,15 @@ font-size: 20px;
 font-weight: bold;
 color: var(--black60);
 }
+.commonMessage {
+margin-top: 0;
+}
+.commonMessage > div,
 .tableMessage > div {
 position: relative;
 padding-left: 96px;
 }
+.commonMessage > div .icon,
 .tableMessage > div .icon {
 position: absolute;
 left: 0; top: 50%;
@@ -1984,6 +2035,9 @@ border: 1px solid rgba( 0,0,0,.1);
 .table {
 border-collapse: separate;
 border-spacing: 0;
+}
+.tableBody .table {
+transform: translateX(-1px);
 }
 .mainTable {
 display: none;
@@ -2184,6 +2238,9 @@ white-space: nowrap;
 font-family: "Osaka-mono", "MS Gothic", "monospace";
 font-size: 14px;
 }
+.bci {
+padding: 2px 4px 1px;
+}
 .ci.textOverWrap {
 white-space: pre-wrap!important;
 word-break: break-all!important;
@@ -2229,6 +2286,9 @@ background-color: var(--mainColor60);
 .tBodyLeftSticky {
 z-index: 5;
 }
+.tBodyTrRowSelect {
+cursor: pointer;
+}
 .tBodyRowSelect,
 .tBodyRowRadioSelect {
 cursor: pointer;
@@ -2256,7 +2316,7 @@ justify-content: center;
 align-items: center;
 width: 40px; min-width: auto;
 height: 24px;
-padding: 0;
+padding: 2px;
 }
 .tHeadRowMenu > .ci,
 .tBodyRowMenu > .ci {
@@ -2420,6 +2480,9 @@ background-color: rgba( 0,0,0,.075 );
 color: var(--black50);
 user-select: none;
 cursor: no-drop;
+}
+.tBodyTrDiscard .noSelect {
+opacity: .5;
 }
 .tableEditInputSelectContainer {
 overflow: hidden;
@@ -4218,11 +4281,12 @@ margin-top: 0;
 .commonSubTitle {
 position: relative;
 z-index: 0;
-margin-top: 8px; padding: 8px 16px 8px 32px;
+margin-top: 8px; padding: 0 16px 0 32px;
 background-image: linear-gradient( var(--mainColor10), var(--mainColor15) );
 border: 1px solid var(--mainColor40);
 box-shadow: 0 1px 1px rgb(255 255 255 / 60%) inset;
 letter-spacing: 1px;
+line-height: 28px;
 color: var(--mainColor100);
 }
 .commonSubTitle::before,
@@ -4244,6 +4308,12 @@ linear-gradient( 90deg, transparent 6px, var(--mainColor10) 6px, var(--mainColor
 }
 .commonBody {
 width: 100%;
+}
+.commonWrap {
+padding: 4px;
+background-color: #FFF;
+background-image: linear-gradient( rgba( 0,0,0,0 ), rgba( 0,0,0,.05 ) );
+border: 1px solid rgba( 0,0,0,.2 );
 }
 .commonBlock {
 display: flex;
@@ -4306,15 +4376,16 @@ font-size: 12px;
 margin-bottom: 8px;
 }
 .commonParagraph {
-padding: 8px;
+margin-bottom: 8px; padding: 8px;
 border-left: 4px solid rgba( 0,0,0,.2 );
 line-height: 1.5;
 letter-spacing: .5px;
 word-break: break-all;
 font-size: 12px;
 }
-
-
+.commonParagraph:last-child {
+margin-bottom: 0;
+}
 .alertMessage {
 height: 100%;
 padding: 16px;
@@ -4333,6 +4404,36 @@ line-height: 1;
 font-size: 64px;
 color: var(--mainColor20);
 }
+.commonContainer.alertMessage {
+padding: 0;
+}
+.commonStatus {
+margin-bottom: 8px;
+padding: 4px 4px 8px;
+border-bottom: 1px solid rgba( 0,0,0,.1 );
+}
+.commonStatus:last-child {
+margin-bottom: 0; padding-bottom: 4px;
+border-bottom: none;
+}
+.commonStatusKey {
+padding: 4px 12px 0;
+border-left: 4px solid var(--mainColor80);
+word-break: break-all;
+letter-spacing: .75px;
+line-height: 1.1;
+font-weight: bold;
+font-size: 11px;
+color: border-left: 4px solid var(--mainColor80);
+}
+.commonStatusValue {
+border-left: 4px solid var(--mainColor80);
+padding: 4px 0 2px 12px;
+word-break: break-all;
+line-height: 1.5;
+font-size: 14px;
+}
+
 
 /*
 ##################################################
@@ -4491,4 +4592,4 @@ box-shadow: 0 0 8px rgba( 0,0,0,.3 );
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-.icon-exastro:before{content:"\e90e"}.icon-ita:before{content:"\e90f"}.icon-oase:before{content:"\e92a"}.icon-epoch:before{content:"\e92b"}.icon-plus:before{content:"\e92c"}.icon-minus:before{content:"\e92d"}.icon-circle:before{content:"\e92e"}.icon-cross:before{content:"\e92f"}.icon-check:before{content:"\e930"}.icon-copy:before{content:"\e958"}.icon-pause:before{content:"\e931"}.icon-clear:before{content:"\e932"}.icon-lock:before{content:"\e933"}.icon-manual:before{content:"\e934"}.icon-update01:before{content:"\e935"}.icon-update02:before{content:"\e919"}.icon-return:before{content:"\e936"}.icon-search:before{content:"\e937"}.icon-exportImport:before{content:"\e938"}.icon-arrow01_left:before{content:"\e927"}.icon-arrow01_right:before{content:"\e928"}.icon-arrow02_bottom:before{content:"\e95b"}.icon-arrow02_top:before{content:"\e95c"}.icon-ellipsis:before{content:"\e920"}.icon-ellipsis_v:before{content:"\e921"}.icon-history:before{content:"\e922"}.icon-clock:before{content:"\e939"}.icon-menuGroup:before{content:"\e923"}.icon-menuList:before{content:"\e924"}.icon-star:before{content:"\e925"}.icon-logout:before{content:"\e91f"}.icon-login:before{content:"\e926"}.icon-rollback:before{content:"\e91e"}.icon-first:before{content:"\e91a"}.icon-prev:before{content:"\e91b"}.icon-next:before{content:"\e91c"}.icon-last:before{content:"\e91d"}.icon-branch:before{content:"\e918"}.icon-detail:before{content:"\e908"}.icon-cal:before{content:"\e909"}.icon-cal_off:before{content:"\e90a"}.icon-edit:before{content:"\e90b"}.icon-filter:before{content:"\e90c"}.icon-filter_off:before{content:"\e90d"}.icon-eye_close:before{content:"\e911"}.icon-eye_open:before{content:"\e912"}.icon-gear:before{content:"\e913"}.icon-link:before{content:"\e914"}.icon-trash:before{content:"\e915"}.icon-upload:before{content:"\e916"}.icon-download:before{content:"\e910"}.icon-user:before{content:"\e917"}.icon-heartBreak:before{content:"\e900"}.icon-heart:before{content:"\e901"}.icon-missing:before{content:"\e902"}.icon-progressing:before{content:"\e904"}.icon-circle_pause:before{content:"\e905"}.icon-circle_check:before{content:"\e906"}.icon-circle_question:before{content:"\e907"}.icon-circle_doubleExclamation:before{content:"\e93a"}.icon-circle_exclamation:before{content:"\e93b"}.icon-circle_info:before{content:"\e93c"}.icon-circle_top:before{content:"\e903"}.icon-square_prev:before{content:"\e93d"}.icon-square_next:before{content:"\e93e"}.icon-square_pause:before{content:"\e93f"}.icon-stop:before{content:"\e940"}.icon-attention:before{content:"\e94b"}.icon-message:before{content:"\e94c"}.icon-message_q:before{content:"\e94d"}.icon-align_left:before{content:"\e941"}.icon-align_center:before{content:"\e942"}.icon-align_right:before{content:"\e943"}.icon-align_top:before{content:"\e944"}.icon-align_horizonal:before{content:"\e945"}.icon-align_bottom:before{content:"\e946"}.icon-algin_equally_horizonal:before{content:"\e947"}.icon-algin_equally_vertical:before{content:"\e948"}.icon-expansion:before{content:"\e94e"}.icon-shrink:before{content:"\e94f"}.icon-pipeline:before{content:"\e951"}.icon-organization:before{content:"\e956"}.icon-role:before{content:"\e957"}.icon-dashboard:before{content:"\e929"}.icon-note:before{content:"\e949"}.icon-workspace:before{content:"\e94a"}.icon-sort:before{content:"\e950"}.icon-sort_asc:before{content:"\e952"}.icon-sort_desc:before{content:"\e953"}.icon-mouse:before{content:"\e954"}.icon-mouse_left:before{content:"\e955"}.icon-mouse_right:before{content:"\e959"}.icon-mouse_wheel:before{content:"\e95a"}
+.icon-exastro:before{content:"\e90e"}.icon-ita:before{content:"\e90f"}.icon-oase:before{content:"\e92a"}.icon-epoch:before{content:"\e92b"}.icon-plus:before{content:"\e92c"}.icon-minus:before{content:"\e92d"}.icon-circle:before{content:"\e92e"}.icon-cross:before{content:"\e92f"}.icon-check:before{content:"\e930"}.icon-copy:before{content:"\e958"}.icon-pause:before{content:"\e931"}.icon-clear:before{content:"\e932"}.icon-lock:before{content:"\e933"}.icon-manual:before{content:"\e934"}.icon-update01:before{content:"\e935"}.icon-update02:before{content:"\e919"}.icon-return:before{content:"\e936"}.icon-search:before{content:"\e937"}.icon-exportImport:before{content:"\e938"}.icon-arrow01_left:before{content:"\e927"}.icon-arrow01_right:before{content:"\e928"}.icon-arrow02_bottom:before{content:"\e95b"}.icon-arrow02_top:before{content:"\e95c"}.icon-ellipsis:before{content:"\e920"}.icon-ellipsis_v:before{content:"\e921"}.icon-history:before{content:"\e922"}.icon-clock:before{content:"\e939"}.icon-menuGroup:before{content:"\e923"}.icon-menuList:before{content:"\e924"}.icon-star:before{content:"\e925"}.icon-logout:before{content:"\e91f"}.icon-login:before{content:"\e926"}.icon-rollback:before{content:"\e91e"}.icon-first:before{content:"\e91a"}.icon-prev:before{content:"\e91b"}.icon-next:before{content:"\e91c"}.icon-last:before{content:"\e91d"}.icon-branch:before{content:"\e918"}.icon-detail:before{content:"\e908"}.icon-cal:before{content:"\e909"}.icon-cal_off:before{content:"\e90a"}.icon-edit:before{content:"\e90b"}.icon-filter:before{content:"\e90c"}.icon-filter_off:before{content:"\e90d"}.icon-eye_close:before{content:"\e911"}.icon-eye_open:before{content:"\e912"}.icon-gear:before{content:"\e913"}.icon-link:before{content:"\e914"}.icon-trash:before{content:"\e915"}.icon-upload:before{content:"\e916"}.icon-download:before{content:"\e910"}.icon-user:before{content:"\e917"}.icon-heartBreak:before{content:"\e900"}.icon-heart:before{content:"\e901"}.icon-missing:before{content:"\e902"}.icon-progressing:before{content:"\e904"}.icon-circle_pause:before{content:"\e905"}.icon-circle_check:before{content:"\e906"}.icon-circle_question:before{content:"\e907"}.icon-circle_doubleExclamation:before{content:"\e93a"}.icon-circle_exclamation:before{content:"\e93b"}.icon-circle_info:before{content:"\e93c"}.icon-circle_top:before{content:"\e903"}.icon-square_prev:before{content:"\e93d"}.icon-square_next:before{content:"\e93e"}.icon-square_pause:before{content:"\e93f"}.icon-stop:before{content:"\e940"}.icon-attention:before{content:"\e94b"}.icon-message:before{content:"\e94c"}.icon-message_q:before{content:"\e94d"}.icon-align_left:before{content:"\e941"}.icon-align_center:before{content:"\e942"}.icon-align_right:before{content:"\e943"}.icon-align_top:before{content:"\e944"}.icon-align_horizonal:before{content:"\e945"}.icon-align_bottom:before{content:"\e946"}.icon-algin_equally_horizonal:before{content:"\e947"}.icon-algin_equally_vertical:before{content:"\e948"}.icon-expansion:before{content:"\e94e"}.icon-shrink:before{content:"\e94f"}.icon-pipeline:before{content:"\e951"}.icon-organization:before{content:"\e956"}.icon-role:before{content:"\e957"}.icon-dashboard:before{content:"\e929"}.icon-note:before{content:"\e949"}.icon-workspace:before{content:"\e94a"}.icon-sort:before{content:"\e950"}.icon-sort_asc:before{content:"\e952"}.icon-sort_desc:before{content:"\e953"}.icon-mouse:before{content:"\e954"}.icon-mouse_left:before{content:"\e955"}.icon-mouse_right:before{content:"\e959"}.icon-mouse_wheel:before{content:"\e95a"}.icon-compare:before{content:"\e95d"}.icon-export:before{content: "\e95e"}.icon-import:before{content: "\e95f"}

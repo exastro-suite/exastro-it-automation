@@ -1576,6 +1576,7 @@ compare() {
         { type: 'js', url: '/_/ita/js/compare.js'},
         { type: 'js', url: '/_/ita/lib/diff2html/diff2html.min.js'},
         { type: 'css', url: '/_/ita/css/compare.css'},
+        { type: 'css', url: '/_/ita/lib/diff2html/diff2html.css'}
     ];
     
     fn.loadAssets( assets ).then(function(){

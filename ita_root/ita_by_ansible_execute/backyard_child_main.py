@@ -89,17 +89,17 @@ def backyard_child_main(organization_id, workspace_id):
         result = main_logic(wsDb, execution_no, driver_id)
         if result[0] is True:
             # 正常終了
-            g.applogger.info(g.appmsg.get_log_message("MSG-10721", [execution_no]))
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10721", [execution_no]))
         else:
             if len(result) == 2:
                 log_err("main_logic:" + str(result[1]))
-            g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+            g.applogger.error(g.appmsg.get_log_message("MSG-10722", [execution_no]))
     except AppException as e:
         # 例外ログ生成
         app_exception_driver_log(e, driver_error_log_file)
 
         update_status_error(wsDb, execution_no)
-        g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+        g.applogger.error(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise AppException(e)
 
     except ValidationException as e:
@@ -110,14 +110,14 @@ def backyard_child_main(organization_id, workspace_id):
 
         update_status_error(wsDb, execution_no)
 
-        g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+        g.applogger.error(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
     except Exception as e:
         # 例外ログ生成
         exception_driver_log(e, driver_error_log_file)
 
         update_status_error(wsDb, execution_no)
-        g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+        g.applogger.error(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise Exception(e)
 
 
@@ -142,7 +142,7 @@ def update_status_error(wsDb: DBConnectWs, execution_no):
     result = cm.update_execution_record(wsDb, data)
     if result[0] is True:
         wsDb.db_commit()
-        g.applogger.info(g.appmsg.get_log_message("MSG-10735", [execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
 
 
 def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
@@ -205,7 +205,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
         result = cm.update_execution_record(wsDb, data)
         if result[0] is True:
             wsDb.db_commit()
-            g.applogger.info(g.appmsg.get_log_message("MSG-10735", [execution_no]))
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
         return True,
 
     # 投入オペレーションの最終実施日を更新する
@@ -213,7 +213,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     result = operation_LAST_EXECUTE_TIMESTAMP_update(wsDb, execute_data["OPERATION_ID"])
     if result[0] is True:
         wsDb.db_commit()
-        g.applogger.info(g.appmsg.get_log_message("BKY-10003", [execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-10003", [execution_no]))
 
     # 処理対象の作業インスタンス実行
     g.applogger.debug("execute instance_execution")
@@ -235,7 +235,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
     if result[0] is True:
         wsDb.db_commit()
-        g.applogger.info(g.appmsg.get_log_message("BKY-10004", [execute_data["STATUS_ID"], execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-10004", [execute_data["STATUS_ID"], execution_no]))
     else:
         wsDb.db_rollback()
         return False, "InstanceRecodeUpdate->" + str(result[1])
@@ -248,7 +248,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     tower_host_list = result_data
 
     # [処理]処理対象インスタンス 作業確認の開始(作業No.:{})
-    g.applogger.info(g.appmsg.get_log_message("MSG-10737", [execution_no]))
+    g.applogger.debug(g.appmsg.get_log_message("MSG-10737", [execution_no]))
 
     check_interval = 3
     while True:
@@ -280,7 +280,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
             if result[0] is True:
                 wsDb.db_commit()
-                g.applogger.info(g.appmsg.get_log_message("BKY-10004", [clone_execute_data["STATUS_ID"], execution_no]))
+                g.applogger.debug(g.appmsg.get_log_message("BKY-10004", [clone_execute_data["STATUS_ID"], execution_no]))
             else:
                 wsDb.db_rollback()
                 return False, "InstanceRecodeUpdate->" + str(result[1])
@@ -289,7 +289,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
             break
 
     # [処理]処理対象インスタンス 作業確認の終了(作業No.:{})
-    g.applogger.info(g.appmsg.get_log_message("MSG-10738", [execution_no]))
+    g.applogger.debug(g.appmsg.get_log_message("MSG-10738", [execution_no]))
 
     return True,
 
@@ -303,7 +303,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     conductor_instance_no = execute_data["CONDUCTOR_INSTANCE_NO"]
 
     # [処理]処理対象インスタンス 作業実行開始(作業No.:{})
-    g.applogger.info(g.appmsg.get_log_message("MSG-10763", [execution_no]))
+    g.applogger.debug(g.appmsg.get_log_message("MSG-10763", [execution_no]))
 
     # 処理対象の並列実行数のリストを格納 (pioneer)
     tgt_exec_count = execute_data['I_ANS_PARALLEL_EXE']
@@ -627,9 +627,9 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
         # 制限時刻と現在時刻を比較
         if limit_unixtime < now_unixtime:
             delay_flag = 1
-            g.applogger.info(g.appmsg.get_log_message("MSG-10707", [execution_no]))
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10707", [execution_no]))
         else:
-            g.applogger.info(g.appmsg.get_log_message("MSG-10708", [execution_no]))
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10708", [execution_no]))
 
     if delay_flag == 1:
         db_update_need = True

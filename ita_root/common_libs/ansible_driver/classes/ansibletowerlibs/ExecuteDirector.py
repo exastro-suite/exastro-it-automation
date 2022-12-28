@@ -38,7 +38,7 @@ from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.Ansible
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInstanceGroups import AnsibleTowerRestApiInstanceGroups
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiCredentials import AnsibleTowerRestApiCredentials
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiProjects import AnsibleTowerRestApiProjects
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApirPassThrough import AnsibleTowerRestApirPassThrough
+from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiPassThrough import AnsibleTowerRestApiPassThrough
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInventories import AnsibleTowerRestApiInventories
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInventoryHosts import AnsibleTowerRestApiInventoryHosts
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiJobTemplates import AnsibleTowerRestApiJobTemplates
@@ -190,7 +190,7 @@ class ExecuteDirector():
         # Gitリポジトリに展開する資材を作業ディレクトリに作成
         # tmp_path_ary["DIR_NAME"]: /storage/org1/workspace-1/tmp/driver/ansible/legacy_role_作業番号
         tmp_path_ary = getInputDataTempDir(execution_no, vg_tower_driver_name)
-        ret = self.createMaterialsTransferTempDir(execution_no, ifInfoRow, TowerHostList, tmp_path_ary["DIR_NAME"])
+        ret = self.createMaterialsTransferTempDir(execution_no, tmp_path_ary["DIR_NAME"])
         if not ret:
             return -1, TowerHostList
 
@@ -459,7 +459,7 @@ class ExecuteDirector():
 
         return wfJobId
 
-    def createMaterialsTransferTempDir(self, execution_no, ifInfoRow, TowerHostList, tmp_path):
+    def createMaterialsTransferTempDir(self, execution_no, tmp_path):
 
         result_code = True
 
@@ -2261,11 +2261,11 @@ class ExecuteDirector():
 
             elif response_array['responseContents']['status'] in ["failed", "error"]:
                 # プロジェクト更新用のURL退避
-                updateUurl = response_array['responseContents']['related']['update']
+                update_url = response_array['responseContents']['related']['update']
 
                 # Git連携に失敗した場合、エラー情報を取得する
                 url = response_array['responseContents']['related']['project_updates']
-                response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url)
+                response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
                 if not response_array['success']:
                     errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
@@ -2275,7 +2275,7 @@ class ExecuteDirector():
                     return -1
 
                 url = "%s?format=txt" % (response_array['responseContents']['results'][0]['related']['stdout'])
-                response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url, True)
+                response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url, True)
                 if not response_array['success']:
                     errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
@@ -2286,7 +2286,7 @@ class ExecuteDirector():
 
                 # 制御ノードにコンテナイメージがロードされていないと、プロジェクト作成でGit連携が失敗する
                 # プロジェクトの更新だとコンテナイメージがロードていなくても問題ないので、プロジェクトを更新する
-                response_array = AnsibleTowerRestApirPassThrough.post(self.restApiCaller, updateUurl)
+                response_array = AnsibleTowerRestApiPassThrough.post(self.restApiCaller, update_url)
                 if not response_array['success']:
                     errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
@@ -2313,7 +2313,7 @@ class ExecuteDirector():
 
         # プロジェクト更新の結果判定
         while True:
-            response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url)
+            response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
             if not response_array['success']:
                 errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                 self.errorLogOut(errorMessage)
@@ -2330,7 +2330,7 @@ class ExecuteDirector():
 
             elif response_array['responseContents']['status'] in ["failed", "error"]:
                 url = "%s?format=txt" % (response_array['responseContents']['related']['stdout'])
-                response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url, True)
+                response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url, True)
                 ProjectUpdateStdout = response_array['responseContents']
                 if not response_array['success']:
                     errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])

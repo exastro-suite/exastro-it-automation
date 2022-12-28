@@ -43,7 +43,6 @@ class RestApiCaller():
         self.accessToken = None
         self.RestResultList = []
 
-        
     def authorize(self):
 
         self.accessToken = self.decryptedAuthToken
@@ -64,7 +63,7 @@ class RestApiCaller():
 
         response_array = {}
 
-        if Rest_stdout_flg == False:
+        if Rest_stdout_flg is False:
             # コンテンツ付与
             if content:
                 httpContext['http'] = {}
@@ -109,7 +108,7 @@ class RestApiCaller():
         httpContext['ssl']['verify_peer'] = False
         httpContext['ssl']['verify_peer_name'] = False
 
-        if DirectUrl == False:
+        if DirectUrl is False:
             url = '%s%s' % (self.baseURI, apiUri)
 
         else:
@@ -143,9 +142,15 @@ class RestApiCaller():
         except urllib.error.HTTPError as e:
             # 返却用のArrayを編集
             response_array['statusCode'] = -2
-            response_array['responseContents'] = {"errorMessage":"HTTP access error "}
+            response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
-            print_Except = "Except HTTPError\nhttp status code: %s\nhttp response contents: %s\nhttp response headers: %s" % (e.code, e.reason, e.headers)
+            print_Except = \
+                "Except HTTPError\n" \
+                "http status code: %s\n" \
+                "http response contents: %s\n" \
+                "http response headers: %s\n" \
+                "http response body: %s" \
+                % (e.code, e.reason, e.headers, e.read().decode())
             self.apperrorloger(self.backtrace())
             self.apperrorloger(print_url)
             self.apperrorloger(print_HttpContext)
@@ -154,7 +159,7 @@ class RestApiCaller():
         except urllib.error.URLError as e:
             # 返却用のArrayを編集
             response_array['statusCode'] = -2
-            response_array['responseContents'] = {"errorMessage":"HTTP access error "}
+            response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
             print_Except = "Except URLError\nhttp response contents: %s" % (e.reason)
             self.apperrorloger(self.backtrace())
@@ -167,7 +172,7 @@ class RestApiCaller():
             if not isinstance(http_response_header, list):
                 # 返却用のArrayを編集
                 response_array['statusCode'] = -2
-                response_array['responseContents'] = {"errorMessage":"HTTP access error "}
+                response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
                 self.apperrorloger(self.backtrace())
                 self.apperrorloger(print_url)
@@ -187,7 +192,7 @@ class RestApiCaller():
                     response_array['statusCode'] = status_code
                     if status_code < 200 or status_code >= 400:
                         response_array['responseHeaders'] = http_response_header
-                        response_array['responseContents'] = {"errorMessage":responseContents}
+                        response_array['responseContents'] = {"errorMessage": responseContents}
 
                         self.apperrorloger(self.backtrace())
                         self.apperrorloger(print_url)
@@ -205,7 +210,7 @@ class RestApiCaller():
                                     try:
                                         response_array['responseContents'] = json.loads(responseContents)
 
-                                    except json.JSONDecodeError as e:
+                                    except json.JSONDecodeError:
                                         response_array['responseContents'] = None
 
                         # 正常時
@@ -220,7 +225,7 @@ class RestApiCaller():
 
                     # 返却用のArrayを編集
                     response_array['statusCode'] = -2
-                    response_array['responseContents'] = {"errorMessage":"HTTP Socket Timeout"}
+                    response_array['responseContents'] = {"errorMessage": "HTTP Socket Timeout"}
 
                     self.apperrorloger(self.backtrace())
                     self.apperrorloger(print_url)

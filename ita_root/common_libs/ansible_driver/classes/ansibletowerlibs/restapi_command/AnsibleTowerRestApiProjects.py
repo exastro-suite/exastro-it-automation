@@ -97,8 +97,10 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
                         'errorMessage' : "Need 'scm_url'."
                     }
                     return response_array
+                content['scm_clean'] = True
+                content['scm_delete_on_update'] = True
             else:
-                # SCM_TYPE = "" (手動) 
+                # SCM_TYPE = "" (手動)
                 if 'execution_no' in param and param['execution_no']:
                     content['local_path'] = cls.SCM_LOCALPATH_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']))
 

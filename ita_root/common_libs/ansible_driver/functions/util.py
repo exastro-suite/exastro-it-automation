@@ -202,20 +202,20 @@ def getDataRelayStorageDir():
     return os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
 
 
-def getInputDataTempDir(EcecuteNo, DriverName):
+def getInputDataTempDir(execution_no, driver_name):
     """
       Ansible Gitリポジトリ用 tmpバスを取得する。
       Arguments:
-        EcecuteNo: 作業番号
-        DriverName: オケストレータID  vg_tower_driver_name
+        execution_no: 作業番号
+        driver_name: オケストレータID  vg_tower_driver_name
       Returns:
         Ansible Gitリポジトリ用 tmpバス
     """
     ary = {}
-    basePath = get_AnsibleDriverTmpPath()
-    ary["BASE_DIR"] = basePath
-    tgtPath = basePath + "/{}_{}".format(DriverName, EcecuteNo)
-    ary["DIR_NAME"] = tgtPath
+    base_path = get_AnsibleDriverTmpPath()
+    ary["BASE_DIR"] = base_path
+    tgt_path = base_path + "/{}_{}".format(driver_name, execution_no)
+    ary["DIR_NAME"] = tgt_path
     return ary
 
 

@@ -27,14 +27,19 @@ from distutils.util import strtobool
 import mimetypes
 import base64
 import re
+import os
+import random
+import unicodedata
 
-import deepdiff
 import dictdiffer
 import difflib
 
-"""
-TASK
-"""
+from openpyxl import Workbook
+from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.styles.fonts import Font
+from openpyxl.utils.escape import *  # noqa: F403
 
 
 # 比較実行画面用情報取得(リスト情報、パラメータフォーマット)
@@ -152,7 +157,15 @@ def compare_execute(objdbca, menu, parameter, options={}):
         RETRUN:
             {"config":{},"compare_data":{},"compare_diff_flg":{}}
     """
+    ###
+    #parameter.setdefault("base_date_1", "")
+    #parameter.setdefault("base_date_2", "")
+    #parameter["base_date_1"] = "2022/06/01 12:00:00"
+    #parameter["base_date_2"] = "2022/06/04 12:00:00"
+
     try:
+        # ### # ["ERROR", "INFO", "DEBUG"]
+        #g.applogger.set_level("INFO")
 
         # set base config
         compare_config = _set_base_config(parameter)
@@ -200,6 +213,7 @@ def compare_execute(objdbca, menu, parameter, options={}):
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         compare_mode = _get_flg(compare_config, "compare_mode")
+        output_flg = _get_flg(compare_config, "output_flg")
 
         # override_column_info_vertical_ver  item1 -> item[input_order:1]
         vertical_compare_flg = _get_flg(compare_config, "vertical_compare_flg")
@@ -223,13 +237,17 @@ def compare_execute(objdbca, menu, parameter, options={}):
             # set result->compare_data
             result["compare_data"] = compare_config.get("compare_data_ptn1")
 
-        else:
+        elif compare_mode == "file":
             # set result->config
             result["config"].setdefault("target_compare_file_info", compare_config.get("target_compare_file_info"))
             result["config"].setdefault("compare_file", _get_flg(compare_config, "compare_file"))
             # set result->unified_diff
             result.setdefault("unified_diff", {})
             result["unified_diff"] = compare_config.get("unified_diff")
+
+        if output_flg is True:
+            # excel output
+            result = _create_outputfile(objdbca, compare_config, result, options)
 
     except AppException as _app_e:  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
@@ -342,7 +360,9 @@ def _set_base_config(parameter):
 
     # not use rest_key
     vertical_no_use_rest_key = [
+        "menu",
         "uuid",
+        "host_name",
         "operation_name_select",
         "operation_name_disp",
         "base_datetime",
@@ -443,8 +463,12 @@ def _set_compare_mode(compare_config, options):
         base_parameter = compare_parameter_format
     base_parameter.update(parameter)
 
-    # set compare mode
+    output_flg = options.get("output_flg")
+
+    # set compare mode / output flg
     compare_config = _set_flg(compare_config, "compare_mode", compare_mode)
+    compare_config = _set_flg(compare_config, "output_flg", output_flg)
+
     # set parameter
     compare_config["parameter"] = base_parameter
 
@@ -571,6 +595,8 @@ def _execute_compare_data(objdbca, compare_config, options):
         menu_name_1 = target_menus.get("menu_1")
         menu_name_2 = target_menus.get("menu_2")
 
+        no_compare_target = []
+        no_view_target_list = {}
         # for target host
         for target_host in list(origin_data.keys()):
 
@@ -579,6 +605,7 @@ def _execute_compare_data(objdbca, compare_config, options):
             diff_flg_data = {}
             diff_flg_file = {}
             file_compare_info = {}
+            no_view_target_list[target_host] = []
             origin_data[target_host].setdefault("__no_input_order__", {"menu_1": {}, "menu_2": {}})
             origin_data[target_host]["__no_input_order__"]["menu_1"].setdefault("menu", menu_name_1)
             origin_data[target_host]["__no_input_order__"]["menu_2"].setdefault("menu", menu_name_2)
@@ -621,6 +648,10 @@ def _execute_compare_data(objdbca, compare_config, options):
                 # check target column
                 target_column_flg = _chk_target_column_flg(copmare_target_column, col_name)
 
+                # no compare target list
+                if compare_target_flg is False:
+                    no_compare_target.append(col_name)
+
                 # target vertical menu
                 if vertical_compare_flg is True:
                     input_orders = list(origin_data[target_host].keys())
@@ -653,6 +684,14 @@ def _execute_compare_data(objdbca, compare_config, options):
                         menu_2_data, target_uuid_2, col_val_menu_2, base_datetime_2, operation_name_disp_2 = \
                             _get_line_values("menu_2", origin_data, target_host, input_order_2, col_name_menu_2)
 
+                        # set menu_name
+                        if menu_name_1 == col_val_menu_1:
+                            if tmp_col_name in target_data_1:
+                                target_data_1[tmp_col_name] = menu_name_1
+                        if menu_name_2 == col_val_menu_2:
+                            if tmp_col_name in target_data_2:
+                                target_data_2[tmp_col_name] = menu_name_2
+
                         # vertical menu and comare target parameters
                         tmp_col_name = _override_col_name_io(
                             col_name,
@@ -662,6 +701,19 @@ def _execute_compare_data(objdbca, compare_config, options):
                             no_input_order_flg,
                             vertical_compare_flg
                         )
+
+                        # set no use target list
+                        none_column_class_list = [
+                            "PasswordColumn"
+                            "SensitiveSingleTextColumn",
+                            "SensitiveMultiTextColumn",
+                            "PasswordIDColumn",
+                            "JsonPasswordIDColumn",
+                        ]
+                        if col_val_menu_1 is None and col_val_menu_2 is None:
+                            if column_class_name_1 not in none_column_class_list and \
+                                    column_class_name_2 not in none_column_class_list:
+                                no_view_target_list[target_host].append(tmp_col_name)
 
                         # check target colname
                         if tmp_col_name is not None:
@@ -706,11 +758,13 @@ def _execute_compare_data(objdbca, compare_config, options):
 
             if compare_mode == "normal":
                 # diff 全体
-                result_ddiff = deepdiff.DeepDiff(target_data_1, target_data_2)
                 result_dictdiffer = list(dictdiffer.diff(target_data_1, target_data_2))
+
                 tmp_compare_result = False
-                if len(result_ddiff) != 0:
+                if len(result_dictdiffer) != 0:
                     tmp_compare_result = True
+                else:
+                    pass
                 compare_config["result_compare_host"].setdefault(target_host, tmp_compare_result)
 
                 # get target rest_key
@@ -721,8 +775,11 @@ def _execute_compare_data(objdbca, compare_config, options):
                 # set diff flg[value]
                 for tmp_key in target_data_key:
                     diff_flg = False
-                    if tmp_key in diff_key:
+                    # target_column_flg = _chk_target_column_flg(copmare_target_column, tmp_key)
+                    if tmp_key in diff_key and tmp_key not in no_compare_target:
                         diff_flg = True
+                    if vertical_compare_flg is True and tmp_key in no_view_target_list[target_host]:
+                        diff_flg = None
                     diff_flg_data.setdefault(tmp_key, diff_flg)
 
                 # set result_ptn1
@@ -1593,6 +1650,37 @@ def _set_column_info(objdbca, compare_config, options):
             # compare_list
             rows = objdbca.sql_execute(sql_str, bind_list)
             if len(rows) >= 1:
+                row = {
+                    'COMPARE_DETAIL_ID': 'menu',
+                    'COMPARE_ID': 'menu',
+                    'COMPARE_COL_TITLE': 'メニュー名',
+                    'TARGET_COLUMN_ID_1': 'menu',
+                    'TARGET_INPUT_ORDER_1': None,
+                    'TARGET_COLUMN_ID_2': 'menu',
+                    'TARGET_INPUT_ORDER_2': None,
+                    'DISP_SEQ': 0,
+                    'NOTE': None,
+                    'DISUSE_FLAG': '0',
+                    'TARGET_COLUMN_NAME_1_JA': 'メニュー名',
+                    'TARGET_COLUMN_NAME_1_EN': 'menu',
+                    'TARGET_COLUMN_NAME_1_REST': 'menu',
+                    'TARGET_COLUMN_CLASS_1': '1',
+                    'TARGET_COLUMN_CLASS_NAME_1': 'SingleTextColumn',
+                    'TARGET_COLUMN_NAME_2_JA': 'メニュー名',
+                    'TARGET_COLUMN_NAME_2_EN': 'menu',
+                    'TARGET_COLUMN_NAME_2_REST': 'menu',
+                    'TARGET_COLUMN_CLASS_2': '1',
+                    'TARGET_COLUMN_CLASS_NAME_2': 'SingleTextColumn',
+                    'COLUMN_NAME_JA': 'メニュー名',
+                    'COLUMN_NAME_EN': 'menu',
+                    'COLUMN_NAME_REST': 'menu'
+                }
+                # tmp_rows = []
+                # tmp_rows.append(row)
+                # for row in rows:
+                #    tmp_rows.append(row)
+                # for row in tmp_rows:
+
                 for row in rows:
                     compare_col_title = row.get("COLUMN_NAME_" + language.upper())
                     col_key = row.get("COLUMN_NAME_REST")
@@ -1730,6 +1818,9 @@ def _override_column_info_vertical_ver(objdbca, compare_config, options):
             if "__no_input_order__" in input_orders:
                 input_orders.remove("__no_input_order__")
             input_orders.sort()
+
+            # column_info.append(base_column)
+
             for base_column in base_column_info:
                 col_name = base_column["col_name"]
                 no_input_order_flg = base_column["no_input_order_flg"]
@@ -1742,6 +1833,8 @@ def _override_column_info_vertical_ver(objdbca, compare_config, options):
                         # set column_info
                         column_info.append(tmp_base_column)
                 elif vertical_no_use_flg is True:
+                    # if col_name in ["menu", "メニュー名"]:
+                    #     column_info.append(base_column)
                     pass
                 else:
                     # set column_info
@@ -2137,6 +2230,522 @@ def _get_col_name_input_order(col_name, input_order, input_order_lang=None):
     else:
         col_name_io = "{}".format(col_name)
     return col_name_io
+
+
+# ファイル出力:Excel
+def _create_outputfile(objdbca, compare_config, data, options):
+    """
+        create excel base64
+        ARGS:
+            objdbca, compare_config, data, options
+        RETRUN:
+            base64 string
+    """
+
+    try:
+        # set
+        tbl_start_str = "A"
+        tbl_end_str = "E"
+
+        # get data
+        config = data.get("config")
+        compare_data = data.get("compare_data")
+        compare_diff_flg = data.get("compare_diff_flg")
+        base_name = compare_config.get("parameter").get("compare")
+        exec_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')  # noqa: F405
+        tmp_exec_time = datetime.datetime.strptime(exec_time, '%Y%m%d%H%M%S')  # noqa: F405
+        tmp_exec_time = tmp_exec_time.strftime('%Y/%m/%d %H:%M:%S')
+        # exec_time = datetime.datetime.now().strftime('%Y%m%d')  # noqa: F405
+
+        file_name = base_name + '_' + exec_time + '.xlsx'
+        wbEncode = ""
+        result = {
+            "file_name": None,
+            "file_data": None,
+        }
+        # path: tmp output xlsx
+        strage_path = os.environ.get('STORAGEPATH')  # noqa: F405
+        # get path
+        file_path, template_file_path = get_workdir_path(strage_path, file_name)
+
+        # create excel
+        # set Workbook
+        wb = Workbook()
+        # wb = load_workbook(template_file_path)
+
+        # set data: comapre execute parameters
+        ws_index_create_table(wb, file_name, tmp_exec_time, config, compare_config, compare_diff_flg, tbl_start_str, tbl_end_str)
+
+        # comapre result :target_host sheet
+        ws_target_host_create_table(wb, file_name, tmp_exec_time, config, compare_data, compare_diff_flg, tbl_start_str, tbl_end_str)
+
+        # save book
+        wb.save(file_path)  # noqa: E303
+
+        # get excel base64 data
+        wbEncode = file_encode(file_path)  # noqa: F405 F841
+
+        # clear tmp file
+        if os.path.isfile(file_path):
+            pass
+            # os.remove(file_path)
+
+        result["file_name"] = file_name
+        result["file_data"] = wbEncode
+
+    except AppException as _app_e:  # noqa: F405
+        raise AppException(_app_e)  # noqa: F405
+    except Exception as e:
+        type_, value, traceback_ = sys.exc_info()
+        msg = traceback.format_exception(type_, value, traceback_)
+        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        status_code = "499-01007"
+        log_msg_args = [e]
+        api_msg_args = [e]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+    return result
+
+
+# Excel入力値エスケープ処理
+def wr_fmt(val):
+    """
+        excel writer format value escape
+        ARGS:
+            val
+        RETRUN:
+            escape(str(val))
+    """
+    if val is None:
+        val = ""
+    return escape(str(val))  # noqa: F405
+
+
+# 文字列ランダム生成
+def rand_str(n):
+    """
+        create random string length n :a-z
+        ARGS:
+            n
+        RETRUN:
+            string
+    """
+    rand_list = [chr(random.randint(97, 122)) for _ in range(n)]
+    rand_chr = "".join(rand_list)
+    return rand_chr
+
+
+# 文字列長カウント
+def count_string(val):
+    """
+        count value
+        ARGS:
+            val
+        RETRUN:
+            int
+    """
+    val_length = 0
+    if isinstance(val, str):
+        for tmp_val in val:
+            if unicodedata.east_asian_width(tmp_val) in 'FWA':
+                val_length += 2
+            else:
+                val_length += 1
+    elif isinstance(val, int):
+        val_length = len(str(val))
+
+    return val_length
+
+
+# 作業ディレクトリ取得
+def get_workdir_path(strage_path, file_name):
+    """
+        get work path
+        ARGS:
+            strage_path, file_name
+        RETRUN:
+            file_path, template_file_path,
+    """
+    # path: tmp work
+    file_path = "{}/{}/{}/tmp/{}".format(
+        strage_path,
+        g.get("ORGANIZATION_ID"),
+        g.get("WORKSPACE_ID"),
+        file_name
+    ).replace('//', '/')
+
+    # path: tmplate xlsx
+    template_file_name = "compare_base_template.xlsx"
+    template_file_path = "{}/{}/{}/tmp/{}".format(
+        strage_path,
+        g.get("ORGANIZATION_ID"),
+        g.get("WORKSPACE_ID"),
+        template_file_name
+    ).replace('//', '/')
+    return file_path, template_file_path,
+
+
+# Excel:Cell幅調整
+def ws_auto_adjusted_width(ws, default_length=8, add_length=2, coefficient=1.2):
+    """
+        auto adjusted width
+        ARGS:
+            ws, default_length=8, add_length=2, coefficient=1.2
+        RETRUN:
+            ws
+    """
+    # set column width
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column
+        for cell in col:
+            tmp_length = count_string(cell.value)
+            if tmp_length > max_length:
+                max_length = tmp_length
+        if default_length > max_length:
+            max_length = default_length
+        adjusted_width = (max_length + add_length) * coefficient
+        column = get_column_letter(column)
+        ws.column_dimensions[column].width = adjusted_width
+    return ws
+
+
+# Excel:テーブル作成
+def ws_add_table(ws, tablename="", table_style=None, ref_area="A1:B1"):
+    """
+        create table
+        ARGS:
+            ws, tablename="", table_style=None, ref_area="A1:B1"
+        RETRUN:
+            ws
+    """
+
+    # default tablename
+    if len(tablename) == 0:
+        tablename = str("table") + rand_str(10)
+    # default table area
+    if len(ref_area) < 5:
+        ref_area = "A1:B1"
+    # default table stayle
+    if table_style is None:
+        table_style = TableStyleInfo(
+            name='TableStyleMedium2',
+            showFirstColumn=False,
+            showLastColumn=False,
+            showRowStripes=True,
+            showColumnStripes=False
+        )
+
+    table_data = Table(displayName=tablename, ref=ref_area)
+    table_data.tableStyleInfo = table_style
+    ws.add_table(table_data)
+
+    return ws
+
+
+# Excel:行入力
+def ws_add_table_data_cells(ws, row_no, column_no, col_name="", val_1="", val_2="", str_diff="", other="", diff_flg=False, wrap_text_flg=False):
+    """
+        add line data + add style
+        ARGS:
+            ws, row_no, column_no, col_name="", val_1="", val_2="", str_diff="", other="", diff_flg=False
+        RETRUN:
+            ws
+    """
+    if str_diff is not None:
+        # col_name
+        ws.cell(row=row_no, column=column_no, value=wr_fmt(col_name))
+        # diff
+        ws.cell(row=row_no, column=column_no + 1, value=wr_fmt(str_diff))
+        # value1: target_menu_1
+        ws.cell(row=row_no, column=column_no + 2, value=wr_fmt(val_1))
+        # value2: target_menu_2
+        ws.cell(row=row_no, column=column_no + 3, value=wr_fmt(val_2))
+        # detail
+        ws.cell(row=row_no, column=column_no + 4, value=wr_fmt(other))
+
+    # add diff style
+    if diff_flg is True:
+        ws.cell(row=row_no, column=column_no + 1).font = Font(color='FF0000')
+        ws.cell(row=row_no, column=column_no + 2).font = Font(color='FF0000')
+        ws.cell(row=row_no, column=column_no + 3).font = Font(color='FF0000')
+
+    if wrap_text_flg is True:
+        ws.cell(row=row_no, column=column_no + 2).alignment = Alignment(wrapText=True)
+        ws.cell(row=row_no, column=column_no + 3).alignment = Alignment(wrapText=True)
+    return ws
+
+
+# Excel:セル入力用の関連データ取得
+def get_col_name_data(compare_data, row_no, target_host, col_name, compare_target_flg):
+    """
+        add line data + add style
+        ARGS:
+            compare_data, row_no, target_host, col_name, compare_target_flg
+        RETRUN:
+            row_no, val_1, val_2, val_diff_flg, str_diff,
+    """
+    row_no = row_no + 1
+    # get value
+    try:
+        val_1 = compare_data.get(target_host).get("target_data_1").get(col_name)
+    except Exception:
+        val_1 = None
+    try:
+        val_2 = compare_data.get(target_host).get("target_data_2").get(col_name)
+    except Exception:
+        val_2 = None
+    # get diff flg
+    try:
+        val_diff_flg = compare_data.get(target_host).get("_data_diff_flg").get(col_name)
+    except Exception:
+        val_diff_flg = False
+
+    if compare_target_flg is True:
+        # convert compare diff flg
+        if val_diff_flg is True:
+            # 差分あり / ●
+            str_diff = g.appmsg.get_api_message("MSG-60008")
+
+        elif val_diff_flg is False:
+            # 差分なし / ""
+            str_diff = g.appmsg.get_api_message("MSG-60009")
+        else:
+            str_diff = None
+            row_no = row_no - 1
+    else:
+        str_diff = ""
+
+    return row_no, val_1, val_2, val_diff_flg, str_diff,
+
+
+# Excel:シート作成 比較条件+比較結果一覧(summary)
+def ws_index_create_table(wb, file_name, exec_time, config, compare_config, compare_diff_flg, tbl_start_str, tbl_end_str):
+    """
+        crate sheet compare parameter + summary
+        ARGS:
+            wb, file_name, exec_time, config, compare_config, compare_diff_flg, tbl_start_str, tbl_end_str
+        RETRUN:
+            ws
+    """
+    compare = compare_config.get("parameter").get("compare")
+    base_date_1 = compare_config.get("parameter").get("base_date_1")
+    base_date_2 = compare_config.get("parameter").get("base_date_2")
+    host_list = compare_config.get("parameter").get("host")
+    host_str = ",".join([str(_) for _ in host_list])
+
+    detail_flg = _get_flg(compare_config, "detail_flg")
+    target_menyu_name_1 = config.get("target_menus")[0]
+    target_menyu_name_2 = config.get("target_menus")[1]
+    target_host_list = config.get("target_host_list")
+
+    # sheet name:比較条件_結果一覧
+    target_sheet = wr_fmt(g.appmsg.get_api_message("MSG-60010"))
+    ws = wb.active
+    ws.title = target_sheet
+    ws = wb[target_sheet]
+    row_no = 1
+    column_no = 1
+    tmp_row_no = 0
+
+    # 比較実行条件 値
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60011")))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(g.appmsg.get_api_message("MSG-60012")))
+    # 比較実行日時
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60013")))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(exec_time))
+    # 比較設定名
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60014")))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(compare))
+
+    # 詳細フラグ
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt("詳細設定フラグ"))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(detail_flg))
+
+    # 比較対象メニュー1
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt("比較対象メニュー1"))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(target_menyu_name_1))
+
+    # 比較対象メニュー2
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt("比較対象メニュー2"))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(target_menyu_name_2))
+
+    # 基準日時1
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60015")))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(base_date_1))
+    # 基準日時2
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60016")))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(base_date_2))
+    # 対象ホスト
+    tmp_row_no += 1
+    ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60017")))
+    ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(host_str))
+
+    # add table: comapre execute parameters
+    tbl_end_no = int("{}".format(tmp_row_no))
+    table_name = "compare_parameter"
+    table_style = TableStyleInfo(
+        name='TableStyleMedium2',
+        showFirstColumn=False,
+        showLastColumn=False,
+        showRowStripes=True,
+        showColumnStripes=False
+    )
+    ref_area = "{}{}:{}{}".format(tbl_start_str, 1, "B", tbl_end_no)
+    ws = ws_add_table(ws, table_name, None, ref_area)
+
+    # set data: compare summary
+    # table header
+    row_no = int("{}".format(tbl_end_no)) + 2
+    tbl_start_no = int("{}".format(row_no))
+    # 比較対象ホスト, 比較結果:対象シートにリンク
+    ws.cell(row=row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60018")))
+    ws.cell(row=row_no, column=column_no + 1, value=wr_fmt(g.appmsg.get_api_message("MSG-60019")))
+
+    # table data
+    row_no = row_no + 1
+    for target_host in target_host_list:
+        column_no = 1
+
+        # create sheet: target_host
+        target_sheet = wr_fmt(target_host)
+        wb.create_sheet(target_sheet)
+
+        # compare diff flg convert
+        host_compare_diff_flg = compare_diff_flg.get(target_host)
+        if host_compare_diff_flg is True:
+            # 差分あり
+            str_host_compare_diff = g.appmsg.get_api_message("MSG-60020")
+            host_result_font = Font(color='FF0000', underline="single")
+        else:
+            # 差分なし
+            str_host_compare_diff = g.appmsg.get_api_message("MSG-60021")
+            host_result_font = Font(color='0000FF', underline="single")
+
+        # set summary list table data
+        ws.cell(row=row_no, column=column_no, value=wr_fmt(target_host))
+        ws.cell(row=row_no, column=column_no + 1, value=wr_fmt(str_host_compare_diff))
+        ws.cell(row=row_no, column=column_no).font = host_result_font
+        ws.cell(row=row_no, column=column_no + 1).font = host_result_font
+
+        # set link
+        target_cell = "{}{}".format("A", row_no)
+        target_link = "{}#'{}'!{}".format(file_name, target_sheet, "A1")
+        ws[target_cell].hyperlink = target_link
+        # ws[target_cell].value = '=HYPERLINK("' + target_link + '", "'+ str_host_compare_diff + '")'
+        row_no = row_no + 1
+
+        # set column width
+        ws = ws_auto_adjusted_width(ws)
+
+    # add table: compare summary
+    tbl_end_no = int("{}".format(row_no)) - 1
+    table_name = "host_link_table"
+    table_style = TableStyleInfo(
+        name='TableStyleMedium2',
+        showFirstColumn=False,
+        showLastColumn=False,
+        showRowStripes=True,
+        showColumnStripes=False
+    )
+    ref_area = "{}{}:{}{}".format(tbl_start_str, tbl_start_no, "B", tbl_end_no)
+    ws = ws_add_table(ws, table_name, None, ref_area)
+
+    return ws
+
+
+# Excel:シート作成 比較結果シート(対象ホスト)
+def ws_target_host_create_table(wb, file_name, exec_time, config, compare_data, compare_diff_flg, tbl_start_str, tbl_end_str):
+    """
+        crate sheet compare result :target host
+        ARGS:
+            wb, config, compare_data, compare_diff_flg, tbl_start_str, tbl_end_str
+        RETRUN:
+            ws
+    """
+
+    target_host_list = config.get("target_host_list")
+    target_column_info = config.get("target_column_info")
+    for target_host in target_host_list:
+        # set data: host compare detail
+        target_sheet = wr_fmt(target_host)
+        ws = wb[target_sheet]
+
+        # compare diff flg convert
+        host_compare_diff_flg = compare_diff_flg.get(target_host)
+        if host_compare_diff_flg is True:
+            ws.sheet_properties.tabColor = 'FF0000'
+
+        # set point
+        row_no = 1
+        column_no = 1
+        column_no = 1
+
+        # get target menu
+        val_1 = "1:{}".format(config.get("target_menus")[0])
+        val_2 = "2:{}".format(config.get("target_menus")[1])
+        val_1 = "{}:{}".format(g.appmsg.get_api_message("MSG-60025"), config.get("target_menus")[0])
+        val_2 = "{}:{}".format(g.appmsg.get_api_message("MSG-60026"), config.get("target_menus")[1])
+
+        # set table start point
+        tbl_start_no = int("{}".format(row_no))
+
+        # set table header
+        # メニュー名 差分 詳細
+        col_name = g.appmsg.get_api_message("MSG-60022")
+        str_diff = g.appmsg.get_api_message("MSG-60023")
+        other = g.appmsg.get_api_message("MSG-60024")
+        ws = ws_add_table_data_cells(ws, row_no, column_no, col_name, val_1, val_2, str_diff, other)
+
+        # set view table data
+        for target_column in target_column_info:
+            col_name = target_column.get("col_name")
+            compare_target_flg = target_column.get("compare_target_flg")
+            column_class_1 = target_column.get("column_class_1")
+            column_class_2 = target_column.get("column_class_2")
+            wrap_text_flg = False
+            if column_class_1 in ["MultiTextColumn"] or column_class_2 in ["MultiTextColumn"]:
+                wrap_text_flg = True
+
+            if col_name not in [g.appmsg.get_api_message("MSG-60022")]:
+                row_no, val_1, val_2, val_diff_flg, str_diff = \
+                    get_col_name_data(compare_data, row_no, target_host, col_name, compare_target_flg)
+
+                # set target data
+                ws = ws_add_table_data_cells(ws, row_no, column_no, col_name, val_1, val_2, str_diff, "", val_diff_flg, wrap_text_flg)
+
+        # set column width
+        ws = ws_auto_adjusted_width(ws)
+
+        # add table: host compare detail
+        tbl_end_no = int("{}".format(row_no))
+        table_name = "target_host_" + rand_str(10)
+
+        # add: dummy line target column 0
+        if tbl_start_no == tbl_end_no:
+            row_no += 1
+            ws = ws_add_table_data_cells(ws, row_no, column_no)
+            tbl_end_no = int("{}".format(row_no))
+
+        ref_area = "{}{}:{}{}".format(tbl_start_str, tbl_start_no, tbl_end_str, tbl_end_no)
+        ws = ws_add_table(ws, table_name, None, ref_area)
+
+        row_no = row_no + 2
+        ws.cell(row=row_no, column=column_no, value=wr_fmt("TOP"))
+        ws.cell(row=row_no, column=column_no).font = Font(color='0000FF', underline="single")
+        target_cell = "{}{}".format("A", row_no)
+        target_sheet = wr_fmt(g.appmsg.get_api_message("MSG-60010"))
+        target_link = "{}#'{}'!{}".format(file_name, target_sheet, "A1")
+        ws[target_cell].hyperlink = target_link
+    return ws
 
 
 # add filename lineno

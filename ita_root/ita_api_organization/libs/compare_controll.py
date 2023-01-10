@@ -157,15 +157,8 @@ def compare_execute(objdbca, menu, parameter, options={}):
         RETRUN:
             {"config":{},"compare_data":{},"compare_diff_flg":{}}
     """
-    ###
-    #parameter.setdefault("base_date_1", "")
-    #parameter.setdefault("base_date_2", "")
-    #parameter["base_date_1"] = "2022/06/01 12:00:00"
-    #parameter["base_date_2"] = "2022/06/04 12:00:00"
 
     try:
-        # ### # ["ERROR", "INFO", "DEBUG"]
-        #g.applogger.set_level("INFO")
 
         # set base config
         compare_config = _set_base_config(parameter)
@@ -2288,7 +2281,7 @@ def _create_outputfile(objdbca, compare_config, data, options):
         # clear tmp file
         if os.path.isfile(file_path):
             pass
-            # os.remove(file_path)
+            os.remove(file_path)
 
         result["file_name"] = file_name
         result["file_data"] = wbEncode
@@ -2386,11 +2379,11 @@ def get_workdir_path(strage_path, file_name):
 
 
 # Excel:Cell幅調整
-def ws_auto_adjusted_width(ws, default_length=8, add_length=2, coefficient=1.2):
+def ws_auto_adjusted_width(ws, default_length=8, limit_length=50, add_length=2, coefficient=1.2):
     """
         auto adjusted width
         ARGS:
-            ws, default_length=8, add_length=2, coefficient=1.2
+            ws,  limit_length=50, default_length=8, add_length=2, coefficient=1.2
         RETRUN:
             ws
     """
@@ -2404,6 +2397,8 @@ def ws_auto_adjusted_width(ws, default_length=8, add_length=2, coefficient=1.2):
                 max_length = tmp_length
         if default_length > max_length:
             max_length = default_length
+        if max_length > limit_length:
+            max_length = limit_length
         adjusted_width = (max_length + add_length) * coefficient
         column = get_column_letter(column)
         ws.column_dimensions[column].width = adjusted_width

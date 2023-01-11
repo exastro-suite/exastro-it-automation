@@ -106,8 +106,54 @@ def post_compare_execute(organization_id, workspace_id, menu, body=None):  # noq
         """
 
         """
+    options = {}
+    options.setdefault("compare_mode", "normal")
+    result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
 
-    result_data = compare_controll.compare_execute(objdbca, menu, parameter)
+    return result_data,
+
+
+@api_filter
+def post_compare_execute_output(organization_id, workspace_id, menu, body=None):  # noqa: E501
+    """post_compare_execute_output
+
+    比較実行ファイル出力 # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param menu: メニュー名
+    :type menu: str
+    :param body:
+    :type body: dict | bytes
+
+    :rtype: InlineResponse20021
+    """
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['17']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    result_data = {}
+    parameter = {}
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        parameter = body
+
+    options = {}
+    options.setdefault("compare_mode", "nomal")
+    options.setdefault("output_flg", True)
+    result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
 
     return result_data,
 
@@ -153,8 +199,8 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  
         """
 
         """
-    options = {"compare_mode": "file"}
-
+    options = {}
+    options.setdefault("compare_mode", "file")
     result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
 
     return result_data,

@@ -4087,6 +4087,85 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/output/:
+    post:
+      tags:
+        - Compare Controll
+      description: 比較実行ファイル出力
+      operationId: postCompareExecuteOutput
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 比較条件を設定
+              properties:
+                compare:
+                  type: string
+                  example: "compare_name"
+                base_date_1:
+                  type: string
+                  example: "YYYY/MM/DD hh:mm:ss"
+                base_date_2:
+                  type: string
+                  example: "YYYY/MM/DD hh:mm:ss"
+                host:
+                  items: {
+                    example: host_name
+                  }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    properties:
+                      file_name:
+                        type: string
+                        example: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
+                      file_data:
+                        type: string
+                        example: "Compare result base64 string"
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/:
     post:
       tags:

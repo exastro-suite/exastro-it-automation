@@ -3635,6 +3635,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/output/:
+    post:
+      tags:
+      - Compare Controll
+      description: 比較実行ファイル出力
+      operationId: post_compare_execute_output
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/execute_output_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_21'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/:
     post:
       tags:
@@ -5079,6 +5135,38 @@ components:
           items:
             example: host_name
       description: 比較条件を設定
+    execute_output_body:
+      properties:
+        compare:
+          type: string
+          example: compare_name
+        base_date_1:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        base_date_2:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        host:
+          type: array
+          items:
+            example: host_name
+      description: 比較条件を設定
+    inline_response_200_21:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_21_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
+          file_data: Compare result base64 string
+        message: message
     execute_file_body:
       properties:
         compare:
@@ -5733,4 +5821,16 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
+    inline_response_200_21_data:
+      type: object
+      properties:
+        file_name:
+          type: string
+          example: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
+        file_data:
+          type: string
+          example: Compare result base64 string
+      example:
+        file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
+        file_data: Compare result base64 string
 

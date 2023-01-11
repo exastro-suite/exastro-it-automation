@@ -1003,7 +1003,7 @@ class SubValueAutoReg():
                                                 # TPF/CPF変数カラム判定
                                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                                        col_val = "'{{" + col_val + "}}'"
+                                                        col_val = "'{{ " + col_val + " }}'"
 
                                     # オブジェクト解放
                                     del objmenu
@@ -1042,7 +1042,7 @@ class SubValueAutoReg():
                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
                                         if col_val is not None:
-                                            col_val = "'{{" + col_val + "}}'"
+                                            col_val = "'{{ " + col_val + " }}'"
 
                                 # オブジェクト解放
                                 del objmenu

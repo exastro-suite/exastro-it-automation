@@ -233,8 +233,21 @@ background-color: #F2F2F2!important;
 .differenceTr .ci {
 opacity: .3;
 }
+
+
+.diffModal .dialogBody {
+overflow: hidden;
+}
+.d2h-wrapper {
+height: 100%;
+}
 .d2h-file-wrapper {
+overflow: auto;
+height: 100%;
 margin-bottom: 0!important;
+}
+.d2h-code-wrapper {
+position: relative;
 }
 .d2h-file-name {
 padding: 1px!important;

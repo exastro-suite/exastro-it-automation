@@ -234,3 +234,26 @@ letter-spacing: .5px;
 font-size: 14px;
 }
 */
+
+.dialogPrintMode #container,
+.dialogPrintMode .dialogHeader,
+.dialogPrintMode .dialogFooter {
+display: none;
+}
+.dialogPrintMode #modalContainer {
+position: static;
+height: auto;
+}
+.dialogPrintMode .modalOverlay {
+height: auto;
+padding: 0;
+}
+.dialogPrintMode .dialog {
+width: 100%!important;
+}
+
+.dialogPrintMode .d2h-wrapper,
+.dialogPrintMode .d2h-file-wrapper,
+.dialogPrintMode .d2h-files-diff {
+height: auto;
+}

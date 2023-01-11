@@ -54,6 +54,7 @@ RUN dnf install -y \
     chardet \
     connexion[swagger-ui] \
     pycryptodome \
+    dictdiffer \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \
@@ -84,13 +85,6 @@ RUN dnf install -y \
     flake8 \
     autopep8 \
     ansible \
-    ansible \
-    psutil \
-    deepdiff \
-    jsonpatch \
-    jsondiff \
-    dictdiffer \
-    pandas \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 

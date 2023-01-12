@@ -21,7 +21,7 @@ import yaml
 import glob
 import inspect
 import copy
-import traceback
+# import traceback
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException, ValidationException
@@ -49,6 +49,7 @@ from libs import common_functions as cm
 ansc_const = AnscConst()
 
 driver_error_log_file = ""
+
 
 def backyard_child_main(organization_id, workspace_id):
     """
@@ -122,9 +123,10 @@ def backyard_child_main(organization_id, workspace_id):
         # 例外ログ生成
         exception_driver_log(e, driver_error_log_file)
 
-        update_status_error(wsDb, execution_no)
+        update_status_error(wsDb, ansc_const, execution_no)
         g.applogger.info(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise Exception(e)
+
 
 def update_status_error(wsDb: DBConnectWs, ansConstObj, execution_no):
     """
@@ -176,9 +178,6 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
     execution_no = execute_data["EXECUTION_NO"]
     run_mode = execute_data['RUN_MODE']
 
-    # ディレクトリを生成
-    container_driver_path = getAnsibleExecutDirPath(ansc_const, execution_no)
-
     # ANSIBLEインタフェース情報を取得
     retBool, result = cm.get_ansible_interface_info(wsDb)
     if retBool is False:
@@ -224,7 +223,6 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
         g.applogger.info(g.appmsg.get_log_message("BKY-10003", [execution_no]))
 
     # 処理対象の作業インスタンス実行
-    g.applogger.debug("execute instance_execution")
     retBool, execute_data, result_data = instance_execution(wsDb, ansdrv, ans_if_info, execute_data, driver_id)
 
     # 実行結果から、処理対象の作業インスタンスのステータス更新
@@ -268,7 +266,6 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
             return False, execute_data
         clone_execute_data = execute_data
         # 実行結果の確認
-        g.applogger.debug("execute instance_checkcondition")
         retBool, clone_execute_data, db_update_need = instance_checkcondition(wsDb, ansdrv, ans_if_info, clone_execute_data, driver_id, tower_host_list)  # noqa: E501
 
         # ステータスが更新されたか判定
@@ -301,6 +298,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
     return True,
 
+
 def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id):
     global ansc_const
 
@@ -332,7 +330,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     # ansdrv.setAnsibleExecuteUser(ans_exec_user)
 
     winrm_id = ""
-    if driver_id == ansc_const.DF_LEGACY_ROLE_DRIVER_ID:
+    if driver_id in [ansc_const.DF_LEGACY_ROLE_DRIVER_ID, ansc_const.DF_LEGACY_DRIVER_ID]:
         winrm_id = execute_data["I_ANS_WINRM_ID"]
 
     # データベースからansibleで実行する情報取得し実行ファイル作成
@@ -657,7 +655,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             g.applogger.debug(g.appmsg.get_log_message("MSG-10743", [execution_no]))
 
             # 戻り値は確認しない
-            ret = AnsibleTowerExecution(
+            AnsibleTowerExecution(
                 driver_id,
                 ansc_const.DF_DELETERESOURCE_FUNCTION,
                 ans_if_info,
@@ -720,7 +718,10 @@ def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, dr
     def_vars_list = {}
     def_array_vars_list = {}
 
-    result = ansdrv.CreateAnsibleWorkingDir(ansc_const.vg_OrchestratorSubId_dir, execution_no, operation_id, hostaddres_type,
+    result = ansdrv.CreateAnsibleWorkingDir(ansc_const.vg_OrchestratorSubId_dir,
+                                            execution_no,
+                                            operation_id,
+                                            hostaddres_type,
                                             winrm_id,
                                             movement_id,
                                             role_rolenamelist,
@@ -780,15 +781,15 @@ def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, dr
     if driver_id == ansc_const.DF_LEGACY_DRIVER_ID or driver_id == ansc_const.DF_PIONEER_DRIVER_ID:
         #  データベースから変数情報を取得する。
         result = ansdrv.getDBVarList(
+            execution_no,
             movement_id,
             operation_id,
             host_vars,
             pioneer_template_host_vars,
             vault_vars,
             vault_host_vars_file_list,
-            host_child_vars,
             DB_child_vars_master)
-        retBool, host_vars, pioneer_template_host_vars, vault_vars, vault_host_vars_file_list, host_child_vars, DB_child_vars_master = result
+        retBool, host_vars, pioneer_template_host_vars, vault_vars, vault_host_vars_file_list, DB_child_vars_master = result
         if retBool is False:
             return False, g.appmsg.get_log_message("BKY-00004", ["CreateAnsibleExecFiles.getDBVarList", "error occured"])
     elif driver_id == ansc_const.DF_LEGACY_ROLE_DRIVER_ID:
@@ -826,16 +827,16 @@ def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, dr
         exec_mode,
         exec_playbook_hed_def,
         exec_option)
-    if retBool is False:
+    if result is False:
         return False, g.appmsg.get_log_message("BKY-00004", ["CreateAnsibleExecFiles.CreateAnsibleWorkingFiles", "error occured"])
 
     return True, ""
 
 
 def getMovementAnsibleExecOption(wsDb, movement_id):
+    global ansc_const
     condition = 'WHERE `DISUSE_FLAG`=0 AND MOVEMENT_ID = %s'
-    records = wsDb.table_select('V_ANSR_MOVEMENT', condition, [movement_id])
-
+    records = wsDb.table_select(ansc_const.vg_ansible_pattern_listDB, condition, [movement_id])
     return records[0]['ANS_EXEC_OPTIONS']
 
 
@@ -874,7 +875,7 @@ def getAnsiblePlaybookOptionParameter(wsDb, option_parameter):
                         break
 
         if hit is False:
-            err_msg_arr.append(g.appmsg.get_log_message("MSG-10634", [chk_param_string.strip()]));
+            err_msg_arr.append(g.appmsg.get_log_message("MSG-10634", [chk_param_string.strip()]))
 
     if len(err_msg_arr) != 0:
         # err_msg
@@ -1063,6 +1064,7 @@ def getJobTemplateProperty(wsDb):
 
     return res
 
+
 def makeJobTemplateProperty(key_string, property_type, property_name, param_arr, err_msg_arr, excist_list, tag_skip_value_key, verbose_cnt):
     res_retBool = True
 
@@ -1122,6 +1124,7 @@ def makeJobTemplateProperty(key_string, property_type, property_name, param_arr,
 
     return res_retBool, err_msg_arr, excist_list, tag_skip_value_key, verbose_cnt
 
+
 def makeJobTemplatePropertyParameterAry(key_string, property_type, property_name, JobTemplatePropertyParameterAry, param_arr, verbose_cnt):
     retBool = True
 
@@ -1172,6 +1175,7 @@ def makeExtraVarsParameter(ext_var_string):
         pass
 
     return False
+
 
 def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
     ########################################

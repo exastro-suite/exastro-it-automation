@@ -18,7 +18,7 @@ from flask import g
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import RestApiCaller
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApirPassThrough import AnsibleTowerRestApirPassThrough
+from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiPassThrough import AnsibleTowerRestApiPassThrough
 
 
 def DBUpdate(Contents_array, TableName, TableRows, PkeyItem, NameItem, IDItem, dbAccess, is_register_history):
@@ -189,7 +189,7 @@ def backyard_main(organization_id, workspace_id):
         # 接続トークンに対応したユーザー情報取得
         ############################################################
         url = "/api/v2/me/"
-        response_array = AnsibleTowerRestApirPassThrough.get(restApiCaller, url)
+        response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
         if not response_array['success']:
             RestResultLog(restApiCaller.getRestResultList())
             raise Exception("Faild to get users data from %s" % (url))
@@ -220,7 +220,7 @@ def backyard_main(organization_id, workspace_id):
             # ユーザーに紐づく組織情報取得
             ############################################################
             url = users_response_array['responseContents']['results'][0]['related']['organizations']
-            response_array = AnsibleTowerRestApirPassThrough.get(restApiCaller, url)
+            response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
             if not response_array['success']:
                 RestResultLog(restApiCaller.getRestResultList())
                 raise Exception("Faild to get organization data from %s" % (url))
@@ -248,7 +248,7 @@ def backyard_main(organization_id, workspace_id):
             # 組織で利用可能なインスタンスグループ情報取得
             ############################################################
             url = org_response_array['responseContents']['results'][0]['related']['instance_groups']
-            response_array = AnsibleTowerRestApirPassThrough.get(restApiCaller, url)
+            response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
             if not response_array['success']:
                 RestResultLog(restApiCaller.getRestResultList())
                 raise Exception("Faild to get instance groups data from %s" % (url))
@@ -372,7 +372,7 @@ def backyard_main(organization_id, workspace_id):
             # 該当ユーザーが利用可能な実行環境取得
             # /api/v2/organizations/12/execution_environments/だと組織共通の実行環境が取得できない
             url = "/api/v2/execution_environments/"
-            response_array = AnsibleTowerRestApirPassThrough.get(restApiCaller, url)
+            response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
 
             if not response_array['success']:
                 RestResultLog(restApiCaller.getRestResultList())

@@ -37,7 +37,7 @@ from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.Ansible
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInstanceGroups import AnsibleTowerRestApiInstanceGroups
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiCredentials import AnsibleTowerRestApiCredentials
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiProjects import AnsibleTowerRestApiProjects
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApirPassThrough import AnsibleTowerRestApirPassThrough
+from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiPassThrough import AnsibleTowerRestApiPassThrough
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInventories import AnsibleTowerRestApiInventories
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInventoryHosts import AnsibleTowerRestApiInventoryHosts
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiJobTemplates import AnsibleTowerRestApiJobTemplates
@@ -1197,7 +1197,7 @@ class ExecuteDirector():
             # エラーログはwait_for_create_projectで出力
             return -1
 
-        response_array = AnsibleTowerRestApirPassThrough.post(self.restApiCaller, update_url)
+        response_array = AnsibleTowerRestApiPassThrough.post(self.restApiCaller, update_url)
         if not response_array['success']:
             errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
             self.errorLogOut(errorMessage)
@@ -2299,7 +2299,7 @@ class ExecuteDirector():
         # プロジェクト更新の結果判定
         # project_updatesオブジェクトは明示的に削除する必要なし
         while True:
-            response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url)
+            response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
             if not response_array['success']:
                 errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                 self.errorLogOut(errorMessage)
@@ -2316,7 +2316,7 @@ class ExecuteDirector():
 
             elif response_array['responseContents']['status'] in ["failed", "error"]:
                 url = "%s?format=txt" % (response_array['responseContents']['related']['stdout'])
-                response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url, True)
+                response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url, True)
                 if not response_array['success']:
                     errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)

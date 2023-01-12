@@ -1119,9 +1119,12 @@ class ExecuteDirector():
             credential_type_id = hostInfo['CREDENTIAL_TYPE_ID']
 
             # 配列のキーに使いたいだけ
+            # 配列のキーに使いたいだけ
+            # 同じワードを同じエンコード値にならないので、デコードした値で重複確認.
+            enc_password = ky_decrypt(password)
             key = (
                 'username_%s_password_%s_sshPrivateKey_%s_sshPrivateKeyPass_%s_instanceGroupId_%s_credential_type_id_%s'
-            ) % (username, password, sshPrivateKey, sshPrivateKeyPass, instanceGroupId, credential_type_id)
+            ) % (username, enc_password, sshPrivateKey, sshPrivateKeyPass, instanceGroupId, credential_type_id)
             credential = {
                 "username": username,
                 "password": password,
@@ -1871,7 +1874,6 @@ class ExecuteDirector():
                 contentArray.append("  credential_name: %s" % (credentialData['name']))
                 contentArray.append("  credential_type: %s" % (credentialData['credential_type']))
                 contentArray.append("  credential_inputs: %s" % (json.dumps(credentialData['inputs'])))
-                contentArray.append("  virtualenv: %s" % (projectData['custom_virtualenv']))
                 if self.workflowJobAry[wfJobId]['is_sliced_job'] is True:
                     contentArray.append("  job_slice_count: %s" % (JobData["job_slice_count"]))
 
@@ -1886,9 +1888,12 @@ class ExecuteDirector():
                     return False
 
                 instance_group = ""
-                if 'responseContents' in response_array and len(response_array['responseContents']) > 0 \
-                and 'name' in response_array['responseContents'][0] and response_array['responseContents'][0]['name'] is True:
-                    instance_group = response_array['responseContents'][0]['name']
+                if 'responseContents' in response_array:
+                    for insgroup_row in response_array['responseContents']:
+                        if 'name' in insgroup_row:
+                            if len(instance_group) > 0:
+                                instance_group += ", "
+                            instance_group += insgroup_row['name']
 
                 contentArray.append("  instance_group: %s" % (instance_group))
 

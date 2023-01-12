@@ -99,44 +99,47 @@ def get_compares_data(objdbca, menu):
         bind_list.append(taget_menu_id)
 
     sql_str = " UNION ".join([str(tmp_sql) for tmp_sql in list_sql])
-    rows = objdbca.sql_execute(sql_str, bind_list)
-    table_names = []
-    for row in rows:
-        table_name = row.get("TABLE_NAME")
-        table_names.append(table_name)
 
-    # get host list
-    sql_str = ""
-    bind_list = []
-    list_sql = []
-    for table_name in table_names:
-        tmp_sql_str = textwrap.dedent("""
-            SELECT
-                `TAB_A`.`HOST_ID`,
-                `TAB_B`.`HOST_NAME`
-            FROM
-                `{table_name}` `TAB_A`
-            LEFT JOIN `T_ANSC_DEVICE` `TAB_B` ON ( `TAB_A`.`HOST_ID` = `TAB_B`.`SYSTEM_ID` )
-            WHERE `TAB_A`.`DISUSE_FLAG` <> 1
-            AND `TAB_B`.`DISUSE_FLAG` <> 1
-        """).format(table_name=table_name).strip()
-        list_sql.append(tmp_sql_str)
-
-    sql_str = " UNION ".join([str(tmp_sql) for tmp_sql in list_sql])
-
-    # set result host data
-    rows = objdbca.sql_execute(sql_str, bind_list)
     host_ids = []
+    result["list"].setdefault("host", [])
     result["dict"].setdefault("host", {})
-    for row in rows:
-        tmp_id = row.get("HOST_ID")
-        tmp_name = row.get("HOST_NAME")
-        host_ids.append(tmp_name)
-        result["dict"]["host"].setdefault(tmp_id, tmp_name)
+    if sql_str:
+        rows = objdbca.sql_execute(sql_str, bind_list)
+        table_names = []
+        for row in rows:
+            table_name = row.get("TABLE_NAME")
+            table_names.append(table_name)
+
+        # get host list
+        sql_str = ""
+        bind_list = []
+        list_sql = []
+        for table_name in table_names:
+            tmp_sql_str = textwrap.dedent("""
+                SELECT
+                    `TAB_A`.`HOST_ID`,
+                    `TAB_B`.`HOST_NAME`
+                FROM
+                    `{table_name}` `TAB_A`
+                LEFT JOIN `T_ANSC_DEVICE` `TAB_B` ON ( `TAB_A`.`HOST_ID` = `TAB_B`.`SYSTEM_ID` )
+                WHERE `TAB_A`.`DISUSE_FLAG` <> 1
+                AND `TAB_B`.`DISUSE_FLAG` <> 1
+            """).format(table_name=table_name).strip()
+            list_sql.append(tmp_sql_str)
+
+        sql_str = " UNION ".join([str(tmp_sql) for tmp_sql in list_sql])
+
+        # set result host data
+        rows = objdbca.sql_execute(sql_str, bind_list)
+        for row in rows:
+            tmp_id = row.get("HOST_ID")
+            tmp_name = row.get("HOST_NAME")
+            host_ids.append(tmp_name)
+            result["dict"]["host"].setdefault(tmp_id, tmp_name)
 
     host_ids = list(set(host_ids))
     host_ids.sort()
-    result["list"].setdefault("host", host_ids)
+    result["list"]["host"] = host_ids
 
     return result
 

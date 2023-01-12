@@ -194,6 +194,12 @@ fetch: function( url, token, method = 'GET', json ) {
     const f = function( u ){
         return new Promise(function( resolve, reject ){
             
+            // ダミー用処理
+            if ( u === 'dummy') {
+                resolve('dummy');
+                return;
+            }
+            
             if ( windowFlag ) u = cmn.getRestApiUrl( u );
             
             const init = {
@@ -751,7 +757,7 @@ createStorageKey: function( key ) {
    Alert, Confirm
 ##################################################
 */
-alert: function( title, elements, type = 'alert', buttons = { ok: { text: getMessage.FTE10043, action: 'normal'}} ) {
+alert: function( title, elements, type = 'alert', buttons = { ok: { text: getMessage.FTE10043, action: 'normal'}}, width = '640px') {
     return new Promise(function( resolve ){
         const funcs = {};
         
@@ -760,7 +766,7 @@ alert: function( title, elements, type = 'alert', buttons = { ok: { text: getMes
             dialog = null;
             resolve( true );
         };
-        if ( type === 'confirm') {
+        if ( type !== 'alert') {
             funcs.cancel = function(){
                 dialog.close();
                 dialog = null;
@@ -775,12 +781,13 @@ alert: function( title, elements, type = 'alert', buttons = { ok: { text: getMes
                 close: false,
                 move: false
             },
+            width: width,
             footer: {
                 button: buttons
             }
         };
         let dialog = new Dialog( config, funcs );
-        dialog.open(`<div class="alertMessage">${elements}</div>`);
+        dialog.open(`<div class="alertMessage ${type}Container">${elements}</div>`);
         
         setTimeout(function(){
             if ( dialog ) {
@@ -789,15 +796,15 @@ alert: function( title, elements, type = 'alert', buttons = { ok: { text: getMes
         }, 500 )
     });
 },
-iconConfirm: function( icon, title, elements ) {
+iconConfirm: function( icon, title, elements, okText = getMessage.FTE10058, cancelText = getMessage.FTE10026 ) {
     elements = `
     <div class="alertMessageIconBlock">
         <div class="alertMessageIcon">${cmn.html.icon( icon )}</div>
         <div class="alertMessageBody">${cmn.escape( elements, true )}</div>
     </div>`;
     return cmn.alert( title, elements , 'confirm', {
-        ok: { text: getMessage.FTE10058, action: 'default', style: 'width:120px', className: 'dialogPositive'},
-        cancel: { text: getMessage.FTE10026, action: 'negative', style: 'width:120px'}
+        ok: { text: okText, action: 'default', style: 'width:120px', className: 'dialogPositive'},
+        cancel: { text: cancelText, action: 'negative', style: 'width:120px'}
     });
 },
 /*
@@ -1387,7 +1394,7 @@ html: {
     button: function( element, className, attrs = {}, option = {}) {
         const attr = bindAttrs( attrs );
         className = classNameCheck( className, 'button');
-                
+
         const html = [ element ];
         if ( option.toggle ) {
             className.push('toggleButton');
@@ -1565,14 +1572,14 @@ html: {
             + `<label for="${id}" class="checkboxLabel"></label>`
         + `</div>`;
     },
-    checkboxText: function( className, value, name, id, attrs = {}) {
+    checkboxText: function( className, value, name, id, attrs = {}, text ) {
         const attr = inputCommon( value, name, attrs, id );
         attr.push(`class="${classNameCheck( className, 'checkboxText').join(' ')}"`);
         
         return ``
         + `<div class="checkboxTextWrap">`
             + `<input type="checkbox" ${attr.join(' ')}>`
-            + `<label for="${id}" class="checkboxTextLabel"><span class="checkboxTextMark"></span>${value}</label>`
+            + `<label for="${id}" class="checkboxTextLabel"><span class="checkboxTextMark"></span><span class="checkboxTextText">${( text )? text: value}</span></label>`
         + `</div>`;
     },
     radio: function( className, value, name, id, attrs = {}) {
@@ -1585,11 +1592,20 @@ html: {
             + `<label for="${id}" class="radioLabel"></label>`
         + `</div>`;
     },
+    radioText: function( className, value, name, id, attrs = {}, text ) {
+        const attr = inputCommon( value, name, attrs, id );
+        attr.push(`class="${classNameCheck( className, 'radioText').join(' ')}"`);
+        
+        return ``
+        + `<div class="radioTextWrap">`
+            + `<input type="radio" ${attr.join(' ')}>`
+            + `<label for="${id}" class="radioTextLabel"><span class="radioTextMark"></span><span class="radioTextText">${( text )? text: value}</span></label>`
+        + `</div>`;
+    },
     'select': function( list, className, value, name, attrs = {}, option = {}) {
         const selectOption = [],
               attr = inputCommon( null, name, attrs );
-        
-        if ( !option.select2 === true ) {
+        if ( option.select2 !== true ) {
             className = classNameCheck( className, 'select input');
         } else {
             className = classNameCheck( className );
@@ -2175,7 +2191,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
         };
         
         if ( !modalInstance[ modalId ] ) {
-            fn.initSelectModal( title, menu, config ).then(function( modalAndTable ){
+            fn.initSelectModal( modalId, title, menu, config ).then(function( modalAndTable ){
                 modalInstance[ modalId ] = modalAndTable;
                 modalInstance[ modalId ].modal.btnFn = modalFuncs;
             });
@@ -2191,7 +2207,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
    tableとmodalのインスタンスを返す
 ##################################################
 */
-initSelectModal: function( title, menu, selectConfig ) {
+initSelectModal: function( modalId, title, menu, selectConfig ) {
     
     return new Promise(function( resolve, reject ) {
         const modalConfig = {
@@ -2221,11 +2237,13 @@ initSelectModal: function( title, menu, selectConfig ) {
             params.selectNameKey = selectConfig.selectNameKey;
             params.restFilter = selectConfig.filter;
             params.restFilterPulldown = selectConfig.filterPulldown;
+            if ( selectConfig.selectOtherKeys ) params.selectOtherKeys = selectConfig.selectOtherKeys;
+            if ( selectConfig.selectType ) params.selectType = selectConfig.selectType;
             
             // 取得したinfoのSubキー確認
             if ( selectConfig.sub ) info = info[ selectConfig.sub ];
 
-            const tableId = `SE_${menu.toUpperCase()}${( selectConfig.sub )? `_${selectConfig.sub}`: ``}`,
+            const tableId = `${modalId}_${menu.toUpperCase()}${( selectConfig.sub )? `_${selectConfig.sub}`: ``}`,
                   table = new DataTable( tableId, 'select', info, params );
             modal.setBody( table.setup() );
             
@@ -2421,7 +2439,7 @@ gotoErrPage: function( message ) {
         } else {
             window.alert('Unknown error.');
         }
-        window.location.href = './system_error/';
+        // window.location.href = './system_error/';
     } else {
         if ( message ) {
             console.error( message );
@@ -2437,16 +2455,32 @@ gotoErrPage: function( message ) {
 // 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-contentLoadingStart() {
+contentLoadingStart: function() {
     document.body.classList.add('loading');
     contentLoadingFlag = true;
 },
-contentLoadingEnd() {
+contentLoadingEnd: function() {
     document.body.classList.remove('loading');
     contentLoadingFlag = false;
 },
-checkContentLoading() {
+checkContentLoading: function() {
     return contentLoadingFlag;
+},
+
+filterEncode: function( json ) {
+    try {
+        return encodeURIComponent( JSON.stringify( json ) );
+    } catch( error ) {
+        return '';
+    }
+},
+
+jsonStringify: function( json ) {
+    try {
+        return JSON.stringify( json );
+    } catch( error ) {
+        return '';
+    }
 },
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2477,17 +2511,9 @@ modalIframe: function( menu, title, option = {}){
             }
         };
         
-        const filterEncode = function( json ) {
-            try {
-                return encodeURIComponent( JSON.stringify( json ) );
-            } catch( error ) {
-                return '';
-            }
-        };
-        
         const url = [`?menu=${menu}`];
         if ( option.filter ) {
-            url.push(`&filter=${filterEncode( option.filter )}`);
+            url.push(`&filter=${cmn.filterEncode( option.filter )}`);
         }
         if ( option.iframeMode ) {
             url.push(`&iframeMode=${option.iframeMode}`);

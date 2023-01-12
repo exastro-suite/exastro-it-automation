@@ -656,7 +656,12 @@ tableHtml() {
             tb.data.filterHeadColspan++;
         break;
         case 'select': case 'execute':
-            html[0] += fn.html.cell(getMessage.FTE00032, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
+            if ( tb.mode === 'select' && tb.params.selectType === 'multi') {
+                const selectButton = fn.html.button('', 'rowSelectButton');
+                html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
+            } else {
+                html[0] += fn.html.cell(getMessage.FTE00032, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
+            }
             tb.data.filterHeadColspan++;
         break;
         case 'edit': {
@@ -1477,6 +1482,25 @@ setTableEvents() {
             
             $select.change();
         });
+        
+        // select欄フォーカス時にselect2を適用する
+        tb.$.tbody.on('focus.select2', '.tableEditInputSelect', function(){
+            const $select = $( this );
+            if ( !$select.is('.select2-hidden-accessible') ) {
+                const $value = $select.prev('.tableEditInputSelectValue'),
+                      width = $value.outerWidth();
+                
+                $select.off('focus.select2');
+                $value.remove();
+
+                $select.select2({
+                    dropdownAutoWidth: false,
+                    width: width
+                }).select2('open');
+
+                $select.change();
+            }
+        });
     }
     
     /*
@@ -1484,7 +1508,7 @@ setTableEvents() {
     VIEW or EDIT モード
     ------------------------------
     */
-    if ( tb.mode === 'view' || tb.mode === 'edit') {
+    if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'view' || tb.mode === 'edit') {
         
         // 行選択チェックボックスの外がクリックされても変更する
         tb.$.thead.find('.tHeadRowSelect').on('click', function( e ){
@@ -1495,16 +1519,21 @@ setTableEvents() {
                 }
             }
         });
-        tb.$.tbody.on('click', '.tBodyRowSelect', function( e ){
+        const rowSelect = function( e ) {
             if ( !tb.checkWork ) {
-                const $check = $( this ).find('.tBodyRowCheck'),
+                const $wrap = $( this ),
+                      $check = ( $wrap.is('.tBodyTrRowSelect') )?
+                          $wrap.find('.tBodyRowSelect').find('.tBodyRowCheck'):
+                          $wrap.find('.tBodyRowCheck'),
                       checked = $check.prop('checked');
 
                 if ( !$( e.target ).closest('.checkboxWrap').length ) {
                     $check.focus().prop('checked', !checked ).change();
                 }
             }
-        });
+        };
+        const target = ( tb.mode === 'select' || tb.mode === 'execute')? '.tBodyTrRowSelect': '.tBodyRowSelect';
+        tb.$.tbody.on('click', target, rowSelect );
         
         // 一括選択
         tb.$.thead.find('.rowSelectButton').on('click', function(){
@@ -1531,14 +1560,29 @@ setTableEvents() {
                 const $check = $( this ),
                       checked = $check.prop('checked'),
                       id = $check.val(),
-                      checkMode = ( tb.mode === 'edit')? 'edit': 'view';
-
-                if ( checked ) {
-                    tb.select[ checkMode ].push( id );
+                      checkMode = ( tb.mode === 'edit')? 'edit': ( tb.mode === 'select')? 'select': 'view';
+                
+                
+                if ( tb.mode === 'select') {
+                    if ( checked ) {
+                        tb.select[tb.mode].push({
+                            id: id,
+                            name: $check.attr('data-selectname')
+                        });
+                    } else {
+                        const index = tb.select[tb.mode].findIndex(function(obj){ return obj.id === id });
+                        if ( index !== -1 ) {
+                            tb.select[ checkMode ].splice( index, 1 );
+                        }
+                    }
                 } else {
-                    const index = tb.select[ checkMode ].indexOf( id );
-                    if ( index !== -1 ) {
-                        tb.select[ checkMode ].splice( index, 1 );
+                    if ( checked ) {
+                        tb.select[ checkMode ].push( id );
+                    } else {
+                        const index = tb.select[ checkMode ].indexOf( id );
+                        if ( index !== -1 ) {
+                            tb.select[ checkMode ].splice( index, 1 );
+                        }
                     }
                 }
 
@@ -1547,6 +1591,9 @@ setTableEvents() {
                 // メニューボタンを活性化
                 if ( checkMode === 'edit' ) {
                     tb.editModeMenuCheck();            
+                } else if ( tb.mode === 'select') {
+                    tb.selectModeMenuCheck();
+                    tb.$.container.trigger(`${tb.id}selectChange`);
                 }
             }
         });
@@ -1556,11 +1603,14 @@ setTableEvents() {
     SELECT or EXECUTEモード
     ------------------------------
     */
-    if ( tb.mode === 'select' || tb.mode === 'execute') {
+    if ( ( tb.mode === 'select' && tb.params.selectType === undefined ) || tb.mode === 'execute') {
         // 行選択ラジオボタンの外がクリックされても変更する
-        tb.$.tbody.on('click', '.tBodyRowRadioSelect', function( e ){
+        const radioRowSelect = function( e ) {
             if ( !tb.checkWork ) {
-                const $radio = $( this ).find('.tBodyRowRadio'),
+                const $wrap = $( this ),
+                      $radio = ( $wrap.is('.tBodyTrRowSelect') )?
+                          $wrap.find('.tBodyRowRadioSelect').find('.tBodyRowRadio'):
+                          $wrap.find('.tBodyRowRadio'),
                       checked = $radio.prop('checked');
                       
                 if ( !checked ) {
@@ -1570,8 +1620,11 @@ setTableEvents() {
                 } else {
                     $radio.focus();
                 }
-            }
-        });
+            }            
+        };
+        const target = ( tb.mode === 'select' || tb.mode === 'execute')? '.tBodyTrRowSelect': '.tBodyRowRadioSelect';
+        tb.$.tbody.on('click', target, radioRowSelect );
+        
         // 行選択ラジオ
         tb.$.tbody.on('change', '.tBodyRowRadio', function(){
             if ( !tb.checkWork ) {
@@ -1584,6 +1637,14 @@ setTableEvents() {
                     id: id,
                     name: name
                 };
+                
+                if ( tb.params.selectOtherKeys ) {
+                    tb.select[tb.mode][0].selectOtherKeys = {};
+                    for ( const selectKey of tb.params.selectOtherKeys ) {
+                        tb.select[tb.mode][0].selectOtherKeys[ selectKey ] = $radio.attr(`data-${selectKey}`);
+                    }
+                }                
+                
                 tb.selectModeMenuCheck();
                 tb.$.container.trigger(`${tb.id}selectChange`);
             }
@@ -1811,7 +1872,7 @@ selectModeMenuCheck() {
     const tb = this;
     
     const $button = tb.$.header.find('.tableAdvance');
-    
+    console.log( tb.select[ tb.mode ] )
     if ( tb.select[ tb.mode ].length ) {
         $button.prop('disabled', false );
     } else {
@@ -2235,7 +2296,7 @@ setTbody() {
         tb.editModeMenuCheck();
     }
     
-    if ( tb.mode === 'edit' || tb.mode === 'view') {
+    if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'edit' || tb.mode === 'view') {
         tb.checkSelectStatus();
     }
     
@@ -2401,15 +2462,22 @@ tbodyHtml() {
             }
             // selectモード
             if ( tb.mode === 'select' || tb.mode === 'execute') {
+                rowClassName.push('tBodyTrRowSelect');
                 attrs.selectname = fn.cv( rowParameter[ tb.params.selectNameKey ], '', true );
+                if ( tb.params.selectOtherKeys ) {
+                    const selectParams = {};
+                    for ( const selectKey of tb.params.selectOtherKeys ) {
+                        attrs[selectKey] = fn.cv( rowParameter[ selectKey ], '', true );
+                    }
+                }
             }
             const idName = ( type === 'check')? `${tb.id}__ROWCHECK`: `${tb.id}__ROWRADIO`,
                   className = ( type === 'check')? 'tBodyRowCheck': 'tBodyRowRadio',
-                  rowClassName = ( type === 'check')? 'tBodyRowSelect': 'tBodyRowRadioSelect';
+                  rowSelectClassName = ( type === 'check')? 'tBodyRowSelect': 'tBodyRowRadioSelect';
 
             const checkboxId = `${idName}__${rowId}`,
                   checkbox = fn.html[ type ]( className, rowId, idName, checkboxId, attrs );
-            return fn.html.cell( checkbox, ['tBodyLeftSticky', rowClassName, 'tBodyTh'], 'th');
+            return fn.html.cell( checkbox, ['tBodyLeftSticky', rowSelectClassName, 'tBodyTh'], 'th');
         };
         
         switch ( tb.mode ) {
@@ -2454,7 +2522,11 @@ tbodyHtml() {
                 rowHtml.push( fn.html.cell( date, ['tBodyTd'], 'td') );
             break;
             case 'select': case 'execute':
-                rowHtml.push( rowCheckInput('radio') );
+                if ( tb.params.selectType !== 'multi' ) {
+                    rowHtml.push( rowCheckInput('radio') );
+                } else {
+                    rowHtml.push( rowCheckInput('check') );
+                }
             break;
         }
 

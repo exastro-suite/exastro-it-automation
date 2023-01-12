@@ -2027,12 +2027,12 @@ def _chk_parameter_host(objdbca, compare_config, options):
         tmp_parameter = compare_config.get("parameter")
         host = tmp_parameter.get("host")
 
-        serch_hosts = []
+        search_hosts = []
         if isinstance(host, list):
-            serch_hosts = host
+            search_hosts = host
         elif isinstance(host, str):
             if host:
-                serch_hosts.append(host)
+                search_hosts.append(host)
         else:
             if host is not None:
                 target_key = "host"
@@ -2047,8 +2047,8 @@ def _chk_parameter_host(objdbca, compare_config, options):
                 api_msg_args = [err_msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        if len(serch_hosts) >= 1:
-            for tmp_host in serch_hosts:
+        if len(search_hosts) >= 1:
+            for tmp_host in search_hosts:
                 sql_str = textwrap.dedent("""
                     SELECT * FROM `T_ANSC_DEVICE` `TAB_A`
                     WHERE `TAB_A`.`HOST_NAME` = %s

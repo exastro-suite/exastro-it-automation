@@ -1120,7 +1120,7 @@ class ExecuteDirector():
 
             # 配列のキーに使いたいだけ
             # 配列のキーに使いたいだけ
-            # 同じワードを同じエンコード値にならないので、デコードした値で重複確認
+            # 同じワードを同じエンコード値にならないので、デコードした値で重複確認.
             enc_password = ky_decrypt(password)
             key = (
                 'username_%s_password_%s_sshPrivateKey_%s_sshPrivateKeyPass_%s_instanceGroupId_%s_credential_type_id_%s'

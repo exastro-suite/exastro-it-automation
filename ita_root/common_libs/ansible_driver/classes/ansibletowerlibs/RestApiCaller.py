@@ -152,7 +152,13 @@ class RestApiCaller():
             response_array['statusCode'] = -2
             response_array['responseContents'] = {"errorMessage":"HTTP access error "}
 
-            print_Except = "Except HTTPError\nhttp status code: %s\nhttp response contents: %s\nhttp response headers: %s" % (e.code, e.reason, e.headers)
+            print_Except = \
+                "Except HTTPError\n" \
+                "http status code: %s\n" \
+                "http response contents: %s\n" \
+                "http response headers: %s\n" \
+                "http response body: %s" \
+                % (e.code, e.reason, e.headers, e.read().decode())
             self.apperrorloger(self.backtrace())
             self.apperrorloger(print_url)
             self.apperrorloger(print_HttpContext)

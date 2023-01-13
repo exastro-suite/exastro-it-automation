@@ -511,6 +511,9 @@ getMessage = ( function() {
         'FTE06029' : "Compare result",
         'FTE06030' : "File comparison",
         'FTE06031' : "Close",
+        'FTE06032' : "Donwload compare result(Excel)",
+        'FTE06033' : "Download failed.",
+        'FTE06034' : "File comparison result print",
         
         // Export - Import
         'FTE07001' : "All menu",

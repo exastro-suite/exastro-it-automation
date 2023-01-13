@@ -26,6 +26,52 @@ CREATE TABLE T_COMN_CONDUCTOR_IF_INFO_JNL
 
 
 
+-- Conductor通知
+CREATE TABLE T_COMN_CONDUCTOR_NOTICE
+(
+    CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
+    NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
+    NOTICE_URL                      VARCHAR(255),                               -- 通知先
+    HEADER                          VARCHAR(255),                               -- ヘッダー
+    FIELDS                          TEXT,                                       -- メッセージ
+    PROXY_URL                       VARCHAR(255),                               -- Proxy URL
+    PROXY_PORT                      INT,                                        -- Proxy Port
+    FQDN                            VARCHAR(255),                               -- 作業確認URL
+    OTHER                           VARCHAR(255),                               -- その他
+    SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
+    SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(CONDUCTOR_NOTICE_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_COMN_CONDUCTOR_NOTICE_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    CONDUCTOR_NOTICE_ID             VARCHAR(40),                                -- Conductor通知ID
+    NOTICE_NAME                     VARCHAR(255),                               -- 通知名称
+    NOTICE_URL                      VARCHAR(255),                               -- 通知先
+    HEADER                          VARCHAR(255),                               -- ヘッダー
+    FIELDS                          TEXT,                                       -- メッセージ
+    PROXY_URL                       VARCHAR(255),                               -- Proxy URL
+    PROXY_PORT                      INT,                                        -- Proxy Port
+    FQDN                            VARCHAR(255),                               -- 作業確認URL
+    OTHER                           VARCHAR(255),                               -- その他
+    SUPPRESS_START                  DATETIME(6),                                -- 抑止開始日時
+    SUPPRESS_END                    DATETIME(6),                                -- 抑止終了日時
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- Conductorクラス
 CREATE TABLE T_COMN_CONDUCTOR_CLASS
 (

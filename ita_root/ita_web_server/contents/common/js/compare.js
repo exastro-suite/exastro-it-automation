@@ -45,6 +45,7 @@ setRestApiUrls() {
     cp.rest.info = `/menu/${cp.menu}/compare/info/`;
     cp.rest.list = `/menu/${cp.menu}/compare/execute/info/`;
     cp.rest.compare = `/menu/${cp.menu}/compare/execute/`;
+    cp.rest.download = `/menu/${cp.menu}/compare/execute/output/`;
 }
 /*
 ##################################################
@@ -73,6 +74,11 @@ init() {
     cp.$ = {};
     cp.$.content = $('#content').find('.sectionBody');
     
+    cp.compareData = {
+        compare: '',
+        host: []
+    };
+    
     cp.$.content.html( cp.compareHtml() );
     
     cp.$.setting = cp.$.content.find('.compareSetting');
@@ -80,13 +86,9 @@ init() {
     cp.$.result = cp.$.content.find('.compareResult');
     
     cp.$.compareButton = cp.$.content.find('.compareButton');
+    cp.$.compareDownloadButton = cp.$.content.find('.compareDownloadButton');
     
     cp.compareEvents();
-    
-    cp.compareData = {
-        compare: '',
-        host: []
-    };
     
     // 結果ホスト切替
     cp.$.content.on('click', '.compareExecuteItem', function(){
@@ -113,8 +115,9 @@ escape( val ) {
 compareButtonCheck() {
     const cp = this;
     
-    const flag = !( cp.compareData.compare !== '' && cp.compareData.host.length );   
+    const flag = !( cp.compareData.compare !== '' );   
     cp.$.compareButton.prop('disabled', flag );
+    cp.$.compareDownloadButton.prop('disabled', flag );
 }
 /*
 ##################################################
@@ -126,13 +129,13 @@ compareHtml() {
     
     const menu = {
         Main: [
-            { button: { icon: 'menuList', text: getMessage.FTE06001, type: 'compareSelect', action: 'default', minWidth: '200px'} },
-            { button: { icon: 'menuList', text: getMessage.FTE06002, type: 'hostSelect', action: 'default', minWidth: '200px'} },
-            { button: { icon: 'compare', text: getMessage.FTE06003, type: 'compare', action: 'positive', minWidth: '200px', disabled: true, className: 'compareButton' } },
-        ],
-        Sub: []
+            { button: { icon: 'menuList', text: getMessage.FTE06001, type: 'compareSelect', action: 'default', minWidth: '160px'} },
+            { button: { icon: 'menuList', text: getMessage.FTE06002, type: 'hostSelect', action: 'default', minWidth: '160px'} },
+            { button: { icon: 'compare', text: getMessage.FTE06003, type: 'compare', action: 'positive', minWidth: '160px', disabled: true, className: 'compareButton' } },
+            { button: { icon: 'download', text: getMessage.FTE06032, type: 'download', action: 'default', minWidth: '160px', disabled: true, className: 'compareDownloadButton' }, separate: true },
+        ]
     };
-    
+
     return '<div class="compareContainer">'
     + '<div class="compareHeader">'
         + fn.html.operationMenu( menu )
@@ -142,7 +145,7 @@ compareHtml() {
             + cp.compareSettingMessageHtml()
         + '</div>'
         + '<div class="compareHost compareBodyBlock">'
-            + cp.compareHostMessageHtml()
+            + cp.hostHtml( cp.info.list.host )
         + '</div>'
         + '<div class="compareResult compareBodyBlock">'
             + cp.compareResultMessageHtml()
@@ -245,18 +248,22 @@ compareSettingHtml( info ) {
 hostHtml( hostList ) {
     const cp = this;
     
+    if ( !hostList.length ) {
+        return cp.compareHostMessageHtml();
+    }
+    
     cp.compareData.host = [];
     
     const html = ['<ul class="compareHostList">'];
     for ( const host of hostList ) {
-        const name = fn.cv( host.name, '', true );
-        console.log(name)
+        const name = ( fn.typeof( host ) === 'string')? host: host.name,
+              escapeName = fn.cv( name, '', true );
         html.push(``
-        + `<li class="compareHostItem" data-id="${name}">`
-            + `<dl class="commonStatus"><dt class="commonStatusKey">${getMessage.FTE06018}</dt><dd class="commonStatusValue">${name}</dd></dl>`
+        + `<li class="compareHostItem" data-id="${escapeName}">`
+            + `<dl class="commonStatus"><dt class="commonStatusKey">${getMessage.FTE06018}</dt><dd class="commonStatusValue">${escapeName}</dd></dl>`
             + `<div class="compareHostDiff"><div class="compareHostDiffTitle">${getMessage.FTE06019}</div><div class="compareHostDiffFlag"></div></div>`
         + `</li>`);
-        cp.compareData.host.push( host.name );
+        cp.compareData.host.push( name );
     }
     html.push('</ul>');
     
@@ -319,6 +326,19 @@ compareEvents() {
                     $button.prop('disabled', false );
                 });
             } break;
+            case 'download': {
+                $button.prop('disabled', true );
+                cp.getCompareSettingData();
+                fn.fetch( cp.rest.download, null, 'POST', cp.compareData ).then(function( result ){
+                    const fileName = fn.cv( result.file_name, '');
+                    fn.download('base64', result.file_data, fileName );
+                }).catch(function( error ){
+                    console.error( error );
+                    alert( getMessage.FTE06033 );
+                }).then(function(){
+                    $button.prop('disabled', false );
+                });
+            } break;
         }
     });
 }
@@ -345,10 +365,10 @@ getCompareSettingData() {
     const output = cp.$.output.filter(':checked').val(),
           targetDate1 = cp.$.referenceDate1.val(),
           targetDate2 = cp.$.referenceDate2.val();
-    
-    // if ( output ) cp.compareData.compare.output = output;
-    if ( targetDate1 ) cp.compareData.compare.base_date_1 = targetDate1;
-    if ( targetDate2 ) cp.compareData.compare.base_date_2 = targetDate2;
+
+    // if ( output ) cp.compareData.output = output;
+    if ( targetDate1 ) cp.compareData.base_date_1 = targetDate1;
+    if ( targetDate2 ) cp.compareData.base_date_2 = targetDate2;
 }
 /*
 ##################################################
@@ -420,73 +440,74 @@ setCompareResult( info ) {
               compareData = info.compare_data[ host ];
         if ( compareData ) {
             const compareFlag = fn.cv( info.compare_diff_flg[ host ], false );
+            comapreCount++;
+
+            const t1Name = fn.cv( info.config.target_menus[0], '', true ),
+                  t2Name = fn.cv( info.config.target_menus[1], '', true );
+
+            const escapeHostName = host.replace(/[ !"#$%&'()*+,.\/:;<=>?@\[\\\]^`{|}~]/g, "\\$&"),
+                  $host = cp.$.host.find(`.compareHostItem[data-id="${escapeHostName}"]`);
+
+            $host.addClass('compareExecuteItem').attr('data-flag', compareFlag );
+            $host.find('.compareHostDiffFlag').html( ( compareFlag )? fn.html.icon('check'): fn.html.icon('minus') );
+
+            html += ''
+            + `<div class="comparaResultBlock" data-id="${hostName}"><div class="commonSubTitle">${hostName}</div><div class="commonBody">`
+            + '<table class="table">'
+            + '<thead class="thead">'
+                + '<tr class="theadTr tr">'
+                    + `<th class="tHeadTh th" rowspan="2"><div class="ci">${getMessage.FTE06024}</div></th>`
+                    + `<th class="tHeadTh th" rowspan="2"><div class="ci">${getMessage.FTE06019}</div></th>`
+                    + `<th class="tHeadGroup tHeadTh th"><div class="ci">${getMessage.FTE06015}</div></th>`
+                    + `<th class="tHeadGroup tHeadTh th"><div class="ci">${getMessage.FTE06016}</div></th>`
+                    + `<th class="tHeadTh th" rowspan="2"><div class="ci">${getMessage.FTE06025}</div></th>`
+                + '</tr>'
+                + '<tr class="theadTr tr">'
+                    + `<th class="tHeadTh th"><div class="ci">${t1Name}</div></th>`
+                    + `<th class="tHeadTh th"><div class="ci">${t2Name}</div></th>`
+                + '</tr>'
+            + '</thead>'
+            + '<tbody class="tbody">';
             
-            if ( compareFlag ) {
-                comapreCount++;
+            // 項目出力
+            for ( const col of cols ) {
+                const colName = fn.cv( col.col_name, '', true ),
+                      diff = compareData._data_diff_flg[ colName ];
+                if ( diff === null ) continue;
                 
-                const t1Name = fn.cv( info.config.target_menus[0], '', true ),
-                      t2Name = fn.cv( info.config.target_menus[1], '', true );
+                const t1Value = fn.cv( compareData.target_data_1[ colName ], '', true ),
+                      t2Value = fn.cv( compareData.target_data_2[ colName ], '', true ),
+                      filediff = fn.cv( compareData._file_compare_execute_flg[ colName ], undefined );
 
-                const escapeHostName = host.replace(/[ !"#$%&'()*+,.\/:;<=>?@\[\\\]^`{|}~]/g, "\\$&"),
-                      $host = cp.$.host.find(`.compareHostItem[data-id="${escapeHostName}"]`);
+                const diffFlag = ( col.file_flg )? ( diff || filediff )? true: false: diff;
 
-                $host.addClass('compareExecuteItem').attr('data-flag', compareFlag );
-                $host.find('.compareHostDiffFlag').html( ( compareFlag )? fn.html.icon('check'): fn.html.icon('minus') );
-                
-                html += ''
-                + `<div class="comparaResultBlock" data-id="${hostName}"><div class="commonSubTitle">${hostName}</div><div class="commonBody">`
-                + '<table class="table">'
-                + '<thead class="thead">'
-                    + '<tr class="theadTr tr">'
-                        + `<th class="tHeadTh th" rowspan="2"><div class="ci">${getMessage.FTE06024}</div></th>`
-                        + `<th class="tHeadTh th" rowspan="2"><div class="ci">${getMessage.FTE06019}</div></th>`
-                        + `<th class="tHeadGroup tHeadTh th"><div class="ci">${getMessage.FTE06015}</div></th>`
-                        + `<th class="tHeadGroup tHeadTh th"><div class="ci">${getMessage.FTE06016}</div></th>`
-                        + `<th class="tHeadTh th" rowspan="2"><div class="ci">${getMessage.FTE06025}</div></th>`
-                    + '</tr>'
-                    + '<tr class="theadTr tr">'
-                        + `<th class="tHeadTh th"><div class="ci">${t1Name}</div></th>`
-                        + `<th class="tHeadTh th"><div class="ci">${t2Name}</div></th>`
-                    + '</tr>'
-                + '</thead>'
-                + '<tbody class="tbody">';
-                for ( const col of cols ) {
-                    const colName = fn.cv( col.col_name, '', true ),
-                          t1Value = fn.cv( compareData.target_data_1[ colName ], '', true ),
-                          t2Value = fn.cv( compareData.target_data_2[ colName ], '', true ),
-                          diff = fn.cv( compareData._data_diff_flg[ colName ], undefined ),
-                          filediff = fn.cv( compareData._file_compare_execute_flg[ colName ], undefined );
+                html += `<tr class="tBodyTr tr${( !diffFlag )? ` differenceTr`: ``}">`
+                + `<th class="tBodyTh th"><div class="ci">${colName}</div></th>`
+                + `<td class="tBodyTd td" data-flag="${diffFlag}"><div class="ci">`
+                    + `<div class="compareItemDiffMark">${( diffFlag )? fn.html.icon('check'): fn.html.icon('minus')}</div>`
+                + `</div></td>`
+                + `<td class="tBodyTd td"><div class="ci">${t1Value}</div></td>`
+                + `<td class="tBodyTd td"><div class="ci">${t2Value}</div></td>`
+                + `<td class="tBodyTd td">`;
 
-                    const diffFlag = ( col.file_flg )? ( diff || filediff )? true: false: diff;
-
-                    html += `<tr class="tBodyTr tr${( !diffFlag )? ` differenceTr`: ``}">`
-                    + `<th class="tBodyTh th"><div class="ci">${colName}</div></th>`
-                    + `<td class="tBodyTd td" data-flag="${diffFlag}"><div class="ci">`
-                        + `<div class="compareItemDiffMark">${( diffFlag )? fn.html.icon('check'): fn.html.icon('minus')}</div>`
-                    + `</div></td>`
-                    + `<td class="tBodyTd td"><div class="ci">${t1Value}</div></td>`
-                    + `<td class="tBodyTd td"><div class="ci">${t2Value}</div></td>`
-                    + `<td class="tBodyTd td">`;
-
-                    if ( filediff ) {
-                        if ( col.file_flg ) {
-                            html += `<div class="ci bci">`
-                            + fn.html.iconButton( 'detail', getMessage.FTE06026, 'itaButton fileDiffButton', { host: fn.escape( host ), colName: colName })
-                            + `</div>`;
-                        } else {
-                            html += `<div class="ci">${getMessage.FTE06027}</div>`;
-                        }
+                if ( filediff ) {
+                    if ( col.file_flg ) {
+                        html += `<div class="ci bci">`
+                        + fn.html.iconButton( 'detail', getMessage.FTE06026, 'itaButton fileDiffButton', { host: fn.escape( host ), colName: colName })
+                        + `</div>`;
                     } else {
-                        html += '<div class="ci"></div>';
+                        html += `<div class="ci">${getMessage.FTE06027}</div>`;
                     }
-
-                    html += '</div></td></tr>';
+                } else {
+                    html += '<div class="ci"></div>';
                 }
-                html += '</tbody></table></div></div>';
+
+                html += '</div></td></tr>';
             }
+            html += '</tbody></table></div></div>';
         }
     }
-    
+
     if ( comapreCount === 0 ) {
         html = ''
         + `<div class="commonMessage failedMessage"><div class="commonMessageInner">${fn.html.icon('compare') + getMessage.FTE06028}</div></div>`;
@@ -514,6 +535,7 @@ setCompareResult( info ) {
         
         fn.fetch(`/menu/${cp.menu}/compare/execute/file/`, null, 'POST', fileDiffData.parameter ).then(function(result){
             const config = {
+                className: 'diffModal',
                 mode: 'modeless',
                 position: 'center',
                 header: {
@@ -522,11 +544,17 @@ setCompareResult( info ) {
                 width: '1600px',
                 footer: {
                     button: {
-                        close: { text: getMessage.FTE06031, action: 'normal'}
+                        close: { text: getMessage.FTE06031, action: 'normal'},
+                        print: { text: getMessage.FTE06034, action: 'normal'}
                     }
                 }
             };
-            const modal = new Dialog( config );
+            const func = {
+                print: function(){
+                    modal.printBody();
+                }
+            };
+            const modal = new Dialog( config, func );
  
             const diffHtml = Diff2Html.html( result.unified_diff.diff_result, {
               drawFileList: false,

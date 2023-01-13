@@ -37,7 +37,7 @@ from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.Ansible
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInstanceGroups import AnsibleTowerRestApiInstanceGroups
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiCredentials import AnsibleTowerRestApiCredentials
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiProjects import AnsibleTowerRestApiProjects
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApirPassThrough import AnsibleTowerRestApirPassThrough
+from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiPassThrough import AnsibleTowerRestApiPassThrough
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInventories import AnsibleTowerRestApiInventories
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInventoryHosts import AnsibleTowerRestApiInventoryHosts
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiJobTemplates import AnsibleTowerRestApiJobTemplates
@@ -89,7 +89,6 @@ class ExecuteDirector():
         OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         execution_no = exeInsRow['EXECUTION_NO']
         proj_name = '%s_%s' % (OrchestratorSubId_dir, execution_no)
-        virtualenv_name = ''  # exeInsRow['I_VIRTUALENV_NAME']
         # AACの実行環境確認
         # 実行エンジンがAAC以外はI_EXECUTION_ENVIRONMENT_NAMEは空なので、実行エンジンのチェックはしない
         execution_environment_id = False
@@ -229,20 +228,15 @@ class ExecuteDirector():
             addParam = {}
             addParam["scm_type"] = AnsibleTowerRestApiProjects.SCMTYPE_GIT
             addParam["scm_url"] = GitObj.get_http_repo_url(proj_name)
+            addParam['organization'] = OrganizationId
+            addParam['execution_no'] = execution_no
 
-            response_array = self.createProject(execution_no, OrganizationId, virtualenv_name, addParam)
-            if response_array == -1:
+            projectId = self.create_project(addParam)
+            if projectId == -1:
                 errorMessage = g.appmsg.get_api_message("MSG-10650")
                 self.errorLogOut(errorMessage)
                 # HTTPの情報をUIに表示
                 self.RestResultLog(self.restApiCaller.getRestResultList())
-                return -1, TowerHostList
-
-            projectId = response_array['responseContents']['id']
-            # project_updatesオブジェクトは明示的に削除する必要なし
-            ret = self.createProjectStatusCheck(response_array)
-            if ret is not True:
-                # エラーログはcreateProjectStatusCheckで出力
                 return -1, TowerHostList
 
         # ansible vault認証情報生成
@@ -1119,9 +1113,12 @@ class ExecuteDirector():
             credential_type_id = hostInfo['CREDENTIAL_TYPE_ID']
 
             # 配列のキーに使いたいだけ
+            # 配列のキーに使いたいだけ
+            # 同じワードを同じエンコード値にならないので、デコードした値で重複確認.
+            enc_password = ky_decrypt(password)
             key = (
                 'username_%s_password_%s_sshPrivateKey_%s_sshPrivateKeyPass_%s_instanceGroupId_%s_credential_type_id_%s'
-            ) % (username, password, sshPrivateKey, sshPrivateKeyPass, instanceGroupId, credential_type_id)
+            ) % (username, enc_password, sshPrivateKey, sshPrivateKeyPass, instanceGroupId, credential_type_id)
             credential = {
                 "username": username,
                 "password": password,
@@ -1182,14 +1179,7 @@ class ExecuteDirector():
 
         return True, inventoryForEachCredentials
 
-    def createProject(self, execution_no, OrganizationId, virtualenv_name, addParam):
-
-        param = addParam
-        param['organization'] = OrganizationId
-        param['execution_no'] = execution_no
-
-        if len(virtualenv_name) > 0:
-            param['custom_virtualenv'] = virtualenv_name
+    def create_project(self, param):
 
         response_array = AnsibleTowerRestApiProjects.post(self.restApiCaller, param)
         if not response_array['success']:
@@ -1200,7 +1190,30 @@ class ExecuteDirector():
             g.applogger.debug("No project id.")
             return -1
 
-        return response_array
+        project_id = response_array['responseContents']['id']
+
+        update_url = self.wait_for_create_project(project_id)
+        if update_url == -1:
+            # エラーログはwait_for_create_projectで出力
+            return -1
+
+        response_array = AnsibleTowerRestApiPassThrough.post(self.restApiCaller, update_url)
+        if not response_array['success']:
+            errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
+            self.errorLogOut(errorMessage)
+            g.applogger.error(response_array)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return -1
+
+        project_updates_url = response_array['responseContents']['url']
+
+        ret = self.wait_for_project_update(project_updates_url)
+        if ret == -1:
+            # エラーログはwait_for_project_updateで出力
+            return -1
+
+        return project_id
 
     def createGitCredential(self, execution_no, credential, OrganizationId):
 
@@ -1871,7 +1884,6 @@ class ExecuteDirector():
                 contentArray.append("  credential_name: %s" % (credentialData['name']))
                 contentArray.append("  credential_type: %s" % (credentialData['credential_type']))
                 contentArray.append("  credential_inputs: %s" % (json.dumps(credentialData['inputs'])))
-                contentArray.append("  virtualenv: %s" % (projectData['custom_virtualenv']))
                 if self.workflowJobAry[wfJobId]['is_sliced_job'] is True:
                     contentArray.append("  job_slice_count: %s" % (JobData["job_slice_count"]))
 
@@ -1886,9 +1898,12 @@ class ExecuteDirector():
                     return False
 
                 instance_group = ""
-                if 'responseContents' in response_array and len(response_array['responseContents']) > 0 \
-                and 'name' in response_array['responseContents'][0] and response_array['responseContents'][0]['name'] is True:
-                    instance_group = response_array['responseContents'][0]['name']
+                if 'responseContents' in response_array:
+                    for insgroup_row in response_array['responseContents']:
+                        if 'name' in insgroup_row:
+                            if len(instance_group) > 0:
+                                instance_group += ", "
+                            instance_group += insgroup_row['name']
 
                 contentArray.append("  instance_group: %s" % (instance_group))
 
@@ -2249,66 +2264,29 @@ class ExecuteDirector():
 
         return True
 
-    def createProjectStatusCheck(self, response_array):
+    def wait_for_create_project(self, project_id):
 
-        projectId = response_array['responseContents']['id']
         # Git連携の状態を確認する
         while True:
-            if response_array['responseContents']['status'] in ["new", "pending", "waiting", "running"]:
+            response_array = AnsibleTowerRestApiProjects.get(self.restApiCaller, project_id)
+            if not response_array['success']:
+                errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
+                self.errorLogOut(errorMessage)
+                g.applogger.error(response_array)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return -1
+
+            project_status = response_array['responseContents']['status']
+            if project_status in ["new", "pending", "waiting", "running"]:
                 time.sleep(5)
-                response_array = AnsibleTowerRestApiProjects.get(self.restApiCaller, projectId)
-                if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
-                    self.errorLogOut(errorMessage)
-                    g.applogger.error(response_array)
-                    # HTTPの情報をUIに表示
-                    self.RestResultLog(self.restApiCaller.getRestResultList())
-                    return -1
 
-            elif response_array['responseContents']['status'] == "successful":
-                return True
-
-            elif response_array['responseContents']['status'] in ["failed", "error"]:
-                # プロジェクト更新用のURL退避
-                updateUurl = response_array['responseContents']['related']['update']
-
-                # Git連携に失敗した場合、エラー情報を取得する
-                url = response_array['responseContents']['related']['project_updates']
-                response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url)
-                if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
-                    self.errorLogOut(errorMessage)
-                    g.applogger.error(response_array)
-                    # HTTPの情報をUIに表示
-                    self.RestResultLog(self.restApiCaller.getRestResultList())
-                    return -1
-
-                url = "%s?format=txt" % (response_array['responseContents']['results'][0]['related']['stdout'])
-                response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url, True)
-                if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
-                    self.errorLogOut(errorMessage)
-                    g.applogger.error(response_array)
-                    # HTTPの情報をUIに表示
-                    self.RestResultLog(self.restApiCaller.getRestResultList())
-                    return -1
-
+            elif project_status in ["successful", "failed", "error"]:
+                # failedやerrorでも次の処理へ進める
                 # 制御ノードにコンテナイメージがロードされていないと、プロジェクト作成でGit連携が失敗する
                 # プロジェクトの更新だとコンテナイメージがロードていなくても問題ないので、プロジェクトを更新する
-                response_array = AnsibleTowerRestApirPassThrough.post(self.restApiCaller, updateUurl)
-                if not response_array['success']:
-                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
-                    self.errorLogOut(errorMessage)
-                    g.applogger.error(response_array)
-                    # HTTPの情報をUIに表示
-                    self.RestResultLog(self.restApiCaller.getRestResultList())
-                    return -1
-
-                ret = self.projectUpdate(response_array)
-                if ret is True:
-                    return True
-
-                return -1
+                update_url = response_array['responseContents']['related']['update']
+                return update_url
 
             else:
                 errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
@@ -2316,20 +2294,19 @@ class ExecuteDirector():
                 g.applogger.error(response_array)
                 return -1
 
-    def projectUpdate(self, response_array):
-
-        url = response_array['responseContents']['url']
+    def wait_for_project_update(self, url):
 
         # プロジェクト更新の結果判定
+        # project_updatesオブジェクトは明示的に削除する必要なし
         while True:
-            response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url)
+            response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
             if not response_array['success']:
                 errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                 self.errorLogOut(errorMessage)
                 g.applogger.error(response_array)
                 # HTTPの情報をUIに表示
                 self.RestResultLog(self.restApiCaller.getRestResultList())
-                return response_array
+                return -1
 
             if response_array['responseContents']['status'] in ["new", "pending", "waiting", "running"]:
                 time.sleep(5)
@@ -2339,8 +2316,7 @@ class ExecuteDirector():
 
             elif response_array['responseContents']['status'] in ["failed", "error"]:
                 url = "%s?format=txt" % (response_array['responseContents']['related']['stdout'])
-                response_array = AnsibleTowerRestApirPassThrough.get(self.restApiCaller, url, True)
-                ProjectUpdateStdout = response_array['responseContents']
+                response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url, True)
                 if not response_array['success']:
                     errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
                     self.errorLogOut(errorMessage)
@@ -2349,6 +2325,7 @@ class ExecuteDirector():
                     self.RestResultLog(self.restApiCaller.getRestResultList())
                     return -1
 
+                ProjectUpdateStdout = response_array['responseContents']
                 errorMessage = g.appmsg.get_api_message("MSG-10020", [ProjectUpdateStdout])
                 self.errorLogOut(errorMessage)
                 # Towerでエラーになるので、レスポンス情報をエラーログに表示

@@ -16,7 +16,7 @@
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
 
 
-class AnsibleTowerRestApirPassThrough(AnsibleTowerRestApiBase):
+class AnsibleTowerRestApiPassThrough(AnsibleTowerRestApiBase):
 
     """
     【概要】

@@ -15,8 +15,6 @@ import os
 import re
 from flask import g
 
-from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, get_AnsibleDriverShellPath, getAnsibleConst
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
 from common_libs.common.util import ky_file_decrypt
@@ -104,8 +102,6 @@ class AnsibleExecute():
         strPlayBookFileName = 'playbook.yml'
         strExecshellName = '/.playbook_execute_shell.sh'
 
-        AnsObj = AnscConst()
-
         # 作業実行パス取得（作業番号まで）
         execute_path = getAnsibleExecutDirPath(ansConstObj, execute_no)
 
@@ -131,9 +127,7 @@ class AnsibleExecute():
             execute_user = " "
 
         # 親playbook取得
-        if ansConstObj.vg_driver_id == AnsObj.DF_LEGACY_ROLE_DRIVER_ID:
-            del AnsObj
-            AnsObj = AnsrConst()
+        if ansConstObj.vg_driver_id == ansConstObj.DF_LEGACY_ROLE_DRIVER_ID:
             strPlayBookFileName = 'site.yml'
 
         # ansible-playbookコマンド実行時のオプションパラメータファイルパス
@@ -257,8 +251,6 @@ class AnsibleExecute():
         """
         self.setLastError("")
 
-        AnsObj = AnscConst()
-
         retStatus = "2"
         # 作業実行パス取得（作業番号まで）
         execute_path = getAnsibleExecutDirPath(ansConstObj, execute_no)
@@ -343,7 +335,8 @@ class AnsibleExecute():
         if os.path.isfile(strorgSTDOUTFileName):
             with open(strorgSTDOUTFileName, "r") as fd:
                 log_data = fd.read()
-            if ansConstObj.vg_driver_id == AnsObj.DF_PIONEER_DRIVER_ID:
+
+            if ansConstObj.vg_driver_id == ansConstObj.DF_PIONEER_DRIVER_ID:
                 # ログ(", ")  =>  (",\n")を改行する
                 log_data = log_data.replace("\", \"", "\",\n\"")
                 # 改行文字列\r\nを改行コードに置換える

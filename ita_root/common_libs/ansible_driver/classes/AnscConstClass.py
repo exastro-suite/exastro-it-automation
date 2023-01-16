@@ -41,7 +41,7 @@ class AnscConst:
 
     # Towerノードタイプ
     DF_EXECUTE_NODE = "execute_node"   # ISOLATED・実行ノード
-    DF_CONTROL_NODE = "control_nide"   # ハイブリット・制御ノード
+    DF_CONTROL_NODE = "control_node"   # ハイブリット・制御ノード
 
     DF_SCP_CONDUCTOR_ITA_PATH = "SCP_CONDUCTOR_ITA_PATH"
     DF_SCP_CONDUCTOR_TOWER_PATH = "SCP_CONDUCTOR_TOWER_PATH"

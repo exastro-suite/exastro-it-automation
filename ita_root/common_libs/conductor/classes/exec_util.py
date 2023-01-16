@@ -131,6 +131,12 @@ class ConductorExecuteLibs():
                     "pk": "CONDUCTOR_IF_INFO_ID",
                     "refresh_interval": "CONDUCTOR_REFRESH_INTERVAL",
                     "sortkey": "CONDUCTOR_IF_INFO_ID",
+                },
+                "notice_info": {
+                    "table_name": "T_COMN_CONDUCTOR_NOTICE",
+                    "pk": "CONDUCTOR_NOTICE_ID",
+                    "name": "NOTICE_NAME",
+                    "sortkey": "NOTICE_NAME"
                 }
             }
 

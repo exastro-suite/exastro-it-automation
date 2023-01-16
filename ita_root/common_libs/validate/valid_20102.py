@@ -72,7 +72,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         ary.append({"VALUE": str_twr_host_id, "MSG_CODE": "MSG-10881"})
         ary.append({"VALUE": str_twr_protocol, "MSG_CODE": "MSG-10882"})
         ary.append({"VALUE": str_twr_port, "MSG_CODE": "MSG-10883"})
-        ary.append({"VALUE": str_org_name, "MSG_CODE": "MSG-10884"})
+        # 組織名は必須項目から外す。
         ary.append({"VALUE": str_token, "MSG_CODE": "MSG-10885"})
         # 実行エンジンがTowerの場合の、Ansible Towerインターフェースの必須入力チェック
         if str_exec_mode != AnscConst.DF_EXEC_MODE_ANSIBLE:

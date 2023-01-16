@@ -691,6 +691,19 @@ opacity: .5;
 opacity: .5;
 }
 
+.radioText:disabled {
+cursor: default!important;
+}
+.radioText:disabled ~ .radioTextLabel {
+opacity: .5;
+}
+.radioText:disabled ~ .radioTextLabel > .radioTextMark {
+background-color: var(--white100)!important;
+background-image: linear-gradient(rgba(255,255,255,0), rgba(0,0,0,.075), rgba(255,255,255,0) )!important;
+border: 1px solid var(--black50)!important;
+}
+
+
 /*
 ##################################################
    html body
@@ -1895,10 +1908,6 @@ display: flex;
 .initFilterStandBy .tableFooter {
 display: none!important;
 }
-.initFilterStandBy .tableBody,
-.noData .tableBody {
-flex: 0 0 auto;
-}
 .commonMessage,
 .initFilterStandBy .tableMessage,
 .historyStandBy .tableMessage,
@@ -2023,13 +2032,52 @@ font-size: 28px;
 color: var(--black25);
 }
 .tableBody {
+flex: 1 1 auto;
+display: flex;
+flex-direction: column;
+}
+.tableBody > div {
+min-height: 0;
+}
+.tableFilter,
+.tableWrap {
+flex: 1 1 auto;
 position: relative;
 z-index: 5;
 overflow: auto;
-flex: 1 1 auto;
 background-color: rgba(0,0,0,.05);
 border: 1px solid rgba( 0,0,0,.1);
 }
+.initFilterStandBy .tableWrap,
+.noData .tableWrap {
+flex: 0 0 auto;
+}
+.tableStandBy .tableWrap {
+visibility: hidden!important;
+}
+/*
+.tableBorder {
+display: inline-block;
+position: relative;
+z-index: 0;
+}
+.tableBorder::before {
+content: '';
+position: absolute;
+z-index: 50;
+right: 0; top: 0;
+width: 2px; height: 100%;
+background-color: var(--mainColor40);
+}
+.tableBorder::after {
+content: '';
+position: absolute;
+z-index: 50;
+right: 0; bottom: 0;
+width: 100%; height: 2px;
+background-color: var(--mainColor40);
+}
+*/
 
 /* Table general */
 .table {
@@ -2111,13 +2159,6 @@ top: 0;
 z-index: 10;
 background-color: var(--mainColor100);
 }
-.tHeadTr:first-child .tHeadLeftSticky {
-border-right-color: transparent;
-border-left: 1px solid var(--mainColor100);
-}
-.tHeadTr:first-child .tHeadLeftStickyLast {
-border-right: 1px solid var(--mainColor100);
-}
 .tHeadTr:first-child .tHeadTh,
 .tHeadTr:first-child .tHeadBlank {
 border-top: 1px solid var(--mainColor100);
@@ -2139,7 +2180,6 @@ background-color: var(--black60)!important;
 height: 16px;
 background-image: linear-gradient( -45deg, transparent 25%, rgba(255,255,255,.1) 25%, rgba(255,255,255,.1) 50%, transparent 50%, transparent 75%, rgba(255,255,255,.1) 75% );
 background-size: 8px 8px;
-
 }
 .tHeadSort {
 cursor: pointer;
@@ -2217,9 +2257,6 @@ border-top: 1px solid var(--mainColor20);
 .tBodyTd {
 border-bottom-width: 2px;
 }
-.tBodyTr > .tBodyTh:first-child {
-border-left: 1px solid var(--mainColor40);
-}
 .tBodyRowMenu {
 color: var(--mainColor100);
 }
@@ -2248,7 +2285,7 @@ word-break: break-all!important;
 .tHeadGroup .ci {
 display: inline-block;
 position: sticky;
-left: 91px;
+left: 0;
 }
 .tbody .ci {
 overflow: hidden;
@@ -2353,7 +2390,6 @@ opacity: .5;
 cursor: default;
 pointer-events: none;
 }
-
 .rowSelectButton[data-select="oneOrMore"],
 .rowSelectButton[data-select="all"] {
 background-color: var(--mainColor80);
@@ -2615,8 +2651,6 @@ gap: 16px;
 height: 48px;
 padding: 0 16px;
 }
-
-
 .filterMenuItem {
 display: flex;
 align-items: center;
@@ -2739,6 +2773,15 @@ width: 100%; min-width: 0;
 margin: 0 0 0 8px; padding: 0 0 0 8px;
 border-top: none;
 border-left: 1px dashed var(--black40);
+}
+/* Filter position */
+.tableFilter {
+display: none;
+flex: 0 0 auto;
+margin-bottom: 8px;
+}
+.tableFilterOut.filterShow .tableFilter {
+display: block;
 }
 
 /* Input date */
@@ -2974,6 +3017,13 @@ cursor: pointer;
 .tBodyRowMenu:hover > .ci {
 background-color: rgba( 255,255,255,.9 );
 }
+.tableItemMenuShow .tHeadRowMenu > .ci,
+.tableItemMenuShow .tBodyRowMenu > .ci {
+width: auto; height: auto;
+}
+.tableItemMenuShow .tBodyRowMenu:hover > .ci {
+background-color: transparent;
+}
 .tableRowMenu {
 display: none;
 position: absolute;
@@ -3027,6 +3077,22 @@ line-height: 24px;
 .actionButton  > .inner {
 padding: 0 8px;
 }
+.tableItemMenuShow .tableRowMenu {
+display: block;
+position: static;
+transform: none;
+height: auto;
+padding: 4px 4px 3px;
+background-color: transparent;
+border: none;
+box-shadow: none;
+}
+.tableItemMenuShow .tableRowMenu::before,
+.tableItemMenuShow .tableRowMenu::after {
+display: none;
+}
+
+
 .tBodyInputTd > .ci {
 padding: 4px;
 }
@@ -4386,6 +4452,13 @@ font-size: 12px;
 .commonParagraph:last-child {
 margin-bottom: 0;
 }
+.commonRadioList {
+display: flex;
+justify-content:space-between
+}
+.commonRadioItem {
+width: 100%;
+}
 .alertMessage {
 height: 100%;
 padding: 16px;
@@ -4474,6 +4547,107 @@ padding: 16px;
 }
 /*
 ##################################################
+  Table setting
+##################################################
+*/
+.tableSettingItemChild {
+position: relative;
+z-index: 0;
+margin-left: 45px;
+}
+.tableSettingGroupName,
+.tableSettingItemName {
+position: relative;
+z-index: 0;
+margin-bottom: 4px;
+padding: 2px 8px 2px 4px;
+background-color: #FFF;
+background-image: linear-gradient( rgba( 0,0,0,0 ) 16px, rgba( 0,0,0,.05 ) );
+border: 1px solid rgba( 0,0,0,.2 );
+border-radius: 0 4px 4px 0;
+}
+.tableSettingItemChild > .tableSettingItemName::before,
+.tableSettingItemChild::after,
+.tableSettingItemChild:last-child > .tableSettingItemName::after {
+content: '';
+display: block;
+position: absolute;
+background-color: var(--mainColor50);
+}
+.tableSettingItemChild:last-child::after {
+display: none;
+}
+.tableSettingItemChild > .tableSettingItemName::before {
+top: 50%; left: -24px;
+width: 24px; height: 1px;
+}
+.tableSettingItemChild::after,
+.tableSettingItemChild:last-child > .tableSettingItemName::after {
+left: -24px; top: -5px;
+width: 1px;
+height: calc( 50% + 6px );
+}
+.tableSettingItemChild::after {
+left: -23px;
+height: calc( 100% + 6px );
+}
+/* tableHorizontal */
+.tableHorizontal .tableWrap .table{
+writing-mode: vertical-lr;
+}
+.tableHorizontal .tableWrap th,
+.tableHorizontal .tableWrap td {
+writing-mode: horizontal-tb;
+}
+.tableHorizontal .tableWrap .thead {
+top: auto;
+left: 0;
+}
+.tableHorizontal .tableWrap .tHeadLeftSticky,
+.tableHorizontal .tableWrap .tBodyLeftSticky {
+left: auto;
+top: 0;
+}
+.tableHorizontal .tableWrap .tHeadTr:first-child .tHeadTh,
+.tableHorizontal .tableWrap .tHeadTr:first-child .tHeadBlank,
+.tableHorizontal .tableWrap .tBodyTr:first-child .tBodyTh,
+.tableHorizontal .tableWrap .tBodyTr:first-child .tBodyTd {
+border-top: none;
+}
+.tableHorizontal .tableWrap .tHeadTh .ci {
+text-align: right;
+}
+.tableHorizontal .tHeadTh.tHeadRowMenu .ci {
+text-align: center;
+}
+.tableHorizontal.tableItemMenuShow .tHeadTh.tHeadRowMenu .ci {
+text-align: right;
+}
+.tableHorizontal .tableWrap .tHeadGroup {
+vertical-align: top;
+}
+.tableHorizontal .tableWrap .tHeadGroup .ci {
+left: auto;
+}
+.tableHorizontal .tableWrap .tBodyTh,
+.tableHorizontal .tableWrap .tBodyTd {
+border-right: 2px solid var(--mainColor20);
+border-bottom: 1px dashed var(--mainColor40);
+}
+.tableHorizontal .tableWrap .tHeadRowSelect > .ci,
+.tableHorizontal .tableWrap .tHeadRowMenu > .ci {
+margin: 0 0 0 auto;
+}
+.tableHorizontal .tableWrap .tBodyRowSelect > .ci {
+margin: 0 auto;
+}
+.initFilterStandBy .tableHorizontal .tableWrap,
+.noData .tableHorizontal .tableWrap {
+display: none!important;
+}
+
+/*
+##################################################
    iframe mode
 ##################################################
 */
@@ -4525,7 +4699,6 @@ height: calc( 100% - 40px );
 .debugBody > .input {
 height: 100%;
 }
-
 /*
 ##################################################
    DashBoard

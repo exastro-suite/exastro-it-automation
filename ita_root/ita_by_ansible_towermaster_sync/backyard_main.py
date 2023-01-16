@@ -277,7 +277,7 @@ def backyard_main(organization_id, workspace_id):
                 # インスタンスグループ取得を無効にする
                 # ifInfoRows[0]['ANSTWR_ORGANIZATION'] = None
                 if not ifInfoRows[0]['ANSTWR_ORGANIZATION']:
-                    igrp_url = None
+                    igrp_url = org_response_array['responseContents']['results'][0]['related']['instance_groups']
                 else:
                     if info['name'] == ifInfoRows[0]['ANSTWR_ORGANIZATION']:
                         igrp_url = info['related']['instance_groups']

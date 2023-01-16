@@ -128,7 +128,7 @@ class ExecuteDirector():
                 return -1, TowerHostList
 
         OrganizationName = ifInfoRow['ANSTWR_ORGANIZATION']
-        if len(OrganizationName) > 0:
+        if OrganizationName:
             # 組織情報取得
             #    [[Inventory]]
             query = "?name=%s" % (OrganizationName)
@@ -143,7 +143,7 @@ class ExecuteDirector():
 
             if ('responseContents' not in response_array or response_array['responseContents'] is None
                 or (type(response_array['responseContents']) in (list, dict) and len(response_array['responseContents']) <= 0)) \
-            or ("id" not in response_array['responseContents'][0]):
+                or ("id" not in response_array['responseContents'][0]):
                 g.applogger.error("No inventory id. (prepare)")
                 errorMessage = g.appmsg.get_api_message("MSG-10672", [OrganizationName])
                 self.errorLogOut(errorMessage)
@@ -152,10 +152,11 @@ class ExecuteDirector():
             OrganizationId = response_array['responseContents'][0]['id']
 
         else:
-            # 組織名未登録
-            errorMessage = g.appmsg.get_api_message("MSG-10677")
-            self.errorLogOut(errorMessage)
-            return -1, TowerHostList
+            # ユーザーが所属している組織を取得
+            OrganizationId = self.getUserDefaultOrganization()
+            if not OrganizationId:
+                # 組織未所属または、ユーザーが所属している組織を取得失敗
+                return -1, TowerHostList
 
         # Host情報取得
         inventoryForEachCredentials = {}
@@ -2365,3 +2366,98 @@ class ExecuteDirector():
         filePath = '%s/%s/%s' % ( getAACListSSHPrivateKeyUploadDirPath(), TowerHostID, sshKeyFileName)
 
         return filePath
+
+    def getUserDefaultOrganization(self):
+        ############################################################
+        # 接続トークンに対応したユーザー情報取得
+        ############################################################
+
+        url = "/api/v2/me/"
+        response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
+        if not response_array['success']:
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'responseContents' not in response_array:
+            g.applogger.error("responseContents tag is not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'results' not in response_array['responseContents']:
+            g.applogger.error("responseContents->results tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'count' not in response_array['responseContents']:
+            g.applogger.error("responseContents->count tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if response_array['responseContents']['count'] != 1:
+            g.applogger.error("responseContents->count is not 1 in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        users_response_array = response_array
+
+        ############################################################
+        # ユーザーに紐づく組織情報取得
+        ############################################################
+        url = users_response_array['responseContents']['results'][0]['related']['organizations']
+        response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
+        if not response_array['success']:
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'responseContents' not in response_array:
+            g.applogger.error("responseContents tag is not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'results' not in response_array['responseContents']:
+            g.applogger.error("responseContents->results tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'count' not in response_array['responseContents']:
+            g.applogger.error("responseContents->count tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if response_array['responseContents']['count'] == 0:
+            g.applogger.error("responseContents->count is 0 in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10911", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        # 複数の組織に所属している場合、ランダムに先頭の組織をデフォルトで使用する。
+        return response_array['responseContents']['results'][0]['id']

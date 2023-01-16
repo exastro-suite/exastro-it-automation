@@ -213,7 +213,7 @@ def backyard_main(organization_id, workspace_id):
         users_response_array = response_array
 
         ############################################################
-        # インスタンスグループ情報更新
+        # ユーザーに紐づく組織情報更新
         ############################################################
         try:
             ############################################################
@@ -237,40 +237,96 @@ def backyard_main(organization_id, workspace_id):
                 RestResultLog(restApiCaller.getRestResultList())
                 raise Exception("responseContents->count tag not found in %s" % (url))
 
-            if response_array['responseContents']['count'] != 1:
-                # ユーザーに紐づく組織がない又は複数(想定外)ある
-                RestResultLog(restApiCaller.getRestResultList())
-                raise Exception("responseContents->count tag is not 1 in %s" % (url))
 
             org_response_array = response_array
+            ############################################################
+            # トランザクション開始
+            ############################################################
+            dbAccess.db_transaction_start()
 
+            ############################################################
+            # ITA側の既に登録済みの組織名情報を取得する
+            ############################################################
+            TableName = "T_ANSC_TWR_ORGANIZATION"
+            cols = dbAccess.table_columns_get(TableName)
+            cols = (',').join(cols[0])
+            sql = (
+                "SELECT \n"
+                "  %s   \n"
+                "FROM   \n"
+                "  %s ; \n"
+            ) % (cols, TableName)
+            OrganizationRows = dbAccess.sql_execute(sql)
+
+            ############################################################
+            # データベース更新
+            ############################################################
+            PkeyItem = "ORGANIZATION_ITA_MANAGED_ID"
+            NameItem = "ORGANIZATION_NAME"
+            IDItem = "ORGANIZATION_ID"
+            Contents_array = []
+            igrp_url = None
+            for info in org_response_array['responseContents']['results']:
+                Contents_array.append(
+                    {
+                        'name': info['name'],
+                        'id': int(info['id']),
+                    }
+                )
+                # インタフェース情報の組織が未登録場合
+                # インスタンスグループ取得を無効にする
+                # ifInfoRows[0]['ANSTWR_ORGANIZATION'] = None
+                if not ifInfoRows[0]['ANSTWR_ORGANIZATION']:
+                    igrp_url = None
+                else:
+                    if info['name'] == ifInfoRows[0]['ANSTWR_ORGANIZATION']:
+                        igrp_url = info['related']['instance_groups']
+
+            DBUpdate(Contents_array, TableName, OrganizationRows, PkeyItem, NameItem, IDItem, dbAccess, False)
+
+            ############################################################
+            # トランザクション終了
+            ############################################################
+            dbAccess.db_commit()
+
+        except Exception as e:
+            g.applogger.error("Faild to make organization data.")
+            raise e
+
+        ############################################################
+        # インスタンスグループ情報更新
+        ############################################################
+        try:
             ############################################################
             # 組織で利用可能なインスタンスグループ情報取得
             ############################################################
-            url = org_response_array['responseContents']['results'][0]['related']['instance_groups']
-            response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
-            if not response_array['success']:
-                RestResultLog(restApiCaller.getRestResultList())
-                raise Exception("Faild to get instance groups data from %s" % (url))
+            # インタフェース情報の組織が未登録場合
+            # インスタンスグループは空にする
+            if igrp_url:
+                url = igrp_url
+                response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
+                if not response_array['success']:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("Faild to get instance groups data from %s" % (url))
 
-            if 'responseContents' not in response_array:
-                RestResultLog(restApiCaller.getRestResultList())
-                raise Exception("responseContents tag is not found in %s" % (url))
+                if 'responseContents' not in response_array:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents tag is not found in %s" % (url))
 
-            if 'results' not in response_array['responseContents']:
-                RestResultLog(restApiCaller.getRestResultList())
-                raise Exception("responseContents->results tag not found in %s" % (url))
+                if 'results' not in response_array['responseContents']:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents->results tag not found in %s" % (url))
 
-            if 'count' not in response_array['responseContents']:
-                RestResultLog(restApiCaller.getRestResultList())
-                raise Exception("responseContents->count tag not found in %s" % (url))
+                if 'count' not in response_array['responseContents']:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents->count tag not found in %s" % (url))
 
-            if response_array['responseContents']['count'] == 0:
-                # 組織に紐づくインスタンスグループがない
-                RestResultLog(restApiCaller.getRestResultList())
-                raise Exception("responseContents->count tag is 0 in %s" % (url))
+                igrp_response_array = response_array
+            else:
+                igrp_response_array = {}
+                igrp_response_array['responseContents'] = {}
+                igrp_response_array['responseContents']['results'] = []
 
-            igrp_response_array = response_array
             ############################################################
             # トランザクション開始
             ############################################################
@@ -317,59 +373,10 @@ def backyard_main(organization_id, workspace_id):
             raise e
 
         ############################################################
-        # ユーザーに紐づく組織情報更新
+        # 該当ユーザーの組織が利用可能な実行環境情報更新
         ############################################################
         try:
-            ############################################################
-            # トランザクション開始
-            ############################################################
-            dbAccess.db_transaction_start()
-
-            ############################################################
-            # ITA側の既に登録済みの組織名情報を取得する
-            ############################################################
-            TableName = "T_ANSC_TWR_ORGANIZATION"
-            cols = dbAccess.table_columns_get(TableName)
-            cols = (',').join(cols[0])
-            sql = (
-                "SELECT \n"
-                "  %s   \n"
-                "FROM   \n"
-                "  %s ; \n"
-            ) % (cols, TableName)
-            OrganizationRows = dbAccess.sql_execute(sql)
-
-            ############################################################
-            # データベース更新
-            ############################################################
-            PkeyItem = "ORGANIZATION_ITA_MANAGED_ID"
-            NameItem = "ORGANIZATION_NAME"
-            IDItem = "ORGANIZATION_ID"
-            Contents_array = []
-            for info in org_response_array['responseContents']['results']:
-                Contents_array.append(
-                    {
-                        'name': info['name'],
-                        'id': int(info['id']),
-                    }
-                )
-
-            DBUpdate(Contents_array, TableName, OrganizationRows, PkeyItem, NameItem, IDItem, dbAccess, False)
-
-            ############################################################
-            # トランザクション終了
-            ############################################################
-            dbAccess.db_commit()
-
-        except Exception as e:
-            g.applogger.error("Faild to make organization data.")
-            raise e
-
-        ############################################################
-        # 該当ユーザー(組織)が利用可能な実行環境情報更新
-        ############################################################
-        try:
-            # 該当ユーザーが利用可能な実行環境取得
+            #  該当ユーザーの組織が利用可能な実行環境取得
             # /api/v2/organizations/12/execution_environments/だと組織共通の実行環境が取得できない
             url = "/api/v2/execution_environments/"
             response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
@@ -389,11 +396,6 @@ def backyard_main(organization_id, workspace_id):
             if 'count' not in response_array['responseContents']:
                 RestResultLog(restApiCaller.getRestResultList())
                 raise Exception("responseContents->count tag not found in %s" % (url))
-
-            if response_array['responseContents']['count'] == 0:
-                # 当該組織で利用可能な実行環境がない
-                RestResultLog(restApiCaller.getRestResultList())
-                raise Exception("responseContents->count tag is 0 in %s" % (url))
 
             ee_response_array = response_array
             ############################################################

@@ -104,7 +104,7 @@ class ConductorCommonLibs():
         data_list = wsdb_istc.table_select('T_COMN_CONDUCTOR_NODE_STATUS', 'WHERE `DISUSE_FLAG`=0')
         for data in data_list:
             self._node_status_list.append(data['STATUS_ID'])
-        ###  暫定追加
+        #  暫定追加
         self._node_status_list.append('__else__')
         self._node_status_list.append('9999')
         # print(self._node_status_list)
@@ -134,7 +134,7 @@ class ConductorCommonLibs():
         err_code = 'xxx-xxxxxx'
         err_code = '499-00201'
         tmp_c_all_data = copy.deepcopy(c_all_data)
-        
+
         try:
             # check first block
             res_chk = self.chk_format(c_all_data)
@@ -320,6 +320,22 @@ class ConductorCommonLibs():
 
         if 'last_update_date_time' not in c_data:
             err_msg_args.append('conductor.last_update_date_time')
+
+        # c_dataにnotice_infoがあるかチェック
+        # ある場合は、通知名がnotice_infoにあるか検索
+        # ステータスIDがステータスマスタにあるか確認
+        if 'notice_info' not in c_data:
+            err_msg_args.append('conductor.notice_info')
+        elif c_data['notice_info']:
+            for key, values in c_data['notice_info'].items():
+                key_list = self.__db.table_select('T_COMN_CONDUCTOR_NOTICE', 'WHERE `DISUSE_FLAG`=0 AND `NOTICE_NAME`=%s', key)  # noqa E501
+                if len(key_list) == 0:
+                    err_msg_args.append('conductor.notice_info not exists')
+                else:
+                    for value in values:
+                        value_list = self.__db.table_select('T_COMN_CONDUCTOR_STATUS', 'WHERE `DISUSE_FLAG`=0 AND `STATUS_ID`=%s', value)
+                        if len(value_list) == 0:
+                            err_msg_args.append('conductor status not exists')
 
         if len(err_msg_args) != 0:
             msg = g.appmsg.get_api_message('MSG-40006')
@@ -797,7 +813,7 @@ class ConductorCommonLibs():
         check whether contain 'conditional-branch' or 'status-file-branch' in way from parallel-branch to parallel-merge
 
         Arguments:
-            
+
         Returns:
             (tuple)
             - retBool (bool)
@@ -1012,7 +1028,7 @@ class ConductorCommonLibs():
                         block_1['operation_id'] = data_list[0]['OPERATION_ID']
                     else:
                         block_1['operation_id'] = None
-                        
+
                 elif node_type == 'call':
                     # call_conductor_name
                     if block_1.get('call_conductor_id'):
@@ -1049,7 +1065,7 @@ class ConductorCommonLibs():
         }
         res.update(self.node_datas)
         res.update(self.edge_datas)
-        
+
         chk_num_2 = len(res)
         if chk_num_1 != chk_num_2:
             msg = g.appmsg.get_api_message('MSG-40013')
@@ -1161,7 +1177,7 @@ class ConductorCommonLibs():
         except Exception:
             result = False
         return result
-    
+
     # Node検索処理呼び出し
     def search_target_node(self, terminal_type, base_node_id, target_node_type, c_data):
         """
@@ -1259,7 +1275,7 @@ class ConductorCommonLibs():
             else:
                 tmpNodeLists = {"SETTING": json.dumps(c_data)}
             arrCallLists = {}
-            
+
             # 重複排除
             conductor_data = tmpNodeLists.get('SETTING')
             if isinstance(conductor_data, str):

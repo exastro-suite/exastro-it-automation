@@ -38,10 +38,11 @@ def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
     """
     msg = ''
 
+    # 開発用 temporaty data
     conductor_data["conductor"]["notice_info"] = {
         # "test": ["5", "6", "7"],
         # "test2": ["5", "6", "7"],
-        "teams_test": ["5", "6", "7"]
+        "teams_test": ["3", "4", "6", "8", "9", "7", "11"]
         # "dummy": ["1","7"],
         # "test2": ["600","700"]
     }

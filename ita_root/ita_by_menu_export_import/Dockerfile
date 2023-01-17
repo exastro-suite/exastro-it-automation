@@ -54,6 +54,12 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
+RUN curl -k -LO https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm \
+&&  dnf -y localinstall mysql80-community-release-el7-3.noarch.rpm \
+&&  curl -k -LO https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 \
+&&  rpm --import RPM-GPG-KEY-mysql-2022 \
+&&  dnf -y install mysql-community-client
+
 RUN dnf install -y \
     sudo \
     git \

@@ -906,6 +906,7 @@ class loadTable():
                 mode
                     inner:内部処理用（IDColumn等は変換後の値、PasswordColumn等は暗号化された状態で返却）
                     input:内部処理用(DBにはいっている値をそのまま返却、PasswordColumn等は復号化された状態で返却)
+                    export:内部処理用(IDColumn等は変換後の値、PasswordColumn等は復号化された状態で返却)
                     nomal:本体 / jnl:履歴 / jnl_all:履歴 /
                     excel:本体Excel用 / excel_jnl:履歴Excel用 / excel_jnl_all:全履歴Excel用 /
                     count:件数 / count_jnl:履歴件数 / count_jnl_all:全履歴件数
@@ -928,7 +929,7 @@ class loadTable():
             column_list = self.get_column_list()
             primary_key = self.get_primary_key()
             # テーブル本体
-            if mode in ['inner', 'nomal', 'excel', 'count']:
+            if mode in ['inner', 'export', 'nomal', 'excel', 'count']:
                 # VIEWが設定されている場合はVIEWを対象とする
                 view_name = self.get_view_name()
                 if view_name:
@@ -1093,7 +1094,7 @@ class loadTable():
                     str_orderby = ''
                     where_str = where_str + str_orderby
 
-            if mode in ['inner', 'nomal', 'excel', 'jnl', 'excel_jnl', 'jnl_all', 'excel_jnl_all']:
+            if mode in ['inner', 'export', 'nomal', 'excel', 'jnl', 'excel_jnl', 'jnl_all', 'excel_jnl_all']:
                 # データ取得
                 tmp_result = self.objdbca.table_select(table_name, where_str, bind_value_list)
 
@@ -1752,7 +1753,7 @@ class loadTable():
             []::RESTパラメータへキー変換
             ARGS:
                 parameter:パラメータ
-                mode: inner/normal/input/excel/excel_jnl
+                mode: inner/export/normal/input/excel/excel_jnl
             RETRUN:
                 {}
         """
@@ -1771,7 +1772,7 @@ class loadTable():
                         # ID → VALUE 変換処理不要ならVALUE変更無し
                         if self.get_col_class_name(jsonkey) in ['PasswordColumn']:
                             # 内部処理用
-                            if mode in ['input']:
+                            if mode in ['input', 'export']:
                                 if jsonval is not None:
                                     objcolumn = self.get_columnclass(jsonkey)
                                     jsonval = util.ky_decrypt(jsonval)    # noqa: F405
@@ -1783,7 +1784,7 @@ class loadTable():
                                 jsonval = None
                         elif self.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:
                             # 内部処理用
-                            if mode in ['input']:
+                            if mode in ['input', 'export']:
                                 if jsonval is not None:
                                     objcolumn = self.get_columnclass(jsonkey)
                                     jsonval = util.ky_decrypt(jsonval)    # noqa: F405
@@ -1805,7 +1806,7 @@ class loadTable():
                                     if col_val is not None:
                                         objcolumn = self.get_columnclass(jsonkey)
                                         col_val = util.ky_decrypt(col_val)    # noqa: F405
-                                elif mode in ['inner']:
+                                elif mode in ['inner', 'export']:
                                     if jsonval is not None:
                                         # base64した値をそのまま返却
                                         pass
@@ -1845,7 +1846,7 @@ class loadTable():
                     # ID → VALUE 変換処理不要ならVALUE変更無し
                     if self.get_col_class_name(rest_key) in ['PasswordColumn']:
                         # 内部処理用
-                        if mode in ['input']:
+                        if mode in ['input', 'export']:
                             if col_val is not None:
                                 objcolumn = self.get_columnclass(rest_key)
                                 col_val = util.ky_decrypt(col_val)    # noqa: F405
@@ -1865,7 +1866,7 @@ class loadTable():
                                 if col_val is not None:
                                     objcolumn = self.get_columnclass(rest_key)
                                     col_val = util.ky_encrypt(col_val)    # noqa: F405
-                            elif mode in ['inner']:
+                            elif mode in ['inner', 'export']:
                                 if jsonval is not None:
                                     # base64した値をそのまま返却
                                     pass
@@ -1877,7 +1878,7 @@ class loadTable():
                             if tmp_exec[0] is True:
                                 col_val = tmp_exec[2]
 
-                    if mode in ['input', 'inner']:
+                    if mode in ['input', 'inner', 'export']:
                         rest_parameter.setdefault(rest_key, col_val)
                     else:
                         # if view_item == '1' or auto_input_item == '1':
@@ -1891,7 +1892,7 @@ class loadTable():
                             file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
                             rest_file.setdefault(rest_key, file_data)
                         elif self.get_col_class_name(rest_key) == 'FileUploadEncryptColumn':
-                            if mode in ['input', 'inner']:
+                            if mode in ['input', 'inner', 'export']:
                                 objcolumn = self.get_columnclass(rest_key)
                                 # ファイル取得＋64変換
                                 file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)

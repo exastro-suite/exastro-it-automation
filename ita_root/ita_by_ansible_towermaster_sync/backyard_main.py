@@ -266,6 +266,7 @@ def backyard_main(organization_id, workspace_id):
             IDItem = "ORGANIZATION_ID"
             Contents_array = []
             igrp_url = None
+            my_org_id = None
             for info in org_response_array['responseContents']['results']:
                 Contents_array.append(
                     {
@@ -278,10 +279,11 @@ def backyard_main(organization_id, workspace_id):
                 # ifInfoRows[0]['ANSTWR_ORGANIZATION'] = None
                 if not ifInfoRows[0]['ANSTWR_ORGANIZATION']:
                     igrp_url = org_response_array['responseContents']['results'][0]['related']['instance_groups']
+                    my_org_id = int(org_response_array['responseContents']['results'][0]['id'])
                 else:
                     if info['name'] == ifInfoRows[0]['ANSTWR_ORGANIZATION']:
                         igrp_url = info['related']['instance_groups']
-
+                        my_org_id = int(info['id'])
             DBUpdate(Contents_array, TableName, OrganizationRows, PkeyItem, NameItem, IDItem, dbAccess, False)
 
             ############################################################
@@ -425,12 +427,15 @@ def backyard_main(organization_id, workspace_id):
             IDItem = "EXECUTION_ENVIRONMENT_AAC_ID"
             Contents_array = []
             for info in ee_response_array['responseContents']['results']:
-                Contents_array.append(
-                    {
-                        'name': info['name'],
-                        'id': info['id'],
-                    }
-                )
+                # 複数の組織に属している場合、他組織に属している実行環境も取得出来てしまうので
+                # 全組織共通の実行環境と自組織に属している実行環境だけを選択する。
+                if not info['organization'] or info['organization'] == my_org_id:
+                    Contents_array.append(
+                        {
+                            'name': info['name'],
+                            'id': info['id'],
+                        }
+                    )
 
             DBUpdate(Contents_array, TableName, VirtualEnvRows, PkeyItem, NameItem, IDItem, dbAccess, False)
 

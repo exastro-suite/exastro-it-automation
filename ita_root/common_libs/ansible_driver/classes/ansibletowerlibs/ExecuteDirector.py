@@ -1199,23 +1199,12 @@ class ExecuteDirector():
 
         project_id = response_array['responseContents']['id']
 
-        update_url = self.wait_for_create_project(project_id)
-        if update_url == -1:
+        url = self.wait_for_create_project(project_id)
+        if url == -1:
             # エラーログはwait_for_create_projectで出力
             return -1
 
-        response_array = AnsibleTowerRestApiPassThrough.post(self.restApiCaller, update_url)
-        if not response_array['success']:
-            errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
-            self.errorLogOut(errorMessage)
-            g.applogger.error(response_array)
-            # HTTPの情報をUIに表示
-            self.RestResultLog(self.restApiCaller.getRestResultList())
-            return -1
-
-        project_updates_url = response_array['responseContents']['url']
-
-        ret = self.wait_for_project_update(project_updates_url)
+        ret = self.wait_for_project_update(url)
         if ret == -1:
             # エラーログはwait_for_project_updateで出力
             return -1
@@ -2274,12 +2263,25 @@ class ExecuteDirector():
             if project_status in ["new", "pending", "waiting", "running"]:
                 time.sleep(5)
 
-            elif project_status in ["successful", "failed", "error"]:
-                # failedやerrorでも次の処理へ進める
+            elif project_status == "successful":
+                # project作成時にupdateが実行されているので、そのlast_updateを確認する(/api/v2/project_updates/{id})
+                return response_array['responseContents']['related']['last_update']
+
+            elif project_status in ["failed", "error"]:
                 # 制御ノードにコンテナイメージがロードされていないと、プロジェクト作成でGit連携が失敗する
                 # プロジェクトの更新だとコンテナイメージがロードていなくても問題ないので、プロジェクトを更新する
                 update_url = response_array['responseContents']['related']['update']
-                return update_url
+                response_array = AnsibleTowerRestApiPassThrough.post(self.restApiCaller, update_url)
+                if not response_array['success']:
+                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
+                    self.errorLogOut(errorMessage)
+                    g.applogger.error(response_array)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
+                    return -1
+
+                # updateをpostした際はproject_updatesが返却されている(/api/v2/project_updates/{id})
+                return response_array['responseContents']['url']
 
             else:
                 errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])

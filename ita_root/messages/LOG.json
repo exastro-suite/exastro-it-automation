@@ -964,6 +964,7 @@
     "MSG-10909": "Failed to get user information.",
     "MSG-10910": "Failed to get the organization to which the user belongs.",
     "MSG-10911": "User does not belong to an organization.",
+    "MSG-10912": "Faild to get instance groups.",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",

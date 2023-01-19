@@ -115,9 +115,11 @@ class ExecuteDirector():
 
             OrganizationId = response_array['responseContents'][0]['id']
 
+            uunuse1, unuse2, is_superuser, is_organizations = self.getUserDefaultOrganization()
+
         else:
             # ユーザーが所属している組織を取得
-            OrganizationId, org_response_array = self.getUserDefaultOrganization()
+            OrganizationId, org_response_array, is_superuser, is_organizations = self.getUserDefaultOrganization()
             if not OrganizationId:
                 # 組織未所属または、ユーザーが所属している組織を取得失敗
                 return -1, TowerHostList
@@ -145,11 +147,14 @@ class ExecuteDirector():
                 errorMessage = g.appmsg.get_api_message("MSG-10685", [execution_environment_name])
                 self.errorLogOut(errorMessage)
                 return -1, TowerHostList
+
             if response_array['responseContents']['results'] is not None:
                 for info in response_array['responseContents']['results']:
+                    # 組織が紐づいていないユーザーで管理者ユーザーの場合か
                     # 複数の組織に属している場合、他組織に属している実行環境も取得出来てしまうので
-                    # 全組織共通の実行環境と自組織に属している実行環境だけを判定。
-                    if not info['organization'] or info['organization'] == OrganizationId:
+                    # 全組織共通の実行環境と自組織に属している実行環境だけを選択する。
+                    if (is_organizations == False and is_superuser == True) or \
+                       (not info['organization'] or info['organization'] == OrganizationId):
                         if info['name'] == execution_environment_name:
                             execution_environment_id = info['id']
                             break
@@ -160,7 +165,7 @@ class ExecuteDirector():
                 return -1, TowerHostList
 
         # インスタンスグルーブ情報取得
-        igrp_array = self.getInstanceGroupBelongingToOrganization(org_response_array['related']['instance_groups'])
+        igrp_array = self.getInstanceGroupBelongingToOrganization(org_response_array['related']['instance_groups'], is_superuser, is_organizations)
         if igrp_array is None:
             return -1, TowerHostList
 
@@ -2382,7 +2387,8 @@ class ExecuteDirector():
         ############################################################
         # 接続トークンに対応したユーザー情報取得
         ############################################################
-
+        is_superuser = False
+        is_organizations = True
         url = "/api/v2/me/"
         response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
         if not response_array['success']:
@@ -2390,7 +2396,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
         if 'responseContents' not in response_array:
             g.applogger.error("responseContents tag is not found in %s" % (url))
@@ -2398,7 +2404,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
         if 'results' not in response_array['responseContents']:
             g.applogger.error("responseContents->results tag not found in %s" % (url))
@@ -2406,7 +2412,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
         if 'count' not in response_array['responseContents']:
             g.applogger.error("responseContents->count tag not found in %s" % (url))
@@ -2414,7 +2420,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
         if response_array['responseContents']['count'] != 1:
             g.applogger.error("responseContents->count is not 1 in %s" % (url))
@@ -2422,8 +2428,9 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
+        is_superuser = response_array['responseContents']['results'][0]['is_superuser']
         users_response_array = response_array
 
         ############################################################
@@ -2436,7 +2443,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
         if 'responseContents' not in response_array:
             g.applogger.error("responseContents tag is not found in %s" % (url))
@@ -2444,7 +2451,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
         if 'results' not in response_array['responseContents']:
             g.applogger.error("responseContents->results tag not found in %s" % (url))
@@ -2452,7 +2459,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
         if 'count' not in response_array['responseContents']:
             g.applogger.error("responseContents->count tag not found in %s" % (url))
@@ -2460,20 +2467,50 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            return None, None, is_superuser, is_organizations
 
+        org_response_array = response_array
+        # 組織の紐付けが無い場合、Defaultの組織を適用する。
         if response_array['responseContents']['count'] == 0:
-            g.applogger.error("responseContents->count is 0 in %s" % (url))
-            errorMessage = g.appmsg.get_api_message("MSG-10911", [])
-            self.errorLogOut(errorMessage)
-            # HTTPの情報をUIに表示
-            self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None
+            url = "/api/v2/organizations/1/"
+            response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
+            if not response_array['success']:
+                g.applogger.error("Faild to get organization data from %s" % (url))
+                errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return None, None, is_superuser, is_organizations
+
+            if 'responseContents' not in response_array:
+                g.applogger.error("responseContents tag is not found in %s" % (url))
+                errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return None, None, is_superuser, is_organizations
+
+            org_response_array = {}
+            org_response_array['responseContents'] = {}
+            org_response_array['responseContents']['results'] = []
+            Contents = {}
+            Contents['id'] = response_array['responseContents']['id']
+            Contents['name'] = response_array['responseContents']['name']
+            Contents['related'] = {}
+            Contents['related']['instance_groups'] = response_array['responseContents']['related']['instance_groups']
+            org_response_array['responseContents']['results'].append(Contents)
+
+            is_organizations = False
 
         # 複数の組織に所属している場合、ランダムに先頭の組織をデフォルトで使用する。
-        return response_array['responseContents']['results'][0]['id'], response_array['responseContents']['results'][0]
+        return org_response_array['responseContents']['results'][0]['id'], org_response_array['responseContents']['results'][0], is_superuser, is_organizations
 
-    def getInstanceGroupBelongingToOrganization(self, url):
+    def getInstanceGroupBelongingToOrganization(self, url, is_superuser, is_organizations):
+
+        # 組織が紐づいていないユーザーで管理者ユーザーの場合
+        if is_organizations == False and is_superuser == True:
+            url = "/api/v2/instance_groups/"
+
         response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
         if not response_array['success']:
             g.applogger.error("Faild to get instance groups data from %s" % (url))
@@ -2481,7 +2518,7 @@ class ExecuteDirector():
             self.errorLogOut(errorMessage)
             # HTTPの情報をUIに表示
             self.RestResultLog(self.restApiCaller.getRestResultList())
-            return None,
+            return None
 
         if 'responseContents' not in response_array:
             g.applogger.error("responseContents tag is not found in %s" % (url))

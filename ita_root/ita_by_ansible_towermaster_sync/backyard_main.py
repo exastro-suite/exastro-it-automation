@@ -210,6 +210,9 @@ def backyard_main(organization_id, workspace_id):
             RestResultLog(restApiCaller.getRestResultList())
             raise Exception("responseContents->count is not 1 in %s" % (url))
 
+        # 管理者ユーザー区分取得
+        is_superuser = response_array['responseContents']['results'][0]['is_superuser']
+
         users_response_array = response_array
 
         ############################################################
@@ -237,8 +240,32 @@ def backyard_main(organization_id, workspace_id):
                 RestResultLog(restApiCaller.getRestResultList())
                 raise Exception("responseContents->count tag not found in %s" % (url))
 
-
             org_response_array = response_array
+            is_organizations = True
+            # 組織の紐付けが無い場合、Defaultの組織を適用する。
+            if response_array['responseContents']['count'] == 0:
+                url = "/api/v2/organizations/1/"
+                response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
+                if not response_array['success']:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("Faild to get organization data from %s" % (url))
+
+                if 'responseContents' not in response_array:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents tag is not found in %s" % (url))
+
+                org_response_array = {}
+                org_response_array['responseContents'] = {}
+                org_response_array['responseContents']['results'] = []
+                Contents = {}
+                Contents['id'] = response_array['responseContents']['id']
+                Contents['name'] = response_array['responseContents']['name']
+                Contents['related'] = {}
+                Contents['related']['instance_groups'] = response_array['responseContents']['related']['instance_groups']
+                org_response_array['responseContents']['results'].append(Contents)
+
+                is_organizations = False
+
             ############################################################
             # トランザクション開始
             ############################################################
@@ -276,7 +303,7 @@ def backyard_main(organization_id, workspace_id):
                 )
                 # インタフェース情報の組織が未登録場合
                 # 先頭の組織に紐づくインスタンスグループ取得
-                # ifInfoRows[0]['ANSTWR_ORGANIZATION'] = None
+
                 if not ifInfoRows[0]['ANSTWR_ORGANIZATION']:
                     igrp_url = org_response_array['responseContents']['results'][0]['related']['instance_groups']
                     my_org_id = int(org_response_array['responseContents']['results'][0]['id'])
@@ -284,6 +311,11 @@ def backyard_main(organization_id, workspace_id):
                     if info['name'] == ifInfoRows[0]['ANSTWR_ORGANIZATION']:
                         igrp_url = info['related']['instance_groups']
                         my_org_id = int(info['id'])
+
+            # 組織が紐づいていないユーザーで管理者ユーザーの場合
+            if is_organizations == False and is_superuser == True:
+                igrp_url = "/api/v2/instance_groups/"
+
             DBUpdate(Contents_array, TableName, OrganizationRows, PkeyItem, NameItem, IDItem, dbAccess, False)
 
             ############################################################
@@ -427,9 +459,11 @@ def backyard_main(organization_id, workspace_id):
             IDItem = "EXECUTION_ENVIRONMENT_AAC_ID"
             Contents_array = []
             for info in ee_response_array['responseContents']['results']:
+                # 組織が紐づいていないユーザーで管理者ユーザーの場合か
                 # 複数の組織に属している場合、他組織に属している実行環境も取得出来てしまうので
                 # 全組織共通の実行環境と自組織に属している実行環境だけを選択する。
-                if not info['organization'] or info['organization'] == my_org_id:
+                if (is_organizations == False and is_superuser == True) or \
+                   (not info['organization'] or info['organization'] == my_org_id):
                     Contents_array.append(
                         {
                             'name': info['name'],

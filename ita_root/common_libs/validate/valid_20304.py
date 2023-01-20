@@ -41,11 +41,8 @@ def external_valid_menu_after(objDBCA, objtable, option):
         pkey = option["uuid"]
 
     dialog_data = None
-    if cmd_type == "Register":
+    if cmd_type in ["Register", "Update"]:
         dialog_data = option.get('entry_parameter', {}).get('file', {}).get('dialog_file', '')
-
-    elif cmd_type == "Update":
-        dialog_data = option.get('current_parameter', {}).get('file', {}).get('dialog_file', '')
 
     # 廃止/復活時の場合、関連レコードを廃止/復活
     if cmd_type in ["Discard", "Restore"]:

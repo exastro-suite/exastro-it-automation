@@ -43,7 +43,11 @@ def get_all_initial_setting_ansible():  # noqa: E501
     else:
         result_data = {}
         for org_db_info in org_db_info_list:
-            result_data[org_db_info['ORGANIZATION_ID']] = json.loads(org_db_info.get('INITIAL_DATA_ANSIBLE_IF'))
+            initial_data_ansible_if = org_db_info.get('INITIAL_DATA_ANSIBLE_IF')
+            if (initial_data_ansible_if is not None) and (len(initial_data_ansible_if) > 0):
+                result_data[org_db_info['ORGANIZATION_ID']] = json.loads(initial_data_ansible_if)
+            else:
+                result_data[org_db_info['ORGANIZATION_ID']] = None
 
     return result_data,
 
@@ -68,7 +72,11 @@ def get_initial_setting_ansible(organization_id):  # noqa: E501
     if len(org_db_info_list) == 0:
         return '', "organization_id[%s] is not exist." % (organization_id), "499-00000", 499
     else:
-        result_data = json.loads(org_db_info_list[0].get('INITIAL_DATA_ANSIBLE_IF'))
+        initial_data_ansible_if = org_db_info_list[0].get('INITIAL_DATA_ANSIBLE_IF')
+        if (initial_data_ansible_if is not None) and (len(initial_data_ansible_if) > 0):
+            result_data = json.loads(initial_data_ansible_if)
+        else:
+            result_data = None
 
     return result_data,
 

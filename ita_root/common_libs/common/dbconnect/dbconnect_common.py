@@ -558,11 +558,12 @@ class DBConnectCommon:
             return data_list[0]
 
         return {
-            "DB_HOST": g.db_connect_info["ORGDB_HOST"],
-            "DB_PORT": g.db_connect_info["ORGDB_PORT"],
-            "DB_USER": g.db_connect_info["ORGDB_USER"],
-            "DB_PASSWORD": g.db_connect_info["ORGDB_PASSWORD"],
-            "DB_ADMIN_USER": g.db_connect_info["ORGDB_ADMIN_USER"],
-            "DB_ADMIN_PASSWORD": g.db_connect_info["ORGDB_ADMIN_PASSWORD"],
-            "DB_DATABASE": g.db_connect_info["ORGDB_DATABASE"]
+            'DB_HOST': g.db_connect_info.get('ORGDB_HOST'),
+            'DB_PORT': g.db_connect_info.get('ORGDB_PORT'),
+            'DB_USER': g.db_connect_info.get('ORGDB_USER'),
+            'DB_PASSWORD': g.db_connect_info.get('ORGDB_PASSWORD'),
+            'DB_ADMIN_USER': g.db_connect_info.get('ORGDB_ADMIN_USER'),
+            'DB_ADMIN_PASSWORD': g.db_connect_info.get('ORGDB_ADMIN_PASSWORD'),
+            'DB_DATABASE': g.db_connect_info.get('ORGDB_DATABASE'),
+            'INITIAL_DATA_ANSIBLE_IF': g.db_connect_info.get('INITIAL_DATA_ANSIBLE_IF')
         }

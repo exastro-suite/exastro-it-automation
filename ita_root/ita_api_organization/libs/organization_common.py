@@ -85,17 +85,18 @@ def before_request_handler():
             raise AppException("999-00001", ["ORGANIZATION_ID=" + organization_id])
 
         g.db_connect_info = {}
-        g.db_connect_info["ORGDB_HOST"] = orgdb_connect_info["DB_HOST"]
-        g.db_connect_info["ORGDB_PORT"] = str(orgdb_connect_info["DB_PORT"])
-        g.db_connect_info["ORGDB_USER"] = orgdb_connect_info["DB_USER"]
-        g.db_connect_info["ORGDB_PASSWORD"] = orgdb_connect_info["DB_PASSWORD"]
-        g.db_connect_info["ORGDB_ADMIN_USER"] = orgdb_connect_info["DB_ADMIN_USER"]
-        g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = orgdb_connect_info["DB_ADMIN_PASSWORD"]
-        g.db_connect_info["ORGDB_DATABASE"] = orgdb_connect_info["DB_DATABASE"]
+        g.db_connect_info['ORGDB_HOST'] = orgdb_connect_info.get('DB_HOST')
+        g.db_connect_info['ORGDB_PORT'] = str(orgdb_connect_info.get('DB_PORT'))
+        g.db_connect_info['ORGDB_USER'] = orgdb_connect_info.get('DB_USER')
+        g.db_connect_info['ORGDB_PASSWORD'] = orgdb_connect_info.get('DB_PASSWORD')
+        g.db_connect_info['ORGDB_ADMIN_USER'] = orgdb_connect_info.get('DB_ADMIN_USER')
+        g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = orgdb_connect_info.get('DB_ADMIN_PASSWORD')
+        g.db_connect_info['ORGDB_DATABASE'] = orgdb_connect_info.get('DB_DATABASE')
+        g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = orgdb_connect_info.get('INITIAL_DATA_ANSIBLE_IF')
         # gitlab connect info
         g.gitlab_connect_info = {}
-        g.gitlab_connect_info["GITLAB_USER"] = orgdb_connect_info["GITLAB_USER"]
-        g.gitlab_connect_info["GITLAB_TOKEN"] = orgdb_connect_info["GITLAB_TOKEN"]
+        g.gitlab_connect_info['GITLAB_USER'] = orgdb_connect_info.get('GITLAB_USER')
+        g.gitlab_connect_info['GITLAB_TOKEN'] = orgdb_connect_info.get('GITLAB_TOKEN')
 
         # initialize setting workspcae-db connect_info and connect check
         org_db = DBConnectOrg()  # noqa: F405

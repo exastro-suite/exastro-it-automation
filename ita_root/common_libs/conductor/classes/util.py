@@ -321,9 +321,6 @@ class ConductorCommonLibs():
         if 'last_update_date_time' not in c_data:
             err_msg_args.append('conductor.last_update_date_time')
 
-        # c_dataにnotice_infoがあるかチェック
-        # ある場合は、通知名がnotice_infoにあるか検索
-        # ステータスIDがステータスマスタにあるか確認
         if 'notice_info' not in c_data:
             err_msg_args.append('conductor.notice_info')
         elif c_data['notice_info']:

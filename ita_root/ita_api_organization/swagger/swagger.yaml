@@ -1,10 +1,31 @@
 openapi: 3.0.3
 info:
-  title: ITA Version2.0 API
-  description: ITAv2.0用API
-  version: 1.0.0
+  title: Exastro IT Automation API
+  description: Exastro IT Automation API
+  version: 2.0.3
 servers:
-- url: /
+- url: "https://{host}"
+  description: API endpoint
+  variables:
+    host:
+      default: localhost
+- url: "http://{host}"
+  description: API endpoint
+  variables:
+    host:
+      default: localhost
+- url: "{protocol}://{host}:{port}"
+  description: API endpoint (Development)
+  variables:
+    protocol:
+      enum:
+      - http
+      - https
+      default: https
+    host:
+      default: localhost
+    port:
+      default: "30080"
 tags:
 - name: Menu Info
   description: メニュー情報の取得
@@ -4805,4 +4826,19 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+  securitySchemes:
+    BearerAuth:
+      type: http
+      description: Credentials or access token for API
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: controllers.authorization_controller.check_BearerAuth
+    BasicAuth:
+      type: http
+      description: Value converted from ID/Password in base64
+      scheme: basic
+      x-basicInfoFunc: controllers.authorization_controller.check_BasicAuth
 

@@ -46,11 +46,12 @@ class DBConnectOrg(DBConnectCommon):
         if connect_info is False:
             raise AppException("999-00001", ["ORGANIZATION_ID=" + self.organization_id])
 
-        self._host = connect_info['DB_HOST']
-        self._port = int(connect_info['DB_PORT'])
-        self._db_user = connect_info['DB_USER']
-        self._db_passwd = connect_info['DB_PASSWORD']
-        self._db = connect_info['DB_DATABASE']
+        self._host = connect_info.get('DB_HOST')
+        self._port = int(connect_info.get('DB_PORT'))
+        self._db_user = connect_info.get('DB_USER')
+        self._db_passwd = connect_info.get('DB_PASSWORD')
+        self._db = connect_info.get('DB_DATABASE')
+        self._inistial_data_ansible_if = connect_info.get('INITIAL_DATA_ANSIBLE_IF')
 
         # connect database
         self.db_connect()
@@ -64,7 +65,7 @@ class DBConnectOrg(DBConnectCommon):
     def get_wsdb_connect_info(self, workspace_id):
         """
         get database connect infomation for workspace
-        
+
         Arguments:
             workspace_id: workspace_id name
         Returns:
@@ -90,6 +91,12 @@ class DBConnectOrg(DBConnectCommon):
             "DB_PASSWORD": g.db_connect_info["WSDB_PASSWORD"],
             "DB_DATABASE": g.db_connect_info["WSDB_DATABASE"]
         }
+
+    def get_inistial_data_ansible_if(self):
+        """
+        get inistial_data_ansible_if
+        """
+        return self._inistial_data_ansible_if
 
 
 class DBConnectOrgRoot(DBConnectOrg):
@@ -171,7 +178,7 @@ class DBConnectOrgRoot(DBConnectOrg):
     def user_create(self, user_name, user_password, db_name):
         """
         create user
-        
+
         Arguments:
             user_name: user name
             user_password: user_password

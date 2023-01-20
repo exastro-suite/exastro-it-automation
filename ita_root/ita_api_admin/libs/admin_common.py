@@ -193,10 +193,10 @@ def initial_settings_ansible(ws_db, body):
                 initial_host_list.append(host)
 
                 for registerd_aac_host in registerd_aac_hosts[1]:
-                    # 既存データに無い初期データは更新する
+                    # 既存データに有る初期データは更新する
                     if host == registerd_aac_host.get('parameter').get('host'):
                         update_aac_host = registerd_aac_host
-                        if 'check_authentication_method' in initial_data_aac_host.get('parameter').keys():
+                        if 'authentication_method' in initial_data_aac_host.get('parameter').keys():
                             update_aac_host["parameter"]["authentication_method"] = authentication_method
                         if 'user' in initial_data_aac_host.get('parameter').keys():
                             update_aac_host["parameter"]["user"] = user

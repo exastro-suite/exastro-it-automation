@@ -458,6 +458,15 @@ getMessage = ( function() {
         'FTE02161' : "Now loading",
         'FTE02162' : "Data in the process of being edited has been read from local storage.",
         'FTE02163' : "Movement name",
+        'FTE02164' : "No notice definition.\nRegister the notice definition from Conductor notice definition.",
+        'FTE02165' : "No notice definition",
+        'FTE02166' : "Go to Conductor notice definition",
+        'FTE02167' : "Close",
+        'FTE02168' : "Notice setting",
+        'FTE02169' : "OK",
+        'FTE02170' : "Cancel",
+        'FTE02171' : "Notice Name",
+        'FTE02172' : "Notice",
         
         // Execution
         'FTE05001' : "Execution No.",

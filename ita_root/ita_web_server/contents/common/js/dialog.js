@@ -307,7 +307,7 @@ footer() {
             if ( f.button[ kind ].separate ) listAttr.push('style="margin-left:auto;"')
             
             const button = fn.html.button( f.button[kind].text, className,
-                { kind: kind, action: f.button[kind].action, style: f.button[kind].style, disabled: 'disabled'});
+                { kind: kind, action: f.button[kind].action, style: f.button[kind].style, disabled: 'disabled'}, { minWidth:f.button[kind].width });
             buttonHtml.push(`<li ${listAttr.join(' ')}>${button}</li>`);
         }
         html.push(`<ul class="dialogFooterMenuList">${buttonHtml.join('')}</ul>`);

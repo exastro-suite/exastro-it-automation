@@ -803,8 +803,8 @@ iconConfirm: function( icon, title, elements, okText = getMessage.FTE10058, canc
         <div class="alertMessageBody">${cmn.escape( elements, true )}</div>
     </div>`;
     return cmn.alert( title, elements , 'confirm', {
-        ok: { text: okText, action: 'default', style: 'width:120px', className: 'dialogPositive'},
-        cancel: { text: cancelText, action: 'negative', style: 'width:120px'}
+        ok: { text: okText, action: 'default', width: '120px', className: 'dialogPositive'},
+        cancel: { text: cancelText, action: 'negative', width: '120px'}
     });
 },
 /*
@@ -2094,6 +2094,7 @@ setCommonEvents: function() {
             
             // ホイールでポップアップ内をスクロール
             $t.on('wheel.popup', function( e ){
+                if ( !$t.is('.popupScroll') ) return;
                 e.preventDefault();
                 
                 const delta = e.originalEvent.deltaY ? - ( e.originalEvent.deltaY ) : e.originalEvent.wheelDelta ? e.originalEvent.wheelDelta : - ( e.originalEvent.detail );

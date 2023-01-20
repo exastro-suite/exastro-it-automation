@@ -816,7 +816,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
             } else if ( type === 'c') {
                 const column = info.column_info[ columnKey ],
                       rowspan = rowLength - i + 1,
-                      className = ['tHeadTh', 'popup'],
+                      className = ['tHeadTh', 'popup', 'popupScroll'],
                       attr = {id: columnKey};
                 
                 let name = fn.cv( column.column_name, '', true );

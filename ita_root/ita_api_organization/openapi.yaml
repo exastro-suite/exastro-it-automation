@@ -1,10 +1,34 @@
 openapi: 3.0.3
 info:
-  description: ITAv2.0用API
-  version: 1.0.0
-  title: ITA Version2.0 API
-tags:
+  title: Exastro IT Automation API
+  description: Exastro IT Automation API
+  version: 2.0.3
 
+servers:
+  - url: "https://{host}"
+    description: API endpoint
+    variables:
+      host:
+        default: localhost
+  - url: "http://{host}"
+    description: API endpoint
+    variables:
+      host:
+        default: localhost
+  - url: "{protocol}://{host}:{port}"
+    description: API endpoint (Development)
+    variables:
+      protocol:
+        enum:
+          - http
+          - https
+        default: https
+      host:
+        default: localhost
+      port:
+        default: '30080'
+
+tags:
   - name: Menu Info
     description: メニュー情報の取得
   - name: Menu Filter
@@ -86,7 +110,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/column/:
     get:
       tags:
@@ -141,7 +165,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/pulldown/:
     get:
       tags:
@@ -257,7 +281,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/filter/count/:
     get:
       tags:
@@ -611,7 +635,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/maintenance/{uuid}/:
     patch:
       tags:
@@ -1251,7 +1275,7 @@ paths:
                     example: 000-00000
                   data:
                     type: object
-                    example: 
+                    example:
                       {
                         version: string,
                         installed_driver: [
@@ -1835,7 +1859,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE' 
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
 
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/execute/info/:
     get:
@@ -2195,11 +2219,11 @@ paths:
               description: 作業実行するConductorの構成情報
               type: object
               properties:
-                conductor_class_name: 
+                conductor_class_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
                 conductor_data:
@@ -2725,11 +2749,11 @@ paths:
               description: 作業実行するDriverの構成情報
               type: object
               properties:
-                movement_name: 
+                movement_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
       responses:
@@ -2795,11 +2819,11 @@ paths:
               description: 作業実行するDriverの構成情報
               type: object
               properties:
-                movement_name: 
+                movement_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
       responses:
@@ -2863,11 +2887,11 @@ paths:
               description: 作業実行するDriverの構成情報
               type: object
               properties:
-                movement_name: 
+                movement_name:
                   type: string
-                operation_name: 
+                operation_name:
                   type: string
-                schedule_date: 
+                schedule_date:
                   type: string
                   example: "YYYY/MM/DD hh:mm"
       responses:
@@ -3499,7 +3523,7 @@ components:
               type: string
             END:
               type: string
-  
+
     FILTER_PARAMETERS:
       type: object
       properties:
@@ -3543,7 +3567,7 @@ components:
         type:
           type: string
           example: Register/Update
-  
+
     CONDUCTOR_INFO_LIST:
       type: object
       properties:
@@ -3607,38 +3631,38 @@ components:
                 name: "string"
               }
             ]
-    
+
     CONDUCTOR_INFO_DICT:
       type: object
       properties:
         conductor_status:
           items: {}
-          example: 
+          example:
             "status_id1" : "status_name1"
             "status_id2" : "status_name2"
         node_status:
           items: {}
-          example: 
+          example:
             "status_id1" : "status_name1"
             "status_id2" : "status_name2"
         node_type:
           items: {}
-          example: 
+          example:
             "node_type_id1" : "node_type_name1"
             "node_type_id2" : "node_type_name2"
         movement:
           items: {}
-          example: 
+          example:
             "movement_id1" : "movement_name1"
             "movement_id2" : "movement_name2"
         operation:
           items: {}
-          example: 
+          example:
             "operation_id1" : "operation_name1"
             "operation_id2" : "operation_name2"
         conductor:
           items: {}
-          example: 
+          example:
             "conductor_id1" : "conductor_name1"
             "conductor_id2" : "conductor_name2"
 
@@ -3727,3 +3751,20 @@ components:
                 "menu_id": メニューID,
                 "execution_id": 作業ID
               }
+
+  securitySchemes:
+    BearerAuth:
+      description: Credentials or access token for API
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      description: Value converted from ID/Password in base64
+      type: http
+      scheme: basic
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+security:
+- BearerAuth: []
+- BasicAuth: []

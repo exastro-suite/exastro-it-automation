@@ -38,14 +38,6 @@ def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
     """
     msg = ''
 
-    conductor_data["conductor"]["notice_info"] = {
-        # "test": ["5", "6", "7"],
-        # "test2": ["5", "6", "7"],
-        "teams_test": ["5", "6", "7"]
-        # "dummy": ["1","7"],
-        # "test2": ["600","700"]
-    }
-
     objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
     if objmenu.get_objtable() is False:
         status_code = "401-00003"

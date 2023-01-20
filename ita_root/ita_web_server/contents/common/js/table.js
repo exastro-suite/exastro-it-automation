@@ -124,12 +124,54 @@ get checkWork() {
 }
 /*
 ##################################################
+   Table構造データ
+##################################################
+*/
+tableStructuralData() {
+    const tb = this;
+    
+    if ( !tb.tableSetting[ tb.tableMode ] ) tb.tableSetting[ tb.tableMode ] = {};
+    
+    tb.structural = {
+        column_group_info: {},
+        menu_info: []
+    };
+    
+    const check = function( key ) {
+        if ( tb.tableSetting[ tb.tableMode ].hideItemList ) {
+            return ( tb.tableSetting[ tb.tableMode ].hideItemList.indexOf( key ) === -1 );
+        } else {
+            return true;
+        }
+    };
+    
+    // menu_info
+    for ( const key of tb.info.menu_info[`columns_${tb.tableMode}`] ) {
+        if ( check( key ) ) tb.structural.menu_info.push( key );
+    }
+    
+    // column_group_info
+    for ( const itemId in tb.info.column_group_info ) {
+        tb.structural.column_group_info[ itemId ] = [];
+        for ( const key of tb.info.column_group_info[ itemId ][`columns_${tb.tableMode}`] ) {
+            if ( check( key ) ) tb.structural.column_group_info[itemId].push( key );
+        }
+        if ( tb.structural.column_group_info[ itemId ].length === 0 ) {
+            delete tb.structural.column_group_info[ itemId ];
+        }
+    }    
+}
+/*
+##################################################
    Header hierarchy
    > ヘッダー階層データと列データをセット
 ##################################################
 */
 setHeaderHierarchy() {
     const tb = this;
+    
+    // テーブル構造データ
+    tb.tableStructuralData();
     
     // 特殊列
     const specialHeadColumn = [ tb.idNameRest, 'discard'],
@@ -147,13 +189,13 @@ setHeaderHierarchy() {
     
     const restOrder = [];
     
-    const hierarchy = function( columns, row, col ){
+    const hierarchy = function( columns, row ){
         if ( !tb.data.hierarchy[ row ] ) tb.data.hierarchy[ row ] = [];
         for ( const columnKey of columns ) {            
             const type = columnKey.slice( 0, 1 );
             if ( type === 'g') {
                 tb.data.hierarchy[ row ].push( columnKey );
-                hierarchy( tb.info.column_group_info[ columnKey ][`columns_${tb.tableMode}`], row + 1, col );
+                hierarchy( tb.structural.column_group_info[ columnKey ], row + 1 );
             } else if ( type === 'c') {
                 const culumnRest =  tb.info.column_info[ columnKey ].column_name_rest;
                 tb.data.restNames[ culumnRest ] = tb.info.column_info[ columnKey ].column_name;                
@@ -173,7 +215,7 @@ setHeaderHierarchy() {
             }
         }
     };
-    hierarchy( tb.info.menu_info[`columns_${tb.tableMode}`], 0, 0 );
+    hierarchy( tb.structural.menu_info, 0 );
     
     // 固定列用情報
     tb.data.sticky = {};
@@ -184,13 +226,17 @@ setHeaderHierarchy() {
 
     // 特殊列を先頭に追加
     for ( const columnKey of specialHeadColumnKeys ) {
-        tb.data.hierarchy[0].unshift( columnKey );
-        tb.data.columnKeys.unshift( columnKey );
+        if ( columnKey ) {
+            tb.data.hierarchy[0].unshift( columnKey );
+            tb.data.columnKeys.unshift( columnKey );
+        }
     }
     // 特殊列を末尾に追加
     for ( const columnKey of specialFootColumnKeys ) {
-        tb.data.hierarchy[0].push( columnKey );
-        tb.data.columnKeys.push( columnKey );
+        if ( columnKey ) {
+            tb.data.hierarchy[0].push( columnKey );
+            tb.data.columnKeys.push( columnKey );
+        }
     }
 }
 /*
@@ -206,13 +252,18 @@ setup() {
         <div class="tableHeader">
         </div>
         <div class="tableBody">
-            <table class="table mainTable">
-            </table>
+            <div class="tableFilter"></div>
+            <div class="tableWrap">
+                <div class="tableBorder">
+                    <table class="table mainTable">
+                    </table>
+                </div>
+            </div>
+            <div class="tableMessage"></div>
         </div>
         <div class="tableFooter">
             ${tb.footerHtml()}
         </div>
-        <div class="tableMessage"></div>
         <div class="tableErrorMessage"></div>
         <div class="tableLoading"></div>
         <style class="tableStyle"></style>
@@ -224,6 +275,7 @@ setup() {
     tb.$.container = $( html );
     tb.$.header = tb.$.container.find('.tableHeader');
     tb.$.body = tb.$.container.find('.tableBody');
+    tb.$.filter = tb.$.container.find('.tableFilter');
     tb.$.footer = tb.$.container.find('.tableFooter');
     tb.$.table = tb.$.container.find('.table');
     tb.$.message = tb.$.container.find('.tableMessage');
@@ -244,7 +296,16 @@ setup() {
         tb.tableMode = 'view';
     } else {
         tb.tableMode = 'input';
-    }    
+    }
+    
+    // テーブル設定
+    tb.tableSettingId = 'TS_' + tb.id + '_' + tb.params.menuNameRest;
+    const tableSetting = fn.storage.get( tb.tableSettingId );
+    if ( tableSetting ) {
+        tb.tableSetting = tableSetting;
+    } else {
+        tb.tableSetting = {};
+    }
     
     // tHead階層
     tb.setHeaderHierarchy();
@@ -352,8 +413,32 @@ setTable( mode ) {
     const tb = this;
     tb.mode = mode;
     
-    tb.$.table.html( tb.tableHtml() );
     tb.$.table.attr('table-mode', tb.tableMode );
+    
+    // フィルター位置
+    if ( tb.tableSetting[ tb.tableMode ].position === 'out') {
+        tb.$.table.html( tb.commonTableHtml( false ) );
+        tb.$.filter.html( tb.filterTableHtml() );
+        tb.$.body.addClass('tableFilterOut');
+    } else {
+        tb.$.table.html( tb.commonTableHtml( true ) );
+        tb.$.filter.empty();
+        tb.$.body.removeClass('tableFilterOut');
+    }
+    
+    // 項目メニュー表示
+    if ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show') {
+        tb.$.body.addClass('tableItemMenuShow');
+    } else {
+        tb.$.body.removeClass('tableItemMenuShow');
+    }
+    
+    // 縦・横
+    if ( tb.tableSetting[ tb.tableMode ].direction === 'horizontal') {
+        tb.$.body.addClass('tableHorizontal');
+    } else {
+        tb.$.body.removeClass('tableHorizontal');
+    }
     
     tb.$.thead = tb.$.container.find('.thead');
     tb.$.tbody = tb.$.container.find('.tbody');
@@ -369,8 +454,11 @@ setTable( mode ) {
             if ( tb.option.sheetType !== 'reference') {
                 const menuList = {
                     Main: [],
-                    Sub: [{ button: { icon: 'filter', text: getMessage.FTE00001, type: 'filterToggle', action: 'default',
-                        toggle: { init: 'off', on:getMessage.FTE00002, off:getMessage.FTE00003}}}]
+                    Sub: [
+                        { button: { icon: 'filter', text: getMessage.FTE00001, type: 'filterToggle', action: 'default',
+                        toggle: { init: 'off', on:getMessage.FTE00002, off:getMessage.FTE00003}}},
+                        { button: { icon: 'gear', text: getMessage.FTE00086, type: 'tableSetting', action: 'default'}}
+                    ]
                 };
                 if ( tb.mode === 'select') {
                     menuList.Main.push({ message: { text: getMessage.FTE00004 }});
@@ -406,8 +494,12 @@ setTable( mode ) {
                     switch ( type ) {
                         // フィルタ開閉
                         case 'filterToggle':
-                            tb.$.table.toggleClass('filterShow');
+                            tb.$.body.toggleClass('filterShow');
                             tb.stickyWidth();
+                        break;
+                        // テーブル設定
+                        case 'tableSetting':
+                            tb.tableSettingOpen();
                         break;
                         // 編集モードに移行
                         case 'tableEdit':
@@ -455,6 +547,9 @@ setTable( mode ) {
             const menuList = {
                 Main: [
                     { button: { type: 'tableOk', icon: 'detail', text: getMessage.FTE00011, action: 'positive', minWidth: '200px'}}
+                ],
+                Sub: [
+                    { button: { icon: 'gear', text: getMessage.FTE00086, type: 'tableSetting', action: 'default'}}
                 ]
             };
             if ( tb.flag.insert ) {
@@ -532,6 +627,10 @@ setTable( mode ) {
                             } else {
                                 tb.changeViewMode.call( tb );
                             }
+                        break;
+                        // テーブル設定
+                        case 'tableSetting':
+                            tb.tableSettingOpen();
                         break;
                     }
                 }
@@ -619,7 +718,7 @@ setTable( mode ) {
    tHead HTML
 ##################################################
 */
-tableHtml() {
+theadHtml( filterFlag = true, filterHeaderFlag = true ) {
     const tb = this;
     
     const info = tb.info,
@@ -645,39 +744,42 @@ tableHtml() {
     
     // モード別列
     const headRowspan = rowLength + 1;
-    switch ( tb.mode ) {
-        case 'view':
-            if ( tb.flag.update ) {
-                const selectButton = fn.html.button('', 'rowSelectButton');
-                html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
+    if ( filterHeaderFlag ) {
+        switch ( tb.mode ) {
+            case 'view':
+                if ( tb.flag.update ) {
+                    const selectButton = fn.html.button('', 'rowSelectButton');
+                    html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
+                    tb.data.filterHeadColspan++;
+                }
+                const itemText = ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show')? '項目メニュー': fn.html.icon('ellipsis_v');
+                html[0] += fn.html.cell( itemText, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowMenu'], 'th', headRowspan );
                 tb.data.filterHeadColspan++;
-            }
-            html[0] += fn.html.cell( fn.html.icon('ellipsis_v'), ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowMenu'], 'th', headRowspan );
-            tb.data.filterHeadColspan++;
-        break;
-        case 'select': case 'execute':
-            if ( tb.mode === 'select' && tb.params.selectType === 'multi') {
-                const selectButton = fn.html.button('', 'rowSelectButton');
-                html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
-            } else {
-                html[0] += fn.html.cell(getMessage.FTE00032, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
-            }
-            tb.data.filterHeadColspan++;
-        break;
-        case 'edit': {
-            if ( tb.flag.edit || tb.flag.disuse || tb.flag.reuse ) {
-                const selectButton = fn.html.button('', 'rowSelectButton');
-                html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
-            }
-        } break;
-        case 'diff':
-            html[0] += fn.html.cell(getMessage.FTE00033, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
-        break;
-        case 'history':
-            html[0] += fn.html.cell(getMessage.FTE00034, ['tHeadTh', 'tHeadLeftSticky', 'tHeadLeftStickyLast'], 'th', headRowspan );
-            html[0] += fn.html.cell(getMessage.FTE00035, ['tHeadTh'], 'th', headRowspan );
-            html[0] += fn.html.cell(getMessage.FTE00036, ['tHeadTh'], 'th', headRowspan );
-        break;
+            break;
+            case 'select': case 'execute':
+                if ( tb.mode === 'select' && tb.params.selectType === 'multi') {
+                    const selectButton = fn.html.button('', 'rowSelectButton');
+                    html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
+                } else {
+                    html[0] += fn.html.cell(getMessage.FTE00032, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
+                }
+                tb.data.filterHeadColspan++;
+            break;
+            case 'edit': {
+                if ( tb.flag.edit || tb.flag.disuse || tb.flag.reuse ) {
+                    const selectButton = fn.html.button('', 'rowSelectButton');
+                    html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
+                }
+            } break;
+            case 'diff':
+                html[0] += fn.html.cell(getMessage.FTE00033, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
+            break;
+            case 'history':
+                html[0] += fn.html.cell(getMessage.FTE00034, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
+                html[0] += fn.html.cell(getMessage.FTE00035, ['tHeadTh'], 'th', headRowspan );
+                html[0] += fn.html.cell(getMessage.FTE00036, ['tHeadTh'], 'th', headRowspan );
+            break;
+        }
     }
 
     for ( let i = rowLength; i >= 0 ; i-- ) {
@@ -694,7 +796,7 @@ tableHtml() {
                       name = fn.cv( group.column_group_name, '', true ),
                       gCount = fn.cv( groupColspan[ columnKey ].group_count, 0 ),
                       gColspan = fn.cv( groupColspan[ columnKey ].group_colspan, 0 ),
-                      colspan = group[`columns_${tb.tableMode}`].length + gColspan - gCount;
+                      colspan = tb.structural.column_group_info[ columnKey ].length + gColspan - gCount;
                 
                 // 親グループにcolspanを追加する
                 if ( group.parent_column_group_id !== null ) {
@@ -714,7 +816,7 @@ tableHtml() {
             } else if ( type === 'c') {
                 const column = info.column_info[ columnKey ],
                       rowspan = rowLength - i + 1,
-                      className = ['tHeadTh', 'popup'],
+                      className = ['tHeadTh', 'popup', 'popupScroll'],
                       attr = {id: columnKey};
                 
                 let name = fn.cv( column.column_name, '', true );
@@ -724,11 +826,13 @@ tableHtml() {
                     continue;
                 }
                 // ソート
-                if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
-                    const notSort = ['ButtonColumn', 'PasswordColumn', 'PasswordIDColumn', 'JsonPasswordIDColumn', 'MaskColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn'];
-                    if ( notSort.indexOf( column.column_type ) === -1 ) {
-                        className.push('tHeadSort');
-                        name += `<span class="tHeadSortMark"></span>`
+                if ( filterHeaderFlag ) {
+                    if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
+                        const notSort = ['ButtonColumn', 'PasswordColumn', 'PasswordIDColumn', 'JsonPasswordIDColumn', 'MaskColumn', 'SensitiveSingleTextColumn', 'SensitiveMultiTextColumn'];
+                        if ( notSort.indexOf( column.column_type ) === -1 ) {
+                            className.push('tHeadSort');
+                            name += `<span class="tHeadSortMark"></span>`
+                        }
                     }
                 }
                 // 必須
@@ -740,17 +844,12 @@ tableHtml() {
                     }
                 }
                 // 廃止、ID列を固定
-                if ( i === 0 && tb.mode !== 'history') {
-                    if ( [ tb.idNameRest, 'discard'].indexOf( column.column_name_rest ) !== -1 ) {
-                        className.push('tHeadLeftSticky');
+                if ( filterHeaderFlag ) {
+                    if ( i === 0 && tb.mode !== 'history') {
+                        if ( [ tb.idNameRest, 'discard'].indexOf( column.column_name_rest ) !== -1 ) {
+                            className.push('tHeadLeftSticky');
+                        }
                     }
-                    // Border調整用class
-                    if ( column.column_name_rest === tb.data.sticky.leftLast ) className.push('tHeadLeftStickyLast');
-                    /*
-                    if ( column.column_name_rest === tb.data.sticky.rightFirst ) className.push('tHeadRightStickyFirst');
-                    if ( column.column_name_rest === tb.data.sticky.commonFirst ) className.push('tHeadCommonFirst');
-                    if ( column.column_name_rest === tb.data.sticky.commonLast ) className.push('tHeadCommonEnd');
-                    */
                 }
                 if ( column.column_name_rest ) attr.rest = column.column_name_rest;
                 if ( column.description ) attr.title = fn.cv( column.description, '', true );
@@ -768,23 +867,62 @@ tableHtml() {
     // フィルター入力欄
     if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
         if ( tb.option.sheetType !== 'reference') {
-            html.push( tb.filterHtml() );
+            if ( filterFlag === true ) html.push( tb.filterHtml( filterHeaderFlag ) );
         }
     }
     
-    return `
-    <thead class="thead">
-        ${html.join('')}
-    </thead>
-    <tbody class="tbody">
-    </tbody>`;
+    return html.join('');
+    
+    if ( mode === 'filter') {
+        return ``
+        + `<table class="table">`
+            + `<thead class="thead">`
+            + 
+            + `</thead>`
+        + `</table>`;
+    } else {
+        return ``
+        + `<thead class="thead">`
+            + html.join('')
+        + `</thead>`
+        + `<tbody class="tbody"></tbody>`;
+    }
+}
+/*
+##################################################
+   common table html
+##################################################
+*/
+commonTableHtml( filterFlag ) {
+    const tb = this;
+    
+    return ``
+    + `<thead class="thead">`
+        + tb.theadHtml( filterFlag )
+    + `</thead>`
+    + `<tbody class="tbody"></tbody>`;
+}
+/*
+##################################################
+   filter table html
+##################################################
+*/
+filterTableHtml() {
+    const tb = this;
+    
+    return ``
+    + `<table class="table">`
+        + `<thead class="thead">`
+            + tb.theadHtml( true, false )
+        + `</thead>`
+    + `</table>`;
 }
 /*
 ##################################################
    Filter HTML
 ##################################################
 */
-filterHtml() {
+filterHtml( filterHeaderFlag = true ) {
     const tb = this;
     
     const info = tb.info.column_info,
@@ -798,10 +936,11 @@ filterHtml() {
     
     // 選択欄がない場合はフィルタタイトルを細くする
     if ( tb.data.filterHeadColspan === 1 ) className.push('tHeadFilterHeaderNarrow');
-    
     const cells = [];
-    cells.push( fn.html.cell( filterIcon, className, 'th', 2, tb.data.filterHeadColspan ) );
-    // rowClassName.push('filterNoHeaderTr'); // フィルタタイトルを消す場合
+    
+    if ( filterHeaderFlag ) {
+        cells.push( fn.html.cell( filterIcon, className, 'th', 2, tb.data.filterHeadColspan ) );
+    }
     
     const pulldownOpen = function( name, rest ) {
         return ``
@@ -963,9 +1102,11 @@ filterHtml() {
                     cellHtml.push('<div class="filterNone"></div>');
             }
         }
-
-        if (  [ tb.idNameRest, 'discard'].indexOf( rest) !== -1 ) {
-            className.push('tHeadLeftSticky');
+        
+        if ( filterHeaderFlag ) {
+            if (  [ tb.idNameRest, 'discard'].indexOf( rest) !== -1 ) {
+                className.push('tHeadLeftSticky');
+            }
         }
 
         cells.push( fn.html.cell( cellHtml.join(''), className, 'th', 1, 1, { rest: rest, type: filterType } ) );
@@ -1051,7 +1192,7 @@ filterDownloadButtonCheck() {
 referenceFilter() {
     const tb = this;
     
-    const thead = [ fn.html.cell( name, 'tHeadBlank tHeadLeftSticky tHeadLeftStickyLast', 'th') ];
+    const thead = [ fn.html.cell( name, 'tHeadBlank tHeadLeftSticky', 'th') ];
     for ( const key of tb.data.referenceFilterKeys ) {
         const column = tb.info.column_info[ key ];
         let name = fn.cv( column.column_name, '', true );
@@ -1249,6 +1390,8 @@ setTableEvents() {
         
         // 個別メニュー
         tb.$.tbody.on('click', '.tBodyRowMenu', function(){
+            if ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show') return;
+            
             if ( !tb.checkWork ) {
                 const $row = $( this );
                 if ( $row.is('.open') ) {
@@ -1872,7 +2015,6 @@ selectModeMenuCheck() {
     const tb = this;
     
     const $button = tb.$.header.find('.tableAdvance');
-    console.log( tb.select[ tb.mode ] )
     if ( tb.select[ tb.mode ].length ) {
         $button.prop('disabled', false );
     } else {
@@ -2332,7 +2474,7 @@ setInitFilterStandBy() {
     const tb = this;
     
     if ( tb.option.sheetType !== 'reference') {
-        tb.$.table.addClass('filterShow');
+        tb.$.body.addClass('filterShow');
     }
     
     tb.$.header.find('.itaButton[data-type="filterToggle"]').attr('data-toggle', 'on');
@@ -2358,46 +2500,66 @@ setInitFilterStandBy() {
 stickyWidth() {
     const tb = this;
     
-    const style = [];
-    
-    // left sticky    
-    let leftStickyWidth = 0,
-        leftStickyFilterMenuWidth = 0;
-        
-    let filterHeaderFlag = true,
-        filterHeaderColspan = Number( tb.$.thead.find('.tHeadFilterHeader').attr('colspan') );
-    if ( isNaN( filterHeaderColspan ) ) {
-        filterHeaderColspan = 1;
-        filterHeaderFlag = false;
-    }
-    
-    tb.$.thead.find('.tHeadTr').eq(0).find('.tHeadLeftSticky').each(function( index ){
-        const $th = $( this ),
-              rest = $th.attr('data-rest'),
-              width = $th.outerWidth();
-        if ( $( this ).is(':visible') ) {
-            if ( index !== 0 ) {
-                style.push(`#${tb.id} .headerTr .tHeadLeftSticky:nth-child(${ index + 1 }){left:${leftStickyWidth}px}`);
-                if ( index >= filterHeaderColspan ) {
-                    style.push(`#${tb.id} .filterTr .tHeadLeftSticky.tHeadFilter:nth-child(${ index + 1 - filterHeaderColspan + 1 }){left:${leftStickyWidth}px}`);
-                }
-                style.push(`#${tb.id} .tBodyLeftSticky:nth-child(${ index + 1 }){left:${leftStickyWidth}px}`);
-            }
-            leftStickyWidth += width;
-            if ( [ tb.idNameRest, 'discard'].indexOf( rest ) === -1 ) {
-                leftStickyFilterMenuWidth += width;
-            }
-        }
-    });
+    if ( tb.tableSetting[ tb.tableMode ].direction !== 'horizontal') {
 
-    if ( !filterHeaderFlag ) leftStickyFilterMenuWidth += 1;
-    
-    if ( tb.option.sheetType !== 'reference') {
-        style.push(`#${tb.id} .filterMenuList{left:${leftStickyFilterMenuWidth}px;}`);
+        const style = [];
+
+        // left sticky    
+        let leftStickyWidth = 0,
+            leftStickyFilterMenuWidth = 0;
+
+        let filterHeaderFlag = true,
+            filterHeaderColspan = Number( tb.$.thead.find('.tHeadFilterHeader').attr('colspan') );
+        if ( isNaN( filterHeaderColspan ) ) {
+            filterHeaderColspan = 1;
+            filterHeaderFlag = false;
+        }
+
+        tb.$.body.find('.tableWrap').find('.tHeadTr').eq(0).find('.tHeadLeftSticky').each(function( index ){
+            const $th = $( this ),
+                  rest = $th.attr('data-rest'),
+                  width = $th.outerWidth();
+            if ( $( this ).is(':visible') ) {
+                if ( index !== 0 ) {
+                    style.push(`#${tb.id} .headerTr .tHeadLeftSticky:nth-child(${ index + 1 }){left:${leftStickyWidth}px}`);
+                    if ( index >= filterHeaderColspan ) {
+                        style.push(`#${tb.id} .filterTr .tHeadLeftSticky.tHeadFilter:nth-child(${ index + 1 - filterHeaderColspan + 1 }){left:${leftStickyWidth}px}`);
+                    }
+                    style.push(`#${tb.id} .tBodyLeftSticky:nth-child(${ index + 1 }){left:${leftStickyWidth}px}`);
+                }
+                leftStickyWidth += width;
+                if ( [ tb.idNameRest, 'discard'].indexOf( rest ) === -1 ) {
+                    leftStickyFilterMenuWidth += width;
+                }
+            }
+        });
+
+        if ( !filterHeaderFlag ) leftStickyFilterMenuWidth += 1;
+
+        if ( tb.option.sheetType !== 'reference') {
+            style.push(`#${tb.id} .filterMenuList{left:${leftStickyFilterMenuWidth}px;}`);
+        }
+        style.push(`#${tb.id} .tHeadGroup>.ci{left:${leftStickyWidth}px;}`);    
+
+        tb.$.style.html( style.join('') );
+    } else {
+        const style = [];
+        let topStickyHeight = 0;
+        
+        tb.$.body.find('.tableWrap').find('.tHeadTr').eq(0).find('.tHeadLeftSticky').each(function( index ){
+            const $th = $( this ),
+                  height = $th.outerHeight();
+            if ( $( this ).is(':visible') ) {
+                if ( index !== 0 ) {
+                    style.push(`#${tb.id} .tableWrap .headerTr .tHeadLeftSticky:nth-child(${ index + 1 }){top:${topStickyHeight}px}`);
+                    style.push(`#${tb.id} .tableWrap .tBodyLeftSticky:nth-child(${ index + 1 }){top:${topStickyHeight}px}`);
+                }
+                topStickyHeight += height;
+            }
+        });
+        style.push(`#${tb.id} .tableWrap .tHeadGroup>.ci{top:${topStickyHeight}px;}`);        
+        tb.$.style.html( style.join('') );
     }
-    style.push(`#${tb.id} .tHeadGroup>.ci{left:${leftStickyWidth}px;}`);    
-    
-    tb.$.style.html( style.join('') );
 }
 /*
 ##################################################
@@ -2939,14 +3101,10 @@ editCellHtml( item, columnKey ) {
         // プルダウン
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn':
-            if ( Object.keys( tb.data.editSelect[columnName] ).length ) {
-                return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
-                + `<div class="tableEditInputSelectValue">${value}</div>`
-                + fn.html.select( fn.cv( tb.data.editSelect[columnName], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
-                + `</div>`;
-            } else {
-                return fn.html.noSelect();
-            }
+            return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
+            + `<div class="tableEditInputSelectValue">${value}</div>`
+            + fn.html.select( fn.cv( tb.data.editSelect[columnName], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
+            + `</div>`;
 
         // パスワード
         case 'PasswordColumn': case 'PasswordIDColumn': case 'JsonPasswordIDColumn': case 'MaskColumn': {
@@ -3072,14 +3230,20 @@ editConfirmCellHtml( item, columnKey ) {
 ##################################################
 */
 rowMenuHtml( list ) {
+    const tb = this;
+    
     const html = [];
     for ( const item of list ) {
         const button = fn.html.button( item.text, [ item.className, 'tableRowMenuButton', 'itaButton'],
             { type: item.type, action: item.action, id: item.id });
         html.push(`<li class="tableRowMenuItem">${button}</li>`);
     }
-    return `${fn.html.icon('ellipsis_v')}
-    <div class="tableRowMenu"><ul class="tableRowMenuList">${html.join('')}</ul></div>`;
+    
+    if ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show') {
+        return `<div class="tableRowMenu"><ul class="tableRowMenuList">${html.join('')}</ul></div>`;
+    } else {
+        return `${fn.html.icon('ellipsis_v')}<div class="tableRowMenu"><ul class="tableRowMenuList">${html.join('')}</ul></div>`;
+    }
 }
 /*
 ##################################################
@@ -3364,6 +3528,30 @@ changeViewMode() {
     } else {
         tb.setTable('view');
     }
+}
+/*
+##################################################
+   resetTable
+##################################################
+*/
+resetTable() {
+    const tb = this;
+    
+    // テーブル構造を再セット
+    tb.setHeaderHierarchy();
+    
+    tb.$.container.removeClass('tableError');
+    tb.$.table.removeClass('tableReady');
+    tb.$.errorMessage.empty();
+    
+    tb.workStart('table', 0 );
+    tb.select.edit = [];
+    tb.select.view = [];
+    tb.select.select = [];
+    tb.select.execute = [];
+    tb.paging.page = 1;    
+    
+    tb.setTable( tb.mode );
 }
 /*
 ##################################################
@@ -3693,6 +3881,277 @@ editError( error ) {
             </tbody>
         </table>
     </div>`);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   Table setting
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+tableSettingOpen() {
+    const tb = this;
+    
+    if ( !tb.tableSettingModal ) tb.tableSettingModal = {};
+    
+    if ( tb.tableSettingModal[ tb.tableMode ] ) {
+        tb.tableSettingModal[ tb.tableMode ].show();
+    } else {
+        // モーダル表示
+        const config = {
+            mode: 'modeless',
+            position: 'center',
+            width: '640px',
+            header: {
+                title: getMessage.FTE00086,
+            },
+            footer: {
+                button: {
+                    ok: { text: getMessage.FTE00087, action: 'default', /*className: 'dialogPositive'*/},
+                    cancel: { text: getMessage.FTE00088, action: 'normal'},
+                    reset: { text: getMessage.FTE00089, action: 'danger', separate: true }
+                }
+            }
+        };
+        
+        // モーダルOK、キャンセル
+        const funcs = {
+            ok: function() {
+                tb.tableSettingOk();
+                tb.tableSettingModal[ tb.tableMode ].hide();
+            },
+            cancel: function() {
+                tb.tableSettingModal[ tb.tableMode ].hide();
+            },
+            reset: function() {
+                tb.tableSettingReset();
+                tb.tableSettingModal[ tb.tableMode ].close();
+                tb.tableSettingModal[ tb.tableMode ] = null;
+            }
+        };
+        
+        const id = tb.id + '_' + tb.tableMode;
+        
+        let html = ``
+        + `<div class="commonSection">`
+            + `<div class="commonTitle">${getMessage.FTE00090}</div>`
+            + `<div class="commonBody">`
+                + `<p class="commonParagraph">`
+                    + getMessage.FTE00101
+                + `</p>`
+                + `<ul class="commonRadioList">`
+                    + `<li class="commonRadioItem">${fn.html.radioText('tableDirection', 'vertical', id + 'tableDirection', id + 'tableDirectionVertical', null, getMessage.FTE00091 )}</li>`
+                    + `<li class="commonRadioItem">${fn.html.radioText('tableDirection', 'horizontal', id + 'tableDirection', id + 'tableDirectionHorizontal', null, getMessage.FTE00092 )}</li>`
+                + `</ul>`
+            + `</div>`;
+        
+        if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
+            html += ``
+            + `<div class="commonTitle">${getMessage.FTE00094}</div>`
+            + `<div class="commonBody">`
+                + `<p class="commonParagraph">`
+                    + getMessage.FTE00102
+                + `</p>`
+                + `<ul class="commonRadioList">`
+                    + `<li class="commonRadioItem">${fn.html.radioText('tableFilterPosition', 'in', id + 'tableFilterPosition', id + 'tableFilterPositionIn', null, getMessage.FTE00095 )}</li>`
+                    + `<li class="commonRadioItem">${fn.html.radioText('tableFilterPosition', 'out', id + 'tableFilterPosition', id + 'tableFilterPositionOut', null, getMessage.FTE00096 )}</li>`
+                + `</ul>`
+            + `</div>`
+            + `<div class="commonTitle">${getMessage.FTE00097}</div>`
+            + `<div class="commonBody">`
+                + `<p class="commonParagraph">`
+                    + getMessage.FTE00103
+                + `</p>`
+                + `<ul class="commonRadioList">`
+                    + `<li class="commonRadioItem">${fn.html.radioText('tableItemMenu', 'hide', id + 'tableItemMenu', id + 'tableItemMenuHide', null, getMessage.FTE00098 )}</li>`
+                    + `<li class="commonRadioItem">${fn.html.radioText('tableItemMenu', 'show', id + 'tableItemMenu', id + 'tableItemMenuShow', null, getMessage.FTE00099 )}</li>`
+                + `</ul>`
+            + `</div>`;
+        }
+        
+        html += ``
+            + `<div class="commonTitle">${getMessage.FTE00100}</div>`
+            + `<div class="commonBody">`
+                + `<p class="commonParagraph">`
+                    + getMessage.FTE00104
+                + `</p>`
+                + tb.tableSettingListHtml()
+            + `</div>`
+        + `</div>`;
+
+        tb.tableSettingModal[ tb.tableMode ] = new Dialog( config, funcs );
+        tb.tableSettingModal[ tb.tableMode ].open( html );
+        tb.tableSettingEvents();
+        
+        // 初期値設定
+        const $dBody = tb.tableSettingModal[ tb.tableMode ].$.dbody,
+              directionCheck = ( tb.tableSetting[ tb.tableMode ].direction )? tb.tableSetting[ tb.tableMode ].direction: 'vertical',
+              itemMenuCheck = ( tb.tableSetting[ tb.tableMode ].itemMenu )? tb.tableSetting[ tb.tableMode ].itemMenu: 'hide',
+              positionCheck = ( tb.tableSetting[ tb.tableMode ].position )? tb.tableSetting[ tb.tableMode ].position: 'in';
+        $dBody.find(`.tableDirection`).val([directionCheck]);
+        $dBody.find(`.tableItemMenu`).val([itemMenuCheck]);
+        $dBody.find(`.tableFilterPosition`).val([positionCheck]);
+        
+        if ( directionCheck === 'horizontal') {
+            $dBody.find(`.tableFilterPosition`).prop('disabled', true );
+        }
+    }
+}
+
+tableSettingOk() {
+    const tb = this;
+    
+    // 縦・横
+    const $direction = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableDirection:checked');
+    tb.tableSetting[ tb.tableMode ].direction = $direction.val();
+    
+    // 項目メニュー
+    const $itemMenu = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableItemMenu:checked');
+    tb.tableSetting[ tb.tableMode ].itemMenu = $itemMenu.val();
+    
+    // フィルター位置
+    const $position = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableFilterPosition:checked');
+    if ( tb.tableSetting[ tb.tableMode ].direction === 'vertical') {
+        tb.tableSetting[ tb.tableMode ].position = $position.val();
+    } else {
+        tb.tableSetting[ tb.tableMode ].position = 'out';
+    }
+    
+    // 表示・非表示
+    const $check = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableSettingCheck').not(':checked'),
+          unCheckList = [];
+    $check.each(function(){
+        unCheckList.push( $( this ).val() );
+    });
+    tb.tableSetting[ tb.tableMode ].hideItemList = unCheckList;
+    
+    // ストレージにセット
+    fn.storage.set( tb.tableSettingId, tb.tableSetting );
+    
+    // テーブルを再セット
+    tb.resetTable();
+}
+
+tableSettingReset() {
+    const tb = this;
+    
+    tb.tableSetting[ tb.tableMode ] = {};
+    
+    // ストレージにセット
+    fn.storage.set( tb.tableSettingId, tb.tableSetting );
+    
+    // テーブルを再セット
+    tb.resetTable();
+}
+
+tableSettingListHtml() {
+    const tb = this;
+    
+    const id = tb.id + '_' + tb.tableMode;
+    
+    let html = '';
+    const tableSettingList = function( list, className ) {
+        for ( const key of list ) {
+            const type = key.slice( 0, 1 ),
+                  checked = ( tb.tableSetting[ tb.tableMode ].hideItemList && tb.tableSetting[ tb.tableMode ].hideItemList.indexOf( key ) !== -1 )? {}: {checked: 'checked'};
+            
+            html += `<li class="${className}">`;
+            if ( type === 'c') {
+                const data = tb.info.column_info[ key ];
+                
+                // 表示しない項目
+                const exclusion = ['discard'];
+                
+                let text = data.column_name;
+                if ( tb.mode === 'edit') {
+                    const noRequiredMark = [ tb.idNameRest, 'last_update_date_time', 'last_updated_user'];
+                    if ( data.required_item === '1' && noRequiredMark.indexOf( data.column_name_rest ) === -1 ) {
+                        text += fn.html.required();
+                    }
+                }
+                
+                if ( exclusion.indexOf( data.column_name_rest ) === -1 ) {
+                    html += `<div class="tableSettingItemName">`
+                    + fn.html.checkboxText('tableSettingCheck tableSettingCheckItem', key, id + '_itemSelect', id + '_' + data.column_name_rest, checked, text )
+                    + `</div>`;
+                }
+            } else {
+                const data = tb.info.column_group_info[ key ];
+                html += `<div class="tableSettingItemName tableSettingGroupName">`
+                + fn.html.checkboxText('tableSettingCheck tableSettingCheckGroup', key, id + '_groupSelect', id + '_' + data.column_group_id, checked, data.column_group_name )
+                + `</div>`
+                + `<ul class="tableSettingList">`;
+                tableSettingList( data['columns_' + tb.tableMode ], 'tableSettingItem tableSettingItemChild');
+                html += `</ul>`;
+            }
+            html += `</li>`;
+        }
+    };
+    tableSettingList( tb.info.menu_info['columns_' + tb.tableMode ], 'tableSettingItem');
+    
+    return `<ul class="tableSettingList">${html}</ul>`;
+}
+
+tableSettingEvents() {
+    const tb = this;
+    
+    const $dBody = tb.tableSettingModal[ tb.tableMode ].$.dbody;
+    
+    if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
+        // フィルタ表示位置
+        $dBody.find('.tableDirection').on('change', function() {
+            const check = $( this ).val();
+            $dBody.find('.tableFilterPosition').prop('disabled', ( check !== 'vertical') );
+        });
+    }
+    
+    // 親兄弟子要素の状態をチェック
+    const parentCheck = function( $check ) {
+
+        // 兄弟要素のチェック
+        const $checks = $check.closest('.tableSettingList').children('.tableSettingItem').children('.tableSettingItemName').find('.tableSettingCheck'),
+              checkLength = $checks.length;
+
+        let checkNum = 0, oneOrMoreNum = 0;
+        $checks.each(function(){
+            const $eachCheck = $( this );
+            if ( $eachCheck.prop('checked') ) checkNum++;
+            if ( $eachCheck.closest('.checkboxTextWrap').is('.checkboxTextOneOrMore') ) oneOrMoreNum++;
+        });
+
+        // 親要素のチェック
+        const $parentCheckWrap = $check.closest('.tableSettingList').prev('.tableSettingItemName').find('.checkboxTextWrap'),
+              $parentCheck = $parentCheckWrap.find('.tableSettingCheck');              
+              
+        $parentCheckWrap.removeClass('checkboxTextOneOrMore');
+        if ( $parentCheck.length ) {
+            if ( checkLength === checkNum && oneOrMoreNum === 0 ) {
+                $parentCheck.prop('checked', true );
+            } else if ( checkNum > 0 ) {
+                $parentCheck.prop('checked', true );
+                $parentCheckWrap.addClass('checkboxTextOneOrMore');
+            } else {
+                $parentCheck.prop('checked', false );
+            }
+            parentCheck( $parentCheck );
+        }
+
+    };
+    $dBody.find('.tableSettingCheck').on('change', function() {
+        
+        const $check = $( this );
+        
+        parentCheck( $check );
+        
+        // 子要素のチェックを全て変更する
+        if ( $check.is('.tableSettingCheckGroup') ) {
+            const checked = $check.prop('checked');
+            
+            $check.closest('.checkboxTextWrap').removeClass('checkboxTextOneOrMore');
+            $check.closest('.tableSettingItemName').next('.tableSettingList').find('.tableSettingCheck').prop('checked', checked );
+        }
+        
+    });
 }
 
 }

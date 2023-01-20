@@ -89,6 +89,41 @@ class ExecuteDirector():
         OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
         execution_no = exeInsRow['EXECUTION_NO']
         proj_name = '%s_%s' % (OrchestratorSubId_dir, execution_no)
+
+        OrganizationName = ifInfoRow['ANSTWR_ORGANIZATION']
+        if OrganizationName:
+            # 組織情報取得
+            query = "?name=%s" % (OrganizationName)
+            response_array = AnsibleTowerRestApiOrganizations().getAll(self.restApiCaller, query)
+            if not response_array['success']:
+                g.applogger.error(response_array['responseContents']['errorMessage'])
+                errorMessage = g.appmsg.get_api_message("MSG-10671", [OrganizationName])
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return -1, TowerHostList
+
+            if ('responseContents' not in response_array or response_array['responseContents'] is None
+                or (type(response_array['responseContents']) in (list, dict) and len(response_array['responseContents']) <= 0)) \
+                or ("id" not in response_array['responseContents'][0]):
+                g.applogger.error("No inventory id. (prepare)")
+                errorMessage = g.appmsg.get_api_message("MSG-10672", [OrganizationName])
+                self.errorLogOut(errorMessage)
+                return -1, TowerHostList
+
+            org_response_array = response_array['responseContents'][0]
+
+            OrganizationId = response_array['responseContents'][0]['id']
+
+            uunuse1, unuse2, is_superuser, is_organizations = self.getUserDefaultOrganization()
+
+        else:
+            # ユーザーが所属している組織を取得
+            OrganizationId, org_response_array, is_superuser, is_organizations = self.getUserDefaultOrganization()
+            if not OrganizationId:
+                # 組織未所属または、ユーザーが所属している組織を取得失敗
+                return -1, TowerHostList
+
         # AACの実行環境確認
         # 実行エンジンがAAC以外はI_EXECUTION_ENVIRONMENT_NAMEは空なので、実行エンジンのチェックはしない
         execution_environment_id = False
@@ -114,49 +149,29 @@ class ExecuteDirector():
                 return -1, TowerHostList
 
             if response_array['responseContents']['results'] is not None:
-                for no, paramList in self.php_array(response_array['responseContents']['results']):
-                    if paramList['name'] == execution_environment_name:
-                        execution_environment_id = paramList['id']
-                        break
+                for info in response_array['responseContents']['results']:
+                    # 組織が紐づいていないユーザーで管理者ユーザーの場合か
+                    # 複数の組織に属している場合、他組織に属している実行環境も取得出来てしまうので
+                    # 全組織共通の実行環境と自組織に属している実行環境だけを選択する。
+                    if (is_organizations == False and is_superuser == True) or \
+                       (not info['organization'] or info['organization'] == OrganizationId):
+                        if info['name'] == execution_environment_name:
+                            execution_environment_id = info['id']
+                            break
 
             if execution_environment_id is False:
                 errorMessage = g.appmsg.get_api_message("MSG-10686", [execution_environment_name])
                 self.errorLogOut(errorMessage)
                 return -1, TowerHostList
 
-        OrganizationName = ifInfoRow['ANSTWR_ORGANIZATION']
-        if len(OrganizationName) > 0:
-            # 組織情報取得
-            #    [[Inventory]]
-            query = "?name=%s" % (OrganizationName)
-            response_array = AnsibleTowerRestApiOrganizations().getAll(self.restApiCaller, query)
-            if not response_array['success']:
-                g.applogger.error(response_array['responseContents']['errorMessage'])
-                errorMessage = g.appmsg.get_api_message("MSG-10671", [OrganizationName])
-                self.errorLogOut(errorMessage)
-                # HTTPの情報をUIに表示
-                self.RestResultLog(self.restApiCaller.getRestResultList())
-                return -1, TowerHostList
-
-            if ('responseContents' not in response_array or response_array['responseContents'] is None
-                or (type(response_array['responseContents']) in (list, dict) and len(response_array['responseContents']) <= 0)) \
-            or ("id" not in response_array['responseContents'][0]):
-                g.applogger.error("No inventory id. (prepare)")
-                errorMessage = g.appmsg.get_api_message("MSG-10672", [OrganizationName])
-                self.errorLogOut(errorMessage)
-                return -1, TowerHostList
-
-            OrganizationId = response_array['responseContents'][0]['id']
-
-        else:
-            # 組織名未登録
-            errorMessage = g.appmsg.get_api_message("MSG-10677")
-            self.errorLogOut(errorMessage)
+        # インスタンスグルーブ情報取得
+        igrp_array = self.getInstanceGroupBelongingToOrganization(org_response_array['related']['instance_groups'], is_superuser, is_organizations)
+        if igrp_array is None:
             return -1, TowerHostList
 
         # Host情報取得
         inventoryForEachCredentials = {}
-        ret, inventoryForEachCredentials = self.getHostInfo(exeInsRow, inventoryForEachCredentials)
+        ret, inventoryForEachCredentials = self.getHostInfo(exeInsRow, inventoryForEachCredentials, igrp_array)
         if not ret:
             # MSG-10649 = "ホスト情報の取得に失敗しました。"
             errorMessage = g.appmsg.get_api_message("MSG-10649")
@@ -1030,7 +1045,7 @@ class ExecuteDirector():
 
         return True, TowerHostList
 
-    def getHostInfo(self, exeInsRow, inventoryForEachCredentials):
+    def getHostInfo(self, exeInsRow, inventoryForEachCredentials, igrp_array):
 
         vg_ansible_pho_linkDB = AnsrConst.vg_ansible_pho_linkDB
         condition = [exeInsRow['EXECUTION_NO'], exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
@@ -1090,17 +1105,8 @@ class ExecuteDirector():
 
             instanceGroupId = None
             if 'ANSTWR_INSTANCE_GROUP_NAME' in hostInfo and hostInfo['ANSTWR_INSTANCE_GROUP_NAME']:
-                # Towerのインスタンスグループ情報取得
-                response_array = AnsibleTowerRestApiInstanceGroups().getAll(self.restApiCaller)
-                if not response_array['success']:
-                    # 組織名未登録
-                    errorMessage = g.appmsg.get_api_message("MSG-10675", [hostInfo['ANSTWR_INSTANCE_GROUP_NAME']])
-                    self.errorLogOut(errorMessage)
-                    # HTTPの情報をUIに表示
-                    self.RestResultLog(self.restApiCaller.getRestResultList())
-                    return False, inventoryForEachCredentials
-
-                for info in response_array['responseContents']:
+                # インスタンスグループ登録確認
+                for info in igrp_array:
                     if info['name'] == hostInfo['ANSTWR_INSTANCE_GROUP_NAME']:
                         instanceGroupId = info['id']
 
@@ -1192,23 +1198,12 @@ class ExecuteDirector():
 
         project_id = response_array['responseContents']['id']
 
-        update_url = self.wait_for_create_project(project_id)
-        if update_url == -1:
+        url = self.wait_for_create_project(project_id)
+        if url == -1:
             # エラーログはwait_for_create_projectで出力
             return -1
 
-        response_array = AnsibleTowerRestApiPassThrough.post(self.restApiCaller, update_url)
-        if not response_array['success']:
-            errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
-            self.errorLogOut(errorMessage)
-            g.applogger.error(response_array)
-            # HTTPの情報をUIに表示
-            self.RestResultLog(self.restApiCaller.getRestResultList())
-            return -1
-
-        project_updates_url = response_array['responseContents']['url']
-
-        ret = self.wait_for_project_update(project_updates_url)
+        ret = self.wait_for_project_update(url)
         if ret == -1:
             # エラーログはwait_for_project_updateで出力
             return -1
@@ -2281,12 +2276,25 @@ class ExecuteDirector():
             if project_status in ["new", "pending", "waiting", "running"]:
                 time.sleep(5)
 
-            elif project_status in ["successful", "failed", "error"]:
-                # failedやerrorでも次の処理へ進める
+            elif project_status == "successful":
+                # project作成時にupdateが実行されているので、そのlast_updateを確認する(/api/v2/project_updates/{id})
+                return response_array['responseContents']['related']['last_update']
+
+            elif project_status in ["failed", "error"]:
                 # 制御ノードにコンテナイメージがロードされていないと、プロジェクト作成でGit連携が失敗する
                 # プロジェクトの更新だとコンテナイメージがロードていなくても問題ないので、プロジェクトを更新する
                 update_url = response_array['responseContents']['related']['update']
-                return update_url
+                response_array = AnsibleTowerRestApiPassThrough.post(self.restApiCaller, update_url)
+                if not response_array['success']:
+                    errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
+                    self.errorLogOut(errorMessage)
+                    g.applogger.error(response_array)
+                    # HTTPの情報をUIに表示
+                    self.RestResultLog(self.restApiCaller.getRestResultList())
+                    return -1
+
+                # updateをpostした際はproject_updatesが返却されている(/api/v2/project_updates/{id})
+                return response_array['responseContents']['url']
 
             else:
                 errorMessage = g.appmsg.get_api_message("MSG-10021", [str(inspect.currentframe().f_lineno)])
@@ -2374,3 +2382,174 @@ class ExecuteDirector():
         filePath = '%s/%s/%s' % (getAACListSSHPrivateKeyUploadDirPath(), TowerHostID, sshKeyFileName)
 
         return filePath
+
+    def getUserDefaultOrganization(self):
+        ############################################################
+        # 接続トークンに対応したユーザー情報取得
+        ############################################################
+        is_superuser = False
+        is_organizations = True
+        url = "/api/v2/me/"
+        response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
+        if not response_array['success']:
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        if 'responseContents' not in response_array:
+            g.applogger.error("responseContents tag is not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        if 'results' not in response_array['responseContents']:
+            g.applogger.error("responseContents->results tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        if 'count' not in response_array['responseContents']:
+            g.applogger.error("responseContents->count tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        if response_array['responseContents']['count'] != 1:
+            g.applogger.error("responseContents->count is not 1 in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10909", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        is_superuser = response_array['responseContents']['results'][0]['is_superuser']
+        users_response_array = response_array
+
+        ############################################################
+        # ユーザーに紐づく組織情報取得
+        ############################################################
+        url = users_response_array['responseContents']['results'][0]['related']['organizations']
+        response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
+        if not response_array['success']:
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        if 'responseContents' not in response_array:
+            g.applogger.error("responseContents tag is not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        if 'results' not in response_array['responseContents']:
+            g.applogger.error("responseContents->results tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        if 'count' not in response_array['responseContents']:
+            g.applogger.error("responseContents->count tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None, None, is_superuser, is_organizations
+
+        org_response_array = response_array
+        # 組織の紐付けが無い場合、Defaultの組織を適用する。
+        if response_array['responseContents']['count'] == 0:
+            url = "/api/v2/organizations/1/"
+            response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
+            if not response_array['success']:
+                g.applogger.error("Faild to get organization data from %s" % (url))
+                errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return None, None, is_superuser, is_organizations
+
+            if 'responseContents' not in response_array:
+                g.applogger.error("responseContents tag is not found in %s" % (url))
+                errorMessage = g.appmsg.get_api_message("MSG-10910", [])
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
+                return None, None, is_superuser, is_organizations
+
+            org_response_array = {}
+            org_response_array['responseContents'] = {}
+            org_response_array['responseContents']['results'] = []
+            Contents = {}
+            Contents['id'] = response_array['responseContents']['id']
+            Contents['name'] = response_array['responseContents']['name']
+            Contents['related'] = {}
+            Contents['related']['instance_groups'] = response_array['responseContents']['related']['instance_groups']
+            org_response_array['responseContents']['results'].append(Contents)
+
+            is_organizations = False
+
+        # 複数の組織に所属している場合、ランダムに先頭の組織をデフォルトで使用する。
+        return org_response_array['responseContents']['results'][0]['id'], org_response_array['responseContents']['results'][0], is_superuser, is_organizations
+
+    def getInstanceGroupBelongingToOrganization(self, url, is_superuser, is_organizations):
+
+        # 組織が紐づいていないユーザーで管理者ユーザーの場合
+        if is_organizations == False and is_superuser == True:
+            url = "/api/v2/instance_groups/"
+
+        response_array = AnsibleTowerRestApiPassThrough.get(self.restApiCaller, url)
+        if not response_array['success']:
+            g.applogger.error("Faild to get instance groups data from %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10912", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'responseContents' not in response_array:
+            g.applogger.error("responseContents tag is not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10912", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'results' not in response_array['responseContents']:
+            g.applogger.error("responseContents->results tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10912", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        if 'count' not in response_array['responseContents']:
+            g.applogger.error("responseContents->count tag not found in %s" % (url))
+            errorMessage = g.appmsg.get_api_message("MSG-10912", [])
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
+            return None
+
+        igrp_arry = []
+        for info in response_array['responseContents']['results']:
+            igrp_arry.append(
+                {
+                    'name': info['name'],
+                    'id': int(info['id']),
+                }
+            )
+        return igrp_arry

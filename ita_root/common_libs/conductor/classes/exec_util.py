@@ -511,9 +511,7 @@ class ConductorExecuteLibs():
                 "parent_conductor_instance_name": parent_conductor_instance_name,
                 "top_conductor_instance_id": top_conductor_instance_id,
                 "top_conductor_instance_name": top_conductor_instance_name,
-                # jsonの情報を入れる
                 "notice_info": notice_info,
-                # 上の情報をもとにnotice_nameで検索したもの
                 "notice_definition": notice_definition,
                 "status_id": conductor_status_name,
                 "abort_execute_flag": bool_master_false,
@@ -1682,7 +1680,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             objnode = load_table.loadTable(self.objdbca, n_menu)  # noqa: F405
             objcclass = load_table.loadTable(self.objdbca, cc_menu)  # noqa: F405
             objmovement = load_table.loadTable(self.objdbca, m_menu)  # noqa: F405
-            objcnotice = load_table.loadTable(self.objdbca, notice)
+            objcnotice = load_table.loadTable(self.objdbca, notice)  # noqa: F405
             if (objconductor.get_objtable() is False or
                     objnode.get_objtable() is False or
                     objconductorif.get_objtable() is False or
@@ -3145,7 +3143,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
         return retBool, result
 
     # 通知実行
-    def execute_notice(self, conductor_instance_id):
+    def execute_notice(self, conductor_instance_id, n_log_name):
         retBool = True
         result = {}
 
@@ -3157,7 +3155,6 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             notice_definition = tmp_result[1]["notice_definition"]
             defined_vars = tmp_result[1]["defined_vars"]
             target_status = []
-
             # 通知実行
             for def_item in notice_definition:
                 # 抑止用変数
@@ -3214,16 +3211,68 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     }
 
                 # 通知送信
+                response_dict = {}
                 if bool(suppress_flag) is False:
                     for target in target_status:
                         if target == current_status_id:
-                            requests.post(
+                            response = requests.post(
                                 url=notice_url,
                                 data=json.dumps(fields),
                                 headers=header,
                                 verify=False,
                                 proxies=proxy if bool(proxy) is True else None
                             )
+                            response_dict["headers"] = dict(response.headers)
+                            response_dict["text"] = response.text
+                            response_dict["status_code"] = response.status_code
+
+                            self.write_notice_log(conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict)
+
+        except Exception as e:
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            type_, value, traceback_ = sys.exc_info()
+            msg = traceback.format_exception(type_, value, traceback_)
+            g.applogger.error(msg)
+            retBool = False
+
+        return retBool, result
+
+    # 通知ログ書き込み
+    def write_notice_log(self, conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict):
+
+        retBool = True
+        result = ""
+
+        try:
+            msg_json = {"conductor_status_id": current_status_id, "exec_time": get_now_datetime(), "result": []}
+            result_dict = {
+                "notice_name": notice_name,
+                "notice_info": notice_info[notice_name],
+                "status_code": response_dict["status_code"],
+                "response.headers": response_dict["headers"],
+                "response.text": response_dict["text"]
+            }
+            msg_json['result'].append(result_dict)
+
+            # file path 生成
+            workspace_id = g.get('WORKSPACE_ID')
+            menu_id = 30108
+            place = "/uploadfiles/{}/{}".format(menu_id, "notification_log")
+            tmp_file_path = get_upload_file_path_specify(workspace_id, place, conductor_instance_id, n_log_name, None)
+            file_path = tmp_file_path.get("file_path")
+            # ログ書き出し
+            if os.path.isfile(file_path) is True:
+                try:
+                    # ファイル読込み+LIST化
+                    with open(file_path) as f:
+                        file_data = json.load(f)
+                    # 追加
+                    file_data.append(msg_json)
+                    # ファイル書き込み
+                    with open(file_path, 'w') as f:
+                        json.dump(file_data, f, ensure_ascii=False, indent=4)
+                except Exception:
+                    raise Exception
 
         except Exception as e:
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
@@ -3276,6 +3325,26 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 for execution_log in execution_logs:
                     tmp_ret, conductor_filter = self.add_execution_log(conductor_filter, execution_log)
 
+            # 通知関連設定取得
+            notice_info = conductor_filter.get('parameter').get('notice_info')
+            # 通知ログ取得
+            n_log_name = conductor_filter.get('parameter').get('notification_log')
+            n_log_base64 = conductor_filter.get('file').get('notification_log')
+
+            # 通知設定がある場合、ログファイル名をDBに刻む初回のみ
+            if notice_info is not None:
+                if len(notice_info) != 0:
+                    if n_log_name is None and n_log_base64 is None:
+                        # ファイル名のDB登録、dummyデータ通知ログ:初期データ埋め込み []
+                        n_log_name = "Notice_log_{}.log".format(conductor_instance_id)
+                        n_log_base64 = base64.b64encode(json.dumps([]).encode()).decode()
+                        conductor_filter['parameter']['notification_log'] = n_log_name
+                        conductor_filter['file']['notification_log'] = n_log_base64
+                    else:
+                        # maintenanceの更新対象から除外+ファイルへ直書き込み
+                        del conductor_filter['parameter']['notification_log']
+                        del conductor_filter['file']['notification_log']
+
             # 未実行、未実行(予約)時、実行中+開始時刻
             if current_status_id in start_status:
                 conductor_update_status = instance_info_data.get('dict').get('conductor_status').get('3')
@@ -3300,7 +3369,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))
                             raise Exception()
                         # 通知実行
-                        self.execute_notice(conductor_instance_id)
+                        self.execute_notice(conductor_instance_id, n_log_name)
                     else:
                         # 終了ステータス(正常終了,異常終了,警告終了,緊急停止,定外エラー)Node待ちあり
                         # 変更後の全Nodeのステータス取得
@@ -3316,7 +3385,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))
                                 raise Exception()
                         # 通知実行
-                        self.execute_notice(conductor_instance_id)
+                        self.execute_notice(conductor_instance_id, n_log_name)
             else:
                 # """
                 # 終了ステータス(正常終了,異常終了,警告終了,緊急停止,定外エラー)Node待ちあり
@@ -3333,7 +3402,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))
                         raise Exception()
                     # 通知実行
-                    self.execute_notice(conductor_instance_id)
+                    self.execute_notice(conductor_instance_id, n_log_name)
                 # """
 
         except Exception as e:

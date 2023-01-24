@@ -107,6 +107,7 @@ def initial_settings_ansible(ws_db, body):
             menu_table_link['parameter']['row_update_flag'] = 'False'
             menu_table_link['parameter']['row_disuse_flag'] = 'False'
             menu_table_link['parameter']['row_reuse_flag'] = 'False'
+            del menu_table_link['parameter']['last_updated_user']
 
             result = objmenu_mtll.exec_maintenance(menu_table_link, '20103', 'Update', False, False)
 
@@ -117,6 +118,7 @@ def initial_settings_ansible(ws_db, body):
         for menu_column_link in menu_column_link_list:
             if menu_column_link['parameter']['input_target_flag'] != '0':
                 menu_column_link['parameter']['input_target_flag'] = '0'
+                del menu_column_link['parameter']['last_updated_user']
                 uuid = menu_column_link['parameter']['uuid']
                 result = objmenu_mcll.exec_maintenance(menu_column_link, uuid, 'Update', False, False)
 
@@ -136,6 +138,7 @@ def initial_settings_ansible(ws_db, body):
             menu_table_link['parameter']['row_update_flag'] = 'True'
             menu_table_link['parameter']['row_disuse_flag'] = 'True'
             menu_table_link['parameter']['row_reuse_flag'] = 'True'
+            del menu_table_link['parameter']['last_updated_user']
 
             result = objmenu_mtll.exec_maintenance(menu_table_link, '20103', 'Update', False, False)
 
@@ -146,6 +149,7 @@ def initial_settings_ansible(ws_db, body):
         for menu_column_link in menu_column_link_list:
             if menu_column_link['parameter']['input_target_flag'] != '1':
                 menu_column_link['parameter']['input_target_flag'] = '1'
+                del menu_column_link['parameter']['last_updated_user']
                 uuid = menu_column_link['parameter']['uuid']
                 result = objmenu_mcll.exec_maintenance(menu_column_link, uuid, 'Update', False, False)
 
@@ -213,6 +217,7 @@ def initial_settings_ansible(ws_db, body):
                         if 'remarks' in initial_data_aac_host.get('parameter').keys():
                             update_aac_host["parameter"]["remarks"] = remarks
 
+                        del update_aac_host['parameter']['last_updated_user']
                         no = update_aac_host["parameter"]["no"]
                         result = objmenu_aach.exec_maintenance(update_aac_host, no, 'Update', False, False)
 
@@ -246,6 +251,7 @@ def initial_settings_ansible(ws_db, body):
                     discard_aac_host = registerd_aac_host
                     no = discard_aac_host["parameter"]["no"]
                     discard_aac_host["parameter"]["discard"] = "1"
+                    del discard_aac_host['parameter']['last_updated_user']
                     result = objmenu_aach.exec_maintenance(discard_aac_host, no, 'Discard', False, False)
 
                     if result[0] is not True:
@@ -292,6 +298,7 @@ def initial_settings_ansible(ws_db, body):
                 if 'proxy_port' in initial_iia.keys():
                     update_iia["parameter"]["proxy_port"] = proxy_port
 
+                del update_iia['parameter']['last_updated_user']
                 item_number = update_iia["parameter"]["item_number"]
                 result = objmenu_iia.exec_maintenance(update_iia, item_number, 'Update', False, False, True, True)
 

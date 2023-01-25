@@ -403,6 +403,8 @@ CREATE TABLE T_COMN_MOVEMENT
     ANS_EXEC_OPTIONS                TEXT,                                       -- オプションパラメータ
     ANS_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255),                               -- 実行環境
     ANS_ANSIBLE_CONFIG_FILE         VARCHAR(255),                               -- Ansible.cfg
+    TERE_WORKSPACE_ID               VARCHAR(40),                                -- Terraform Cloud/EP Workspace
+    TERC_WORKSPACE_ID               VARCHAR(40),                                -- Terraform CLI Workspace
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -426,6 +428,8 @@ CREATE TABLE T_COMN_MOVEMENT_JNL
     ANS_EXEC_OPTIONS                TEXT,                                       -- オプションパラメータ
     ANS_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255),                               -- 実行環境
     ANS_ANSIBLE_CONFIG_FILE         VARCHAR(255),                               -- Ansible.cfg
+    TERE_WORKSPACE_ID               VARCHAR(40),                                -- Terraform Cloud/EP Workspace
+    TERC_WORKSPACE_ID               VARCHAR(40),                                -- Terraform CLI Workspace
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時

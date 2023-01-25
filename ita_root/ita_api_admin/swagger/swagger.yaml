@@ -771,10 +771,10 @@ components:
       description: Credentials or access token for API
       scheme: bearer
       bearerFormat: JWT
-      x-bearerInfoFunc: controllers.authorization_controller.check_BearerAuth
+      x-bearerInfoFunc: swagger_server.controllers.authorization_controller.check_BearerAuth
     BasicAuth:
       type: http
       description: Value converted from ID/Password in base64
       scheme: basic
-      x-basicInfoFunc: controllers.authorization_controller.check_BasicAuth
+      x-basicInfoFunc: swagger_server.controllers.authorization_controller.check_BasicAuth
 

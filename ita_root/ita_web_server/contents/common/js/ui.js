@@ -1256,7 +1256,24 @@ defaultMenu( sheetType ) {
     $download.find('.operationButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
+              
+        // File name
+        let fileName = '';
         
+        if ( mn.currentGroup && mn.currentGroup.title ) {
+            if ( mn.currentGroup.title.length > 64 ) {
+                fileName += mn.currentGroup.title.slice( 0, 61 ) + '..._';
+            } else {
+                fileName += mn.currentGroup.title + '_';
+            }
+        }
+        
+        if ( mn.title && mn.title.length > 64 ) {
+            fileName += mn.title.slice( 0, 61 ) + '..._';
+        } else {
+            fileName += mn.title + '_';
+        }
+              
         const downloadFile = function( type, url, fileName ){
             $button.prop('disabled', true );
             
@@ -1278,7 +1295,7 @@ defaultMenu( sheetType ) {
                     if ( limit && mn.info.menu_info.xls_print_limit < result ) {
                         alert( getMessage.FTE00085( result, limit) );
                     } else {
-                        downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, mn.title + '_all');
+                        downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all');
                     }
                 }).catch(function( error ){
                     fn.gotoErrPage( error.message );
@@ -1287,10 +1304,10 @@ defaultMenu( sheetType ) {
                 });
             } break;
             case 'allDwonloadJson':
-                downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, mn.title + '_all');
+                downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, fileName + 'all');
             break;
             case 'newDwonloadExcel':
-                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, mn.title + '_format');
+                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format');
             break;
             case 'excelUpload':
                 mn.fileRegister( $button, 'excel');
@@ -1299,7 +1316,7 @@ defaultMenu( sheetType ) {
                 mn.fileRegister( $button, 'json');
             break;
             case 'allHistoryDwonloadExcel':
-                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, mn.title + '_journal');
+                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal');
             break;
         }
     });

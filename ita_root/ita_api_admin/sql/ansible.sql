@@ -14,7 +14,7 @@ CREATE TABLE T_ANSC_DEVICE
     WINRM_PORT                      INT,                                        -- ポート番号
     WINRM_SSL_CA_FILE               VARCHAR(255),                               -- サーバー証明書
     PROTOCOL_ID                     VARCHAR(2),                                 -- プロトコル
-    OS_TYPE_ID                      VARCHAR(2),                                 -- OS種別
+    OS_TYPE_ID                      VARCHAR(40),                                -- OS種別
     PIONEER_LANG_ID                 VARCHAR(2),                                 -- LANG
     SSH_EXTRA_ARGS                  TEXT,                                       -- 接続オプション
     HOSTS_EXTRA_ARGS                TEXT,                                       -- インベントリファイル追加オプション
@@ -45,7 +45,7 @@ CREATE TABLE T_ANSC_DEVICE_JNL
     WINRM_PORT                      INT,                                        -- ポート番号
     WINRM_SSL_CA_FILE               VARCHAR(255),                               -- サーバー証明書
     PROTOCOL_ID                     VARCHAR(2),                                 -- プロトコル
-    OS_TYPE_ID                      VARCHAR(2),                                 -- OS種別
+    OS_TYPE_ID                      VARCHAR(40),                                -- OS種別
     PIONEER_LANG_ID                 VARCHAR(2),                                 -- LANG
     SSH_EXTRA_ARGS                  TEXT,                                       -- 接続オプション
     HOSTS_EXTRA_ARGS                TEXT,                                       -- インベントリファイル追加オプション

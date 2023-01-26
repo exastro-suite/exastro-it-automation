@@ -3486,11 +3486,11 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/upload/:
-    get:
+    post:
       tags:
         - Export Import
       description: メニューインポートのアップロード
-      operationId: getMenuImportUpload
+      operationId: postMenuImportUpload
       x-openapi-router-controller: controllers.export_import_controller
       parameters:
         - name: organization_id
@@ -3505,6 +3505,14 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を設定
+              properties:
+                rest_key_name:
+                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       responses:
         '200':
           description: Success
@@ -3722,11 +3730,11 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
   /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/upload/:
-    get:
+    post:
       tags:
         - Export Import
       description: Excel一括インポートのアップロード
-      operationId: getExcelBulkUpload
+      operationId: postExcelBulkUpload
       x-openapi-router-controller: controllers.export_import_controller
       parameters:
         - name: organization_id
@@ -3741,6 +3749,14 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を設定
+              properties:
+                rest_key_name:
+                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       responses:
         '200':
           description: Success

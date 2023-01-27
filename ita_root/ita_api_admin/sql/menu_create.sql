@@ -213,7 +213,7 @@ CREATE TABLE T_MENU_ROLE
 (
     MENU_ROLE_ID                    VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
-    ROLE_ID                         VARCHAR(40),                                -- ロールID
+    ROLE_ID                         VARCHAR(64),                                -- ロールID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -228,7 +228,7 @@ CREATE TABLE T_MENU_ROLE_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     MENU_ROLE_ID                    VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
-    ROLE_ID                         VARCHAR(40),                                -- ロールID
+    ROLE_ID                         VARCHAR(64),                                -- ロールID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -355,7 +355,7 @@ CREATE TABLE T_MENU_OTHER_LINK_JNL
 
 
 -- 他メニュー連携ビュー
-CREATE OR REPLACE VIEW V_MENU_OTHER_LINK AS 
+CREATE OR REPLACE VIEW V_MENU_OTHER_LINK AS
 SELECT DISTINCT TAB_A.LINK_ID              ,
        TAB_C.MENU_GROUP_ID                 ,
        TAB_A.MENU_ID                       ,
@@ -384,7 +384,7 @@ LEFT JOIN T_COMN_MENU TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP TAB_C ON (TAB_B.MENU_GROUP_ID = TAB_C.MENU_GROUP_ID)
 WHERE TAB_B.DISUSE_FLAG='0' AND TAB_C.DISUSE_FLAG='0'
 ;
-CREATE OR REPLACE VIEW V_MENU_OTHER_LINK_JNL AS 
+CREATE OR REPLACE VIEW V_MENU_OTHER_LINK_JNL AS
 SELECT DISTINCT TAB_A.JOURNAL_SEQ_NO       ,
        TAB_A.JOURNAL_REG_DATETIME          ,
        TAB_A.JOURNAL_ACTION_CLASS          ,
@@ -472,7 +472,7 @@ CREATE TABLE T_MENU_REFERENCE_ITEM_JNL
 
 
 -- 参照項目情報ビュー
-CREATE OR REPLACE VIEW V_MENU_REFERENCE_ITEM AS 
+CREATE OR REPLACE VIEW V_MENU_REFERENCE_ITEM AS
 SELECT DISTINCT TAB_A.REFERENCE_ID         ,
        TAB_A.LINK_ID                       ,
        TAB_B.MENU_GROUP_ID                 ,
@@ -504,7 +504,7 @@ FROM T_MENU_REFERENCE_ITEM TAB_A
 LEFT JOIN V_MENU_OTHER_LINK TAB_B ON (TAB_A.LINK_ID = TAB_B.LINK_ID)
 WHERE TAB_B.DISUSE_FLAG='0'
 ;
-CREATE OR REPLACE VIEW V_MENU_REFERENCE_ITEM_JNL AS 
+CREATE OR REPLACE VIEW V_MENU_REFERENCE_ITEM_JNL AS
 SELECT DISTINCT TAB_A.JOURNAL_SEQ_NO       ,
        TAB_A.JOURNAL_REG_DATETIME          ,
        TAB_A.JOURNAL_ACTION_CLASS          ,

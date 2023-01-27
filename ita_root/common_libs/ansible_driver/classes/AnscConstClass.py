@@ -41,7 +41,7 @@ class AnscConst:
 
     # Towerノードタイプ
     DF_EXECUTE_NODE = "execute_node"   # ISOLATED・実行ノード
-    DF_CONTROL_NODE = "control_nide"   # ハイブリット・制御ノード
+    DF_CONTROL_NODE = "control_node"   # ハイブリット・制御ノード
 
     DF_SCP_CONDUCTOR_ITA_PATH = "SCP_CONDUCTOR_ITA_PATH"
     DF_SCP_CONDUCTOR_TOWER_PATH = "SCP_CONDUCTOR_TOWER_PATH"
@@ -93,7 +93,7 @@ class AnscConst:
     GBL_parent_VarName = r"^\s*GBL_[0-9a-zA-Z_]*\s*$"  # グローバル変数
     TPF_parent_VarName = r"^\s*TPF_[0-9a-zA-Z_]*\s*$"  # テンプレート変数
     CPF_parent_VarName = r"^\s*CPF_[0-9a-zA-Z_]*\s*$"
-    
+
     # 実行エンジン
     DF_EXEC_MODE_ANSIBLE = '1'    # Ansibleで実行
     DF_EXEC_MODE_AAC = '2'        # ansible automation controllerで実行
@@ -104,20 +104,20 @@ class AnscConst:
     DF_LOGIN_AUTH_TYPE_KEY_EXCH = '3'    # 認証方式:鍵認証(鍵交換済み)
     DF_LOGIN_AUTH_TYPE_KEY_PP_USE = '4'  # 認証方式:鍵認証(パスフレーズあり)
     DF_LOGIN_AUTH_TYPE_PW_WINRM = '5'    # 認証方式:パスワード認証(winrm)
-    
+
     # カラムタイプ
     DF_COL_TYPE_VAL = '1'    # Value型
     DF_COL_TYPE_KEY = '2'    # Key型
-    
+
     # 具体値 SENSITIVE設定値
     DF_SENSITIVE_OFF = '0'    # OFF
     DF_SENSITIVE_ON = '1'     # ON
-    
+
     # VARS_ATTRIBUTE_01 の 具体値定義
     GC_VARS_ATTR_STD = '1'       # 一般変数
     GC_VARS_ATTR_LIST = '2'      # 複数具体値
     GC_VARS_ATTR_M_ARRAY = '3'   # 多段変数
-    
+
     # 代入値紐付メニューSELECT時のITA独自カラム名
     DF_ITA_LOCAL_OPERATION_CNT = '__ITA_LOCAL_COLUMN_1__'
     DF_ITA_LOCAL_HOST_CNT = '__ITA_LOCAL_COLUMN_2__'
@@ -162,7 +162,7 @@ class AnscConst:
 
     LC_RUN_MODE_STD = "0"      # 標準
     LC_RUN_MODE_VARFILE = "1"  # 変数定義ファイルの構造チェック
-    
+
     # ステータス定義(DBの値と同期させること)
     NOT_YET = '1'          # 未実行
     PREPARE = '2'          # 準備中
@@ -181,7 +181,7 @@ class AnscConst:
     # WINRM接続ポート デフォルト値
     LC_WINRM_PORT = 5985
 
-    
+
     # ITA独自変数名
     ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME = "__loginprotocol__"
     ITA_SP_VAR_ANS_USERNAME_VAR_NAME = "__loginuser__"

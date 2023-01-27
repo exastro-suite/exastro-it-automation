@@ -2867,14 +2867,10 @@ editCellHtml( item, columnKey ) {
         // プルダウン
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn':
-            if ( Object.keys( tb.data.editSelect[columnName] ).length ) {
-                return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
-                + `<div class="tableEditInputSelectValue">${value}</div>`
-                + fn.html.select( fn.cv( tb.data.editSelect[columnName], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
-                + `</div>`;
-            } else {
-                return fn.html.noSelect();
-            }
+            return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
+            + `<div class="tableEditInputSelectValue">${value}</div>`
+            + fn.html.select( fn.cv( tb.data.editSelect[columnName], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
+            + `</div>`;
 
         // パスワード
         case 'PasswordColumn': case 'PasswordIDColumn': case 'JsonPasswordIDColumn': case 'MaskColumn': {

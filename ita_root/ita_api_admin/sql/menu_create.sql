@@ -213,7 +213,7 @@ CREATE TABLE T_MENU_ROLE
 (
     MENU_ROLE_ID                    VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
-    ROLE_ID                         VARCHAR(40),                                -- ロールID
+    ROLE_ID                         VARCHAR(64),                                -- ロールID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -228,7 +228,7 @@ CREATE TABLE T_MENU_ROLE_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     MENU_ROLE_ID                    VARCHAR(40),                                -- 項番(UUID)
     MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
-    ROLE_ID                         VARCHAR(40),                                -- ロールID
+    ROLE_ID                         VARCHAR(64),                                -- ロールID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

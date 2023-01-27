@@ -46,7 +46,6 @@ class LastUpdateUserColumn(IDColumn):
         user_id = g.get('USER_ID')
         if user_id not in users_list:
             pf_users = util.get_exastro_platform_users()
-
             users_list.update(pf_users)
 
         self.data_list_set_flg = True

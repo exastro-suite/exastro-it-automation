@@ -12,14 +12,13 @@
 # limitations under the License.
 #
 from flask import g
-from common_libs.common.exception import AppException
+
+# from common_libs.common.exception import AppException
 
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import RestApiCaller
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInstanceGroups import AnsibleTowerRestApiInstanceGroups
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiOrganizations import AnsibleTowerRestApiOrganizations
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiExecutionEnvironment import AnsibleTowerRestApiExecutionEnvironment
+from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiPassThrough import AnsibleTowerRestApiPassThrough
 
 
 def DBUpdate(Contents_array, TableName, TableRows, PkeyItem, NameItem, IDItem, dbAccess, is_register_history):
@@ -40,10 +39,10 @@ def DBUpdate(Contents_array, TableName, TableRows, PkeyItem, NameItem, IDItem, d
         # 見つからない場合は新規
         if target_index is None:
             newRow = {
-                NameItem : Contents_fromTower['name'],
-                IDItem : Contents_fromTower['id'],
-                'DISUSE_FLAG' : '0',
-                'LAST_UPDATE_USER' : db_access_user_id,
+                NameItem: Contents_fromTower['name'],
+                IDItem: Contents_fromTower['id'],
+                'DISUSE_FLAG': '0',
+                'LAST_UPDATE_USER': db_access_user_id,
             }
             rowId = dbAccess.table_insert(TableName, newRow, PkeyItem, is_register_history)
             rowId = rowId[0][PkeyItem]
@@ -88,15 +87,22 @@ def DBUpdate(Contents_array, TableName, TableRows, PkeyItem, NameItem, IDItem, d
 
     return True
 
+
+def RestResultLog(message_list):
+    for message in message_list:
+        if not isinstance(message, str):
+            message = str(message)
+        print(message)
+
+
 def backyard_main(organization_id, workspace_id):
-    print("backyard_main ita_by_ansible_towermaster_sync called")
 
     warning_flag = 0
     error_flag = 0
     dbAccess = None
 
     try:
-        g.applogger.debug(" = Start Procedure. =")
+        g.applogger.debug("Start Procedure.")
 
         ################################
         # DBコネクト
@@ -153,7 +159,7 @@ def backyard_main(organization_id, workspace_id):
             return 0
 
         if ('ANSTWR_AUTH_TOKEN' not in ifInfoRows[0] or ifInfoRows[0]['ANSTWR_AUTH_TOKEN'] is None or len(ifInfoRows[0]['ANSTWR_AUTH_TOKEN'].strip()) <= 0) \
-        or ('ANSTWR_HOST_ID'    not in ifInfoRows[0] or ifInfoRows[0]['ANSTWR_HOST_ID']    is None or len(ifInfoRows[0]['ANSTWR_HOST_ID'].strip()) <= 0):
+        or ('ANSTWR_HOST_ID' not in ifInfoRows[0] or ifInfoRows[0]['ANSTWR_HOST_ID'] is None or len(ifInfoRows[0]['ANSTWR_HOST_ID'].strip()) <= 0):
             return 0
 
         ansibleTowerIfInfo = ifInfoRows[0]
@@ -180,71 +186,85 @@ def backyard_main(organization_id, workspace_id):
             raise Exception("Faild to authorize to Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
 
         ############################################################
-        # インスタンスグループ情報更新
+        # 接続トークンに対応したユーザー情報取得
+        ############################################################
+        url = "/api/v2/me/"
+        response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
+        if not response_array['success']:
+            RestResultLog(restApiCaller.getRestResultList())
+            raise Exception("Faild to get users data from %s" % (url))
+
+        if 'responseContents' not in response_array:
+            RestResultLog(restApiCaller.getRestResultList())
+            raise Exception("responseContents tag is not found in %s" % (url))
+
+        if 'results' not in response_array['responseContents']:
+            RestResultLog(restApiCaller.getRestResultList())
+            raise Exception("responseContents->results tag not found in %s" % (url))
+
+        if 'count' not in response_array['responseContents']:
+            RestResultLog(restApiCaller.getRestResultList())
+            raise Exception("responseContents->count tag not found in %s" % (url))
+
+        if response_array['responseContents']['count'] != 1:
+            RestResultLog(restApiCaller.getRestResultList())
+            raise Exception("responseContents->count is not 1 in %s" % (url))
+
+        # 管理者ユーザー区分取得
+        is_superuser = response_array['responseContents']['results'][0]['is_superuser']
+
+        users_response_array = response_array
+
+        ############################################################
+        # ユーザーに紐づく組織情報更新
         ############################################################
         try:
             ############################################################
-            # Towerのインスタンスグループ情報取得
+            # ユーザーに紐づく組織情報取得
             ############################################################
-            response_array = AnsibleTowerRestApiInstanceGroups.getAll(restApiCaller)
+            url = users_response_array['responseContents']['results'][0]['related']['organizations']
+            response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
             if not response_array['success']:
-                raise Exception("Faild to get instance groups data from Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("Faild to get organization data from %s" % (url))
 
-            ############################################################
-            # トランザクション開始
-            ############################################################
-            dbAccess.db_transaction_start()
+            if 'responseContents' not in response_array:
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("responseContents tag is not found in %s" % (url))
 
-            ############################################################
-            # ITA側の登録済みのインスタンスグループ情報取得
-            ############################################################
-            TableName = "T_ANSC_TWR_INSTANCE_GROUP"
-            cols = dbAccess.table_columns_get(TableName)
-            cols = (',').join(cols[0])
-            sql = (
-                "SELECT \n"
-                "  %s   \n"
-                "FROM   \n"
-                "  %s ; \n"
-            ) % (cols, TableName)
-            instanceGroupRows = dbAccess.sql_execute(sql)
+            if 'results' not in response_array['responseContents']:
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("responseContents->results tag not found in %s" % (url))
 
-            ############################################################
-            # データベース更新
-            ############################################################
-            PkeyItem = "INSTANCE_GROUP_ITA_MANAGED_ID"
-            NameItem = "INSTANCE_GROUP_NAME"
-            IDItem = "INSTANCE_GROUP_ID"
-            Contents_array = []
-            for info in response_array['responseContents']:
-                Contents_array.append(
-                    {
-                        'name' : info['name'],
-                        'id'   : int(info['id']),
-                    }
-                )
+            if 'count' not in response_array['responseContents']:
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("responseContents->count tag not found in %s" % (url))
 
-            DBUpdate(Contents_array, TableName, instanceGroupRows, PkeyItem, NameItem, IDItem, dbAccess, False)
+            org_response_array = response_array
+            is_organizations = True
+            # 組織の紐付けが無い場合、Defaultの組織を適用する。
+            if response_array['responseContents']['count'] == 0:
+                url = "/api/v2/organizations/1/"
+                response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
+                if not response_array['success']:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("Faild to get organization data from %s" % (url))
 
-            ############################################################
-            # トランザクション終了(分割コミット)
-            ############################################################
-            dbAccess.db_commit()
+                if 'responseContents' not in response_array:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents tag is not found in %s" % (url))
 
-        except Exception as e:
-            g.applogger.error("Faild to make instance group data.")
-            raise e
+                org_response_array = {}
+                org_response_array['responseContents'] = {}
+                org_response_array['responseContents']['results'] = []
+                Contents = {}
+                Contents['id'] = response_array['responseContents']['id']
+                Contents['name'] = response_array['responseContents']['name']
+                Contents['related'] = {}
+                Contents['related']['instance_groups'] = response_array['responseContents']['related']['instance_groups']
+                org_response_array['responseContents']['results'].append(Contents)
 
-        ############################################################
-        # 組織情報更新
-        ############################################################
-        try:
-            ############################################################
-            # Towerの組織情報取得
-            ############################################################
-            response_array = AnsibleTowerRestApiOrganizations.getAll(restApiCaller)
-            if not response_array['success']:
-                raise Exception("Faild to get organizations data from Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
+                is_organizations = False
 
             ############################################################
             # トランザクション開始
@@ -272,13 +292,29 @@ def backyard_main(organization_id, workspace_id):
             NameItem = "ORGANIZATION_NAME"
             IDItem = "ORGANIZATION_ID"
             Contents_array = []
-            for info in response_array['responseContents']:
+            igrp_url = None
+            my_org_id = None
+            for info in org_response_array['responseContents']['results']:
                 Contents_array.append(
                     {
-                        'name' : info['name'],
-                        'id'   : int(info['id']),
+                        'name': info['name'],
+                        'id': int(info['id']),
                     }
                 )
+                # インタフェース情報の組織が未登録場合
+                # 先頭の組織に紐づくインスタンスグループ取得
+
+                if not ifInfoRows[0]['ANSTWR_ORGANIZATION']:
+                    igrp_url = org_response_array['responseContents']['results'][0]['related']['instance_groups']
+                    my_org_id = int(org_response_array['responseContents']['results'][0]['id'])
+                else:
+                    if info['name'] == ifInfoRows[0]['ANSTWR_ORGANIZATION']:
+                        igrp_url = info['related']['instance_groups']
+                        my_org_id = int(info['id'])
+
+            # 組織が紐づいていないユーザーで管理者ユーザーの場合
+            if is_organizations == False and is_superuser == True:
+                igrp_url = "/api/v2/instance_groups/"
 
             DBUpdate(Contents_array, TableName, OrganizationRows, PkeyItem, NameItem, IDItem, dbAccess, False)
 
@@ -292,64 +328,155 @@ def backyard_main(organization_id, workspace_id):
             raise e
 
         ############################################################
-        # 実行環境情報更新
+        # インスタンスグループ情報更新
         ############################################################
         try:
-            if ifInfoRows[0]['ANSIBLE_EXEC_MODE'] == AnscConst.DF_EXEC_MODE_AAC:
-                ############################################################
-                # Towerの実行環境情報取得
-                ############################################################
-                response_array = AnsibleTowerRestApiExecutionEnvironment.get(restApiCaller)
+            ############################################################
+            # 組織で利用可能なインスタンスグループ情報取得
+            ############################################################
+            # インタフェース情報の組織が未登録場合
+            # インスタンスグループは空にする
+            if igrp_url:
+                url = igrp_url
+                response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
                 if not response_array['success']:
-                    raise Exception("Faild to get Execution Environment data from Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("Faild to get instance groups data from %s" % (url))
 
                 if 'responseContents' not in response_array:
-                    raise Exception("responseContents tag is not found in Ansible Automation Controller. %s" % (response_array))
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents tag is not found in %s" % (url))
 
                 if 'results' not in response_array['responseContents']:
-                    raise Exception("responseContents->results tag not found in Ansible Automation Controller. %s" % (response_array))
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents->results tag not found in %s" % (url))
 
-                ############################################################
-                # トランザクション開始
-                ############################################################
-                dbAccess.db_transaction_start()
+                if 'count' not in response_array['responseContents']:
+                    RestResultLog(restApiCaller.getRestResultList())
+                    raise Exception("responseContents->count tag not found in %s" % (url))
 
-                ############################################################
-                # ITA側の既に登録済みの実行環境情報取得
-                ############################################################
-                TableName = "T_COMN_AAC_EXECUTION_ENVIRONMENT"
-                cols = dbAccess.table_columns_get(TableName)
-                cols = (',').join(cols[0])
-                sql = (
-                    "SELECT \n"
-                    "  %s   \n"
-                    "FROM   \n"
-                    "  %s ; \n"
-                ) % (cols, TableName)
-                VirtualEnvRows = dbAccess.sql_execute(sql)
+                igrp_response_array = response_array
+            else:
+                igrp_response_array = {}
+                igrp_response_array['responseContents'] = {}
+                igrp_response_array['responseContents']['results'] = []
 
-                ############################################################
-                # データベース更新
-                ############################################################
-                PkeyItem = "EXECUTION_ENVIRONMENT_ID"
-                NameItem = "EXECUTION_ENVIRONMENT_NAME"
-                IDItem = "EXECUTION_ENVIRONMENT_AAC_ID"
-                Contents_array = []
-                if 'responseContents' in response_array and 'results' in response_array['responseContents']:
-                    for no, paramList in enumerate(response_array['responseContents']['results']):
-                        Contents_array.append(
-                            {
-                                'name' : paramList['name'],
-                                'id'   : no,
-                            }
-                        )
+            ############################################################
+            # トランザクション開始
+            ############################################################
+            dbAccess.db_transaction_start()
 
-                DBUpdate(Contents_array, TableName, VirtualEnvRows, PkeyItem, NameItem, IDItem, dbAccess, False)
+            ############################################################
+            # インスタンスグループ情報取得
+            ############################################################
+            TableName = "T_ANSC_TWR_INSTANCE_GROUP"
+            cols = dbAccess.table_columns_get(TableName)
+            cols = (',').join(cols[0])
+            sql = (
+                "SELECT \n"
+                "  %s   \n"
+                "FROM   \n"
+                "  %s ; \n"
+            ) % (cols, TableName)
+            instanceGroupRows = dbAccess.sql_execute(sql)
 
-                ############################################################
-                # トランザクション終了
-                ############################################################
-                dbAccess.db_commit()
+            ############################################################
+            # データベース更新
+            ############################################################
+            PkeyItem = "INSTANCE_GROUP_ITA_MANAGED_ID"
+            NameItem = "INSTANCE_GROUP_NAME"
+            IDItem = "INSTANCE_GROUP_ID"
+            Contents_array = []
+            for info in igrp_response_array['responseContents']['results']:
+                Contents_array.append(
+                    {
+                        'name': info['name'],
+                        'id': int(info['id']),
+                    }
+                )
+
+            DBUpdate(Contents_array, TableName, instanceGroupRows, PkeyItem, NameItem, IDItem, dbAccess, False)
+
+            ############################################################
+            # トランザクション終了(分割コミット)
+            ############################################################
+            dbAccess.db_commit()
+
+        except Exception as e:
+            g.applogger.error("Faild to make instance group data.")
+            raise e
+
+        ############################################################
+        # 該当ユーザーの組織が利用可能な実行環境情報更新
+        ############################################################
+        try:
+            #  該当ユーザーの組織が利用可能な実行環境取得
+            # /api/v2/organizations/12/execution_environments/だと組織共通の実行環境が取得できない
+            url = "/api/v2/execution_environments/"
+            response_array = AnsibleTowerRestApiPassThrough.get(restApiCaller, url)
+
+            if not response_array['success']:
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("Faild to get execution environments data from %s" % (url))
+
+            if 'responseContents' not in response_array:
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("responseContents tag is not found in %s" % (url))
+
+            if 'results' not in response_array['responseContents']:
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("responseContents->results tag not found in %s" % (url))
+
+            if 'count' not in response_array['responseContents']:
+                RestResultLog(restApiCaller.getRestResultList())
+                raise Exception("responseContents->count tag not found in %s" % (url))
+
+            ee_response_array = response_array
+            ############################################################
+            # トランザクション開始
+            ############################################################
+            dbAccess.db_transaction_start()
+
+            ############################################################
+            # ITA側の既に登録済みの実行環境情報取得
+            ############################################################
+            TableName = "T_COMN_AAC_EXECUTION_ENVIRONMENT"
+            cols = dbAccess.table_columns_get(TableName)
+            cols = (',').join(cols[0])
+            sql = (
+                "SELECT \n"
+                "  %s   \n"
+                "FROM   \n"
+                "  %s ; \n"
+            ) % (cols, TableName)
+            VirtualEnvRows = dbAccess.sql_execute(sql)
+
+            ############################################################
+            # データベース更新
+            ############################################################
+            PkeyItem = "EXECUTION_ENVIRONMENT_ID"
+            NameItem = "EXECUTION_ENVIRONMENT_NAME"
+            IDItem = "EXECUTION_ENVIRONMENT_AAC_ID"
+            Contents_array = []
+            for info in ee_response_array['responseContents']['results']:
+                # 組織が紐づいていないユーザーで管理者ユーザーの場合か
+                # 複数の組織に属している場合、他組織に属している実行環境も取得出来てしまうので
+                # 全組織共通の実行環境と自組織に属している実行環境だけを選択する。
+                if (is_organizations == False and is_superuser == True) or \
+                   (not info['organization'] or info['organization'] == my_org_id):
+                    Contents_array.append(
+                        {
+                            'name': info['name'],
+                            'id': info['id'],
+                        }
+                    )
+
+            DBUpdate(Contents_array, TableName, VirtualEnvRows, PkeyItem, NameItem, IDItem, dbAccess, False)
+
+            ############################################################
+            # トランザクション終了
+            ############################################################
+            dbAccess.db_commit()
 
         except Exception as e:
             g.applogger.error("Faild to make Execution Environment data.")
@@ -372,13 +499,13 @@ def backyard_main(organization_id, workspace_id):
         restApiCaller = None
 
     if error_flag != 0:
-        g.applogger.error(" = Finished Procedure. [state: ERROR] = ")
+        g.applogger.error("Finished Procedure. [state: ERROR]")
         return 2
 
     elif warning_flag != 0:
-        g.applogger.warning(" = Finished Procedure. [state: WARNING] = ")
+        g.applogger.debug("Finished Procedure. [state: WARNING]")
         return 2
 
     else:
-        g.applogger.debug(" = Finished Procedure. [state: SUCCESS] = ")
+        g.applogger.debug("Finished Procedure. [state: SUCCESS]")
         return 0

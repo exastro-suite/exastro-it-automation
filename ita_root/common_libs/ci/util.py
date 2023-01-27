@@ -47,17 +47,18 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None):
 
         # database connect info
         g.db_connect_info = {}
-        g.db_connect_info["ORGDB_HOST"] = organization_info["DB_HOST"]
-        g.db_connect_info["ORGDB_PORT"] = str(organization_info["DB_PORT"])
-        g.db_connect_info["ORGDB_USER"] = organization_info["DB_USER"]
-        g.db_connect_info["ORGDB_PASSWORD"] = organization_info["DB_PASSWORD"]
-        g.db_connect_info["ORGDB_ADMIN_USER"] = organization_info["DB_ADMIN_USER"]
-        g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = organization_info["DB_ADMIN_PASSWORD"]
-        g.db_connect_info["ORGDB_DATABASE"] = organization_info["DB_DATABASE"]
+        g.db_connect_info['ORGDB_HOST'] = organization_info.get('DB_HOST')
+        g.db_connect_info['ORGDB_PORT'] = str(organization_info.get('DB_PORT'))
+        g.db_connect_info['ORGDB_USER'] = organization_info.get('DB_USER')
+        g.db_connect_info['ORGDB_PASSWORD'] = organization_info.get('DB_PASSWORD')
+        g.db_connect_info['ORGDB_ADMIN_USER'] = organization_info.get('DB_ADMIN_USER')
+        g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
+        g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
+        g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = organization_info.get('INITIAL_DATA_ANSIBLE_IF')
         # gitlab connect info
         g.gitlab_connect_info = {}
-        g.gitlab_connect_info["GITLAB_USER"] = organization_info["GITLAB_USER"]
-        g.gitlab_connect_info["GITLAB_TOKEN"] = organization_info["GITLAB_TOKEN"]
+        g.gitlab_connect_info['GITLAB_USER'] = organization_info['GITLAB_USER']
+        g.gitlab_connect_info['GITLAB_TOKEN'] = organization_info['GITLAB_TOKEN']
 
         # job for organization
         try:
@@ -73,7 +74,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None):
 def organization_job(main_logic, organization_id=None, workspace_id=None):
     '''
     job for organization unit
-    
+
     Argument:
         organization_id
     '''
@@ -131,7 +132,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
 def app_exception(e):
     '''
     called when AppException occured
-    
+
     Argument:
         e: AppException
     '''
@@ -153,12 +154,12 @@ def app_exception(e):
     result_code, log_msg_args, api_msg_args = args
     log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
     log_err(log_msg)
-    
-    
+
+
 def exception(e):
     '''
     called when Exception occured
-    
+
     Argument:
         e: Exception
     '''
@@ -180,7 +181,7 @@ def exception(e):
 def validation_exception(e):
     '''
     called when AppException occured
-    
+
     Argument:
         e: AppException
     '''
@@ -207,7 +208,7 @@ def validation_exception(e):
 def app_exception_driver_log(e, logfile=None):
     '''
     called when AppException occured
-    
+
     Argument:
         e: AppException
         logfile: If you want exception file output
@@ -237,7 +238,7 @@ def app_exception_driver_log(e, logfile=None):
 def exception_driver_log(e, logfile=None):
     '''
     called when Exception occured
-    
+
     Argument:
         e: Exception
         logfile: If you want exception file output
@@ -262,7 +263,7 @@ def exception_driver_log(e, logfile=None):
 def validation_exception_driver_log(e, logfile=None):
     '''
     called when AppException occured
-    
+
     Argument:
         e: AppException
         logfile: If you want exception file output

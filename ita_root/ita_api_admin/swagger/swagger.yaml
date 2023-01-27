@@ -1,15 +1,36 @@
 openapi: 3.0.3
 info:
-  title: ITA Version2.0 admin API
-  description: ITAv2.0 admin用API
-  version: 1.0.0
+  title: Exastro IT Automation API (System Management)
+  description: Exastro IT Automation API for System Manager
+  version: 2.0.3
 servers:
-- url: /
+- url: "https://{host}"
+  description: API endpoint
+  variables:
+    host:
+      default: localhost
+- url: "http://{host}"
+  description: API endpoint
+  variables:
+    host:
+      default: localhost
+- url: "{protocol}://{host}:{port}"
+  description: API endpoint (Development)
+  variables:
+    protocol:
+      enum:
+      - http
+      - https
+      default: https
+    host:
+      default: localhost
+    port:
+      default: "30081"
 tags:
 - name: Organization Create
-  description: Organization作成
+  description: Organization作成(Exastro Platform連携用) ※利用不可
 - name: Workspace Create
-  description: Workspace作成
+  description: Workspace作成(Exastro Platform連携用) ※利用不可
 - name: Initial Settings Ansible
   description: 初期データ設定(Ansible)
 paths:
@@ -176,8 +197,8 @@ paths:
     get:
       tags:
       - Initial Settings Ansible
-      description: Ansibleの初期データを取得する
-      operationId: get_initial_setting
+      description: すべてのorganizationのAnsibleの初期データを取得する
+      operationId: get_all_initial_setting_ansible
       parameters: []
       responses:
         "200":
@@ -199,12 +220,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.initial_settings_ansible_controller
+  /api/ita/{organization_id}/initial-settings/ansible/:
+    get:
+      tags:
+      - Initial Settings Ansible
+      description: Ansibleの初期データを取得する
+      operationId: get_initial_setting_ansible
+      parameters:
+      - name: organization_id
+        in: path
+        description: organizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_2'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.initial_settings_ansible_controller
     post:
       tags:
       - Initial Settings Ansible
       description: Ansibleの初期データを登録・更新する
-      operationId: post_initial_setting
-      parameters: []
+      operationId: post_initial_setting_ansible
+      parameters:
+      - name: organization_id
+        in: path
+        description: organizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -264,6 +328,60 @@ components:
       example:
         result: 000-00000
         data:
+          (organization_id):
+            execution_engine_list:
+            - execution_engine_list
+            - execution_engine_list
+            initial_data:
+              interface_info_ansible:
+                parameter:
+                  proxy_port: proxy_port
+                  execution_engine: execution_engine
+                  representative_server: representative_server
+                  delete_runtime_data: delete_runtime_data
+                  ansible_automation_controller_port: ansible_automation_controller_port
+                  authentication_token: authentication_token
+                  proxy_address: proxy_address
+                  organization_name: organization_name
+                  ansible_automation_controller_protocol: ansible_automation_controller_protocol
+              ansible_automation_controller_host_list:
+              - file:
+                  ssh_private_key_file: ssh_private_key_file
+                parameter:
+                  authentication_method: authentication_method
+                  password: password
+                  isolated_tower: isolated_tower
+                  host: host
+                  ssh_private_key_file: ssh_private_key_file
+                  passphrase: passphrase
+                  user: user
+                  remarks: remarks
+              - file:
+                  ssh_private_key_file: ssh_private_key_file
+                parameter:
+                  authentication_method: authentication_method
+                  password: password
+                  isolated_tower: isolated_tower
+                  host: host
+                  ssh_private_key_file: ssh_private_key_file
+                  passphrase: passphrase
+                  user: user
+                  remarks: remarks
+            input_limit_setting: true
+        message: message
+    inline_response_200_2:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_1_data_organization_id'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
           execution_engine_list:
           - execution_engine_list
           - execution_engine_list
@@ -304,7 +422,7 @@ components:
                 remarks: remarks
           input_limit_setting: true
         message: message
-    apiitainitialsettingsansible_initial_data_file:
+    apiitaorganization_idinitialsettingsansible_initial_data_file:
       type: object
       properties:
         ssh_private_key_file:
@@ -312,7 +430,7 @@ components:
           nullable: true
       example:
         ssh_private_key_file: ssh_private_key_file
-    apiitainitialsettingsansible_initial_data_parameter:
+    apiitaorganization_idinitialsettingsansible_initial_data_parameter:
       type: object
       properties:
         host:
@@ -336,13 +454,13 @@ components:
         remarks:
           type: string
           nullable: true
-    apiitainitialsettingsansible_initial_data_ansible_automation_controller_host_list:
+    apiitaorganization_idinitialsettingsansible_initial_data_ansible_automation_controller_host_list:
       properties:
         file:
-          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_file'
+          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_file'
         parameter:
-          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_parameter'
-    apiitainitialsettingsansible_initial_data_interface_info_ansible_parameter:
+          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_parameter'
+    apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible_parameter:
       type: object
       properties:
         execution_engine:
@@ -369,20 +487,20 @@ components:
         proxy_port:
           type: string
           nullable: true
-    apiitainitialsettingsansible_initial_data_interface_info_ansible:
+    apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible:
       type: object
       properties:
         parameter:
-          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_interface_info_ansible_parameter'
-    apiitainitialsettingsansible_initial_data:
+          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible_parameter'
+    apiitaorganization_idinitialsettingsansible_initial_data:
       type: object
       properties:
         ansible_automation_controller_host_list:
           type: array
           items:
-            $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_ansible_automation_controller_host_list'
+            $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_ansible_automation_controller_host_list'
         interface_info_ansible:
-          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_interface_info_ansible'
+          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible'
     initialsettings_ansible_body:
       type: object
       properties:
@@ -393,8 +511,8 @@ components:
           items:
             type: string
         initial_data:
-          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data'
-    inline_response_200_1_data_initial_data_parameter:
+          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data'
+    inline_response_200_1_data_organization_id_initial_data_parameter:
       type: object
       properties:
         host:
@@ -430,12 +548,12 @@ components:
         passphrase: passphrase
         user: user
         remarks: remarks
-    inline_response_200_1_data_initial_data_ansible_automation_controller_host_list:
+    inline_response_200_1_data_organization_id_initial_data_ansible_automation_controller_host_list:
       properties:
         file:
-          $ref: '#/components/schemas/apiitainitialsettingsansible_initial_data_file'
+          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_file'
         parameter:
-          $ref: '#/components/schemas/inline_response_200_1_data_initial_data_parameter'
+          $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data_parameter'
       example:
         file:
           ssh_private_key_file: ssh_private_key_file
@@ -448,7 +566,7 @@ components:
           passphrase: passphrase
           user: user
           remarks: remarks
-    inline_response_200_1_data_initial_data_interface_info_ansible_parameter:
+    inline_response_200_1_data_organization_id_initial_data_interface_info_ansible_parameter:
       type: object
       properties:
         execution_engine:
@@ -488,11 +606,11 @@ components:
         proxy_address: proxy_address
         organization_name: organization_name
         ansible_automation_controller_protocol: ansible_automation_controller_protocol
-    inline_response_200_1_data_initial_data_interface_info_ansible:
+    inline_response_200_1_data_organization_id_initial_data_interface_info_ansible:
       type: object
       properties:
         parameter:
-          $ref: '#/components/schemas/inline_response_200_1_data_initial_data_interface_info_ansible_parameter'
+          $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data_interface_info_ansible_parameter'
       example:
         parameter:
           proxy_port: proxy_port
@@ -504,15 +622,15 @@ components:
           proxy_address: proxy_address
           organization_name: organization_name
           ansible_automation_controller_protocol: ansible_automation_controller_protocol
-    inline_response_200_1_data_initial_data:
+    inline_response_200_1_data_organization_id_initial_data:
       type: object
       properties:
         ansible_automation_controller_host_list:
           type: array
           items:
-            $ref: '#/components/schemas/inline_response_200_1_data_initial_data_ansible_automation_controller_host_list'
+            $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data_ansible_automation_controller_host_list'
         interface_info_ansible:
-          $ref: '#/components/schemas/inline_response_200_1_data_initial_data_interface_info_ansible'
+          $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data_interface_info_ansible'
       example:
         interface_info_ansible:
           parameter:
@@ -548,7 +666,7 @@ components:
             passphrase: passphrase
             user: user
             remarks: remarks
-    inline_response_200_1_data:
+    inline_response_200_1_data_organization_id:
       type: object
       properties:
         input_limit_setting:
@@ -558,7 +676,7 @@ components:
           items:
             type: string
         initial_data:
-          $ref: '#/components/schemas/inline_response_200_1_data_initial_data'
+          $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data'
       example:
         execution_engine_list:
         - execution_engine_list
@@ -599,4 +717,64 @@ components:
               user: user
               remarks: remarks
         input_limit_setting: true
+    inline_response_200_1_data:
+      properties:
+        (organization_id):
+          $ref: '#/components/schemas/inline_response_200_1_data_organization_id'
+      example:
+        (organization_id):
+          execution_engine_list:
+          - execution_engine_list
+          - execution_engine_list
+          initial_data:
+            interface_info_ansible:
+              parameter:
+                proxy_port: proxy_port
+                execution_engine: execution_engine
+                representative_server: representative_server
+                delete_runtime_data: delete_runtime_data
+                ansible_automation_controller_port: ansible_automation_controller_port
+                authentication_token: authentication_token
+                proxy_address: proxy_address
+                organization_name: organization_name
+                ansible_automation_controller_protocol: ansible_automation_controller_protocol
+            ansible_automation_controller_host_list:
+            - file:
+                ssh_private_key_file: ssh_private_key_file
+              parameter:
+                authentication_method: authentication_method
+                password: password
+                isolated_tower: isolated_tower
+                host: host
+                ssh_private_key_file: ssh_private_key_file
+                passphrase: passphrase
+                user: user
+                remarks: remarks
+            - file:
+                ssh_private_key_file: ssh_private_key_file
+              parameter:
+                authentication_method: authentication_method
+                password: password
+                isolated_tower: isolated_tower
+                host: host
+                ssh_private_key_file: ssh_private_key_file
+                passphrase: passphrase
+                user: user
+                remarks: remarks
+          input_limit_setting: true
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+  securitySchemes:
+    BearerAuth:
+      type: http
+      description: Credentials or access token for API
+      scheme: bearer
+      bearerFormat: JWT
+      x-bearerInfoFunc: controllers.authorization_controller.check_BearerAuth
+    BasicAuth:
+      type: http
+      description: Value converted from ID/Password in base64
+      scheme: basic
+      x-basicInfoFunc: controllers.authorization_controller.check_BasicAuth
 

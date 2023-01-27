@@ -177,8 +177,8 @@ def get_excel_bulk_export_list(organization_id, workspace_id):  # noqa: E501
     return result_data,
 
 @api_filter
-def get_excel_bulk_upload(organization_id, workspace_id):  # noqa: E501
-    """get_excel_bulk_upload
+def post_excel_bulk_upload(organization_id, workspace_id, body=None):  # noqa: E501
+    """post_excel_bulk_upload
 
     Excel一括インポートのアップロード # noqa: E501
 
@@ -186,6 +186,8 @@ def get_excel_bulk_upload(organization_id, workspace_id):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
     :rtype: InlineResponse200
     """
@@ -223,8 +225,8 @@ def get_menu_export_list(organization_id, workspace_id):  # noqa: E501
     return result_data,
 
 @api_filter
-def get_menu_import_upload(organization_id, workspace_id):  # noqa: E501
-    """get_menu_import_upload
+def post_menu_import_upload(organization_id, workspace_id, body=None):  # noqa: E501
+    """post_menu_import_upload
 
     メニューインポートのアップロード # noqa: E501
 
@@ -232,6 +234,8 @@ def get_menu_import_upload(organization_id, workspace_id):  # noqa: E501
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
 
     :rtype: InlineResponse200
     """

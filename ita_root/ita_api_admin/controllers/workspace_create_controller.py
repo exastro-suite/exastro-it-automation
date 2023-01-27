@@ -146,6 +146,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             # ['terraform_common.sql', 'terraform_common_master.sql'],
             # ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
             # ['terraform_cli.sql', 'terraform_cli_master.sql'],
+            ['hostgroup.sql', 'hostgroup_master.sql'],
         ]
         last_update_timestamp = str(get_timestamp())
 

@@ -277,7 +277,7 @@ class KubernetesMode(AnsibleAgent):
             ))
 
         # create command string
-        command = ["/usr/local/bin/kubectl", "apply", "-f", exec_manifest, "-n", KubernetesMode.NAMESPACE]
+        command = ["/usr/local/bin/kubectl", "apply", "-f", exec_manifest]
 
         # kubectl apply -f file -n namespace
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
@@ -314,7 +314,7 @@ class KubernetesMode(AnsibleAgent):
         container_mount_path_driver = "/storage/%s/%s/%s/%s" % (self._organization_id, self._workspace_id, ansible_role_driver_middle_path, execution_no)  # noqa E501
         exec_manifest = "%s/.tmp/.k8s_pod.yml" % (container_mount_path_driver)
 
-        command = ["/usr/local/bin/kubectl", "delete", "-f", exec_manifest, "-n", KubernetesMode.NAMESPACE, "--force=true", "--grace-period=0"]
+        command = ["/usr/local/bin/kubectl", "delete", "-f", exec_manifest, "--force=true", "--grace-period=0"]
 
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
         if cp.returncode != 0:
@@ -348,7 +348,7 @@ class KubernetesMode(AnsibleAgent):
         # create command string
         unique_name = self.get_unique_name(execution_no)
         unique_name = re.sub(r'_', '-', unique_name).lower()
-        command = ["/usr/local/bin/kubectl", "get", "pod", "-n", KubernetesMode.NAMESPACE, 'ita-by-ansible-agent-' + unique_name, "-o", "json"]
+        command = ["/usr/local/bin/kubectl", "get", "pod", 'ita-by-ansible-agent-' + unique_name, "-o", "json"]
 
         cp = subprocess.run(' '.join(command), capture_output=True, shell=True, text=True)
         if cp.returncode != 0:

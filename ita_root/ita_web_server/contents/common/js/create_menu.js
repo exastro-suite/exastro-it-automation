@@ -168,7 +168,7 @@ editorMainHtml( itaEditorMode ) {
                             </div>
                             <div class="editor-tab-contents">
                                 <div id="menu-editor-preview" class="editor-tab-body">
-                                    <div class="tableBody">
+                                    <div class="tableWrap">
                                         <table class="table">
                                             <thead class="thead"></tbody>
                                             <tbody class="tbody"></tbody>

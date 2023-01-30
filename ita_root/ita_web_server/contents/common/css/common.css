@@ -145,24 +145,30 @@ background-color: var(--focusBackgroundColor);
 border-color: var(--focusColor);
 }
 .inputTextWrap,
+.inputColorWrap,
 .inputPasswordWrap,
 .inputFileWrap {
 display: flex;
 width: 100%;
 }
 .inputTextWrap > div,
+.inputColorWrap > div,
 .inputPasswordWrap > div,
 .inputFileWrap > div {
 min-width: 0;
 }
-.inputTextBody {
+.inputTextBody,
+.inputColorBody {
 flex: 1 1 auto;
 }
-.inputTextBody .inputText {
+.inputTextBody .inputText,
+.inputColorBody .inputColor {
 border-radius: 0;
 }
 .inputTextBefore,
-.inputTextAfter {
+.inputTextAfter,
+.inputColorBefore,
+.inputColorAfter {
 flex: 0 0 auto;
 height: 32px;
 padding: 0 16px;
@@ -173,11 +179,19 @@ letter-spacing: .75px;
 line-height: 30px;
 color: var(--white100);
 }
-.inputTextBefore {
+.inputColorBefore,
+.inputColorAfter {
+background-color: var(--black10);
+border: 1px solid var(--black40);
+color: var(--black90);
+}
+.inputTextBefore,
+.inputColorBefore {
 border-right: none;
 border-radius: 4px 0 0 4px;
 }
-.inputTextAfter {
+.inputTextAfter,
+.inputColorAfter {
 border-left: none;
 border-radius: 0 4px 4px 0;
 }
@@ -215,6 +229,12 @@ visibility: hidden;
 }
 .textareaOverWrap > .textareaHeightAdjustmentText {
 white-space: normal!important;
+}
+.inputColor {
+width: 80px; height: 100%;
+margin: 0; padding: 2px;
+background-color: var(--white100);
+border: 1px solid var(--black40);
 }
 /* checkbox */
 .checkboxWrap,
@@ -406,6 +426,11 @@ cursor: default;
 background-color: var(--black60)!important;
 background-image: none!important;
 border-color: transparent!important;
+opacity: .2;
+}
+.checkbox:disabled ~ .checkboxLabel::after,
+.checkboxText:disabled ~ .checkboxTextLabel > .checkboxTextMark::after {
+opacity: .8;
 }
 /* button */
 .button {
@@ -1692,6 +1717,7 @@ text-overflow: ellipsis;
 }
 .contentMenuInfo {
 flex: 1 1 auto;
+gap: 8px;
 display: flex;
 min-width: 0;
 padding-right: 16px;
@@ -1948,7 +1974,7 @@ opacity: .5;
 }
 
 .tableError .tableBody {
-display: block;
+display: flex;
 flex: 3 1 0;
 }
 .tableError .tableErrorMessage {
@@ -2555,6 +2581,14 @@ height: 32px;
 .tableEditInputSelectContainer.tableEditChange .select2-selection {
 background-color: #DFF4CF;
 border-color: #60C60D;
+}
+.tableEditInputSelectValueDisabled,
+.select2-container--default.select2-container--disabled .select2-selection--single {
+background-color: var(--black15);
+border-color: var(--black30);
+color: var(--rowDiscardTextColor)!important;
+opacity: .5!important;
+cursor: no-drop;
 }
 
 /* Filter */
@@ -3523,6 +3557,7 @@ border-radius: 4px;
 box-shadow: 0 0 16px rgba( 0,0,0,.3 );
 letter-spacing: .75px;
 line-height: 1.5;
+word-break: break-all;
 font-size: 14px;
 color: var(--black90);
 }
@@ -3593,7 +3628,7 @@ min-width: auto;
 }
 .inputFaderRange {
 position: relative;
-z-index: 0;
+z-index: 25;
 display: inline-block;
 width: calc( 100% - 64px ); height: 100%;
 margin-left: 16px;
@@ -3934,6 +3969,7 @@ line-height: 1.5;
 letter-spacing: .75px;
 font-size: 20px;
 font-weight: bold;
+word-break: break-all;
 color: var(--mainColor100);
 }
 .menuInfoTitle::before {
@@ -4506,7 +4542,104 @@ word-break: break-all;
 line-height: 1.5;
 font-size: 14px;
 }
+.commonTab {
+display: flex;
+flex-direction: column;
+height: 100%;
+}
+.commonTab > div {
+min-height: 0;
+}
+.commonTabMenu {
+flex: 0 0 48px;
+}
+.commonTabList {
+display: flex;
+width: 100%; height: 100%;
+justify-content: space-between;
+background-color: var(--baseColor100);
+}
+.commonTabItem {
+display: flex;
+justify-content: center;
+align-items: center;
+width: 100%;
+background-image: linear-gradient( rgba( 0,0,0,.25 ), rgba( 0,0,0,.05 ) );
+border-right: 1px solid rgba(0,0,0,.3);
+border-bottom: 1px solid rgba(0,0,0,.2);
+border-top: 1px solid rgba(0,0,0,.3);
+box-shadow: 0 1px 1px rgb(255 255 255 / 20%) inset, 0 -4px 8px rgba( 0,0,0,.05) inset;
+font-size: 14px;
+color: var(--black60);
+cursor: pointer;
+}
+.commonTabItem:last-child {
+border-right: none;
+}
+.commonTabBody {
+overflow: hidden;
+display: flex;
+flex: 1 1 auto;
+}
+.commonTabSection {
+display: none;
+overflow: auto;
+flex: 1 1 auto;
+width: 100%; min-height: 0;
+}
+.commonTabItem:hover {
+background-image: linear-gradient( rgba( 0,0,0,.25 ), rgba( 0,0,0,.025 ) );
+color: var(--black70);
+}
+.commonTabItem.open {
+position: relative;
+z-index: 0;
+background-image: linear-gradient( rgba( 0,0,0,.15 ), rgba( 0,0,0,0 ) );
+box-shadow: 0 1px 1px rgb(255 255 255 / 20%) inset;
+border-bottom: none;
+font-weight: bold;
+color: var(--mainColor100);
+cursor: default;
+}
+.commonTabItem.open::after {
+content: '';
+position: absolute;
+bottom: 2px; right: 12px;
+width:  calc( 100% - 24px ); height: 2px;
+background-color: var(--mainColor50);
+}
+.commonTabSection.open {
+display: block;
+}
 
+.commonInputTable {
+width: 100%;
+}
+.commonInputTh {
+width: 8px;
+white-space: nowrap;
+}
+.commonInputTd {
+padding: 4px 8px;
+}
+.commonInputTitle {
+padding: 8px;
+border-left: 4px solid var(--mainColor50);
+text-align: left;
+}
+.commonInputGroup {
+padding: 8px 16px;
+background-color: rgba( 255,255,255,.2 );
+border: 1px solid rgba( 0,0,0,.15 );
+border-radius: 4px;
+}
+.tableInputColorTable {
+display: none;
+margin-top: 16px;
+}
+.tableInputColorTable.colorOpen {
+display: block;
+}
 
 /*
 ##################################################

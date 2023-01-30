@@ -201,12 +201,12 @@ commonEvents() {
             const $checks = $check.closest('.exportImportList').children('.exportImportItem').children('.exportImportName').find('.exportImportCheck'),
                   checkLength = $checks.length;
 
-            let checkNum = 0;
+            let checkNum = 0, oneOrMoreNum = 0;
             $checks.each(function(){
                 const $eachCheck = $( this );
-                if ( !$eachCheck.closest('.checkboxTextWrap ').is('.checkboxTextOneOrMore') ) {
-                    checkNum += ( $eachCheck.prop('checked') )? 1: 0;
-                }
+                if ( $eachCheck.prop('checked') ) checkNum++;
+                if ( $eachCheck.closest('.checkboxTextWrap').is('.checkboxTextOneOrMore') ) oneOrMoreNum++;
+                
             });
 
             // 親要素のチェック
@@ -214,7 +214,7 @@ commonEvents() {
                   $parentCheck = $parentCheckWrap.find('.exportImportCheck');
             $parentCheckWrap.removeClass('checkboxTextOneOrMore');
             if ( $parentCheck.length ) {
-                if ( checkLength === checkNum ) {
+                if ( checkLength === checkNum && oneOrMoreNum === 0 ) {
                     $parentCheck.prop('checked', true );
                 } else if ( checkNum > 0 ) {
                     $parentCheck.prop('checked', true );
@@ -232,14 +232,13 @@ commonEvents() {
         
         parentCheck( $check );
         
-        if ( $check.is('.exportImportCheckAll, .exportImportCheckList') ) {
-            $check.closest('.checkboxTextWrap').removeClass('checkboxTextOneOrMore');
-        }
-        
         // 子要素のチェックを全て変更する
         if ( $check.is('.exportImportCheckList, .exportImportCheckAll') ) {
-            const checked = $check.prop('checked');
-            $check.closest('.exportImportName').next('.exportImportList').find('.exportImportCheck').prop('checked', checked );
+            const $wrap = $check.closest('.checkboxTextWrap'),
+                  $parent = $check.closest('.exportImportName').next('.exportImportList'),
+                  checked = $check.prop('checked');
+            $wrap.add( $parent.find('.checkboxTextOneOrMore') ).removeClass('checkboxTextOneOrMore');
+            $parent.find('.exportImportCheck').prop('checked', checked );
         }
         
         // ボタン活性化
@@ -390,7 +389,7 @@ exportHtml( menuGroupList ) {
     + '</div>'
     + '<div class="exportImportBody">'
         + ex.exportSettingHtml()
-        + '<div class="exportImportSelect">'
+        + '<div class="exportImportSelect commonScroll">'
             + '<div class="commonTitle">'
                 + getMessage.FTE07015
             + '</div>'
@@ -741,53 +740,4 @@ importModal() {
     });
 }
 
-}
-const fileselectDummy = {
-  "data": {
-    "upload_id": "一意のID",
-    "file_name": "ファイル名",
-    "mode": "1",
-    "abolished_type": "1",
-    "specified_time": null,
-    "import_list": {
-        "menu_groups": [
-            {
-    "disp_seq": 10,
-    "id": "101",
-    "menu_group_name": "管理コンソール",
-    "menus": [
-        {
-            "disp_seq": 10,
-            "id": "10101",
-            "menu_name": "システム設定",
-            "menu_name_rest": "system_settings"
-        },
-        {
-            "disp_seq": 20,
-            "id": "10102",
-            "menu_name": "メニューグループ管理",
-            "menu_name_rest": "menu_group_list"
-        },
-        {
-            "disp_seq": 30,
-            "id": "10103",
-            "menu_name": "メニュー管理",
-            "menu_name_rest": "menu_list"
-        },
-        {
-            "disp_seq": 40,
-            "id": "10104",
-            "menu_name": "ロール-メニュー紐付管理",
-            "menu_name_rest": "role_menu_link_list"
-        }
-    ],
-    "parent_id": null,
-    "main_menu_rest": "system_settings"
-}
-]
-    }
-  },
-  "message": "SUCCESS",
-  "result": "000-00000",
-  "ts": "2022-12-08T09:14:33.915Z"
 }

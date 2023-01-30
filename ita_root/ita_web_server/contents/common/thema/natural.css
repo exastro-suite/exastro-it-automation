@@ -9,7 +9,7 @@
 --mainColor100:#165632;--mainColor95:#225E3C;--mainColor90:#2D6747;--mainColor85:#396F51;--mainColor80:#45785B;--mainColor75:#508065;--mainColor70:#5C8970;--mainColor65:#68917A;--mainColor60:#739A84;--mainColor55:#7FA28E;--mainColor50:#8BAB99;--mainColor45:#96B3A3;--mainColor40:#A2BBAD;--mainColor35:#ADC4B7;--mainColor30:#B9CCC2;--mainColor25:#C5D5CC;--mainColor20:#D0DDD6;--mainColor15:#DCE6E0;--mainColor10:#E8EEEB;--mainColor5:#F3F7F5;--mainColor0:#FFFFFF;
 
 /* Accent color */ 
---accentColor100:#936959;--accentColor95:#987161;--accentColor90:#9E786A;--accentColor85:#A38072;--accentColor80:#A9877A;--accentColor75:#AE8F83;--accentColor70:#B3968B;--accentColor65:#B99E93;--accentColor60:#BEA59B;--accentColor55:#C4ADA4;--accentColor50:#C9B4AC;--accentColor45:#CEBCB4;--accentColor40:#D4C3BD;--accentColor35:#D9CBC5;--accentColor30:#DFD2CD;--accentColor25:#E4DAD6;--accentColor20:#E9E1DE;--accentColor15:#EFE9E6;--accentColor10:#F4F0EE;--accentColor5:#FAF8F7;--accentColor0:#FFFFFF;
+--accentColor100:#DDCC00;--accentColor95:#DFCF0D;--accentColor90:#E0D11A;--accentColor85:#E2D426;--accentColor80:#E4D633;--accentColor75:#E6D940;--accentColor70:#E7DB4D;--accentColor65:#E9DE59;--accentColor60:#EBE066;--accentColor55:#ECE373;--accentColor50:#EEE680;--accentColor45:#F0E88C;--accentColor40:#F1EB99;--accentColor35:#F3EDA6;--accentColor30:#F5F0B3;--accentColor25:#F7F2BF;--accentColor20:#F8F5CC;--accentColor15:#FAF7D9;--accentColor10:#FCFAE6;--accentColor5:#FDFCF2;--accentColor0:#FFFFFF;
 
 /* Black color */
 --black100:#2C201B;--black95:#372B26;--black90:#413632;--black85:#4C413D;--black80:#564D49;--black75:#615854;--black70:#6B635F;--black65:#766E6B;--black60:#807976;--black55:#8B8482;--black50:#96908D;--black45:#A09B98;--black40:#ABA6A4;--black35:#B5B1AF;--black30:#C0BCBB;--black25:#CAC7C6;--black20:#D5D2D1;--black15:#DFDEDD;--black10:#EAE9E8;--black5:#F4F4F4;--black0:#FFFFFF;
@@ -29,6 +29,9 @@
 background-image: linear-gradient( transparent, transparent 50%, rgba( 255,255,255,.03 ) 50%, rgba( 255,255,255,.03 )),
 linear-gradient( var(--black90) 80%, var(--black100) );
 background-size: 32px 32px, 100% 100%;
+}
+.containerHeader {
+border-bottom-color: #936959;
 }
 .tabContent .contentHeader {
 border-bottom-color: #8CACD7;

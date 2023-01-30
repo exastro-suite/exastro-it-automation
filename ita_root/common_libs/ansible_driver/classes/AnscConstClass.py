@@ -195,8 +195,8 @@ class AnscConst:
     ITA_SP_VAR_OUT_PARAM_FILE_DIR = "__parameters_file_dir__"
     ITA_SP_VAR_MOVEMENT_STS_FILE = "__movement_status_filepath__"
     ITA_SP_VAR_CONDUCTOR_ID = "__conductor_id__"
-    ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME = "_dnshostname_"
-    ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME = "_ipaddress_"
+    ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME = "__dnshostname__"
+    ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME = "__ipaddress__"
     # pioneerモジュール実行時のホスト名として使用
     ITA_SP_VAR_TARGETHOSTNAME_VAR_NAME = "__logintarget__"
     ITA_SP_VAR_CPF_VAR_NAME = "CPF_[0-9a-zA-Z_]*"

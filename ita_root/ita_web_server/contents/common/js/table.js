@@ -978,7 +978,7 @@ filterHtml( filterHeaderFlag = true ) {
                     case 'LastUpdateUserColumn': case 'AppIDColumn': case 'JsonColumn':
                     case 'FileUploadColumn': case 'FileUploadEncryptColumn':
                     case 'EnvironmentIDColumn': case 'TextColumn': case 'RoleIDColumn':
-                    case 'JsonIDColumn':
+                    case 'JsonIDColumn': case 'UserIDColumn':
                         return 'text';
                     break;
                     // 数値のFROM,TO
@@ -2850,6 +2850,7 @@ viewCellHtml( item, columnKey, journal ) {
         case 'EnvironmentIDColumn': case 'TextColumn':
         case 'DateColumn': case 'DateTimeColumn':
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
+        case 'UserIDColumn':
             return checkJournal( value );
         
         // リンク
@@ -3106,7 +3107,7 @@ editCellHtml( item, columnKey ) {
             return fn.html.dateInput( true, inputClassName, value, name, attr );
 
         // プルダウン
-        case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn':
+        case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn':
             return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
             + `<div class="tableEditInputSelectValue">${value}</div>`
@@ -3465,7 +3466,7 @@ changeEdtiMode( changeMode ) {
             const columnInfo = info[ key ];
             
             // セレクト必須選択項目
-            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn'];
+            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn'];
             if ( selectTarget.indexOf( columnInfo.column_type ) !== -1 
               && columnInfo.required_item === '1'
               && columnInfo.initial_value === null ) {

@@ -53,6 +53,12 @@ const fn = ( function() {
     };
     const windowFlag = windowCheck();
     
+    // document.referrerが空の場合、WebStorageをクリア
+    if ( windowFlag && !document.referrer.length ) {
+        localStorage.clear();
+        sessionStorage.clear();
+    }
+    
     // iframeフラグ
     const iframeFlag = windowFlag? ( window.parent !== window ): false;
     
@@ -1064,12 +1070,12 @@ datePicker: function( timeFlag, className, date, start, end ) {
     
     // 時間
     if ( timeFlag ) {
-        const datePickerTime = [`<div class="datePickerHour">${cmn.html.inputFader('datePickerHourInput', hour, null, { min: 0, max: 23 }, { after: '時'} )}</div>`];
+        const datePickerTime = [`<div class="datePickerHour">${cmn.html.inputFader('datePickerHourInput', hour, null, { min: 0, max: 23 }, { after: getMessage.FTE10089 } )}</div>`];
         if ( timeFlag === 'true' || timeFlag === true || timeFlag === 'hms' || timeFlag === 'hm') {
-            datePickerTime.push(`<div class="datePickerMin">${cmn.html.inputFader('datePickerMinInput', min, null, { min: 0, max: 59 }, { after: '分'} )}</div>`);
+            datePickerTime.push(`<div class="datePickerMin">${cmn.html.inputFader('datePickerMinInput', min, null, { min: 0, max: 59 }, { after: getMessage.FTE10090 } )}</div>`);
         }
         if ( timeFlag === 'true' || timeFlag === true || timeFlag === 'hms') {
-            datePickerTime.push(`<div class="datePickerSec">${cmn.html.inputFader('datePickerSecInput', sec, null, { min: 0, max: 59 }, { after: '秒'} )}</div>`);
+            datePickerTime.push(`<div class="datePickerSec">${cmn.html.inputFader('datePickerSecInput', sec, null, { min: 0, max: 59 }, { after: getMessage.FTE10091 } )}</div>`);
         }
         
         $datePicker.append(`
@@ -1301,6 +1307,8 @@ faderEvent: function( $item ) {
     // 値から位置をセット
     const valPosition = function(){
       if ( val === '') val = min;
+      if ( val < min ) val = min;
+      if ( val > max ) val = max;
       ratio = ( val - min ) / inputRange;
       if ( Number.isNaN( ratio ) ) ratio = 0;
       positionX = Math.round( width * ratio );
@@ -1362,23 +1370,27 @@ faderEvent: function( $item ) {
         $window.off('mousemove.faderTooltip');
       }
     });
-
+    
+    $input.on('change', function(){
+        val = $input.val();
+        width = $fader.width();
+        if ( val !== '') {
+          if ( val < min ) {
+            val = min;
+            $input.val( min );
+          }
+          if ( val > max ) {
+            val = max;
+            $input.val( max );
+          }
+        } else {
+          val = '';
+        }
+    });
+    
     $input.on('input', function(){
-      val = $input.val();
-      width = $fader.width();
-      if ( val !== '') {
-        if ( val < min ) {
-          $input.val( min ).change();
-          val = min;
-        }
-        if ( val > max ) {
-          $input.val( max ).change();
-          val = max;
-        }
-      } else {
-        val = '';
-      }
-      valPosition();
+        val = $input.val();
+        valPosition();
     });
 },
 /*
@@ -1505,6 +1517,22 @@ html: {
         attr.push(`class="${classNameCheck( className, 'inputNumber input').join(' ')}"`);
         
         return `<input type="number" ${attr.join(' ')}>`;
+    },
+    inputColor: function( className, value, name, attrs = {}, option = {}) {
+        const attr = inputCommon( value, name, attrs );
+        
+        className = classNameCheck( className, 'inputColor');
+        attr.push(`class="${className.join(' ')}"` );
+        
+        let input = `<input type="color" ${attr.join(' ')}>`;
+        
+        if ( option.before || option.after ) {
+          const before = ( option.before )? `<div class="inputColorBefore">${option.before}</div>`: '',
+                after =  ( option.after )? `<div class="inputColorAfter">${option.after}</div>`: '';
+        
+          input = `<div class="inputColorWrap">${before}<div class="inputColorBody">${input}</div>${after}</div>`;
+        }
+        return  input;
     },
     inputFader: function( className, value, name, attrs = {}, option = {}) {
         const attr = inputCommon( value, name, attrs );
@@ -1882,7 +1910,6 @@ resultModal: function( result ) {
 ##################################################
 */
 errorModal: function( errors, pageName, info ) {
-    console.log( info )
     return new Promise(function( resolve ){
         let errorMessage;
         try {
@@ -2440,7 +2467,7 @@ gotoErrPage: function( message ) {
         } else {
             window.alert('Unknown error.');
         }
-        // window.location.href = './system_error/';
+        //window.location.href = './system_error/';
     } else {
         if ( message ) {
             console.error( message );
@@ -2645,13 +2672,41 @@ modalConductor: function( menu, mode, conductorId, option ) {
 
 setUiSetting() {
     const uiSettingData = cmn.storage.get('ui_setting');
-    if ( uiSettingData ) {
-        if ( uiSettingData.thema ) {
-            const $thema = $('#thema'),
-                  src = `/_/ita/thema/${uiSettingData.thema}.css`;
-            $thema.attr('href', src );
+    // テーマ
+    if ( uiSettingData && uiSettingData.theme ) {
+        cmn.setTheme( uiSettingData.theme );
+    } else {
+        cmn.setTheme('default');
+    }
+    // フィルター
+    if ( uiSettingData && uiSettingData.filter ) {
+        cmn.setFilter( uiSettingData.filter );
+    } else {
+        $('body').removeAttr('style');
+    }
+},
+
+setTheme( theme ) {
+    const $theme = $('#thema'),
+          src = `/_/ita/thema/${theme}.css`;
+    $theme.attr('href', src );
+},
+
+setFilter( filterList ) {
+    const style = [];
+    for ( const type in filterList ) {
+        const value = filterList[ type ];
+        switch ( type ) {
+            case 'grayscale': case 'invert': case 'saturate': case 'sepia':
+            case 'brightness': case 'contrast':
+              if ( value !== 0 ) style.push(`${type}(${value/100})`);
+            break;
+            case 'huerotate':
+              if ( value !== 0 ) style.push(`hue-rotate(${value}deg)`);
+            break;
         }
     }
+    $('body').css('filter', style.join(' ') );
 },
 
 uiSetting() {
@@ -2664,25 +2719,38 @@ uiSetting() {
                 resolve();
             },
             cancel: function(){
+                cmn.setUiSetting();
                 uiSettingInstance.buttonPositiveDisabled( true );
                 uiSettingInstance.hide();
                 resolve('cancel');
             }
         };
         const setUiSettingData = function() {
-            const uiSettingData = {};
-            uiSettingInstance.$.dbody.find('.input').each(function(){
-                const $input = $( this ),
-                      type = $input.attr('data-type'),
-                      value = $input.val();
-                uiSettingData[type] = value;
-            });
+            const uiSettingData = {
+                theme: uiSettingInstance.$.dbody.find('.displaySettingTheme').val(),
+                filter: getFilterValue()
+            };
+            
             cmn.storage.set('ui_setting', uiSettingData );
             cmn.setUiSetting();
         };
+        const getFilterValue = function() {
+            // フィルター
+            const $colorSetting = uiSettingInstance.$.dbody.find('.displaySettingColor'),
+                  filterList = {};
+            
+            $colorSetting.each(function(){
+                const $input = $( this ),
+                      value = Number( $input.val() ),
+                      type = $input.attr('data-type');
+                filterList[type] = value;
+            });
+            
+            return filterList;
+        };
 
         if ( !uiSettingInstance ) {
-            const themaList = {
+            const themeList = {
                 default: getMessage.FTE10065,
                 red: getMessage.FTE10066,
                 green: getMessage.FTE10067,
@@ -2702,28 +2770,58 @@ uiSetting() {
             };
             
             const uiSettingData = cmn.storage.get('ui_setting'),
-                  thema = ( uiSettingData )? uiSettingData.thema: '';
+                  theme = ( uiSettingData )? uiSettingData.theme: '';
             
             const select = [];
-            for ( const key in themaList ) {
-                const selected = ( thema === key )? ' selected': '';
-                select.push(`<option value="${key}"${selected}>${themaList[key]}</option>`);
+            for ( const key in themeList ) {
+                const selected = ( theme === key )? ' selected': '';
+                select.push(`<option value="${key}"${selected}>${themeList[key]}</option>`);
             }
             
-            const html = `
-            <div class="commonSection">
-                <div class="commonTitle">${getMessage.FTE10063}</div>
-                <div class="commonBody">
-                    <table class="commonTable">
-                        <tbody class="commonTbody">
-                            <tr class="commonTr">
-                                <th class="commonTh">${getMessage.FTE10064}</th>
-                                <td class="commonTd commonTdInput"><select class="input select" data-type="thema">${select.join('')}</select></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
+            const filterList = function() {
+                const list = {
+                    grayscale: [ getMessage.FTE10082, 'displaySettingGrayScale', 0, 100, '%', 0 ],
+                    sepia: [ getMessage.FTE10083, 'displaySettingSepia', 0, 100, '%', 0 ],
+                    brightness: [ getMessage.FTE10084, 'displaySettingBrightness', 50, 150, '%', 100 ],
+                    contrast: [ getMessage.FTE10085, 'displaySettingContrast', 50, 150, '%', 100 ],
+                    saturate: [ getMessage.FTE10086, 'displaySettingSaturate', 10, 200, '%', 100 ],
+                    huerotate: [ getMessage.FTE10087, 'displaySettingHueRotate', 0, 360, 'Deg', 0 ],
+                    invert: [ getMessage.FTE10088, 'displaySettingInvert', 0, 100, '%', 0 ],
+                };
+                let html = '';
+                for ( const key in list ) {
+                    const value = ( uiSettingData && uiSettingData.filter )? uiSettingData.filter[ key ]: list[key][5];
+                    html += ``
+                    + `<tr class="commonInputTr">`
+                        + `<th class="commonInputTh"><div class="commonInputTitle">${list[key][0]}</div></th>`
+                        + `<td class="commonInputTd">${fn.html.inputFader('displaySettingColor', value, list[key][1], { min: list[key][2], max: list[key][3], type: key }, { after: list[key][4] })}</td>`
+                    + `</tr>`;
+                }
+                return html;
+            };
+            
+            const html = ``
+            + `<div class="commonSection">`
+                + `<div class="commonTitle">${getMessage.FTE10063}</div>`
+                + `<div class="commonBody"><div class="commonInputGroup" data-type="theme">`
+                    + `<table class="commonInputTable">`
+                        + `<tbody class="commonInputTbody">`
+                            + `<tr class="commonInputTr">`
+                                + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE10064}</div></th>`
+                                + `<td class="commonInputTd"><select class="displaySettingTheme input select" data-type="theme">${select.join('')}</select></td>`
+                            + `</tr>`
+                        + `</tbody>`
+                    + `</table></div>`
+                + `</div>`
+                + `<div class="commonTitle">${getMessage.FTE10081}</div>`
+                + `<div class="commonBody"><div class="commonInputGroup" data-type="filter">`
+                    + `<table class="commonInputTable">`
+                        + `<tbody class="commonInputTbody">`
+                            + filterList()
+                        + `</tbody>`
+                    + `</table></div>`
+                + `</div>`
+            + `</div>`;
 
             const config = {
                 mode: 'modeless',
@@ -2739,11 +2837,28 @@ uiSetting() {
                 }
             };
             uiSettingInstance = new Dialog( config, funcs );
-            
             uiSettingInstance.open( html );
             
-            uiSettingInstance.$.dbody.find('.input').on('change', function(){
+            const $body = uiSettingInstance.$.dbody;
+            
+            // 反映ボタン
+            $body.find('.input').on('change', function(){
                 uiSettingInstance.buttonPositiveDisabled( false );
+            });
+            
+            // テーマ変更
+            $body.find('.displaySettingTheme').on('change', function(){
+                cmn.setTheme( $( this ).val() );
+            });
+            
+            // フェーダー
+            $body.find('.inputFaderWrap').each(function(){
+                cmn.faderEvent( $( this ) );
+            });
+            
+            // フィルター
+            $body.find('.displaySettingColor').on('change', function(){
+                cmn.setFilter( getFilterValue() );
             });
             
         } else {
@@ -2801,6 +2916,25 @@ fullScreen( elem ) {
         document.msExitFullscreen();
       }
     }
+},
+
+/*
+##################################################
+   タブ
+##################################################
+*/
+commonTab( $target ) {
+    $target.find('.commonTabItem').eq(0).add( $target.find('.commonTabSection').eq(0) ).addClass('open');
+    
+    $target.find('.commonTabItem').on('click', function(){
+        const $item = $( this );
+        
+        if ( !$item.is('.open') ) {
+            const index = $target.find('.commonTabItem').index( this );
+            $target.find('.open').removeClass('open');
+            $( this ).add( $target.find('.commonTabSection').eq( index ) ).addClass('open');
+        }        
+    });
 }
 
 }; // end cmn

@@ -130,7 +130,7 @@ get checkWork() {
 tableStructuralData() {
     const tb = this;
     
-    if ( !tb.tableSetting[ tb.tableMode ] ) tb.tableSetting[ tb.tableMode ] = {};
+    tb.initTableSettingValue();
     
     tb.structural = {
         column_group_info: {},
@@ -267,6 +267,7 @@ setup() {
         <div class="tableErrorMessage"></div>
         <div class="tableLoading"></div>
         <style class="tableStyle"></style>
+        <style class="tableCustomStyle"></style>
     </div>`;
     
     // jQueryオブジェクトキャッシュ
@@ -281,6 +282,7 @@ setup() {
     tb.$.message = tb.$.container.find('.tableMessage');
     tb.$.errorMessage = tb.$.container.find('.tableErrorMessage');
     tb.$.style = tb.$.container.find('.tableStyle');
+    tb.$.custom = tb.$.container.find('.tableCustomStyle');
 
     // 固有ID
     tb.idNameRest = tb.info.menu_info.pk_column_name_rest;
@@ -296,15 +298,6 @@ setup() {
         tb.tableMode = 'view';
     } else {
         tb.tableMode = 'input';
-    }
-    
-    // テーブル設定
-    tb.tableSettingId = 'TS_' + tb.id + '_' + tb.params.menuNameRest;
-    const tableSetting = fn.storage.get( tb.tableSettingId );
-    if ( tableSetting ) {
-        tb.tableSetting = tableSetting;
-    } else {
-        tb.tableSetting = {};
     }
     
     // tHead階層
@@ -324,7 +317,7 @@ setup() {
     // 1頁に表示する数
     const onePageNum = fn.storage.get('onePageNum');
     if ( onePageNum ) {
-        tb.paging.onePageNum = onePageNum; 
+        tb.paging.onePageNum = onePageNum;
     } else {
         tb.paging.onePageNum = 25; 
     }
@@ -416,10 +409,15 @@ setTable( mode ) {
     tb.$.table.attr('table-mode', tb.tableMode );
     
     // フィルター位置
-    if ( tb.tableSetting[ tb.tableMode ].position === 'out') {
+    if ( tb.getTableSettingValue('position') === 'out') {
         tb.$.table.html( tb.commonTableHtml( false ) );
-        tb.$.filter.html( tb.filterTableHtml() );
-        tb.$.body.addClass('tableFilterOut');
+        if ( tb.mode !== 'edit') {
+            tb.$.filter.html( tb.filterTableHtml() );
+            tb.$.body.addClass('tableFilterOut');
+        } else {
+            tb.$.filter.empty();
+            tb.$.body.removeClass('tableFilterOut');
+        }
     } else {
         tb.$.table.html( tb.commonTableHtml( true ) );
         tb.$.filter.empty();
@@ -427,14 +425,14 @@ setTable( mode ) {
     }
     
     // 項目メニュー表示
-    if ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show') {
+    if ( tb.getTableSettingValue('menu') === 'show') {
         tb.$.body.addClass('tableItemMenuShow');
     } else {
         tb.$.body.removeClass('tableItemMenuShow');
     }
     
     // 縦・横
-    if ( tb.tableSetting[ tb.tableMode ].direction === 'horizontal') {
+    if ( tb.getTableSettingValue('direction') === 'horizontal') {
         tb.$.body.addClass('tableHorizontal');
     } else {
         tb.$.body.removeClass('tableHorizontal');
@@ -710,6 +708,11 @@ setTable( mode ) {
         } break;
     }
     
+    // テーブル設定 カスタムCSS
+    if ( tb.mode === 'edit') {
+        tb.$.custom.html( tb.tableSettingCustomCSS() );
+    }
+    
     // Table内各種イベントセット
     tb.setTableEvents();    
 }
@@ -752,7 +755,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
                     html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
                     tb.data.filterHeadColspan++;
                 }
-                const itemText = ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show')? '項目メニュー': fn.html.icon('ellipsis_v');
+                const itemText = ( tb.getTableSettingValue('menu') === 'show')? '項目メニュー': fn.html.icon('ellipsis_v');
                 html[0] += fn.html.cell( itemText, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowMenu'], 'th', headRowspan );
                 tb.data.filterHeadColspan++;
             break;
@@ -1390,7 +1393,7 @@ setTableEvents() {
         
         // 個別メニュー
         tb.$.tbody.on('click', '.tBodyRowMenu', function(){
-            if ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show') return;
+            if ( tb.getTableSettingValue('menu') === 'show') return;
             
             if ( !tb.checkWork ) {
                 const $row = $( this );
@@ -1614,7 +1617,9 @@ setTableEvents() {
         tb.$.tbody.on('click', '.tableEditInputSelectValue', function(){
             const $value = $( this ),
                   $select = $value.next('.tableEditInputSelect'),
-                  width = $value.outerWidth();            
+                  width = $value.outerWidth();          
+            
+            if ( $value.is('.tableEditInputSelectValueDisabled') ) return false;
             
             $value.remove();
             
@@ -1632,7 +1637,7 @@ setTableEvents() {
             if ( !$select.is('.select2-hidden-accessible') ) {
                 const $value = $select.prev('.tableEditInputSelectValue'),
                       width = $value.outerWidth();
-                
+
                 $select.off('focus.select2');
                 $value.remove();
 
@@ -1938,10 +1943,12 @@ changeDiscard( beforeData, type ) {
         
         if ( value === '0') {
             $tr.removeClass('tBodyTrDiscard');
-            $tr.find('.input, .button').not('[data-key="remarks"]').prop('disabled', false );
+            $tr.find('.input, .button, .tableEditInputSelect').not('[data-key="remarks"]').prop('disabled', false );
+            $tr.find('.tableEditInputSelectValue').removeClass('tableEditInputSelectValueDisabled');
         } else {
             $tr.addClass('tBodyTrDiscard');
-            $tr.find('.input, .button').not('[data-key="remarks"]').prop('disabled', true );
+            $tr.find('.input, .button, .tableEditInputSelect').not('[data-key="remarks"]').prop('disabled', true );
+            $tr.find('.tableEditInputSelectValue').addClass('tableEditInputSelectValueDisabled');
         }        
         
         const discardMark = tb.discardMark( value );
@@ -2500,7 +2507,7 @@ setInitFilterStandBy() {
 stickyWidth() {
     const tb = this;
     
-    if ( tb.tableSetting[ tb.tableMode ].direction !== 'horizontal') {
+    if ( tb.getTableSettingValue('direction') !== 'horizontal') {
 
         const style = [];
 
@@ -3239,7 +3246,7 @@ rowMenuHtml( list ) {
         html.push(`<li class="tableRowMenuItem">${button}</li>`);
     }
     
-    if ( tb.tableSetting[ tb.tableMode ].itemMenu === 'show') {
+    if ( tb.getTableSettingValue('menu') === 'show') {
         return `<div class="tableRowMenu"><ul class="tableRowMenuList">${html.join('')}</ul></div>`;
     } else {
         return `${fn.html.icon('ellipsis_v')}<div class="tableRowMenu"><ul class="tableRowMenuList">${html.join('')}</ul></div>`;
@@ -3888,7 +3895,162 @@ editError( error ) {
 //   Table setting
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+   テーブル設定初期値
+##################################################
+*/
+initTableSettingValue() {
+    const tb = this;
+    
+    tb.tableSettingInitValue = {
+        individual: {
+            check: {
+                direction: 'common',
+                filter: 'common',
+                menu: 'common',
+                color: 'common'
+            },
+            color: {
+                color_any_bd: '#A3A4A4',
+                color_any_bg: '#FFFFFF',
+                color_any_tx: '#000000',
+                color_req_bd: '#C80000',
+                color_req_bg: '#F4CCCC',
+                color_req_tx: '#000000',
+                color_typ_bd: '#0070FF',
+                color_typ_bg: '#E5F1FF',
+                color_typ_tx: '#000000',
+                color_don_bd: '#60C60D',
+                color_don_bg: '#DFF4CF',
+                color_don_tx: '#000000'
+            }
+        },
+        general: {
+            check: {
+                direction: 'vertical',
+                filter: 'in',
+                menu: 'hide',
+                color: 'default'
+            },
+            color: {
+                color_any_bd: '#A3A4A4',
+                color_any_bg: '#FFFFFF',
+                color_any_tx: '#000000',
+                color_req_bd: '#C80000',
+                color_req_bg: '#F4CCCC',
+                color_req_tx: '#000000',
+                color_typ_bd: '#0070FF',
+                color_typ_bg: '#E5F1FF',
+                color_typ_tx: '#000000',
+                color_don_bd: '#60C60D',
+                color_don_bg: '#DFF4CF',
+                color_don_tx: '#000000'
+            }
+        }
+    };
 
+    if ( !tb.tableSetting ) tb.tableSetting = {};
+    
+    if ( !tb.tableSetting[ tb.tableMode ] ) {
+        tb.tableSetting[ tb.tableMode ] = {
+            individual: {
+                check: {},
+                color: {}
+            },
+            general: {
+                check: {},
+                color: {}
+            }
+        };
+    }
+
+}
+/*
+##################################################
+   テーブル設定取得
+##################################################
+*/
+getTableSettingValue( key ) {
+    const tb = this;
+    
+    const data = tb.tableSetting[ tb.tableMode ];
+    
+    // 個別か共通か
+    if ( key !== 'color') {
+        if ( !data.individual.check[ key ] || data.individual.check[ key ] === 'common') {
+            return data.general.check[ key ];
+        } else {
+            return data.individual.check[ key ];
+        }
+    } else {
+        if ( data.individual.check.color === 'custom') {
+             return data.individual.color;
+        } else if ( data.general.check.color === 'custom') { 
+            return data.general.color;
+        } else {
+            return null;
+        }
+    }
+}
+/*
+##################################################
+   テーブル設定初期値取得
+##################################################
+*/
+getTableSettingInitValue( target, type, key ) {
+    const tb = this;
+    
+    return ( tb.tableSetting[ tb.tableMode ][ target ][ type ] && tb.tableSetting[ tb.tableMode ][ target ][ type ][ key ] )?
+        tb.tableSetting[ tb.tableMode ][ target ][ type ][ key ]:
+        tb.tableSettingInitValue[ target ][ type ][ key ];
+}
+/*
+##################################################
+   テーブル設定適用
+##################################################
+*/
+tableSettingOk() {
+    const tb = this;
+    
+    // 値をセット
+    const settingData = tb.tableSetting[ tb.tableMode ],
+          $dBody = tb.tableSettingModal[ tb.tableMode ].$.dbody;
+    
+    for ( const target in tb.tableSettingInitValue ) {
+        for ( const type in tb.tableSettingInitValue[ target ] ) {
+            for ( const key in tb.tableSettingInitValue[ target ][ type ] ) {
+                const $input = $dBody.find(`.${target}TabBody`).find(`.ts_${key}`);
+                if ( !$input.length ) continue;
+                
+                switch ( type ) {
+                    case 'check':
+                        settingData[ target ][ type ][ key ] = $input.filter(':checked').val();
+                    break;
+                    case 'color':
+                        settingData[ target ][ type ][ key ] = $input.val();
+                    break;
+                }
+            }
+        }
+    }
+    
+    // 表示・非表示
+    const $check = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableSettingCheck').not(':checked'),
+          unCheckList = [];
+    $check.each(function(){
+        unCheckList.push( $( this ).val() );
+    });
+    tb.tableSetting[ tb.tableMode ].hideItemList = unCheckList;
+
+    // テーブルを再セット
+    tb.resetTable();
+}
+/*
+##################################################
+   テーブル設定モーダルを開く
+##################################################
+*/
 tableSettingOpen() {
     const tb = this;
     
@@ -3900,7 +4062,7 @@ tableSettingOpen() {
         // モーダル表示
         const config = {
             mode: 'modeless',
-            position: 'center',
+            position: 'top',
             width: '640px',
             header: {
                 title: getMessage.FTE00086,
@@ -3929,121 +4091,175 @@ tableSettingOpen() {
                 tb.tableSettingModal[ tb.tableMode ] = null;
             }
         };
+        const checkStatus = function( target, key, value ) {
+            const attr = {};
+            
+            if ( key === 'filter') {
+                const direction = tb.getTableSettingInitValue( target, 'check', 'direction');
+                if ( direction === 'horizontal') {
+                    attr.disabled = 'disabled'
+                }
+            }
+            
+            if ( value === tb.getTableSettingInitValue( target, 'check', key ) ) {
+                attr.checked = 'checked';
+            }
+            
+            return attr;
+        };
         
-        const id = tb.id + '_' + tb.tableMode;
-        
-        let html = ``
-        + `<div class="commonSection">`
-            + `<div class="commonTitle">${getMessage.FTE00090}</div>`
-            + `<div class="commonBody">`
-                + `<p class="commonParagraph">`
-                    + getMessage.FTE00101
-                + `</p>`
-                + `<ul class="commonRadioList">`
-                    + `<li class="commonRadioItem">${fn.html.radioText('tableDirection', 'vertical', id + 'tableDirection', id + 'tableDirectionVertical', null, getMessage.FTE00091 )}</li>`
-                    + `<li class="commonRadioItem">${fn.html.radioText('tableDirection', 'horizontal', id + 'tableDirection', id + 'tableDirectionHorizontal', null, getMessage.FTE00092 )}</li>`
-                + `</ul>`
-            + `</div>`;
-        
-        if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
-            html += ``
-            + `<div class="commonTitle">${getMessage.FTE00094}</div>`
-            + `<div class="commonBody">`
-                + `<p class="commonParagraph">`
-                    + getMessage.FTE00102
-                + `</p>`
-                + `<ul class="commonRadioList">`
-                    + `<li class="commonRadioItem">${fn.html.radioText('tableFilterPosition', 'in', id + 'tableFilterPosition', id + 'tableFilterPositionIn', null, getMessage.FTE00095 )}</li>`
-                    + `<li class="commonRadioItem">${fn.html.radioText('tableFilterPosition', 'out', id + 'tableFilterPosition', id + 'tableFilterPositionOut', null, getMessage.FTE00096 )}</li>`
-                + `</ul>`
-            + `</div>`
-            + `<div class="commonTitle">${getMessage.FTE00097}</div>`
-            + `<div class="commonBody">`
-                + `<p class="commonParagraph">`
-                    + getMessage.FTE00103
-                + `</p>`
-                + `<ul class="commonRadioList">`
-                    + `<li class="commonRadioItem">${fn.html.radioText('tableItemMenu', 'hide', id + 'tableItemMenu', id + 'tableItemMenuHide', null, getMessage.FTE00098 )}</li>`
-                    + `<li class="commonRadioItem">${fn.html.radioText('tableItemMenu', 'show', id + 'tableItemMenu', id + 'tableItemMenuShow', null, getMessage.FTE00099 )}</li>`
-                + `</ul>`
-            + `</div>`;
-        }
-        
-        html += ``
-            + `<div class="commonTitle">${getMessage.FTE00100}</div>`
-            + `<div class="commonBody">`
-                + `<p class="commonParagraph">`
-                    + getMessage.FTE00104
-                + `</p>`
-                + tb.tableSettingListHtml()
-            + `</div>`
-        + `</div>`;
+        const tableSettingHtml = function( id, target ) {
+            let tableSettingHtml = ``
+            + `<div class="commonSection ${target}TabBody">`
+                + `<div class="commonTitle">${getMessage.FTE00090}</div>`
+                + `<div class="commonBody">`
+                    + `<p class="commonParagraph">`
+                        + getMessage.FTE00101
+                    + `</p>`
+                    + `<ul class="commonRadioList">`
+                        + `${( target === 'individual')?
+                            `<li class="commonRadioItem">${fn.html.radioText('ts_direction', 'common', id + 'tableDirection', id + 'tableDirectionCommon', checkStatus( target, 'direction', 'common'), getMessage.FTE00105 )}</li>`: ``}`
+                        + `<li class="commonRadioItem">${fn.html.radioText('ts_direction', 'vertical', id + 'tableDirection', id + 'tableDirectionVertical', checkStatus( target, 'direction', 'vertical'), getMessage.FTE00091 )}</li>`
+                        + `<li class="commonRadioItem">${fn.html.radioText('ts_direction', 'horizontal', id + 'tableDirection', id + 'tableDirectionHorizontal', checkStatus( target, 'direction', 'horizontal'), getMessage.FTE00092 )}</li>`
+                    + `</ul>`
+                + `</div>`;
 
+            if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {             
+                tableSettingHtml += ``
+                + `<div class="commonTitle">${getMessage.FTE00094}</div>`
+                + `<div class="commonBody">`
+                    + `<p class="commonParagraph">`
+                        + getMessage.FTE00102
+                    + `</p>`
+                    + `<ul class="commonRadioList">`
+                        + `${( target === 'individual')?
+                            `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'common', id + 'tableFilterPosition', id + 'tableFilterPositionCommon', checkStatus( target, 'filter', 'common'), getMessage.FTE00105 )}</li>`: ``}`
+                        + `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'in', id + 'tableFilterPosition', id + 'tableFilterPositionIn', checkStatus( target, 'filter', 'in'), getMessage.FTE00095 )}</li>`
+                        + `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'out', id + 'tableFilterPosition', id + 'tableFilterPositionOut', checkStatus( target, 'filter', 'out'), getMessage.FTE00096 )}</li>`
+                    + `</ul>`
+                + `</div>`
+                + `<div class="commonTitle">${getMessage.FTE00097}</div>`
+                + `<div class="commonBody">`
+                    + `<p class="commonParagraph">`
+                        + getMessage.FTE00103
+                    + `</p>`
+                    + `<ul class="commonRadioList">`
+                        + `${( target === 'individual')?
+                            `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'common', id + 'tableItemMenu', id + 'tableItemMenuCommon', checkStatus( target, 'menu', 'common'), getMessage.FTE00105 )}</li>`: ``}`
+                        + `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'hide', id + 'tableItemMenu', id + 'tableItemMenuHide', checkStatus( target, 'menu', 'hide'), getMessage.FTE00098 )}</li>`
+                        + `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'show', id + 'tableItemMenu', id + 'tableItemMenuShow', checkStatus( target, 'menu', 'show'), getMessage.FTE00099 )}</li>`
+                    + `</ul>`
+                + `</div>`;
+            }
+            
+            if ( tb.mode === 'edit') {
+                const colorTable = ( tb.getTableSettingInitValue( target, 'check', 'color') === 'custom')? ' colorOpen': '';
+                tableSettingHtml += ``
+                    + `<div class="commonTitle">${getMessage.FTE00109}</div>`
+                    + `<div class="commonBody">`
+                        + `<p class="commonParagraph">`
+                            + getMessage.FTE00110
+                        + `</p>`
+                        + `<ul class="commonRadioList">`
+                            + `${( target === 'individual')?
+                                `<li class="commonRadioItem">${fn.html.radioText('ts_color', 'common', id + 'tableItemMenu', id + 'tableColorCommon', checkStatus( target, 'color', 'common'), getMessage.FTE00105 )}</li>`: ``}`
+                            + `<li class="commonRadioItem">${fn.html.radioText('ts_color', 'default', id + 'tableItemMenu', id + 'tableColorDefault', checkStatus( target, 'color', 'default'), getMessage.FTE00106 )}</li>`
+                            + `<li class="commonRadioItem">${fn.html.radioText('ts_color', 'custom', id + 'tableItemMenu', id + 'tableColorCustom', checkStatus( target, 'color', 'custom'), getMessage.FTE00107 )}</li>`
+                        + `</ul>`
+                        + `<div class="commonInputGroup tableInputColorTable${colorTable}">`
+                            + `<table class="commonInputTable">`
+                                + `<tbody class="commonInputTbody">`
+                                    + `<tr class="commonInputTr">`
+                                        + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00111}</div></th>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_any_bd', tb.getTableSettingInitValue( target, 'color', 'color_any_bd'), 'tableInputColor', {}, { before: getMessage.FTE00115 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_any_bg', tb.getTableSettingInitValue( target, 'color', 'color_any_bg'), 'tableInputColor', {}, { before: getMessage.FTE00116 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_any_tx', tb.getTableSettingInitValue( target, 'color', 'color_any_tx'), 'tableInputColor', {}, { before: getMessage.FTE00117 })}</td>`
+                                    + `</tr>`
+                                    + `<tr class="commonInputTr">`
+                                        + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00112}</div></th>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_req_bd', tb.getTableSettingInitValue( target, 'color', 'color_req_bd'), 'tableInputColor', {}, { before: getMessage.FTE00115 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_req_bg', tb.getTableSettingInitValue( target, 'color', 'color_req_bg'), 'tableInputColor', {}, { before: getMessage.FTE00116 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_req_tx', tb.getTableSettingInitValue( target, 'color', 'color_req_tx'), 'tableInputColor', {}, { before: getMessage.FTE00117 })}</td>`
+                                    + `</tr>`
+                                    + `<tr class="commonInputTr">`
+                                        + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00113}</div></th>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_typ_bd', tb.getTableSettingInitValue( target, 'color', 'color_typ_bd'), 'tableInputColor', {}, { before: getMessage.FTE00115 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_typ_bg', tb.getTableSettingInitValue( target, 'color', 'color_typ_bg'), 'tableInputColor', {}, { before: getMessage.FTE00116 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_typ_tx', tb.getTableSettingInitValue( target, 'color', 'color_typ_tx'), 'tableInputColor', {}, { before: getMessage.FTE00117 })}</td>`
+                                    + `</tr>`
+                                    + `<tr class="commonInputTr">`
+                                        + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00114}</div></th>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_don_bd', tb.getTableSettingInitValue( target, 'color', 'color_don_bd'), 'tableInputColor', {}, { before: getMessage.FTE00115 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_don_bg', tb.getTableSettingInitValue( target, 'color', 'color_don_bg'), 'tableInputColor', {}, { before: getMessage.FTE00116 })}</td>`
+                                        + `<td class="commonInputTd">${fn.html.inputColor('ts_colorInput ts_color_don_tx', tb.getTableSettingInitValue( target, 'color', 'color_don_tx'), 'tableInputColor', {}, { before: getMessage.FTE00117 })}</td>`
+                                    + `</tr>`
+                                + `</tbody>`
+                            + `</table>`
+                        + `</div>`
+                    + `</div>`;
+            }
+            
+            if ( target === 'individual') {
+                tableSettingHtml += ``
+                    + `<div class="commonTitle">${getMessage.FTE00100}</div>`
+                    + `<div class="commonBody">`
+                        + `<p class="commonParagraph">`
+                            + getMessage.FTE00104
+                        + `</p>`
+                        + tb.tableSettingListHtml()
+                    + `</div>`;
+            }
+            tableSettingHtml += `</div>`;
+            
+            return tableSettingHtml;
+        };
+        
+        const html = ``
+        + `<div class="commonTab">`
+            + `<div class="commonTabMenu">`
+                + `<ul class="commonTabList">`
+                    + `<li class="commonTabItem">${getMessage.FTE00108}</li>`
+                    + `<li class="commonTabItem">${getMessage.FTE00105}</li>`
+                + `</ul>`
+            + `</div>`
+            + `<div class="commonTabBody">`
+                + `<div class="commonTabSection commonScroll">`
+                    + tableSettingHtml(`individual_${tb.id}_${tb.tableMode}`, 'individual')
+                + `</div>`
+                + `<div class="commonTabSection commonScroll">`
+                    + tableSettingHtml(`general_${tb.id}_${tb.tableMode}`, 'general')
+                + `</div>`
+            + `</div>`
+        + `<div>`;
+        
         tb.tableSettingModal[ tb.tableMode ] = new Dialog( config, funcs );
         tb.tableSettingModal[ tb.tableMode ].open( html );
+        
         tb.tableSettingEvents();
-        
-        // 初期値設定
-        const $dBody = tb.tableSettingModal[ tb.tableMode ].$.dbody,
-              directionCheck = ( tb.tableSetting[ tb.tableMode ].direction )? tb.tableSetting[ tb.tableMode ].direction: 'vertical',
-              itemMenuCheck = ( tb.tableSetting[ tb.tableMode ].itemMenu )? tb.tableSetting[ tb.tableMode ].itemMenu: 'hide',
-              positionCheck = ( tb.tableSetting[ tb.tableMode ].position )? tb.tableSetting[ tb.tableMode ].position: 'in';
-        $dBody.find(`.tableDirection`).val([directionCheck]);
-        $dBody.find(`.tableItemMenu`).val([itemMenuCheck]);
-        $dBody.find(`.tableFilterPosition`).val([positionCheck]);
-        
-        if ( directionCheck === 'horizontal') {
-            $dBody.find(`.tableFilterPosition`).prop('disabled', true );
-        }
+        fn.commonTab( tb.tableSettingModal[ tb.tableMode ].$.dbody.find(`.commonTab`) );
     }
 }
-
-tableSettingOk() {
-    const tb = this;
-    
-    // 縦・横
-    const $direction = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableDirection:checked');
-    tb.tableSetting[ tb.tableMode ].direction = $direction.val();
-    
-    // 項目メニュー
-    const $itemMenu = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableItemMenu:checked');
-    tb.tableSetting[ tb.tableMode ].itemMenu = $itemMenu.val();
-    
-    // フィルター位置
-    const $position = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableFilterPosition:checked');
-    if ( tb.tableSetting[ tb.tableMode ].direction === 'vertical') {
-        tb.tableSetting[ tb.tableMode ].position = $position.val();
-    } else {
-        tb.tableSetting[ tb.tableMode ].position = 'out';
-    }
-    
-    // 表示・非表示
-    const $check = tb.tableSettingModal[ tb.tableMode ].$.dbody.find('.tableSettingCheck').not(':checked'),
-          unCheckList = [];
-    $check.each(function(){
-        unCheckList.push( $( this ).val() );
-    });
-    tb.tableSetting[ tb.tableMode ].hideItemList = unCheckList;
-    
-    // ストレージにセット
-    fn.storage.set( tb.tableSettingId, tb.tableSetting );
-    
-    // テーブルを再セット
-    tb.resetTable();
-}
-
+/*
+##################################################
+   テーブル設定リセット
+##################################################
+*/
 tableSettingReset() {
     const tb = this;
     
-    tb.tableSetting[ tb.tableMode ] = {};
-    
-    // ストレージにセット
-    fn.storage.set( tb.tableSettingId, tb.tableSetting );
-    
+    tb.tableSetting[ tb.tableMode ].individual = {
+        check: {},
+        color: {}
+    };
+
     // テーブルを再セット
     tb.resetTable();
 }
-
+/*
+##################################################
+   項目一覧HTML
+##################################################
+*/
 tableSettingListHtml() {
     const tb = this;
     
@@ -4053,7 +4269,7 @@ tableSettingListHtml() {
     const tableSettingList = function( list, className ) {
         for ( const key of list ) {
             const type = key.slice( 0, 1 ),
-                  checked = ( tb.tableSetting[ tb.tableMode ].hideItemList && tb.tableSetting[ tb.tableMode ].hideItemList.indexOf( key ) !== -1 )? {}: {checked: 'checked'};
+                  attr = ( tb.tableSetting[ tb.tableMode ].hideItemList && tb.tableSetting[ tb.tableMode ].hideItemList.indexOf( key ) !== -1 )? {}: {checked: 'checked'};
             
             html += `<li class="${className}">`;
             if ( type === 'c') {
@@ -4067,18 +4283,19 @@ tableSettingListHtml() {
                     const noRequiredMark = [ tb.idNameRest, 'last_update_date_time', 'last_updated_user'];
                     if ( data.required_item === '1' && noRequiredMark.indexOf( data.column_name_rest ) === -1 ) {
                         text += fn.html.required();
+                        attr.disabled = 'disabled';
                     }
                 }
                 
                 if ( exclusion.indexOf( data.column_name_rest ) === -1 ) {
                     html += `<div class="tableSettingItemName">`
-                    + fn.html.checkboxText('tableSettingCheck tableSettingCheckItem', key, id + '_itemSelect', id + '_' + data.column_name_rest, checked, text )
+                    + fn.html.checkboxText('tableSettingCheck tableSettingCheckItem', key, id + '_itemSelect', id + '_' + data.column_name_rest, attr, text )
                     + `</div>`;
                 }
             } else {
                 const data = tb.info.column_group_info[ key ];
                 html += `<div class="tableSettingItemName tableSettingGroupName">`
-                + fn.html.checkboxText('tableSettingCheck tableSettingCheckGroup', key, id + '_groupSelect', id + '_' + data.column_group_id, checked, data.column_group_name )
+                + fn.html.checkboxText('tableSettingCheck tableSettingCheckGroup', key, id + '_groupSelect', id + '_' + data.column_group_id, attr, data.column_group_name )
                 + `</div>`
                 + `<ul class="tableSettingList">`;
                 tableSettingList( data['columns_' + tb.tableMode ], 'tableSettingItem tableSettingItemChild');
@@ -4092,6 +4309,11 @@ tableSettingListHtml() {
     return `<ul class="tableSettingList">${html}</ul>`;
 }
 
+/*
+##################################################
+   テーブル設定モーダルイベント
+##################################################
+*/
 tableSettingEvents() {
     const tb = this;
     
@@ -4099,9 +4321,23 @@ tableSettingEvents() {
     
     if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
         // フィルタ表示位置
-        $dBody.find('.tableDirection').on('change', function() {
-            const check = $( this ).val();
-            $dBody.find('.tableFilterPosition').prop('disabled', ( check !== 'vertical') );
+        $dBody.find('.ts_direction').on('change', function() {
+            const $check = $( this ),
+                  check = $check.val();
+            $check.closest('.commonSection').find('.ts_filter').prop('disabled', ( check === 'horizontal') );
+        });
+    }
+    
+    if ( tb.mode === 'edit') {
+        // 入力欄色設定
+        $dBody.find('.ts_color').on('change', function() {
+            const $check = $( this ),
+                  value = $check.val();
+            if ( value === 'custom') {
+                $check.closest('.commonSection').find('.tableInputColorTable').addClass('colorOpen');
+            } else {
+                $check.closest('.commonSection').find('.tableInputColorTable').removeClass('colorOpen');
+            }
         });
     }
     
@@ -4121,7 +4357,7 @@ tableSettingEvents() {
 
         // 親要素のチェック
         const $parentCheckWrap = $check.closest('.tableSettingList').prev('.tableSettingItemName').find('.checkboxTextWrap'),
-              $parentCheck = $parentCheckWrap.find('.tableSettingCheck');              
+              $parentCheck = $parentCheckWrap.find('.tableSettingCheck').not(':disabled');              
               
         $parentCheckWrap.removeClass('checkboxTextOneOrMore');
         if ( $parentCheck.length ) {
@@ -4141,17 +4377,71 @@ tableSettingEvents() {
         
         const $check = $( this );
         
-        parentCheck( $check );
-        
         // 子要素のチェックを全て変更する
         if ( $check.is('.tableSettingCheckGroup') ) {
-            const checked = $check.prop('checked');
+            const $wrap = $check.closest('.checkboxTextWrap'),
+                  $parent = $check.closest('.tableSettingItemName').next('.tableSettingList'),
+                  $checks = $parent.find('.tableSettingCheck').not(':disabled');
             
-            $check.closest('.checkboxTextWrap').removeClass('checkboxTextOneOrMore');
-            $check.closest('.tableSettingItemName').next('.tableSettingList').find('.tableSettingCheck').prop('checked', checked );
+            let   checked = $check.prop('checked');
+            
+            if ( $wrap.is('.checkboxTextOneOrMore') && !$checks.not('.tableSettingCheckGroup').filter(':checked').length ) {
+                checked = true;
+                $check.add( $checks ).prop('checked', checked );
+            } else {
+                $checks.prop('checked', checked );
+            }
+            
+            $wrap.add( $parent.find('.checkboxTextOneOrMore') ).removeClass('checkboxTextOneOrMore');
+            
+            
+            if ( !checked ) {
+                // グループのチェック状態を確認
+                $wrap.add( $parent.find('.checkboxTextWrap') ).find('.tableSettingCheckGroup').each(function(){
+                    const $checkGroup = $( this ),
+                          $checked = $checkGroup.closest('.tableSettingItemName').next('.tableSettingList').find('.tableSettingCheckItem:checked');
+
+                    if ( $checked.length ) {
+                        $checkGroup.prop('checked', true ).closest('.checkboxTextWrap').addClass('checkboxTextOneOrMore');
+                    }
+                });
+            }            
         }
         
+        // 親要素のチェック
+        parentCheck( $check );
+        
     });
+}
+/*
+##################################################
+   テーブル設定カスタムCSS
+##################################################
+*/
+tableSettingCustomCSS() {
+    const tb = this;
+    
+    let style = '';
+    
+    // 入力欄色設定
+    const color = tb.getTableSettingValue('color');
+
+    if ( color ) {
+        style += ``
+        + `#${tb.id} .tbody .input,`
+        + `#${tb.id} .noSelect,`
+        + `#${tb.id} .tableEditInputSelectValue,`
+        + `#${tb.id} .tbody .tableEditSelectFile{background-color:${color.color_any_bg};border-color:${color.color_any_bd};color:${color.color_any_tx}}`
+        + `#${tb.id} .input.tableEditRequiredError{background-color:${color.color_req_bg};border-color:${color.color_req_bd};color:${color.color_req_tx}}`
+        + `#${tb.id} .input.tableEditChange,`
+        + `#${tb.id} .tableEditSelectFile.tableEditChange,`
+        + `#${tb.id} .tableEditInputSelectContainer.tableEditChange .tableEditInputSelectValue,`
+        + `#${tb.id} .tableEditInputSelectContainer.tableEditChange .select2-selection{background-color:${color.color_don_bg};border-color:${color.color_don_bd};color:${color.color_don_tx}}`
+        + `#${tb.id} .input:focus{background-color:${color.color_typ_bg};border-color:${color.color_typ_bd};color:${color.color_typ_tx}}`;
+        return style;
+    } else {
+        return '';
+    }
 }
 
 }

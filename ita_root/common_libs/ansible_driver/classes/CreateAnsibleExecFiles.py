@@ -145,6 +145,54 @@
 # getTowerProjectsScpPath
 # CopyAnsibleConfigFile
 # CopysshAgentExpectfile
+# enomoto
+# CreateHostvarsfile
+# CreatePioneerTemplateHostvarsfile
+# CheckConcreteValueIsVar
+# CheckConcreteValueIsVarTemplatefile
+# getHostvarsfile_template_file_value
+# getHostvarsfile_pioneer_template_file_value
+# getHostvarsfile_pioneer_template_file
+# getHostvarsfile_pioneer_copy_file_value
+# CreateLegacyPlaybookfiles
+# CreateChildPlaybookfiles
+# CheckLegacyPlaybookfiles
+# getITA_child_playbiook_file
+# getAnsible_child_playbiook_file
+# CheckVariablesDefinedInDeviceList
+# CreateLegacytemplatefiles
+# CheckTemplatefile
+# CreateLegacyCopyFiles
+# CommitHostVarsfiles
+# CreateVaultHostvarsfiles
+# CreatePioneerDialogfiles
+# CreateDialogfiles
+# getAnsible_dialog_file
+# getAnsible_dialog_file_host_Dir
+# getAnsible_org_dialog_file_host_Dir
+# getITA_dialog_file
+# CreatePioneertemplatefiles
+# CreatePioneerCopyFiles
+# CheckPioneerPlaybookfiles
+# TemplateMmoduleAddPlaybook
+# CheckChildPlaybookFormat
+# CheckDialogfileFormat
+# str_to_num
+# beforCommandCheck
+# checkstateCommand
+# errorstateCommand
+# initstateCommandInfo
+# checkCommand
+# errorCommand
+# initCommandInfo
+# initlocalactionInfo
+# errorlocalaction
+# getArrayTypeValuecount
+# getDBLegacyPlaybookList
+# getDBPioneerDialogFileList
+# getDBVarList
+# var_check
+# value_extraction
 #############################################################
 import os
 import shutil
@@ -154,6 +202,8 @@ import json
 from dictknife import deepmerge
 from flask import g
 
+# enomoto
+import sys
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.ansible_common_libs import AnsibleCommonLibs
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
@@ -174,6 +224,7 @@ from common_libs.ansible_driver.functions.util import getDataRelayStorageDir
 from common_libs.ansible_driver.functions.util import getInputDataTempDir
 from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.util import getPioneerDialogUploadDirPath
+from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath
 from common_libs.common.util import ky_encrypt, ky_decrypt, ky_file_encrypt, ky_file_decrypt
 """
 Ansibleの実行に必要な情報をデータベースから取得しAnsible実行ディレクトリを作成するモジュール
@@ -198,6 +249,8 @@ class CreateAnsibleExecFiles():
         Returns:
             なし
         """
+        self.php_array = lambda x: x.items() if isinstance(x, dict) else enumerate(x)
+
         self.LC_ANS_IN_DIR = "in"
         self.LC_ANS_OUT_DIR = "out"
         self.LC_ANS_TMP_DIR = "tmp"
@@ -261,7 +314,7 @@ class CreateAnsibleExecFiles():
         self.run_operation_id = ""
         self.run_pattern_id = ""
         self.lv_objDBCA = ""
-        self.lva_global_vars_list = ""
+        self.lva_global_vars_list = {}
         self.lva_cpf_vars_list = {}
         self.lva_tpf_vars_list = {}
         self.lv_user_out_Dir = ""
@@ -280,6 +333,7 @@ class CreateAnsibleExecFiles():
         self.lv_cpf_vars_list = {}
         self.lv_use_gbl_vars_list = {}
         self.lv_parent_vars_list = {}
+        self.lv_pioneer_template_parent_vars_list = {}
         self.lv_tpf_var_file_path_list = {}
         self.lv_cpf_var_file_path_list = {}
         self.ansible_vault_password_file_dir = ""
@@ -574,7 +628,10 @@ class CreateAnsibleExecFiles():
             # child_playbooksディレクトリ名を記憶
             self.setAnsible_child_playbooks_Dir(c_dirwk)
 
-            #  PlayBook内 子PlayBookパスを記憶
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # PlayBook内 子PlayBookパスを記憶
+            # enomoto 未テスト
             self.setPlaybook_child_playbooks_Dir(self.LC_ANS_CHILD_PLAYBOOKS_DIR)
 
         # template_filesディレクトリ作成
@@ -615,24 +672,34 @@ class CreateAnsibleExecFiles():
 
         # ドライバ区分がPIONEERの場合にdialog_filesディレクトリ作成
         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-            # enomoto未テスト
+            # enomoto  未テスト
             # dialog_filesディレクトリ作成
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
             c_dirwk = c_indir + "/" + self.LC_ANS_DIALOG_FILES_DIR
+            print(c_dirwk)
             os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
             self.setAnsible_dialog_files_Dir(c_dirwk)
 
+            # enomoto  未テスト
             # original_dialog_filesディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_ORG_DIALOG_FILES_DIR
+            print(c_dirwk)
             os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
             self.setAnsible_in_original_dialog_files_Dir(c_dirwk)
 
+            # enomoto  未テスト
             # 対話ファイル実行に必要な資材配置ディレクトリ作成
             c_dirwk = c_indir + "/" + self.LC_ANS_PIONEER_LIBRARY_DIR
+            print(c_dirwk)
             os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
             src_files = []
+
+            # enomoto  未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
             # 対話ファイル実行に必要な資材配置ディレクトリ配置
             base_path = "/exastro/common_libs/ansible_driver/shells"
@@ -643,6 +710,8 @@ class CreateAnsibleExecFiles():
                 # 対話ファイル実行に必要な資材をコピーする。
                 shutil.copyfile(src_file, dest_file)
                 os.chmod(src_file, 0o777)
+                print(src_file)
+                print(dest_file)
 
         # グローバル変数管理からグローバル変数の情報を取得
         self.lva_global_vars_list = {}
@@ -954,25 +1023,30 @@ class CreateAnsibleExecFiles():
 
         # ドライバ区分がPIONEERの場合にPIONEER用作業ディレクトリ作成
         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-            # enomoto未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enomoto  未テスト
             # original_dialog_filesディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_ORG_DIALOG_FILES_DIR
             os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
             self.setAnsible_original_dialog_files_Dir(c_dirwk)
 
+            # enomoto  未テスト
             # original_host_varsディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_ORG_HOST_VARS_DIR
             os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
             self.setAnsible_original_hosts_vars_Dir(c_dirwk)
 
+            # enomoto  未テスト
             # vault_host_varsディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_VAULT_HOST_VARS_DIR
             os.mkdir(c_dirwk)
             os.chmod(c_dirwk, 0o777)
             self.setAnsible_vault_hosts_vars_Dir(c_dirwk)
 
+            # enomoto  未テスト
             # pioneer_template_host_varsディレクトリ作成
             c_dirwk = c_tmpdir + "/" + self.LC_ANS_PIONEER_TEMPLATE_HOST_VARS_DIR
             os.mkdir(c_dirwk)
@@ -1105,7 +1179,7 @@ class CreateAnsibleExecFiles():
         pioneer_sshkeyfilelist = {}
         pioneer_sshextraargslist = {}
 
-        # enomoto ina_hostprotcollistはなくなった
+        # enomoto 未テスト　ina_hostprotcollistはなくなった
         # retAry = self.CreateHostsfile(ina_hosts, ina_hostprotcollist, ina_hostinfolist,  pioneer_sshkeyfilelist,  pioneer_sshextraargslist)
         retAry = self.CreateHostsfile(ina_hosts, ina_hostinfolist, pioneer_sshkeyfilelist, pioneer_sshextraargslist)
         ret = retAry[0]
@@ -1117,7 +1191,9 @@ class CreateAnsibleExecFiles():
         # ドライバ区分を判定
         if self.getAnsibleDriverID() in [self.AnscObj.DF_LEGACY_DRIVER_ID, self.AnscObj.DF_PIONEER_DRIVER_ID]:
             # ホスト変数定義ファイル作成
-            # enomoto未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enomoto　未テスト
             if self.CreateHostvarsfiles(ina_host_vars, ina_pioneer_template_host_vars,
                                         ina_host_child_vars, ina_DB_child_vars_master) is False:
                 return False
@@ -1137,47 +1213,60 @@ class CreateAnsibleExecFiles():
 
         # ドライバ区分を判定
         if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID:
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enomoto　未テスト
             # Legacy PlayBookファイル作成
             if self.CreateLegacyPlaybookfiles(ina_child_playbooks, in_exec_mode, in_exec_playbook_hed_def) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 子Playbookのフォーマットと変数定義チェック
             if self.CheckLegacyPlaybookfiles(ina_hosts, ina_host_vars, ina_child_playbooks) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 機器一覧の変数定義チェック
             if self.CheckVariablesDefinedInDeviceList(ina_hostinfolist, ina_host_vars) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 子Playbook内のtemplateモジュールをチェック
             # enomoto ina_hostprotcollistをina_hostinfolistに変更
             if self.CreateLegacytemplatefiles(ina_hosts, ina_child_playbooks, ina_host_vars) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 子Playbook内のcopyモジュールをチェック
             # enomoto ina_hostprotcollistをina_hostinfolistに変更
             if self.CreateLegacyCopyFiles(ina_hosts, ina_child_playbooks) is False:
+                print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # ホスト変数ファイルにグローバル変数・コピー変数
             # テンプレート変数の情報を出力する。
             # enomoto ina_hostprotcollistをina_hostinfolistに変更
             # if self.CommitHostVarsfiles(ina_hosts, ina_hostprotcollist, ina_host_vars, ina_pioneer_template_host_vars) is False:
             if self.CommitHostVarsfiles(ina_hosts, ina_host_vars, ina_pioneer_template_host_vars) is False:
                 return False
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enomoto　未テスト
             # Pionner 暗号化が必要な変数のホスト変数ファイル作成
             if self.CreateVaultHostvarsfiles(ina_vault_host_vars_file_list, ina_host_vars, ina_hostinfolist) is False:
                 return False
-            # enomoto 未テスト
+
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # Pionner 対話ファイル作成
             if self.CreatePioneerDialogfiles(ina_hostinfolist, ina_dialog_files, ina_host_vars,
                                              pioneer_sshkeyfilelist,
@@ -1185,7 +1274,8 @@ class CreateAnsibleExecFiles():
                                              in_exec_mode) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 対話ファイル内のtemplateモジュールをチェック
             # if self.CreatePioneertemplatefiles(ina_hosts, ina_dialog_files,
             #                                   # ina_hostprotcollist,
@@ -1193,7 +1283,8 @@ class CreateAnsibleExecFiles():
             if self.CreatePioneertemplatefiles(ina_hosts, ina_dialog_files, ina_host_vars) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 対話ファイル内のcopyモジュールをチェック
             # if self.CreatePioneerCopyFiles(ina_hosts, ina_dialog_files,
             #                               # ina_hostprotcollist,
@@ -1201,27 +1292,34 @@ class CreateAnsibleExecFiles():
             if self.CreatePioneerCopyFiles(ina_hosts, ina_dialog_files) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 対話ファイルのフォーマットと変数定義チェック
             # 変数具体値の置換え
             # if self.CheckPioneerPlaybookfiles(ina_hosts, ina_host_vars, ina_vault_vars, ina_dialog_files, ina_hostprotcollist,False) is False:
+
+            # enomoto とりあえずコメントにして先に進む
             if self.CheckPioneerPlaybookfiles(ina_hosts, ina_host_vars, ina_vault_vars, ina_dialog_files, False) is False:
+                print("CheckPioneerPlaybookfiles False return")
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # ホスト変数ファイルにグローバル変数・コピー変数
             # テンプレート変数の情報を出力する。
             # if self.CommitHostVarsfiles(ina_hosts, ina_hostprotcollist, ina_host_vars, ina_pioneer_template_host_vars) is False:
             if self.CommitHostVarsfiles(ina_hosts, ina_host_vars, ina_pioneer_template_host_vars) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # 具体値がTPF/CPF変数の場合の具体値の置換え
             # if self.CheckPioneerPlaybookfiles(ina_hosts, ina_host_vars, ina_vault_vars, ina_dialog_files, ina_hostprotcollist, True) is False:
             if self.CheckPioneerPlaybookfiles(ina_hosts, ina_host_vars, ina_vault_vars, ina_dialog_files, True) is False:
                 return False
 
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+            # enomoto　未テスト
             # テンプレート管理を使用している場合、
             # 親PlaybookにTemplateMmoduleを追加して
             # テンプレート内の変数解決する。
@@ -1242,11 +1340,15 @@ class CreateAnsibleExecFiles():
                                                  ina_role_rolevars,
                                                  ina_role_roleglobalvars) is False:
                 return False
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # Movement一覧にAnsible Config Fileが設定されている場合にin配下にコピー
         if self.lv_ansible_cnf_file:
             if self.CopyAnsibleConfigFile() is False:
                 return False
+
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         return True
 
     def CreateHostsfile(self, ina_hosts, ina_hostinfolist, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist):
@@ -1714,8 +1816,6 @@ class CreateAnsibleExecFiles():
 
         return True
 
-    # def CreateHostvarsfile(in_var_type, in_host_name,
-    # def CreateVaultHostvarsfiles(ina_vault_host_vars_file_list, ina_host_vars, ina_hostprotcollist)
     def CreatePlaybookfile(self, in_file_name, ina_playbook_list, in_exec_mode, in_exec_playbook_hed_def):
         """
         親Playbook作成
@@ -1737,6 +1837,8 @@ class CreateAnsibleExecFiles():
         value = ""
         if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID:
             # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
             if not in_exec_playbook_hed_def:
                 value = "- hosts: all\n"
                 value += "  remote_user: \"{{ " + self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME + " }}\"\n"
@@ -1751,7 +1853,9 @@ class CreateAnsibleExecFiles():
             value += "\n"
             value += "  tasks:\n"
         elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enomoto  未テスト
             value = "- hosts: all\n"
             value = value + "  gather_facts: False\n"
             value = value + "\n"
@@ -1774,22 +1878,32 @@ class CreateAnsibleExecFiles():
             value = value + "  roles:\n"
 
         else:
-            msgstr = g.appmsg.get_api_message("MSG-10082", [os.path.basename(__file__), self.lineno()])
+            # enomoto 未テスト
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            msgstr = g.appmsg.get_api_message("MSG-10082", [os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno)])
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                str(inspect.currentframe().f_lineno), msgstr)
             return False
 
+        print("valuevaluevaluevaluevaluevaluevalue")
+        print(value)
+        print("valuevaluevaluevaluevaluevaluevalue")
         fd.write(value)
         value = ""
+        print("ina_playbook_listina_playbook_listina_playbook_listina_playbook_list")
+        print(ina_playbook_list)
+        print("ina_playbook_listina_playbook_listina_playbook_listina_playbook_list")
         for no, file_list in ina_playbook_list.items():
             for key, file in file_list.items():
                 # ドライバ区分判定
                 if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID:
-                    # enomoto 未テスト
-                    value += "    - include: " + self.getPlaybook_child_playbook_file(key, file) + "\n"
+                    target_playbook_path = self.getPlaybook_child_playbook_file(key, file)
+                    value += "    - include: " + target_playbook_path + "\n"
 
                 elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-                    # enomoto 未テスト
+                    # enomoto  未テスト
                     log_file_path = self.setAnsibleSideFilePath(self.getAnsible_out_Dir(), self.LC_ITA_OUT_DIR)
                     host_vars_path = self.setAnsibleSideFilePath(self.getAnsible_original_hosts_vars_Dir(), self.LC_ITA_TMP_DIR)
 
@@ -1809,7 +1923,11 @@ class CreateAnsibleExecFiles():
                 elif self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
                     value += "    - role: " + file + "\n"
                 else:
-                    msgstr = g.appmsg.get_api_message("MSG-10082", [os.path.basename(__file__), self.lineno()])
+                    # enomoto 未テスト
+                    print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+                    msgstr = g.appmsg.get_api_message("MSG-10082", [os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                                    str(inspect.currentframe().f_lineno)])
                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                        str(inspect.currentframe().f_lineno), msgstr)
                     return False
@@ -1933,6 +2051,18 @@ class CreateAnsibleExecFiles():
             child_playbooks
         """
         return self.lv_Playbook_child_playbooks_Dir
+
+    def getPlaybook_child_playbook_file(self, in_pkey, in_file):
+        """
+        親PlayBook内の子PlayBookファイルパスを取得
+        Arguments:
+            in_pkey:    子playbookファイル Pkey
+            in_file:    子playbookファイル
+        Returns:
+            child_playbooks
+        """
+        file = "{}/{}-{}".format(self.getPlaybook_child_playbooks_Dir(), in_pkey, in_file)
+        return file
 
     def setAnsible_dialog_files_Dir(self, in_indir):
         """
@@ -2116,12 +2246,11 @@ class CreateAnsibleExecFiles():
         Returns:
             作業実行tmpディレクトリ配下のpioneer template用 host_varsディレクトリパス
         """
+        print("getAnsible_pioneer_template_hosts_vars_Dir")
+        print(self.lv_Ansible_pioneer_template_hosts_vars_Dir)
+        print("getAnsible_pioneer_template_hosts_vars_Dir")
         return self.lv_Ansible_pioneer_template_hosts_vars_Dir
 
-    # def setITA_child_playbook_Dir(in_indir):
-    # def getITA_child_playbook_Dir():
-    # def setITA_dialog_files_Dir(self, in_indir):
-    # def getITA_dialog_files_Dir(self):
     # lv_ita_dialog_files_Dirと同様、util.pyにfunctionを用意する
     def getAnsible_hosts_file(self):
         """
@@ -2178,6 +2307,7 @@ class CreateAnsibleExecFiles():
         file = "{}/{}".format(self.getAnsible_original_hosts_vars_Dir(), in_hostname)
         return file
 
+    # enomoto  未テスト
     def getAnsible_org_dialog_file(self, in_hostname, in_pkey, in_filename):
         """
         加工前の対話ファイル名(Pioneer)を取得
@@ -2188,6 +2318,8 @@ class CreateAnsibleExecFiles():
         Returns:
             加工前の対話ファイルパス(Pioneer)を取得
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # Ansible実行時の対話ファイル名は Pkey(10桁)-対話ファイル名 する。
         file = "{}/{}/{}-{}".format(self.getAnsible_original_dialog_files_Dir(), in_hostname, in_pkey, in_filename)
         return file
@@ -2536,6 +2668,9 @@ class CreateAnsibleExecFiles():
         # rows = []
         # rows.append(ary)
         for row in rows:
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enomoto　未テスト
             # enomoto ret = self.setFileUploadCloumnFileEnv(self.lv_ans_if_info, row)
             ret = self.setFileUploadCloumnFileEnv(row)
             if ret is not True:
@@ -2635,7 +2770,9 @@ class CreateAnsibleExecFiles():
                             if row['VARS_NAME'] not in mt_host_vars[row['HOST_NAME']]:
                                 mt_host_vars[row['HOST_NAME']][row['VARS_NAME']] = ""
                             # 複数行具体値をjson形式で収める
-                            # enomoto retAry[0]は見る必要はない
+                            # enomoto r etAry[0]は見る必要はない
+                            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
                             retAry = self.ArrayTypeValue_encode(mt_host_vars[row['HOST_NAME']][row['VARS_NAME']], row['VARS_ENTRY'])
                             mt_host_vars[row['HOST_NAME']][row['VARS_NAME']] = retAry[1]
 
@@ -2841,8 +2978,8 @@ class CreateAnsibleExecFiles():
         Returns:
             mt_host_vars
         """
+        print(mt_host_vars)
         for host_name, hostinfo in ina_hostinfolist.items():
-
             if host_name not in mt_host_vars:
                 mt_host_vars[host_name] = {}
 
@@ -2854,13 +2991,26 @@ class CreateAnsibleExecFiles():
                 mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = hostinfo['LOGIN_PW']
 
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME] = host_name
+
+            # enomoto 追加
+            if hostinfo['HOST_DNS_NAME']:
+                mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = hostinfo['HOST_DNS_NAME']
+            else:
+                mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = self.LC_ANS_UNDEFINE_NAME
+            if hostinfo['IP_ADDRESS']:
+                mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = hostinfo['IP_ADDRESS']
+            else:
+                mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = self.LC_ANS_UNDEFINE_NAME
+
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_OUTDIR_VAR_NAME] = self.lv_user_out_Dir
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME] = self.lv_conductor_instance_Dir
             if self.lv_conductor_instance_no:
                 mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = self.lv_conductor_instance_no
             else:
                 mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = self.LC_ANS_UNDEFINE_NAME
-
+        print(mt_host_vars)
+        import sys
+        sys.exit(1)
         return mt_host_vars
 
     def getDBTemplateMaster(self, in_tpf_var_name, mt_tpf_key, mt_tpf_file_name, mt_tpf_role_only, mt_tpf_vars_struct):
@@ -3025,8 +3175,6 @@ class CreateAnsibleExecFiles():
 
         return True
 
-    # function CreateLegacytemplatefiles(ina_hosts, ina_child_playbooks, ina_hostprotcollist, ina_host_vars)
-    # function CheckTemplatefile(ina_hosts, ina_host_vars, in_child_playbook, in_tpf_key, in_tpf_file_name,
     def getDBPatternList(self, in_pattern_id):
         """
         Movementロール紐付の情報を取得
@@ -3341,8 +3489,12 @@ class CreateAnsibleExecFiles():
         single_pkg = retAry[2]
         # [{ ROLE_PACKAGE_ID:? ,ROLE_ID: ?, INCLUDE_SEQ: ? }]
         if ret is not True:
-            #
-            msgstr = g.appmsg.get_api_message("MSG-10023", [os.path.basename(__file__), self.lineno(), self.lineno()])
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enmoto
+            msgstr = g.appmsg.get_api_message("MSG-10023", [os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno),
+                                                            str(inspect.currentframe().f_lineno)])
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                str(inspect.currentframe().f_lineno), msgstr)
             return False, role_package_pkey, role_package_file
@@ -3495,7 +3647,6 @@ class CreateAnsibleExecFiles():
 
         return True
 
-    # def CreateLegacyCopyFiles(ina_hosts, ina_child_playbooks, ina_hostprotcollist, ina_host_vars){
     def getDBCopyMaster(self, in_cpf_var_name, mt_cpf_key, mt_cpf_file_name):
         """
         ファイル管理の情報取得
@@ -4346,13 +4497,13 @@ class CreateAnsibleExecFiles():
                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                            str(inspect.currentframe().f_lineno), msgstr)
                         return False, mt_legacy_Role_cpf_vars_list, mt_legacy_Role_tpf_vars_list
-                    else:
-                        # コピーファイル名が未登録の場合
-                        if not file_name:
-                            msgstr = g.appmsg.get_api_message("MSG-10544", [var_name])
-                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                               str(inspect.currentframe().f_lineno), msgstr)
-                            return False, mt_legacy_Role_cpf_vars_list, mt_legacy_Role_tpf_vars_list
+
+                    # コピーファイル名が未登録の場合
+                    if not file_name:
+                        msgstr = g.appmsg.get_api_message("MSG-10544", [var_name])
+                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                           str(inspect.currentframe().f_lineno), msgstr)
+                        return False, mt_legacy_Role_cpf_vars_list, mt_legacy_Role_tpf_vars_list
 
                     # inディレクトリ配下のファイルバスを取得
                     path = self.getHostvarsfile_copy_file_value(key, file_name)
@@ -4378,18 +4529,19 @@ class CreateAnsibleExecFiles():
                     tpf_file_name = retAry[2]
                     role_only = retAry[3]
                     tpf_vars_struct_json = retAry[4]
-                    if ret is False:
+                    if ret is False or not tpf_key:
+                        # テンプレート変数名が未登録の場合
                         msgstr = g.appmsg.get_api_message("MSG-10531", [tpf_var_name])
                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                            str(inspect.currentframe().f_lineno), msgstr)
                         return False, mt_legacy_Role_cpf_vars_list, mt_legacy_Role_tpf_vars_list
-                    else:
-                        if not tpf_file_name:
-                            # テンプレートファイル名が未登録の場合
-                            msgstr = g.appmsg.get_api_message("MSG-10558", [tpf_var_name])
-                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                               str(inspect.currentframe().f_lineno), msgstr)
-                            return False, mt_legacy_Role_cpf_vars_list, mt_legacy_Role_tpf_vars_list
+
+                    if not tpf_file_name:
+                        # テンプレートファイル名が未登録の場合
+                        msgstr = g.appmsg.get_api_message("MSG-10558", [tpf_var_name])
+                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                           str(inspect.currentframe().f_lineno), msgstr)
+                        return False, mt_legacy_Role_cpf_vars_list, mt_legacy_Role_tpf_vars_list
 
                     # inディレクトリ配下のテンプレートファイルバスを取得
                     path = self.getHostvarsfile_template_file_path(tpf_key, tpf_file_name)
@@ -4428,19 +4580,6 @@ class CreateAnsibleExecFiles():
 
         return True, mt_legacy_Role_cpf_vars_list, mt_legacy_Role_tpf_vars_list
 
-    # def CommitHostVarsfiles(ina_hosts, ina_hostprotcollist, ina_host_vars, ina_pioneer_template_host_vars){
-    # def getHostvarsfile_pioneer_copy_file_value(in_pkey, in_file){
-    # def CreatePioneerCopyFiles(ina_hosts, ina_dialog_files, ina_hostprotcollist, ina_host_vars){
-    # def setITA_pns_template_file_Dir(self, in_indir):
-    #  不要 getTemplateContentUploadDirPath
-    # def getITA_pns_template_file_Dir():
-    # getITA_template_fileに置換え
-    # def getITA_pns_template_file(in_key, in_filename){
-    #  getITA_pns_template_fileはgetITA_template_fileに置換える
-    # def getHostvarsfile_pioneer_template_file_value(in_pkey, in_file, in_hostname) {
-    # def getHostvarsfile_pioneer_template_file(in_pkey, in_file) {
-    # def CreatePioneertemplatefiles(ina_hosts, ina_dialog_files, ina_hostprotcollist, ina_host_vars) {
-    # def CopyPioneerTemplatefiles(ina_template_files) {
     def CreateLegacyRoleTemplateFiles(self, ina_hosts, ina_rolenames, ina_tpf_vars_list):
         """
         playbook内で使用しているテンプレート管理のファイルを所定の場所にコピーする
@@ -4497,9 +4636,6 @@ class CreateAnsibleExecFiles():
 
         return True
 
-    # def TemplateMmoduleAddPlaybook(in_tpf_path) {
-    # def var_check (dialog_file_name, hostname, dialog_file_vars, host_variable_file_array){
-    # def value_extraction (array, mae, &dialog_file_vars){
     def makeAnsibleVaultPassword(self, in_pass, in_vaultpass, in_indento, in_system_id):
         """
         指定文字列の暗号化及びインデント付加
@@ -4556,7 +4692,6 @@ class CreateAnsibleExecFiles():
 
         return out_vaultpass
 
-    # def makeAnsibleVaultSSHFile(in_exec_user, in_file_id, in_sshKeyFile, in_vault_sshKeyFileData, in_system_id) {
     def makeAnsibleVaultValue(self, in_pass, in_vaultpass, in_indento, in_assign_id):
         """
         指定文字列をansible-vaultで暗号化する
@@ -4701,7 +4836,6 @@ class CreateAnsibleExecFiles():
             val = "|-\n" + val
         return val
 
-    # def getArrayTypeValuecount(self, val):
     def ArrayTypeValue_encode(seld, mt_jsonstr, val):
         """
         複数行具体値をjson形式で収める
@@ -4998,8 +5132,11 @@ class CreateAnsibleExecFiles():
         rows = self.lv_objDBCA.sql_execute(sql, [in_operation_id])
 
         if len(rows) != 1:
-            #
-            msgstr = g.appmsg.get_api_message("MSG-10178", [os.path.basename(__file__), self.lineno()])
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            # enomoto 未テスト
+            msgstr = g.appmsg.get_api_message("MSG-10178", [os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno)])
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                str(inspect.currentframe().f_lineno), msgstr)
             return False, mt_host_vars, mt_pioneer_template_host_vars
@@ -5013,12 +5150,11 @@ class CreateAnsibleExecFiles():
                 mt_host_vars[host_name] = {}
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
 
-            # enomoto Pioneerの場合の処理
-            # switch(self.getAnsibleDriverID()){
-            # case DF_PIONEER_DRIVER_ID:
-            #    ina_pioneer_template_host_vars[host_ip][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
-            #    break
-            # }
+            # enomoto   Pioneerの場合の処理
+            print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+            if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
+                mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
         return True, mt_host_vars, mt_pioneer_template_host_vars
 
     def CreateSSHAgentConfigInfoFile(self, file, hostname, ssh_key_file, pssphrase):
@@ -5038,6 +5174,7 @@ class CreateAnsibleExecFiles():
         fd.close()
         return True
 
+    # enomoto　未テスト
     # enomoto def setFileUploadCloumnFileEnv(self, in_ans_if_info, row):
     def setFileUploadCloumnFileEnv(self, row):
         """
@@ -5047,14 +5184,16 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         if not row['VARS_ENTRY_FILE']:
             return True
 
         if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID:
-            # enomoto
+            # enomoto  未テスト
             srcFilePath = "{}/{}/{}".format(getFileupLoadColumnPath('20207', 'file'), row['ASSIGN_ID'], row['VARS_ENTRY_FILE'])
         elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-            # enomoto
+            # enomoto  未テスト
             srcFilePath = "{}/{}/{}".format(getFileupLoadColumnPath('20309', 'file'), row['ASSIGN_ID'], row['VARS_ENTRY_FILE'])
         elif self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
             srcFilePath = "{}/{}/{}".format(getFileupLoadColumnPath('20409', 'file'), row['ASSIGN_ID'], row['VARS_ENTRY_FILE'])
@@ -5092,7 +5231,6 @@ class CreateAnsibleExecFiles():
         """
         return True
 
-    # def GetEngineVirtualenvName() {
     def getTowerProjectDirPath(self, PathId):
         """
         Towerプロジェクトパス取得
@@ -5232,7 +5370,7 @@ class CreateAnsibleExecFiles():
             shutil.copyfile(src_file, dest_file)
         return True
 
-    # enomoto ここから2.1
+    # enomoto   未テストここから2.1
     def CreateHostvarsfiles(self, ina_host_vars, ina_pioneer_template_host_vars,
                             # DEL ina_hostprotcollist,
                             ina_host_child_vars, ina_DB_child_vars_master):
@@ -5252,6 +5390,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # ホスト分繰返し
         for host_name in ina_host_vars.keys():
             host_vars_file = self.getAnsible_host_var_file(host_name)
@@ -5271,13 +5411,13 @@ class CreateAnsibleExecFiles():
                 if len(ina_pioneer_template_host_vars[host_name]) != 0:
                     pioneer_template_vars_list = ina_pioneer_template_host_vars[host_name]
 
-                host_vars_file = self.getAnsible_pioneer_template_host_var_file(host_vars_file)
+                host_vars_file = self.getAnsible_pioneer_template_host_var_file(host_name)
                 if self.CreatePioneerTemplateHostvarsfile("VAR", host_name,
                                                           host_vars_file, pioneer_template_vars_list) is False:
                     return False
         return True
 
-    # enomoto 未テスト
+    # enomoto  未テスト
     def CreateHostvarsfile(self, in_var_type, in_host_name, in_file_name, ina_var_list, in_mode="w"):
         """
         ホスト変数定義ファイル(1ホスト)を作成する。
@@ -5297,12 +5437,15 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         var_str = ""
         if in_var_type != "CMT":
             for var, val in ina_var_list.items():
-                if len(self.lv_parent_vars_list[in_host_name][var]) != 0:
+                keystr = "{}_{}".format(in_host_name, var)
+                if keystr in self.lv_parent_vars_list:
                     continue
-                self.lv_parent_vars_list[in_host_name][var] = 0
+                self.lv_parent_vars_list[keystr] = 0
 
                 # 機器一覧のプロトコルが未登録の場合を判定
                 if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID and \
@@ -5314,7 +5457,7 @@ class CreateAnsibleExecFiles():
                 # ホスト変数ファイルのレコード生成
                 # 変数名: 具体値
                 # 機器一覧のパスワードをansible-vaultで暗号化
-                if var == self.LC_ANS_PASSWD_VAR_NAME and val != self.LC_ANS_UNDEFINE_NAME:
+                if var == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME and val != self.LC_ANS_UNDEFINE_NAME:
                     if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
                         # rot13+base64で暗号化
                         val = ky_encrypt(val)
@@ -5362,10 +5505,11 @@ class CreateAnsibleExecFiles():
             # グローバル変数をホスト変数ファイルに登録する。
             for var, val in self.lva_global_vars_list.items():
                 # Playbookで使用しているグローバル変数のみを対象にする。
-                if len(self.lv_use_gbl_vars_list[var]) != 0:
-                    if len(self.lv_parent_vars_list[in_host_name][var]) != 0:
+                if var in self.lv_use_gbl_vars_list:
+                    keystr = "{}_{}".format(in_host_name, var)
+                    if keystr in self.lv_parent_vars_list:
                         continue
-                    self.lv_parent_vars_list[in_host_name][var] = 0
+                    self.lv_parent_vars_list[keystr] = 0
 
                     # ホスト変数ファイルのレコード生成
                     # 変数名: 具体値
@@ -5396,20 +5540,22 @@ class CreateAnsibleExecFiles():
                     #     return False
 
             # 変数の具体値に使用しているテンプレート変数の情報をホスト変数ファイルに出力
-            if len(self.lv_tpf_vars_list[in_host_name]) != 0:
+            if in_host_name in self.lv_tpf_vars_list:
                 for var, val in self.lv_tpf_vars_list[in_host_name].items():
-                    if len(self.lv_parent_vars_list[in_host_name][var]) != 0:
+                    keystr = "{}_{}".format(in_host_name, var)
+                    if keystr in self.lv_parent_vars_list:
                         continue
-                    self.lv_parent_vars_list[in_host_name][var] = 0
+                    self.lv_parent_vars_list[keystr] = 0
 
                     var_str = var_str + "%s: %s\n" % (var, val)
 
             # 変数の具体値に使用しているコピー変数の情報をホスト変数ファイルに出力
-            if len(self.lv_cpf_vars_list[in_host_name]) != 0:
+            if in_host_name in self.lv_cpf_vars_list:
                 for var, val in self.lv_cpf_vars_list[in_host_name].items():
-                    if len(self.lv_parent_vars_list[in_host_name][var]) != 0:
+                    keystr = "{}_{}".format(in_host_name, var)
+                    if keystr in self.lv_parent_vars_list:
                         continue
-                    self.lv_parent_vars_list[in_host_name][var] = 0
+                    self.lv_parent_vars_list[keystr] = 0
 
                     var_str = var_str + "%s: %s\n" % (var, val)
 
@@ -5444,11 +5590,16 @@ class CreateAnsibleExecFiles():
         Returns:
           True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         var_str = ""
         if in_var_type != "CMT":
             for var, val in ina_var_list.items():
-                if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+                # if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+                if self.nestArrayDefineCheck(self.lv_pioneer_template_parent_vars_list, in_host_name, var) is True:
                     continue
+                if in_host_name not in self.lv_pioneer_template_parent_vars_list:
+                    self.lv_pioneer_template_parent_vars_list[in_host_name] = {}
                 self.lv_pioneer_template_parent_vars_list[in_host_name][var] = 0
 
                 # 機器一覧のプロトコルが未登録の場合を判定
@@ -5458,7 +5609,7 @@ class CreateAnsibleExecFiles():
                     #  __loginprotocol__をホスト変数に出力しない
                     continue
                 # 機器一覧のパスワードをansible-vaultで暗号化
-                if var == self.LC_ANS_PASSWD_VAR_NAME and val != self.LC_ANS_UNDEFINE_NAME:
+                if var == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME and val != self.LC_ANS_UNDEFINE_NAME:
 
                     indento_sp4 = "".ljust(4)
 
@@ -5485,9 +5636,13 @@ class CreateAnsibleExecFiles():
             # グローバル変数をホスト変数ファイルに登録する。
             for var, val in self.lva_global_vars_list.items():
                 # Playbookで使用しているグローバル変数のみを対象にする。
-                if len(self.lv_use_gbl_vars_list[var]) != 0:
-                    if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+                # enomoto if len(self.lv_use_gbl_vars_list[var]) != 0:
+                if var in self.lv_use_gbl_vars_list:
+                    # if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+                    if self.nestArrayDefineCheck(self.lv_pioneer_template_parent_vars_list, in_host_name, var) is True:
                         continue
+                    if in_host_name not in self.lv_pioneer_template_parent_vars_list:
+                        self.lv_pioneer_template_parent_vars_list[in_host_name] = {}
                     self.lv_pioneer_template_parent_vars_list[in_host_name][var] = 0
 
                     # 複数行具体値の場合に複数行の扱い記号を付ける
@@ -5499,19 +5654,27 @@ class CreateAnsibleExecFiles():
                     var_str += "{}: {}\n".format(var, out_val)
 
             # 変数の具体値に使用しているテンプレート変数の情報をホスト変数ファイルに出力
-            if len(self.lv_tpf_vars_list[in_host_name]) != 0:
+            # enomoto if len(self.lv_tpf_vars_list[in_host_name]) != 0:
+            if in_host_name in self.lv_tpf_vars_list:
                 for var, val in self.lv_tpf_vars_list[in_host_name].items():
-                    if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+                    # if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+                    if self.nestArrayDefineCheck(self.lv_pioneer_template_parent_vars_list, in_host_name, var) is True:
                         continue
+                    if in_host_name not in self.lv_pioneer_template_parent_vars_list:
+                        self.lv_pioneer_template_parent_vars_list[in_host_name] = {}
                     self.lv_pioneer_template_parent_vars_list[in_host_name][var] = 0
 
                     var_str += "{}: {}\n".format(var, val)
 
             # 変数の具体値に使用しているコピー変数の情報をホスト変数ファイルに出力
-            if len(self.lv_cpf_vars_list[in_host_name]) != 0:
-                for var, val in self.lv_cpf_vars_list[in_host_name]:
-                    if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+            # enomoto if len(self.lv_cpf_vars_list[in_host_name]) != 0:
+            if in_host_name in self.lv_cpf_vars_list:
+                for var, val in self.lv_cpf_vars_list[in_host_name].items():
+                    # if len(self.lv_pioneer_template_parent_vars_list[in_host_name][var]) != 0:
+                    if self.nestArrayDefineCheck(self.lv_pioneer_template_parent_vars_list, in_host_name, var) is True:
                         continue
+                    if in_host_name not in self.lv_pioneer_template_parent_vars_list:
+                        self.lv_pioneer_template_parent_vars_list[in_host_name] = {}
                     self.lv_pioneer_template_parent_vars_list[in_host_name][var] = 0
 
                     var_str += "{}: {}\n".format(var, val)
@@ -5525,6 +5688,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CheckConcreteValueIsVar(self,
                                 in_temp_vars_chk,
                                 in_var_val,
@@ -5550,6 +5714,8 @@ class CreateAnsibleExecFiles():
           # enomoto リターンチェック
           True/False, mt_tpf_vars_list, mt_cpf_vars_list
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         tpf_vars_list = {}
         cpf_vars_list = {}
         # テンプレート変数　{{ TPF_[a-zA-Z0-9_] }} を取出す
@@ -5560,7 +5726,9 @@ class CreateAnsibleExecFiles():
             keyFilter = r"TPF_[a-zA-Z0-9_]*"
             var_names = re.findall(keyFilter, in_var_val)
             for var_name in var_names:
-                if var_name not in mt_tpf_vars_list[in_host_name]:
+                # if var_name not in mt_tpf_vars_list[in_host_name]:
+                ret = self.nestArrayDefineCheck(mt_tpf_vars_list, in_host_name, var_name)
+                if ret is False:
                     tpf_vars_list[var_name] = ""
 
         # コピー変数　{{ CPF_[a-zA-Z0-9_] }} を取出す
@@ -5571,13 +5739,17 @@ class CreateAnsibleExecFiles():
             keyFilter = r"CPF_[a-zA-Z0-9_]*"
             var_names = re.findall(keyFilter, in_var_val)
             for var_name in var_names:
-                if var_name not in mt_cpf_vars_list[in_host_name]:
+                # if var_name in mt_cpf_vars_list[in_host_name]:
+                ret = self.nestArrayDefineCheck(mt_cpf_vars_list, in_host_name, var_name)
+                if ret is False:
                     cpf_vars_list[var_name] = ""
 
         # テンプレート変数
         la_tpf_files = {}
         for tpf_var_name, dummy in tpf_vars_list.items():
-            if len(mt_tpf_vars_list[in_host_name][tpf_var_name]) == 0:
+            # if len(mt_tpf_vars_list[in_host_name][tpf_var_name]) == 0:
+            ret = self.nestArrayDefineCheck(mt_tpf_vars_list, in_host_name, tpf_var_name)
+            if ret is False:
                 # テンプレート変数に紐づくテンプレートファイルの情報を取得
                 tpf_key = ""
                 tpf_file_name = ""
@@ -5587,9 +5759,21 @@ class CreateAnsibleExecFiles():
                 tpf_key, tpf_file_name, tpf_role_only, tpf_vars_struct_array
                 ret, tpf_key, tpf_file_name, tpf_role_only, tpf_vars_struct_array = self.getDBTemplateMaster(tpf_var_name, tpf_key, tpf_file_name,
                                                                                                              tpf_role_only, tpf_vars_struct_array)
-                if ret is False:
-                    # エラーが発生した場合は処理終了
+                if ret is False or not tpf_key:
+                    # enomot 変更
+                    # テンプレート変数名が未登録
+                    msgstr = g.appmsg.get_api_message("MSG-10531", [tpf_var_name])
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                       str(inspect.currentframe().f_lineno), msgstr)
                     return False, mt_tpf_vars_list, mt_cpf_vars_list
+
+                # テンプレートファイル名が未登録の場合
+                if not tpf_file_name:
+                    msgstr = g.appmsg.get_api_message("MSG-10532", [tpf_var_name])
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                       str(inspect.currentframe().f_lineno), msgstr)
+                    return False, mt_tpf_vars_list, mt_cpf_vars_list
+
                 # 多段/読替変数を含んでいるか判定
                 if tpf_role_only == 1:
                     msgstr = g.appmsg.get_api_message("MSG-10599", [tpf_var_name])
@@ -5597,21 +5781,6 @@ class CreateAnsibleExecFiles():
                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                        str(inspect.currentframe().f_lineno), msgstr)
                     return False, mt_tpf_vars_list, mt_cpf_vars_list
-
-                # テンプレート変数名が未登録の場合
-                if not tpf_key:
-                    # テンプレート変数名が未登録
-                    msgstr = g.appmsg.get_api_message("MSG-10531", [tpf_var_name])
-                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                       str(inspect.currentframe().f_lineno), msgstr)
-                    return False, mt_tpf_vars_list, mt_cpf_vars_list
-                else:
-                    # テンプレートファイル名が未登録の場合
-                    if not tpf_file_name:
-                        msgstr = g.appmsg.get_api_message("MSG-10532", [tpf_var_name])
-                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                           str(inspect.currentframe().f_lineno), msgstr)
-                        return False, mt_tpf_vars_list, mt_cpf_vars_list
 
                 # テンプレート変数に紐づくテンプレートファイル内の変数確認
                 # テンプレートファイルのpkeyとファイル名を退避
@@ -5631,12 +5800,10 @@ class CreateAnsibleExecFiles():
                                                                                        '{{ ' + self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME + ' }}')
                     tmpmod_tpf_path = self.setAnsibleSideFilePath(tmpmod_tpf_path, self.LC_ITA_IN_DIR)
 
-                    # templateモジュールのsrc/destパス退避
-                    self.lv_tpf_var_file_path_list[tpf_var_name] = {}
-
                     tpf_src_path = self.getHostvarsfile_pioneer_template_file(tpf_key, tpf_file_name)
                     tpf_src_path = self.setAnsibleSideFilePath(tpf_src_path, self.LC_ITA_IN_DIR)
 
+                    # templateモジュールのsrc/destパス退避
                     self.lv_tpf_var_file_path_list[tpf_var_name] = {}
                     self.lv_tpf_var_file_path_list[tpf_var_name]['src'] = tpf_src_path
                     self.lv_tpf_var_file_path_list[tpf_var_name]['dest'] = tmpmod_tpf_path
@@ -5663,29 +5830,31 @@ class CreateAnsibleExecFiles():
         # ファイル管理変数
         la_cpf_files = {}
         for cpf_var_name, dummy in cpf_vars_list.items():
-            if len(mt_cpf_vars_list[in_host_name][cpf_var_name]) == 0:
+            print(cpf_var_name)
+            # if len(mt_cpf_vars_list[in_host_name][cpf_var_name]) == 0:
+            ret = self.nestArrayDefineCheck(mt_cpf_vars_list, in_host_name, cpf_var_name)
+            if ret is False:
                 # コピー変数に紐づくファイルの情報を取得
                 cpf_key = ""
                 cpf_file_name = ""
                 # copy変数名からコピーファイル名とPkeyを取得する。
-                ret = self.getDBCopyMaster(cpf_var_name, cpf_key, cpf_file_name)
-                if ret is False:
-                    # エラーが発生した場合は処理終了
-                    return False, mt_tpf_vars_list, mt_cpf_vars_list
-                # コピー変数名が未登録の場合
-                if not cpf_key:
+                retAry = self.getDBCopyMaster(cpf_var_name, cpf_key, cpf_file_name)
+                ret = retAry[0]
+                cpf_key = retAry[1]
+                cpf_file_name = retAry[2]
+                if ret is False or not cpf_key:
+                    # コピー変数名が未登録の場合
+                    # enomoto 変更
                     msgstr = g.appmsg.get_api_message("MSG-10543", [cpf_var_name])
                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                        str(inspect.currentframe().f_lineno), msgstr)
-                    # コピー変数名が未登録
                     return False, mt_tpf_vars_list, mt_cpf_vars_list
-                else:
-                    #  コピーファイル名が未登録の場合
-                    if not cpf_file_name:
-                        msgstr = g.appmsg.get_api_message("MSG-10544", [cpf_var_name])
-                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                           str(inspect.currentframe().f_lineno), msgstr)
-                        return False, mt_tpf_vars_list, mt_cpf_vars_list
+
+                if not cpf_file_name:
+                    msgstr = g.appmsg.get_api_message("MSG-10544", [cpf_var_name])
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                       str(inspect.currentframe().f_lineno), msgstr)
+                    return False, mt_tpf_vars_list, mt_cpf_vars_list
 
                 # copyファイルのpkeyとファイル名を退避
                 la_cpf_files[cpf_key] = cpf_file_name
@@ -5699,8 +5868,9 @@ class CreateAnsibleExecFiles():
                 cpf_path = self.setAnsibleSideFilePath(cpf_path, self.LC_ITA_IN_DIR)
 
                 # mt_cpf_vars_list[copy変数]=inディレクトリ配下ののcopyファイルパス
+                if in_host_name not in mt_cpf_vars_list:
+                    mt_cpf_vars_list[in_host_name] = {}
                 mt_cpf_vars_list[in_host_name][cpf_var_name] = cpf_path
-                self.lv_cpf_var_file_path_list[cpf_var_name] = cpf_path
 
         # コピー変数に紐づくファイルを所定のディレクトリに配置
         if len(la_cpf_files) > 0:
@@ -5711,6 +5881,7 @@ class CreateAnsibleExecFiles():
 
         return True, mt_tpf_vars_list, mt_cpf_vars_list
 
+    # enomoto 未テスト
     def CheckConcreteValueIsVarTemplatefile(self, in_host_name, ina_var_list,
                                             in_tpf_val_name, in_tpf_key, in_tpf_file_name,
                                             ina_tpf_vars_struct_array):
@@ -5746,6 +5917,8 @@ class CreateAnsibleExecFiles():
         Returns:
           True/False, mt_tpf_vars_list, mt_cpf_vars_list
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
 
         templatefile = self.getITA_template_file(in_tpf_key, in_tpf_file_name)
@@ -5769,8 +5942,6 @@ class CreateAnsibleExecFiles():
         # Array_vars_use = retAry[3]
         GBL_vars_info = retAry[4]
         # VarVal_list = retAry[5]
-
-        GBL_vars_info = ina_tpf_vars_struct_array['GBL_vars_info']
 
         use_gbl_vars_list = {}
 
@@ -5870,6 +6041,7 @@ class CreateAnsibleExecFiles():
                         result_code = False
         return result_code
 
+    # enomoto 未テスト
     def getHostvarsfile_template_file_value(self, in_pkey, in_file):
         """
           inディレクトリ配下のテンプレートファイルパスを取得
@@ -5879,9 +6051,12 @@ class CreateAnsibleExecFiles():
         Returns:
           テンプレートファイルパス
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}/{}-{}".format(self.getHostvarsfile_template_file_Dir(), in_pkey, in_file)
         return file
 
+    # enomoto 未テスト
     def getHostvarsfile_pioneer_template_file_value(self, in_pkey, in_file, in_hostname):
         """
            inディレクトリ配下のテンプレートファイルパスを取得
@@ -5892,10 +6067,13 @@ class CreateAnsibleExecFiles():
         Returns:
           テンプレートファイルパス
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}-{}".format(in_pkey, in_file)
         file = "{}/{}-{}".format(self.getAnsible_template_files_Dir(), in_hostname, file)
         return file
 
+    # enomoto 未テスト
     def getHostvarsfile_pioneer_template_file(self, in_pkey, in_file):
         """
           inディレクトリ配下のテンプレートファイルパスを取得
@@ -5906,9 +6084,12 @@ class CreateAnsibleExecFiles():
         Returns:
           テンプレートファイルパス
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}/{}-{}".format(self.getAnsible_template_files_Dir(), in_pkey, in_file)
         return file
 
+    # enomoto 未テスト
     def getHostvarsfile_pioneer_copy_file_value(self, in_pkey, in_file):
         """
            inディレクトリ配下のファイル管理 ファイルパスを取得
@@ -5919,9 +6100,12 @@ class CreateAnsibleExecFiles():
         Returns:
           ファイル管理 ファイルパス
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}/{}-{}".format(self.getAnsible_copy_files_Dir(), in_pkey, in_file)
         return file
 
+    # enomoto 未テスト
     def CreateLegacyPlaybookfiles(self, ina_child_playbooks, in_exec_mode, in_exec_playbook_hed_def):
         """
         Legacy用 PlayBookファイルを作成する。
@@ -5934,6 +6118,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # 子PlayBookファイル作成
         if self.CreateChildPlaybookfiles(ina_child_playbooks) is False:
             return False
@@ -5946,6 +6132,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CreateChildPlaybookfiles(self, ina_child_playbooks):
         """
         Legacy用 PlayBookファイルを作成する。
@@ -5955,7 +6142,9 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
-        for playbook_list in ina_child_playbooks:
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+        for seqno, playbook_list in ina_child_playbooks.items():
             for pkey, playbook in playbook_list.items():
                 # 子Playbookが存在しているか確認
                 src_file = self.getITA_child_playbiook_file(pkey, playbook)
@@ -5973,6 +6162,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CheckLegacyPlaybookfiles(self, ina_hosts, ina_host_vars, ina_child_playbooks):
         """
         Legacy用 Playbookのフォーマットをチェックする
@@ -5987,6 +6177,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
 
         for no, playbook_list in ina_child_playbooks.items():
@@ -6032,16 +6224,18 @@ class CreateAnsibleExecFiles():
                         return False
 
                     # Playbookから抜き出したグローバル変数がグローバル変数管理に登録されているか判定
-                    for var_name in file_global_vars_list:
-                        if var_name not in self.lva_global_vars_list:
-                            msgstr = g.appmsg.get_api_message("MSG-10462", [os.path.basename(file_name), var_name])
-                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                               str(inspect.currentframe().f_lineno), msgstr)
-                            result_code = False
-                        # 対話ファイルで使用されているグローバル変数退避
-                        self.lv_use_gbl_vars_list[var_name] = "1"
+                    # enomoto SimpleFillterVerSearch
+                    for var_list in file_global_vars_list:
+                        for line_no, var_name in var_list.items():
+                            if var_name not in self.lva_global_vars_list:
+                                msgstr = g.appmsg.get_api_message("MSG-10462", [os.path.basename(file_name), var_name])
+                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                   str(inspect.currentframe().f_lineno), msgstr)
+                                result_code = False
+                            # 対話ファイルで使用されているグローバル変数退避
+                            self.lv_use_gbl_vars_list[var_name] = "1"
 
-                # ITA独自変数のリスト作成
+                    # ITA独自変数のリスト作成
                 local_vars = self.setITALocalVars()
 
                 file_vars_list = {}
@@ -6060,73 +6254,78 @@ class CreateAnsibleExecFiles():
                     continue
 
                 # PlayBookに登録されている変数のデータベース登録確認
-                for var_name in file_vars_list:
-                    # ホスト配列のホスト分繰り返し
-                    for host_key, host_name in ina_hosts.items():
-                        if var_name not in ina_host_vars[host_name]:
-                            if var_name == self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME:
-                                msgstr = g.appmsg.get_api_message("MSG-10206", [playbook, var_name, host_name])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                            elif var_name == self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME:
-                                msgstr = g.appmsg.get_api_message("MSG-10204", [playbook, var_name, host_name])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                            elif var_name == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME:
-                                msgstr = g.appmsg.get_api_message("MSG-10205", [playbook, var_name, host_name])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                            elif var_name == self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME:
-                                msgstr = g.appmsg.get_api_message("MSG-10203", [playbook, var_name, host_name])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                            else:
-                                continue
-                            # else{
-                            #     if((array_key_exists($var_name,$ina_host_vars[$host_name])===True)) {
-                            #        continue
-                            #    }
-                            #    $msgstr = $this->lv_objMTS->getSomeMessage("ITAANSIBLEH-ERR-55214",
-                            #                                                    array($playbook,
-                            #                                                          $var_name,
-                            #                                                          $host_name))
-                            #    $this->LocalLogPrint(basename(__FILE__),__LINE__,$msgstr)
-                            # }
-                            # エラーリターンする
-                            result_code = False
-                        else:
-                            # 予約変数を使用している場合に対象システム一覧に該当データが登録されているか判定
-                            if ina_host_vars[host_name][var_name] == self.LC_ANS_UNDEFINE_NAME:
-                                # プロトコル未登録
+                for var_list in file_vars_list:
+                    for var_line, var_name in var_list.items():
+                        # ホスト配列のホスト分繰り返し
+                        for host_key, host_name in ina_hosts.items():
+                            if var_name not in ina_host_vars[host_name]:
                                 if var_name == self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME:
                                     msgstr = g.appmsg.get_api_message("MSG-10206", [playbook, var_name, host_name])
                                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                        str(inspect.currentframe().f_lineno), msgstr)
-                                    result_code = False
 
-                                # ユーザー名未登録
                                 elif var_name == self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME:
                                     msgstr = g.appmsg.get_api_message("MSG-10204", [playbook, var_name, host_name])
                                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                        str(inspect.currentframe().f_lineno), msgstr)
-                                    result_code = False
 
-                                # ログインパスワード未登録
                                 elif var_name == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME:
                                     msgstr = g.appmsg.get_api_message("MSG-10205", [playbook, var_name, host_name])
                                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                        str(inspect.currentframe().f_lineno), msgstr)
-                                    result_code = False
 
-                                # ホスト名未登録
                                 elif var_name == self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME:
                                     msgstr = g.appmsg.get_api_message("MSG-10203", [playbook, var_name, host_name])
                                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                        str(inspect.currentframe().f_lineno), msgstr)
-                                    result_code = False
+                                else:
+                                    continue
+                                # else{
+                                #     if((array_key_exists($var_name,$ina_host_vars[$host_name])===True)) {
+                                #        continue
+                                #    }
+                                #    $msgstr = $this->lv_objMTS->getSomeMessage("ITAANSIBLEH-ERR-55214",
+                                #                                                    array($playbook,
+                                #                                                          $var_name,
+                                #                                                          $host_name))
+                                #    $this->LocalLogPrint(basename(__FILE__),__LINE__,$msgstr)
+                                # }
+                                # エラーリターンする
+                                result_code = False
+                            else:
+                                # 予約変数を使用している場合に対象システム一覧に該当データが登録されているか判定
+                                if ina_host_vars[host_name][var_name] == self.LC_ANS_UNDEFINE_NAME:
+                                    # プロトコル未登録
+                                    if var_name == self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME:
+                                        msgstr = g.appmsg.get_api_message("MSG-10206", [playbook, var_name, host_name])
+                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                           str(inspect.currentframe().f_lineno), msgstr)
+                                        result_code = False
+
+                                    # ユーザー名未登録
+                                    elif var_name == self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME:
+                                        msgstr = g.appmsg.get_api_message("MSG-10204", [playbook, var_name, host_name])
+                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                           str(inspect.currentframe().f_lineno), msgstr)
+                                        result_code = False
+
+                                    # ログインパスワード未登録
+                                    elif var_name == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME:
+                                        msgstr = g.appmsg.get_api_message("MSG-10205", [playbook, var_name, host_name])
+                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                           str(inspect.currentframe().f_lineno), msgstr)
+                                        result_code = False
+
+                                    # ホスト名未登録
+                                    elif var_name == self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME:
+                                        msgstr = g.appmsg.get_api_message("MSG-10203", [playbook, var_name, host_name])
+                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                           str(inspect.currentframe().f_lineno), msgstr)
+                                        result_code = False
 
         return result_code
 
+    # enomoto 未テスト
     def getITA_child_playbiook_file(self, in_key, in_filename):
         """
         ITA 子PlayBookファイル名(Legacy)を取得
@@ -6136,9 +6335,12 @@ class CreateAnsibleExecFiles():
         Returns:
             作業実行inディレクトリ配下のchild_playbooksディレクトリパス
         """
-        file = "{}/{}/{}".format(self.getITA_child_playbook_Dir(), in_key, in_filename)
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
+        file = "{}/{}/{}".format(getLegacyPlaybookUploadDirPath(), in_key, in_filename)
         return file
 
+    # enomoto 未テスト
     def getAnsible_child_playbiook_file(self, in_pkey, in_filename):
         """
         ITA 子PlayBookファイル名(Legacy)を取得
@@ -6148,10 +6350,13 @@ class CreateAnsibleExecFiles():
         Returns:
             子PlayBookファイル名(Legacy)ディレクトリパス
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # Ansible実行時の子Playbookファイル名は Pkey(10桁)-子Playbookファイル名 する。
         file = "{}/{}-{}".format(self.getAnsible_child_playbooks_Dir(), in_pkey, in_filename)
         return file
 
+    # enomoto 未テスト
     def CheckVariablesDefinedInDeviceList(self, ina_hostinfolist, ina_host_vars):
         """
         機器一覧のインベントファイル追加オプションで使用している変数がホスト変数に登録されているかチェックする。
@@ -6163,11 +6368,13 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
         for host_name, row in ina_hostinfolist.items():
             # 機器一覧のインベントファイル追加オプションを取得
             InventryFileAddOptionStr = row['HOSTS_EXTRA_ARGS']
-            if len(InventryFileAddOptionStr) != 0:
+            if not InventryFileAddOptionStr:
                 continue
             out_yaml_array = ""
             error_line = ""
@@ -6253,6 +6460,7 @@ class CreateAnsibleExecFiles():
 
         return result_code
 
+    # enomoto 未テスト
     def CreateLegacytemplatefiles(self, ina_hosts, ina_child_playbooks, ina_host_vars):
         """
         Playbookよりtemplateモジュールで使用しているテンプレート変数を抜出しホスト変数ファイルに追加する。
@@ -6266,6 +6474,8 @@ class CreateAnsibleExecFiles():
         Returns:
           True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
         la_tpf_path = {}
 
@@ -6306,8 +6516,19 @@ class CreateAnsibleExecFiles():
                         tpf_file_name = retAry[2]
                         tpf_role_only = retAry[3]
                         tpf_vars_struct_array = retAry[4]
-                        if ret is False:
-                            # エラーが発生時はgetDBTemplateMasterでログ出力
+                        if ret is False or not tpf_key:
+                            # enomoto 変更
+                            # テンプレート変数名が未登録の場合
+                            msgstr = g.appmsg.get_api_message("MSG-10123", [os.path.basename(playbook), line_no, tpf_var_name])
+                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                               str(inspect.currentframe().f_lineno), msgstr)
+                            return False
+
+                        # テンプレートファイル名が未登録の場合
+                        if not tpf_file_name:
+                            msgstr = g.appmsg.get_api_message("MSG-10152", [os.path.basename(playbook), line_no, tpf_var_name])
+                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                               str(inspect.currentframe().f_lineno), msgstr)
                             return False
 
                         # 多段/読替変数を含んでいるか判定
@@ -6319,23 +6540,8 @@ class CreateAnsibleExecFiles():
                             msgstr = g.appmsg.get_api_message("MSG-10579", [msgstr])
                             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                str(inspect.currentframe().f_lineno), msgstr)
+                            # enomoto 変更
                             return False
-
-                        # テンプレート変数名が未登録の場合
-                        if not tpf_key:
-                            msgstr = g.appmsg.get_api_message("MSG-10123", [os.path.basename(playbook), line_no, tpf_var_name])
-                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                               str(inspect.currentframe().f_lineno), msgstr)
-                            result_code = False
-                            continue
-                        else:
-                            # テンプレートファイル名が未登録の場合
-                            if not tpf_file_name:
-                                msgstr = g.appmsg.get_api_message("MSG-10152", [os.path.basename(playbook), line_no, tpf_var_name])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                                result_code = False
-                                continue
 
                         # テンプレートファイルのpkeyとファイル名を退避
                         # la_tpf_files[pkey]=テンプレートファイル
@@ -6381,6 +6587,7 @@ class CreateAnsibleExecFiles():
                     return False
         return True
 
+    # enomoto 未テスト
     # enomoto ina_tpf_vars_struct_array 大丈夫か
     def CheckTemplatefile(self, ina_hosts, ina_host_vars, in_child_playbook, in_tpf_key, in_tpf_file_name,
                           ina_tpf_vars_struct_array, in_file_type_name):
@@ -6416,6 +6623,8 @@ class CreateAnsibleExecFiles():
         Returns:
           True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
         use_gbl_vars_list = {}
 
@@ -6424,20 +6633,33 @@ class CreateAnsibleExecFiles():
         dataString = fd.read()
         fd.close()
 
+        # 変数定義の解析結果をデコード
+        obj = VarStructAnalJsonConv()
+        retAry = obj.TemplateVarStructAnalJsonLoads(ina_tpf_vars_struct_array)
+        # Vars_list = retAry[0]
+        # Array_vars_list = retAry[1]
+        # LCA_vars_use = retAry[2]
+        # Array_vars_use = retAry[3]
+        GBL_vars_info = retAry[4]
+        # VarVal_list = retAry[5]
+
         # テンプレートに登録されているグローバル変数のデータベース登録確認
-        if isinstance(ina_tpf_vars_struct_array['GBL_vars_info'], dict):
-            if '1' in ina_tpf_vars_struct_array['GBL_vars_info'].keys():
-                for var_name, dummy in ina_tpf_vars_struct_array['GBL_vars_info']['1'].items():
-                    if var_name not in self.lva_global_vars_list:
-                        msgstr = g.appmsg.get_api_message("MSG-10463", [in_file_type_name, os.path.basename(in_child_playbook),
-                                                                        os.path.basename(templatefile), var_name])
-                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                           str(inspect.currentframe().f_lineno), msgstr)
-                        return False
+        if "1" in GBL_vars_info:
+            for var_name, vaule in GBL_vars_info["1"].items():
+                #        if isinstance(ina_tpf_vars_struct_array['GBL_vars_info'], dict):
+                #            if '1' in ina_tpf_vars_struct_array['GBL_vars_info'].keys():
+                #                for var_name, dummy in ina_tpf_vars_struct_array['GBL_vars_info']['1'].items():
+                if var_name not in self.lva_global_vars_list:
+                    msgstr = g.appmsg.get_api_message("MSG-10463", [in_file_type_name, os.path.basename(in_child_playbook),
+                                                      os.path.basename(templatefile), var_name])
+                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                       str(inspect.currentframe().f_lineno), msgstr)
+                    return False
 
-                    use_gbl_vars_list[var_name] = 1
-                    self.lv_use_gbl_vars_list[var_name] = 1
+                use_gbl_vars_list[var_name] = 1
+                self.lv_use_gbl_vars_list[var_name] = 1
 
+        # -------------------
         # ITA独自変数のリスト作成
         local_vars = self.setITALocalVars()
 
@@ -6528,6 +6750,7 @@ class CreateAnsibleExecFiles():
 
         return result_code
 
+    # enomoto 未テスト
     def CreateLegacyCopyFiles(self, ina_hosts, ina_child_playbooks):
         """
         Playbookよりcopyモジュールで使用している変数を抜出しホスト変数ファイルに追加する。
@@ -6539,6 +6762,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
         la_cpf_path = {}
 
@@ -6561,12 +6786,14 @@ class CreateAnsibleExecFiles():
                 # enomoto la_cpf_path帰ってくるか確認
                 retAry = obj.SimpleFillterVerSearch(self.AnscObj.DF_HOST_CPF_HED, dataString, la_cpf_vars, varsArray, local_vars, FillterVars)
                 # unuse ret = retAry[0]
-                varsArray = retAry[1]
+                la_cpf_vars = retAry[1]
+
+                print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
                 # copy変数に紐づくファイルの情報を取得
                 la_cpf_files = {}
-                for no, cpf_var_list in la_cpf_vars.items():
-                    for line_no, cpf_var_name in cpf_var_list.items():
+                for var_list in la_cpf_vars:
+                    for line_no, cpf_var_name in var_list.items():
                         cpf_key = ""
                         cpf_file_name = ""
                         # copy変数名からコピーファイル名とPkeyを取得する。
@@ -6574,28 +6801,21 @@ class CreateAnsibleExecFiles():
                         ret = retAry[0]
                         cpf_key = retAry[1]
                         cpf_file_name = retAry[2]
-                        if ret is False:
-                            # エラーが発生した場合は処理終了
-                            return False
-
-                        # copy変数名が未登録の場合
-                        if not cpf_key:
-                            # enomoto pioneer/legacyでメッセージが合わない
-                            prastr = g.appmsg.get_api_message("MSG-10615", [os.path.basename(playbook), line_no, cpf_var_name])
-                            msgstr = g.appmsg.get_api_message("MSG-10408", [prastr])
+                        if ret is False or not cpf_key:
+                            # enomoto 変更
+                            # copy変数名が未登録の場合
+                            msgstr = g.appmsg.get_api_message("MSG-10543", [cpf_var_name])
                             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                str(inspect.currentframe().f_lineno), msgstr)
-                            result_code = False
-                            continue
-                        else:
-                            # copyファイル名が未登録の場合
-                            if not cpf_file_name:
-                                prastr = g.appmsg.get_api_message("MSG-10615", [os.path.basename(playbook), line_no, cpf_var_name])
-                                msgstr = g.appmsg.get_api_message("MSG-10411", [prastr])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                                result_code = False
-                                continue
+                            return False
+
+                        # copyファイル名が未登録の場合
+                        if not cpf_file_name:
+                            prastr = g.appmsg.get_api_message("MSG-10615", [os.path.basename(playbook), line_no, cpf_var_name])
+                            msgstr = g.appmsg.get_api_message("MSG-10411", [prastr])
+                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                               str(inspect.currentframe().f_lineno), msgstr)
+                            return False
 
                         # copyファイルのpkeyとファイル名を退避
                         la_cpf_files[cpf_key] = cpf_file_name
@@ -6632,6 +6852,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CommitHostVarsfiles(self, ina_hosts, ina_host_vars, ina_pioneer_template_host_vars):
         """
         グローバル変数・テンプレート変数・コピー変数をホスト変数の情報を
@@ -6647,6 +6868,7 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # ホスト変数配列のホスト)分繰返し
         for host_key, host_name in ina_hosts.items():
@@ -6675,6 +6897,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CreateVaultHostvarsfiles(self, ina_vault_host_vars_file_list, ina_host_vars, ina_hostinfolist):
         """
         グローバル変数・テンプレート変数・コピー変数をホスト変数の情報を
@@ -6689,6 +6912,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # 作業対象ホスト分繰り返し i
         for host_name, host_info in ina_hostinfolist.items():
             host_vars_file = host_name
@@ -6703,11 +6928,12 @@ class CreateAnsibleExecFiles():
                                                           ky_encrypt(ina_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME]))
 
             # 暗号化している変数の有無判定
-            if len(ina_vault_host_vars_file_list[host_name]) != 0:
+            # enomoto if len(ina_vault_host_vars_file_list[host_name]) != 0:
+            if host_name in ina_vault_host_vars_file_list:
                 # 該当ホストの変数配列を取得
                 vars_list = ina_vault_host_vars_file_list[host_name]
 
-                for var, val in vars_list:
+                for var, val in vars_list.items():
                     # 具体値はrot13+base64で暗号化されている
                     var_str = var_str + "{}: {}\n".format(var, val)
 
@@ -6718,6 +6944,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CreatePioneerDialogfiles(self, ina_hostinfolist,
                                  ina_dialog_files,
                                  ina_host_vars,
@@ -6744,6 +6971,7 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         max_file = 0
         host_list = ina_dialog_files.keys()
@@ -6764,14 +6992,17 @@ class CreateAnsibleExecFiles():
             # 対話ファイル数を取得
             if max_vars < len(dialog_file_list):
                 max_vars = len(dialog_file_list)
-                var_name_list = []
+                var_name_list = {}
                 for idx in range(1, max_vars + 1):
                     # ホスト変数ファイルに登録する対話ファイルの変数名(var%d)配列作成
                     # [通番][pkey固定][変数名(var%d)]
-                    dic = {}
-                    dic["pkey"] = self.LC_PLAYBOOK_DIALOG_FILE_VARNAME_MK % (idx)
-                    var_name_list.append(dic)
+                    if idx not in var_name_list:
+                        var_name_list[idx] = {}
+                    var_name_list[idx] = {"pkey": self.LC_PLAYBOOK_DIALOG_FILE_VARNAME_MK % (idx)}
 
+            print("CreateDialogfilesCreateDialogfilesCreateDialogfiles")
+            print(var_name_list)
+            print("CreateDialogfilesCreateDialogfilesCreateDialogfiles")
             # 対話ファイル作成
             if self.CreateDialogfiles(host_name, dialog_file_list) is False:
                 return False
@@ -6834,13 +7065,10 @@ class CreateAnsibleExecFiles():
                 host_vars_list[self.LC_ANS_SSH_EXTRA_ARGS_VAR_NAME] = self.LC_ANS_UNDEFINE_NAME
 
             # ユーザー公開用データリレイストレージパス 変数の名前
-            host_vars_list[self.LC_ANS_OUTDIR_VAR_NAME] = self.lv_user_out_Dir
-
-            # ユーザー公開用 symphonyインスタンス作業用データリレイストレージパス 変数の名前
-            host_vars_list[self.LC_SYMPHONY_DIR_VAR_NAME] = self.lv_symphony_instance_Dir
+            host_vars_list[self.AnscObj.ITA_SP_VAR_ANS_OUTDIR_VAR_NAME] = self.lv_user_out_Dir
 
             # ユーザー公開用 conductorインスタンス作業用データリレイストレージパス 変数の名前
-            host_vars_list[self.LC_CONDUCTO_DIR_VAR_NAME] = self.lv_conductor_instance_Dir
+            host_vars_list[self.AnscObj.ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME] = self.lv_conductor_instance_Dir
 
             # ホスト変数定義ファイル名を取得
             file_name = self.getAnsible_host_var_file(host_name)
@@ -6856,7 +7084,7 @@ class CreateAnsibleExecFiles():
                     return False
 
         # in/original_dialog_filesに加工前の対話ファイルをコピー
-        shutil.copytree(self.getAnsible_original_dialog_files_Dir(), self.getAnsible_in_original_dialog_files_Dir())
+        shutil.copytree(self.getAnsible_original_dialog_files_Dir(), self.getAnsible_in_original_dialog_files_Dir(), dirs_exist_ok=True)
 
         # 親PlayBookファイル作成(Pioneer)
         # var_name_list [通番][pkey固定][変数名(var%d)]
@@ -6865,6 +7093,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CreateDialogfiles(self, in_hostname, dialog_file_list):
         """
         対話ファイルをAnsible用ディレクトリにコピーする。
@@ -6874,6 +7103,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         for includeno, pkeylist in dialog_file_list.items():
             for pkey, dialogfile in pkeylist.items():
                 # ITA側で管理されている対話ファイルが存在しているか確認
@@ -6911,10 +7142,14 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def getAnsible_dialog_file(self, in_hostname, in_pkey, in_filename):
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}/{}/{}-{}".format(self.getAnsible_dialog_files_Dir(), in_hostname, in_pkey, in_filename)
         return file
 
+    # enomoto 未テスト
     def getAnsible_dialog_file_host_Dir(self, in_hostname):
         """
         ホスト毎の加工後の対話ファイル(Pioneer)格納ディレクトリを取得
@@ -6923,9 +7158,12 @@ class CreateAnsibleExecFiles():
         Returns:
             ITA管理 対話ファイルパス(Pioneer)
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}/{}".format(self.getAnsible_dialog_files_Dir(), in_hostname)
         return file
 
+    # enomoto 未テスト
     def getAnsible_org_dialog_file_host_Dir(self, in_hostname):
         """
         ホスト毎の加工前の対話ファイル(Pioneer)格納ディレクトリを取得
@@ -6934,9 +7172,12 @@ class CreateAnsibleExecFiles():
         Returns:
             ITA管理 対話ファイルパス(Pioneer)
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}/{}".format(self.getAnsible_original_dialog_files_Dir(), in_hostname)
         return file
 
+    # enomoto 未テスト
     def getITA_dialog_file(self, in_key, in_filename):
         """
         Pioneer用 PlayBook(対話ファイル)を作成する。
@@ -6946,9 +7187,12 @@ class CreateAnsibleExecFiles():
         Returns:
             ITA管理 対話ファイルパス(Pioneer)
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         file = "{}/{}/{}".format(getPioneerDialogUploadDirPath(), in_key, in_filename)
         return file
 
+    # enomoto 未テスト
     def CreatePioneertemplatefiles(self, ina_hosts, ina_dialog_files, ina_host_vars):
         """
         Pioneer用 対話ファイルよりtemplateモジュールで使用しているテンプレート変数を抜出しホスト変数ファイルに追加する。
@@ -6962,6 +7206,8 @@ class CreateAnsibleExecFiles():
         Returns:
           True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
         la_tpf_files = {}
 
@@ -7009,8 +7255,20 @@ class CreateAnsibleExecFiles():
                             tpf_file_name = retAry[2]
                             tpf_role_only = retAry[3]
                             tpf_vars_struct_array = retAry[4]
-                            if ret is False:
-                                # エラーが発生時はgetDBTemplateMasterでログ出力
+                            if ret is False or not tpf_key:
+                                # template変数名が未登録の場合
+                                msgstr = g.appmsg.get_api_message("MSG-10617", [os.path.basename(playbook), line_no, tpf_var_name])
+                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                   str(inspect.currentframe().f_lineno), msgstr)
+                                return False
+
+                            # テンプレートファイル名が未登録の場合
+                            if not tpf_file_name:
+                                msgstr = g.appmsg.get_api_message("MSG-10618", [os.path.basename(playbook), line_no, tpf_var_name])
+
+                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                   str(inspect.currentframe().f_lineno), msgstr)
+                                # enomoto 修正
                                 return False
 
                             # 多段/読替変数を含んでいるか判定
@@ -7019,24 +7277,8 @@ class CreateAnsibleExecFiles():
                                 msgstr = g.appmsg.get_api_message("MSG-10579", [msgstr])
                                 self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                    str(inspect.currentframe().f_lineno), msgstr)
+                                # enomoto 修正
                                 return False
-
-                            # template変数名が未登録の場合
-                            if not tpf_key:
-                                msgstr = g.appmsg.get_api_message("MSG-10617", [os.path.basename(playbook), line_no, tpf_var_name])
-                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                   str(inspect.currentframe().f_lineno), msgstr)
-                                result_code = False
-                                continue
-                            else:
-                                # テンプレートファイル名が未登録の場合
-                                if not tpf_file_name:
-                                    msgstr = g.appmsg.get_api_message("MSG-10618", [os.path.basename(playbook), line_no, tpf_var_name])
-
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-                                    result_code = False
-                                    continue
 
                             # templateファイルのpkeyとファイル名を退避
                             # la_tpf_files[pkey] = テンプレートファイル
@@ -7097,12 +7339,14 @@ class CreateAnsibleExecFiles():
 
         if len(la_tpf_files) > 0:
             # templateファイルを所定のディレクトリにコピーする。
-            ret = self.CopyPioneerTemplatefiles(la_tpf_files)
+            # enomoto ret = self.CopyPioneerTemplatefiles(la_tpf_files)
+            ret = self.CreateTemplatefiles(la_tpf_files)
             if ret is False:
                 return False
 
         return True
 
+    # enomoto 未テスト
     def CreatePioneerCopyFiles(self, ina_hosts, ina_dialog_files):
         """
         Arguments:
@@ -7113,6 +7357,8 @@ class CreateAnsibleExecFiles():
         Returns:
           True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
 
         la_cpf_files = {}
@@ -7148,8 +7394,8 @@ class CreateAnsibleExecFiles():
 
                     # copy変数に紐づくファイルの情報を取得
                     la_cpf_files = {}
-                    for no, cpf_var_list in la_cpf_vars.items():
-                        for line_no, cpf_var_name in cpf_var_list.items():
+                    for var_list in la_cpf_vars:
+                        for line_no, cpf_var_name in var_list.items():
                             cpf_key = ""
                             cpf_file_name = ""
                             # copy変数名からコピーファイル名とPkeyを取得する。
@@ -7157,29 +7403,21 @@ class CreateAnsibleExecFiles():
                             ret = retAry[0]
                             cpf_key = retAry[1]
                             cpf_file_name = retAry[2]
-                            if ret is False:
-                                # エラーが発生した場合は処理終了
-                                return False
-
-                            # copy変数名が未登録の場合
-                            # copy変数名が未登録の場合
-                            if not cpf_key:
-                                # enomoto pioneer/legacyでメッセージが合わない
-                                prastr = g.appmsg.get_api_message("MSG-10616", [os.path.basename(playbook), line_no, cpf_var_name])
-                                msgstr = g.appmsg.get_api_message("MSG-10408", [prastr])
+                            if ret is False or not cpf_key:
+                                # enomoto 変更
+                                # copy変数名が未登録の場合
+                                msgstr = g.appmsg.get_api_message("MSG-10543", [cpf_var_name])
                                 self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                    str(inspect.currentframe().f_lineno), msgstr)
-                                result_code = False
-                                continue
-                            else:
-                                # copyファイル名が未登録の場合
-                                if not cpf_file_name:
-                                    prastr = g.appmsg.get_api_message("MSG-10616", [os.path.basename(playbook), line_no, cpf_var_name])
-                                    msgstr = g.appmsg.get_api_message("MSG-10409", [prastr])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-                                    result_code = False
-                                    continue
+                                return False
+
+                            # copyファイル名が未登録の場合
+                            if not cpf_file_name:
+                                prastr = g.appmsg.get_api_message("MSG-10616", [os.path.basename(playbook), line_no, cpf_var_name])
+                                msgstr = g.appmsg.get_api_message("MSG-10409", [prastr])
+                                self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                   str(inspect.currentframe().f_lineno), msgstr)
+                                return False
 
                             # copyファイルのpkeyとファイル名を退避
                             # la_cpf_files[pkey]=copyファイル
@@ -7225,6 +7463,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
+    # enomoto 未テスト
     def CheckPioneerPlaybookfiles(self, ina_hosts, ina_host_vars, ina_vault_vars, ina_dialog_files, in_SpecialVarValReplace=False):
         """
         Pioneer用 Playbookのフォーマットをチェックする
@@ -7243,6 +7482,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         result_code = True
 
         # 対話ファイル配列よりホストリストを取得
@@ -7294,7 +7535,6 @@ class CreateAnsibleExecFiles():
                     dialog_file_vars = []
                     retAry = self.value_extraction(dialog_file_array, "", dialog_file_vars)
                     dialog_file_vars = retAry[1]
-
                     ret = self.var_check(playbook, host_name, dialog_file_vars, host_vars_file_array)
                     if ret is False:
                         return False
@@ -7324,16 +7564,23 @@ class CreateAnsibleExecFiles():
                     # 変数具体値がTPF/CPF変数の場合の具体値置換えでない場合
                     if in_SpecialVarValReplace is False:
                         # 対話ファイルのフォーマットチェックを行う。
+                        print("CheckDialogfileFormat in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
                         if self.CheckDialogfileFormat(file_name, host_name) is False:
+                            print("CheckDialogfileFormat out " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                             # フォーマットチェックでエラーが発生した場合は変数チェックはしない。
                             result_code = False
                             continue
+
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
                     # 子PlayBookで使用している変数がホストの変数に登録されているか判定
                     # 子PlayBookに登録されている変数を抜出す。
                     fd = open(file_name)
                     dataString = fd.read()
                     fd.close()
+
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
                     # 変数具体値がTPF/CPF変数の場合の具体値置換えでない場合
                     if in_SpecialVarValReplace is False:
@@ -7351,7 +7598,7 @@ class CreateAnsibleExecFiles():
                         file_global_vars_list = retAry[1]
                         del obj
 
-                        globalvarSetTo = {}
+                        globalvarSetTo = []
                         if len(file_global_vars_list) != 0:
                             # グローバル変数管理にグローバル変数が未定義の判定
                             if len(self.lva_global_vars_list) == 0:
@@ -7361,26 +7608,29 @@ class CreateAnsibleExecFiles():
                                 return False
 
                             # 対話ファイルから抜き出したグローバル変数がグローバル変数管理に登録されているか判定
-                            for var_name in file_global_vars_list:
-                                if var_name not in self.lva_global_vars_list:
-                                    msgstr = g.appmsg.get_api_message("MSG-10460", [os.path.basename(file_name), var_name])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-                                    return False
+                            for var_list in file_global_vars_list:
+                                for line_no, var_name in var_list.items():
+                                    if var_name not in self.lva_global_vars_list:
+                                        msgstr = g.appmsg.get_api_message("MSG-10460", [os.path.basename(file_name), var_name])
+                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                           str(inspect.currentframe().f_lineno), msgstr)
+                                        return False
 
-                                # 対話ファイルで使用されているグローバル変数退避
-                                self.lv_use_gbl_vars_list[var_name] = "1"
+                                    # 対話ファイルで使用されているグローバル変数退避
+                                    self.lv_use_gbl_vars_list[var_name] = "1"
 
-                                # グローバル変数の具体値を退避
-                                globalvarSetTo[var_name] = self.lva_global_vars_list[var_name]
-                                # 複数行具体値判定
-                                ret = self.chkMultilineValue(self.lva_global_vars_list[var_name])
-                                if ret is False:
-                                    msgstr = g.appmsg.get_api_message("MSG-10473", [var_name])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-                                    return False
+                                    # グローバル変数の具体値を退避
+                                    globalvarSetTo.append({var_name: self.lva_global_vars_list[var_name]})
 
+                                    # 複数行具体値判定
+                                    ret = self.chkMultilineValue(self.lva_global_vars_list[var_name])
+                                    if ret is False:
+                                        msgstr = g.appmsg.get_api_message("MSG-10473", [var_name])
+                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                           str(inspect.currentframe().f_lineno), msgstr)
+                                        return False
+
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                     # copy変数を対話ファイルから抜出しファイル管理に登録されていることを確認する。
                     local_vars = []
                     varsLineArray = []
@@ -7405,11 +7655,12 @@ class CreateAnsibleExecFiles():
                             result_code = False
                             continue
 
-                    copyvarSetTo = {}
+                    copyvarSetTo = []
                     copy_list = {}
                     host_vars_file = host_name
                     file_name2 = self.getAnsible_host_var_file(host_vars_file)
 
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                     obj = YamlParse()
                     copy_list = obj.Parse(file_name2)
                     error_detail = obj.GetLastError()
@@ -7423,16 +7674,18 @@ class CreateAnsibleExecFiles():
                         continue
 
                     # copy_list[ 変数名 ]=>具体値
-                    for var_name in file_copy_vars_list:
-                        # 対話ファイルで使用している変数がホストの変数に登録されているか判定
-                        if var_name not in copy_list:
-                            # enomoto エラーメッセージなくてよいの
-                            result_code = False
-                            # 未登録でも処理は続行する。
-                        else:
-                            # 変数を置換える具体値を設定
-                            copyvarSetTo[var_name] = copy_list[var_name]
+                    for var_name_list in file_copy_vars_list:
+                        for no, var_name in var_name_list.items():
+                            # 対話ファイルで使用している変数がホストの変数に登録されているか判定
+                            if var_name not in copy_list:
+                                # enomoto エラーメッセージなくてよいの
+                                result_code = False
+                                # 未登録でも処理は続行する。
+                            else:
+                                # 変数を置換える具体値を設定
+                                copyvarSetTo.append({var_name: copy_list[var_name]})
 
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                     # template変数を対話ファイルから抜出しファイル管理に登録されていることを確認する。
                     local_vars = []
                     varsLineArray = []
@@ -7457,7 +7710,7 @@ class CreateAnsibleExecFiles():
                             result_code = False
                             continue
 
-                    tpfvarSetTo = {}
+                    tpfvarSetTo = []
                     tpf_list = {}
                     host_vars_file2 = host_name
                     file_name3 = self.getAnsible_host_var_file(host_vars_file2)
@@ -7474,7 +7727,8 @@ class CreateAnsibleExecFiles():
                         result_code = False
                         continue
 
-                    for no, tpf_var_list in la_tpf_vars.items():
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+                    for tpf_var_list in la_tpf_vars:
                         for line_no, tpf_var_name in tpf_var_list.items():
                             # 対話ファイルで使用している変数がホストの変数に登録されているか判定
                             if tpf_var_name not in tpf_list:
@@ -7483,8 +7737,9 @@ class CreateAnsibleExecFiles():
                                 # 未登録でも処理は続行する。
                             else:
                                 # 変数を置換える具体値を設定
-                                tpfvarSetTo[tpf_var_name] = tpf_list[tpf_var_name]
+                                tpfvarSetTo.append({tpf_var_name: tpf_list[tpf_var_name]})
 
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                     # 変数具体値がTPF/CPF変数の場合の具体値置換えでない場合
                     if in_SpecialVarValReplace is False:
                         # ITA独自変数のリスト作成
@@ -7525,78 +7780,88 @@ class CreateAnsibleExecFiles():
                                 # ホスト変数が登録されていないので以降のチェックをスキップ
 
                         # 該当ホストの変数配列を取得
-                        varSetTo = {}
+                        varSetTo = []
                         vars_list = ina_host_vars[host_name]
                         # vars_list[ 変数名 ]=>具体値
-                        for var_name in file_vars_list:
-                            # 対話ファイルで使用している変数がホストの変数に登録されているか判定
-                            if var_name not in vars_list:
-                                if var_name == self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME:
-                                    msgstr = g.appmsg.get_api_message("MSG-10202", [os.path.basename(playbook), var_name, host_name])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-
-                                elif var_name == self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME:
-                                    msgstr = g.appmsg.get_api_message("MSG-10200", [os.path.basename(playbook), var_name, host_name])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-
-                                elif var_name == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME:
-                                    msgstr = g.appmsg.get_api_message("MSG-10201", [os.path.basename(playbook), var_name, host_name])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-
-                                elif var_name == self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME:
-                                    msgstr = g.appmsg.get_api_message("MSG-10199", [os.path.basename(playbook), var_name, host_name])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-
-                                # enomoto コンダクタは
-                                else:
-                                    msgstr = g.appmsg.get_api_message("MSG-10098", [os.path.basename(playbook), var_name, host_name])
-                                    self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                       str(inspect.currentframe().f_lineno), msgstr)
-                                # 未登録でも処理は続行する。
-                                result_code = False
-
-                            else:
-
-                                # 予約変数を使用している場合に対象システム一覧に該当データが登録されているか判定
-                                if vars_list[var_name] == self.LC_ANS_UNDEFINE_NAME:
-                                    # プロトコル未登録
+                        for file_vars_line in file_vars_list:
+                            for no, var_name in file_vars_line.items():
+                                # 対話ファイルで使用している変数がホストの変数に登録されているか判定
+                                if var_name not in vars_list:
                                     if var_name == self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME:
                                         msgstr = g.appmsg.get_api_message("MSG-10202", [os.path.basename(playbook), var_name, host_name])
                                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                           str(inspect.currentframe().f_lineno), msgstr)
-                                        result_code = False
+                                                        str(inspect.currentframe().f_lineno), msgstr)
 
-                                    # ユーザー名未登録
                                     elif var_name == self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME:
                                         msgstr = g.appmsg.get_api_message("MSG-10200", [os.path.basename(playbook), var_name, host_name])
                                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                           str(inspect.currentframe().f_lineno), msgstr)
-                                        result_code = False
+                                                        str(inspect.currentframe().f_lineno), msgstr)
 
-                                    # ログインパスワード未登録
                                     elif var_name == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME:
                                         msgstr = g.appmsg.get_api_message("MSG-10201", [os.path.basename(playbook), var_name, host_name])
                                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                           str(inspect.currentframe().f_lineno), msgstr)
-                                        result_code = False
+                                                        str(inspect.currentframe().f_lineno), msgstr)
 
-                                    # ホスト名未登録
                                     elif var_name == self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME:
                                         msgstr = g.appmsg.get_api_message("MSG-10199", [os.path.basename(playbook), var_name, host_name])
                                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
-                                                           str(inspect.currentframe().f_lineno), msgstr)
-                                        result_code = False
+                                                        str(inspect.currentframe().f_lineno), msgstr)
 
-                                # 変数を置換える具体値を設定
-                                varSetTo[var_name] = vars_list[var_name]
+                                    # enomoto コンダクタは
+                                    else:
+                                        msgstr = g.appmsg.get_api_message("MSG-10098", [os.path.basename(playbook), var_name, host_name])
+                                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                        str(inspect.currentframe().f_lineno), msgstr)
+                                    # 未登録でも処理は続行する。
+                                    result_code = False
+
+                                else:
+
+                                    # 予約変数を使用している場合に対象システム一覧に該当データが登録されているか判定
+                                    if vars_list[var_name] == self.LC_ANS_UNDEFINE_NAME:
+                                        # プロトコル未登録
+                                        if var_name == self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME:
+                                            msgstr = g.appmsg.get_api_message("MSG-10202", [os.path.basename(playbook), var_name, host_name])
+                                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno), msgstr)
+                                            result_code = False
+
+                                        # ユーザー名未登録
+                                        elif var_name == self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME:
+                                            msgstr = g.appmsg.get_api_message("MSG-10200", [os.path.basename(playbook), var_name, host_name])
+                                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno), msgstr)
+                                            result_code = False
+
+                                        # ログインパスワード未登録
+                                        elif var_name == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME:
+                                            msgstr = g.appmsg.get_api_message("MSG-10201", [os.path.basename(playbook), var_name, host_name])
+                                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno), msgstr)
+                                            result_code = False
+
+                                        # ホスト名未登録
+                                        elif var_name == self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME:
+                                            msgstr = g.appmsg.get_api_message("MSG-10199", [os.path.basename(playbook), var_name, host_name])
+                                            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                                            str(inspect.currentframe().f_lineno), msgstr)
+                                            result_code = False
+
+                                    var_value = vars_list[var_name]
+                                    # 変数を置換える具体値を設定
+                                    # ansible_vaultの対応により、機器一覧のパスワードの具体値を<< self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME >>に置き換える
+                                    # pioneerモジュール側で置換をする。
+                                    if var_name == self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME:
+                                        var_value = "<< {} >>".format(self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME)
+                                    # 具体値が暗号化されている変数の具体値を変数名<< 変数名 >>に置き換える
+                                    if var_name in ina_vault_vars:
+                                        var_value = vars_list[var_name]
+                                    varSetTo.append({var_name: var_value})
 
                     # グローバル変数を具体値で置換える
                     book_upd = False
 
+                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                     obj = WrappedStringReplaceAdmin(self.lv_objDBCA)
                     # 変数具体値がTPF/CPF変数の場合の具体値置換えでない場合
                     if in_SpecialVarValReplace is False:
@@ -7617,20 +7882,20 @@ class CreateAnsibleExecFiles():
 
                     # 変数具体値がTPF/CPF変数の場合の具体値置換えでない場合
                     if in_SpecialVarValReplace is False:
-                        if len(varSetTo) != 0:
-                            # ansible_vaultの対応により、機器一覧のパスワードの具体値を<< self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME >>に置き換える
-                            # pioneerモジュール側で置換をする。
-                            if len(varSetTo[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME]) == 1:
-                                varSetTo[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "<< {} >>".format(self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME)
-
-                            # 具体値が暗号化されている変数の具体値を変数名{{ 変数名 }}に置き換える
-                            for var_name, var_value in ina_vault_vars.items():
-                                varSetTo[var_name] = var_value
-
-                            # 変数を具体値で置換える
-                            obj.stringReplace(dataString, varSetTo)
-                            dataString = obj.getReplacedString()
-                            book_upd = True
+#                        if len(varSetTo) != 0:
+#                            # ansible_vaultの対応により、機器一覧のパスワードの具体値を<< self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME >>に置き換える
+#                            # pioneerモジュール側で置換をする。
+#                            if len(varSetTo[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME]) == 1:
+#                                varSetTo[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "<< {} >>".format(self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME)
+#
+#                            # 具体値が暗号化されている変数の具体値を変数名{{ 変数名 }}に置き換える
+#                            for var_name, var_value in ina_vault_vars.items():
+#                                varSetTo[var_name] = var_value
+#
+                        # 変数を具体値で置換える
+                        obj.stringReplace(dataString, varSetTo)
+                        dataString = obj.getReplacedString()
+                        book_upd = True
                     del obj
 
                     if book_upd is True:
@@ -7638,8 +7903,10 @@ class CreateAnsibleExecFiles():
                         fd.write(dataString)
                         fd.close()
 
+        print("result_code " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
         return result_code
 
+    # enomoto 未テスト
     def TemplateMmoduleAddPlaybook(self, in_tpf_path):
         """
         テンプレート管理を使用している場合、親PlaybookにTemplateMmoduleを追加してテンプレート内の変数解決する。
@@ -7648,29 +7915,31 @@ class CreateAnsibleExecFiles():
         Returns:
             True
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         playbookwrite = []
 
         # playbookの読み込み
         fd = open(self.getAnsible_playbook_file(), 'r')
         playbookread = fd.read().split("\n")
         fd.close()
+        print("playbookreadplaybookreadplaybookreadplaybookread")
+        print(playbookread)
+        print("playbookreadplaybookreadplaybookreadplaybookread")
 
         # Templateファイルがある場合、TemplateMmoduleを親playbookに追加する
         for line in playbookread:
+            # 読み込みデータを書き込みデータに代入
+            playbookwrite.append(line)
             if line == '  tasks:':
                 host_vars_path = self.setAnsibleSideFilePath(self.getAnsible_pioneer_template_hosts_vars_Dir(), self.LC_ITA_TMP_DIR)
-                #                     1234
                 playbookwrite.append("    - name: include")
                 playbookwrite.append("      include_vars: " + host_vars_path + "/{{ " + self.AnscObj.ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME + " }}")
                 for var_name, fileinfo in in_tpf_path.items():
-                    #                     1234
                     playbookwrite.append("    - name: Templatefile Create " + "[{}]".format(var_name))
-                    playbookwrite.append("      template: src='{}'  dest='{}".format(in_tpf_path[var_name]['src'], in_tpf_path[var_name]['dest']))
+                    playbookwrite.append("      template: src='{}'  dest='{}'".format(in_tpf_path[var_name]['src'], in_tpf_path[var_name]['dest']))
                     playbookwrite.append("      delegate_to: 127.0.0.1")
                     playbookwrite.append("      when: {} is defined".format(var_name))
-            # 読み込みデータを書き込みデータに代入
-            playbookwrite.append(line)
-
         fd = open(self.getAnsible_playbook_file(), "w")
         for line in playbookwrite:
             fd.write(line + "\n")
@@ -7678,7 +7947,7 @@ class CreateAnsibleExecFiles():
 
         return True
 
-##########################
+    # enomoto 未テスト
     def CheckChildPlaybookFormat(self, in_file_name):
         """
         子PlayBookファイルのフォーマットをチェックする。
@@ -7687,6 +7956,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # enomoto　処理削除
         result_code = True
 
@@ -7745,6 +8016,7 @@ class CreateAnsibleExecFiles():
 
         return result_code
 
+    # enomoto 未テスト
     def CheckDialogfileFormat(self, in_file_name, in_host_name):
         """
         対話ファイルの独自フォーマットをチェックする。
@@ -7753,6 +8025,7 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         ignore_errors_preg_match_array = []
         ignore_errors_preg_match_array.append(r'^\s*\S+: {1}\s*"(no|yes|\{\{ {1}\S+ {1}\}\})"\s*$')
@@ -8939,6 +9212,7 @@ class CreateAnsibleExecFiles():
 
         return result_code
 
+    # enomoto 未テスト
     def str_to_num(self, s):
         try:
             n = float(s)
@@ -8947,6 +9221,7 @@ class CreateAnsibleExecFiles():
 
         return n
 
+    # enomoto 未テスト
     def beforCommandCheck(self, mysts, result_code, state_info, state_line_no, command_info, command_line_no, in_file_name, in_host_name):
         """
         一個前のコマンドに問題がないか判定
@@ -8962,6 +9237,7 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False, mysts, result_code, state_info, state_line_no, command_info, command_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # 一個前のがlocalactionの場合
         if mysts == 9:
@@ -8991,6 +9267,7 @@ class CreateAnsibleExecFiles():
 
         return True, mysts, result_code, state_info, state_line_no, command_info, command_line_no
 
+    # enomoto 未テスト
     def checkstateCommand(self, in_state_sts, in_result_code, in_state_info, in_state_line_no, in_file_name, in_host_name):
         """
         一個前のコマンドに問題がないか判定
@@ -9004,6 +9281,8 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False, in_state_sts, in_result_code, in_state_info, in_state_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # パラメータリスト
         cmd_list = ["state", "prompt", "shell", "parameter", "- (parameter)", "stdout_file", "success_exit", "ignore_errors"]
 
@@ -9086,6 +9365,7 @@ class CreateAnsibleExecFiles():
 
         return result_code, in_state_sts, in_result_code, in_state_info, in_state_line_no
 
+    # enomoto 未テスト
     def errorstateCommand(self, in_mysts, in_result_code, in_state_info, in_state_line_no, in_error_code, ina_error_info):
         """
         stateコマンドのパラメータでエラーがあった場合の処理
@@ -9099,6 +9379,7 @@ class CreateAnsibleExecFiles():
         Returns:
             in_mysts, in_result_code, in_state_info, in_state_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # エラーメッセージを出力
         msgstr = g.appmsg.get_api_message(in_error_code, ina_error_info)
@@ -9113,6 +9394,7 @@ class CreateAnsibleExecFiles():
 
         return in_mysts, in_result_code, in_state_info, in_state_line_no
 
+    # enomoto 未テスト
     def initstateCommandInfo(self, in_state_info, in_state_line_no, in_line_no):
         """
         stateコマンドのパラメータ情報初期化
@@ -9123,6 +9405,7 @@ class CreateAnsibleExecFiles():
         Returns:
             in_state_info, in_state_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # stateコマンドのパラメータ設定有無をクリア
         in_state_info = {}
@@ -9140,6 +9423,7 @@ class CreateAnsibleExecFiles():
 
         return in_state_info, in_state_line_no
 
+    # enomoto 未テスト
     def checkCommand(self, in_mysts, in_result_code, in_command_info, in_command_line_no, in_file_name, in_host_name):
         """
         対話ファイルの独自フォーマットをチェックする。
@@ -9153,6 +9437,7 @@ class CreateAnsibleExecFiles():
         Returns:
             True/False, in_mysts, in_result_code, in_command_info, in_command_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # パラメータリスト
         cmd_list = [
@@ -9247,6 +9532,7 @@ class CreateAnsibleExecFiles():
 
         return result_code, in_mysts, in_result_code, in_command_info, in_command_line_no
 
+    # enomoto 未テスト
     def errorCommand(self, in_mysts, in_result_code, in_command_info, in_command_line_no, in_error_code, ina_error_info):
         """
         commandコマンドのパラメータでエラーがあった場合の処理
@@ -9260,6 +9546,7 @@ class CreateAnsibleExecFiles():
         Returns:
             in_mysts, in_result_code, in_command_info, in_command_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # エラーメッセージを出力
         msgstr = g.appmsg.get_api_message(in_error_code, ina_error_info)
@@ -9274,6 +9561,7 @@ class CreateAnsibleExecFiles():
 
         return in_mysts, in_result_code, in_command_info, in_command_line_no
 
+    # enomoto 未テスト
     def initCommandInfo(self, in_command_info, in_command_line_no, in_line_no):
         """
         commandコマンドのパラメータ情報初期化
@@ -9284,6 +9572,7 @@ class CreateAnsibleExecFiles():
         Returns:
             in_command_info, in_command_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # commandコマンドのパラメータ設定有無をクリア
         in_command_info = {}
@@ -9305,6 +9594,7 @@ class CreateAnsibleExecFiles():
 
         return in_command_info, in_command_line_no
 
+    # enomoto 未テスト
     def initlocalactionInfo(self, in_localaction_info, in_localaction_line_no, in_line_no):
         """
         localactionコマンドのパラメータ情報初期化
@@ -9315,6 +9605,7 @@ class CreateAnsibleExecFiles():
         Returns:
             in_localaction_info, in_localaction_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # localactionコマンドのパラメータ設定有無をクリア
         in_localaction_info = {}
@@ -9326,6 +9617,7 @@ class CreateAnsibleExecFiles():
 
         return in_localaction_info, in_localaction_line_no
 
+    # enomoto 未テスト
     def errorlocalaction(self, in_mysts, in_result_code, in_localaction_info, in_localaction_line_no, in_error_code, ina_error_info):
         """
         localactionコマンドのパラメータでエラーがあった場合の処理
@@ -9339,6 +9631,7 @@ class CreateAnsibleExecFiles():
         Returns:
             in_mysts, in_result_code, in_localaction_info, in_localaction_line_no
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
 
         # エラーメッセージを出力
         msgstr = g.appmsg.get_api_message(in_error_code, ina_error_info)
@@ -9353,13 +9646,17 @@ class CreateAnsibleExecFiles():
 
         return in_mysts, in_result_code, in_localaction_info, in_localaction_line_no
 
+    # enomoto 未テスト
     def getArrayTypeValuecount(self, val):
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         ret = self.isJsonString(val)
         if ret is False:
             return 0
         else:
             return len(val)
 
+    # enomoto 未テスト
     def getDBLegacyPlaybookList(self, in_movement_id, mt_child_playbooks):
         """
         Legacyで実行する子PlayBookファイルをデータベースより取得する。
@@ -9371,6 +9668,8 @@ class CreateAnsibleExecFiles():
         Returns:
             bool, mt_child_playbooks
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         # B_ANSIBLE_LNS_PLAYBOOKに対するDISUSE_FLAG = '0'の
         # 条件はSELECT文に入れない。
         sql = """\
@@ -9402,10 +9701,8 @@ class CreateAnsibleExecFiles():
 
         for row in rows:
             if row['DISUSE_FLAG'] == '0':
-                if len(row['PLAYBOOK_MATTER_FILE']) == 0:
-                    # enomoto メッセージ追加
-                    # playbook素材集に対話ファイルが登録されていません。(playbook素材集 項番:{})
-                    msgstr = g.appmsg.get_api_message("MSG-99999", [row['PLAYBOOK_MATTER_ID']])
+                if not row['PLAYBOOK_MATTER_FILE']:
+                    msgstr = g.appmsg.get_api_message("MSG-10906", [row['PLAYBOOK_MATTER_ID']])
                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                        str(inspect.currentframe().f_lineno), msgstr)
                     return False, mt_child_playbooks
@@ -9423,6 +9720,8 @@ class CreateAnsibleExecFiles():
             # DISUSE_FLAG = '1'は読み飛ばし
 
         # 紐付の数を確認
+        # enomoto これはデバック行かな？
+        row = []
         if len(rows) < 1:
             msgstr = g.appmsg.get_api_message("MSG-10180", [in_movement_id])
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
@@ -9438,6 +9737,7 @@ class CreateAnsibleExecFiles():
 
         return True, mt_child_playbooks
 
+    # enomoto 未テスト
     def getDBPioneerDialogFileList(self, in_execute_no, in_movement_id, in_operation_id, mt_dialog_files, ina_hostostypelist):
         """
         Pioneerで実行する対話ファイルをデータベースより取得する。
@@ -9453,6 +9753,8 @@ class CreateAnsibleExecFiles():
         Returns:
             bool, mt_dialog_files
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         sql = """
               SELECT
                   TBL_1.MVMT_MATL_LINK_ID,
@@ -9533,7 +9835,7 @@ class CreateAnsibleExecFiles():
             if row['DIALOG_TYPE_ID_COUNT'] == 0:
                 # enomoto メッセージ追加
                 # Movement-対話種別紐付の対話種別が登録されていません。(Movement-対話種別紐付 項番:{})
-                msgstr = g.appmsg.get_api_message("MSG-9999", [row['MVMT_MATL_LINK_ID']])
+                msgstr = g.appmsg.get_api_message("MSG-10907", [row['MVMT_MATL_LINK_ID']])
                 self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                    str(inspect.currentframe().f_lineno), msgstr)
                 return False, mt_dialog_files
@@ -9542,7 +9844,7 @@ class CreateAnsibleExecFiles():
             if row['OS_TYPE_ID_COUNT'] == 0:
                 # enomoto メッセージ追加
                 # Movement-対話種別紐付の対話種別に紐づくOS種別が登録されていません。(Movement-対話種別紐付 項番:{})
-                msgstr = g.appmsg.get_api_message("MSG-9999", [row['MVMT_MATL_LINK_ID']])
+                msgstr = g.appmsg.get_api_message("MSG-10908", [row['MVMT_MATL_LINK_ID']])
                 self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                    str(inspect.currentframe().f_lineno), msgstr)
                 return False, mt_dialog_files
@@ -9615,8 +9917,9 @@ class CreateAnsibleExecFiles():
 
         return ret_code, mt_dialog_files
 
+    # enomoto pioneerのみの処理確認
     def getDBVarList(self,
-                     in_execute_no,  # enomoto 追加
+                     in_execute_no,
                      in_movement_id,
                      in_operation_id,
                      mt_host_vars,
@@ -9644,6 +9947,8 @@ class CreateAnsibleExecFiles():
         Returns:
             bool, mt_host_vars, mt_pionner_template_host_vars, mt_vault_vars, mt_vault_host_vars_file_list, mt_DB_child_vars_list
         """
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
+
         vars_assign_seq_list = {}
 
         # T_ANSP_MVMT_VAR_LINKに対するDISUSE_FLAG = '0'の
@@ -9719,16 +10024,14 @@ class CreateAnsibleExecFiles():
                          self.AnscObj.vg_ansible_vars_assignDB,
                          self.AnscObj.vg_ansible_pattern_vars_linkDB)
 
-        rows = self.lv_objDBCA.sql_execute(sql, [in_execute_no, in_movement_id, in_operation_id,
-                                                 in_execute_no, in_movement_id, in_operation_id,
-                                                 in_execute_no, in_movement_id, in_operation_id])
+        rows = self.lv_objDBCA.sql_execute(sql, [in_execute_no, in_operation_id, in_movement_id,
+                                                 in_execute_no, in_operation_id, in_movement_id,
+                                                 in_execute_no, in_operation_id, in_movement_id])
 
         mt_host_vars = {}
         mt_pionner_template_host_vars = {}
-
         tgt_row = []
         for row in rows:
-
             ret = self.setFileUploadCloumnFileEnv(row)
             if ret is not True:
                 return False, mt_host_vars, mt_pionner_template_host_vars, mt_vault_vars, mt_vault_host_vars_file_list, mt_DB_child_vars_list
@@ -9752,7 +10055,6 @@ class CreateAnsibleExecFiles():
                     msgstr = g.appmsg.get_api_message("MSG-10186", [row['ASSIGN_ID']])
                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                        str(inspect.currentframe().f_lineno), msgstr)
-
                     return False, mt_host_vars, mt_pionner_template_host_vars, mt_vault_vars, mt_vault_host_vars_file_list, mt_DB_child_vars_list
 
                 if not row['VARS_NAME']:
@@ -9793,10 +10095,9 @@ class CreateAnsibleExecFiles():
                         #  複数変数で代入順序が重複していないか判定する。
                         keyStr = "{}_{}_{}".format(row['HOST_NAME'], row['VARS_NAME'], row['ASSIGN_SEQ'])
                         if keyStr in vars_assign_seq_list:
-                            msgstr = g.appmsg.get_api_message("MSG-10417",
-                                                              [row['ASSIGN_ID']],
-                                                              vars_assign_seq_list[msgstr],
-                                                              row['VARS_NAME'], row['ASSIGN_SEQ'])
+                            msgstr = g.appmsg.get_api_message("MSG-10417", [row['ASSIGN_ID'],
+                                                                            vars_assign_seq_list[keyStr],
+                                                                            row['VARS_NAME'], row['ASSIGN_SEQ']])
                             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                                str(inspect.currentframe().f_lineno), msgstr)
 
@@ -9864,7 +10165,7 @@ class CreateAnsibleExecFiles():
                         if row['HOST_NAME'] not in mt_pionner_template_host_vars:
                             mt_pionner_template_host_vars[row['HOST_NAME']] = {}
 
-                        if row['VARS_NAME'] not in mt_pionner_template_host_vars['HOST_NAME']:
+                        if row['VARS_NAME'] not in mt_pionner_template_host_vars[row['HOST_NAME']]:
                             mt_pionner_template_host_vars[row['HOST_NAME']][row['VARS_NAME']] = ""
 
                         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
@@ -9919,7 +10220,7 @@ class CreateAnsibleExecFiles():
                 if not row['ASSIGN_SEQ']:
                     assign_seq = True
 
-            if ['DISUSE_FLAG'] == '0':
+            if row['DISUSE_FLAG'] == '0':
                 #  代入値管理のみあるホスト変数(作業対象ホストにない)をはじく
                 if row['PHO_LINK_HOST_COUNT'] == 0:
                     continue
@@ -10028,7 +10329,7 @@ class CreateAnsibleExecFiles():
 
                         if row['HOST_NAME'] not in mt_pionner_template_host_vars:
                             mt_pionner_template_host_vars[row['HOST_NAME']] = {}
-                        if row['VARS_NAME'] not in mt_pionner_template_host_vars['HOST_NAME']:
+                        if row['VARS_NAME'] not in mt_pionner_template_host_vars[row['HOST_NAME']]:
                             mt_pionner_template_host_vars[row['HOST_NAME']][row['VARS_NAME']] = ""
 
                         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
@@ -10078,10 +10379,14 @@ class CreateAnsibleExecFiles():
         return (True, mt_host_vars, mt_pionner_template_host_vars, mt_vault_vars,
                 mt_vault_host_vars_file_list, mt_DB_child_vars_list)
 
+    # enomoto 未テスト
     def var_check(self, dialog_file_name, host_name, dialog_file_vars, host_variable_file_array):
+        print("Now in " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
         for dialog_row in dialog_file_vars:
             command = ""
             for dialog_key, dialog_var in dialog_row.items():
+                if isinstance(dialog_var, str) is False:
+                    dialog_var = str(dialog_var)
                 dialog_key = dialog_key.strip()
                 if command == "":
                     command = dialog_key
@@ -10119,11 +10424,93 @@ class CreateAnsibleExecFiles():
 
         return True
 
-    # enomoto mt_dialog_file_vars はリスト
-    def value_extraction(self, array, mae, mt_dialog_file_vars):
-        for key, array_1 in array.items():
-            if isinstance(array_1, dict):
-                self.value_extraction(array_1, key, mt_dialog_file_vars)
+    def value_extraction(self, dialog_array, key_name, mt_dialog_line_list):
+        """
+        処理内容
+          対話ファイルの内容を行単位のリスト型に変換する。
+        パラメータ
+          key_name:            行毎のキー名
+          dialog_array:        対話ファイルをパースした内容
+                               想定対話ファイル
+                                 conf:
+                                   timeout: 10
+                                 exec_list:
+                                   - expect: 'assword:'
+                                     exec: '{{ __loginpassword__ }}'
+                                   - localaction: "{{ VAR_localaction_cmd }}"
+                                     ignore_errors: "{{ VAR_localaction_ignore_errors_YES }}"
+                                  - state: "{{ VAR_state_cmd }}"
+                                    prompt: "{{ VAR_pro }}"
+                                    shell: "{{ VAR_state_shell }}"
+                                    stdout_file: "{{ VAR_state_stdout }}"
+                                    success_exit: "{{ VAR_state_success_exit_NO }}"
+                                    ignore_errors: "{{ VAR_state_ignore_errors_YES }}"
+                                    parameter:
+                                      - "{{ VAR_state_list_ok_1 }}"
+                                      - "{{ VAR_state_list_ok_2 }}"
+                                  - command: 'echo {{ item.0 }} {{ item.1 }} {{ VAR_1 }}  >> /temp/plog'
+                                    prompt:  '{{ item.2 }}'
+                                    timeout: '{{ item.3 }}'
+                                    when:
+                                      - VAR_when is undefine
+                                    exec_when:
+                                      - "{{ item.4 }} == OK"
+                                    failed_when:
+                                      - stdout match({{ item.5 }})
+                                    with_items:
+                                      - '{{ VAR_list_1 }}'
+                                      - '{{ VAR_list_2 }}'
+                                      - '{{ VAR_prompt_list }}'
+                                      - '{{ VAR_timeout_list }}'
+                                      - '{{ VAR_exec_when_list }}'
+                                      - '{{ VAR_failed_when_list }}'
+          key_name:            行毎のキー名
+          mt_dialog_line_list: 行単位に変換したリスト型
+                               [{'timeout': 10},
+                                {'expect': 'assword:'},
+                                {'exec': '{{ __loginpassword__ }}'},
+                                {'localaction': 'echo {{ VAR_line }}'},
+                                {'localaction': '{{ VAR_localaction_cmd }}'},
+                                {'ignore_errors': '{{ VAR_localaction_ignore_errors_YES }}'},
+                                {'state': '{{ VAR_state_cmd }}'},
+                                {'prompt': '{{ VAR_pro }}'},
+                                {'shell': '{{ VAR_state_shell }}'},
+                                {'stdout_file': '{{ VAR_state_stdout }}'},
+                                {'success_exit': '{{ VAR_state_success_exit_NO }}'},
+                                {'ignore_errors': '{{ VAR_state_ignore_errors_YES }}'},
+                                {'parameter': '{{ VAR_state_list_ok_1 }}'},
+                                {'parameter': '{{ VAR_state_list_ok_2 }}'},
+                                {'command': 'echo {{ item.0 }} {{ item.1 }} {{ VAR_1 }}  >> /temp/plog'},
+                                {'prompt': '{{ item.2 }}'},
+                                {'timeout': '{{ item.3 }}'},
+                                {'when': 'VAR_when is undefine'},
+                                {'exec_when': '{{ item.4 }} == OK'},
+                                {'failed_when': 'stdout match({{ item.5 }})'},
+                                {'with_items': '{{ VAR_list_1 }}'},
+                                {'with_items': '{{ VAR_list_2 }}'},
+                                {'with_items': '{{ VAR_prompt_list }}'},
+                                {'with_items': '{{ VAR_timeout_list }}'},
+                                {'with_items': '{{ VAR_exec_when_list }}'},
+                                {'with_items': '{{ VAR_failed_when_list }}'}]
+        戻り値
+          true: 正常
+          行単位に変換したリスト型
+        """
+        for line_key, dialog_line_array in self.php_array(dialog_array):
+            if isinstance(dialog_line_array, dict) or isinstance(dialog_line_array, list):
+                self.value_extraction(dialog_line_array, line_key, mt_dialog_line_list)
             else:
-                mt_dialog_file_vars.append({mae: array_1})
-        return True
+                if type(line_key) is int:
+                    pass
+                else:
+                    # 該当行のキー名を上書き
+                    key_name = line_key
+                mt_dialog_line_list.append({key_name: dialog_line_array})
+        return True, mt_dialog_line_list
+
+
+    def nestArrayDefineCheck(self, nestArray, FstItem, SstItem):
+        if FstItem in nestArray:
+            if SstItem in nestArray[FstItem]:
+                return True
+        return False

@@ -988,6 +988,8 @@
     "MSG-10921": "IP address in the device list is blank. ITA proprietary variable cannot be used in the inventory file addition option. (ITA proprietary variable: host:{})",
     "MSG-10922": "ITA proprietary variables cannot be used in the dialog file because DNS host of device list is blank. (Dialog file:{} ITA proprietary variable:{} host:{})",
     "MSG-10923": "ITA proprietary variables cannot be used in the dialog file because IP address of device list is blank. (Dialog file:{} ITA proprietary variable:{} host:{})",
+    "MSG-10924": "ITA proprietary variable cannot be used in template file because DNS host of device list is blank. ({}:{} Template file:{} ITA proprietary variable:{} host:{})",
+    "MSG-10925": "ITA proprietary variable cannot be used in template file because IP address of device list is blank. ({}:{} Template file:{} ITA proprietary variable:{} host:{})",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",

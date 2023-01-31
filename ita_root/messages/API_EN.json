@@ -203,7 +203,7 @@
     "MSG-10095": "Failed to copy dialog file. (Dialog file:{})",
     "MSG-10096": "The variable's specific value in the Playbook is not registered in the Substitution value list.. (Playbook:{} Variable: host:{})",
     "MSG-10097": "Host variable is not registered. (host:{})",
-    "MSG-10098": "The variable's specific value in the dialog file is not registered in the Substitution value list. (host:{} Dialog file:{} Variable:{})",
+    "MSG-10098": "The variable's specific value in the dialog file is not registered in the Substitution value list. (Dialog file:{} ITA proprietary variable:{} host:{})",
     "MSG-10099": "Failed to embed the dialog file's specific value. (host:{} Dialog file:{})",
     "MSG-10100": "Failed to read Playbook. (Playbook:{})",
     "MSG-10101": "The Playbook contains an indent. (Playbook:{} line:{})",

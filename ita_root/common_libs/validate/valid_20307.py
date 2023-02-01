@@ -385,12 +385,11 @@ def external_valid_menu_after(objdbca, objtable, option):
                     +" T_ANSP_VALUE_AUTOREG" \
                     +" WHERE" \
                     +" COLUMN_ID <> %s AND" \
-                    +" MENU_ID = %s AND " \
                     +" MOVEMENT_ID = %s AND" \
                     +" DISUSE_FLAG = '0'" \
                     +" AND("
 
-        aryForBind = [columnId, rg_menu_id, rg_pattern_id]
+        aryForBind = [columnId, rg_pattern_id]
 
         # Key変数が必須の場合
         strQuery += " ("
@@ -417,7 +416,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                 retBool = False
                 boolExecuteContinue = False
                 # 次の項目が、[項番]:({})のレコードと重複しています。\n[(メニューグループ:メニュー),(Movement),(変数),(代入順序)]
-                msg = g.appmsg.get_api_message("MSG-10430", [dupnostr])
+                msg = g.appmsg.get_api_message("MSG-10932", [dupnostr])
         del retArray
 
         # 縦型メニューかの確認。

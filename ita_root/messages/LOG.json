@@ -996,6 +996,7 @@
     "MSG-10929": "ITA original variable Conductor instance ID cannot be used because it is not Conductor execution. addition option. (ITA proprietary variable: host:{})",
     "MSG-10930": "ITA original variable Conductor instance ID cannot be used because it is not Conductor execution. (Dialog file:{} ITA proprietary variable:{} host:{})",
     "MSG-10931": "ITA original variable Conductor instance ID cannot be used because it is not Conductor execution. ({}:{} Template file:{} ITA proprietary variable:{} host:{})",
+    "MSG-10932": "Following items are duplicated with the records of [Item No.]:({}). n [(Movement),(Variable),(Substitution order)]",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",

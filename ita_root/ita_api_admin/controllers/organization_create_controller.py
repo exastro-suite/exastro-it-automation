@@ -92,11 +92,12 @@ def organization_create(body, organization_id):  # noqa: E501
         g.applogger.debug("executed sql/organization.sql")
 
         # make gitlab user and token value
-        gitlab_agent = GitLabAgent()
-        res = gitlab_agent.create_user(org_db_name)
-        g.applogger.debug("GitLab create_user : {}".format(res))
-        data["GITLAB_USER"] = res['username']
-        data["GITLAB_TOKEN"] = gitlab_agent.create_personal_access_tokens(res['id'], res['username'])
+        if (os.environ.get('GITLAB_HOST') is not None) and (len(os.environ.get('GITLAB_HOST')) > 0):
+            gitlab_agent = GitLabAgent()
+            res = gitlab_agent.create_user(org_db_name)
+            g.applogger.debug("GitLab create_user : {}".format(res))
+            data["GITLAB_USER"] = res['username']
+            data["GITLAB_TOKEN"] = gitlab_agent.create_personal_access_tokens(res['id'], res['username'])
 
         # register organization-db connect infomation and gitlab connect infomation
         common_db.db_transaction_start()
@@ -179,14 +180,15 @@ def organization_delete(organization_id):  # noqa: E501
     org_root_db.db_disconnect()
 
     # delete gitlab user and projects
-    gitlab_agent = GitLabAgent()
-    user_list = gitlab_agent.get_user_by_username(connect_info['GITLAB_USER'])
-    for user in user_list:
-        gitlab_user_id = user['id']
-        projects = gitlab_agent.get_all_project_by_user_id(gitlab_user_id)
-        for project in projects:
-            gitlab_agent.delete_project(project['id'])
-        gitlab_agent.delete_user(gitlab_user_id)
+    if (os.environ.get('GITLAB_HOST') is not None) and (len(os.environ.get('GITLAB_HOST')) > 0):
+        gitlab_agent = GitLabAgent()
+        user_list = gitlab_agent.get_user_by_username(connect_info['GITLAB_USER'])
+        for user in user_list:
+            gitlab_user_id = user['id']
+            projects = gitlab_agent.get_all_project_by_user_id(gitlab_user_id)
+            for project in projects:
+                gitlab_agent.delete_project(project['id'])
+            gitlab_agent.delete_user(gitlab_user_id)
 
     # disuse org-db connect infomation
     data = {

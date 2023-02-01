@@ -466,6 +466,9 @@ components:
         execution_engine:
           type: string
           nullable: true
+        representative_server:
+          type: string
+          nullable: true
         ansible_automation_controller_protocol:
           type: string
           nullable: true
@@ -487,11 +490,32 @@ components:
         proxy_port:
           type: string
           nullable: true
+      example:
+        proxy_port: proxy_port
+        execution_engine: execution_engine
+        representative_server: representative_server
+        delete_runtime_data: delete_runtime_data
+        ansible_automation_controller_port: ansible_automation_controller_port
+        authentication_token: authentication_token
+        proxy_address: proxy_address
+        organization_name: organization_name
+        ansible_automation_controller_protocol: ansible_automation_controller_protocol
     apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible:
       type: object
       properties:
         parameter:
           $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible_parameter'
+      example:
+        parameter:
+          proxy_port: proxy_port
+          execution_engine: execution_engine
+          representative_server: representative_server
+          delete_runtime_data: delete_runtime_data
+          ansible_automation_controller_port: ansible_automation_controller_port
+          authentication_token: authentication_token
+          proxy_address: proxy_address
+          organization_name: organization_name
+          ansible_automation_controller_protocol: ansible_automation_controller_protocol
     apiitaorganization_idinitialsettingsansible_initial_data:
       type: object
       properties:
@@ -566,62 +590,6 @@ components:
           passphrase: passphrase
           user: user
           remarks: remarks
-    inline_response_200_1_data_organization_id_initial_data_interface_info_ansible_parameter:
-      type: object
-      properties:
-        execution_engine:
-          type: string
-          nullable: true
-        representative_server:
-          type: string
-          nullable: true
-        ansible_automation_controller_protocol:
-          type: string
-          nullable: true
-        ansible_automation_controller_port:
-          type: string
-          nullable: true
-        organization_name:
-          type: string
-          nullable: true
-        authentication_token:
-          type: string
-          nullable: true
-        delete_runtime_data:
-          type: string
-          nullable: true
-        proxy_address:
-          type: string
-          nullable: true
-        proxy_port:
-          type: string
-          nullable: true
-      example:
-        proxy_port: proxy_port
-        execution_engine: execution_engine
-        representative_server: representative_server
-        delete_runtime_data: delete_runtime_data
-        ansible_automation_controller_port: ansible_automation_controller_port
-        authentication_token: authentication_token
-        proxy_address: proxy_address
-        organization_name: organization_name
-        ansible_automation_controller_protocol: ansible_automation_controller_protocol
-    inline_response_200_1_data_organization_id_initial_data_interface_info_ansible:
-      type: object
-      properties:
-        parameter:
-          $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data_interface_info_ansible_parameter'
-      example:
-        parameter:
-          proxy_port: proxy_port
-          execution_engine: execution_engine
-          representative_server: representative_server
-          delete_runtime_data: delete_runtime_data
-          ansible_automation_controller_port: ansible_automation_controller_port
-          authentication_token: authentication_token
-          proxy_address: proxy_address
-          organization_name: organization_name
-          ansible_automation_controller_protocol: ansible_automation_controller_protocol
     inline_response_200_1_data_organization_id_initial_data:
       type: object
       properties:
@@ -630,7 +598,7 @@ components:
           items:
             $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data_ansible_automation_controller_host_list'
         interface_info_ansible:
-          $ref: '#/components/schemas/inline_response_200_1_data_organization_id_initial_data_interface_info_ansible'
+          $ref: '#/components/schemas/apiitaorganization_idinitialsettingsansible_initial_data_interface_info_ansible'
       example:
         interface_info_ansible:
           parameter:
@@ -771,10 +739,10 @@ components:
       description: Credentials or access token for API
       scheme: bearer
       bearerFormat: JWT
-      x-bearerInfoFunc: controllers.authorization_controller.check_BearerAuth
+      x-bearerInfoFunc: swagger_server.controllers.authorization_controller.check_BearerAuth
     BasicAuth:
       type: http
       description: Value converted from ID/Password in base64
       scheme: basic
-      x-basicInfoFunc: controllers.authorization_controller.check_BasicAuth
+      x-basicInfoFunc: swagger_server.controllers.authorization_controller.check_BasicAuth
 

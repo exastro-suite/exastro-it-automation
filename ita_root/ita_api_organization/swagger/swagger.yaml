@@ -3095,11 +3095,11 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/upload/:
-    get:
+    post:
       tags:
       - Export Import
       description: メニューインポートのアップロード
-      operationId: get_menu_import_upload
+      operationId: post_menu_import_upload
       parameters:
       - name: organization_id
         in: path
@@ -3117,6 +3117,11 @@ paths:
         explode: false
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/import_upload_body'
       responses:
         "200":
           description: Success
@@ -3277,11 +3282,11 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.export_import_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/upload/:
-    get:
+    post:
       tags:
       - Export Import
       description: Excel一括インポートのアップロード
-      operationId: get_excel_bulk_upload
+      operationId: post_excel_bulk_upload
       parameters:
       - name: organization_id
         in: path
@@ -3299,6 +3304,11 @@ paths:
         explode: false
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bulk_upload_body'
       responses:
         "200":
           description: Success
@@ -5039,12 +5049,22 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
+    import_upload_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
     import_execute_body:
       properties:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
     export_execute_body_1:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    bulk_upload_body:
       properties:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
@@ -5863,10 +5883,10 @@ components:
       description: Credentials or access token for API
       scheme: bearer
       bearerFormat: JWT
-      x-bearerInfoFunc: controllers.authorization_controller.check_BearerAuth
+      x-bearerInfoFunc: swagger_server.controllers.authorization_controller.check_BearerAuth
     BasicAuth:
       type: http
       description: Value converted from ID/Password in base64
       scheme: basic
-      x-basicInfoFunc: controllers.authorization_controller.check_BasicAuth
+      x-basicInfoFunc: swagger_server.controllers.authorization_controller.check_BasicAuth
 

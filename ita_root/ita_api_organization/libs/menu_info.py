@@ -38,10 +38,10 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     t_common_column_class = 'T_COMN_COLUMN_CLASS'
     t_common_column_group = 'T_COMN_COLUMN_GROUP'
     t_common_menu_group = 'T_COMN_MENU_GROUP'
-    
+
     # 変数定義
     lang = g.LANGUAGE
-    
+
     # メニュー管理のレコードが空の場合、検索する
     if len(menu_record) == 0:
         menu_record = objdbca.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [menu, 0])
@@ -76,7 +76,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     web_print_confirm = menu_record[0].get('WEB_PRINT_CONFIRM')
     xls_print_limit = menu_record[0].get('XLS_PRINT_LIMIT')
     sort_key = menu_record[0].get('SORT_KEY')
-    
+
     # メニュー-テーブル紐付管理から情報取得
     menu_info = menu_table_link_record[0].get('MENU_INFO_' + lang.upper())
     sheet_type = menu_table_link_record[0].get('SHEET_TYPE')
@@ -90,14 +90,14 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     row_update_flag = menu_table_link_record[0].get('ROW_UPDATE_FLAG')
     row_disuse_flag = menu_table_link_record[0].get('ROW_DISUSE_FLAG')
     row_reuse_flag = menu_table_link_record[0].get('ROW_REUSE_FLAG')
-    
+
     # 『メニューグループ管理』テーブルから対象のデータを取得
     ret = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID = %s AND DISUSE_FLAG = %s', [menu_group_id, 0])
     if not ret:
         log_msg_args = [menu]
         api_msg_args = [menu]
         raise AppException("499-00004", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     menu_group_name = ret[0].get('MENU_GROUP_NAME_' + lang.upper())
     parent_menu_group_id = ret[0].get('PARENT_MENU_GROUP_ID')
     parent_menu_group_name = None
@@ -105,7 +105,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
         ret = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID = %s AND DISUSE_FLAG = %s', [parent_menu_group_id, 0])
         if ret:
             parent_menu_group_name = ret[0].get('MENU_GROUP_NAME_' + lang.upper())
-    
+
     menu_info_data = {
         'menu_info': menu_info,
         'menu_group_id': menu_group_id,
@@ -134,13 +134,13 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
         'sort_key': sort_key,
         'privilege': privilege
     }
-    
+
     # 『カラムクラスマスタ』テーブルからcolumn_typeの一覧を取得
     ret = objdbca.table_select(t_common_column_class, 'WHERE DISUSE_FLAG = %s', [0])
     column_class_master = {}
     for record in ret:
         column_class_master[record.get('COLUMN_CLASS_ID')] = record.get('COLUMN_CLASS_NAME')
-    
+
     # 『カラムグループ管理』テーブルからカラムグループ一覧を取得
     column_group_list = {}
     ret = objdbca.table_select(t_common_column_group, 'WHERE DISUSE_FLAG = %s', [0])
@@ -154,10 +154,10 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                 "parent_column_group_id": record.get('PA_COL_GROUP_ID')
             }
             column_group_list[record.get('COL_GROUP_ID')] = add_data
-    
+
     # 『メニュー-カラム紐付管理』テーブルから対象のデータを取得
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY COLUMN_DISP_SEQ ASC', [menu_id, 0])
-    
+
     column_info_data = {}
     tmp_column_group = {}
     tmp_column_group_input = {}
@@ -177,15 +177,15 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
             validate_option = record.get('VALIDATE_OPTION')
             if type(validate_option) is str:
                 validate_option = validate_option.replace('\n', '')
-                
+
             before_validate_register = record.get('BEFORE_VALIDATE_REGISTER')
             if type(before_validate_register) is str:
                 before_validate_register = before_validate_register.replace('\n', '')
-                
+
             after_validate_register = record.get('AFTER_VALIDATE_REGISTER')
             if type(after_validate_register) is str:
                 after_validate_register = after_validate_register.replace('\n', '')
-            
+
             # カラムグループIDがあればカラムグループ名を取得
             column_group_name = None
             column_group_id = record.get('COL_GROUP_ID')
@@ -193,16 +193,16 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                 target_data = column_group_list.get(column_group_id)
                 if target_data:
                     column_group_name = target_data.get('full_column_group_name')
-            
+
             # カラムクラスIDを取得
             column_class = record.get('COLUMN_CLASS')
-            
+
             # カラム名(rest)を取得
             column_name_rest = record.get('COLUMN_NAME_REST')
-            
+
             # 初期値(initial_value)を取得
             initial_value = record.get('INITIAL_VALUE')
-            
+
             # カラムクラスが「7: IDColumn」「21: JsonIDColumn」かつ初期値が設定されている場合、初期値の値(ID)から表示用の値を取得する
             if str(column_class) == "7" or str(column_class) == "21" and initial_value:
                 objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
@@ -210,7 +210,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                 tmp_exec = objcolumn.convert_value_output(initial_value)
                 if tmp_exec[0] is True:
                     initial_value = tmp_exec[2]
-            
+
             # カラムクラスが「5: DateTimeColumn」かつ初期値が設定されている場合、初期値の値(日時)をフォーマット
             if str(column_class) == "5" and initial_value:
                 try:
@@ -218,7 +218,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                     initial_value = initial_value.strftime('%Y/%m/%d %H:%M:%S')
                 except Exception:
                     initial_value = None
-                
+
             # カラムクラスが「6: DateTColumn」かつ初期値が設定されている場合、初期値の値(日付)をフォーマット
             if str(column_class) == "6" and initial_value:
                 try:
@@ -226,7 +226,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                     initial_value = initial_value.strftime('%Y/%m/%d')
                 except Exception:
                     initial_value = None
-            
+
             detail = {
                 'column_id': record.get('COLUMN_DEFINITION_ID'),
                 'column_name': record.get('COLUMN_NAME_' + lang.upper()),
@@ -257,7 +257,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
             }
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = detail
-            
+
             # カラムグループ利用があれば、カラムグループ管理用配列に追加
             if column_group_id:
                 tmp_column_group, column_group_parent_of_child = add_tmp_column_group(column_group_list,
@@ -282,26 +282,26 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                                                                                                     tmp_column_group_view,
                                                                                                     column_group_parent_of_child_view
                                                                                                     )
-        
+
         # カラムグループ管理用配列について、カラムグループIDをg1,g2,g3...に変換し、idやnameを格納する。
         column_group_info_data, key_to_id = collect_column_group_sort_order(column_group_list,
                                                                             tmp_column_group,
                                                                             tmp_column_group_input,
                                                                             tmp_column_group_view
                                                                             )
-        
+
         # 大元のカラムの並び順を作成し格納
         columns, columns_input, columns_view = collect_parent_sord_order(column_info_data, column_group_parent_of_child, key_to_id)
         menu_info_data['columns'] = columns
         menu_info_data['columns_input'] = columns_input
         menu_info_data['columns_view'] = columns_view
-    
+
     info_data = {
         'menu_info': menu_info_data,
         'column_info': column_info_data,
         'column_group_info': column_group_info_data
     }
-    
+
     return info_data
 
 
@@ -320,9 +320,9 @@ def add_tmp_column_group(column_group_list, col_group_record_count, column_group
     """
     if column_group_id not in tmp_column_group:
         tmp_column_group[column_group_id] = []
-    
+
     tmp_column_group[column_group_id].append(col_num)
-    
+
     # カラムグループの親をたどり格納
     end_flag = False
     target_column_group_id = column_group_id
@@ -336,21 +336,21 @@ def add_tmp_column_group(column_group_list, col_group_record_count, column_group
                 if not parent_column_group_id:
                     end_flag = True
                     break
-                
+
                 if parent_column_group_id not in tmp_column_group:
                     tmp_column_group[parent_column_group_id] = []
-                
+
                 if target_column_group_id not in tmp_column_group[parent_column_group_id]:
                     tmp_column_group[parent_column_group_id].append(target_column_group_id)
-                
+
                 target_column_group_id = parent_column_group_id
                 column_group_parent_of_child[first_column_group_id] = parent_column_group_id
-        
+
         # ループ数がmax_loopを超えたら無限ループの可能性が高いため強制終了
         loop_count += 1
         if loop_count > max_loop:
             end_flag = True
-    
+
     return tmp_column_group, column_group_parent_of_child
 
 
@@ -375,7 +375,7 @@ def collect_column_group_sort_order(column_group_list, tmp_column_group, tmp_col
     for group_id in tmp_column_group.keys():
         key_to_id[group_id] = 'g' + str(group_num)
         group_num += 1
-    
+
     # カラムグループ管理用配列について、カラムグループIDをg1,g2,g3...に変換し、idやnameを格納する。
     for group_id, value_list in tmp_column_group.items():
         add_data = {}
@@ -403,7 +403,7 @@ def collect_column_group_sort_order(column_group_list, tmp_column_group, tmp_col
                     columns_view.append(key_to_id[col])
                 else:
                     columns_view.append(col)
-        
+
         add_data['columns'] = columns
         add_data['columns_input'] = columns_input
         add_data['columns_view'] = columns_view
@@ -418,9 +418,9 @@ def collect_column_group_sort_order(column_group_list, tmp_column_group, tmp_col
             if parent_id:
                 add_data['parent_column_group_id'] = parent_id
                 add_data['parent_column_group_name'] = column_group_list.get(parent_id).get('column_group_name')
-        
+
         column_group_info_data[key_to_id[group_id]] = add_data
-    
+
     return column_group_info_data, key_to_id
 
 
@@ -449,7 +449,7 @@ def collect_parent_sord_order(column_info_data, column_group_parent_of_child, ke
             if col_data['view_item'] in ['1']:
                 columns_view.append(col_num)
             continue
-        
+
         if column_group_id in column_group_parent_of_child:
             # 大親のカラムグループIDをg番号(g1, g2, g3...)に変換した値を格納
             parent_column_group_id = column_group_parent_of_child.get(column_group_id)
@@ -488,22 +488,22 @@ def collect_menu_column_list(objdbca, menu, menu_record):
     # 変数定義
     t_common_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
     lang = g.LANGUAGE
-    
+
     # メニュー管理から情報取得
     menu_id = menu_record[0].get('MENU_ID')
-    
+
     # 『メニュー-カラム紐付管理』テーブルから対象のデータを取得
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s ORDER BY COLUMN_DISP_SEQ ASC', ['0', menu_id])
     if not ret:
         log_msg_args = [menu]
         api_msg_args = [menu]
         raise AppException("499-00004", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     column_list = {}
     for record in ret:
         if not (record.get('INPUT_ITEM') == '2' and record.get('VIEW_ITEM') == '0'):
             column_list[record.get('COLUMN_NAME_REST')] = record.get('COLUMN_NAME_' + lang.upper())
-    
+
     return column_list
 
 
@@ -520,25 +520,25 @@ def collect_pulldown_list(objdbca, menu, menu_record):
     # 変数定義
     t_common_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
     t_common_column_class = 'T_COMN_COLUMN_CLASS'
-    
+
     # 『カラムクラスマスタ』テーブルからcolumn_typeの一覧を取得
     ret = objdbca.table_select(t_common_column_class, 'WHERE DISUSE_FLAG = %s', [0])
     column_class_master = {}
     for record in ret:
         column_class_master[record.get('COLUMN_CLASS_ID')] = record.get('COLUMN_CLASS_NAME')
-    
+
     # メニュー管理から情報取得
     menu_id = menu_record[0].get('MENU_ID')
-    
+
     # 『メニュー-カラム紐付管理』テーブルから対象のメニューのデータを取得
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-    
+
     pulldown_list = {}
     # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn)
-    id_column_list = ["7", "11", "18", "21", "22"]
+    id_column_list = ["7", "11", "18", "21", "22", "27"]
     for record in ret:
         column_class_id = str(record.get('COLUMN_CLASS'))
-        
+
         if column_class_id not in id_column_list:
             continue
 
@@ -592,25 +592,25 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
 
     # メニュー管理から情報取得
     menu_id = menu_record[0].get('MENU_ID')
-    
+
     # 『メニュー-テーブル紐付管理』テーブルから対象のテーブル名を取得(VIEW_NAMEがあれば、VIEWを採用)
     table_name = menu_table_link_record[0].get('TABLE_NAME')
     view_name = menu_table_link_record[0].get('VIEW_NAME')
     if view_name:
         table_name = view_name
-    
+
     # 『メニュー-カラム紐付管理』テーブルから対象の項目のデータを取得
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_id, column, 0])  # noqa: E501
     if not ret:
         log_msg_args = [menu, column]
         api_msg_args = [menu, column]
         raise AppException("499-00006", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     col_name = str(ret[0].get('COL_NAME'))
     column_name_rest = str(ret[0].get('COLUMN_NAME_REST'))
     column_class_id = str(ret[0].get('COLUMN_CLASS'))
     save_type = str(ret[0].get('SAVE_TYPE'))
-    
+
     # パスワードカラム系の場合は499を返却
     # 8(PasswordColumn), 15(MaskColumn), 16(SensitiveSingleTextColumn), 17(SensitiveMultiTextColumn), 25(PasswordIDColumn), 26(JsonPasswordIDColumn)
     sensitive_column_list = ["8", "15", "16", "17", "25", "26"]
@@ -618,13 +618,13 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         log_msg_args = [menu, column]
         api_msg_args = [menu, column]
         raise AppException("499-00010", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     # 対象のテーブルからレコードを取得し、対象のカラムの値を一覧化
     ret = objdbca.table_select(table_name, '', [])
     if not ret:
         # レコードが0件の場合は空をreturn
         return []
-    
+
     search_candidates = []
     # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn)
     id_column_list = ["7", "11", "14", "18", "21", "22"]
@@ -664,9 +664,9 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
             for record in ret:
                 target = record.get(col_name)
                 search_candidates.append(target)
-        
+
     # 重複を削除(元の並び順は維持)
     if search_candidates:
         search_candidates = list(dict.fromkeys(search_candidates))
-    
+
     return search_candidates

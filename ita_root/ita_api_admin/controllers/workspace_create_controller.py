@@ -73,7 +73,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['driver', 'ansible', 'legacy_role'],
             ['driver', 'ansible', 'git_repositories'],
             ['driver', 'conductor'],
-            ['driver', 'terraform'],
+            # ['driver', 'terraform_cloud_ep'],
+            # ['driver', 'terraform_cli'],
             ['uploadfiles'],
             ['tmp', 'driver', 'ansible'],
             ['tmp', 'driver', 'import_menu'],
@@ -142,6 +143,10 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['ansible.sql', 'ansible_master.sql'],
             ['export_import.sql', 'export_import_master.sql'],
             ['compare.sql', 'compare_master.sql'],
+            # ['terraform_common.sql', 'terraform_common_master.sql'],
+            # ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
+            # ['terraform_cli.sql', 'terraform_cli_master.sql'],
+            ['hostgroup.sql', 'hostgroup_master.sql'],
         ]
         last_update_timestamp = str(get_timestamp())
 

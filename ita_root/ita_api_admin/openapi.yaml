@@ -509,6 +509,9 @@ paths:
                             execution_engine:
                               type: string
                               nullable: true
+                            representative_server:
+                              type: string
+                              nullable: true
                             ansible_automation_controller_protocol:
                               type: string
                               nullable: true

@@ -1074,7 +1074,7 @@ paths:
     get:
       tags:
         - User Info
-      description: ユーザの権限情報を取得する
+      description: ユーザの権限情報とWebのテーブル設定を取得する
       operationId: getUserAuth
       x-openapi-router-controller: controllers.user_info_controller
       parameters:
@@ -1112,6 +1112,8 @@ paths:
                         example: "User Name"
                       workspaces:
                         example: ["workspace1", "workspace2", "workspace3"]
+                      table_settings:
+                        type: object
                   message:
                     type: string
                     example: SUCCESS
@@ -1255,6 +1257,60 @@ paths:
                   message:
                     type: string
                     example: SUCCESS
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/table_settings/:
+    post:
+      tags:
+        - User Info
+      description: Webのテーブル設定を登録する
+      operationId: postTableSettings
+      x-openapi-router-controller: controllers.user_info_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: テーブル設定
+              type: object
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
         '401':
           description: Unauthorized
           content:

@@ -1,5 +1,6 @@
 {
     "000-00000": "Success",
+    "000-00001": "Setting completed",
     "400-00001": "Request-Header Paramater({}) is Invalid",
     "400-00002": "Request-Body Paramater({}) is Invalid",
     "401-00001": "You do not have access privileges to the target menu. (menu: {})",

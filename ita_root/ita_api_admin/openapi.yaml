@@ -482,6 +482,9 @@ paths:
                               host:
                                 type: string
                                 nullable: true
+                              authentication_method:
+                                type: string
+                                nullable: true
                               user:
                                 type: string
                                 nullable: true

@@ -1,5 +1,6 @@
 {
     "000-00000": "Success",
+    "000-00001": "Setting completed",
     "400-00001": "Request-Header Paramater({}) is Invalid",
     "400-00002": "Request-Body Paramater({}) is Invalid",
     "401-00001": "You do not have access privileges to the target menu. (menu: {})",
@@ -1322,6 +1323,10 @@
     "MSG-30031": "MENU_LIST.txt not exists.",
     "MSG-30032": "The setting value of MENU_LIST.txt are incorrect.",
     "MSG-30033": "The target Menu ID does not exist.",
+    "MSG-30034": "There are multiple files with the same name.",
+    "MSG-30035": "The target Menu ID is written multiple times in the MENU_LIST.txt file.",
+    "MSG-30036": "The target file does not exist.",
+    "MSG-30037": "There are no importable menus.",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",

@@ -634,6 +634,19 @@ CREATE TABLE T_COMN_PROC_LOADED_LIST
 
 
 
+-- Webテーブル設定
+CREATE TABLE T_COMN_WEB_TABLE_SETTINGS
+(
+    ROW_ID                          VARCHAR(40),                                -- UUID
+    USER_ID                         VARCHAR(64),                                -- ユーザID
+    WEB_TABLE_SETTINGS              LONGTEXT,                                   -- テーブル設定
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- インデックス
 CREATE INDEX IND_T_COMN_MENU_GROUP_01 ON T_COMN_MENU_GROUP (DISUSE_FLAG);
 CREATE INDEX IND_T_COMN_MENU_01 ON T_COMN_MENU (DISUSE_FLAG);

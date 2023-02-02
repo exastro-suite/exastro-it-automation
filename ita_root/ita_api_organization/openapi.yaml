@@ -54,6 +54,8 @@ tags:
     description: データのエクスポート・インポート
   - name: Compare Controll
     description: 比較の情報取得・操作
+  - name: Terraform Cloud EP
+    description: Terraform Cloud/Enterpriseとの連携
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
@@ -4405,6 +4407,590 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/:
+    get:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからOrganizationの一覧を取得する
+      operationId: getTerraformOrganizationList
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+    post:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseにOrganizationを作成する
+      operationId: createTerraformOrganization
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Organization名およびemailを指定
+              properties:
+                organiation_name:
+                  type: string
+                  example: "example_organization"
+                email:
+                  type: string
+                  example: "example@example.com"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/:
+    patch:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているOrganizationを更新する
+      operationId: updateTerraformOrganization
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: emailを指定
+              properties:
+                email:
+                  type: string
+                  example: "example@example.com"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+    delete:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているOrganizationを削除する
+      operationId: deleteTerraformOrganization
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/check/:
+    get:
+      tags:
+        - Terraform Cloud EP
+      description: 対象のOrganizatinoの連携状態を確認する
+      operationId: checkTerraformOrganization
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/:
+    get:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからWorkspaceの一覧を取得する
+      operationId: getTerraformWorkspaceList
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+    post:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseにWorkspaceを作成する
+      operationId: createTerraformWorkspace
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Workspace名およびVersionを指定(Versionがnullの場合、自動的に最新のVersionが適用されます。)
+              properties:
+                workspace_name:
+                  type: string
+                  example: "example_workspace"
+                version:
+                  type: string
+                  example: "1.0.0"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/{terraform_workspace}/:
+    patch:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているWorkspaceを更新する
+      operationId: updateTerraformWorkspace
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+        - name: terraform_workspace
+          in: path
+          description: Terraform Workspace Name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: Versionを指定
+              properties:
+                version:
+                  type: string
+                  example: "1.0.0"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+    delete:
+      tags:
+        - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているWorkspaceを削除する
+      operationId: deleteTerraformWorkspace
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+        - name: terraform_workspace
+          in: path
+          description: Terraform Workspace Name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/{terraform_workspace}/check/:
+    get:
+      tags:
+        - Terraform Cloud EP
+      description: 対象のWorkspaceの連携状態を確認する
+      operationId: checkTerraformWorkspace
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: terraform_organization
+          in: path
+          description: Terraform Organization Name
+          required: true
+          schema:
+            type: string
+        - name: terraform_workspace
+          in: path
+          description: Terraform Workspace Name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
 components:
   schemas:
     TABLE:

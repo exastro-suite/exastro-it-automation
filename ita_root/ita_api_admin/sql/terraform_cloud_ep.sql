@@ -2,7 +2,9 @@
 CREATE TABLE T_TERE_IF_INFO
 (
     TERRAFORM_IF_INFO_ID            VARCHAR(40),                                -- 項番(UUID)
+    TERRAFORM_PROTOCOL              VARCHAR(8),                                 -- Terraform Protocol
     TERRAFORM_HOSTNAME              VARCHAR(255),                               -- Terraform Hostname
+    TERRAFORM_PORT                  INT,                                        -- Terraform Port
     TERRAFORM_TOKEN                 TEXT,                                       -- Terraform User Token
     TERRAFORM_PROXY_ADDRESS         VARCHAR(255),                               -- プロキシサーバアドレス
     TERRAFORM_PROXY_PORT            INT,                                        -- プロキシサーバポート
@@ -22,7 +24,9 @@ CREATE TABLE T_TERE_IF_INFO_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     TERRAFORM_IF_INFO_ID            VARCHAR(40),                                -- 項番(UUID)
+    TERRAFORM_PROTOCOL              VARCHAR(8),                                 -- Terraform Protocol
     TERRAFORM_HOSTNAME              VARCHAR(255),                               -- Terraform Hostname
+    TERRAFORM_PORT                  INT,                                        -- Terraform Port
     TERRAFORM_TOKEN                 TEXT,                                       -- Terraform User Token
     TERRAFORM_PROXY_ADDRESS         VARCHAR(255),                               -- プロキシサーバアドレス
     TERRAFORM_PROXY_PORT            INT,                                        -- プロキシサーバポート
@@ -411,7 +415,7 @@ CREATE TABLE T_TERE_EXEC_STS_INST
     I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/名称
     I_TIME_LIMIT                    INT,                                        -- Movement/遅延タイマー
     I_WORKSPACE_ID                  VARCHAR(40),                                -- Movement/Terraform利用情報/WorkspaceID
-    I_WORKSPACE_NAME                VARCHAR(90),                                -- Movement/Terraform利用情報/Workspace名
+    I_WORKSPACE_NAME                VARCHAR(255),                               -- Movement/Terraform利用情報/Workspace名
     TERRAFORM_RUN_ID                VARCHAR(32),                                -- Movement/Terraform利用情報/RUN-ID
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
     I_OPERATION_NAME                VARCHAR(255),                               -- オペレーション/名称
@@ -443,7 +447,7 @@ CREATE TABLE T_TERE_EXEC_STS_INST_JNL
     I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/名称
     I_TIME_LIMIT                    INT,                                        -- Movement/遅延タイマー
     I_WORKSPACE_ID                  VARCHAR(40),                                -- Movement/Terraform利用情報/WorkspaceID
-    I_WORKSPACE_NAME                VARCHAR(90),                                -- Movement/Terraform利用情報/Workspace名
+    I_WORKSPACE_NAME                VARCHAR(255),                               -- Movement/Terraform利用情報/Workspace名
     TERRAFORM_RUN_ID                VARCHAR(32),                                -- Movement/Terraform利用情報/RUN-ID
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
     I_OPERATION_NAME                VARCHAR(255),                               -- オペレーション/名称
@@ -510,7 +514,7 @@ CREATE TABLE T_TERE_MOD_VAR_LINK
 (
     MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 項番(UUID)
     MODULE_MATTER_ID                VARCHAR(40),                                -- Module素材(ID連携)
-    VARS_NAME                       VARCHAR(255),                               -- 変数名
+    VARS_NAME                       VARCHAR(128),                               -- 変数名
     TYPE_ID                         VARCHAR(2),                                 -- タイプ(ID連携)
     VARS_VALUE                      TEXT,                                       -- デフォルト値
     NOTE                            TEXT,                                       -- 備考
@@ -527,7 +531,7 @@ CREATE TABLE T_TERE_MOD_VAR_LINK_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 項番(UUID)
     MODULE_MATTER_ID                VARCHAR(40),                                -- Module素材(ID連携)
-    VARS_NAME                       VARCHAR(255),                               -- 変数名
+    VARS_NAME                       VARCHAR(128),                               -- 変数名
     TYPE_ID                         VARCHAR(2),                                 -- タイプ(ID連携)
     VARS_VALUE                      TEXT,                                       -- デフォルト値
     NOTE                            TEXT,                                       -- 備考
@@ -612,7 +616,7 @@ CREATE TABLE T_TERE_MVMT_VAR_LINK_JNL
 
 
 -- メンバー変数管理(VIEW)
-CREATE VIEW V_TERE_VAR_MEMBER AS
+CREATE OR REPLACE VIEW V_TERE_VAR_MEMBER AS
 SELECT
         CHILD_MEMBER_VARS_ID,
         PARENT_VARS_ID,
@@ -640,6 +644,43 @@ SELECT
         LAST_UPDATE_TIMESTAMP,
         LAST_UPDATE_USER
 FROM    T_TERE_VAR_MEMBER AS TAB_A;
+
+
+
+-- Organization-Workspace(VIEW)
+CREATE OR REPLACE VIEW V_TERE_ORGANIZATION_WORKSPACE_LINK AS
+SELECT
+    TAB_B.ORGANIZATION_ID        ,
+    TAB_B.ORGANIZATION_NAME      ,
+    TAB_A.WORKSPACE_ID           ,
+    TAB_A.WORKSPACE_NAME         ,
+    CONCAT(TAB_B.ORGANIZATION_NAME,':',TAB_A.WORKSPACE_NAME) ORGANIZATION_WORKSPACE,
+    TAB_A.TERRAFORM_VERSION      ,
+    TAB_A.NOTE                   ,
+    TAB_A.DISUSE_FLAG            ,
+    TAB_A.LAST_UPDATE_TIMESTAMP  ,
+    TAB_A.LAST_UPDATE_USER
+FROM T_TERE_WORKSPACE TAB_A
+LEFT JOIN T_TERE_ORGANIZATION TAB_B ON ( TAB_A.ORGANIZATION_ID = TAB_B.ORGANIZATION_ID )
+;
+CREATE OR REPLACE VIEW V_TERE_ORGANIZATION_WORKSPACE_LINK_JNL AS
+SELECT
+    TAB_A.JOURNAL_SEQ_NO         ,
+    TAB_A.JOURNAL_REG_DATETIME   ,
+    TAB_A.JOURNAL_ACTION_CLASS   ,
+    TAB_B.ORGANIZATION_ID        ,
+    TAB_B.ORGANIZATION_NAME      ,
+    TAB_A.WORKSPACE_ID           ,
+    TAB_A.WORKSPACE_NAME         ,
+    CONCAT(TAB_B.ORGANIZATION_NAME,':',TAB_A.WORKSPACE_NAME) ORGANIZATION_WORKSPACE,
+    TAB_A.TERRAFORM_VERSION      ,
+    TAB_A.NOTE                   ,
+    TAB_A.DISUSE_FLAG            ,
+    TAB_A.LAST_UPDATE_TIMESTAMP  ,
+    TAB_A.LAST_UPDATE_USER
+FROM T_TERE_WORKSPACE_JNL TAB_A
+LEFT JOIN T_TERE_ORGANIZATION_JNL TAB_B ON ( TAB_A.ORGANIZATION_ID = TAB_B.ORGANIZATION_ID )
+;
 
 
 

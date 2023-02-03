@@ -130,20 +130,20 @@ get checkWork() {
 tableStructuralData() {
     const tb = this;
     
-    tb.initTableSettingValue();
-    
     tb.structural = {
         column_group_info: {},
         menu_info: []
     };
     
     const check = function( key ) {
-        if ( tb.tableSetting[ tb.tableMode ].hideItemList ) {
-            return ( tb.tableSetting[ tb.tableMode ].hideItemList.indexOf( key ) === -1 );
+        const hideItem = tb.getTableSettingValue('hideItem');
+        console.log(hideItem)
+        if ( hideItem.length ) {
+            return ( hideItem.indexOf( key ) === -1 );
         } else {
             return true;
         }
-    };
+    };    
     
     // menu_info
     for ( const key of tb.info.menu_info[`columns_${tb.tableMode}`] ) {
@@ -300,6 +300,10 @@ setup() {
         tb.tableMode = 'input';
     }
     
+    // テーブル設定
+    tb.initTableSettingValue();
+    tb.setTableSettingValue();
+    
     // tHead階層
     tb.setHeaderHierarchy();
     
@@ -409,7 +413,7 @@ setTable( mode ) {
     tb.$.table.attr('table-mode', tb.tableMode );
     
     // フィルター位置
-    if ( tb.getTableSettingValue('position') === 'out') {
+    if ( tb.getTableSettingValue('direction') === 'horizontal' || tb.getTableSettingValue('filter') === 'out') {
         tb.$.table.html( tb.commonTableHtml( false ) );
         if ( tb.mode !== 'edit') {
             tb.$.filter.html( tb.filterTableHtml() );
@@ -3950,22 +3954,46 @@ initTableSettingValue() {
             }
         }
     };
-
-    if ( !tb.tableSetting ) tb.tableSetting = {};
+}
+/*
+##################################################
+   テーブル設定値をセット
+##################################################
+*/
+setTableSettingValue() {
+    const tb = this;
     
-    if ( !tb.tableSetting[ tb.tableMode ] ) {
-        tb.tableSetting[ tb.tableMode ] = {
-            individual: {
-                check: {},
-                color: {}
-            },
-            general: {
-                check: {},
-                color: {}
-            }
-        };
-    }
-
+    const restUser = fn.storage.get('restUser', 'session'),
+          tableSetting = ( restUser.web_table_settings && restUser.web_table_settings.table )? restUser.web_table_settings.table: {};
+    
+    const general = fn.cv( tableSetting.general, {}),
+          individual = ( tableSetting.individual && tableSetting.individual[ tb.params.menuNameRest ] )?
+              tableSetting.individual[ tb.params.menuNameRest ]: {};
+    
+    if ( !tb.tableSetting ) tb.tableSetting = {};
+    tb.tableSetting = {
+        individual: individual,
+        general: general
+    };
+}
+/*
+##################################################
+   テーブル設定値チェック
+##################################################
+*/
+checkTableSettingValue() {
+    const tb = this;
+    
+    const data = tb.tableSetting;
+    
+    if ( !data.individual[ tb.tableMode ] ) data.individual[ tb.tableMode ] = {};
+    if ( !data.individual[ tb.tableMode ].check ) data.individual[ tb.tableMode ].check = {};
+    if ( !data.individual[ tb.tableMode ].color ) data.individual[ tb.tableMode ].color = {};
+    if ( !data.individual[ tb.tableMode ].hideItem ) data.individual[ tb.tableMode ].hideItem = [];
+    
+    if ( !data.general[ tb.tableMode ] ) data.general[ tb.tableMode ] = {};
+    if ( !data.general[ tb.tableMode ].check ) data.general[ tb.tableMode ].check = {};
+    if ( !data.general[ tb.tableMode ].color ) data.general[ tb.tableMode ].color = {};
 }
 /*
 ##################################################
@@ -3975,20 +4003,27 @@ initTableSettingValue() {
 getTableSettingValue( key ) {
     const tb = this;
     
-    const data = tb.tableSetting[ tb.tableMode ];
+    const data = tb.tableSetting;
+    tb.checkTableSettingValue();
     
     // 個別か共通か
-    if ( key !== 'color') {
-        if ( !data.individual.check[ key ] || data.individual.check[ key ] === 'common') {
-            return data.general.check[ key ];
+    if ( key !== 'color' && key !== 'hideItem') {
+        if ( !data.individual[ tb.tableMode ].check[ key ] || data.individual[ tb.tableMode ].check[ key ] === 'common') {
+            return data.general[ tb.tableMode ].check[ key ];
         } else {
-            return data.individual.check[ key ];
+            return data.individual[ tb.tableMode ].check[ key ];
+        }
+    } else if( key === 'hideItem') {
+        if ( data.individual[ tb.tableMode ].hideItem ) {
+            return data.individual[ tb.tableMode ].hideItem;
+        } else {
+            return [];
         }
     } else {
-        if ( data.individual.check.color === 'custom') {
-             return data.individual.color;
-        } else if ( data.general.check.color === 'custom') { 
-            return data.general.color;
+        if ( data.individual[ tb.tableMode ].check.color === 'custom') {
+             return data.individual[ tb.tableMode ].color;
+        } else if ( data.general[ tb.tableMode ].check.color === 'custom') { 
+            return data.general[ tb.tableMode ].color;
         } else {
             return null;
         }
@@ -4002,8 +4037,8 @@ getTableSettingValue( key ) {
 getTableSettingInitValue( target, type, key ) {
     const tb = this;
     
-    return ( tb.tableSetting[ tb.tableMode ][ target ][ type ] && tb.tableSetting[ tb.tableMode ][ target ][ type ][ key ] )?
-        tb.tableSetting[ tb.tableMode ][ target ][ type ][ key ]:
+    return ( tb.tableSetting[ target ][ tb.tableMode ][ type ] && tb.tableSetting[ target ][ tb.tableMode ][ type ][ key ] )?
+        tb.tableSetting[ target ][ tb.tableMode ][ type ][ key ]:
         tb.tableSettingInitValue[ target ][ type ][ key ];
 }
 /*
@@ -4015,7 +4050,7 @@ tableSettingOk() {
     const tb = this;
     
     // 値をセット
-    const settingData = tb.tableSetting[ tb.tableMode ],
+    const settingData = tb.tableSetting,
           $dBody = tb.tableSettingModal[ tb.tableMode ].$.dbody;
     
     for ( const target in tb.tableSettingInitValue ) {
@@ -4026,10 +4061,10 @@ tableSettingOk() {
                 
                 switch ( type ) {
                     case 'check':
-                        settingData[ target ][ type ][ key ] = $input.filter(':checked').val();
+                        settingData[ target ][ tb.tableMode ][ type ][ key ] = $input.filter(':checked').val();
                     break;
                     case 'color':
-                        settingData[ target ][ type ][ key ] = $input.val();
+                        settingData[ target ][ tb.tableMode ][ type ][ key ] = $input.val();
                     break;
                 }
             }
@@ -4042,10 +4077,48 @@ tableSettingOk() {
     $check.each(function(){
         unCheckList.push( $( this ).val() );
     });
-    tb.tableSetting[ tb.tableMode ].hideItemList = unCheckList;
-
-    // テーブルを再セット
-    tb.resetTable();
+    settingData.individual[ tb.tableMode ].hideItem = unCheckList;
+    
+    tb.saveTableSetting();
+}
+/*
+##################################################
+   テーブル設定更新 ＞ 再表示
+##################################################
+*/
+saveTableSetting() {
+    const tb = this;
+    
+    const settingData = tb.tableSetting;
+    
+    const sessionUserData = fn.storage.get('restUser', 'session');
+    if ( sessionUserData ) {
+        const process = fn.processingModal(),
+              set = sessionUserData.web_table_settings;
+        
+        if ( !set ) set = {};
+        if ( !set.table ) set.table = {};
+        
+        // 全般
+        if ( !set.table.general ) set.table.general = {};
+        set.table.general[ tb.tableMode ] = settingData.general[ tb.tableMode ];
+        
+        // 共通
+        if ( !set.table.individual ) set.table.individual = {};
+        if ( !set.table.individual[ tb.params.menuNameRest ] ) set.table.individual[ tb.params.menuNameRest ] = {};
+        set.table.individual[ tb.params.menuNameRest ][ tb.tableMode ]  = settingData.individual[ tb.tableMode ];
+        
+        fn.fetch('/user/table_settings/', null, 'POST', set ).then(function(){
+            tb.resetTable();
+        }).catch(function(){
+            fn.alert( getMessage.FTE10092, getMessage.FTE10093 );
+        }).then(function(){
+            process.close();
+        });
+    } else {
+        // session storageの取得に失敗した場合はエラー
+        fn.alert( getMessage.FTE10092, getMessage.FTE10093 );
+    }
 }
 /*
 ##################################################
@@ -4248,13 +4321,12 @@ tableSettingOpen() {
 tableSettingReset() {
     const tb = this;
     
-    tb.tableSetting[ tb.tableMode ].individual = {
+    tb.tableSetting.individual[ tb.tableMode ] = {
         check: {},
         color: {}
     };
-
-    // テーブルを再セット
-    tb.resetTable();
+    
+    tb.saveTableSetting();
 }
 /*
 ##################################################
@@ -4270,7 +4342,7 @@ tableSettingListHtml() {
     const tableSettingList = function( list, className ) {
         for ( const key of list ) {
             const type = key.slice( 0, 1 ),
-                  attr = ( tb.tableSetting[ tb.tableMode ].hideItemList && tb.tableSetting[ tb.tableMode ].hideItemList.indexOf( key ) !== -1 )? {}: {checked: 'checked'};
+                  attr = ( tb.tableSetting.individual[ tb.tableMode ].hideItem && tb.tableSetting.individual[ tb.tableMode ].hideItem.indexOf( key ) !== -1 )? {}: {checked: 'checked'};
             
             html += `<li class="${className}">`;
             if ( type === 'c') {
@@ -4432,6 +4504,7 @@ tableSettingCustomCSS() {
         + `#${tb.id} .tbody .input,`
         + `#${tb.id} .noSelect,`
         + `#${tb.id} .tableEditInputSelectValue,`
+        + `#${tb.id} .select2-container--default .select2-selection--single,`
         + `#${tb.id} .tbody .tableEditSelectFile{background-color:${color.color_any_bg};border-color:${color.color_any_bd};color:${color.color_any_tx}}`
         + `#${tb.id} .input.tableEditRequiredError{background-color:${color.color_req_bg};border-color:${color.color_req_bd};color:${color.color_req_tx}}`
         + `#${tb.id} .input.tableEditChange,`

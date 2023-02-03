@@ -1892,7 +1892,7 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
             raise Exception("499-00712", [])  # 「縦メニュー利用」の場合、項目数が0件のメニューを作成できません。
 
         # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
-        if sheet_id == "2" and not hostgroup == "True":
+        if sheet_id == "2" and hostgroup == "True":
             raise Exception("499-00713", [])
 
         # ロールを取得

@@ -682,6 +682,8 @@ getMessage = ( function() {
         'FTE10089': 'h',
         'FTE10090': 'm',
         'FTE10091': 's',
+        'FTE10092': 'Update failed',
+        'FTE10093': 'Update failed. Please try again after reloading.',
     };
 
     return message;

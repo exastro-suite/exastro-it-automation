@@ -2714,9 +2714,6 @@ uiSetting() {
         const funcs = {
             ok: function(){
                 setUiSettingData();
-                uiSettingInstance.buttonPositiveDisabled( true );
-                uiSettingInstance.hide();
-                resolve();
             },
             cancel: function(){
                 cmn.setUiSetting();
@@ -2725,14 +2722,37 @@ uiSetting() {
                 resolve('cancel');
             }
         };
+        
+        // データ更新
         const setUiSettingData = function() {
-            const uiSettingData = {
-                theme: uiSettingInstance.$.dbody.find('.displaySettingTheme').val(),
-                filter: getFilterValue()
-            };
             
-            cmn.storage.set('ui_setting', uiSettingData );
-            cmn.setUiSetting();
+            // ユーザー情報取得
+            const sessionUserData = cmn.storage.get('restUser', 'session');
+            if ( sessionUserData ) {
+                const process = cmn.processingModal();
+                        
+                const uiSettingData = {
+                    theme: uiSettingInstance.$.dbody.find('.displaySettingTheme').val(),
+                    filter: getFilterValue()
+                };
+                
+                if ( !sessionUserData.web_table_settings ) sessionUserData.web_table_settings = {};                
+                sessionUserData.web_table_settings.ui = uiSettingData;
+                cmn.fetch('/user/table_settings/', null, 'POST', sessionUserData.web_table_settings ).then(function(){
+                    cmn.storage.set('ui_setting', uiSettingData );
+                    cmn.setUiSetting(); 
+                }).catch(function(){
+                    cmn.alert( getMessage.FTE10092, getMessage.FTE10093 );
+                }).then(function(){
+                    process.close();
+                    uiSettingInstance.buttonPositiveDisabled( true );
+                    uiSettingInstance.hide();
+                    resolve();
+                });
+            } else {
+                // session storageの取得に失敗した場合はエラー
+                cmn.alert( getMessage.FTE10092, getMessage.FTE10093 );
+            }
         };
         const getFilterValue = function() {
             // フィルター
@@ -2769,9 +2789,10 @@ uiSetting() {
                 darkmode: getMessage.FTE10080,
             };
             
-            const uiSettingData = cmn.storage.get('ui_setting'),
-                  theme = ( uiSettingData )? uiSettingData.theme: '';
-            
+            const restUser = cmn.storage.get('restUser', 'session'),
+                  uiSettingData = ( restUser && restUser.web_table_settings )? restUser.web_table_settings: {},
+                  theme = ( uiSettingData && uiSettingData.ui )? uiSettingData.ui.theme: '';
+            console.log(uiSettingData)
             const select = [];
             for ( const key in themeList ) {
                 const selected = ( theme === key )? ' selected': '';
@@ -2790,7 +2811,8 @@ uiSetting() {
                 };
                 let html = '';
                 for ( const key in list ) {
-                    const value = ( uiSettingData && uiSettingData.filter )? uiSettingData.filter[ key ]: list[key][5];
+                    const value = ( uiSettingData && uiSettingData.ui && uiSettingData.ui.filter )? uiSettingData.ui.filter[ key ]: list[key][5];
+                    console.log( value )
                     html += ``
                     + `<tr class="commonInputTr">`
                         + `<th class="commonInputTh"><div class="commonInputTitle">${list[key][0]}</div></th>`

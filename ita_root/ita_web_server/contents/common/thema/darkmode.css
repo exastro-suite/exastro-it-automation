@@ -572,7 +572,12 @@ background-color: #990D00;
 background-color: #117A2C;
 }
 
-
+.userinfoWorkspaceItem,
+.userinfoRoleItem,
+.tableHorizontal .tableWrap .tBodyTh,
+.tableHorizontal .tableWrap .tBodyTd {
+border-color: #111;
+}
 
 .select2-dropdown {
 background-color: #333;

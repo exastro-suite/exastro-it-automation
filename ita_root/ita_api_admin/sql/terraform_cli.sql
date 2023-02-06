@@ -354,7 +354,7 @@ CREATE TABLE T_TERC_MOD_VAR_LINK
 (
     MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 項番(UUID)
     MODULE_MATTER_ID                VARCHAR(40),                                -- Module素材(ID連携)
-    VARS_NAME                       VARCHAR(255),                               -- 変数名
+    VARS_NAME                       VARCHAR(128),                               -- 変数名
     TYPE_ID                         VARCHAR(2),                                 -- タイプ(ID連携)
     VARS_VALUE                      TEXT,                                       -- デフォルト値
     NOTE                            TEXT,                                       -- 備考
@@ -371,7 +371,7 @@ CREATE TABLE T_TERC_MOD_VAR_LINK_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 項番(UUID)
     MODULE_MATTER_ID                VARCHAR(40),                                -- Module素材(ID連携)
-    VARS_NAME                       VARCHAR(255),                               -- 変数名
+    VARS_NAME                       VARCHAR(128),                               -- 変数名
     TYPE_ID                         VARCHAR(2),                                 -- タイプ(ID連携)
     VARS_VALUE                      TEXT,                                       -- デフォルト値
     NOTE                            TEXT,                                       -- 備考
@@ -456,7 +456,7 @@ CREATE TABLE T_TERC_MVMT_VAR_LINK_JNL
 
 
 -- メンバー変数管理(VIEW)
-CREATE VIEW V_TERC_VAR_MEMBER AS
+CREATE OR REPLACE VIEW V_TERC_VAR_MEMBER AS
 SELECT
         CHILD_MEMBER_VARS_ID,
         PARENT_VARS_ID,

@@ -93,7 +93,7 @@ init() {
                 ui.rest.user = ui.storageUser;
                 
                 ui.setSideMenu();
-                ui.headerMenu();
+                ui.headerMenu( false );
             });
         }
         
@@ -787,7 +787,17 @@ setMenu() {
             mn.rest.user = result[0];
             mn.headerMenu();
             
-            fn.storage.set('restUser', mn.rest.user, 'session');
+            fn.storage.set('restUser', mn.rest.user, 'session');            
+        } else {
+            mn.headerMenuReady();
+        }
+        
+        // 画面設定
+        const uiStrageSetting = fn.storage.get('ui_setting'),
+              uiSetting = ( mn.rest.user.web_table_settings && mn.rest.user.web_table_settings.ui )? mn.rest.user.web_table_settings.ui: {};
+        if ( JSON.stringify( uiStrageSetting ) !== JSON.stringify( uiSetting ) ) {
+            fn.storage.set('ui_setting', uiSetting );
+            fn.setUiSetting(); 
         }
         
         if ( mn.params.menuNameRest ) {
@@ -890,7 +900,7 @@ sheetType() {
    Header menu
 ##################################################
 */
-headerMenu() {
+headerMenu( readyFlag = true ) {
     const mn = this;
     
     const html = `
@@ -923,6 +933,10 @@ headerMenu() {
         window.location.href = fn.getWorkspaceChangeUrl( workspaceId );        
     });
     
+    if ( !readyFlag ) {
+        mn.$.header.find('.userInfoMenuButton').prop('disabled', true );
+    }
+    
     // ボタン各種
     mn.$.header.find('.userInfoMenuButton').on('click', function(){
         const $button = $( this ),
@@ -953,6 +967,11 @@ headerMenu() {
             } break;
         }
     });
+}
+headerMenuReady() {
+    const mn = this;
+    
+    mn.$.header.find('.userInfoMenuButton').prop('disabled', false );
 }
 /*
 ##################################################

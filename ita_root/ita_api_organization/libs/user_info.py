@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import json
 from common_libs.common import *  # noqa: F403
 from flask import g
 from libs.organization_common import check_auth_menu, get_auth_menus
@@ -104,11 +105,24 @@ def collect_user_auth(objdbca):
     # Workspaceを取得
     workspaces = util.get_exastro_platform_workspaces()[0]
 
+    # Webテーブル設定を取得
+    ret = objdbca.table_select('T_COMN_WEB_TABLE_SETTINGS', 'WHERE USER_ID = %s', g.USER_ID)
+
+    # メニューグループごとのメニュー一覧を作成
+    if len(ret) == 0:
+        web_table_settings = None
+    else:
+        if (ret[0]['WEB_TABLE_SETTINGS'] is None) or (len(ret[0]['WEB_TABLE_SETTINGS']) == 0):
+            web_table_settings = None
+        else:
+            web_table_settings = json.loads(ret[0]['WEB_TABLE_SETTINGS'])
+
     user_auth_data = {
         "user_id": user_id,
         "user_name": user_name,
         "roles": roles,
-        "workspaces": workspaces
+        "workspaces": workspaces,
+        "web_table_settings": web_table_settings
     }
 
     return user_auth_data
@@ -194,3 +208,39 @@ def collect_menus(objdbca):
     }
 
     return menus_data
+
+
+def regist_table_settings(objdbca, parameter):
+    """
+        Webのテーブル設定を登録する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+            parameter: bodyの中身
+        RETRUN:
+            data
+    """
+    # DBコネクション開始
+    objdbca.db_transaction_start()
+
+    # Webテーブル設定を取得
+    ret = objdbca.table_select('T_COMN_WEB_TABLE_SETTINGS', 'WHERE USER_ID = %s', g.USER_ID)
+
+    # メニューグループごとのメニュー一覧を作成
+
+    data_list = {
+        'USER_ID': g.USER_ID,
+        'WEB_TABLE_SETTINGS': str(json.dumps(parameter)),
+    }
+    if len(ret) == 0:
+
+        # Webテーブル設定にINSERT
+        ret = objdbca.table_insert('T_COMN_WEB_TABLE_SETTINGS', data_list, 'ROW_ID', False)
+    else:
+        data_list['ROW_ID'] = ret[0]['ROW_ID']
+        # Webテーブル設定にUPDATE
+        ret = objdbca.table_update('T_COMN_WEB_TABLE_SETTINGS', data_list, 'ROW_ID', False)
+
+    # DBコネクション終了
+    objdbca.db_transaction_end(True)
+
+    return g.appmsg.get_api_message("000-00001")

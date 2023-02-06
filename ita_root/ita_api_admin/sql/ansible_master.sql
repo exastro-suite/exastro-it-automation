@@ -271,46 +271,70 @@ INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(20201,_____DATE_____,'INSERT','20201','20201','T_COMN_MOVEMENT','V_ANSL_MOVEMENT','movement_id','Ansible-LegacyのMovementをメンテナンス(閲覧/登録/更新/廃止)できます。','You can perform maintenance (view/register/update/discard) of Ansible-Legacy Movement.','0','1','0','0','1','1','1','1','0','["T_COMN_PROC_LOADED_LIST"]',NULL,'external_valid_menu_before',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('20202','20202','T_ANSL_MATL_COLL',NULL,'item_no','AnsibleのPlaybookをメンテナンス(閲覧/登録/更新/廃止)できます。
 
-Playbook内の変数には接頭文字として「VAR_」を付与して下さい。
-接頭文字が「VAR_」の変数が、代入値管理メニューにて選択可能になります。
-(例) {{ VAR_TEST }} また、以下は予約変数となります。
-基本コンソールの機器一覧メニューで管理している情報を代入することができます。
-[ログインユーザID]
-{{ __loginuser__ }}
-[ログインホスト名]
-{{ __loginhostname__ }}','You can perform maintenance (view/register/update/discard) for the Ansible Playbook.
+Playbook内の変数は半角英数字とアンダースコア（ _ ）で記載します。
+(例) {{ VAR_TEST }} 
 
-Assign \"VAR_\" as a prefix string for variable in Playbook.
-Variables with prefix string \"VAR_\" can be selected from substitution value list menu.
-(Example) {{ VAR_TEST }}
+また、以下は予約変数となります。
+基本コンソールの機器一覧メニューで管理している情報を代入することができます。
+ホスト名:
+{{ __inventory_hostname__ }}
+ＤＮＳホスト名
+{{ __dnshostname__ }}
+IPアドレス
+{{ __ipaddress__ }}
+ユーザ
+{{ __loginuser__ }}
+パスワード
+{{ __loginpassword__ }}','You can perform maintenance (view/register/update/discard) for the Ansible Playbook.
+
+Playbook variables can be described with half-width characters and underscores (_). 
+(Example) {{ var_Example }}
 
 The following are reserved variables.
 You can substitute the information that is managed by the Device list menu of Basic Console.
-[Login user ID]
+host name:
+{{ __inventory_hostname__ }}
+DNS host name:
+{{ __dnshostname__ }}
+IP address
+{{ __ipaddress__ }}
+Login user
 {{ __loginuser__ }}
-[Login host name]
-{{ __loginhostname__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
+Login password
+{{ __loginpassword__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(20202,_____DATE_____,'INSERT','20202','20202','T_ANSL_MATL_COLL',NULL,'item_no','AnsibleのPlaybookをメンテナンス(閲覧/登録/更新/廃止)できます。
 
-Playbook内の変数には接頭文字として「VAR_」を付与して下さい。
-接頭文字が「VAR_」の変数が、代入値管理メニューにて選択可能になります。
-(例) {{ VAR_TEST }} また、以下は予約変数となります。
-基本コンソールの機器一覧メニューで管理している情報を代入することができます。
-[ログインユーザID]
-{{ __loginuser__ }}
-[ログインホスト名]
-{{ __loginhostname__ }}','You can perform maintenance (view/register/update/discard) for the Ansible Playbook.
+Playbook内の変数は半角英数字とアンダースコア（ _ ）で記載します。
+(例) {{ VAR_TEST }} 
 
-Assign \"VAR_\" as a prefix string for variable in Playbook.
-Variables with prefix string \"VAR_\" can be selected from substitution value list menu.
-(Example) {{ VAR_TEST }}
+また、以下は予約変数となります。
+基本コンソールの機器一覧メニューで管理している情報を代入することができます。
+ホスト名:
+{{ __inventory_hostname__ }}
+ＤＮＳホスト名
+{{ __dnshostname__ }}
+IPアドレス
+{{ __ipaddress__ }}
+ユーザ
+{{ __loginuser__ }}
+パスワード
+{{ __loginpassword__ }}','You can perform maintenance (view/register/update/discard) for the Ansible Playbook.
+
+Playbook variables can be described with half-width characters and underscores (_). 
+(Example) {{ var_Example }}
 
 The following are reserved variables.
 You can substitute the information that is managed by the Device list menu of Basic Console.
-[Login user ID]
+host name:
+{{ __inventory_hostname__ }}
+DNS host name:
+{{ __dnshostname__ }}
+IP address
+{{ __ipaddress__ }}
+Login user
 {{ __loginuser__ }}
-[Login host name]
-{{ __loginhostname__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
+Login password
+{{ __loginpassword__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('20203','20203','T_ANSL_MVMT_MATL_LINK',NULL,'associated_item_no','MovementにインクルードするPlaybookをメンテナンス(閲覧/登録/更新/廃止)できます。
 Movement実行時には複数のPlaybookをインクルード順序に従ってインクルードすることが可能です。','You can perform maintenance (view/register/update/discard) for Playbook to be included in Movement.
 It is possible to include multiple Playbook in the include order at the time of executing Movement.','0','1','0','0','1','1','1','1','0','["T_COMN_PROC_LOADED_LIST"]','[["movement","include_order"]]','external_valid_menu_before',NULL,NULL,'0',_____DATE_____,1);
@@ -387,66 +411,70 @@ INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(20303,_____DATE_____,'INSERT','20303','20303','T_ANSP_OS_TYPE',NULL,'item_no','OS種別をメンテナンス(閲覧/登録/更新/廃止)できます。','Allows users to perform maintenance(view/register/update/discard) for the OS type.','0','1','0','0','1','1','1','1','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('20304','20304','T_ANSP_MATL_COLL',NULL,'item_no','OS種別ごとの対話ファイルをメンテナンス(閲覧/登録/更新/廃止)できます。
 
-対話ファイル内の変数には接頭文字として「VAR_」を付与して下さい。
-接頭文字が「VAR_」の変数が、代入値管理メニューにて選択可能になります。
-(例) {{ VAR_TEST }}
+対話ファイル内の変数は半角英数字とアンダースコア（ _ ）で記載します。
+(例) {{ VAR_TEST }} 
 
 また、以下の変数は予約語となります。
 基本コンソールの機器一覧メニューで管理している情報を代入することができます。
-[プロトコル]
-{{ __loginprotocol__ }}
-[ログインユーザID]
+ホスト名:
+{{ __inventory_hostname__ }}
+ＤＮＳホスト名
+{{ __dnshostname__ }}
+IPアドレス
+{{ __ipaddress__ }}
+ユーザ
 {{ __loginuser__ }}
-[ログインパスワード]
-{{ __loginpassword__ }}
-[ログインホスト名]
-{{ __loginhostname__ }}','You can perform maintenance (view/register/update/discard) for the dialog file for each OS type.
+パスワード
+{{ __loginpassword__ }}"','You can perform maintenance (view/register/update/discard) for the dialog file for each OS type.
 
-Assign “VAR_\" as a prefix string for variable in dialog file.
-Variables with prefix string \"VAR_\" can be selected from substitution value list menu.
-(Example) {{ VAR_TEST }}\
+Dialog file variables can be described with half-width characters and underscores (_). 
+(Example) {{ var_Example }}
 
 The following are reserved word.
 You can substitute the information that is managed by the Device list menu of Basic Console.
-[Protocol]
-{{ __loginprotocol__ }}
-[Login user ID]
+host name:
+{{ __inventory_hostname__ }}
+DNS host name:
+{{ __dnshostname__ }}
+IP address
+{{ __ipaddress__ }}
+Login user
 {{ __loginuser__ }}
-[Login password]
-{{ __loginpassword__ }}
-[Login host name]
-{{ __loginhostname__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]','[["dialog_type","os_type"]]',NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
+Login password
+{{ __loginpassword__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]','[["dialog_type","os_type"]]',NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(20304,_____DATE_____,'INSERT','20304','20304','T_ANSP_MATL_COLL',NULL,'item_no','OS種別ごとの対話ファイルをメンテナンス(閲覧/登録/更新/廃止)できます。
 
-対話ファイル内の変数には接頭文字として「VAR_」を付与して下さい。
-接頭文字が「VAR_」の変数が、代入値管理メニューにて選択可能になります。
-(例) {{ VAR_TEST }}
+対話ファイル内の変数は半角英数字とアンダースコア（ _ ）で記載します。
+(例) {{ VAR_TEST }} 
 
 また、以下の変数は予約語となります。
 基本コンソールの機器一覧メニューで管理している情報を代入することができます。
-[プロトコル]
-{{ __loginprotocol__ }}
-[ログインユーザID]
+ホスト名:
+{{ __inventory_hostname__ }}
+ＤＮＳホスト名
+{{ __dnshostname__ }}
+IPアドレス
+{{ __ipaddress__ }}
+ユーザ
 {{ __loginuser__ }}
-[ログインパスワード]
-{{ __loginpassword__ }}
-[ログインホスト名]
-{{ __loginhostname__ }}','You can perform maintenance (view/register/update/discard) for the dialog file for each OS type.
+パスワード
+{{ __loginpassword__ }}"','You can perform maintenance (view/register/update/discard) for the dialog file for each OS type.
 
-Assign “VAR_\" as a prefix string for variable in dialog file.
-Variables with prefix string \"VAR_\" can be selected from substitution value list menu.
-(Example) {{ VAR_TEST }}\
+Dialog file variables can be described with half-width characters and underscores (_). 
+(Example) {{ var_Example }}
 
 The following are reserved word.
 You can substitute the information that is managed by the Device list menu of Basic Console.
-[Protocol]
-{{ __loginprotocol__ }}
-[Login user ID]
+host name:
+{{ __inventory_hostname__ }}
+DNS host name:
+{{ __dnshostname__ }}
+IP address
+{{ __ipaddress__ }}
+Login user
 {{ __loginuser__ }}
-[Login password]
-{{ __loginpassword__ }}
-[Login host name]
-{{ __loginhostname__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]','[["dialog_type","os_type"]]',NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
+Login password
+{{ __loginpassword__ }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]','[["dialog_type","os_type"]]',NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('20305','20305','T_ANSP_MVMT_MATL_LINK',NULL,'associated_item_no','Movementにインクルードする対話種別をメンテナンス(閲覧/登録/更新/廃止)できます。
 Movement実行時には複数の対話種別をインクルード順序に従ってインクルードすることが可能です。','You can perform maintenance (view/register/update/discard) for the dialog type to be included in Movement.
 It is possible to include multiple dialog types in the include order at the time of executing Movement.','0','1','0','0','1','1','1','1','0','["T_COMN_PROC_LOADED_LIST"]','[["movement","include_order"]]','external_valid_menu_before',NULL,NULL,'0',_____DATE_____,1);

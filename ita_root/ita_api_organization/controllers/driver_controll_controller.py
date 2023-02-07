@@ -24,7 +24,11 @@ from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
-from common_libs.ansible_driver.functions.rest_libs import insert_execution_list, execution_scram
+from common_libs.ansible_driver.functions.rest_libs import insert_execution_list as a_insert_execution_list, execution_scram as a_exectuion_scram
+from common_libs.terraform_driver.common.Const import Const as TFCommonConst
+from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
+from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
+from common_libs.terraform_driver.common.Execute import insert_execution_list as t_insert_execution_list, get_execution_info as t_get_execution_info, reserve_cancel as t_reserve_cancel  # noqa: E501
 
 
 @api_filter
@@ -66,9 +70,19 @@ def get_driver_execute_data(organization_id, workspace_id, menu, execution_no): 
                                                          'ansConstObj': AnspConst()},
               'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
                                                       'table_name': AnsrConst.vg_exe_ins_msg_table_name,
-                                                      'ansConstObj': AnsrConst()}}
+                                                      'ansConstObj': AnsrConst()},
+              TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
+                                                  'table_name': TFCloudEPConst.T_EXEC_STS_INST},
+              TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
+                                              'table_name': TFCLIConst.T_EXEC_STS_INST}
+              }
 
-    result = driver_controll.get_execution_info(objdbca, target[menu], execution_no)
+    if 'ansible' in menu:
+        # Ansible用 作業実行の状態取得
+        result = driver_controll.get_execution_info(objdbca, target[menu], execution_no)
+    else:
+        # Terraform用 作業実行の状態取得
+        result = t_get_execution_info(objdbca, target[menu], execution_no)
 
     return result,
 
@@ -103,7 +117,9 @@ def get_driver_execute_info(organization_id, workspace_id, menu):  # noqa: E501
     # 作業実行メニューとMovement一覧の対応
     movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
                        'execution_ansible_legacy': 'movement_list_ansible_legacy',
-                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer'}
+                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
+                       TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
+                       TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
 
     # 作業実行関連のメニューの基本情報および項目情報の取得
     target_menus = ["operation_list", movement_target[menu]]
@@ -149,7 +165,9 @@ def get_driver_execute_search_candidates(organization_id, workspace_id, menu, ta
     # 作業実行メニューとMovement一覧の対応
     movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
                        'execution_ansible_legacy': 'movement_list_ansible_legacy',
-                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer'}
+                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
+                       TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
+                       TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
 
     # targetのチェック
     target_menus = ["operation_list", movement_target[menu]]
@@ -195,9 +213,16 @@ def post_driver_cancel(organization_id, workspace_id, menu, execution_no, body=N
 
     target = {'check_operation_status_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
               'check_operation_status_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
+              'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+              TFCloudEPConst.RN_CHECK_OPERATION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+              TFCLIConst.RN_CHECK_OPERATION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
-    result = driver_controll.reserve_cancel(objdbca, target[menu], execution_no)
+    if 'ansible' in menu:
+        # Ansible用 予約取り消し
+        result = driver_controll.reserve_cancel(objdbca, target[menu], execution_no)
+    else:
+        # Terraform用 予約取り消し
+        result = t_reserve_cancel(objdbca, target[menu], execution_no)
 
     return result,
 
@@ -251,7 +276,9 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
 
     target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
               'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
+              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+              TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+              TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
     # トランザクション開始
     objdbca.db_transaction_start()
@@ -260,7 +287,12 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
     conductor_id = None
     conductor_name = None
     run_mode = "1"
-    result = insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    if 'ansible' in menu:
+        # Ansible用 作業実行登録
+        result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    else:
+        # Terraform用 作業実行登録
+        result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
     # コミット・トランザクション終了
     objdbca.db_transaction_end(True)
 
@@ -316,7 +348,9 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
 
     target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
               'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
+              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+              TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+              TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
     # トランザクション開始
     objdbca.db_transaction_start()
@@ -325,7 +359,12 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
     conductor_id = None
     conductor_name = None
     run_mode = "3"
-    result = insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    if 'ansible' in menu:
+        # Ansible用 作業実行登録
+        result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    else:
+        # Terraform用 作業実行登録
+        result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
     # コミット・トランザクション終了
     objdbca.db_transaction_end(True)
 
@@ -381,7 +420,9 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
 
     target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
               'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
+              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+              TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+              TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
     # トランザクション開始
     objdbca.db_transaction_start()
@@ -390,7 +431,12 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
     conductor_id = None
     conductor_name = None
     run_mode = "2"
-    result = insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    if 'ansible' in menu:
+        # Ansible用 作業実行登録
+        result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+    else:
+        # Terraform用 作業実行登録
+        result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
 
     # コミット・トランザクション終了
     objdbca.db_transaction_end(True)
@@ -433,7 +479,9 @@ def post_driver_execute_filter(organization_id, workspace_id, menu, target, body
     # 作業実行メニューとMovement一覧の対応
     movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
                        'execution_ansible_legacy': 'movement_list_ansible_legacy',
-                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer'}
+                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
+                       TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
+                       TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
 
     # targetのチェック
     target_menus = ["operation_list", movement_target[menu]]
@@ -488,8 +536,8 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
               'check_operation_status_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
               'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
 
-    # result = execution_scram(objdbca, target[menu], execution_no)
-    execution_scram(objdbca, target[menu], execution_no)
+    # result = a_exectuion_scram(objdbca, target[menu], execution_no)
+    a_exectuion_scram(objdbca, target[menu], execution_no)
 
     objdbca.db_transaction_end(False)  # roleback
 

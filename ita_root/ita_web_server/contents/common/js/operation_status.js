@@ -30,11 +30,11 @@ class Status {
 */
 constructor( menu, id, config ) {
     const op = this;
-    
+
     op.menu = menu;
     op.id = id;
     op.config = config;
-    
+
 }
 /*
 ##################################################
@@ -52,7 +52,7 @@ viewId( id, sharpFlag = true ) {
 */
 setRestApiUrls() {
     const op = this;
-    
+
     op.rest = {};
     if ( op.id ) {
         op.rest.info = `/menu/${op.menu}/driver/${op.id}/`;
@@ -94,6 +94,24 @@ static string = {
         targetHostMenu: 'target_host_ansible_pioneer',
         substValueMenu: 'subst_value_list_ansible_pioneer',
         executionListMenu: 'execution_list_ansible_pioneer'
+    },
+    check_operation_status_terraform_cloud_ep: {
+        movementType: 'Terraform Cloud/EP',
+        movementGem: 'TERE',
+        movementClassName: 'node-terraform-cloud-ep',
+        movementListMenu: 'movement_list_terraform_cloud_ep',
+        targetHostMenu: '',
+        substValueMenu: 'subst_value_auto_reg_setting__terraform_cloud_ep',
+        executionListMenu: 'execution_list_terraform_cloud_ep'
+    },
+    check_operation_status_terraform_cli: {
+        movementType: 'Terraform CLI',
+        movementGem: 'TERC',
+        movementClassName: 'node-terraform-cli',
+        movementListMenu: 'movement_list_terraform_cli',
+        targetHostMenu: '',
+        substValueMenu: 'subst_value_auto_reg_setting__terraform_cli',
+        executionListMenu: 'execution_list_terraform_cli'
     }
 }
 /*
@@ -103,21 +121,21 @@ static string = {
 */
 setup() {
     const op = this;
-    
+
     fn.contentLoadingStart();
-    
+
     op.$ = {};
     op.$.content = $('#content');
     op.$.operation = $('#operationStatus').find('.sectionBody');
     op.$.executeLog = $('#executeLog').find('.sectionBody');
     op.$.errorLog = $('#errorLog').find('.sectionBody');
-    
+
     op.$.tab = op.$.content.find('.contentMenu');
     op.$.executeTab = op.$.tab.find('.executeLogTab');
     op.$.errorTab = op.$.tab.find('.errorLogTab');
-    
+
     op.setRestApiUrls();
-    
+
     if ( op.rest.info ) {
         history.replaceState( null, null, `?menu=${op.menu}&execution_no=${op.id}`);
         fn.fetch( op.rest.info ).then(function( info ){
@@ -125,10 +143,10 @@ setup() {
             op.operationStatusInit();
             op.operationStatus();
             op.logInit()
-            
+
             // status_monitoring_cycleごとに更新
             op.monitoring();
-            
+
         }).catch(function( error ){
             if ( error.message !== 'Failed to fetch') {
                 alert( error.message );
@@ -151,13 +169,13 @@ setup() {
 */
 monitoring() {
     const op = this;
-    
+
     // 完了、完了(異常)、想定外エラー、緊急停止、予約取消の場合は更新しない
     const stopId = [ '5', '6', '7', '8', '10'];
     if ( stopId.indexOf( op.info.status_id ) !== -1 ) return false;
-    
+
     const cycle = fn.cv( op.info.status_monitoring_cycle, 3000 );
-    
+
     op.timerId = setTimeout( function(){
         fn.fetch( op.rest.info ).then(function( info ){
             op.info = info;
@@ -166,17 +184,17 @@ monitoring() {
             op.operationStatusUpdate();
             op.executeLogUpdate();
             op.errorLogUpdate();
-            
+
             fn.contentLoadingEnd();
             op.monitoring();
-            
+
         }).catch(function( error ){
             if ( error.message !== 'Failed to fetch') {
                 console.error( error );
                 alert( error.message );
             }
         });
-        
+
     }, cycle );
 }
 /*
@@ -186,9 +204,9 @@ monitoring() {
 */
 operationStatusInit() {
     const op = this;
-    
+
     const html = `<div class="operationStatusContainer"></div>`;
-    
+
     const menu = {
         Main: [
             { input: { className: 'operationId', value: op.id, before: getMessage.FTE05001 } },
@@ -201,10 +219,10 @@ operationStatusInit() {
     op.$.operation.html( fn.html.operationMenu( menu ) + html );
     op.$.operationMenu = op.$.operation.find('.operationMenu');
     op.$.operationContainer = op.$.operation.find('.operationStatusContainer');
-    
+
     op.$.button = op.$.operationMenu.find('.operationMenuButton');
-    
-    
+
+
     const $operationNoInput = op.$.operationMenu.find('.operationMenuInput'),
           $operationNoButton = op.$.operationMenu.find('.operationMenuButton[data-type="check"]');
     $operationNoInput.on('input', function(){
@@ -218,18 +236,18 @@ operationStatusInit() {
     if ( !op.id ) {
         $operationNoButton.prop('disabled', true );
     }
-    
+
     // メニューボタン
     op.$.button.on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
-        
+
         if ( !fn.checkContentLoading() ) {
-            
+
             $button.prop('disabled', true );
             fn.contentLoadingStart();
             clearTimeout( op.timerId );
-        
+
             switch ( type ) {
                 // 作業状態確認切替
                 case 'check': {
@@ -284,7 +302,7 @@ operationStatusInit() {
 */
 operationMessage() {
     const op = this;
-    
+
     const html = `<div class="contentMessage">
         <div class="contentMessageInner">
             <span class="icon icon-circle_info"></span>` + getMessage.FTE05005 + `<br>
@@ -292,7 +310,7 @@ operationMessage() {
             <a href="?menu=${Status.string[op.menu].executionListMenu}">` + getMessage.FTE05007 + `</a>` + getMessage.FTE05008 + `
         </div>
     </div>`;
-    
+
     op.$.operationContainer.html( html );
 }
 /*
@@ -302,7 +320,7 @@ operationMessage() {
 */
 operationStatus() {
     const op = this;
-    
+
     const html = `
     <div class="commonSection">
         <div class="commonBlock">
@@ -484,12 +502,12 @@ operationStatus() {
             </div>
         </div>
     </div>`;
-    
+
     op.$.operationContainer.html( html );
-    
+
     op.$.movementArea = op.$.operationContainer.find('.movementArea');
     op.$.node = op.$.operationContainer.find('.node');
-    
+
     // コンテンツボタン
     op.$.operationContainer.find('.commonButton').on('click', function(){
         const $button = $( this ),
@@ -515,27 +533,27 @@ operationStatus() {
         }
         fn.modalIframe( target.menu, target.title, { filter: target.filter, iframeMode: target.iframeMode });
     });
-    
+
     // ファイルダウンロード
     op.$.operationContainer.on('click', '.operationStatusFileDownload', function( e ){
         e.preventDefault();
-        
+
         const $link = $( this ),
               rest = $link.attr('data-rest'),
               fileName = $link.text();
-        
+
         if ( op.info.execution_list.file[rest] ) {
             fn.download('base64', op.info.execution_list.file[rest], fileName );
         }
     });
-    
+
     // ノードのアニメーション完了時
     op.$.node.find('.node-result').on('animationend', function(){
         if ( op.$.node.is('.complete') ) {
             $( this ).off('animationend').addClass('animationEnd');
         }
     });
-    
+
     if ( op.info ) {
         op.operationStatusUpdate();
     }
@@ -547,7 +565,7 @@ operationStatus() {
 */
 operationStatusUpdate() {
     const op = this;
-    
+
     // 値を更新する
     const typeFile = Object.keys( op.info.execution_list.file );
     for( const key in op.info.execution_list.parameter ) {
@@ -566,7 +584,7 @@ operationStatusUpdate() {
             }
         }
     }
-    
+
     /* ステータス
     01 未実行
     02 準備中
@@ -580,14 +598,14 @@ operationStatusUpdate() {
     10 予約取消
     */
     const statudId = op.info.status_id;
-    
+
     // ホスト確認、代入値確認ボタン
     if ( ['1', '2', '9', '10'].indexOf( statudId ) !== -1 ) {
         op.$.operationContainer.find('.hostButton, .valueButton').prop('disabled', true );
     } else {
         op.$.operationContainer.find('.hostButton, .valueButton').prop('disabled', false );
     }
-    
+
     // 予約取消、緊急停止ボタン
     if ( ['9'].indexOf( statudId ) !== -1 && op.info.execution_list.parameter.scheduled_date_time !== null ) {
         op.$.operation.attr('data-mode', 'standby');
@@ -596,7 +614,7 @@ operationStatusUpdate() {
     } else {
         op.$.operation.attr('data-mode', '');
     }
-    
+
     // ノードの状態を更新する
     switch ( op.info.status_id ) {
         case '2':
@@ -625,7 +643,7 @@ operationStatusUpdate() {
             op.$.node.addClass('complete').find('.node-result').attr('data-result-text', 'CANCEL');
         break;
     }
-    
+
 }
 
 
@@ -636,14 +654,14 @@ operationStatusUpdate() {
 */
 logInit() {
     const op = this;
-    
+
     // 進行状態表示行数
-    if ( op.info ) { 
+    if ( op.info ) {
         op.logMax = fn.cv( op.info.number_of_rows_to_display_progress_status, 1000 );
     } else {
         op.logMax = 0;
     }
-    
+
     op.executeLogInit();
     op.errorLogInit();
 }
@@ -654,7 +672,7 @@ logInit() {
 */
 executeLogInit() {
     const op = this;
-    
+
     if ( op.info ) {
         op.executeLog = {};
 
@@ -698,13 +716,13 @@ executeLogUpdate() {
                     op.executeLog[ filename ] = new Log( executeLogId, op.logMax );
                     op.$.executeLogSelectList.append(`<li class="executeLogSelectItem"><a title="${filename}" class="executeLogSelectLink" href="#${executeLogId}">${filename}</a></li>`);
                     op.$.executeLogContent.append( op.executeLog[ filename ].setup('executeLogSection', executeLogId ) );
-                    
+
                     if ( firstFlag ) {
                         op.$.executeTab.removeClass('hidden');
                         op.$.executeLogSelectList.find('.executeLogSelectLink').addClass('logOpen').attr('tabindex', -1 );
                         op.$.executeLogContent.find('.executeLogSection').addClass('logOpen');
                     }
-                }  
+                }
                 op.executeLog[ filename ].update( op.info.progress.execution_log.exec_log[ filename ] );
             }
         }
@@ -717,7 +735,7 @@ executeLogUpdate() {
 */
 errorLogInit() {
     const op = this;
-    
+
     if ( op.info ) {
         op.errorLogUpdate();
     }

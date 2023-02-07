@@ -308,11 +308,12 @@ editFlag: function( menuInfo ) {
     flag.autoFilter = ( menuInfo.auto_filter_flg === '1')? true: false;
     flag.history = ( menuInfo.history_table_flag === '1')? true: false;
     
-    flag.insert = ( menuInfo.row_insert_flag === '1')? true: false;
-    flag.update = ( menuInfo.row_update_flag === '1')? true: false;
-    flag.disuse = ( menuInfo.row_disuse_flag === '1')? true: false;
-    flag.reuse = ( menuInfo.row_reuse_flag === '1')? true: false;
-    flag.edit = ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false;
+    flag.privilege = ( menuInfo.privilege === '1')? true: false;
+    flag.insert = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1')? true: false: false;
+    flag.update = ( menuInfo.privilege === '1')? ( menuInfo.row_update_flag === '1')? true: false: false;
+    flag.disuse = ( menuInfo.privilege === '1')? ( menuInfo.row_disuse_flag === '1')? true: false: false;
+    flag.reuse = ( menuInfo.privilege === '1')? ( menuInfo.row_reuse_flag === '1')? true: false: false;
+    flag.edit = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
     
     return flag;
 },

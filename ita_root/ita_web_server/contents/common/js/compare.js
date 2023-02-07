@@ -191,7 +191,7 @@ compareSettingHtml( info ) {
     + '<div class="compareContentHeader">'
         + `<div class="commonTitle">${getMessage.FTE06007}</div>`
     + '</div>'
-    + '<div class="compareContentBody">'
+    + '<div class="compareContentBody commonScroll">'
         + '<div class="commonBody commonWrap">'
             + '<dl class="commonStatus">'
                 + `<dt class="commonStatusKey">${getMessage.FTE06008}</dt>`
@@ -271,7 +271,7 @@ hostHtml( hostList ) {
     + '<div class="compareContentHeader">'
         + `<div class="commonTitle">${getMessage.FTE06020}</div>`
     + '</div>'
-    + '<div class="compareContentBody">'
+    + '<div class="compareContentBody commonScroll">'
         + html.join('')
     + '</div>';
 }
@@ -452,7 +452,7 @@ setCompareResult( info ) {
             $host.find('.compareHostDiffFlag').html( ( compareFlag )? fn.html.icon('check'): fn.html.icon('minus') );
 
             html += ''
-            + `<div class="comparaResultBlock" data-id="${hostName}"><div class="commonSubTitle">${hostName}</div><div class="commonBody">`
+            + `<div class="comparaResultBlock" data-id="${hostName}"><div class="commonSubTitle">${hostName}</div><div class="commonBody commonScroll">`
             + '<table class="table">'
             + '<thead class="thead">'
                 + '<tr class="theadTr tr">'
@@ -517,7 +517,7 @@ setCompareResult( info ) {
     + '<div class="compareContentHeader">'
         + `<div class="commonTitle">${getMessage.FTE06029}</div>`
     + '</div>'
-    + '<div class="compareContentBody">'
+    + '<div class="compareContentBody commonScroll">'
         + html
     + '</div>');
     

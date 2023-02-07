@@ -260,9 +260,9 @@ def execution_scram(objdbca, driver_id, execution_no):
         RETRUN:
             True
     """
-    target = {{AnscConst.DF_LEGACY_DRIVER_ID: AnslConst.vg_exe_ins_msg_table_name},
-              {AnscConst.DF_PIONEER_DRIVER_ID: AnspConst.vg_exe_ins_msg_table_name},
-              {AnscConst.DF_LEGACY_ROLE_DRIVER_ID: AnsrConst.vg_exe_ins_msg_table_name}}
+    target = {AnscConst.DF_LEGACY_DRIVER_ID: AnslConst.vg_exe_ins_msg_table_name,
+              AnscConst.DF_PIONEER_DRIVER_ID: AnspConst.vg_exe_ins_msg_table_name,
+              AnscConst.DF_LEGACY_ROLE_DRIVER_ID: AnsrConst.vg_exe_ins_msg_table_name}
 
     TableName = target[driver_id]
 

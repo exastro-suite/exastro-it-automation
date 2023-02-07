@@ -815,6 +815,11 @@ def _insert_t_menu_define(objdbca, menu_data):
         if not vertical:
             vertical = "False"
 
+        # ホストグループ利用のkeyが無い場合はFalseを指定
+        hostgroup = menu_data.get('hostgroup')
+        if not hostgroup:
+            hostgroup = "False"
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -827,6 +832,7 @@ def _insert_t_menu_define(objdbca, menu_data):
                 "description_en": menu_data.get('description'),  # 説明(en)
                 "remarks": menu_data.get('remarks'),  # 備考
                 "vertical": vertical,  # 縦メニュー利用有無
+                ### "hostgroup": hostgroup,  # ホストグループ利用有無
                 "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                 "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
                 "menu_group_for_ref": menu_data.get('menu_group_for_ref')  # 参照用メニューグループ名
@@ -885,13 +891,18 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         menu_name_en = menu_data.get('menu_name')
         menu_name_rest = menu_data.get('menu_name_rest')
 
-        # 「シートタイプ」「縦メニュー利用」を取得
+        # 「シートタイプ」「縦メニュー利用」「ホストグループ利用」を取得
         sheet_type = str(menu_data.get('sheet_type'))
         vertical = menu_data.get('vertical')
+        hostgroup = menu_data.get('hostgroup')
 
         # 縦メニュー利用有無のkeyが無い場合はFalseを指定
         if not vertical:
             vertical = "False"
+
+        # 縦メニュー利用有無のkeyが無い場合はFalseを指定
+        if not hostgroup:
+            hostgroup = "False"
 
         # 「初期化」「編集」の場合のみチェックするバリデーション
         if type_name == 'initialize' or type_name == 'edit':
@@ -903,6 +914,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         if type_name == 'edit':
             current_sheet_type = str(current_t_menu_define.get('SHEET_TYPE'))
             current_vertical = str(current_t_menu_define.get('VERTICAL'))
+            current_hostgroup = str(current_t_menu_define.get('HOSTGROUP'))
 
             # シートタイプのIDと名称の紐付け取得
             sheet_type_list = objdbca.table_select(v_menu_sheet_type, 'ORDER BY DISP_SEQ ASC')
@@ -918,6 +930,10 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
             vertical_id = "1" if vertical == "True" else "0"
             if not current_vertical == vertical_id:
                 raise Exception("499-00704", ["vertical"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
+
+            hostgroup_id = "1" if hostgroup == "True" else "0"
+            if not current_hostgroup == hostgroup_id:
+                raise Exception("499-00704", ["hostgroup"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
         # 対象のuuidを取得
         menu_create_id = menu_data.get('menu_create_id')
@@ -1857,6 +1873,9 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         # 縦メニュー利用を取得
         vertical = menu_data.get('vertical')
 
+        # ホストグループ利用を取得
+        hostgroup = menu_data.get('hostgroup')
+
         # シートタイプ一覧情報を取得
         ret = objdbca.table_select(v_menu_sheet_type, 'WHERE DISUSE_FLAG = %s', [0])
         for record in ret:
@@ -1871,6 +1890,10 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         # 「縦メニュー利用」かつ、登録する項目が無い場合エラー判定
         if vertical == "True" and not column_data_list:
             raise Exception("499-00712", [])  # 「縦メニュー利用」の場合、項目数が0件のメニューを作成できません。
+
+        # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
+        if sheet_id == "2" and hostgroup == "True":
+            raise Exception("499-00713", [])
 
         # ロールを取得
         role_list = menu_data.get('role_list')

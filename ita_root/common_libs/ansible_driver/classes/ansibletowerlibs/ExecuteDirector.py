@@ -29,7 +29,6 @@ from flask import g
 
 from common_libs.common.util import ky_decrypt, ky_file_decrypt
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.menu_required_check import AuthTypeParameterRequiredCheck
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiConfig import AnsibleTowerRestApiConfig
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiExecutionEnvironment import AnsibleTowerRestApiExecutionEnvironment
@@ -172,7 +171,8 @@ class ExecuteDirector():
         # Host情報取得
         inventoryForEachCredentials = {}
         ret, inventoryForEachCredentials = self.getHostInfo(exeInsRow, inventoryForEachCredentials, igrp_array)
-        if not ret:
+
+        if not ret or len(inventoryForEachCredentials) == 0:
             # MSG-10649 = "ホスト情報の取得に失敗しました。"
             errorMessage = g.appmsg.get_api_message("MSG-10649")
             self.errorLogOut(errorMessage)
@@ -324,10 +324,6 @@ class ExecuteDirector():
         # ジョブテンプレートをワークフローに結合
         workflowTplId = self.createWorkflowJobTemplate(execution_no, jobTemplateIds, OrganizationId)
         if workflowTplId == -1:
-            errorMessage = g.appmsg.get_api_message("MSG-10654")
-            self.errorLogOut(errorMessage)
-            # HTTPの情報をUIに表示
-            self.RestResultLog(self.restApiCaller.getRestResultList())
             return -1, TowerHostList
 
         return workflowTplId, TowerHostList
@@ -799,7 +795,7 @@ class ExecuteDirector():
             # src   path: /var/lib/exastro/ita_legacy_role_executions_作業番号/__ita_out_dir__
             # dest  path: /storage/org1/workspace-1/driver/ansible/legacy_role/作業番号/out
             ########################################################################################################
-            src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH]
+            src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH] + "/*";
             dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_ITA_PATH]
             info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
@@ -1047,7 +1043,7 @@ class ExecuteDirector():
 
     def getHostInfo(self, exeInsRow, inventoryForEachCredentials, igrp_array):
 
-        vg_ansible_pho_linkDB = AnsrConst.vg_ansible_pho_linkDB
+        vg_ansible_pho_linkDB = self.AnsConstObj.vg_ansible_pho_linkDB
         condition = [exeInsRow['EXECUTION_NO'], exeInsRow['OPERATION_ID'], exeInsRow['MOVEMENT_ID']]
         cols = self.dbAccess.table_columns_get(vg_ansible_pho_linkDB)
         cols = (',').join(cols[0])
@@ -1362,7 +1358,7 @@ class ExecuteDirector():
 
     def createEachJobTemplate(self, execution_no, loopCount, projectId, credentialId, vault_credentialId, inventoryId, runMode, execution_environment_id):
 
-        vg_parent_playbook_name = AnsrConst.vg_parent_playbook_name
+        vg_parent_playbook_name = self.AnsConstObj.vg_parent_playbook_name
 
         param = {}
         param['execution_no'] = execution_no
@@ -1400,21 +1396,24 @@ class ExecuteDirector():
 
     def createWorkflowJobTemplate(self, execution_no, jobTemplateIds, OrganizationId):
 
-        if not jobTemplateIds:
-            g.applogger.debug("%s no job templates." % (inspect.currentframe().f_code.co_name))
-            return -1
-
         param = {}
         param['organization'] = OrganizationId
         param['execution_no'] = execution_no
 
         response_array = AnsibleTowerRestApiWorkflowJobTemplates.post(self.restApiCaller, param)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            errorMessage = g.appmsg.get_api_message("MSG-10654")
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return -1
 
         if "id" not in response_array['responseContents']:
-            g.applogger.debug("No workflow-job-template id.")
+            g.applogger.error("No workflow-job-template id.")
+            errorMessage = g.appmsg.get_api_message("MSG-10654")
+            self.errorLogOut(errorMessage)
+            # HTTPの情報をUIに表示
+            self.RestResultLog(self.restApiCaller.getRestResultList())
             return -1
 
         workflowTplId = response_array['responseContents']['id']
@@ -1428,7 +1427,10 @@ class ExecuteDirector():
 
             response_array = AnsibleTowerRestApiWorkflowJobTemplateNodes.post(self.restApiCaller, param)
             if not response_array['success']:
-                g.applogger.debug(response_array['responseContents']['errorMessage'])
+                errorMessage = g.appmsg.get_api_message("MSG-10913")
+                self.errorLogOut(errorMessage)
+                # HTTPの情報をUIに表示
+                self.RestResultLog(self.restApiCaller.getRestResultList())
                 return -1
 
             loopCount = loopCount + 1

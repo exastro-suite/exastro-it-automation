@@ -403,6 +403,8 @@ CREATE TABLE T_COMN_MOVEMENT
     ANS_EXEC_OPTIONS                TEXT,                                       -- オプションパラメータ
     ANS_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255),                               -- 実行環境
     ANS_ANSIBLE_CONFIG_FILE         VARCHAR(255),                               -- Ansible.cfg
+    TERE_WORKSPACE_ID               VARCHAR(40),                                -- Terraform Cloud/EP Workspace
+    TERC_WORKSPACE_ID               VARCHAR(40),                                -- Terraform CLI Workspace
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -426,6 +428,8 @@ CREATE TABLE T_COMN_MOVEMENT_JNL
     ANS_EXEC_OPTIONS                TEXT,                                       -- オプションパラメータ
     ANS_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255),                               -- 実行環境
     ANS_ANSIBLE_CONFIG_FILE         VARCHAR(255),                               -- Ansible.cfg
+    TERE_WORKSPACE_ID               VARCHAR(40),                                -- Terraform Cloud/EP Workspace
+    TERC_WORKSPACE_ID               VARCHAR(40),                                -- Terraform CLI Workspace
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -623,6 +627,19 @@ CREATE TABLE T_COMN_PROC_LOADED_LIST
     ROW_ID                          VARCHAR(40),                                -- UUID
     PROC_NAME                       VARCHAR(64),                                -- 処理名
     LOADED_FLG                      VARCHAR(1),                                 -- 実行フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- Webテーブル設定
+CREATE TABLE T_COMN_WEB_TABLE_SETTINGS
+(
+    ROW_ID                          VARCHAR(40),                                -- UUID
+    USER_ID                         VARCHAR(64),                                -- ユーザID
+    WEB_TABLE_SETTINGS              LONGTEXT,                                   -- テーブル設定
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;

@@ -184,6 +184,20 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         # 縦メニュー利用の有無を取得
         vertical_flag = True if str(record_t_menu_define.get('VERTICAL')) == "1" else False
 
+        # ホストグループ利用の有無を取得
+        hostgroup_flag = True if str(record_t_menu_define.get('HOSTGROUP')) == "1" else False
+        if hostgroup_flag:
+            # ホストグループ利用時、代入値自動登録用テーブル名/ビュー名を生成
+            sv_create_table_name = 'T_CMDB_' + str(menu_create_id) + '_SV'
+            sv_create_table_name_jnl = 'T_CMDB_' + str(menu_create_id) + '_SV' + '_JNL'
+            sv_create_view_name = 'V_CMDB_' + str(menu_create_id) + '_SV'
+            sv_create_view_name_jnl = 'V_CMDB_' + str(menu_create_id) + '_SV' + '_JNL'
+        else:
+            sv_create_table_name = None
+            sv_create_table_name_jnl = None
+            sv_create_view_name = None
+            sv_create_view_name_jnl = None
+
         # シートタイプによる処理の分岐
         file_upload_only_flag = False
         if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
@@ -252,6 +266,20 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                     if re.fullmatch(r'[\s\n\r]*', sql) is None:
                         objdbca.sql_execute(sql)
 
+            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
+            if hostgroup_flag:
+                with open(sql_file_path, "r") as f:
+                    file = f.read()
+                    if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
+                        file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
+                        file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
+                        file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
+                        file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
+                    sql_list = file.split(";\n")
+                    for sql in sql_list:
+                        if re.fullmatch(r'[\s\n\r]*', sql) is None:
+                            objdbca.sql_execute(sql)
+
         # カラムグループ登録の処理に必要な形式にフォーマット
         result, msg, dict_t_menu_column_group, target_column_group_list = _format_column_group_data(record_t_menu_column_group, record_t_menu_column)
         if not result:
@@ -318,7 +346,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「メニュー-テーブル紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20013", [target_menu_group_type])
             g.applogger.debug(debug_msg)
-            result, msg = _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, file_upload_only_flag, create_table_name, create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name)  # noqa: E501
+            result, msg = _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, file_upload_only_flag, create_table_name, create_view_name, sv_create_table_name, sv_create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name)  # noqa: E501
             if not result:
                 raise Exception(msg)
 
@@ -347,7 +375,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「メニュー-カラム紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20015", [target_menu_group_type])
             g.applogger.debug(debug_msg)
-            result, msg = _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name)  # noqa: E501
+            result, msg = _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name)  # noqa: E501
             if not result:
                 raise Exception(msg)
 
@@ -373,6 +401,15 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                 result, msg = _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_t_menu_column)
                 if not result:
                     raise Exception(msg)
+
+        # ホストグループ利用時、ホストグループ分割対象へのレコード登録
+        if hostgroup_flag:
+            # 「分割対象メニュー」「登録対象メニュー」の「MENU_NAME_REST」
+            split_menu_name_rest = record_t_menu_define.get('MENU_NAME_REST')
+            register_menu_name_rest = record_t_menu_define.get('MENU_NAME_REST') + "_subst"
+            result, msg = _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest)
+            if not result:
+                raise Exception(msg)
 
         # 正常系リターン
         return True, msg
@@ -626,7 +663,7 @@ def _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_ro
     return True, None
 
 
-def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, file_upload_only_flag, create_table_name, create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name):  # noqa: E501
+def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, file_upload_only_flag, create_table_name, create_view_name, sv_create_table_name, sv_create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name):  # noqa: E501
     """
         「メニュー-テーブル紐付管理」メニューのテーブルにレコードを追加もしくは復活する
         ARGS:
@@ -729,6 +766,11 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
+            # ホストグループ利用時、入力用メニューのテーブル変更
+            if hostgroup_flag and substitution_value_link_flag == "1":
+                data_list["TABLE_NAME"] = sv_create_table_name
+                data_list["VIEW_NAME"] = sv_create_view_name
+
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_update(t_comn_menu_table_link, data_list, primary_key_name)
 
@@ -753,6 +795,11 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
+            # ホストグループ利用時、入力用メニューのテーブル変更
+            if hostgroup_flag and substitution_value_link_flag == "1":
+                data_list["TABLE_NAME"] = sv_create_table_name
+                data_list["VIEW_NAME"] = sv_create_view_name
+
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
@@ -833,7 +880,7 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
     return True, None
 
 
-def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name):  # noqa: E501, C901
+def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, menu_group_col_name):  # noqa: E501, C901
     """
         「メニュー-カラム紐付管理」メニューのテーブルに対し、「column_name_rest」を基準として以下の操作を行う
         1: 同一の「column_name_rest」のレコードがあれば、そのレコードの更新を行う（事前の処理で廃止状態になっているため、復活したうえで更新する）。
@@ -955,6 +1002,13 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
+
+            # ホストグループ利用時、参照先テーブル変更
+            if hostgroup_flag:
+                data_list["REF_TABLE_NAME"] = "V_HGSP_UQ_HOST_LIST"
+                data_list["REF_PKEY_NAME"] = "KY_KEY"
+                data_list["REF_COL_NAME"] = "KY_VALUE"
+
             primary_key_name = 'COLUMN_DEFINITION_ID'
             if column_definition_id:
                 data_list['COLUMN_DEFINITION_ID'] = column_definition_id
@@ -2428,3 +2482,68 @@ def _check_file_upload_column(record_t_menu_column):
         file_upload_only_flag = True
 
     return file_upload_only_flag
+
+
+def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest):
+    """
+        「ホストグループ分割対象」メニューのテーブルにレコードを追加、更新
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+            split_menu_name_rest: 分割対象メニュー
+            register_menu_name_rest: 登録対象メニュー
+
+        RETRUN:
+            result, msg
+    """
+    # テーブル名 - PK
+    t_hgsp_split_target = 'T_HGSP_SPLIT_TARGET'
+    primary_key_name = 'ROW_ID'
+    try:
+        # 分割対象:入力用/登録対象:代入値自動登録用 の「MENU_NAME_REST」を設定
+        split_target_menus = {
+            "split": split_menu_name_rest,
+            "register": register_menu_name_rest,
+        }
+        # 「MENU_NAME_REST」からmenu_idを取得
+        split_target_menu_ids = {}
+        for target_key, target_menu_name in split_target_menus.items():
+            t_comn_menu = 'T_COMN_MENU'
+            ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [target_menu_name, 0])
+            if ret:
+                menu_id = ret[0].get('MENU_ID')
+                split_target_menu_ids.setdefault(target_key, menu_id)
+
+        # 「ホストグループ分割対象」から対象のレコードを取得
+        if len(split_target_menu_ids) == 2:
+            ret = objdbca.table_select(
+                t_hgsp_split_target,
+                'WHERE INPUT_MENU_ID = %s AND OUTPUT_MENU_ID = %s AND DISUSE_FLAG = %s',
+                [split_target_menu_ids.get('input'), split_target_menu_ids.get('output'), 0]
+            )
+            if ret:
+                # 対象の DIVIDED_FLG を '0' で更新
+                split_target_id = ret[0].get('ROW_ID')
+                divided_flg = ret[0].get('DIVIDED_FLG')
+                if divided_flg != "0":
+                    data_list = {
+                        'ROW_ID': split_target_id,
+                        'DIVIDED_FLG': '0',
+                        'DISUSE_FLAG': '0',
+                        'LAST_UPDATE_USER': g.get('USER_ID')
+                    }
+                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name)
+            else:
+                # 「分割対象メニュー」*「登録対象メニュー」で DIVIDED_FLG を '0' で登録
+                data_list = {
+                    'INPUT_MENU_ID': split_target_menu_ids.get('split'),
+                    'OUTPUT_MENU_ID': split_target_menu_ids.get('register'),
+                    'DIVIDED_FLG': '0',
+                    'DISUSE_FLAG': '0',
+                    'LAST_UPDATE_USER': g.get('USER_ID')
+                }
+                objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name)
+
+    except Exception as msg:
+        return False, msg
+
+    return True, None,

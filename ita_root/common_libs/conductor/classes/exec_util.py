@@ -482,15 +482,16 @@ class ConductorExecuteLibs():
             notice_names = []
             notice_definition = []
 
-            for key in notice_info.keys():
-                notice_names.append(key)
-            for name in notice_names:
-                filter_parameter = {"notice_name": {"LIST": [name]}}
-                tmp_notice = objcnotice.rest_filter(filter_parameter)
-                if tmp_notice[0] == "000-00000":
-                    notice_definition.append(tmp_notice[1][0])
-                else:
-                    raise Exception
+            if notice_info is not None:
+                for key in notice_info.keys():
+                    notice_names.append(key)
+                for name in notice_names:
+                    filter_parameter = {"notice_name": {"LIST": [name]}}
+                    tmp_notice = objcnotice.rest_filter(filter_parameter)
+                    if tmp_notice[0] == "000-00000":
+                        notice_definition.append(tmp_notice[1][0])
+                    else:
+                        raise Exception()
 
             bool_master_true = 'True'
             bool_master_false = 'False'
@@ -1547,8 +1548,9 @@ class ConductorExecuteLibs():
                     }
                 )
                 action_info = orchestra_action_info.get(orchestra_id)
-                result['id'][orchestra_id].update(action_info)
-                result['name'][orchestra_name].update(action_info)
+                if action_info is not None:
+                    result['id'][orchestra_id].update(action_info)
+                    result['name'][orchestra_name].update(action_info)
         except Exception as e:
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()

@@ -37,8 +37,14 @@ class Const:
     # RUN_MODE
     RUN_MODE_APPLY = '1'    # 実行モード(apply)
     RUN_MODE_PLAN = '2'     # 実行モード(plan)
-    RUN_MODE_DESTROY = '3'  # 実行モード(destroy)
+    RUN_MODE_PARAM = '3'    # 実行モード(パラメータ確認)
+    RUN_MODE_DESTROY = '4'  # 実行モード(destroy)
 
+    # ドライバ識別子
+    DRIVER_TERRAFORM_CLOUD_EP = 'TERE'
+    DRIVER_TERRAFORM_CLI = 'TERC'
 
-
-
+    # テーブル/ビュー名
+    T_EXEC_STATUS = 'T_TERF_EXEC_STATUS'
+    T_EXEC_MODE = 'T_TERF_EXEC_MODE'
+    T_TYPE_MASTER = 'T_TERF_TYPE_MASTER'

@@ -137,7 +137,6 @@ tableStructuralData() {
     
     const check = function( key ) {
         const hideItem = tb.getTableSettingValue('hideItem');
-        console.log(hideItem)
         if ( hideItem.length ) {
             return ( hideItem.indexOf( key ) === -1 );
         } else {
@@ -4094,9 +4093,8 @@ saveTableSetting() {
     const sessionUserData = fn.storage.get('restUser', 'session');
     if ( sessionUserData ) {
         const process = fn.processingModal(),
-              set = sessionUserData.web_table_settings;
+              set = fn.cv( sessionUserData.web_table_settings, {} );
         
-        if ( !set ) set = {};
         if ( !set.table ) set.table = {};
         
         // 全般

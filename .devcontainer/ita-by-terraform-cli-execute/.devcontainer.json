@@ -1,9 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/jekyll
 {
-	"name": "it-automation2 - ita-by-terraform-cloud-ep-execute",
+	"name": "it-automation2 - ita-by-terraform-cli-execute",
 	"dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml"],
-	"service": "ita-by-terraform-cloud-ep-execute",
+	"service": "ita-by-terraform-cli-execute",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"files.trimTrailingWhitespace": true,

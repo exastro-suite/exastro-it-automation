@@ -35,7 +35,7 @@ class CommonUi {
 */
 constructor() {
     const ui = this;
-    
+
     // jQuery cache
     ui.$ = {};
     ui.$.window = $( window ),
@@ -44,14 +44,14 @@ constructor() {
     ui.$.header = $('#header');
     ui.$.menu = $('#menu');
     ui.$.content = $('#content');
-    
+
     // Common parameter
     ui.params = fn.getCommonParams();
     ui.params.menuNameRest = fn.getParams().menu;
-    
+
     // Set common events
     fn.setCommonEvents();
-    
+
     // 結果を入れる
     ui.rest = {};
 }
@@ -62,49 +62,49 @@ constructor() {
 */
 init() {
     const ui = this;
-    
+
     // UI設定読み込み
     fn.setUiSetting();
-    
+
     // UIモード
     if ( window.parent === window ) {
         ui.$.container.addClass('windowMode');
-        
+
         // サイドメニュー開閉チェック
         const sideMenu = fn.storage.get('sideMenuClose');
         if ( sideMenu === true ) {
             ui.$.container.addClass('menuClose');
         }
-        
+
         // サイドメニューイベントのセット
         ui.setSideMenuEvents();
-        
+
         // Session storageにデータがある場合は先に表示する
         ui.storageLang = fn.storage.get('lang', 'session');
         ui.storageMenuGroups = fn.storage.get('restMenuGroups', 'session');
         ui.storagePanel = fn.storage.get('restPanel', 'session');
         ui.storageUser = fn.storage.get('restUser', 'session');
-        
+
         if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel && ui.storageUser ) {
             ui.lang = ui.storageLang;
             fn.loadAssets({type:'js', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
                 ui.rest.menuGroups = ui.storageMenuGroups;
                 ui.rest.panel = ui.storagePanel;
                 ui.rest.user = ui.storageUser;
-                
+
                 ui.setSideMenu();
                 ui.headerMenu( false );
             });
         }
-        
+
     } else {
         ui.$.container.addClass('iframeMode');
-        
+
         const iframeMode = fn.getParams().iframeMode;
         if ( iframeMode ) {
             ui.$.container.attr('data-iframeMode', iframeMode );
         }
-    }    
+    }
 }
 /*
 ##################################################
@@ -113,7 +113,7 @@ init() {
 */
 setUi() {
     const ui = this;
-    
+
     const set = function() {
         // iframeで読み込まれていないか？
         if ( window.parent === window ) {
@@ -131,7 +131,7 @@ setUi() {
     if ( ui.lang !== tmpLang ) {
         fn.storage.set('lang', tmpLang, 'session');
         ui.lang = tmpLang;
-        
+
         if ( $lang.length ) $('#lang').remove();
         fn.loadAssets({type:'js', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
             set();
@@ -154,19 +154,19 @@ setUi() {
 */
 setSideMenuEvents() {
     const ui = this;
-    
+
     ui.$.menu.on('click', '.menuTabLink', function( e ){
         e.preventDefault();
-        
+
         const $link = $( this );
         ui.menuTab = $link.attr('href');
         ui.$.menu.find('.tabOpen').removeClass('tabOpen').removeAttr('tabindex');
         ui.$.menu.find(`.menuTabLink[href="${ui.menuTab}"]`).addClass('tabOpen').attr('tabindex', -1 );
         $( ui.menuTab ).addClass('tabOpen');
         fn.storage.set('menuTab', ui.menuTab );
-        
+
     });
-    
+
     // Menu toggle
     ui.$.menu.on('click', '.menuToggleButton', function(){
         if ( !ui.$.container.is('.menuClose') ) {
@@ -178,15 +178,15 @@ setSideMenuEvents() {
             ui.$.menu.find('.cloneMenu').remove();
         }
     });
-    
+
     // Menu accordion
     ui.$.container.on('click', '.menuSecondaryToggleButton', function( e ){
         e.preventDefault();
-        
+
         const $button = $( this ),
               menuId = $button.attr('data-id'),
               $menu = $button.next('.menuSecondaryList');
-        
+
         if ( $button.is('.open') ) {
             $button.removeClass('open');
             $menu.stop(0,0).slideUp( ui.menuSecondaryToggleSpeed );
@@ -202,24 +202,24 @@ setSideMenuEvents() {
         }
         fn.storage.set('subMenuOpen', ui.menuSecondary );
     });
-    
+
     // メニューグループクリック時、メニュー一覧表示
     ui.$.menu.on('click', '.menuGroupLink', function( e ){
         e.preventDefault();
-        
+
         const $link = $( this ),
               num = $link.attr('data-num'),
               id = $link.attr('data-id'),
               list = ui.menuGroupList[ num ],
               width = ui.$.menu.outerWidth();
-        
+
         if ( list.id === id && !$link.is('.subGroupMenuOpen') ) {
             if ( $link.is('.cloneLink') ) {
                 $link.closest('.menuItem').trigger('pointerleave');
             }
-            
+
             ui.$.menu.find(`.menuGroupLink[data-id="${id}"]`).addClass('subGroupMenuOpen');
-        
+
             const $html = $(`<div class="menuGroupSub" style="left:${width}px">`
             + `<div class="menuHeader"></div>`
             + `<div class="menuBody">`
@@ -227,7 +227,7 @@ setSideMenuEvents() {
                     + ui.sideMenuBody( list.menu_group_name, null, ui.menuSub( list.menus ), ui.rest.panel[ id ], false )
                 + `</div>`
             + `</div></div>`);
-            
+
             ui.$.container.append( $html );
             ui.$.window.on('mousedown.groupSub', function( e ){
                 if ( !$( e.target ).closest('.menuGroupSub, .subGroupMenuOpen').length ) {
@@ -240,50 +240,50 @@ setSideMenuEvents() {
             });
         }
     });
-    
+
     // メニューが閉じている場合、サイドメニュータブを表示
     ui.$.menu.on('pointerenter', '.menuHeader', function( e ){
         if ( ui.$.container.is('.menuClose') ) {
             const $menu = $( this ),
                   $cloneHeader = $menu.find('.menuHeaderInner').clone();
-            
+
             $cloneHeader.addClass('cloneMenu');
-            
+
             $menu.prepend( $cloneHeader );
-            
+
             ui.$.menu.find('.menuHeader').on('pointerleave', function( e ){
                 ui.$.menu.find('.menuHeader').off('pointerleave');
                 $cloneHeader.remove();
             });
         }
     });
-    
+
     ui.$.menu.on('pointerenter', '.menuItem', function( e ){
         if ( ui.$.container.is('.menuClose') ) {
             const $item = $( this ),
                   $link = $item.find('.menuLink');
-            
+
             if ( $link.is('.subGroupMenuOpen') || $link.is('.current') ) return;
-            
+
             const $cloneLink = $link.clone();
-            
+
             $cloneLink.addClass('cloneLink');
-            
+
             $item.prepend( $cloneLink );
-            
+
             $item.on('pointerleave', function( e ){
                 $item.off('pointerleave click');
                 $cloneLink.remove();
             });
         }
     });
-    
+
     // メニュー検索
     ui.$.menu.on('input', '.menuSearchText', function(){
         const $input = $( this ),
               $menuLink = $input.closest('.menuBlock').find('.menuLink'),
               val = $input.val().toLowerCase();
-        
+
         $menuLink.each(function(){
             const $link = $( this ),
                   text = $link.text().toLowerCase();
@@ -291,10 +291,10 @@ setSideMenuEvents() {
                 $link.hide();
             } else {
                 $link.show();
-            } 
-        }); 
+            }
+        });
     });
-    
+
     // メニュー検索クリア
     ui.$.menu.on('click', '.menuSearchClear', function(){
         const $input = $( this ).prev('.menuSearchText');
@@ -308,7 +308,7 @@ setSideMenuEvents() {
 */
 getSideMenuData() {
     const ui = this;
-    
+
     // REST API URLs
     const restApiUrls = [
         '/user/menus/',
@@ -317,13 +317,13 @@ getSideMenuData() {
 
     fn.fetch( restApiUrls ).then(function( result ){
         if ( result ) {
-            // 変更があればSession storageにセット            
+            // 変更があればSession storageにセット
             if ( JSON.stringify( result[0].menu_groups ) !== JSON.stringify( ui.storageMenuGroups ) || JSON.stringify( result[1] ) !== JSON.stringify( ui.storagePanel ) ) {
                 ui.rest.menuGroups = result[0].menu_groups;
                 ui.rest.panel = result[1];
                 fn.storage.set('restMenuGroups', ui.rest.menuGroups, 'session');
                 fn.storage.set('restPanel', ui.rest.panel, 'session');
-                
+
                 // 変更したデータサイドメニューを再セット
                 ui.setSideMenu();
             }
@@ -343,34 +343,34 @@ getSideMenuData() {
 */
 setSideMenu() {
     const ui = this;
-    
+
     // Secondary(Child) menu
     ui.menuSecondaryToggleSpeed = 300;
     ui.menuSecondary = fn.storage.get('subMenuOpen');
     if ( !ui.menuSecondary ) ui.menuSecondary = [];
-    
+
     // メニュー構造作成
     ui.createMenuGroupList();
-    
+
     const menus = [
         { name: 'menuGroup', icon: 'menuGroup', title: getMessage.FTE10002 },
         { name: 'menuMain', icon: 'menuList', title: ui.currentGroup.title },
         /*{ name: 'menuFavorite', icon: 'star'},
         { name: 'menuHistory', icon: 'history'}*/
     ];
-    
+
     // Menu tab
     ui.menuTab = fn.storage.get('menuTab');
     if ( !ui.menuTab || ui.menuTab === '#menuGroup') ui.menuTab = '#menuMain';
-    
+
     const tab = [],
           body = [];
-    
+
     for ( const menu of menus ) {
         tab.push(`<li class="menuTabItem"><a class="menuTabLink popup darkPopup" title="${menu.title}" href="#${menu.name}"><span class="icon icon-${menu.icon}"></span></a></li>`);
         body.push(`<div class="menuBlock" id="${menu.name}">${ui[ menu.name ]()}</div>`);
     }
-    
+
     ui.$.menu.html(`
     <div class="menuHeader">
         <div class="menuHeaderInner">
@@ -388,14 +388,14 @@ setSideMenu() {
     <div class="menuBody">
         ${body.join('')}
     </div>`);
-    
+
     // 最初に開いているタブをセット
     ui.$.menu.find(`.menuTabLink[href="${ui.menuTab}"]`).addClass('tabOpen').attr('tabindex', -1 );
     ui.$.menu.find( ui.menuTab ).addClass('tabOpen');
-    
+
     // トピックパスをセット
     ui.topicPath();
-    
+
     // メインメニューの場合メニューグループ一覧を表示する
     if ( !ui.params.menuNameRest ) {
         ui.mainMenu();
@@ -408,15 +408,15 @@ setSideMenu() {
 */
 createMenuGroupList() {
     const ui = this;
-    
-    // メニューグループリストの作成    
+
+    // メニューグループリストの作成
     ui.menuGroupList = [];
     ui.currentMenuGroupList = null;
     const childs = [];
-    
+
     // 配列のディープコピー
     const tempMenuGroups = $.extend( true, [], ui.rest.menuGroups );
-    
+
     // 親と子を分ける
     for ( const menuGroup of tempMenuGroups ) {
         if ( menuGroup.parent_id === null ) {
@@ -425,7 +425,7 @@ createMenuGroupList() {
             childs.push( menuGroup );
         }
     }
-    
+
     // 親に子を追加（開いているメニュー・各メインメニュー・カレントチェック）
     for ( const parent of ui.menuGroupList ) {
         for ( const child of childs ) {
@@ -450,7 +450,7 @@ createMenuGroupList() {
             }
         }
         ui.dispSeqSort( parent.menus );
-  
+
         parent.main_menu_rest = null;
         let subRest = null;
         for ( const menu of parent.menus ) {
@@ -466,7 +466,7 @@ createMenuGroupList() {
         if ( !parent.main_menu_rest && subRest ) parent.main_menu_rest = subRest;
     }
     ui.dispSeqSort( ui.menuGroupList );
-    
+
     if ( ui.currentMenuGroupList ) {
         const menuGroupName = fn.cv( ui.currentMenuGroupList.menu_group_name, '', true ),
               menuGroupPanel = fn.cv( ui.rest.panel[ ui.currentMenuGroupList.id ], ''),
@@ -503,9 +503,9 @@ getPanelImage( title, icon, panel ) {
 */
 sideMenuBody( title, icon, list, panel, searchFlag = true ) {
     const ui = this;
-    
+
     const iconImage = ui.getPanelImage( title, icon, panel );
-    
+
     return `
     <div class="menuTitle">
         <div class="menuTitleIcon">
@@ -528,8 +528,8 @@ sideMenuBody( title, icon, list, panel, searchFlag = true ) {
 ##################################################
 */
 menuMain() {
-    const ui = this;    
-    
+    const ui = this;
+
     if ( ui.params.menuNameRest && ui.currentMenuGroupList ) {
         const item = function( m, secondary ){
             const menuName = fn.cv( m.menu_name, '', true ),
@@ -600,7 +600,7 @@ menuMain() {
 ##################################################
 */
 menuSub( subMenuList ) {
-    const ui = this;    
+    const ui = this;
 
     const item = function( m, secondary ){
         const menuName = fn.cv( m.menu_name, '', true ),
@@ -653,10 +653,10 @@ menuSub( subMenuList ) {
 */
 menuGroup() {
     const ui = this;
-    
+
     const list = [],
           length = ui.menuGroupList.length;
-    
+
     for ( let i = 0; i < length; i++ ) {
         const menuGroup = ui.menuGroupList[i];
         if ( menuGroup.parent_id === null ) {
@@ -666,7 +666,7 @@ menuGroup() {
             list.push(`<li class="menuItem"><a class="menuGroupLink menuLink" data-id="${id}" data-num="${i}" href="${ui.params.path}?menu=${menuGroup.main_menu_rest}"><span class="menuGroupPanel">${panel}</span><span class="menuGroupTitle">${title}</span></a></li>`);
         }
     }
-    
+
     return ui.sideMenuBody( getMessage.FTE10002, 'menuGroup', list.join(''));
 }
 /*
@@ -741,7 +741,7 @@ topicPath() {
         topics.push({ href: `${ui.params.path}?menu=${ui.currentSecondaryGroup.link}`, title: ui.currentSecondaryGroup.title });
         title.push( ui.currentSecondaryGroup.title );
     }
-    
+
     const list = [];
     if ( topics.length ) {
         for ( const topic of topics ) {
@@ -751,14 +751,14 @@ topicPath() {
     } else {
         list.push(`<li class="topichPathItem"><span class="topichPathCurrent">${getMessage.FTE10001}</span></li>`);
     }
-    
+
     const html = `
     <ol class="topichPathList">
         ${list.join('')}
     </ol>`;
-    
+
     ui.$.header.find('.topicPath').html( html );
-    
+
     title.push('Exastro IT Automation');
     document.title = title.join(' / ');
 }
@@ -776,30 +776,30 @@ topicPath() {
 */
 setMenu() {
     const mn = this;
-      
+
     const urls = ['/user/'];
-    
+
     if ( mn.params.menuNameRest ) urls.push(`/menu/${mn.params.menuNameRest}/info/`);
 
     fn.fetch( urls ).then(function( result ){
         // ユーザ情報に変更があれば更新
-        if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) ) { 
+        if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) ) {
             mn.rest.user = result[0];
             mn.headerMenu();
-            
-            fn.storage.set('restUser', mn.rest.user, 'session');            
+
+            fn.storage.set('restUser', mn.rest.user, 'session');
         } else {
             mn.headerMenuReady();
         }
-        
+
         // 画面設定
         const uiStrageSetting = fn.storage.get('ui_setting'),
               uiSetting = ( mn.rest.user.web_table_settings && mn.rest.user.web_table_settings.ui )? mn.rest.user.web_table_settings.ui: {};
         if ( JSON.stringify( uiStrageSetting ) !== JSON.stringify( uiSetting ) ) {
             fn.storage.set('ui_setting', uiSetting );
-            fn.setUiSetting(); 
+            fn.setUiSetting();
         }
-        
+
         if ( mn.params.menuNameRest ) {
             mn.info = result[1];
             mn.title = fn.cv( mn.info.menu_info.menu_name, '', true );
@@ -823,7 +823,7 @@ sheetType() {
 
         // 権限フラグ
         mn.flag = fn.editFlag( mn.info.menu_info );
-        
+
         // シートタイプ
         mn.type = mn.info.menu_info.sheet_type;
 
@@ -902,18 +902,18 @@ sheetType() {
 */
 headerMenu( readyFlag = true ) {
     const mn = this;
-    
+
     const html = `
     <ul class="headerMenuList">
         <li class="userInfomation headerMenuItem">${mn.userInfo()}</li>
     </ul>`;
-    
+
     mn.$.header.find('.headerMenu').html( html );
-    
+
     mn.$.header.find('.headerMenuButton').on('click', function(){
         const $button = $( this ),
               $userInfo = $button.next('.userInfoContainer');
-        
+
         if ( $userInfo.is('.open') ) {
             $userInfo.removeClass('open');
         } else {
@@ -926,17 +926,17 @@ headerMenu( readyFlag = true ) {
             });
         }
     });
-    
+
     // ワークスペース切替
     mn.$.header.find('.userInfoWorkspaceButton').on('click', function(){
         const workspaceId =  $( this ).attr('data-workspace');
-        window.location.href = fn.getWorkspaceChangeUrl( workspaceId );        
+        window.location.href = fn.getWorkspaceChangeUrl( workspaceId );
     });
-    
+
     if ( !readyFlag ) {
         mn.$.header.find('.userInfoMenuButton').prop('disabled', true );
     }
-    
+
     // ボタン各種
     mn.$.header.find('.userInfoMenuButton').on('click', function(){
         const $button = $( this ),
@@ -945,7 +945,7 @@ headerMenu( readyFlag = true ) {
             case 'version':
                 $button.prop('disabled', true );
                 fn.fetch('/version/').then(function( result ){
-                    mn.checkVersion( result ).then(function(){        
+                    mn.checkVersion( result ).then(function(){
                         $button.prop('disabled', false );
                     });
                 });
@@ -970,7 +970,7 @@ headerMenu( readyFlag = true ) {
 }
 headerMenuReady() {
     const mn = this;
-    
+
     mn.$.header.find('.userInfoMenuButton').prop('disabled', false );
 }
 /*
@@ -985,22 +985,22 @@ userInfo() {
           id = fn.cv( mn.rest.user.user_id, '', true ),
           roles = fn.cv( mn.rest.user.roles, []),
           workspaces = fn.cv( mn.rest.user.workspaces, []);
-    
+
     const workspaceList = [];
-    
+
     for ( const work in workspaces ) {
         workspaceList.push(`<li class="userinfoWorkspaceItem">`
             + `<button class="userInfoWorkspaceButton" data-workspace="${work}">${workspaces[work]}</button>`
         + `</li>`);
     }
-    
+
     const roleList = [];
     for ( const role of roles ) {
         roleList.push(`<li class="userinfoRoleItem">`
             + role
         + `</li>`);
     }
-    
+
     return `
     <button class="headerMenuButton">
         <span class="icon icon-user"></span>
@@ -1065,7 +1065,7 @@ checkVersion( version ) {
     for ( const item of version.installed_driver ) {
         driverList.push(`<li class="driverItem">${fn.html.icon('plus')} ${item}</li>`);
     }
-    
+
     const versionHtml = `<div class="versionContainer">
         <div class="versionLogo"><img class="versionLogoImg" src="/_/ita/imgs/logo.svg" alt="Exastro IT Automation"></div>
         <div class="versionNumber"><span class="versionNumberWrap">Version: ${version.version}</span></div>
@@ -1076,7 +1076,7 @@ checkVersion( version ) {
             </ul>
         </div>
     </div>`;
-    
+
     return new Promise( function( resolve ){
         fn.alert('Exastro IT Automation', versionHtml ).then(function(){
             resolve();
@@ -1126,21 +1126,21 @@ commonContainer( title, info, body, menuFlag = true ) {
 */
 contentTab( list ) {
     const mn = this;
-    
+
     const tab = [],
           section = [];
-    
+
     for ( const item of list ) {
         const listClass = ['contentMenuItem'];
         if ( item.className ) listClass.push( item.className );
         if ( item.view === false ) listClass.push('contentMenuItemToggle hidden');
         tab.push(`<li class="${listClass.join(' ')}"><a class="contentMenuLink" href="#${item.name}">`
         + `<span class="contentMenuLinkTab"><span class="contentMenuLinkInner">${item.title}</span></span></a></li>`);
-        
+
         const sectionBody = ( item.type !== 'blank' )? mn[item.name](): '';
         section.push( mn.contentSection( sectionBody, item.name ) );
     }
-    
+
     return `
     <div class="contentMenu">
         <ul class="contentMenuList">
@@ -1164,13 +1164,13 @@ contentSection( body, id ) {
 */
 contentTabEvent( openTab = '#dataList') {
     const mn = this;
-    
+
     mn.$.content.find(`.contentMenuLink[href="${openTab}"]`).addClass('tabOpen').attr('tabindex', -1 );
     mn.$.content.find( openTab ).addClass('tabOpen');
-    
+
     mn.$.content.find('.contentMenuLink').on('click', function( e ){
         e.preventDefault();
-        
+
         const $link = $( this ),
               tab = $link.attr('href');
         mn.$.content.find('.tabOpen').removeClass('tabOpen').removeAttr('tabindex');
@@ -1181,12 +1181,12 @@ contentTabEvent( openTab = '#dataList') {
 // 指定のタブを開く
 contentTabOpen( openTab ) {
     const mn = this;
-    
+
     const $link = mn.$.content.find(`.contentMenuLink[href="${openTab}"]`);
-    
+
     mn.$.content.find('.tabOpen').removeClass('tabOpen').removeAttr('tabindex');
     $link.addClass('tabOpen').attr('tabindex', -1 );
-    
+
     mn.$.content.find(`.contentMenuLink[href="${openTab}"]`).addClass('tabOpen').attr('tabindex', -1 );
     mn.$.content.find( openTab ).addClass('tabOpen');
 }
@@ -1202,21 +1202,21 @@ mainMenu() {
 
     const list = [],
           length = mn.menuGroupList.length;
-    
+
     for ( let i = 0; i < length; i++ ) {
         const menuGroup = mn.menuGroupList[i];
         if ( menuGroup.parent_id === null ) {
             const title = fn.cv( menuGroup.menu_group_name, '', true ),
                   id =  fn.cv( menuGroup.id, ''),
                   panel = mn.getPanelImage( title, null, mn.rest.panel[ id ] );
-            
+
             list.push(`<li class="dashboardMenuGroupItem"><a class="dashboardMenuGroupLink" href="${mn.params.path}?menu=${menuGroup.main_menu_rest}"><span class="dashboardMenuGroupPanel">${panel}</span><span class="dashboardMenuGroupTitle">${title}</span></a></li>`);
         }
     }
-    
+
     const html = `<ul class="dashboardMenuGroupList">${list.join('')}</ul>`;
-    
-    mn.$.content.html( mn.commonContainer( 'DashBoard', getMessage.FTE00077, html, false ) );  
+
+    mn.$.content.html( mn.commonContainer( 'DashBoard', getMessage.FTE00077, html, false ) );
 
     mn.onReady();
 }
@@ -1229,7 +1229,7 @@ mainMenu() {
 
 defaultMenu( sheetType ) {
     const mn = this;
-    
+
     const contentTab = [{ name: 'dataList', title: getMessage.FTE10008, type: 'blank' }];
     // 履歴タブ
     if ( mn.flag.history ) {
@@ -1238,10 +1238,10 @@ defaultMenu( sheetType ) {
     contentTab.push({ name: 'dataDownload', title: getMessage.FTE10010 });
 
     const menuInfo = fn.cv( mn.info.menu_info.menu_info, '', true );
-    
+
     mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentTab( contentTab ) ) );
     mn.contentTabEvent('#dataList');
-    
+
     // 一覧
     const $dataList = mn.$.content.find('#dataList'),
           initSetFilter = fn.getParams().filter,
@@ -1249,13 +1249,13 @@ defaultMenu( sheetType ) {
     if ( initSetFilter !== undefined ) option.initSetFilter = initSetFilter;
     mn.mainTable = new DataTable('MT', 'view', mn.info, mn.params, option );
     $dataList.find('.sectionBody').html( mn.mainTable.setup() );
-    
+
     // 履歴ボディ
     if ( mn.flag.history ) {
         const $history = mn.$.content.find('#changeHistory');
         mn.historyTable = new DataTable('HT', 'history', mn.info, mn.params );
         $history.find('.sectionBody').html( mn.historyTable.setup() );
-        
+
         // 一覧 個別履歴ボタン
         mn.mainTable.$.container.on('click', '.tBodyRowMenuUi', function(){
             const $button = $( this ),
@@ -1269,16 +1269,16 @@ defaultMenu( sheetType ) {
             mn.historyTable.workerPost('history', uuid );
         });
     }
-    
+
     // 全件ダウンロード・ファイル一括登録
     const $download = mn.$.content.find('#dataDownload');
     $download.find('.operationButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
-              
+
         // File name
         let fileName = '';
-        
+
         if ( mn.currentGroup && mn.currentGroup.title ) {
             if ( mn.currentGroup.title.length > 64 ) {
                 fileName += mn.currentGroup.title.slice( 0, 61 ) + '..._';
@@ -1286,29 +1286,29 @@ defaultMenu( sheetType ) {
                 fileName += mn.currentGroup.title + '_';
             }
         }
-        
+
         if ( mn.title && mn.title.length > 64 ) {
             fileName += mn.title.slice( 0, 61 ) + '..._';
         } else {
             fileName += mn.title + '_';
         }
-              
+
         const downloadFile = function( type, url, fileName ){
             $button.prop('disabled', true );
-            
+
             fn.fetch( url ).then(function( result ){
-                fn.download( type, result, fileName );                
+                fn.download( type, result, fileName );
             }).catch(function( error ){
                 fn.gotoErrPage( error.message );
             }).then(function(){
                 fn.disabledTimer( $button, false, 1000 );
             });
         };
-        
+
         switch ( type ) {
             case 'allDwonloadExcel': {
                 $button.prop('disabled', true );
-                
+
                 fn.fetch(`/menu/${mn.params.menuNameRest}/filter/count/`).then(function( result ){
                     const limit = mn.info.menu_info.xls_print_limit;
                     if ( limit && mn.info.menu_info.xls_print_limit < result ) {
@@ -1339,7 +1339,7 @@ defaultMenu( sheetType ) {
             break;
         }
     });
-    
+
     mn.setCommonEvents();
     mn.onReady();
 }
@@ -1350,18 +1350,18 @@ defaultMenu( sheetType ) {
 */
 dataDownload() {
     const mn = this;
-    
+
     const list = [
         { title: getMessage.FTE10011, description: getMessage.FTE10012, type: 'allDwonloadExcel'},
         { title: getMessage.FTE10013, description: getMessage.FTE10014, type: 'allDwonloadJson'}
     ];
-    
+
     if ( mn.flag.insert ) {
         list.push({ title: getMessage.FTE10015, description: getMessage.FTE10016, type: 'newDwonloadExcel'});
-    } 
-    
+    }
+
     list.push({ title: getMessage.FTE10023, description: getMessage.FTE10024, type: 'allHistoryDwonloadExcel'});
-    
+
     if ( mn.flag.edit ) {
         list.push({ title: getMessage.FTE10017, description: getMessage.FTE10018, type: 'excelUpload', action: 'positive'});
         list.push({ title: getMessage.FTE10019, description: getMessage.FTE10020, type: 'jsonUpload', action: 'positive'});
@@ -1369,7 +1369,7 @@ dataDownload() {
         list.push({ title: getMessage.FTE10017, description: getMessage.FTE10031, type: 'excelUpload', action: 'positive'});
         list.push({ title: getMessage.FTE10019, description: getMessage.FTE10032, type: 'jsonUpload', action: 'positive'});
     }
-    
+
     const html = [];
     for ( const item of list ) {
         const attr = { type: item.type };
@@ -1379,7 +1379,7 @@ dataDownload() {
             + `<div class="operationDescription">${item.description}</div>`
         + `</div>`);
     }
-    
+
     return html.join('');
 }
 /*
@@ -1389,28 +1389,28 @@ dataDownload() {
 */
 fileRegister( $button, type ) {
     const mn = this;
-    
+
     const fileType = ( type === 'excel')? 'base64': 'json',
           fileMime = ( type === 'excel')? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'application/json',
           restUrl = ( type === 'excel')? `excel/maintenance/`: `maintenance/all/`;
-    
+
     // ボタンを無効
     $button.prop('disabled', true );
-    
+
     // ファイル選択
     fn.fileSelect( fileType, null, fileMime ).then(function( selectFile ){
         const postData = ( type === 'excel')? { excel: selectFile.base64 }: selectFile.json;
-        
+
         // 登録するか確認する
         const buttons = {
             ok: { text: getMessage.FTE10025, action: 'positive'},
             cancel: { text: getMessage.FTE10026, action: 'normal'}
         };
-        
+
         const table = { tbody: []};
         table.tbody.push([ getMessage.FTE10027, selectFile.name ]);
         table.tbody.push([ getMessage.FTE10028, selectFile.size.toLocaleString() + ' byte']);
-        
+
         if ( fileType === 'json') {
             try {
                 table.tbody.push([ getMessage.FTE10029, selectFile.json.length.toLocaleString() ]);
@@ -1418,12 +1418,12 @@ fileRegister( $button, type ) {
                 throw new Error( getMessage.FTE10021 );
             }
         }
-        
+
         fn.alert( getMessage.FTE00083, fn.html.table( table, 'fileSelectTable', 1 ), 'confirm', buttons ).then( function( flag ){
             if ( flag ) {
-            
+
                 const processing = fn.processingModal( getMessage.FTE00084 );
-                
+
                 // POST（登録）
                 fn.fetch(`/menu/${mn.params.menuNameRest}/${restUrl}`, null, 'POST', postData ).then(function( result ){
                     // 登録成功
@@ -1460,16 +1460,16 @@ fileRegister( $button, type ) {
 
 executeMenu() {
     const mn = this;
-    
+
     const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
-    
+
     const initSetFilter = fn.getParams().filter,
           option = {};
-    if ( initSetFilter !== undefined ) option.initSetFilter = initSetFilter;  
-    
-    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );  
+    if ( initSetFilter !== undefined ) option.initSetFilter = initSetFilter;
+
+    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );
     mn.setCommonEvents();
-    
+
     fn.fetch(`/menu/${mn.params.menuNameRest}/driver/execute/info/`).then(function( result ){
         // ドライバ
         const listNameFunc = function(){
@@ -1477,16 +1477,18 @@ executeMenu() {
                 case 'execution_ansible_role': return 'ansible_role';
                 case 'execution_ansible_legacy': return 'ansible_legacy';
                 case 'execution_ansible_pioneer': return 'ansible_pioneer';
-            }            
+                case 'execution_terraform_cloud_ep': return 'terraform_cloud_ep';
+                case 'execution_terraform_cli': return 'terraform_cli';
+            }
         };
         mn.params.operationType = listNameFunc();
-        
+
         // 実行時に渡す名前のKey
         mn.params.selectNameKey = 'movement_name';
         // Main REST URL
         mn.params.restFilter = `/menu/${mn.params.menuNameRest}/driver/execute/filter/movement_list_${mn.params.operationType}/`;
         mn.params.restFilterPulldown = `/menu/${mn.params.menuNameRest}/driver/execute/filter/movement_list_${mn.params.operationType}/search/candidates/`;
-        
+
         // Operation
         mn.params.operation = {
             selectNameKey: 'operation_name',
@@ -1497,11 +1499,11 @@ executeMenu() {
 
         mn.mainTable = new DataTable('MT', 'execute', result[`movement_list_${mn.params.operationType}`], mn.params, option );
         mn.$.content.find('.sectionBody').html( mn.mainTable.setup() ).show();
-        
+
         mn.onReady();
     }).catch(function( error ){
         fn.gotoErrPage( error.message );
-    });  
+    });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1512,29 +1514,29 @@ executeMenu() {
 
 operationStatusMenu() {
     const mn = this;
-    
+
     const contentTab = [
         { name: 'operationStatus', title: getMessage.FTE00080, type: 'blank' },
         { name: 'executeLog', title: getMessage.FTE00081, type: 'blank', view: false, className: 'executeLogTab'},
         { name: 'errorLog', title: getMessage.FTE00082, type: 'blank', view: false, className: 'errorLogTab' }
     ];
-    
+
     const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
-    
+
     mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentTab( contentTab ) ) );
     mn.setCommonEvents();
     mn.contentTabEvent('#operationStatus');
-    
+
     const assets = [
         { type: 'js', url: '/_/ita/js/operation_status.js'},
         { type: 'css', url: '/_/ita/css/conductor.css'},
         { type: 'css', url: '/_/ita/css/operation_status.css'},
     ];
-    
+
     fn.loadAssets( assets ).then(function(){
         const id = fn.getParams().execution_no;
         fn.createCheckOperation( mn.params.menuNameRest, id );
-        
+
         mn.onReady();
     });
 }
@@ -1547,17 +1549,17 @@ operationStatusMenu() {
 
 createMenu( mode ) {
     const mn = this;
-    
+
     const assets = [
         { type: 'js', url: '/_/ita/js/create_menu.js'},
         { type: 'css', url: '/_/ita/css/editor_common.css'},
         { type: 'css', url: '/_/ita/css/create_menu.css'}
     ];
-    
+
     fn.loadAssets( assets ).then(function(){
         const createMenu = new CreateMenu('#content', mn.rest.user );
         createMenu.setup();
-        
+
         mn.onReady();
     });
 }
@@ -1570,13 +1572,13 @@ createMenu( mode ) {
 
 condcutor( mode ) {
     const mn = this;
-    
+
     const assets = [
         { type: 'js', url: '/_/ita/js/conductor.js'},
         { type: 'css', url: '/_/ita/css/editor_common.css'},
         { type: 'css', url: '/_/ita/css/conductor.css'}
     ];
-    
+
     const getId = function(){
         if ( mode === 'confirmation') {
             return fn.getParams().conductor_instance_id;
@@ -1586,11 +1588,11 @@ condcutor( mode ) {
     }
     const id = getId();
     if ( mode === 'edit' && id ) mode = 'view';
-    
+
     fn.loadAssets( assets ).then(function(){
         const conductor = fn.createConductor( mn.params.menuNameRest, '#content', mode, id );
         conductor.setup();
-        
+
         mn.onReady();
     });
 }
@@ -1603,22 +1605,22 @@ condcutor( mode ) {
 
 compare() {
     const mn = this;
-    
+
     const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
     mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );
     mn.setCommonEvents();
-    
+
     const assets = [
         { type: 'js', url: '/_/ita/js/compare.js'},
         { type: 'js', url: '/_/ita/lib/diff2html/diff2html.min.js'},
         { type: 'css', url: '/_/ita/css/compare.css'},
         { type: 'css', url: '/_/ita/lib/diff2html/diff2html.css'}
     ];
-    
+
     fn.loadAssets( assets ).then(function(){
         const compare = new Compare( mn.params.menuNameRest );
         compare.setup();
-        
+
         mn.onReady();
     });
 }
@@ -1631,20 +1633,20 @@ compare() {
 
 exportImport( type ) {
     const mn = this;
-    
+
     const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
     mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );
     mn.setCommonEvents();
-    
+
     const assets = [
         { type: 'js', url: '/_/ita/js/export_import.js'},
         { type: 'css', url: '/_/ita/css/export_import.css'},
     ];
-    
+
     fn.loadAssets( assets ).then(function(){
         const exportImport =  new ExportImport( mn.params.menuNameRest, type );
         exportImport.setup();
-        
+
         mn.onReady();
     });
 }
@@ -1657,14 +1659,14 @@ exportImport( type ) {
 
 setCommonEvents() {
     const mn = this;
-    
+
     const menuInfo = mn.info.menu_info;
-    
+
     const buttons = {
         cancel: { text: getMessage.FTE00002, action: 'normal'},
         //ok: { text: 'メニュー情報詳細確認', action: 'positive'}
     }
-    
+
     mn.$.content.find('.contentHeader').find('.contentMenuInfoButton').on('click', function(){
         const menuInfoHTml = ``
         + `<div class="menuInfoContainer">`

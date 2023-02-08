@@ -266,7 +266,7 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
                                                                                       tmp_column_group,
                                                                                       column_group_parent_of_child
                                                                                       )
-                if record.get('INPUT_ITEM') in ['0', '1']:
+                if record.get('INPUT_ITEM') in ['0', '1', '3']:
                     tmp_column_group_input, column_group_parent_of_child_input = add_tmp_column_group(column_group_list,
                                                                                                       col_group_record_count,
                                                                                                       column_group_id,
@@ -444,7 +444,7 @@ def collect_parent_sord_order(column_info_data, column_group_parent_of_child, ke
         if not column_group_id:
             # カラムグループが無い場合はcol_num(c1, c2, c3...)を格納
             columns.append(col_num)
-            if col_data['input_item'] in ['0', '1']:
+            if col_data['input_item'] in ['0', '1', '3']:
                 columns_input.append(col_num)
             if col_data['view_item'] in ['1']:
                 columns_view.append(col_num)
@@ -455,7 +455,7 @@ def collect_parent_sord_order(column_info_data, column_group_parent_of_child, ke
             parent_column_group_id = column_group_parent_of_child.get(column_group_id)
             if key_to_id[parent_column_group_id] not in columns:
                 columns.append(key_to_id[parent_column_group_id])
-                if col_data['input_item'] in ['0', '1']:
+                if col_data['input_item'] in ['0', '1', '3']:
                     columns_input.append(key_to_id[parent_column_group_id])
                 if col_data['view_item'] in ['1']:
                     columns_view.append(key_to_id[parent_column_group_id])
@@ -465,7 +465,7 @@ def collect_parent_sord_order(column_info_data, column_group_parent_of_child, ke
             if key_to_id[column_group_id] not in columns:
                 columns.append(key_to_id[column_group_id])
             if key_to_id[column_group_id] not in columns_input:
-                if col_data['input_item'] in ['0', '1']:
+                if col_data['input_item'] in ['0', '1', '3']:
                     columns_input.append(key_to_id[column_group_id])
             if key_to_id[column_group_id] not in columns_view:
                 if col_data['view_item'] in ['1']:

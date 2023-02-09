@@ -52,7 +52,7 @@ class RestApiCaller():
 
         return response_array
 
-    def rest_call(self, method, api_uri, content=None, header=None, rest_stdout_flg=False, direct_url=False):  # noqa: C901
+    def rest_call(self, method, api_uri, content=None, header=None, direct_url=False, module_upload_flag=False, module_upload_url=""):  # noqa: C901
         # 変数定義
         httpContext = {}
         httpContext['http'] = {}
@@ -62,16 +62,22 @@ class RestApiCaller():
         response_array = {}
 
         # コンテンツ付与
-        if content is not None:
-            httpContext['http']['content'] = json.dumps(content).encode('utf-8')
-            headers['Content-type'] = 'application/vnd.api+json'
+        if module_upload_flag is True:
+            headers['Content-type'] = 'application/octet-stream'
+        else:
+            if content is not None:
+                httpContext['http']['content'] = json.dumps(content).encode('utf-8')
+                headers['Content-type'] = 'application/vnd.api+json'
 
         # Header精査
         if self.accessToken:
             headers['Authorization'] = 'Bearer %s' % (self.accessToken)
 
         if self.hasHeaderField(headers, "Accept") is False:
-            headers['Accept'] = 'application/vnd.api+json'
+            if module_upload_flag is True:
+                headers['Accept'] = 'application/octet-stream'
+            else:
+                headers['Accept'] = 'application/vnd.api+json'
 
         # HTTPコンテキスト作成
         httpContext['http']['method'] = method
@@ -93,10 +99,13 @@ class RestApiCaller():
         httpContext['ssl']['verify_peer_name'] = False
 
         # URL定義
-        if direct_url:
-            url = '%s%s' % (self.directURI, api_uri)
+        if module_upload_flag is True:
+            url = module_upload_url
         else:
-            url = '%s%s' % (self.baseURI, api_uri)
+            if direct_url:
+                url = '%s%s' % (self.directURI, api_uri)
+            else:
+                url = '%s%s' % (self.baseURI, api_uri)
 
         print_HttpContext = 'http context\n%s' % (httpContext)
         print_url = "URL: %s\n" % (url)
@@ -106,8 +115,11 @@ class RestApiCaller():
         ################################
         http_response_header = None
         data = None
-        if 'content' in httpContext['http']:
-            data = httpContext['http']['content']
+        if module_upload_flag is True:
+            data = content
+        else:
+            if 'content' in httpContext['http']:
+                data = httpContext['http']['content']
 
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
         if 'address' in self.proxySetting and self.proxySetting['address']:

@@ -3919,7 +3919,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/:
     delete:
       tags:
       - Terraform Cloud EP
@@ -3942,7 +3942,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -3992,7 +3992,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -4004,7 +4004,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/organization_terraform_organization_body'
+              $ref: '#/components/schemas/organization_tf_organization_name_body'
       responses:
         "200":
           description: Success
@@ -4025,7 +4025,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/check/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/check/:
     get:
       tags:
       - Terraform Cloud EP
@@ -4048,7 +4048,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -4076,7 +4076,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
     get:
       tags:
       - Terraform Cloud EP
@@ -4099,7 +4099,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -4149,7 +4149,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -4161,7 +4161,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/workspace_terraform_organization_body'
+              $ref: '#/components/schemas/workspace_tf_organization_name_body'
       responses:
         "200":
           description: Success
@@ -4182,7 +4182,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/{terraform_workspace}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/{tf_workspace_name}/:
     delete:
       tags:
       - Terraform Cloud EP
@@ -4205,7 +4205,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -4213,7 +4213,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_workspace
+      - name: tf_workspace_name
         in: path
         description: Terraform Workspace Name
         required: true
@@ -4263,7 +4263,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -4271,7 +4271,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_workspace
+      - name: tf_workspace_name
         in: path
         description: Terraform Workspace Name
         required: true
@@ -4283,7 +4283,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/terraform_organization_terraform_workspace_body'
+              $ref: '#/components/schemas/tf_organization_name_tf_workspace_name_body'
       responses:
         "200":
           description: Success
@@ -4304,8 +4304,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/{terraform_workspace}/check/
-  : get:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/{tf_workspace_name}/check/:
+    get:
       tags:
       - Terraform Cloud EP
       description: 対象のWorkspaceの連携状態を確認する
@@ -4327,7 +4327,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_organization
+      - name: tf_organization_name
         in: path
         description: Terraform Organization Name
         required: true
@@ -4335,7 +4335,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: terraform_workspace
+      - name: tf_workspace_name
         in: path
         description: Terraform Workspace Name
         required: true
@@ -5814,31 +5814,31 @@ components:
       description: 比較条件を設定
     terraform_organization_body:
       properties:
-        organiation_name:
+        tf_organization_name:
           type: string
           example: example_organization
-        email:
+        email_address:
           type: string
           example: example@example.com
       description: Organization名およびemailを指定
-    organization_terraform_organization_body:
+    organization_tf_organization_name_body:
       properties:
-        email:
+        email_address:
           type: string
           example: example@example.com
       description: emailを指定
-    workspace_terraform_organization_body:
+    workspace_tf_organization_name_body:
       properties:
         workspace_name:
           type: string
           example: example_workspace
-        version:
+        terraform_version:
           type: string
           example: 1.0.0
       description: Workspace名およびVersionを指定(Versionがnullの場合、自動的に最新のVersionが適用されます。)
-    terraform_organization_terraform_workspace_body:
+    tf_organization_name_tf_workspace_name_body:
       properties:
-        version:
+        terraform_version:
           type: string
           example: 1.0.0
       description: Versionを指定

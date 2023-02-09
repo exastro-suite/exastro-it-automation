@@ -21,7 +21,7 @@ from common_libs.api import check_request_body_key  # noqa: F401
 from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
 
 
-def check_organization(objdbca, organization_name):
+def check_organization(objdbca, tf_organization_name):
     """
         連携先Terraformから対象のOrganizationの連携状態を確認する
         ARGS:
@@ -33,22 +33,23 @@ def check_organization(objdbca, organization_name):
     t_tere_organization = 'T_TERE_ORGANIZATION'
     registered_flag = False
     updated_flag = False
+    msg = ''
 
     # 対象のorganiation_nameのレコードを取得
-    target_record = objdbca.table_select(t_tere_organization, 'WHERE ORGANIZATION_NAME = %s AND DISUSE_FLAG = %s', [organization_name, 0])
+    target_record = objdbca.table_select(t_tere_organization, 'WHERE ORGANIZATION_NAME = %s AND DISUSE_FLAG = %s', [tf_organization_name, 0])
     if not target_record:
         # 対象のOrganization名のレコードが存在しない（廃止されている）場合
-        raise AppException("499-01104", [organization_name], [organization_name])  # noqa: F405
-    target_organization_name = organization_name
+        raise AppException("499-01104", [tf_organization_name], [tf_organization_name])  # noqa: F405
+    target_organization_name = tf_organization_name
     target_email = target_record[0].get('EMAIL_ADDRESS')
 
     # 連携先TerraformからOrganizationの一覧を取得
     organization_list = get_organization_list(objdbca)
     for organization_data in organization_list:
-        if target_organization_name == organization_data.get('organization_name'):
+        if target_organization_name == organization_data.get('tf_organization_name'):
             # 一致しているOrganization名があれば登録済みフラグをTrue
             registered_flag = True
-            if target_email != organization_data.get('email'):
+            if target_email != organization_data.get('email_address'):
                 # メールアドレスが一致していない場合更新済みフラグをTrue
                 updated_flag = True
 
@@ -56,18 +57,21 @@ def check_organization(objdbca, organization_name):
     if not registered_flag:
         # 未登録パターンの返却値
         return_data = {'registar_status': 0, 'update_status': 0}
+        msg = g.appmsg.get_api_message("MSG-80001", [tf_organization_name])
     else:
         if not updated_flag:
             # 登録済みパターンの返却値
             return_data = {'registar_status': 1, 'update_status': 0}
+            msg = g.appmsg.get_api_message("MSG-80002", [tf_organization_name])
         else:
             # 更新ありパターンの返却値
             return_data = {'registar_status': 1, 'update_status': 1}
+            msg = g.appmsg.get_api_message("MSG-80003", [tf_organization_name])
 
-    return return_data
+    return return_data, msg
 
 
-def check_workspace(objdbca, organization_name, workspace_name):
+def check_workspace(objdbca, tf_organization_name, tf_workspace_name):
     """
         連携先Terraformから対象のWorkspaceの連携状態を確認する
         ARGS:
@@ -82,29 +86,29 @@ def check_workspace(objdbca, organization_name, workspace_name):
     updated_flag = False
 
     # 対象のorganiation_name, workspace_nameのレコードを取得
-    target_record = objdbca.table_select(v_tere_organization_workspace_list, 'WHERE ORGANIZATION_NAME = %s AND WORKSPACE_NAME = %s AND DISUSE_FLAG = %s', [organization_name, workspace_name, 0])  # noqa: E501
+    target_record = objdbca.table_select(v_tere_organization_workspace_list, 'WHERE ORGANIZATION_NAME = %s AND WORKSPACE_NAME = %s AND DISUSE_FLAG = %s', [tf_organization_name, tf_workspace_name, 0])  # noqa: E501
     if not target_record:
         # 対象のOrganization名, Workspace名のレコードが存在しない（廃止されている）場合
-        raise AppException("499-01105", [organization_name, workspace_name], [organization_name, workspace_name])  # noqa: F405
-    target_organization_name = organization_name
-    target_workspace_name = workspace_name
+        raise AppException("499-01105", [tf_organization_name, tf_workspace_name], [tf_organization_name, tf_workspace_name])  # noqa: F405
+    target_organization_name = tf_organization_name
+    target_workspace_name = tf_workspace_name
     target_version = target_record[0].get('TERRAFORM_VERSION')
 
     # 連携先TerraformからOrganizationの一覧を取得
     organization_list = get_organization_list(objdbca)
     for organization_data in organization_list:
-        if target_organization_name == organization_data.get('organization_name'):
+        if target_organization_name == organization_data.get('tf_organization_name'):
             # 一致しているOrganization名があれば登録済みフラグをTrue
             organization_registered_flag = True
 
     if not organization_registered_flag:
         # 対象のOrganizationが連携先Terraformに存在しない場合
-        raise AppException("499-01106", [organization_name], [organization_name])  # noqa: F405
+        raise AppException("499-01106", [tf_organization_name], [tf_organization_name])  # noqa: F405
 
     # 連携先TerraformからWorkspaceの一覧を取得
     workspace_list = get_workspace_list(objdbca, target_organization_name)
     for workspace_data in workspace_list:
-        if target_workspace_name == workspace_data.get('workspace_name'):
+        if target_workspace_name == workspace_data.get('tf_workspace_name'):
             # 一致しているOrganization名があれば登録済みフラグをTrue
             registered_flag = True
             if target_version:
@@ -115,15 +119,18 @@ def check_workspace(objdbca, organization_name, workspace_name):
     if not registered_flag:
         # 未登録パターンの返却値
         return_data = {'registar_status': 0, 'update_status': 0}
+        msg = g.appmsg.get_api_message("MSG-80004", [tf_workspace_name])
     else:
         if not updated_flag:
             # 登録済みパターンの返却値
             return_data = {'registar_status': 1, 'update_status': 0}
+            msg = g.appmsg.get_api_message("MSG-80005", [tf_workspace_name])
         else:
             # 更新ありパターンの返却値
             return_data = {'registar_status': 1, 'update_status': 1}
+            msg = g.appmsg.get_api_message("MSG-80006", [tf_workspace_name])
 
-    return return_data
+    return return_data, msg
 
 
 def get_organization_list(objdbca):
@@ -144,10 +151,10 @@ def get_organization_list(objdbca):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -168,10 +175,10 @@ def get_organization_list(objdbca):
             for data in respons_contents_data:
                 # organization名とemailを格納
                 attributes = data['attributes']
-                organization_name = attributes['name']
-                email = attributes['email']
+                tf_organization_name = attributes['name']
+                email_address = attributes['email']
                 # 返却値を作成
-                organization_data = {'organization_name': organization_name, 'email': email}
+                organization_data = {'tf_organization_name': tf_organization_name, 'email_address': email_address}
                 return_data.append(organization_data)
     else:
         # 異常系
@@ -180,7 +187,7 @@ def get_organization_list(objdbca):
     return return_data
 
 
-def get_workspace_list(objdbca, organization_name):
+def get_workspace_list(objdbca, tf_organization_name):
     """
         連携先TerraformからWorkspace一覧の取得
         ARGS:
@@ -198,10 +205,10 @@ def get_workspace_list(objdbca, organization_name):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -210,7 +217,7 @@ def get_workspace_list(objdbca, organization_name):
         raise AppException("999-99999", [], [])  # noqa: F405
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces' % (organization_name)
+    api_uri = '/organizations/%s/workspaces' % (tf_organization_name)
     response_array = restApiCaller.rest_call('GET', api_uri)
     response_status_code = response_array.get('statusCode')
     if response_status_code == 200:
@@ -222,15 +229,14 @@ def get_workspace_list(objdbca, organization_name):
             for data in respons_contents_data:
                 # organization名とemailを格納
                 attributes = data['attributes']
-                workspace_name = attributes['name']
+                tf_workspace_name = attributes['name']
                 terraform_version = attributes['terraform-version']
                 # 返却値を作成
-                workspace_data = {'workspace_name': workspace_name, 'terraform_version': terraform_version}
+                workspace_data = {'tf_workspace_name': tf_workspace_name, 'terraform_version': terraform_version}
                 return_data.append(workspace_data)
     else:
         # 異常系
         raise AppException("499-01101", [], [])  # noqa: F405
-
 
     return return_data
 
@@ -253,10 +259,10 @@ def create_organization(objdbca, parameters):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -265,14 +271,15 @@ def create_organization(objdbca, parameters):
         raise AppException("999-99999", [], [])  # noqa: F405
 
     # contentsを作成
-    organization_name = parameters.get('organization_name')
-    email = parameters.get('email')
+    print(parameters)
+    tf_organization_name = parameters.get('tf_organization_name')
+    email_address = parameters.get('email_address')
     request_contents = {
         "data": {
             "type": "organizations",
             "attributes": {
-                "name": organization_name,
-                "email": email
+                "name": tf_organization_name,
+                "email": email_address
             }
         }
     }
@@ -294,8 +301,8 @@ def create_organization(objdbca, parameters):
             # 返却値を作成
             return_data = {
                 'external_id': external_id,
-                'organization_name': created_organization_name,
-                'email': created_organization_email
+                'tf_organization_name': created_organization_name,
+                'email_address': created_organization_email
             }
     elif response_status_code == 404 or response_status_code == 401:
         # 異常系(アクセス・認証系)
@@ -306,11 +313,10 @@ def create_organization(objdbca, parameters):
         error_message = response_contents.get('errorMessage')
         raise AppException("499-01102", [error_message], [error_message])  # noqa: F405
 
-
     return return_data
 
 
-def create_workspace(objdbca, organization_name, parameters):
+def create_workspace(objdbca, tf_organization_name, parameters):
     """
         連携先TerraformにWorkspaceを作成する
         ARGS:
@@ -328,10 +334,10 @@ def create_workspace(objdbca, organization_name, parameters):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -343,23 +349,23 @@ def create_workspace(objdbca, organization_name, parameters):
     execution_mode = True  # リモート実行モードをしようするかどうか。ITAからWorkspaceを作成する際はTrue固定とする
     auto_apply = False  # Planが成功した際に自動でApplyを実行するかどうか。ITAからWorkspaceを作成する際はFalse固定とする
     working_directory = ''  # Terraformが実行される相対パス。ITAからWorkspaceを作成する際は空欄固定とする。
-    workspace_name = parameters.get('workspace_name')
-    version = parameters.get('version') or ''
+    tf_workspace_name = parameters.get('tf_workspace_name')
+    terraform_version = parameters.get('terraform_version') or ''
     request_contents = {
         "data": {
             "type": "workspaces",
             "attributes": {
-                "name": workspace_name,
+                "name": tf_workspace_name,
                 "operations": execution_mode,
                 "auto-apply": auto_apply,
-                "terraform-version": version,
+                "terraform-version": terraform_version,
                 "working-directory": working_directory
             }
         }
     }
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces' % (organization_name)
+    api_uri = '/organizations/%s/workspaces' % (tf_organization_name)
     response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
     response_status_code = response_array.get('statusCode')
     if response_status_code == 201:
@@ -375,8 +381,8 @@ def create_workspace(objdbca, organization_name, parameters):
             # 返却値を作成
             return_data = {
                 'workspace_id': created_workspace_id,
-                'workspace_name': created_workspace_name,
-                'version': created_workspace_version
+                'tf_workspace_name': created_workspace_name,
+                'terraform_version': created_workspace_version
             }
     elif response_status_code == 404 or response_status_code == 401:
         # 異常系(アクセス・認証系)
@@ -390,7 +396,7 @@ def create_workspace(objdbca, organization_name, parameters):
     return return_data
 
 
-def update_organization(objdbca, organization_name, parameters):
+def update_organization(objdbca, tf_organization_name, parameters):
     """
         連携先TerraformのOrganizationを更新する
         ARGS:
@@ -408,10 +414,10 @@ def update_organization(objdbca, organization_name, parameters):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -420,19 +426,19 @@ def update_organization(objdbca, organization_name, parameters):
         raise AppException("999-99999", [], [])  # noqa: F405
 
     # contentsを作成
-    email = parameters.get('email')
+    email_address = parameters.get('email_address')
     request_contents = {
         "data": {
             "type": "organizations",
             "attributes": {
-                "name": organization_name,
-                "email": email
+                "name": tf_organization_name,
+                "email": email_address
             }
         }
     }
 
     # RESTAPIコール
-    api_uri = '/organizations/%s' % (organization_name)
+    api_uri = '/organizations/%s' % (tf_organization_name)
     response_array = restApiCaller.rest_call('PATCH', api_uri, request_contents)
     response_status_code = response_array.get('statusCode')
     if response_status_code == 200:
@@ -448,8 +454,8 @@ def update_organization(objdbca, organization_name, parameters):
             # 返却値を作成
             return_data = {
                 'external_id': external_id,
-                'organization_name': updated_organization_name,
-                'email': updated_organization_email
+                'tf_organization_name': updated_organization_name,
+                'email_address': updated_organization_email
             }
     elif response_status_code == 404 or response_status_code == 401:
         # 異常系(アクセス・認証系)
@@ -463,7 +469,7 @@ def update_organization(objdbca, organization_name, parameters):
     return return_data
 
 
-def update_workspace(objdbca, organization_name, workspace_name, parameters):
+def update_workspace(objdbca, tf_organization_name, tf_workspace_name, parameters):
     """
         連携先TerraformのWorkspaceを更新する
         ARGS:
@@ -481,10 +487,10 @@ def update_workspace(objdbca, organization_name, workspace_name, parameters):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -496,21 +502,21 @@ def update_workspace(objdbca, organization_name, workspace_name, parameters):
     execution_mode = True  # リモート実行モードをしようするかどうか。ITAからWorkspaceを作成する際はTrue固定とする
     auto_apply = False  # Planが成功した際に自動でApplyを実行するかどうか。ITAからWorkspaceを作成する際はFalse固定とする
     working_directory = ''  # Terraformが実行される相対パス。ITAからWorkspaceを作成する際は空欄固定とする。
-    version = parameters.get('version') or ''
+    terraform_version = parameters.get('terraform_version') or ''
     request_contents = {
         "data": {
             "type": "workspaces",
             "attributes": {
                 "operations": execution_mode,
                 "auto-apply": auto_apply,
-                "terraform-version": version,
+                "terraform-version": terraform_version,
                 "working-directory": working_directory
             }
         }
     }
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces/%s' % (organization_name, workspace_name)
+    api_uri = '/organizations/%s/workspaces/%s' % (tf_organization_name, tf_workspace_name)
     response_array = restApiCaller.rest_call('PATCH', api_uri, request_contents)
     response_status_code = response_array.get('statusCode')
     if response_status_code == 200:
@@ -526,8 +532,8 @@ def update_workspace(objdbca, organization_name, workspace_name, parameters):
             # 返却値を作成
             return_data = {
                 'workspace_id': update_workspace_id,
-                'workspace_name': updated_workspace_name,
-                'version': updated_workspace_version
+                'tf_workspace_name': updated_workspace_name,
+                'terraform_version': updated_workspace_version
             }
     elif response_status_code == 404 or response_status_code == 401:
         # 異常系(アクセス・認証系)
@@ -541,7 +547,7 @@ def update_workspace(objdbca, organization_name, workspace_name, parameters):
     return return_data
 
 
-def delete_organization(objdbca, organization_name):
+def delete_organization(objdbca, tf_organization_name):
     """
         連携先TerraformのOrganizationを削除する。
         ARGS:
@@ -559,10 +565,10 @@ def delete_organization(objdbca, organization_name):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -574,7 +580,7 @@ def delete_organization(objdbca, organization_name):
     request_contents = {}
 
     # RESTAPIコール
-    api_uri = '/organizations/%s' % (organization_name)
+    api_uri = '/organizations/%s' % (tf_organization_name)
     response_array = restApiCaller.rest_call('DELETE', api_uri, request_contents)
     response_status_code = response_array.get('statusCode')
     if response_status_code == 204:
@@ -592,7 +598,7 @@ def delete_organization(objdbca, organization_name):
     return return_data
 
 
-def delete_workspace(objdbca, organization_name, workspace_name):
+def delete_workspace(objdbca, tf_organization_name, tf_workspace_name):
     """
         連携先TerraformのWorkspaceを削除する。ただし「Sage Delete」で行うため、Workspaceで作成したリソースが残っている場合は削除できない。
         ARGS:
@@ -610,10 +616,10 @@ def delete_workspace(objdbca, organization_name, workspace_name):
     encrypted_user_token = interface_info_data.get('user_token')
     proxy_address = interface_info_data.get('proxy_address')
     proxy_port = interface_info_data.get('proxy_port')
-    proxySetting = {'address': proxy_address, "port": proxy_port}
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
     # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxySetting)
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
     # トークンをセット
     response_array = restApiCaller.authorize()
@@ -625,7 +631,7 @@ def delete_workspace(objdbca, organization_name, workspace_name):
     request_contents = {}
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces/%s/actions/safe-delete' % (organization_name, workspace_name)
+    api_uri = '/organizations/%s/workspaces/%s/actions/safe-delete' % (tf_organization_name, tf_workspace_name)
     response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
     response_status_code = response_array.get('statusCode')
     if response_status_code == 204:

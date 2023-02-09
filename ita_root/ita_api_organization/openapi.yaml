@@ -4480,10 +4480,10 @@ paths:
             schema:
               description: Organization名およびemailを指定
               properties:
-                organiation_name:
+                tf_organization_name:
                   type: string
                   example: "example_organization"
-                email:
+                email_address:
                   type: string
                   example: "example@example.com"
       responses:
@@ -4514,7 +4514,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/:
     patch:
       tags:
         - Terraform Cloud EP
@@ -4534,7 +4534,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4546,7 +4546,7 @@ paths:
             schema:
               description: emailを指定
               properties:
-                email:
+                email_address:
                   type: string
                   example: "example@example.com"
       responses:
@@ -4596,7 +4596,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4630,7 +4630,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/check/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/check/:
     get:
       tags:
         - Terraform Cloud EP
@@ -4650,7 +4650,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4684,7 +4684,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
     get:
       tags:
         - Terraform Cloud EP
@@ -4704,7 +4704,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4757,7 +4757,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4772,7 +4772,7 @@ paths:
                 workspace_name:
                   type: string
                   example: "example_workspace"
-                version:
+                terraform_version:
                   type: string
                   example: "1.0.0"
       responses:
@@ -4803,7 +4803,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/{terraform_workspace}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/{tf_workspace_name}/:
     patch:
       tags:
         - Terraform Cloud EP
@@ -4823,13 +4823,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
           schema:
             type: string
-        - name: terraform_workspace
+        - name: tf_workspace_name
           in: path
           description: Terraform Workspace Name
           required: true
@@ -4841,7 +4841,7 @@ paths:
             schema:
               description: Versionを指定
               properties:
-                version:
+                terraform_version:
                   type: string
                   example: "1.0.0"
       responses:
@@ -4891,13 +4891,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
           schema:
             type: string
-        - name: terraform_workspace
+        - name: tf_workspace_name
           in: path
           description: Terraform Workspace Name
           required: true
@@ -4931,7 +4931,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/{terraform_workspace}/check/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/{tf_workspace_name}/check/:
     get:
       tags:
         - Terraform Cloud EP
@@ -4951,13 +4951,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
           schema:
             type: string
-        - name: terraform_workspace
+        - name: tf_workspace_name
           in: path
           description: Terraform Workspace Name
           required: true

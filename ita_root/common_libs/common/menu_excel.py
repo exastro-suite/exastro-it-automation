@@ -374,7 +374,10 @@ def make_master_sheet(wb, objdbca, lang, retList_t_common_menu_column_link, menu
         msg = g.appmsg.get_api_message('MSG-30012')
         new_range = DefinedName(
             name='FILTER_ROW_EDIT_BY_FILE', attr_text=msg + '!$C$2:$C$' + str(cnt + 1))
-        wb.defined_names.append(new_range)
+        if type(wb.defined_names) is openpyxl.workbook.defined_name.DefinedNameList:
+            wb.defined_names.append(new_range)
+        else:
+            wb.defined_names.add(new_range)
 
     # 実行処理種別
     msg = g.appmsg.get_api_message('MSG-30002')
@@ -424,7 +427,10 @@ def make_master_sheet(wb, objdbca, lang, retList_t_common_menu_column_link, menu
                             absolute_coordinate(startCell) +
                             ':' +
                             absolute_coordinate(endCell))
-                        wb.defined_names.append(new_range)
+                        if type(wb.defined_names) is openpyxl.workbook.defined_name.DefinedNameList:
+                            wb.defined_names.append(new_range)
+                        else:
+                            wb.defined_names.add(new_range)
                         name_define_list.append(column_name_rest)
 
     return name_define_list

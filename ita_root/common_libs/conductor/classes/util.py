@@ -322,17 +322,20 @@ class ConductorCommonLibs():
             err_msg_args.append('conductor.last_update_date_time')
 
         if 'notice_info' not in c_data:
-            err_msg_args.append('conductor.notice_info')
+            pass
         elif c_data['notice_info']:
-            for key, values in c_data['notice_info'].items():
-                key_list = self.__db.table_select('T_COMN_CONDUCTOR_NOTICE', 'WHERE `DISUSE_FLAG`=0 AND `NOTICE_NAME`=%s', key)  # noqa E501
-                if len(key_list) == 0:
-                    err_msg_args.append('conductor.notice_info not exists')
-                else:
-                    for value in values:
-                        value_list = self.__db.table_select('T_COMN_CONDUCTOR_STATUS', 'WHERE `DISUSE_FLAG`=0 AND `STATUS_ID`=%s', value)
-                        if len(value_list) == 0:
-                            err_msg_args.append('conductor status not exists')
+            if isinstance(c_data['notice_info'], dict):
+                for key, values in c_data['notice_info'].items():
+                    key_list = self.__db.table_select('T_COMN_CONDUCTOR_NOTICE', 'WHERE `DISUSE_FLAG`=0 AND `NOTICE_NAME`=%s', key)  # noqa E501
+                    if len(key_list) == 0:
+                        err_msg_args.append('conductor.notice_info not exists')
+                    else:
+                        for value in values:
+                            value_list = self.__db.table_select('T_COMN_CONDUCTOR_STATUS', 'WHERE `DISUSE_FLAG`=0 AND `STATUS_ID`=%s', value)
+                            if len(value_list) == 0:
+                                err_msg_args.append('conductor status not exists')
+            else:
+                err_msg_args.append('conductor.notice_info not exists')
 
         if len(err_msg_args) != 0:
             msg = g.appmsg.get_api_message('MSG-40006')

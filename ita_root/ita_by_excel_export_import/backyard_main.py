@@ -11,23 +11,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+import inspect
 import json
-import re
-import ast
+import time
+import pathlib
+import shutil
 from flask import g
 # from common_libs.common.exception import AppException
 from common_libs.common import *  # noqa: F403
+from common_libs.common import menu_excel
+import util
 
 
 def backyard_main(organization_id, workspace_id):
     """
-        メニュー作成機能backyardメイン処理
+        Excelエクスポート機能backyardメイン処理
         ARGS:
             organization_id: Organization ID
             workspace_id: Workspace ID
         RETRUN:
 
     """
+
+    EXPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/export"
+    IMPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import"
+    DST_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/uploadfiles/60106/file_name"
+    RESULT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/uploadfiles/60106/result_file"
+
+    STATUS_RUNNING = "2"
+    STATUS_PROCESSED = "3"
+    STATUS_FAILURE = "4"
+
     # メイン処理開始
     debug_msg = g.appmsg.get_log_message("BKY-20001", [])
     g.applogger.debug(debug_msg)
@@ -37,110 +52,262 @@ def backyard_main(organization_id, workspace_id):
     # # テーブル名
     # t_menu_create_history = 'T_MENU_CREATE_HISTORY'  # メニュー作成履歴
 
-    # # DB接続
-    # objdbca = DBConnectWs(workspace_id)  # noqa: F405
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # # 「メニュー作成履歴」から「未実行(ID:1)」のレコードを取得
-    # ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [1, 0])
+    # 未実行のレコードを取得する
+    ret = objdbca.table_select("T_BULK_EXCEL_EXPORT_IMPORT", 'WHERE STATUS = %s AND DISUSE_FLAG = %s', [1, 0])
 
-    # # 0件なら処理を終了
-    # if not ret:
-    #     debug_msg = g.appmsg.get_log_message("BKY-20003", [])
-    #     g.applogger.debug(debug_msg)
+    # 0件なら処理を終了
+    if not ret:
+        debug_msg = g.appmsg.get_log_message("BKY-20003", [])
+        g.applogger.debug(debug_msg)
 
-    #     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
-    #     g.applogger.debug(debug_msg)
-    #     return
+        debug_msg = g.appmsg.get_log_message("BKY-20002", [])
+        g.applogger.debug(debug_msg)
+        return
 
-    # for record in ret:
-    #     history_id = str(record.get('HISTORY_ID'))
-    #     menu_create_id = str(record.get('MENU_CREATE_ID'))
-    #     create_type = str(record.get('CREATE_TYPE'))
+    for task in ret:
+        # 実行フラグ
+        execFlg = True
 
-    #     # 「メニュー作成履歴」ステータスを「2:実行中」に更新
-    #     objdbca.db_transaction_start()
-    #     status_id = "2"
-    #     result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
-    #     if not result:
-    #         # エラーログ出力
-    #         g.applogger.error(msg)
-    #         continue
-    #     objdbca.db_transaction_end(True)
+        # 言語情報
+        lang = task['LANGUAGE']
 
-    #     # トランザクション開始
-    #     debug_msg = g.appmsg.get_log_message("BKY-20004", [])
-    #     g.applogger.debug(debug_msg)
-    #     objdbca.db_transaction_start()
+        g.appmsg.set_lang(lang)
 
-    #     # create_typeに応じたレコード登録/更新処理を実行(メイン処理)
-    #     if create_type == "1":  # 1: 新規作成
-    #         debug_msg = g.appmsg.get_log_message("BKY-20019", [menu_create_id, 'create_new'])
-    #         g.applogger.debug(debug_msg)
-    #         main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'create_new')
+        # 実行ユーザー
+        g.USER_ID = '60102'
 
-    #     elif create_type == "2":  # 2: 初期化
-    #         debug_msg = g.appmsg.get_log_message("BKY-20019", [menu_create_id, 'initialize'])
-    #         g.applogger.debug(debug_msg)
-    #         main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'initialize')
+        result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_RUNNING, objdbca, False)
+        if result is False:
+            # エラーログ出力
+            frame = inspect.currentframe().f_back
+            msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
+            g.applogger.error(msgstr)
+            # ステータスを完了(異常)に更新
+            result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
+            continue
 
-    #     elif create_type == "3":  # 3: 編集
-    #         debug_msg = g.appmsg.get_log_message("BKY-20019", [menu_create_id, 'edit'])
-    #         g.applogger.debug(debug_msg)
-    #         main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'edit')
+        # エクスポート
+        if task["EXECUTION_TYPE"] == "1":
+            taskId = task["EXECUTION_NO"]
 
-    #     # メイン処理がFalseの場合、異常系処理
-    #     if not main_func_result:
-    #         # エラーログ出力
-    #         g.applogger.error(msg)
+            # タスクIDでディレクトリづくり
+            if not os.path.isdir(EXPORT_PATH + "/" + taskId + "/tmp_zip"):
+                os.makedirs(EXPORT_PATH + "/" + taskId + "/tmp_zip")
+                os.chmod(EXPORT_PATH + "/" + taskId + "/tmp_zip", 0o777)
+            if not os.path.isdir(EXPORT_PATH + "/" + taskId):
+                frame = inspect.currentframe().f_back
+                msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
+                g.applogger.error(msgstr)
+                # ステータスを完了(異常)に更新
+                result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
+                # 一時ディレクトリ削除
+                shutil.rmtree(EXPORT_PATH + "/" + taskId)
+                continue
 
-    #         # ロールバック/トランザクション終了
-    #         debug_msg = g.appmsg.get_log_message("BKY-20006", [])
-    #         g.applogger.debug(debug_msg)
-    #         objdbca.db_transaction_end(False)
+            fileNameList = ""
 
-    #         # 「メニュー作成履歴」ステータスを「4:完了(異常)」に更新
-    #         objdbca.db_transaction_start()
-    #         status_id = 4
-    #         result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
-    #         if not result:
-    #             # エラーログ出力
-    #             g.applogger.error(msg)
-    #             continue
-    #         objdbca.db_transaction_end(True)
+            request = {}
 
-    #         continue
+            json_storage_item = json.loads(str(task['JSON_STORAGE_ITEM']))
+            menu_list = json_storage_item["menu"]
+            for menu in menu_list:
+                sql = " SELECT MENU_ID, MENU_NAME_REST FROM T_COMN_MENU WHERE DISUSE_FLAG <> 1 AND MENU_NAME_REST = %s "
+                data_list = objdbca.sql_execute(sql, [menu])
+                for data in data_list:
+                    menuId = data['MENU_ID']
+                    menuNameRest = data['MENU_NAME_REST']
+                # ファイル名が重複しないためにsleep
+                time.sleep(1)
+                menuInfo = util.getMenuInfoByMenuId(menuId, objdbca)
 
-    #     # 「メニュー定義一覧」の対象レコードの「メニュー作成状態」を「2: 作成済み」に変更
-    #     menu_create_done_status_id = "2"
-    #     result, msg = _update_t_menu_define(objdbca, menu_create_id, menu_create_done_status_id)
-    #     if not result:
-    #         # ロールバック/トランザクション終了
-    #         debug_msg = g.appmsg.get_log_message("BKY-20006", [])
-    #         g.applogger.debug(debug_msg)
-    #         objdbca.db_transaction_end(False)
+                # メニュー周りの情報
+                menuGroupId = menuInfo["MENU_GROUP_ID"]
+                if lang == 'ja':
+                    menuGroupName = menuInfo["MENU_GROUP_NAME_JA"]
+                else:
+                    menuGroupName = menuInfo["MENU_GROUP_NAME_EN"]
 
-    #         # エラーログ出力
-    #         g.applogger.error(msg)
-    #         continue
+                # メニューの存在確認
+                menu_record = util.check_menu_info(menuNameRest, objdbca)
 
-    #     # コミット/トランザクション終了
-    #     debug_msg = g.appmsg.get_log_message("BKY-20005", [])
-    #     g.applogger.debug(debug_msg)
-    #     objdbca.db_transaction_end(True)
+                # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+                sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+                menu_table_link_record = util.check_sheet_type(menuNameRest, sheet_type_list, objdbca)
 
-    #     # 「メニュー作成履歴」ステータスを「3:完了」に更新
-    #     objdbca.db_transaction_start()
-    #     status_id = 3
-    #     result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
-    #     if not result:
-    #         # エラーログ出力
-    #         g.applogger.error(msg)
-    #         continue
-    #     objdbca.db_transaction_end(True)
+                filter_parameter = {}
+                # 廃止情報
+                if task["ABOLISHED_TYPE"] == "2":
+                    # 廃止情報の取得 廃止情報を除く
+                    filter_parameter = {"discard": {"NORMAL": "0"}}
+                elif task["ABOLISHED_TYPE"] == "3":
+                    # 廃止情報の取得 廃止情報のみ
+                    filter_parameter = {"discard": {"NORMAL": "1"}}
 
-    # # メイン処理終了
-    # debug_msg = g.appmsg.get_log_message("BKY-20002", [])
-    # g.applogger.debug(debug_msg)
+                # ダミー情報設定
+                g.ROLES = "dummy"
+                g.WORKSPACE_ROLES = "dummy"
+                g.PLATFORM_WORKSPACES = "dummy"
+                g.PLATFORM_ENVIRONMENTS = "dummy"
+                filePath = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menuNameRest, menu_record, menu_table_link_record, filter_parameter, True, lang)
+
+                # メニューグループごとにまとめる
+                folder_name = menuGroupId + "_" + menuGroupName
+                if not os.path.exists(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name):
+                    os.makedirs(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name)
+                    os.chmod(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name, 0o777)
+
+                shutil.move(filePath, EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name)
+
+                # ファイルリスト
+                fileNamelist = filePath.split("/")
+                fileName = ""
+                for value in fileNamelist:
+                    if "xlsx" in value:
+                        fileName = value
+
+                if menuGroupId in request:
+                    request[menuGroupId] = {"menu_group_name": menuGroupName, "menu": []}
+                    request[menuGroupId]["menu"] = {}
+                    request[menuGroupId]["menu"][""] = {"menu_id": menuId, "menu_name": menuNameRest}
+                else:
+                    request[menuGroupId] = {}
+                    request[menuGroupId]["menu"] = {}
+                    request[menuGroupId]["menu"][""] = {"menu_id": menuId, "menu_name": menuNameRest}
+
+                fileNameList += "#" + menuGroupId + "(" + menuGroupName + ")\n" + menuId + ":" + fileName + "\n"
+
+            # ファイル一覧をJSONに変換
+            tmpExportPath = EXPORT_PATH + "/" + taskId + "/tmp_zip"
+            fileputflg = pathlib.Path(tmpExportPath + "/MENU_LIST.txt").write_text(fileNameList, encoding="utf-8")
+
+            # パスの有無を確認
+            if not os.path.exists(DST_PATH):
+                os.makedirs(DST_PATH)
+                os.chmod(DST_PATH, 0o777)
+            else:
+                os.chmod(DST_PATH, 0o777)
+
+            # ZIPを固める
+            t_delta = datetime.timedelta(hours=9)
+            JST = datetime.timezone(t_delta, 'JST')
+            now = datetime.datetime.now(JST)
+            now_date = now.date().strftime('%Y%m%d')
+            now_time = now.time().strftime('%X')
+            now_time = now_time.replace(":", "")
+            dstFileName = "ITA_FILES_" + now_date + now_time + ".zip"
+            res = util.zip(task['EXECUTION_NO'], EXPORT_PATH + "/" + taskId, DST_PATH, dstFileName, objdbca)
+            if res == 0:
+                frame = inspect.currentframe().f_back
+                msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
+                g.applogger.error(msgstr)
+                # ステータスを完了(異常)に更新
+                result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
+                # 一時ディレクトリ削除
+                shutil.rmtree(EXPORT_PATH + "/" + taskId)
+                continue
+
+            # ステータスを完了にする
+            res = util.setStatus(task['EXECUTION_NO'], STATUS_PROCESSED, objdbca)
+
+            # 一時ディレクトリ削除
+            shutil.rmtree(EXPORT_PATH + "/" + taskId)
+
+        # インポート
+        elif task["EXECUTION_TYPE"] == "2":
+            taskId = task["EXECUTION_NO"]
+            json_storage_item = json.loads(str(task['JSON_STORAGE_ITEM']))
+            upload_id = json_storage_item["upload_id"]
+
+            targetImportPath = IMPORT_PATH + "/import/" + upload_id
+            tmpMenuIdFileAry = Path(targetImportPath + '/MENU_LIST.txt').read_text(encoding="utf-8")
+            tmpMenuIdFileAry = tmpMenuIdFileAry.split("\n")
+
+            menuIdFileInfo = []
+            retImportAry = {}
+            for value in tmpMenuIdFileAry:
+                # 頭に#がついているものはコメントなのではじく
+                result = re.match('^#', value)
+                if not result:
+                    if not value == "":
+                        menuIdFileInfo = value.split(":")
+                        if len(menuIdFileInfo) == 2:
+                            menuId = menuIdFileInfo[0]
+                            menuFileName = menuIdFileInfo[1]
+                            retImportAry[menuId] = menuFileName
+
+            for menuId, fileName in retImportAry.items():
+                menuInfo = util.getMenuInfoByMenuId(menuId, objdbca)
+                chk_path1 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_JA"] + "/" + fileName
+                chk_path2 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_EN"] + "/" + fileName
+                if not os.path.exists(chk_path1) and not os.path.exists(chk_path2) or fileName == "":
+                    # ファイルがないエラー
+                    resFilePath = RESULT_PATH + "/ResultData_" + taskId + ".log"
+                    title = menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_" + lang.upper()] + ":" + menuId + "_" + menuInfo["MENU_NAME_" + lang.upper()]
+                    msg = title + "\n" + g.appmsg.get_api_message("MSG-30026") + "\n"
+
+                    util.dumpResultMsg(msg, taskId, RESULT_PATH)
+                    continue
+
+                if os.path.exists(chk_path1):
+                    targetImportPath = chk_path1
+                elif os.path.exists(chk_path2):
+                    targetImportPath = chk_path2
+
+                excel_data = util.file_encode(targetImportPath)
+                sql = " SELECT MENU_NAME_REST FROM T_COMN_MENU WHERE DISUSE_FLAG <> 1 AND MENU_ID = %s "
+                data_list = objdbca.sql_execute(sql, [menuId])
+                for data in data_list:
+                    menuNameRest = data['MENU_NAME_REST']
+
+                # メニューの存在確認
+                menu_record = util.check_menu_info(menuNameRest, objdbca)
+
+                # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+                sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+                menu_table_link_record = util.check_sheet_type(menuNameRest, sheet_type_list, objdbca)
+
+                # アップロード
+                aryRetBody = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menuNameRest, menu_record, excel_data, True, lang)
+
+                # リザルトファイルの作成
+                menuInfo = util.getMenuInfoByMenuId(menuId, objdbca)
+                msg = menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_" + lang.upper()] + ":" + menuId + "_" + menuInfo["MENU_NAME_" + lang.upper()] + "\n"
+
+                strErrCountExplainTail = g.appmsg.get_api_message("MSG-30027")
+                msg += g.appmsg.get_api_message("MSG-30028", [fileName])
+                idx = 0
+                msg_result = []
+                msg_result.append(g.appmsg.get_api_message('MSG-30004'))
+                msg_result.append(g.appmsg.get_api_message('MSG-30005'))
+                msg_result.append(g.appmsg.get_api_message('MSG-30006'))
+                msg_result.append(g.appmsg.get_api_message('MSG-30007'))
+                for name, ct in aryRetBody.items():
+                    msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
+                    idx += 1
+
+                util.dumpResultMsg(msg, taskId, RESULT_PATH)
+
+                # ファイルの登録
+                res = util.registerResultFile(taskId, objdbca)
+
+                if res == 0:
+                    frame = inspect.currentframe().f_back
+                    msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
+                    g.applogger.error(msgstr)
+                    # ステータスを完了(異常)に更新
+                    result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
+                    continue
+
+                # ステータスを完了にする
+                res = util.setStatus(task['EXECUTION_NO'], STATUS_PROCESSED, objdbca)
+                if res == 0:
+                    frame = inspect.currentframe().f_back
+                    msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
+                    g.applogger.error(msgstr)
+                    # ステータスを完了(異常)に更新
+                    result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
+                    continue
     return
-
-

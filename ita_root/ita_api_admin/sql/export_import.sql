@@ -47,6 +47,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
     FILE_NAME                       VARCHAR(64),                                -- ファイル名
+    LANGUAGE                        VARCHAR(40),                                -- 言語
     RESULT_FILE                     VARCHAR(64),                                -- 結果
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -66,6 +67,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT_JNL
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
     FILE_NAME                       VARCHAR(64),                                -- ファイル名
+    LANGUAGE                        VARCHAR(40),                                -- 言語
     RESULT_FILE                     VARCHAR(64),                                -- 結果
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ

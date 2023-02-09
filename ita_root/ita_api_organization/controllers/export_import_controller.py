@@ -74,9 +74,31 @@ def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa
 
     :rtype: InlineResponse200
     """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    menu = 'bulk_excel_export'
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['22']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
     if connexion.request.is_json:
-        body = ImportExecuteBody1.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!',
+        body = dict(connexion.request.get_json())
+        check_request_body_key(body, 'upload_id')  # keyが無かったら400-00002エラー
+        check_request_body_key(body, 'data_portability_upload_file_name')
+
+    result_data = export_import.execute_excel_bulk_import(objdbca, menu, body)
+
+    return result_data,
 
 @api_filter
 def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa: E501
@@ -191,7 +213,30 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None):  # noqa: E
 
     :rtype: InlineResponse200
     """
-    return 'do some magic!',
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    menu = 'bulk_excel_export'
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['22']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+
+    result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca)
+
+    return result_data,
 
 @api_filter
 def get_menu_export_list(organization_id, workspace_id):  # noqa: E501

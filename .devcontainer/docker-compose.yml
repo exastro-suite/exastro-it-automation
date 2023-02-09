@@ -307,6 +307,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
 
   # ita-by-terraform-cloud-ep-execute:
   #   user: 1000:1000

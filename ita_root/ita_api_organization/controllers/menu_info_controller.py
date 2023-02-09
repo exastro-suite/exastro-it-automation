@@ -15,7 +15,7 @@
 from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
-from libs import menu_info
+from common_libs.common import menu_info
 
 
 @api_filter
@@ -35,7 +35,7 @@ def get_column_list(organization_id, workspace_id, menu):  # noqa: E501
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu_record = check_menu_info(menu, objdbca)
 
@@ -45,10 +45,10 @@ def get_column_list(organization_id, workspace_id, menu):  # noqa: E501
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # メニューのカラム情報を取得
     data = menu_info.collect_menu_column_list(objdbca, menu, menu_record)
-    
+
     return data,
 
 
@@ -69,7 +69,7 @@ def get_menu_info(organization_id, workspace_id, menu):  # noqa: E501
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu_record = check_menu_info(menu, objdbca)
 
@@ -82,7 +82,7 @@ def get_menu_info(organization_id, workspace_id, menu):  # noqa: E501
 
     # メニューの基本情報および項目情報の取得
     data = menu_info.collect_menu_info(objdbca, menu, menu_record, menu_table_link_record, privilege)
-    
+
     return data,
 
 
@@ -116,7 +116,7 @@ def get_pulldown_list(organization_id, workspace_id, menu):  # noqa: E501
 
     # IDColumn項目のプルダウン一覧の取得
     data = menu_info.collect_pulldown_list(objdbca, menu, menu_record)
-    
+
     return data,
 
 
@@ -149,8 +149,8 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 対象項目のプルダウン検索候補一覧を取得
     data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
-    
+
     return data,

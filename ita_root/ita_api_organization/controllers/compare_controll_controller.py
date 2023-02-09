@@ -17,8 +17,9 @@ import six  # noqa: F401
 
 from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter
+from common_libs.common import menu_info
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
-from libs import compare_controll, menu_info, menu_filter
+from libs import compare_controll, menu_filter
 
 
 @api_filter

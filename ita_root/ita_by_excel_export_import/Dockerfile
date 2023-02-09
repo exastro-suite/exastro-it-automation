@@ -33,6 +33,8 @@ RUN dnf install -y \
     langpacks-en \
     wget \
     unzip \
+    glibc-locale-source \
+    glibc-gconv-extra \
 &&  pip3.9 install --upgrade pip setuptools \
 &&  pip3.9 install \
     Flask \
@@ -65,6 +67,9 @@ RUN dnf install -y \
     debugpy \
     flake8 \
     autopep8 \
+    six \
+    pyrsistent \
+    openpyxl \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 

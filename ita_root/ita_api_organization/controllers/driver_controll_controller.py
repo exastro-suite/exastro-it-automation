@@ -19,7 +19,8 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
-from libs import driver_controll, menu_info, menu_filter
+from libs import driver_controll, menu_filter
+from common_libs.common import menu_info
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst

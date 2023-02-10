@@ -1270,7 +1270,7 @@ class loadTable():
         return status_code, result, msg,
 
     # [maintenance]:メニューのレコード操作
-    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False):
+    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False, import_mode=False):
         """
             RESTAPI[filter]:メニューのレコード操作
             ARGS:
@@ -1425,28 +1425,44 @@ class loadTable():
                         # カラムクラス呼び出し
                         objcolumn = self.get_columnclass(rest_key, cmd_type)
 
-                        # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前
-                        tmp_exec = objcolumn.before_iud_action(rest_val, copy.deepcopy(target_col_option))
-                        if tmp_exec[0] is not True:
-                            dict_msg = {
-                                'status_code': '',
-                                'msg_args': '',
-                                'msg': tmp_exec[1],
-                            }
-                            self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
-                        else:
-                            tmp_target_col_option = tmp_exec[3]
-                            entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
-                            entry_file = tmp_target_col_option.get('entry_parameter').get('file')
-                            rest_val = entry_parameter.get(rest_key)
-                            # entry_file[rest_key] = target_col_option.get('file_data')
+                        if import_mode is False:
+                            # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前
+                            tmp_exec = objcolumn.before_iud_action(rest_val, copy.deepcopy(target_col_option))
+                            if tmp_exec[0] is not True:
+                                dict_msg = {
+                                    'status_code': '',
+                                    'msg_args': '',
+                                    'msg': tmp_exec[1],
+                                }
+                                self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                            else:
+                                tmp_target_col_option = tmp_exec[3]
+                                entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
+                                entry_file = tmp_target_col_option.get('entry_parameter').get('file')
+                                rest_val = entry_parameter.get(rest_key)
+                                # entry_file[rest_key] = target_col_option.get('file_data')
 
-                            if rest_val is not None:
-                                if self.get_col_class_name(rest_key) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
-                                    sensitive_col_name = objcolumn.get_objcol().get(COLNAME_SENSITIVE_COL_NAME)
-                                    sensitive_settings = entry_parameter.get(sensitive_col_name)
-                                    # SENSITIVEがONの場合
-                                    if sensitive_settings == '1':
+                                if rest_val is not None:
+                                    if self.get_col_class_name(rest_key) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
+                                        sensitive_col_name = objcolumn.get_objcol().get(COLNAME_SENSITIVE_COL_NAME)
+                                        sensitive_settings = entry_parameter.get(sensitive_col_name)
+                                        # SENSITIVEがONの場合
+                                        if sensitive_settings == '1':
+                                            tmp_exec = objcolumn.convert_value_input(rest_val)
+                                            if tmp_exec[0] is True:
+                                                entry_parameter[rest_key] = tmp_exec[2]
+                                            else:
+                                                dict_msg = {
+                                                    'status_code': '',
+                                                    'msg_args': '',
+                                                    'msg': tmp_exec[1],
+                                                }
+                                                self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                                        else:
+                                            entry_parameter[rest_key] = rest_val
+
+                                    else:
+                                        # VALUE 変換処理不要ならVALUE変更無し
                                         tmp_exec = objcolumn.convert_value_input(rest_val)
                                         if tmp_exec[0] is True:
                                             entry_parameter[rest_key] = tmp_exec[2]
@@ -1457,21 +1473,6 @@ class loadTable():
                                                 'msg': tmp_exec[1],
                                             }
                                             self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
-                                    else:
-                                        entry_parameter[rest_key] = rest_val
-
-                                else:
-                                    # VALUE 変換処理不要ならVALUE変更無し
-                                    tmp_exec = objcolumn.convert_value_input(rest_val)
-                                    if tmp_exec[0] is True:
-                                        entry_parameter[rest_key] = tmp_exec[2]
-                                    else:
-                                        dict_msg = {
-                                            'status_code': '',
-                                            'msg_args': '',
-                                            'msg': tmp_exec[1],
-                                        }
-                                        self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
 
             # メニュー共通処理:レコード操作前 組み合わせ一意制約
             self.exec_unique_constraint(entry_parameter, target_uuid)
@@ -1873,7 +1874,7 @@ class loadTable():
                             else:
                                 col_val = None
                     else:
-                        if mode not in ['input']:
+                        if mode not in ['input', 'export']:
                             tmp_exec = objcolumn.convert_value_output(col_val)
                             if tmp_exec[0] is True:
                                 col_val = tmp_exec[2]

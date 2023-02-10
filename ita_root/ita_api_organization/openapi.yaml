@@ -56,6 +56,8 @@ tags:
     description: 比較の情報取得・操作
   - name: Terraform Cloud EP
     description: Terraform Cloud/Enterpriseとの連携
+  - name: CI/CD for IaC
+    description: CI/CD for IaCの操作
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
@@ -4976,6 +4978,115 @@ paths:
                     example: 000-00000
                   data:
                     type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/repository/{uuid}/:
+    post:
+      tags:
+        - CI/CD for IaC
+      description: リモートリポジトリの再開
+      operationId: postCicdForIacResumeRepository
+      x-openapi-router-controller: controllers.cicd_for_ia_c_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: uuid
+          in: path
+          description: uuid
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/file_link/{uuid}/:
+    post:
+      tags:
+        - CI/CD for IaC
+      description: 資材紐付の再開
+      operationId: postCicdForIacResumeFilelink
+      x-openapi-router-controller: controllers.cicd_for_ia_c_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: uuid
+          in: path
+          description: uuid
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
                   message:
                     type: string
         '401':

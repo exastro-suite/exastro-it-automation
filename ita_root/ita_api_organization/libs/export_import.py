@@ -13,6 +13,19 @@
 #   limitations under the License.
 
 import json
+import subprocess
+import shutil
+import collections
+import re
+import zipfile
+import glob
+import base64
+import datetime
+import tarfile
+import mimetypes
+import secrets
+import pathlib
+from collections import Counter
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body, check_request_body_key
@@ -301,7 +314,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
 def execute_excel_bulk_export(objdbca, menu, body):
     """
-        メニュー一括エクスポート実行
+        EXCEL一括エクスポート実行
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu:menu_export
@@ -361,15 +374,18 @@ def execute_excel_bulk_export(objdbca, menu, body):
 
         abolished_type = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
+        user_name = util.get_user_name(user_id)
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
                 "status": status,
                 "execution_type": execution_type,
                 "abolished_type": abolished_type,
+                "language": lang,
                 "file_name": None,
                 "result_file": None,
-                "execution_user": user_id,
+                "execution_user": user_name,
                 "json_storage_item": json.dumps(body),
                 "discard": "0"
             },
@@ -400,6 +416,956 @@ def execute_excel_bulk_export(objdbca, menu, body):
     result_data = {'execution_no': execution_no}
 
     return result_data
+
+def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
+    """
+        Excel一括インポートのアップロード
+        ARGS:
+            body:リクエストのbody部
+        RETRUN:
+            result_data
+    """
+
+    arrayResult = {}
+    msg_args = ""
+    intResultCode = ""
+
+    try:
+        body_zipfile = body.get('zipfile')
+        # upload_idの作成
+        date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        upload_id = date + str(secrets.randbelow(9999999999))
+
+        fileName = upload_id + '_ita_data.zip'
+
+        # ファイル保存
+        uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/" + fileName
+        uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
+        importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+        ret = upload_file(uploadFilePath, body_zipfile['base64'])
+
+        if ret == 0:
+            if os.path.exists(uploadPath + fileName):
+                os.remove(uploadPath + fileName)
+
+        # zip解凍
+        if os.path.exists(uploadPath + fileName):
+            os.makedirs(uploadPath + upload_id)
+            os.chmod(uploadPath + upload_id, 0o777)
+
+        with zipfile.ZipFile(uploadPath + fileName) as z:
+            for info in z.infolist():
+                info.filename = info.filename.encode('cp437').decode('cp932')
+                z.extract(info, path=uploadPath + upload_id)
+
+        # zipファイルの中身確認
+        declare_list = checkZipFile(upload_id, organization_id, workspace_id)
+
+        # メニューリストの取得
+        tmpRetImportAry = makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, objdbca)
+        if len(tmpRetImportAry) == 0:
+            msgstr = g.appmsg.get_api_message("MSG-30037")
+            log_msg_args = [msgstr]
+            api_msg_args = [msgstr]
+            raise AppException("499-00005", log_msg_args, api_msg_args)
+
+        retImportAry = {}
+        retUnImportAry = {}
+        idx = 0
+        idx_unimport = 0
+        for menuGroupId, menuGroupInfo in tmpRetImportAry.items():
+            for k, menuInfo in menuGroupInfo["menu"].items():
+                menuId = menuInfo["menu_id"]
+                menuName = menuInfo["menu_name"]
+                fileName = menuInfo["file_name"]
+
+                tmpMenuInfo = getMenuInfoByMenuId(menuId, objdbca)
+                group_disp_seq = tmpMenuInfo["GROUP_DISP_SEQ"]
+                parent_id = tmpMenuInfo["PARENT_MENU_GROUP_ID"]
+                disp_seq = tmpMenuInfo["DISP_SEQ"]
+
+                # 『メニューテーブル紐付管理』テーブルから対象のデータを取得
+                ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])
+
+                for record in ret_role_menu_link:
+                    if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0":
+                        # 権限エラー
+                        msgstr = g.appmsg.get_api_message("MSG-30038")
+                        menuInfo["error"] = msgstr
+
+                if "error" in menuInfo:
+                    error = menuInfo["error"]
+                    if menuGroupId in retUnImportAry:
+                        retUnImportAry[menuGroupId]["menu"][idx_unimport] = {"disp_seq": disp_seq,
+                                                                            "menu_id": menuId,
+                                                                            "menu_name": menuName,
+                                                                            "file_name": fileName,
+                                                                            "error": error}
+
+                        idx_unimport += 1
+                    else:
+                        retUnImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
+                                                    "menu_group_id": menuGroupId,
+                                                    "menu_group_name": menuGroupInfo["menu_group_name"],
+                                                    "menu": {idx_unimport: {"disp_seq": disp_seq,
+                                                            "menu_id": menuId,
+                                                            "menu_name": menuName,
+                                                            "file_name": fileName,
+                                                            "error": error}},
+                                                    "parent_id": parent_id}
+
+                        idx_unimport += 1
+                else:
+                    if menuGroupId in retImportAry:
+                        retImportAry[menuGroupId]["menu"][idx] = {"disp_seq": disp_seq,
+                                                                    "menu_id": menuId,
+                                                                    "menu_name": menuName,
+                                                                    "file_name": fileName}
+
+                        idx += 1
+                    else:
+                        retImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
+                                                    "menu_group_id": menuGroupId,
+                                                    "menu_group_name": menuGroupInfo["menu_group_name"],
+                                                    "menu": {idx: {"disp_seq": disp_seq,
+                                                            "menu_id": menuId,
+                                                            "menu_name": menuName,
+                                                            "file_name": fileName}},
+                                                    "parent_id": parent_id}
+
+                        idx += 1
+
+        if len(retImportAry) == 0:
+            msgstr = g.appmsg.get_api_message("MSG-30037")
+            log_msg_args = [msgstr]
+            api_msg_args = [msgstr]
+            raise AppException("499-00005", log_msg_args, api_msg_args)
+
+        intResultCode = "000"
+
+    except Exception as e:
+        result_code = e.args[0]
+        msg_args = e.args[1]
+        return False, result_code, msg_args, None
+
+    arrayResult["upload_id"] = upload_id
+    arrayResult["data_portability_upload_file_name"] = body['zipfile']['name']
+
+    if intResultCode == "000":
+        arrayResult["import_list"] = retImportAry
+        arrayResult["umimport_list"] = retUnImportAry
+    if intResultCode == "002":
+        del arrayResult["upload_id"]
+
+    return arrayResult
+
+def execute_excel_bulk_import(objdbca, menu, body):
+    """
+        EXCEL一括インポート実行
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+            menu:menu_export
+            body:リクエストのbody部
+        RETRUN:
+            result_data
+    """
+    # 変数定義
+    lang = g.get('LANGUAGE')
+    user_id = g.get('USER_ID')
+
+    # テーブル名
+    t_dp_status_master = 'T_DP_STATUS_MASTER'
+    t_dp_execution_type = 'T_DP_EXECUTION_TYPE'
+    t_dp_abolished_type = 'T_DP_ABOLISHED_TYPE'
+
+    try:
+        # トランザクション開始
+        objdbca.db_transaction_start()
+
+        # loadTableの呼び出し
+        objmenu = load_table.loadTable(objdbca, 'bulk_excel_export_import_list')  # noqa: F405
+        if objmenu.get_objtable() is False:
+            log_msg_args = ["not menu or table"]
+            api_msg_args = ["not menu or table"]
+            raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+
+        # 『ステータスマスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_status = objdbca.table_select(t_dp_status_master, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [1, 0])
+        if not ret_dp_status:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        status = ret_dp_status[0].get('TASK_STATUS_NAME_' + lang.upper())
+
+        # 『処理種別マスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_execution_type = objdbca.table_select(t_dp_execution_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [2, 0])
+        if not ret_dp_execution_type:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        execution_type = ret_dp_execution_type[0].get('EXECUTION_TYPE_NAME_' + lang.upper())
+
+        user_name = util.get_user_name(user_id)
+
+        # 登録用パラメータを作成
+        parameters = {
+            "parameter": {
+                "status": status,
+                "execution_type": execution_type,
+                "abolished_type": None,
+                "language": lang,
+                "file_name": None,
+                "result_file": None,
+                "execution_user": user_name,
+                "json_storage_item": json.dumps(body),
+                "discard": "0"
+            },
+            "type": "Register"
+        }
+
+        # 登録を実行
+        exec_result = objmenu.exec_maintenance(parameters, "", "", False, False, True)  # noqa: E999
+        if not exec_result[0]:
+            result_msg = _format_loadtable_msg(exec_result[2])
+            result_msg = json.dumps(result_msg, ensure_ascii=False)
+            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+
+        # コミット/トランザクション終了
+        objdbca.db_transaction_end(True)
+
+    except Exception as e:
+        # ロールバック トランザクション終了
+        objdbca.db_transaction_end(False)
+
+        result_code = e.args[0]
+        msg_args = e.args[1]
+        return False, result_code, msg_args, None
+
+    # 返却用の値を取得
+    execution_no = exec_result[1].get('execution_no')
+
+    result_data = {'execution_no': execution_no}
+
+    return result_data
+
+def _format_loadtable_msg(loadtable_msg):
+    """
+        【内部呼び出し用】loadTableから受け取ったバリデーションエラーメッセージをフォーマットする
+        ARGS:
+            loadtable_msg: loadTableから返却されたメッセージ(dict)
+        RETRUN:
+            format_msg
+    """
+    result_msg = {}
+    for key, value_list in loadtable_msg.items():
+        msg_list = []
+        for value in value_list:
+            msg_list.append(value.get('msg'))
+        result_msg[key] = msg_list
+
+    return result_msg
+
+def checkZipFile(upload_id, organization_id, workspace_id):
+    """
+        zipファイルの中身を確認する
+
+        args:
+            upload_id: アップロードID
+    """
+    fileName = upload_id + '_ita_data.zip'
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
+    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+
+    # tmpfileAry = os.scandir(uploadPath + upload_id)
+    # tmpfileAry = zipfile.ZipFile(uploadPath + fileName)
+    # lst = tmpfileAry.namelist()
+    lst = os.listdir(uploadPath + upload_id)
+
+    fileAry = []
+    for value in lst:
+        if not value == '.' and not value == '..':
+            path = os.path.join(uploadPath + upload_id, value)
+            if os.path.isdir(path):
+                dir_name = value
+                sublst = os.listdir(path)
+                for subvalue in sublst:
+                    if not subvalue == '.' and not subvalue == '..':
+                        fileAry.append(dir_name + "/" + subvalue)
+            else:
+                fileAry.append(value)
+
+    if len(fileAry) == 0:
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+
+        msgstr = g.appmsg.get_api_message("MSG-30030")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    # 必須ファイルの確認
+    errCnt = 0
+    errFlg = True
+    for value in fileAry:
+        if 'MENU_LIST.txt' in value:
+            errFlg = False
+
+    if errFlg == 1:
+        errCnt += 1
+        msgstr = g.appmsg.get_api_message("MSG-30031")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    tmp_menu_list = Path(uploadPath + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
+    if tmp_menu_list == "":
+        msgstr = g.appmsg.get_api_message("MSG-30032")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    if errCnt > 0:
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+
+        shutil.rmtree(uploadPath + upload_id)
+
+        msgstr = g.appmsg.get_api_message("MSG-30030")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    # ファイル移動
+    if not os.path.exists(importPath):
+        os.makedirs(importPath)
+        os.chmod(importPath, 0o777)
+
+    shutil.copy(uploadPath + fileName, importPath + fileName)
+    os.makedirs(importPath + upload_id)
+    os.chmod(importPath + upload_id, 0o777)
+    from_path = uploadPath + upload_id
+    to_path = importPath + '.'
+    cmd = "cp -frp " + from_path + ' ' + to_path
+    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+
+    errCnt = 0
+    declare_check_list = []
+    for value in fileAry:
+        file = importPath + upload_id + '/' + value
+        if not os.path.exists(file):
+            errCnt += 1
+            break
+
+        if not file == "":
+            tmpFileAry = file.split("/")
+            fileName = tmpFileAry[len(tmpFileAry) - 1]
+            declare_check_list.append(fileName)
+
+    declare_list = collections.Counter(declare_check_list)
+    for value in fileAry:
+        file = importPath + upload_id + '/' + value
+        if value.endswith(".xlsx"):
+            continue
+
+        if not os.path.exists(file):
+            errCnt += 1
+            break
+
+        if not file:
+            cmd = "rm -rf " + importPath + upload_id
+            ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+            if ret.returncode != 0:
+                return False
+
+    if errCnt > 0:
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+
+        if os.path.exists(importPath + fileName):
+            os.remove(importPath + fileName)
+
+        cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        if ret.returncode != 0:
+            msgstr = g.appmsg.get_api_message("MSG-30029")
+            log_msg_args = [msgstr]
+            api_msg_args = [msgstr]
+            raise AppException("499-00005", log_msg_args, api_msg_args)
+
+        cmd = "rm -rf " + importPath + upload_id + " 2>&1"
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        if ret.returncode != 0:
+            msgstr = g.appmsg.get_api_message("MSG-30029")
+            log_msg_args = [msgstr]
+            api_msg_args = [msgstr]
+            raise AppException("499-00005", log_msg_args, api_msg_args)
+
+        msgstr = g.appmsg.get_api_message("MSG-30030")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
+    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+    if ret.returncode != 0:
+        msgstr = g.appmsg.get_api_message("MSG-30029")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    return declare_list
+
+def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, objdbca):
+    """
+    インポートするメニューのチェックボックス作成
+
+    Arguments:
+        upload_id: アップロードID
+        objdbca: DBオブジェクト
+    Returns:
+        実行結果
+    """
+    path = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+
+    # 取得したいFILEリストの取得
+    menuIdFile = Path(path + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
+
+    tmpMenuIdFileAry = menuIdFile.split("\n")
+
+    if len(tmpMenuIdFileAry) == 0:
+        msgstr = g.appmsg.get_api_message("MSG-30032")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    retImportAry = {}
+    idx = 0
+    for menuFileInfo in tmpMenuIdFileAry:
+        # フォーマットチェック
+        result1 = re.match('^#', menuFileInfo)
+        result2 = re.match('^\d{5}:.*$', menuFileInfo)
+
+        if not result1 and result2:
+            menuIdFileInfo = menuFileInfo.split(":")
+            menuId = menuIdFileInfo[0]
+            menuFileName = menuIdFileInfo[1]
+            menuInfo = getMenuInfoByMenuId(menuId, objdbca)
+
+            menuGroupId = menuInfo["MENU_GROUP_ID"]
+            if g.get('LANGUAGE') == 'ja':
+                menuGroupName = menuInfo["MENU_GROUP_NAME_JA"]
+                menuName = menuInfo["MENU_NAME_JA"]
+            else:
+                menuGroupName = menuInfo["MENU_GROUP_NAME_EN"]
+                menuName = menuInfo["MENU_NAME_EN"]
+
+            menuGroupFolderName = menuGroupId + "_" + menuGroupName
+
+            if len(retImportAry) == 0 or len(menuInfo) == 0:
+                declare_key = False
+                declare_file_name_key = False
+            else:
+                if menuGroupId in retImportAry:
+                    tmp_ary = []
+                    for key, value in retImportAry[menuGroupId]["menu"].items():
+                        if "menu_id" in value:
+                            tmp_ary.append(value["menu_id"])
+                        if menuId in tmp_ary:
+                            declare_key = True
+                            break
+                    tmp_ary = []
+                    for key, value in retImportAry[menuGroupId]["menu"].items():
+                        if "file_name" in value:
+                            tmp_ary.append(value["file_name"])
+                        if menuFileName in tmp_ary:
+                            declare_file_name_key = tmp_ary.index(menuFileName)
+                            break
+                    declare_menu_info = retImportAry[menuGroupId]["menu"][declare_file_name_key]
+                else:
+                    declare_key = False
+                    declare_file_name_key = False
+
+            # メニューの存在チェック
+            if menuInfo == 0:
+                tmpMenuInfo = {"menu_id": menuId,
+                                "menu_name": menuName,
+                                "disabled": True,
+                                "error": g.appmsg.get_api_message("MSG-30033"),
+                                "file_name": menuFileName}
+
+                if menuGroupId in retImportAry:
+                    # メニューグループは存在するがメニューがない場合
+                    if declare_key == 0:
+                        retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
+                    else:
+                        idx = 0
+                        retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
+                                                    "menu": {idx: tmpMenuInfo}}
+
+                    idx += 1
+            # ファイルの拡張子チェック
+            elif not menuFileName.endswith(".xlsx") and not menuFileName == "":
+                tmpMenuInfo = {"menu_id": menuId,
+                                "menu_name": menuName,
+                                "disabled": True,
+                                "error": g.appmsg.get_api_message("MSG-30033"),
+                                "file_name": menuFileName}
+
+                if menuGroupId in retImportAry:
+                    # メニューグループは存在するがメニューがない場合
+                    if declare_key == 0:
+                        retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
+                    else:
+                        idx = 0
+                        retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
+                                                    "menu": {idx: tmpMenuInfo}}
+
+                    idx += 1
+            # ファイルの有無
+            else:
+                if os.path.exists(path + upload_id + "/" + menuGroupFolderName + "/" + menuFileName) and not menuFileName == "":
+                    # retImportAryのなかに該当メニューグループがあるかどうか
+                    if menuGroupId in retImportAry:
+                        # メニューグループは存在するがメニューがない場合
+                        # 同名ファイルが複数あった場合
+                        if declare_list[menuFileName] > 1:
+                            tmpMenuInfo = {"menu_id": menuId,
+                                "menu_name": menuName,
+                                "disabled": True,
+                                "error": g.appmsg.get_api_message("MSG-30034"),
+                                "file_name": menuFileName}
+
+                            declare_menu_info["disabled"] = True
+                            declare_menu_info["error"] = g.appmsg.get_api_message("MSG-30034")
+
+                            retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
+                            retImportAry[menuGroupId]["menu"][declare_file_name_key] = declare_menu_info
+                            idx += 1
+                        elif not declare_key == 0:
+                            tmpMenuInfo = {"menu_id": menuId,
+                                "menu_name": menuName,
+                                "disabled": True,
+                                "error": g.appmsg.get_api_message("MSG-30035"),
+                                "file_name": menuFileName}
+
+                            declare_menu_info["disabled"] = True
+                            declare_menu_info["error"] = g.appmsg.get_api_message("MSG-30035")
+
+                            retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
+                            retImportAry[menuGroupId]["menu"][declare_file_name_key] = declare_menu_info
+                            idx += 1
+                        else:
+                            retImportAry[menuGroupId]["menu"][idx] = {"menu_id": menuId,
+                                                            "menu_name": menuName,
+                                                            "disabled": False,
+                                                            "file_name": menuFileName}
+                            idx += 1
+                    else:
+                        if declare_list[menuFileName] > 1:
+                            idx = 0
+                            retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
+                                                        "menu": {idx: {"menu_id": menuId,
+                                                            "menu_name": menuName,
+                                                            "error": g.appmsg.get_api_message("MSG-30034"),
+                                                            "disabled": True,
+                                                            "file_name": menuFileName}}}
+
+                            idx += 1
+                        else:
+                            idx = 0
+                            retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
+                                                        "menu": {idx: {"menu_id": menuId,
+                                                            "menu_name": menuName,
+                                                            "disabled": False,
+                                                            "file_name": menuFileName}}}
+
+                            idx += 1
+                else:
+                    tmpMenuInfo = {"menu_id": menuId,
+                                "menu_name": menuName,
+                                "disabled": True,
+                                "error": g.appmsg.get_api_message("MSG-30036"),
+                                "file_name": menuFileName}
+                    if menuGroupId in retImportAry:
+                        # メニューグループは存在するがメニューがない場合
+                        if declare_key == 0:
+                            retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
+
+                        idx += 1
+                    else:
+                        idx = 0
+                        retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
+                                                    "menu": {idx: tmpMenuInfo}}
+
+                        idx += 1
+
+    if len(retImportAry) == 0:
+        msgstr = g.appmsg.get_api_message("MSG-30032")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise Exception("499-00005", log_msg_args, api_msg_args)
+
+    return retImportAry
+
+def getMenuInfoByMenuId(menuId, objdbca=None):
+    """
+    メニュー情報取得
+
+    Arguments:
+        menuId: メニューID
+        objdbca: DBオブジェクト
+    Returns:
+        実行結果
+    """
+    sql = "SELECT "
+    sql += " T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN, "
+    sql += " T_COMN_MENU.DISP_SEQ, T_COMN_MENU_GROUP.PARENT_MENU_GROUP_ID, T_COMN_MENU_GROUP.DISP_SEQ AS GROUP_DISP_SEQ "
+    sql += "FROM T_COMN_MENU "
+    sql += "LEFT OUTER JOIN "
+    sql += " T_COMN_MENU_GROUP "
+    sql += "ON T_COMN_MENU.MENU_GROUP_ID = T_COMN_MENU_GROUP.MENU_GROUP_ID "
+    sql += "WHERE T_COMN_MENU.MENU_ID = %s "
+    sql += "AND T_COMN_MENU.DISUSE_FLAG = 0 "
+    sql += "AND T_COMN_MENU_GROUP.DISUSE_FLAG = 0 "
+
+    data_list = objdbca.sql_execute(sql, [menuId])
+
+    for data in data_list:
+        if data is None or len(data) == 0:
+            return []
+
+    return data
+
+def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
+    """
+        メニューアップロード
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+            menu:menu_import
+            body:リクエストのbody部
+        RETRUN:
+            result_data
+    """
+    # upload_idの作成
+    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    upload_id = date + str(secrets.randbelow(9999999999))
+
+    # パスの設定
+    strage_path = os.environ.get('STORAGEPATH')
+    import_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu"
+    dir_name = import_menu_dir + '/' + 'upload'
+    upload_id_path = dir_name + '/' + upload_id
+    file_name = upload_id + '_ita_data.tar.gz'
+    file_path = dir_name + '/' + file_name
+    if not os.path.isdir(dir_name):
+        os.makedirs(dir_name)
+        g.applogger.debug("made import_dir")
+
+    # アップロードファイルbase64変換処理
+    _decode_zip_file(file_path, body['base64'])
+
+    # zip解凍
+    with tarfile.open(file_path, 'r:gz') as tar:
+        tar.extractall(path=upload_id_path)
+
+    # zipファイルの中身を確認する
+    _check_zip_file(upload_id_path)
+
+    if os.path.isfile(upload_id_path + '/MENU_NAME_REST_LIST') is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+
+    # MENU_NAME_REST_LISTファイル読み込み
+    menu_name_rest_list = Path(upload_id_path + '/MENU_NAME_REST_LIST').read_text(encoding='utf-8').split(',')
+    # import_listの作成
+    import_list = _create_import_list(objdbca, menu_name_rest_list)
+
+    if os.path.isfile(upload_id_path + '/DP_INFO') is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+
+    # DP_INFOファイル読み込み
+    with open(upload_id_path + '/DP_INFO') as f:
+        dp_info_file = json.load(f)
+    dp_mode = dp_info_file['DP_MODE']
+    abolished_type = dp_info_file['ABOLISHED_TYPE']
+    specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
+
+    result_data = {
+        'upload_id': upload_id,
+        'file_name': body['name'],
+        'mode': dp_mode,
+        'abolished_type': abolished_type,
+        'specified_time': specified_time,
+        'import_list': import_list
+    }
+
+    return result_data
+
+def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
+    """
+        メニューインポート実行
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+            menu:menu_import
+            body:リクエストのbody部
+        RETRUN:
+            result_data
+    """
+    # パスの設定
+    strage_path = os.environ.get('STORAGEPATH')
+    import_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu"
+    dir_name = import_menu_dir + '/' + 'upload'
+
+    menu_name_rest_list = body['menu']
+    upload_id = body['upload_id']
+    file_name = body['file_name']
+
+    upload_dir_name = upload_id.replace('A_', '')
+    import_path = dir_name + '/' + upload_dir_name
+
+    if os.path.isfile(import_path + '/DP_INFO') is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+
+    # DP_INFOファイル読み込み
+    with open(import_path + '/DP_INFO') as f:
+        dp_info_file = json.load(f)
+
+    dp_info = _check_dp_info(objdbca, menu, dp_info_file)
+
+    result_data = _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name)
+
+    return result_data
+
+def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name):
+    # メニューインポート登録処理
+    # データインポート管理テーブル更新処理
+    # 変数定義
+    lang = g.get('LANGUAGE')
+    user_id = g.get('USER_ID')
+
+    # テーブル名
+    t_dp_status_master = 'T_DP_STATUS_MASTER'
+    t_dp_execution_type = 'T_DP_EXECUTION_TYPE'
+
+    specified_time = dp_info['SPECIFIED_TIMESTAMP']
+    dp_mode_name = dp_info['DP_MODE_NAME']
+    abolished_type_name = dp_info['ABOLISHED_TYPE_NAME']
+
+    try:
+        # トランザクション開始
+        objdbca.db_transaction_start()
+
+        # loadTableの呼び出し
+        objmenu = load_table.loadTable(objdbca, 'menu_export_import_list')  # noqa: F405
+        if objmenu.get_objtable() is False:
+            log_msg_args = ["not menu or table"]
+            api_msg_args = ["not menu or table"]
+            raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+
+        # 『ステータスマスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_status = objdbca.table_select(t_dp_status_master, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [1, 0])
+        if not ret_dp_status:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        status = ret_dp_status[0].get('TASK_STATUS_NAME_' + lang.upper())
+
+        # 『処理種別マスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_execution_type = objdbca.table_select(t_dp_execution_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [2, 0])
+        if not ret_dp_execution_type:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        execution_type = ret_dp_execution_type[0].get('EXECUTION_TYPE_NAME_' + lang.upper())
+
+        # 登録用パラメータを作成
+        parameters = {
+            "file": {
+                "file_name": file_encode(import_path + '_ita_data.tar.gz')
+            },
+            "parameter": {
+                "status": status,
+                "execution_type": execution_type,
+                "mode": dp_mode_name,
+                "abolished_type": abolished_type_name,
+                "specified_time": specified_time,
+                "file_name": file_name,
+                "execution_user": user_id,
+                "json_storage_item": None,
+                "discard": "0"
+            },
+            "type": "Register"
+        }
+
+        # 登録を実行
+        exec_result = objmenu.exec_maintenance(parameters, "", "", False, False, True)  # noqa: E999
+        if not exec_result[0]:
+            result_msg = _format_loadtable_msg(exec_result[2])
+            result_msg = json.dumps(result_msg, ensure_ascii=False)
+            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+
+        # コミット/トランザクション終了
+        objdbca.db_transaction_end(True)
+
+    except Exception as e:
+        # ロールバック トランザクション終了
+        objdbca.db_transaction_end(False)
+
+        result_code = e.args[0]
+        msg_args = e.args[1]
+        return False, result_code, msg_args, None
+
+    # 返却用の値を取得
+    execution_no = exec_result[1].get('execution_no')
+
+    result_data = {'execution_no': execution_no}
+
+    return result_data
+
+def _check_dp_info(objdbca, menu, dp_info_file):
+    # DP_INFOファイルの中身が正常がチェックする
+    # 変数定義
+    lang = g.get('LANGUAGE')
+
+    # テーブル名
+    t_dp_mode = 'T_DP_MODE'
+    t_dp_abolished_type = 'T_DP_ABOLISHED_TYPE'
+
+    dp_mode = dp_info_file['DP_MODE']
+    abolished_type = dp_info_file['ABOLISHED_TYPE']
+    specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
+
+    # 『モードマスタ』テーブルから対象のデータを取得
+    # 形式名を取得
+    ret_dp_status = objdbca.table_select(t_dp_mode, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [dp_mode, 0])
+    if not ret_dp_status:
+        log_msg_args = [menu]
+        api_msg_args = [menu]
+        raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+    dp_mode_name = ret_dp_status[0].get('MODE_NAME_' + lang.upper())
+
+    # 『廃止情報マスタ』テーブルから対象のデータを取得
+    # 形式名を取得
+    ret_dp_abolished_type = objdbca.table_select(t_dp_abolished_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [abolished_type, 0])
+    if not ret_dp_abolished_type:
+        log_msg_args = [menu]
+        api_msg_args = [menu]
+        raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+    abolished_type_name = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
+
+    if dp_mode != 2:
+        specified_time = None
+
+    result_data = {
+        'DP_MODE': dp_mode,
+        'DP_MODE_NAME': dp_mode_name,
+        'ABOLISHED_TYPE': abolished_type,
+        'ABOLISHED_TYPE_NAME': abolished_type_name,
+        'SPECIFIED_TIMESTAMP': specified_time,
+    }
+
+    return result_data
+
+def _create_import_list(objdbca, menu_name_rest_list):
+    # テーブル名
+    t_common_menu = 'T_COMN_MENU'
+    t_common_menu_group = 'T_COMN_MENU_GROUP'
+
+    # 変数定義
+    lang = g.get('LANGUAGE')
+
+    # 『メニュー管理』テーブルから対象メニューを取得
+    ret_menu = objdbca.table_select(t_common_menu, 'WHERE MENU_NAME_REST IN %s AND DISUSE_FLAG = %s', [menu_name_rest_list, 0])
+
+    menu_group_id_list = []
+    menus = {}
+    for record in ret_menu:
+        menu_group_id = record.get('MENU_GROUP_ID')
+        menu_group_id_list.append(menu_group_id)
+        if menu_group_id not in menus:
+            menus[menu_group_id] = []
+
+        add_menu = {}
+        add_menu['id'] = record.get('MENU_ID')
+        add_menu['menu_name'] = record.get('MENU_NAME_' + lang.upper())
+        add_menu['menu_name_rest'] = record.get('MENU_NAME_REST')
+        add_menu['disp_seq'] = record.get('DISP_SEQ')
+        menus[record.get('MENU_GROUP_ID')].append(add_menu)
+
+    # 『メニューグループ管理』テーブルから対象のデータを取得
+    # メニューグループ名を取得
+    ret_menu_group = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID IN %s AND DISUSE_FLAG = %s ORDER BY DISP_SEQ', [menu_group_id_list, 0])
+
+    # MENU_GROUP_ID:MENU_GROUP_NAMEのdict
+    dict_menu_group_id_name = {}
+    # MENU_GROUP_ID:DISP_SEQのdict
+    dict_menu_group_id_seq = {}
+    # メニューグループの一覧を作成し、メニュー一覧も格納する
+    menu_group_list = []
+    for record in ret_menu_group:
+        menu_group_id = record.get('MENU_GROUP_ID')
+        dict_menu_group_id_name[record.get('MENU_GROUP_ID')] = record.get('MENU_GROUP_NAME_' + lang.upper())
+        dict_menu_group_id_seq[record.get('MENU_GROUP_ID')] = record.get('DISP_SEQ')
+
+        add_menu_group = {}
+        add_menu_group['parent_id'] = record.get('PARENT_MENU_GROUP_ID')
+        add_menu_group['id'] = menu_group_id
+        add_menu_group['menu_group_name'] = record.get('MENU_GROUP_NAME_' + lang.upper())
+        add_menu_group['disp_seq'] = record.get('DISP_SEQ')
+        add_menu_group['menus'] = menus.get(menu_group_id)
+
+        menu_group_list.append(add_menu_group)
+
+    menus_data = {
+        "menu_groups": menu_group_list,
+    }
+
+    return menus_data
+
+def _check_zip_file(file_path):
+    ret_scanDir = os.listdir(file_path)
+    if len(ret_scanDir) == 0:
+        return False
+
+    needleAry = ['MENU_NAME_REST_LIST', 'DP_INFO']
+    errCnt = 0
+    for value in needleAry:
+        ret = value in ret_scanDir
+        if ret == False:
+            errCnt += 1
+
+    if errCnt > 0:
+        shutil.rmtree(file_path)
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+
+    return
+
+def _decode_zip_file(file_path, base64Data):
+    # アップロードファイルbase64変換処理
+    upload_file_decode = base64.b64decode(base64Data.encode('utf-8'))
+
+    # ファイル移動
+    Path(file_path).write_bytes(upload_file_decode)
+
+    # ファイルタイプの取得、判定
+    file_mimetype, encoding = mimetypes.guess_type(file_path)
+    if file_mimetype != 'application/x-gzip':
+        return False
+
+    return True
 
 def _format_loadtable_msg(loadtable_msg):
     """

@@ -17,8 +17,9 @@ import six  # noqa: F401
 
 from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter
+from common_libs.common import menu_info
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
-from libs import conductor_controll, menu_info, menu_filter
+from libs import conductor_controll, menu_filter
 
 
 # Conductorクラス関連
@@ -189,7 +190,7 @@ def get_conductor_execute_info(organization_id, workspace_id, menu):  # noqa: E5
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -199,7 +200,7 @@ def get_conductor_execute_info(organization_id, workspace_id, menu):  # noqa: E5
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 作業実行関連のメニューの基本情報および項目情報の取得
     target_menus = ['operation_list', 'conductor_class_list']
     data = {}
@@ -230,7 +231,7 @@ def get_execute_search_candidates(organization_id, workspace_id, menu, target, c
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -240,14 +241,14 @@ def get_execute_search_candidates(organization_id, workspace_id, menu, target, c
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # targetのチェック
     target_menus = ['operation_list', 'conductor_class_list']
     if target not in target_menus:
         log_msg_args = []
         api_msg_args = []
         raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     # 対象項目のプルダウン検索候補一覧を取得
     data = menu_info.collect_search_candidates(objdbca, target, column)
     return data,
@@ -284,19 +285,19 @@ def post_execute_filter(organization_id, workspace_id, menu, target, body=None):
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # targetのチェック
     target_menus = ['operation_list', 'conductor_class_list']
     if target not in target_menus:
         log_msg_args = []
         api_msg_args = []
         raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     filter_parameter = {}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
         filter_parameter = body
-        
+
     # メニューのカラム情報を取得
     result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
     return result_data,
@@ -402,12 +403,12 @@ def post_conductor_excecute(organization_id, workspace_id, menu, body=None):  # 
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     parameter = {}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
         parameter = body
-        
+
     # メニューのカラム情報を取得
     result_data = conductor_controll.conductor_execute(objdbca, menu, parameter)
     return result_data,
@@ -513,7 +514,7 @@ def patch_conductor_cancel(organization_id, workspace_id, menu, conductor_instan
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 予約取消の実行
     action_type = "cancel"
     result_data = conductor_controll.conductor_execute_action(objdbca, menu, action_type, conductor_instance_id)
@@ -551,7 +552,7 @@ def patch_conductor_relese(organization_id, workspace_id, menu, conductor_instan
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 一時停止解除の実行
     action_type = "relese"
     result_data = conductor_controll.conductor_execute_action(objdbca, menu, action_type, conductor_instance_id, node_instance_id)
@@ -587,7 +588,7 @@ def patch_conductor_scram(organization_id, workspace_id, menu, conductor_instanc
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # 緊急停止の実行
     action_type = "scram"
     result_data = conductor_controll.conductor_execute_action(objdbca, menu, action_type, conductor_instance_id)
@@ -624,13 +625,13 @@ def get_conductor_input_data(organization_id, workspace_id, menu, conductor_inst
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # このRestAPIは「Conductor作業一覧」専用
     if menu != 'conductor_list':
         log_msg_args = [menu]
         api_msg_args = [menu]
         raise AppException("401-00003", log_msg_args, api_msg_args)  # noqa: F405
-    
+
     # 入力データ収集
     data_type = 'input'
     result_data = conductor_controll.create_movement_zip(objdbca, menu, data_type, conductor_instance_id)
@@ -665,13 +666,13 @@ def get_conductor_result_data(organization_id, workspace_id, menu, conductor_ins
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
-    
+
     # このRestAPIは「Conductor作業一覧」専用
     if menu != 'conductor_list':
         log_msg_args = [menu]
         api_msg_args = [menu]
         raise AppException("401-00003", log_msg_args, api_msg_args)  # noqa: F405
-        
+
     # 結果データ収集
     data_type = 'result'
     result_data = conductor_controll.create_movement_zip(objdbca, menu, data_type, conductor_instance_id)

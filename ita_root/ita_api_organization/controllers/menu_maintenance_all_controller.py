@@ -20,7 +20,7 @@ sys.path.append('../../')
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable.load_table import loadTable
 from common_libs.api import api_filter
-from libs import menu_maintenance_all
+from common_libs.common import menu_maintenance_all
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 
 
@@ -36,7 +36,7 @@ def maintenance_all(organization_id, workspace_id, menu, body=None):  # noqa: E5
     :type workspace_id: str
     :param menu: メニュー名
     :type menu: str
-    :param body: 
+    :param body:
     :type body: list | bytes
 
     :rtype: InlineResponse2005
@@ -67,6 +67,6 @@ def maintenance_all(organization_id, workspace_id, menu, body=None):  # noqa: E5
     if connexion.request.is_json:
         body = connexion.request.get_json()
         parameters = body
-        
+
     result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters)
     return result_data,

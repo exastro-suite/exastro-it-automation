@@ -149,6 +149,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             # ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
             # ['terraform_cli.sql', 'terraform_cli_master.sql'],
             ['hostgroup.sql', 'hostgroup_master.sql'],
+            ['cicd.sql', 'cicd_master.sql'],
         ]
         last_update_timestamp = str(get_timestamp())
 
@@ -186,6 +187,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # 初期データ設定(ansible)
         if (inistial_data_ansible_if is not None) and (len(inistial_data_ansible_if) != 0):
             ws_db.db_transaction_start()
+            g.WORKSPACE_ID = workspace_id
             initial_settings_ansible(ws_db, json.loads(inistial_data_ansible_if))
             ws_db.db_commit()
 

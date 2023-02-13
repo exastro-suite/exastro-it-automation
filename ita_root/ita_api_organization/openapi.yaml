@@ -56,6 +56,8 @@ tags:
     description: 比較の情報取得・操作
   - name: Terraform Cloud EP
     description: Terraform Cloud/Enterpriseとの連携
+  - name: CI/CD for IaC
+    description: CI/CD for IaCの操作
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
@@ -4480,10 +4482,10 @@ paths:
             schema:
               description: Organization名およびemailを指定
               properties:
-                organiation_name:
+                tf_organization_name:
                   type: string
                   example: "example_organization"
-                email:
+                email_address:
                   type: string
                   example: "example@example.com"
       responses:
@@ -4514,7 +4516,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/:
     patch:
       tags:
         - Terraform Cloud EP
@@ -4534,7 +4536,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4546,7 +4548,7 @@ paths:
             schema:
               description: emailを指定
               properties:
-                email:
+                email_address:
                   type: string
                   example: "example@example.com"
       responses:
@@ -4596,7 +4598,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4630,7 +4632,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/check/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/check/:
     get:
       tags:
         - Terraform Cloud EP
@@ -4650,7 +4652,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4684,7 +4686,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
     get:
       tags:
         - Terraform Cloud EP
@@ -4704,7 +4706,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4757,7 +4759,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
@@ -4772,7 +4774,7 @@ paths:
                 workspace_name:
                   type: string
                   example: "example_workspace"
-                version:
+                terraform_version:
                   type: string
                   example: "1.0.0"
       responses:
@@ -4803,7 +4805,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{terraform_organization}/{terraform_workspace}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/{tf_workspace_name}/:
     patch:
       tags:
         - Terraform Cloud EP
@@ -4823,13 +4825,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
           schema:
             type: string
-        - name: terraform_workspace
+        - name: tf_workspace_name
           in: path
           description: Terraform Workspace Name
           required: true
@@ -4841,7 +4843,7 @@ paths:
             schema:
               description: Versionを指定
               properties:
-                version:
+                terraform_version:
                   type: string
                   example: "1.0.0"
       responses:
@@ -4891,13 +4893,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
           schema:
             type: string
-        - name: terraform_workspace
+        - name: tf_workspace_name
           in: path
           description: Terraform Workspace Name
           required: true
@@ -4931,7 +4933,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{terraform_organization}/{terraform_workspace}/check/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/{tf_workspace_name}/check/:
     get:
       tags:
         - Terraform Cloud EP
@@ -4951,13 +4953,13 @@ paths:
           required: true
           schema:
             type: string
-        - name: terraform_organization
+        - name: tf_organization_name
           in: path
           description: Terraform Organization Name
           required: true
           schema:
             type: string
-        - name: terraform_workspace
+        - name: tf_workspace_name
           in: path
           description: Terraform Workspace Name
           required: true
@@ -4976,6 +4978,115 @@ paths:
                     example: 000-00000
                   data:
                     type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/repository/{uuid}/:
+    post:
+      tags:
+        - CI/CD for IaC
+      description: リモートリポジトリの再開
+      operationId: postCicdForIacResumeRepository
+      x-openapi-router-controller: controllers.cicd_for_ia_c_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: uuid
+          in: path
+          description: uuid
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/file_link/{uuid}/:
+    post:
+      tags:
+        - CI/CD for IaC
+      description: 資材紐付の再開
+      operationId: postCicdForIacResumeFilelink
+      x-openapi-router-controller: controllers.cicd_for_ia_c_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: uuid
+          in: path
+          description: uuid
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
                   message:
                     type: string
         '401':

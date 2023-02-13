@@ -65,6 +65,9 @@ RUN dnf install -y \
     debugpy \
     flake8 \
     autopep8 \
+    six \
+    pyrsistent \
+    openpyxl \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 

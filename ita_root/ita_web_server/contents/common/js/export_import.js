@@ -67,14 +67,32 @@ createMenuGroupList( list ) {
     
     // 配列のディープコピー
     const tempMenuGroups = $.extend( true, [], list );
-    console.log(tempMenuGroups)
+    
     // 親と子を分ける
+    const unknownParents = [];
     for ( const menuGroup of tempMenuGroups ) {
         if ( menuGroup.parent_id === null ) {
             menuGroupList.push( menuGroup );
         } else {
+            // 親が存在するか？
+            const parent = tempMenuGroups.find(function( mg ){
+                return ( mg.id === menuGroup.parent_id );
+            });
             childs.push( menuGroup );
+            if ( !parent ) unknownParents.push( menuGroup.parent_id );
         }
+    }
+    
+    // 親が見つからない場合は不明の親を追加する
+    for ( const id of unknownParents ) {
+        menuGroupList.push({
+            disp_seq: -1,
+            id: id,
+            menu_group_name: getMessage.FTE07034,
+            menus: [],
+            parent_id: null,
+            unknown: true
+        });
     }
     
     // 親に子を追加
@@ -84,25 +102,11 @@ createMenuGroupList( list ) {
                 child.main_menu_rest = null;
                 if ( child.menus && child.menus.length ) {
                     ex.dispSeqSort( child.menus );
-                    if ( child.menus[0].menu_name_rest ) {
-                         child.main_menu_rest = child.menus[0].menu_name_rest;
-                    }
                 }
                 parent.menus.push( child );
             }
         }
         ex.dispSeqSort( parent.menus );
-  
-        parent.main_menu_rest = null;
-        let subRest = null;
-        for ( const menu of parent.menus ) {
-            if ( menu.menu_name_rest && parent.main_menu_rest === null ) {
-                parent.main_menu_rest = menu.menu_name_rest;
-            } else if ( menu.menus && menu.menus.length && menu.menus[0].menu_name_rest ) {
-                subRest = menu.menus[0].menu_name_rest;
-            }
-        }
-        if ( !parent.main_menu_rest && subRest ) parent.main_menu_rest = subRest;
     }
     ex.dispSeqSort( menuGroupList );
     
@@ -139,6 +143,8 @@ dispSeqSort( data ) {
 ##################################################
 */
 menuGroupHtml( menuGroupList ) {
+    const ex = this;
+    
     let html = ''
     + '<ul class="exportImportList">'
         + '<li class="exportImportItem exportImportAllMenu">'
@@ -148,32 +154,54 @@ menuGroupHtml( menuGroupList ) {
             + '<ul class="exportImportList exportImportAllMenuList">';
     
     const menuGroup = function( item, className ) {
-        const id = `menuGroup${item.id}`;
+        const value = item.id,
+              id = `menuGroup${item.id}`,
+              text = ( !item.error_count )? fn.cv( item.menu_group_name, '', true ):
+                      `${fn.cv( item.menu_group_name, '', true )}<span class="exportImportErrorMessage">${fn.html.icon('attention')}${getMessage.FTE07035}</span>`;
+        
+        
+        const openFlag = ( item.unknown || item.error_count )? true: false,
+              unknownClass = ( item.unknown )? ' exportImportMenuGroupNameUnkown': '',
+              buttonIcon = ( openFlag )? 'minus': 'plus',
+              display = ( openFlag )? 'block': 'hidden';
+        
         html += ''
-        + '<li class="exportImportItem ' + className + '">'
-            + '<div class="exportImportName ' + className + 'Name">'
-                + fn.html.checkboxText('exportImportCheck exportImportCheckList', id, 'menuSelectAll', id, {checked: 'checked'}, item.menu_group_name )
+        + `<li class="exportImportItem ${className}">`
+            + `<div class="exportImportName ${className}Name${unknownClass}">`
+                + fn.html.checkboxText(`exportImportCheck exportImportCheckList`, value, 'menuSelectAll', id, {checked: 'checked'}, text )
                 + '<div class="exportImportToggleWrap">'
-                    + fn.html.iconButton('plus', getMessage.FTE07002, 'menuGroupToggle')
+                    + fn.html.iconButton( buttonIcon, getMessage.FTE07002, 'menuGroupToggle')
                 + '</div>'
             + '</div>'
-            + '<ul class="exportImportList ' + className + 'List">';
+            + `<ul class="exportImportList ${className}List" style="display:${display}">`;
         
-        menuList( item.menus );
+        menuList( item.menus, value );
         
         html += '</ul>'
         + '</li>';
     };
     
-    const menuList = function( list ) {
+    const menuList = function( list, menuGroupId ) {
         for ( const item of list ) {
             if ( !item.parent_id ) {
+                const value = ( ex.type !== 'excelImport')? item.menu_name_rest: item.id,
+                      id = `menuItem${item.id}`,
+                      text = ( ex.type !== 'excelImport')? fn.cv( item.menu_name, '', true ):
+                          `${fn.cv( item.menu_name, '', true )}<span class="exportImportMenuFileName">${fn.cv( item.file_name, '', true )}</span>`;
+                
                 html += ''
                 + '<li class="exportImportItem exportImportMenu">'
-                    + '<div class="exportImportName exportImportMenuName">'
-                        + fn.html.checkboxText('exportImportCheck exportImportCheckItem', item.menu_name_rest, 'exportItemt', item.menu_name_rest, {checked: 'checked'}, item.menu_name )
-                    + '</div>'
+                    + '<div class="exportImportName exportImportMenuName">';
+                
+                if ( ex.type === 'excelImport' && item.error !== null ) {
+                    html += `<div class="exportImportError">${text} <div class="exportImportErrorMessage">${fn.html.icon('cross')}${fn.escape( item.error )}</div></div>`;
+                } else {
+                    html += fn.html.checkboxText('exportImportCheck exportImportCheckItem', value, 'exportItem', id, {checked: 'checked', menuGroup: menuGroupId }, text );
+                }
+
+                html += '</div>'
                 + '</li>';
+
             } else {
                 menuGroup( item, 'exportImportSubMenuGroup');
             }
@@ -268,6 +296,30 @@ commonEvents() {
         
     });
 }
+/*
+##################################################
+   エクスポート設定　モードテキスト
+##################################################
+*/
+exportModeText( mode ) {
+    if ( mode === '1') {
+        return getMessage.FTE07016;
+    } else {
+        return getMessage.FTE07008;
+    }
+}
+/*
+##################################################
+   エクスポート設定　廃止情報
+##################################################
+*/
+exportDiscardText( discard ) {
+    if ( discard === '1') {
+        return getMessage.FTE07017;
+    } else {
+        return getMessage.FTE07018;
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -321,7 +373,7 @@ exportEvents() {
     // エクスポートボタン
     ex.$.content.find('.operationMenu').find('.operationMenuButton').on('click', function(){
         const $button = $( this ),
-              exportData = ex.createExportData();
+              exportData = ex.getExportData();
         
         // 確認HTML
         const html = '<div class="commonSection">'
@@ -332,37 +384,41 @@ exportEvents() {
                     + '<tbody class="commonTbody">'
                         + '<tr class="commonTr">'
                             + `<th class="commonTh">${getMessage.FTE07006}</th>`
-                            + `<td class="commonTd">${exportData.rest.menu.length}</td>`
+                            + `<td class="commonTd">${exportData.menu.length}</td>`
                         + '</tr>'
                         + `${( ex.type === 'menuExport')?
                             `<tr class="commonTr">`
                                 + `<th class="commonTh">${getMessage.FTE07007}</th>`
-                                + `<td class="commonTd">${exportData.text.mode}</td>`
+                                + `<td class="commonTd">${ex.exportModeText( exportData.mode )}</td>`
                             + `</tr>`
-                            + `${( exportData.rest.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd">${fn.escape( exportData.rest.specified_timestamp )}</td></tr>`: ``}`: ``}`
+                            + `${( exportData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd">${fn.escape( exportData.specified_timestamp )}</td></tr>`: ``}`: ``}`
                         + '<tr class="commonTr">'
                             + `<th class="commonTh">${getMessage.FTE07009}</th>`
-                            + `<td class="commonTd">${exportData.text.abolished_type}</td>`
+                            + `<td class="commonTd">${ex.exportDiscardText( exportData.abolished_type )}</td>`
                         + '</tr>'
                     + '</tbody>'
                 + '</table>'
             + '</div>'
         + '</div>';
         
+        // エクスポート確認
         fn.alert( getMessage.FTE07010, html, 'common', {
             ok: { text: getMessage.FTE07011, action: 'default', style: 'width:160px', className: 'dialogPositive'},
             cancel: { text: getMessage.FTE07012, action: 'negative', style: 'width:120px'}
-        }, '400px').then( function( flag ){
+        }, '480px').then( function( flag ){
             if ( flag ) {
                 const rest = ( ex.type === 'menuExport')? '/menu/bulk/export/execute/': '/excel/bulk/export/execute/',
                       manage = ( ex.type === 'menuExport')? 'menu_export_import_list': 'bulk_excel_export_import_list';
-                const processing = fn.processingModal( getMessage.FTE07013 );
-                fn.fetch( rest, null, 'POST', exportData.rest ).then(function( result ){
+                
+                // 読み込み中
+                let process = fn.processingModal( getMessage.FTE07013 );
+                fn.fetch( rest, null, 'POST', exportData ).then(function( result ){
                     const filter = { execution_no: { NORMAL: result.execution_no } };
                     window.location.href = `?menu=${manage}&filter=${fn.filterEncode( filter )}`;
                 }).catch(function( error ){
                     alert( error );
-                    processing.close();
+                    process.close();
+                    process = null;
                 });
             }        
         });
@@ -413,7 +469,7 @@ exportSettingHtml() {
             + '<div class="commonSubTitle">'
                 + getMessage.FTE07007
             + '</div>'
-            + '<div class="commonBody">'
+            + '<div class="commonBody commonWrap">'
                 + fn.html.radioText('exportMode', '1', 'exportMode', 'exportModeEnvironment', {checked: 'checked'}, getMessage.FTE07016 )
                 + fn.html.radioText('exportMode', '2', 'exportMode', 'exportModeTime', null, getMessage.FTE07008 )
                 + fn.html.dateInput('hm', 'exportModeTime', '', 'exportModeTime', { disabled: 'disabled'})
@@ -421,7 +477,7 @@ exportSettingHtml() {
             + '<div class="commonSubTitle">'
                 + getMessage.FTE07009
             + '</div>'
-            + '<div class="commonBody">'
+            + '<div class="commonBody commonWrap">'
                 + fn.html.radioText('exportDiscard', '1', 'exportDiscard', 'exportDiscardInclude', {checked: 'checked'}, getMessage.FTE07017 )
                 + fn.html.radioText('exportDiscard', '2', 'exportDiscard', 'exportDiscardNot', null, getMessage.FTE07018 )
             + '</div>'
@@ -434,7 +490,7 @@ exportSettingHtml() {
             + '<div class="commonSubTitle">'
                 + getMessage.FTE07009
             + '</div>'
-            + '<div class="commonBody">'
+            + '<div class="commonBody commonWrap">'
                 + fn.html.radioText('exportDiscard', '1', 'exportDiscard', 'exportDiscardAll', {checked: 'checked'}, getMessage.FTE07019 )
                 + fn.html.radioText('exportDiscard', '2', 'exportDiscard', 'exportDiscardNot', null, getMessage.FTE07018 )
                 + fn.html.radioText('exportDiscard', '3', 'exportDiscard', 'exportDiscardOnly', null, getMessage.FTE07020 )
@@ -455,34 +511,30 @@ exportButtonCheck() {
 }
 /*
 ##################################################
-   Export Data
+   Export Data取得
 ##################################################
 */
-createExportData() {
+getExportData() {
     const ex = this;
     
-    const data = {
-              rest: {},
-              text: {}
-          },
-          $setting = ex.$.content.find('.exportImportSetting');
+    const data = {};
     
-    data.rest['menu'] = [];
+    const $setting = ex.$.content.find('.exportImportSetting');
+          
+    data.menu = [];
     ex.$.content.find('.exportImportCheckItem:checked').each(function(){
-        data.rest['menu'].push( $( this ).val() );
+        data.menu.push( $( this ).val() );
     });
     
     if ( ex.type === 'menuExport') {
         const $mode = $setting.find('.exportMode:checked');
-        data.rest['mode'] = $mode.val();
-        data.text['mode'] = $mode.next().text();
-        if ( data.rest['mode'] === '2') {
-            data.rest['specified_timestamp'] = $setting.find('.exportModeTime').val();
+        data.mode = $mode.val();
+        if ( data.mode === '2') {
+            data.specified_timestamp = $setting.find('.exportModeTime').val();
         }
     }
     const $discard = $setting.find('.exportDiscard:checked');
-    data.rest['abolished_type'] = $discard.val();
-    data.text['abolished_type'] = $discard.next().text();
+    data.abolished_type = $discard.val();
     
     return data;
 }
@@ -533,25 +585,53 @@ importEvents() {
 fileSelect() {
     const ex = this;
     
-    fn.fileSelect('base64', null, '.kym').then(function( selectFile ){
-        const postData = ( ex.type === 'excelImport')? { excel: selectFile.base64 }: selectFile.json;
+    const fileExt = ( ex.type === 'excelImport')? '.zip': '.kym',
+          fileRest = ( ex.type === 'excelImport')? '/excel/bulk/upload/': `/menu/import/upload/`;
+    
+    
+    fn.fileSelect('base64', null, fileExt ).then(function( selectFile ){
+        const postData = ( ex.type === 'excelImport')?
+            // エクセルインポート
+            { 
+                zipfile: {
+                    name: selectFile.name,
+                    base64: selectFile.base64
+                }
+            }:
+            // メニューインポート
+            {
+                file: {
+                    name: selectFile.name,
+                    base64: selectFile.base64
+                }
+            };
         
-        fn.fetch('dummy').then(function(){
-            const result = fileselectDummy.data; // ダミーデータ
+        let process = fn.processingModal( getMessage. FTE07036 );
+        
+        fn.fetch( fileRest, null, 'POST', postData ).then(function( result ){
+            
+            process.close();
+            process = null;
             
             // インポートデータ
             ex.importData = result;
             
-            // メニューグループリスト
-            const menuGroupList = ex.createMenuGroupList( ex.importData.import_list.menu_groups );
-
+            let listHtml = '';
+            if ( ex.type === 'excelImport') {
+                const importList = ex.createMenuGroupList( ex.changeExcelImportList( ex.importData.IMPORT_LIST, ex.importData.UNIMPORT_LIST ) );
+                listHtml += ex.menuGroupHtml( importList );
+            } else {
+                const importList = ex.createMenuGroupList( ex.importData.import_list.menu_groups );
+                listHtml += ex.menuGroupHtml( importList );
+            }
+            
             ex.$.importBody.html(
                 ex.importSettingHtml()
                 + '<div class="exportImportSelect">'
                     + '<div class="commonTitle">'
                         + getMessage.FTE07022
                     + '</div>'
-                    + ex.menuGroupHtml( menuGroupList )
+                    + listHtml
                 +  '</div>');
             
             ex.commonEvents();
@@ -604,32 +684,18 @@ importHtml() {
 importSettingHtml() {
     const ex = this;
     
-    const modeHtml = function(){
-        if ( ex.importData.mode === '1') {
-            return getMessage.FTE07016;
-        } else {
-            return getMessage.FTE07008;
-        }
-    };
-    
-    const discardHtml = function(){
-        if ( ex.importData.abolished_type === '1') {
-            return getMessage.FTE07017;
-        } else {
-            return getMessage.FTE07018;
-        }
-    };
+    const fileName = ( ex.type === 'menuImport')? ex.importData.file_name: ex.importData.data_portability_upload_file_name;
     
     let html = ''
     + '<div class="exportImportSetting">'
         + '<div class="commonTitle">'
             + getMessage.FTE07027
         + '</div>'
-        + '<div class="commonBody">'
+        + '<div class="commonBody commonWrap">'
             + '<dl class="commonStatus">'
                 + `<dt class="commonStatusKey">${getMessage.FTE07028}</dt>`
                 + '<dd class="commonStatusValue">'
-                    + fn.cv( ex.importData.file_name, '', true )
+                    + fn.cv( fileName, '', true )
                 + '</dd>'
             + '</dl>';
     
@@ -638,7 +704,7 @@ importSettingHtml() {
             + '<dl class="commonStatus">'
                 + `<dt class="commonStatusKey">${getMessage.FTE07007}</dt>`
                 + '<dd class="commonStatusValue">'
-                    + modeHtml()
+                    + ex.exportModeText( ex.importData.mode )
                 + '</dd>'
             + '</dl>';
         if ( ex.importData.specified_time ) {
@@ -650,16 +716,15 @@ importSettingHtml() {
                 + '</dd>'
             + '</dl>';
         }
-    }
-    
-    html += ''
+        html += ''
             + '<dl class="commonStatus">'
                 + `<dt class="commonStatusKey">${getMessage.FTE07009}</dt>`
                 + '<dd class="commonStatusValue">'
-                    + discardHtml()
+                    + ex.exportDiscardText( ex.importData.abolished_type )
                 + '</dd>'
-            + '</dl>'
-        + '</div>'
+            + '</dl>';
+    }
+    html += '</div>'
     + '</div>';
     
     return html;
@@ -683,61 +748,155 @@ importButtonCheck() {
 importModal() {
     const ex = this;
     
-    const menu = [];
-    ex.$.content.find('.exportImportCheckItem:checked').each(function(){
-        menu.push( $( this ).val() );
-    });
+    // Importリスト作成
+    const restData = {};
     
+    let fileName = '',
+        menuCount = 0;
+    
+    if ( ex.type === 'excelImport') {
+        // Excel インポート
+        const menu = {};
+        ex.$.content.find('.exportImportCheckItem:checked').each(function(){
+            const $item = $( this ),
+                  value = $item.val(),
+                  group = $item.attr('data-menuGroup');
+            
+            if ( !menu[ group ] ) menu[ group ] = [];
+            menu[ group ].push( value );
+            menuCount++;
+        });
+        restData.menu = menu;
+        restData.upload_id = ex.importData.upload_id;
+        restData.data_portability_upload_file_name = ex.importData.data_portability_upload_file_name;
+        fileName = ex.importData.data_portability_upload_file_name;
+    } else {
+        // Menu インポート
+        const menu = [];
+        ex.$.content.find('.exportImportCheckItem:checked').each(function(){
+            menu.push( $( this ).val() );
+            menuCount++;
+        });
+        restData.menu = menu;
+        restData.upload_id = ex.importData.upload_id;
+        restData.file_name = ex.importData.file_name;
+        fileName = ex.importData.file_name;
+    }
     
     // 確認HTML
-    const html = '<div class="commonSection">'
+    let html = ``
+    + `<div class="commonSection">`
         + `<div class="commonTitle">${getMessage.FTE07021}</div>`
-        + '<div class="commonBody">'
+        + `<div class="commonBody">`
             + `<p class="commonParagraph">${getMessage.FTE07029}</p>`
-            + '<table class="commonTable">'
-                + '<tbody class="commonTbody">'
-                    + '<tr class="commonTr">'
+            + `<table class="commonTable">`
+                + `<tbody class="commonTbody">`
+                    + `<tr class="commonTr">`
+                        + `<th class="commonTh">${getMessage.FTE07028}</th>`
+                        + `<td class="commonTd">${fn.escape( fileName )}</td>`
+                    + `</tr>`
+                    + `<tr class="commonTr">`
                         + `<th class="commonTh">${getMessage.FTE07006}</th>`
-                        + `<td class="commonTd">${menu.length}</td>`
-                    + '</tr>'
-                    + `${( ex.type === 'menuImport')?
-                        `<tr class="commonTr">`
-                            + `<th class="commonTh">${getMessage.FTE07007}</th>`
-                            + `<td class="commonTd"></td>`
-                        + `</tr>`
-                        + `${( ex.importData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd"></td></tr>`: ``}`: ``}`
-                    + '<tr class="commonTr">'
+                        + `<td class="commonTd">${menuCount}</td>`
+                    + `</tr>`;
+    if ( ex.type === 'menuImport') {
+        html += ``
+                    + `<tr class="commonTr">`
+                        + `<th class="commonTh">${getMessage.FTE07007}</th>`
+                        + `<td class="commonTd">${ex.exportModeText( ex.importData.mode )}</td>`
+                    + `</tr>`
+                    + `${( ex.importData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd"></td></tr>`: ``}`
+                    + `<tr class="commonTr">`
                         + `<th class="commonTh">${getMessage.FTE07009}</th>`
-                        + `<td class="commonTd"></td>`
-                    + '</tr>'
-                + '</tbody>'
-            + '</table>'
-        + '</div>'
-    + '</div>';
-
+                        + `<td class="commonTd">${ex.exportDiscardText( ex.importData.abolished_type )}</td>`
+                    + `</tr>`;
+    }
+    html += ``
+                + `</tbody>`
+            + `</table>`
+        + `</div>`
+    + `</div>`;
+    
+    // インポート確認
     fn.alert( getMessage.FTE07030, html, 'common', {
         ok: { text: getMessage.FTE07031, action: 'default', style: 'width:160px', className: 'dialogPositive'},
         cancel: { text: getMessage.FTE07012, action: 'negative', style: 'width:120px'}
-    }, '400px').then( function( flag ){
+    }, '480px').then( function( flag ){
         if ( flag ) {
-            const restData = {
-                menu: menu,
-                upload_id: ex.importData.upload_id,
-                file_name: ex.importData.file_name
-            };
             const rest = ( ex.type === 'menuImport')? '/menu/import/execute/': '/excel/bulk/import/execute/',
                   manage = ( ex.type === 'menuImport')? 'menu_export_import_list': 'bulk_excel_export_import_list';
-            const processing = fn.processingModal( getMessage.FTE07032 );
+            let process = fn.processingModal( getMessage.FTE07032 );
             fn.fetch( rest, null, 'POST', restData ).then(function( result ){
                 const filter = { execution_no: { NORMAL: result.execution_no } };
                 window.location.href = `?menu=${manage}&filter=${fn.filterEncode( filter )}`;
             }).catch(function( error ){
                 window.console.error( error );
                 alert( getMessage.FTE07033 );
-                processing.close();
+                process.close();
+                process = null;
             });
         }        
     });
+}
+/*
+##################################################
+   Excelインポートリストの形式を変更
+##################################################
+*/
+changeExcelImportList( importList, unImportList ) {
+    const afterList = [];
+    
+    // 二つのリストを結合する
+    const unImporOnlyKeys = [],
+          importKeys = Object.keys( importList ),
+          unImportKeys = Object.keys( unImportList );
+    
+    for ( const key of unImportKeys ) {
+        if ( importKeys.indexOf( key ) === -1 ) unImporOnlyKeys.push( key );
+    }
+    
+    for ( const key of unImporOnlyKeys ) {
+        importList[ key ] = unImportList[ key ];
+    }    
+    
+    for ( const key in importList ) {
+        if ( unImportList[ key ] ) {
+            for ( const num in unImportList[ key ].menu ) {
+                const menuId = 'un_import_' + unImportList[ key ].menu[ num ].menu_id;
+                importList[ key ].menu[ menuId ] = unImportList[ key ].menu[ num ];
+            }
+        }
+    }
+
+    for ( const key in importList ) {
+        const menus = [];
+        let errorCount = 0;
+        if ( importList[ key ].menu ) {
+            for ( const menu in importList[ key ].menu ) {
+                const data = importList[ key ].menu[ menu ],
+                      error = fn.cv( data.error, null );
+                
+                if ( error !== null ) errorCount++;
+                menus.push({
+                    disp_seq: fn.cv( data.disp_seq, null ),
+                    id: fn.cv( data.menu_id, null ),
+                    menu_name: fn.cv( data.menu_name, null ),
+                    file_name: fn.cv( data.file_name, null ),
+                    error: fn.cv( data.error, null )
+                })
+            }
+        }
+        afterList.push({
+            disp_seq: fn.cv( importList[ key ].disp_seq, null ),
+            id: key,
+            menu_group_name: fn.cv( importList[ key ].menu_group_name, null ),
+            menus: menus,
+            parent_id: fn.cv( importList[ key ].parent_id, null ),
+            error_count: errorCount
+        });
+    }
+    
+    return afterList;
 }
 
 }

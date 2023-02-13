@@ -73,6 +73,7 @@ def backyard_main(organization_id, workspace_id):
 
         # 言語情報
         lang = task['LANGUAGE']
+        g.LANGUAGE = lang
 
         g.appmsg.set_lang(lang)
 
@@ -270,6 +271,7 @@ def backyard_main(organization_id, workspace_id):
                 menu_table_link_record = util.check_sheet_type(menuNameRest, sheet_type_list, objdbca)
 
                 # アップロード
+                g.ROLES = "dummy"
                 aryRetBody = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menuNameRest, menu_record, excel_data, True, lang)
 
                 # リザルトファイルの作成
@@ -282,8 +284,8 @@ def backyard_main(organization_id, workspace_id):
                 msg_result = []
                 msg_result.append(g.appmsg.get_api_message('MSG-30004'))
                 msg_result.append(g.appmsg.get_api_message('MSG-30005'))
-                msg_result.append(g.appmsg.get_api_message('MSG-30006'))
                 msg_result.append(g.appmsg.get_api_message('MSG-30007'))
+                msg_result.append(g.appmsg.get_api_message('MSG-30006'))
                 for name, ct in aryRetBody.items():
                     msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
                     idx += 1

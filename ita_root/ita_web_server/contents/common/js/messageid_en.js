@@ -590,6 +590,9 @@ getMessage = ( function() {
         'FTE07031' : "Start import",
         'FTE07032' : "Import",
         'FTE07033' : "import failed.",
+        'FTE07034' : "Unknown menu group",
+        'FTE07035' : "Contains menus that cannot be imported.",
+        'FTE07036' : "Loading import file",
 
         // UI common
         'FTE10001': 'Main menu',

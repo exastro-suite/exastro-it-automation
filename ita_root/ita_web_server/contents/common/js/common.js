@@ -83,7 +83,7 @@ const fn = ( function() {
         
         for ( const key in attrs ) {
             if ( attrs[key] !== undefined ) {
-                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class']; // dataをつけない
+                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class', 'readonly']; // dataをつけない
                 if ( attrName.indexOf( key ) !== -1) {
                     attr.push(`${key}="${attrs[key]}"`);
                 } else {
@@ -2813,7 +2813,6 @@ uiSetting() {
                 let html = '';
                 for ( const key in list ) {
                     const value = ( uiSettingData && uiSettingData.ui && uiSettingData.ui.filter )? uiSettingData.ui.filter[ key ]: list[key][5];
-                    console.log( value )
                     html += ``
                     + `<tr class="commonInputTr">`
                         + `<th class="commonInputTh"><div class="commonInputTitle">${list[key][0]}</div></th>`

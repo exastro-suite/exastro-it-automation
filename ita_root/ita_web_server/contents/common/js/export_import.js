@@ -68,8 +68,6 @@ createMenuGroupList( list ) {
     // 配列のディープコピー
     const tempMenuGroups = $.extend( true, [], list );
     
-    console.log( tempMenuGroups );
-    
     // 親と子を分ける
     const unknownParents = [];
     for ( const menuGroup of tempMenuGroups ) {
@@ -111,9 +109,6 @@ createMenuGroupList( list ) {
         ex.dispSeqSort( parent.menus );
     }
     ex.dispSeqSort( menuGroupList );
-    
-    
-    console.log( menuGroupList);
     
     return menuGroupList;
 }
@@ -786,11 +781,7 @@ importModal() {
         restData.upload_id = ex.importData.upload_id;
         restData.file_name = ex.importData.file_name;
         fileName = ex.importData.file_name;
-    }   
-    
-    console.group('Import');
-    console.log(restData)
-    console.groupEnd('Import');
+    }
     
     // 確認HTML
     let html = ``
@@ -881,7 +872,7 @@ changeExcelImportList( importList, unImportList ) {
         const menus = [];
         let errorCount = 0;
         if ( importList[ key ].menu ) {
-            for ( const menu in importList[ key ].menu ) {console.log(importList[ key ].menu[ menu ])
+            for ( const menu in importList[ key ].menu ) {
                 const data = importList[ key ].menu[ menu ],
                       error = fn.cv( data.error, null );
                 

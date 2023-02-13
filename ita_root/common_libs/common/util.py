@@ -77,13 +77,13 @@ def ky_file_encrypt(src_file, dest_file):
     try:
         # ファイルオープン
         fsrc = open(src_file)
-        
+
         # ファイル読み込み
         lcstr = Path(src_file).read_text(encoding="utf-8")
-        
+
         # エンコード関数呼び出し
         enc_data = ky_encrypt(lcstr)
-        
+
         # ファイル書き込み
         Path(dest_file).write_text(enc_data, encoding="utf-8")
     except Exception:
@@ -91,7 +91,7 @@ def ky_file_encrypt(src_file, dest_file):
     finally:
         # ファイルクローズ
         fsrc.close()
-    
+
     return True
 
 
@@ -108,13 +108,13 @@ def ky_file_decrypt(src_file, dest_file):
     try:
         # ファイルオープン
         fsrc = open(src_file)
-        
+
         # ファイル読み込み
         lcstr = Path(src_file).read_text(encoding="utf-8")
-        
+
         # デコード関数呼び出し
         enc_data = ky_decrypt(lcstr)
-        
+
         # ファイル書き込み
         Path(dest_file).write_text(enc_data, encoding="utf-8")
     except Exception:
@@ -122,7 +122,7 @@ def ky_file_decrypt(src_file, dest_file):
     finally:
         # ファイルクローズ
         fsrc.close()
-    
+
     return True
 
 
@@ -246,7 +246,7 @@ def file_encode(file_path):
         is_file = os.path.isfile(file_path)
         if not is_file:
             return ""
-        
+
         with open(file_path, "rb") as f:
             return base64.b64encode(f.read()).decode()
     except Exception:
@@ -314,7 +314,7 @@ def upload_file(file_path, text):
 
     if type(text) is bytes:
         text = base64.b64decode(text.encode()).decode()
-    
+
     if isinstance(text, str):
         text = base64.b64decode(text.encode())
 
@@ -480,10 +480,15 @@ def get_exastro_platform_users():
     language = g.get('LANGUAGE')
     users = {}
 
+    if "ROLES" in g:
+        roles = g.ROLES
+    else:
+        roles = ""
+
     header_para = {
         "Content-Type": "application/json",
         "User-Id": user_id,
-        "Roles": json.dumps(g.ROLES),
+        "Roles": json.dumps(roles),
         "Language": language
     }
 

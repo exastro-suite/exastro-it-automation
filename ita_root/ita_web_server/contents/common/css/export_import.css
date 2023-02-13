@@ -118,11 +118,19 @@ left: -32px; top: -22px;
 width: 1px;
 height: calc( 50% + 23px );
 }
+.exportImportMenuGroupNameUnkown .checkboxTextText {
+opacity: .3;
+}
 .exportImportName .checkboxTextLabel:hover {
 background-color: var(--accentColor10);
 }
 .exportImportMenuName .checkboxTextLabel:hover {
 background-color: rgba( 255,255,255,.5 );
+}
+.exportImportMenuFileName {
+margin-left: 1em;
+font-size: 80%;
+opacity: .5;
 }
 .exportImportSetting .commonBody {
 margin: 8px 0 24px;
@@ -133,4 +141,37 @@ margin-top: 8px;
 }
 .inputDateBody {
 flex: 1 1 auto;
+}
+.exportImportError {
+position: relative;
+display: inline-flex;
+align-items: center;
+width: 100%;
+min-height: 32px;
+margin: 0;
+padding: 0 8px;
+font-family: "Osaka-mono", "MS Gothic", "monospace";
+letter-spacing: .75px;
+font-size: 14px;
+word-break: break-all;
+color: var(--black50);
+}
+.exportImportError::before {
+content: '';
+display: inline-block;
+width: 18px; height: 18px;
+margin-right: 8px;
+background-color: var(--black50);
+border: 1px solid var(--black50);
+border-radius: 4px;
+opacity: .3;
+}
+.exportImportErrorMessage {
+display: inline-flex;
+margin-left: .5em; padding-left: .5em;
+border-left: 1px solid #C80000;
+color: #C80000;
+}
+.exportImportErrorMessage > .icon {
+margin-right: .2em;
 }

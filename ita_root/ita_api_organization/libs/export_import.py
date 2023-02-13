@@ -29,7 +29,6 @@ from collections import Counter
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body, check_request_body_key
-from common_libs.common.util import ky_encrypt
 from flask import g
 from common_libs.common.exception import AppException  # noqa: F401
 
@@ -454,15 +453,10 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
             os.makedirs(uploadPath + upload_id)
             os.chmod(uploadPath + upload_id, 0o777)
 
-        # zipを展開する
-        cmd = "unzip -Ocp932 " + uploadPath + fileName + " -d " + uploadPath + upload_id
-        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-        if ret.returncode != 0:
-            msgstr = g.appmsg.get_api_message("MSG-30029")
-            log_msg_args = [msgstr]
-            api_msg_args = [msgstr]
-            raise AppException("499-00005", log_msg_args, api_msg_args)
-        # shutil.unpack_archive(uploadPath + fileName, uploadPath + upload_id)
+        with zipfile.ZipFile(uploadPath + fileName) as z:
+            for info in z.infolist():
+                info.filename = info.filename.encode('cp437').decode('cp932')
+                z.extract(info, path=uploadPath + upload_id)
 
         # zipファイルの中身確認
         declare_list = checkZipFile(upload_id, organization_id, workspace_id)
@@ -485,6 +479,11 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
                 menuName = menuInfo["menu_name"]
                 fileName = menuInfo["file_name"]
 
+                tmpMenuInfo = getMenuInfoByMenuId(menuId, objdbca)
+                group_disp_seq = tmpMenuInfo["GROUP_DISP_SEQ"]
+                parent_id = tmpMenuInfo["PARENT_MENU_GROUP_ID"]
+                disp_seq = tmpMenuInfo["DISP_SEQ"]
+
                 # 『メニューテーブル紐付管理』テーブルから対象のデータを取得
                 ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])
 
@@ -497,32 +496,42 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
                 if "error" in menuInfo:
                     error = menuInfo["error"]
                     if menuGroupId in retUnImportAry:
-                        retUnImportAry[menuGroupId]["menu"][idx_unimport] = {"menu_id": menuId,
+                        retUnImportAry[menuGroupId]["menu"][idx_unimport] = {"disp_seq": disp_seq,
+                                                                            "menu_id": menuId,
                                                                             "menu_name": menuName,
                                                                             "file_name": fileName,
                                                                             "error": error}
 
-                        idx_unimport +=1
+                        idx_unimport += 1
                     else:
-                        retUnImportAry[menuGroupId] = {"menu_group_name": menuGroupInfo["menu_group_name"],
-                                                    "menu": {idx_unimport: {"menu_id": menuId,
+                        retUnImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
+                                                    "menu_group_id": menuGroupId,
+                                                    "menu_group_name": menuGroupInfo["menu_group_name"],
+                                                    "menu": {idx_unimport: {"disp_seq": disp_seq,
+                                                            "menu_id": menuId,
                                                             "menu_name": menuName,
                                                             "file_name": fileName,
-                                                            "error": error}}}
+                                                            "error": error}},
+                                                    "parent_id": parent_id}
 
                         idx_unimport += 1
                 else:
                     if menuGroupId in retImportAry:
-                        retImportAry[menuGroupId]["menu"][idx] = {"menu_id": menuId,
-                                                                            "menu_name": menuName,
-                                                                            "file_name": fileName}
+                        retImportAry[menuGroupId]["menu"][idx] = {"disp_seq": disp_seq,
+                                                                    "menu_id": menuId,
+                                                                    "menu_name": menuName,
+                                                                    "file_name": fileName}
 
                         idx += 1
                     else:
-                        retImportAry[menuGroupId] = {"menu_group_name": menuGroupInfo["menu_group_name"],
-                                                    "menu": {idx: {"menu_id": menuId,
+                        retImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
+                                                    "menu_group_id": menuGroupId,
+                                                    "menu_group_name": menuGroupInfo["menu_group_name"],
+                                                    "menu": {idx: {"disp_seq": disp_seq,
+                                                            "menu_id": menuId,
                                                             "menu_name": menuName,
-                                                            "file_name": fileName}}}
+                                                            "file_name": fileName}},
+                                                    "parent_id": parent_id}
 
                         idx += 1
 
@@ -535,16 +544,16 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
         intResultCode = "000"
 
     except Exception as e:
-        intResultCode = "002"
+        result_code = e.args[0]
         msg_args = e.args[1]
-        retImportAry = e.args[1]
+        return False, result_code, msg_args, None
 
     arrayResult["upload_id"] = upload_id
     arrayResult["data_portability_upload_file_name"] = body['zipfile']['name']
 
     if intResultCode == "000":
-        arrayResult["IMPORT_LIST"] = retImportAry
-        arrayResult["UNIMPORT_LIST"] = retUnImportAry
+        arrayResult["import_list"] = retImportAry
+        arrayResult["umimport_list"] = retUnImportAry
     if intResultCode == "002":
         del arrayResult["upload_id"]
 
@@ -863,16 +872,18 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                 if menuGroupId in retImportAry:
                     tmp_ary = []
                     for key, value in retImportAry[menuGroupId]["menu"].items():
-                        if key == "menu_id":
-                            tmp_ary.append(value)
+                        if "menu_id" in value:
+                            tmp_ary.append(value["menu_id"])
                         if menuId in tmp_ary:
-                            declare_key = tmp_ary.index(menuId)
+                            declare_key = True
+                            break
                     tmp_ary = []
                     for key, value in retImportAry[menuGroupId]["menu"].items():
-                        if key == "file_name":
-                            tmp_ary.append(value)
+                        if "file_name" in value:
+                            tmp_ary.append(value["file_name"])
                         if menuFileName in tmp_ary:
-                            declare_file_name_key = tmp_ary.index(menuId)
+                            declare_file_name_key = tmp_ary.index(menuFileName)
+                            break
                     declare_menu_info = retImportAry[menuGroupId]["menu"][declare_file_name_key]
                 else:
                     declare_key = False
@@ -891,6 +902,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                     if declare_key == 0:
                         retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
                     else:
+                        idx = 0
                         retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
                                                     "menu": {idx: tmpMenuInfo}}
 
@@ -908,6 +920,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                     if declare_key == 0:
                         retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
                     else:
+                        idx = 0
                         retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
                                                     "menu": {idx: tmpMenuInfo}}
 
@@ -953,6 +966,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                             idx += 1
                     else:
                         if declare_list[menuFileName] > 1:
+                            idx = 0
                             retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
                                                         "menu": {idx: {"menu_id": menuId,
                                                             "menu_name": menuName,
@@ -962,6 +976,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
 
                             idx += 1
                         else:
+                            idx = 0
                             retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
                                                         "menu": {idx: {"menu_id": menuId,
                                                             "menu_name": menuName,
@@ -982,6 +997,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
 
                         idx += 1
                     else:
+                        idx = 0
                         retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
                                                     "menu": {idx: tmpMenuInfo}}
 
@@ -991,13 +1007,13 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
         msgstr = g.appmsg.get_api_message("MSG-30032")
         log_msg_args = [msgstr]
         api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        raise Exception("499-00005", log_msg_args, api_msg_args)
 
     return retImportAry
 
 def getMenuInfoByMenuId(menuId, objdbca=None):
     """
-    メニュー情報
+    メニュー情報取得
 
     Arguments:
         menuId: メニューID
@@ -1006,7 +1022,8 @@ def getMenuInfoByMenuId(menuId, objdbca=None):
         実行結果
     """
     sql = "SELECT "
-    sql += " T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN "
+    sql += " T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN, "
+    sql += " T_COMN_MENU.DISP_SEQ, T_COMN_MENU_GROUP.PARENT_MENU_GROUP_ID, T_COMN_MENU_GROUP.DISP_SEQ AS GROUP_DISP_SEQ "
     sql += "FROM T_COMN_MENU "
     sql += "LEFT OUTER JOIN "
     sql += " T_COMN_MENU_GROUP "

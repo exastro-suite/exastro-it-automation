@@ -111,6 +111,8 @@ services:
       - GITLAB_ROOT_TOKEN=${GITLAB_ROOT_TOKEN}
       - ANSIBLE_AGENT_IMAGE=${ANSIBLE_AGENT_IMAGE}
       - ANSIBLE_AGENT_IMAGE_TAG=${ANSIBLE_AGENT_IMAGE_TAG}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
     # init: true
 
   ita-by-ansible-legacy-role-vars-listup:

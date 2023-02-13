@@ -33,8 +33,6 @@ RUN dnf install -y \
     langpacks-en \
     wget \
     unzip \
-    glibc-locale-source \
-    glibc-gconv-extra \
 &&  pip3.9 install --upgrade pip setuptools \
 &&  pip3.9 install \
     Flask \

@@ -136,6 +136,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
 
   ita-by-ansible-legacy-vars-listup:
     user: 1000:1000
@@ -158,6 +160,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
 
   ita-by-ansible-pioneer-vars-listup:
     user: 1000:1000
@@ -180,6 +184,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
 
   ita-by-ansible-towermaster-sync:
     user: 1000:1000
@@ -202,6 +208,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
   ita-by-collector:
     user: 1000:1000
     build:
@@ -223,6 +231,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
   ita-by-conductor-synchronize:
     user: 1000:1000
     build:
@@ -244,6 +254,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
   ita-by-menu-create:
     user: 1000:1000
     build:
@@ -265,6 +277,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
 
   ita-by-menu-export-import:
     user: 1000:1000
@@ -287,6 +301,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
 
   ita-by-excel-export-import:
     user: 1000:1000
@@ -333,6 +349,8 @@ services:
   #     - DB_PASSWORD=${DB_PASSWORD}
   #     - DB_ADMIN_USER=${DB_ADMIN_USER}
   #     - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+  #     - PLATFORM_API_HOST=platform-api
+  #     - PLATFORM_API_PORT=8000
 
   # ita-by-terraform-cloud-ep-vars-listup:
   #   user: 1000:1000
@@ -355,6 +373,8 @@ services:
   #     - DB_PASSWORD=${DB_PASSWORD}
   #     - DB_ADMIN_USER=${DB_ADMIN_USER}
   #     - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+  #     - PLATFORM_API_HOST=platform-api
+  #     - PLATFORM_API_PORT=8000
 
   # ita-by-terraform-cli-execute:
   #   user: 1000:1000
@@ -377,6 +397,8 @@ services:
   #     - DB_PASSWORD=${DB_PASSWORD}
   #     - DB_ADMIN_USER=${DB_ADMIN_USER}
   #     - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+  #     - PLATFORM_API_HOST=platform-api
+  #     - PLATFORM_API_PORT=8000
 
   # ita-by-terraform-cli-vars-listup:
   #   user: 1000:1000
@@ -399,6 +421,8 @@ services:
   #     - DB_PASSWORD=${DB_PASSWORD}
   #     - DB_ADMIN_USER=${DB_ADMIN_USER}
   #     - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+  #     - PLATFORM_API_HOST=platform-api
+  #     - PLATFORM_API_PORT=8000
 
   ita-by-hostgroup-split:
     user: 1000:1000
@@ -421,3 +445,5 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000

@@ -55,7 +55,7 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
         check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
         check_request_body_key(body, 'abolished_type')
 
-    result_data = export_import.execute_excel_bulk_export(organization_id, workspace_id, objdbca, menu, body)
+    result_data = export_import.execute_excel_bulk_export(objdbca, menu, body)
 
     return result_data,
 
@@ -163,9 +163,32 @@ def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501
 
     :rtype: InlineResponse200
     """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    menu = 'menu_import'
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['21']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
     if connexion.request.is_json:
-        body = ImportExecuteBody.from_dict(connexion.request.get_json())  # noqa: E501
-    return 'do some magic!',
+        body = dict(connexion.request.get_json())
+        check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
+        check_request_body_key(body, 'upload_id')
+        check_request_body_key(body, 'file_name')
+
+    result_data = export_import.execute_menu_import(objdbca, organization_id, workspace_id, menu, body)
+
+    return result_data,
 
 @api_filter
 def get_excel_bulk_export_list(organization_id, workspace_id):  # noqa: E501
@@ -284,4 +307,30 @@ def post_menu_import_upload(organization_id, workspace_id, body=None):  # noqa: 
 
     :rtype: InlineResponse200
     """
-    return 'do some magic!',
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    menu = 'menu_import'
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['21']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
+    body_file = {}
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        body_file = check_request_body_key(body, 'file')  # keyが無かったら400-00002エラー
+        check_request_body_key(body_file, 'name')
+        check_request_body_key(body_file, 'base64')
+
+    result_data = export_import.post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body_file)
+
+    return result_data,

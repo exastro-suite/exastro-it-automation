@@ -943,29 +943,50 @@ class loadTable():
                     base_datetime_condition = parameter.get('base_datetime')
                     if not base_datetime_condition:
                         # 「基準日時」に指定が無い場合のwhereを作成
-                        ref_where_str = textwrap.dedent("""
-                            BASE_TIMESTAMP = (
-                                select max(BASE_TIMESTAMP)
-                                from `{table_name}` as tbl
-                                where `{table_name}`.HOST_ID = tbl.HOST_ID
-                                and DISUSE_FLAG = "0"
-                            )
-                            and DISUSE_FLAG = "0"
-                        """).format(table_name=table_name).strip()
-                    else:
-                        # 「基準日時」に指定がある場合のwhereを作成
-                        base_datetime = base_datetime_condition.get('NORMAL')
-                        if base_datetime:
+                        if str(self.get_sheet_type()) == "5":  # シートタイプが「5: 参照用（ホスト/オペレーションあり）」
                             ref_where_str = textwrap.dedent("""
                                 BASE_TIMESTAMP = (
                                     select max(BASE_TIMESTAMP)
                                     from `{table_name}` as tbl
                                     where `{table_name}`.HOST_ID = tbl.HOST_ID
                                     and DISUSE_FLAG = "0"
-                                    and tbl.BASE_TIMESTAMP <= '{base_datetime}'
                                 )
                                 and DISUSE_FLAG = "0"
-                            """).format(table_name=table_name, base_datetime=base_datetime).strip()
+                            """).format(table_name=table_name).strip()
+                        else:  # シートタイプが「6: 参照用（オペレーションあり）」
+                            ref_where_str = textwrap.dedent("""
+                                BASE_TIMESTAMP = (
+                                    select max(BASE_TIMESTAMP)
+                                    from `{table_name}` as tbl
+                                    where DISUSE_FLAG = "0"
+                                )
+                                and DISUSE_FLAG = "0"
+                            """).format(table_name=table_name).strip()
+                    else:
+                        # 「基準日時」に指定がある場合のwhereを作成
+                        base_datetime = base_datetime_condition.get('NORMAL')
+                        if base_datetime:
+                            if str(self.get_sheet_type()) == "5":  # シートタイプが「5: 参照用（ホスト/オペレーションあり）」
+                                ref_where_str = textwrap.dedent("""
+                                    BASE_TIMESTAMP = (
+                                        select max(BASE_TIMESTAMP)
+                                        from `{table_name}` as tbl
+                                        where `{table_name}`.HOST_ID = tbl.HOST_ID
+                                        and DISUSE_FLAG = "0"
+                                        and tbl.BASE_TIMESTAMP <= '{base_datetime}'
+                                    )
+                                    and DISUSE_FLAG = "0"
+                                """).format(table_name=table_name, base_datetime=base_datetime).strip()
+                            else:  # シートタイプが「6: 参照用（オペレーションあり）」
+                                ref_where_str = textwrap.dedent("""
+                                    BASE_TIMESTAMP = (
+                                        select max(BASE_TIMESTAMP)
+                                        from `{table_name}` as tbl
+                                        where DISUSE_FLAG = "0"
+                                        and tbl.BASE_TIMESTAMP <= '{base_datetime}'
+                                    )
+                                    and DISUSE_FLAG = "0"
+                                """).format(table_name=table_name, base_datetime=base_datetime).strip()
 
                         # parameterから「基準日時(key:base_datetime)」を削除する
                         parameter.pop('base_datetime')

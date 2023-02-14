@@ -770,6 +770,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             if hostgroup_flag and substitution_value_link_flag == "1":
                 data_list["TABLE_NAME"] = sv_create_table_name
                 data_list["VIEW_NAME"] = sv_create_view_name
+            elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
+                data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
 
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_update(t_comn_menu_table_link, data_list, primary_key_name)
@@ -799,7 +801,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             if hostgroup_flag and substitution_value_link_flag == "1":
                 data_list["TABLE_NAME"] = sv_create_table_name
                 data_list["VIEW_NAME"] = sv_create_view_name
-
+            elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
+                data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
@@ -1003,8 +1006,8 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
 
-            # ホストグループ利用時、参照先テーブル変更
-            if hostgroup_flag:
+            # ホストグループ利用時、入力用の参照先テーブル変更
+            if hostgroup_flag and menu_group_col_name == "MENU_GROUP_ID_INPUT":
                 data_list["REF_TABLE_NAME"] = "V_HGSP_UQ_HOST_LIST"
                 data_list["REF_PKEY_NAME"] = "KY_KEY"
                 data_list["REF_COL_NAME"] = "KY_VALUE"

@@ -64,7 +64,7 @@ class AppLog:
             isMyapp: (bool) True : no-container-app, False : container-app(Saas)
             dictConfig: (dict) logging dict-config
         Returns:
-            
+
         """
         self.__name__ = "fileAppLogger" if isMyapp is True else "stdAppLogger"
 
@@ -82,7 +82,7 @@ class AppLog:
         logging.config.dictConfig(self._config)
         # set instance
         self.__logger_obj = logging.getLogger(self.__name__)
-        self.info("AppLog instance({}) is created".format(self.__name__))
+        # self.info("AppLog instance({}) is created".format(self.__name__))
 
     def set_user_setting(self, wsdb_instance):
         """
@@ -167,7 +167,7 @@ class AppLog:
         Arguments:
             message: message for output
         """
-        self.__logger_obj.debug(self.__env_message + str(message))
+        # self.__logger_obj.debug(self.__env_message + str(message))
 
     def set_env_message(self):
         """

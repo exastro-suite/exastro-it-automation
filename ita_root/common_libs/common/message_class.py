@@ -27,14 +27,15 @@ class MessageTemplate:
         # set lang
         if lang is None:
             lang = os.getenv('DEFAULT_LANGUAGE')
-        self.set_lang(lang)
-        
+        # self.set_lang(lang)
+        self.set_lang("ja")
+
         # set messages dir
         self.path = '/exastro/messages'
-        
+
         # define variable
         self.messages = {'log': {}, 'api': {}}
-        
+
         # read message files
         self.__read_message_files()
 
@@ -48,7 +49,7 @@ class MessageTemplate:
             # read message file
             op_file = open(file, 'r', encoding="utf-8")
             file_json = json.load(op_file)
-            
+
             # set messages in dict
             file_name = os.path.splitext(os.path.basename(file))[0]
             file_type = file_name[:3].lower()
@@ -62,7 +63,7 @@ class MessageTemplate:
 
     """
     言語設定
-    
+
     Arguments:
         lang: (str) "ja" | "en"
     """
@@ -82,13 +83,13 @@ class MessageTemplate:
     """
     def get_api_message(self, message_id, format_strings=[]):
         ret_msg = self.messages.get('api', {}).get(self.lang, {}).get(str(message_id))
-        
+
         if ret_msg and format_strings:
             ret_msg = ret_msg.format(*format_strings)
-        
+
         if not ret_msg:
             ret_msg = "Message id is not found.(Called-ID[{}])".format(str(message_id))
-        
+
         return ret_msg
 
     """
@@ -104,11 +105,11 @@ class MessageTemplate:
     """
     def get_log_message(self, message_id, format_strings=[]):
         ret_msg = self.messages.get('log', {}).get(str(message_id))
-        
+
         if ret_msg and format_strings:
             ret_msg = ret_msg.format(*format_strings)
-        
+
         if not ret_msg:
             ret_msg = "Message id is not found.(Called-ID[{}])".format(str(message_id))
-        
+
         return ret_msg

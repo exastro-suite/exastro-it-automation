@@ -38,4 +38,4 @@ def post_cicd_for_iac_resume_repository(organization_id, workspace_id, uuid, bod
 
     :rtype: InlineResponse20011
     """
-    return 'do some magic!',
+    return 'post_cicd_for_iac_resume_repository',

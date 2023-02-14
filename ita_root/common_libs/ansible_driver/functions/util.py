@@ -262,7 +262,7 @@ def getSpecialColumnVaule(column_rest_name, option):
         column_rest_name: カラム名(REST用)
         option: 個別
       Returns:
-        Ansible Gitリポジトリ用 tmpバス
+        カラム入力値
     """
     str_token = option["current_parameter"]["parameter"][column_rest_name]
     if column_rest_name in option["entry_parameter"]["parameter"]:

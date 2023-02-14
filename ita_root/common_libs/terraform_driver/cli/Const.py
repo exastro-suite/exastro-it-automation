@@ -15,9 +15,10 @@
 """
 terraformドライバー（terraform CLI）に必要な定数定義モジュール
 """
+from common_libs.terraform_driver.common.Const import Const as CommonConst
 
 
-class Const:
+class Const(CommonConst):
     """
     terraformドライバー（terraform CLI）に必要な定数定義クラス
     """

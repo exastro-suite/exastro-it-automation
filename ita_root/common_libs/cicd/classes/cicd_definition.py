@@ -20,6 +20,11 @@ class TD_SYNC_STATUS_NAME_DEFINE():
     リモートリポジトリ・資材紐付  同期状態マスタ
     """
 
+    STS_NONE    = None
+    STS_NORMAL  = "1"
+    STS_ERROR   = "2"
+    STS_RESTART = "3"
+
     @staticmethod
     def NORMAL():
         # 正常

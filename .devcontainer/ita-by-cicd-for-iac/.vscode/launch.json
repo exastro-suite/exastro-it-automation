@@ -1,0 +1,53 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: Flask",
+        "type": "python",
+        "request": "launch",
+        "program": "/exastro/backyard/backyard_init.py",
+        "env": {
+            "FLASK_APP": "/exastro/backyard/backyard_init.py"
+        },
+        "cwd": "/exastro",
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/ita_root/ita_by_cicd_for_iac",
+            "remoteRoot": "/exastro"
+          },
+        ],
+        "args": [
+            "run",
+            "--no-debugger"
+        ],
+        "jinja": true,
+        "justMyCode": true,
+        "noDebug": true,
+      },
+      {
+        "name": "[DEBUG] Python: Flask",
+        "type": "python",
+        "request": "launch",
+        "program": "/exastro/backyard/backyard_init.py",
+        "env": {
+            "FLASK_APP": "/exastro/backyard/backyard_init.py"
+        },
+        "cwd": "/exastro",
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/ita_root/ita_by_cicd_for_iac",
+            "remoteRoot": "/exastro"
+          },
+        ],
+        "args": [
+            "run",
+            "--no-debugger"
+        ],
+        "jinja": true,
+        "justMyCode": true
+      }
+  ]
+}

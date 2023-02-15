@@ -482,6 +482,9 @@ paths:
                               host:
                                 type: string
                                 nullable: true
+                              authentication_method:
+                                type: string
+                                nullable: true
                               user:
                                 type: string
                                 nullable: true
@@ -507,6 +510,9 @@ paths:
                           type: object
                           properties:
                             execution_engine:
+                              type: string
+                              nullable: true
+                            representative_server:
                               type: string
                               nullable: true
                             ansible_automation_controller_protocol:

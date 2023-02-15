@@ -2068,6 +2068,8 @@ filterSelectBoxHtml( list, name, rest ) {
     
     // listをソートする
     list.sort(function( a, b ){
+        a = fn.cv( a, '');
+        b = fn.cv( b, '');
         return a.localeCompare( b );
     });
     

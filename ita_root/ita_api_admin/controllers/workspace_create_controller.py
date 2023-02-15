@@ -75,6 +75,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['driver', 'conductor'],
             # ['driver', 'terraform_cloud_ep'],
             # ['driver', 'terraform_cli'],
+            ['driver', 'cicd', 'repositories'],
             ['uploadfiles'],
             ['tmp', 'driver', 'ansible'],
             ['tmp', 'driver', 'import_menu'],

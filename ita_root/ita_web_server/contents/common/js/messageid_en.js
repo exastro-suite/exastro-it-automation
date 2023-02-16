@@ -193,12 +193,13 @@ getMessage = ( function() {
         'FTE00156' : "end date",
         'FTE00157' : "start of work suspension period",
         'FTE00158' : "end of work suspension period",
-        'FTE00159' : function( text ){ return `Invalid ${text} value(Valid only for official datetime in "yyyy/MM/dd HH:mm" format)`;},
+        'FTE00159' : function( text ){ return `Invalid ${text} value(Valid only for official datetime in "yyyy/MM/dd HH:mm:ss" format)`;},
         'FTE00160' : "Start date must be earlier than end date.",
         'FTE00161' : "The start of the suspension period must be earlier the end",
         'FTE00162' : "Suspension period must be entered for both start and end.",
         'FTE00163' : "The work suspension period must be within the work period.",
         'FTE00164' : "Period",
+        'FTE00165' : "Seconds",
         
         // Create menu
         'FTE01001' : "Item",

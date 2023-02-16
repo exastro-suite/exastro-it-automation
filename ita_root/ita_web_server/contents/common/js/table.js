@@ -4456,6 +4456,9 @@ tableSettingListHtml() {
                         text += fn.html.required();
                         attr.disabled = 'disabled';
                     }
+                    if ( data.input_item === '3') {
+                        attr.disabled = 'disabled';
+                    }
                 }
                 
                 if ( exclusion.indexOf( data.column_name_rest ) === -1 ) {
@@ -4697,6 +4700,7 @@ scheduleSettingData() {
             scheduleMonthDayWeekInput: [ getMessage.FTE00139, 0, 0, null, 0, 'period_5', 'week_number'],
             scheduleHourInput: [ getMessage.FTE00140, 0, 23, getMessage.FTE00140, 0, 'period_T', 'time'],
             scheduleMinutesInput: [ getMessage.FTE00141, 0, 59, getMessage.FTE00141, 0, 'period_T', 'time_minutes'],
+            scheduleSecondsInput: [ getMessage.FTE00165, 0, 59, getMessage.FTE00165, 0, 'period_T', 'time_seconds'],
         }
     };
 }
@@ -4761,9 +4765,10 @@ scheduleSettingOpen( itemId, buttonText ) {
                     after = $mbody.find(`.schedulePeriodType:checked`).val();
                 } else if ( key === 'time') {
                     const h = $mbody.find(`.input[data-key="${key}"]:visible`).val(),
-                          m = $mbody.find(`.input[data-key="${key}_minutes"]:visible`).val();
-                    if ( h && m ) {
-                        after = `${h}:${fn.zeroPadding(m,2)}`;
+                          m = $mbody.find(`.input[data-key="${key}_minutes"]:visible`).val(),
+                          s = $mbody.find(`.input[data-key="${key}_seconds"]:visible`).val();
+                    if ( h && m && s ) {
+                        after = `${h}:${fn.zeroPadding(m,2)}:${fn.zeroPadding(s,2)}`;
                     }
                 } else {
                     after = $mbody.find(`.input[data-key="${key}"]:visible`).val();
@@ -4835,9 +4840,11 @@ scheduleSettingOpen( itemId, buttonText ) {
                         sc[4] = initScheduleValue.interval;
                     }
                 } else if ( sc[6] === 'time' && initScheduleValue.time ) {
-                    sc[4] = initScheduleValue.time.split(':')[0];
+                    sc[4] = fn.cv( initScheduleValue.time.split(':')[0], '');
                 } else if ( sc[6] === 'time_minutes' && initScheduleValue.time ) {
-                    sc[4] = initScheduleValue.time.split(':')[1];
+                    sc[4] = fn.cv( initScheduleValue.time.split(':')[1], '');
+                } else if ( sc[6] === 'time_seconds' && initScheduleValue.time ) {
+                    sc[4] = fn.cv( initScheduleValue.time.split(':')[2], '');
                 } else {
                     if ( initScheduleValue[ sc[6] ] ) {
                         sc[4] = initScheduleValue[ sc[6] ];
@@ -4864,14 +4871,14 @@ scheduleSettingOpen( itemId, buttonText ) {
                                 + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00146}${fn.html.required()}</div></th>`
                                 + `<td class="commonInputTd">`
                                     + `<div class="scheduleInputFromDateWrap">`
-                                        + fn.html.inputText(['scheduleInput', 'scheduleFromDate'], '', 'start_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm', type: 'fromDate', key: 'start_date'})
+                                        + fn.html.inputText(['scheduleInput', 'scheduleFromDate'], fn.cv( initScheduleValue.start_date, ''), 'start_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'fromDate', key: 'start_date'})
                                     + `</div>`
                                 + `</td>`
                                 + `<td class="commonInputTd">${getMessage.FTE00148}</td>`
                                 + `<th class="commonInputTh">${getMessage.FTE00147}</th>`
                                 + `<td class="commonInputTd">`
                                     + `<div class="scheduleInputFromDateWrap">`
-                                        + fn.html.inputText(['scheduleInput', 'scheduleToDate'], '', 'end_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm', type: 'toDate', key: 'end_date'})
+                                        + fn.html.inputText(['scheduleInput', 'scheduleToDate'], fn.cv( initScheduleValue.end_date, ''), 'end_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'toDate', key: 'end_date'})
                                     + `</div>`
                                 + `</td>`
                                 + `<td class="commonInputTd">`
@@ -4911,14 +4918,14 @@ scheduleSettingOpen( itemId, buttonText ) {
                                 + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00151}</div></th>`
                                 + `<td class="commonInputTd">`
                                     + `<div class="scheduleInputFromDateWrap">`
-                                        + fn.html.inputText(['scheduleInput', 'scheduleFromDate'], '', 'execution_stop_start_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm', type: 'fromDate', key: 'execution_stop_start_date'})
+                                        + fn.html.inputText(['scheduleInput', 'scheduleFromDate'], fn.cv( initScheduleValue.execution_stop_start_date, ''), 'execution_stop_start_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'fromDate', key: 'execution_stop_start_date'})
                                     + `</div>`
                                 + `</td>`
                                 + `<td class="commonInputTd">${getMessage.FTE00148}</td>`
                                 + `<th class="commonInputTh">${getMessage.FTE00152}</th>`
                                 + `<td class="commonInputTd">`
                                     + `<div class="scheduleInputFromDateWrap">`
-                                        + fn.html.inputText(['scheduleInput', 'scheduleToDate'], '', 'execution_stop_end_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm', type: 'toDate', key: 'execution_stop_end_date'})
+                                        + fn.html.inputText(['scheduleInput', 'scheduleToDate'], fn.cv( initScheduleValue.execution_stop_end_date, ''), 'execution_stop_end_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'toDate', key: 'execution_stop_end_date'})
                                     + `</div>`
                                 + `</td>`
                                 + `<td class="commonInputTd">`
@@ -4934,7 +4941,7 @@ scheduleSettingOpen( itemId, buttonText ) {
             + `</div>`
             + `<div class="commonTitle">${getMessage.FTE00153}</div>`
             + `<div class="commonBody">`
-                + fn.html.textarea('scheduleNote', '')
+                + fn.html.textarea('scheduleNote',  fn.cv( initScheduleValue.remarks, ''), null, {key: 'remarks'})
             + `</div>`
         + `</div>`;
         
@@ -4994,7 +5001,7 @@ scheduleSettingOpen( itemId, buttonText ) {
                 }
                 
                 // 形式チェック
-                const dateValidationRule = /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}$/;
+                const dateValidationRule = /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/;
                 
                 const checkPeriodText = {
                     start_date: getMessage.FTE00155,
@@ -5078,7 +5085,7 @@ scheduleSettingOpen( itemId, buttonText ) {
             const from = $from.val(),
                   to = $to.val();
 
-            fn.datePickerDialog('fromTo', 'hm', getMessage.FTE00164, { from: from, to: to } ).then(function( result ){
+            fn.datePickerDialog('fromTo', true, getMessage.FTE00164, { from: from, to: to } ).then(function( result ){
                 if ( result !== 'cancel') {
                     $from.val( result.from );
                     $to.val( result.to ).change();

@@ -4695,7 +4695,7 @@ scheduleSettingData() {
             scheduleIntervalDayInput: [ getMessage.FTE00132, 1, 99, getMessage.FTE00134, 1, 'period_2', 'interval'],
             scheduleIntervalWeekInput: [ getMessage.FTE00132,  1, 99, getMessage.FTE00135, 1, 'period_3', 'interval'],
             scheduleIntervalMonthInput: [ getMessage.FTE00132, 1, 99, getMessage.FTE00136, 1 ,'period_4 period_5 period_6', 'interval'],
-            scheduleDayInput: [ getMessage.FTE00137, 1, 31, getMessage.FTE00138, 0, 'period_4', 'day'],
+            scheduleDayInput: [ getMessage.FTE00137, 1, 31, getMessage.FTE00138, 1, 'period_4', 'day'],
             scheduleDayWeekInput: [ getMessage.FTE00139, 0, 0, null, 0, 'period_3', 'day_of_week'],
             scheduleMonthDayWeekInput: [ getMessage.FTE00139, 0, 0, null, 0, 'period_5', 'week_number'],
             scheduleHourInput: [ getMessage.FTE00140, 0, 23, getMessage.FTE00140, 0, 'period_T', 'time'],
@@ -4840,11 +4840,11 @@ scheduleSettingOpen( itemId, buttonText ) {
                         sc[4] = initScheduleValue.interval;
                     }
                 } else if ( sc[6] === 'time' && initScheduleValue.time ) {
-                    sc[4] = fn.cv( initScheduleValue.time.split(':')[0], '');
+                    sc[4] = Number( fn.cv( initScheduleValue.time.split(':')[0], 0 ) );
                 } else if ( sc[6] === 'time_minutes' && initScheduleValue.time ) {
-                    sc[4] = fn.cv( initScheduleValue.time.split(':')[1], '');
+                    sc[4] = Number( fn.cv( initScheduleValue.time.split(':')[1], 0 ) );
                 } else if ( sc[6] === 'time_seconds' && initScheduleValue.time ) {
-                    sc[4] = fn.cv( initScheduleValue.time.split(':')[2], '');
+                    sc[4] = Number( fn.cv( initScheduleValue.time.split(':')[2], 0 ) );
                 } else {
                     if ( initScheduleValue[ sc[6] ] ) {
                         sc[4] = initScheduleValue[ sc[6] ];

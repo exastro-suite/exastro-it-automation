@@ -16,25 +16,6 @@ from common_libs.cicd.functions.util import getColumnValueFromOptionData
 from common_libs.cicd.classes.cicd_definition import TD_SYNC_STATUS_NAME_DEFINE, TD_B_CICD_MATERIAL_TYPE_NAME, TD_C_PATTERN_PER_ORCH
 from common_libs.cicd.functions.local_functions import MatlLinkColumnValidator1, MatlLinkColumnValidator2, MatlLinkColumnValidator5
 
-
-def external_valid_menu_after(objdbca, objtable, option):
-    """
-    メニューバリデーション(登録/更新)
-    ARGS:
-        objdbca :DB接続クラスインスタンス
-        objtabl :メニュー情報、カラム紐付、関連情報
-        option :パラメータ、その他設定値
-    RETRUN:
-        retBoo :True/ False
-        msg :エラーメッセージ
-        option :受け取ったもの
-    """
-    retBool = True
-    msg = ''
-
-    return retBool, msg, option,
-
-
 def external_valid_menu_before(objdbca, objtable, option):
     """
     メニューバリデーション(登録/更新)

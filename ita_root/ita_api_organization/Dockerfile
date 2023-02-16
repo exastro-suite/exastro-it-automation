@@ -55,6 +55,7 @@ RUN dnf install -y \
     connexion[swagger-ui] \
     pycryptodome \
     dictdiffer \
+    python-hcl2 \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \

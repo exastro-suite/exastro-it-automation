@@ -63,8 +63,6 @@ class TD_B_CICD_MATERIAL_TYPE_NAME():
     C_MATL_TYPE_ROW_ID_MODULE     = "6"  # Terraform/Module素材
     C_MATL_TYPE_ROW_ID_POLICY     = "7"  # Terraform/Policy管理
     C_MATL_TYPE_ROW_ID_MODULE_CLI = "8"  # Terraform-CLI/Module素材
-
-
 class TD_C_PATTERN_PER_ORCH():
     """
     オーケストレータタイプ
@@ -76,6 +74,13 @@ class TD_C_PATTERN_PER_ORCH():
     C_EXT_STM_ID_TERRAFORM     = "4"
     C_EXT_STM_ID_TERRAFORM_CLI = "5"
 
+    # 作業状態確認　メニュー名(rest_menu_name)
+    C_CHECK_OPERATION_STATUS_MENU_NAME = {}
+    C_CHECK_OPERATION_STATUS_MENU_NAME[C_EXT_STM_ID_LEGACY] = "check_operation_status_ansible_legacy"
+    C_CHECK_OPERATION_STATUS_MENU_NAME[C_EXT_STM_ID_PIONEER] = "check_operation_status_ansible_pioneer"
+    C_CHECK_OPERATION_STATUS_MENU_NAME[C_EXT_STM_ID_ROLE] = "check_operation_status_ansible_role"
+    C_CHECK_OPERATION_STATUS_MENU_NAME[C_EXT_STM_ID_TERRAFORM] = "check_operation_status_terraform_cloud_ep"
+    C_CHECK_OPERATION_STATUS_MENU_NAME[C_EXT_STM_ID_TERRAFORM_CLI] = "check_operation_status_terraform_cli"
 
 class TD_B_CICD_GIT_PROTOCOL_TYPE_NAME():
     """

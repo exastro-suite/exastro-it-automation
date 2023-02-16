@@ -802,7 +802,7 @@ class loadTable():
             required_item = self.get_objcol(rest_key).get(COLNAME_REQUIRED_ITEM)
             input_item = self.get_objcol(rest_key).get(COLNAME_INPUT_ITEM)
             auto_input = self.get_objcol(rest_key).get(COLNAME_AUTO_INPUT)
-            if required_item == '1' and input_item == '1' and auto_input != '1':
+            if required_item == '1' and input_item in ['1', '3'] and auto_input != '1':
                 required_restkey_list.append(rest_key)
 
         return required_restkey_list
@@ -1399,7 +1399,7 @@ class loadTable():
                 if objcol is not None:
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                 # INPUT_ITEMが1の場合
-                if input_item == '1' or force_conv is True:
+                if input_item in ['1', '3'] or force_conv is True:
                     if rest_key in self.restkey_list:
                         target_col_option = {
                             'uuid': target_uuid,
@@ -2268,7 +2268,7 @@ class loadTable():
                 if objcol is not None:
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                     tmp_col_name = self.get_col_name(tmp_keys)
-                    if input_item != '1':
+                    if input_item != '1' and input_item != '3':
                         if tmp_col_name not in primary_key_list:
                             if tmp_keys in parameter:
                                 del parameter[tmp_keys]

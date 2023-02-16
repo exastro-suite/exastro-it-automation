@@ -13,7 +13,7 @@
 
 from flask import g
 from common_libs.cicd.functions.util import getColumnValueFromOptionData
-from common_libs.cicd.classes.cicd_definition import TD_B_CICD_GIT_PROTOCOL_TYPE_NAME, TD_B_CICD_GIT_REPOSITORY_TYPE_NAME
+from common_libs.cicd.classes.cicd_definition import TD_SYNC_STATUS_NAME_DEFINE, TD_B_CICD_GIT_PROTOCOL_TYPE_NAME, TD_B_CICD_GIT_REPOSITORY_TYPE_NAME
 
 
 def external_valid_menu_before(objdbca, objtable, option):
@@ -34,8 +34,6 @@ def external_valid_menu_before(objdbca, objtable, option):
     ColValue, RestNameConfig = getColumnValueFromOptionData(objdbca, objtable, option)
 
     # プロトコルタイプ: https
-    print("--------------------------------------------------------")
-    print(ColValue['GIT_PROTOCOL_TYPE_ROW_ID'])
     if ColValue['GIT_PROTOCOL_TYPE_ROW_ID'] == TD_B_CICD_GIT_PROTOCOL_TYPE_NAME.C_GIT_PROTOCOL_TYPE_ROW_ID_HTTPS:
         # リポジトリタイプ必須入力チェック
         if not ColValue['GIT_REPO_TYPE_ROW_ID']:
@@ -145,7 +143,6 @@ def external_valid_menu_before(objdbca, objtable, option):
 
         # Gitパスワード未入力チェック
         if ColValue['GIT_PASSWORD']:
-            print("step9")
             # プロトコルでhttpsを選択し、VisibilityタイプでPrivateを選択している場合以外は、入力が不要な項目です。(項目:Gitパスワード)
             status_code = "MSG-90015"
             msg_args = []
@@ -167,7 +164,6 @@ def external_valid_menu_before(objdbca, objtable, option):
                 retBool = False
             # sshパスフレーズ未入力チェック
             if ColValue['SSH_PASSPHRASE']:
-                print("step11")
                 # プロトコルでssh鍵認証(パスフレーズあり)以外を選択している場合は、入力が不要な項目です。(項目:ssh接続情報/パスフレーズ)
                 status_code = "MSG-90012"
                 msg_args = []
@@ -212,7 +208,6 @@ def external_valid_menu_before(objdbca, objtable, option):
 
             # sshパスフレーズ未入力チェック
             if ColValue['SSH_PASSPHRASE']:
-                print("step15")
                 # プロトコルでssh鍵認証(パスフレーズあり)以外を選択している場合は、入力が不要な項目です。(項目:ssh接続情報/パスフレーズ)
                 status_code = "MSG-90012"
                 msg_args = []
@@ -231,7 +226,7 @@ def external_valid_menu_before(objdbca, objtable, option):
 
     # 同期状態・同期エラー情報・同期時刻を更新
     if option["cmd_type"] in ("Register", "Update", "Restore"):
-        option["entry_parameter"]["parameter"][RestNameConfig["SYNC_STATUS_ROW_ID"]] = None
+        option["entry_parameter"]["parameter"][RestNameConfig["SYNC_STATUS_ROW_ID"]] = TD_SYNC_STATUS_NAME_DEFINE.STS_NONE
         option["entry_parameter"]["parameter"][RestNameConfig["SYNC_ERROR_NOTE"]] = None
         option["entry_parameter"]["parameter"][RestNameConfig["SYNC_LAST_TIMESTAMP"]] = None
 

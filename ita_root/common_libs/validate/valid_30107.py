@@ -74,6 +74,9 @@ def conductor_regularly_valid(objdbca, objtable, option):  # noqa: C901
         # else:
         # 本来はエラーだが、開始日時は必須項目チェックでエラー内容を返す
 
+    # 実行ユーザの入力 -------------------------------------------
+    entry_parameter["execution_user"] = g.USER_ID
+
     # 周期と入力項目　チェック -------------------------------------------
 
     # 必須項目の場合、スペース除去。

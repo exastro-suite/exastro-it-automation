@@ -36,8 +36,6 @@ def post_cicd_for_iac_resume_filelink(organization_id, workspace_id, uuid, body=
 
     :rtype: InlineResponse20011
     """
-    result_msg = g.appmsg.get_api_message("MSG-90042", [uuid])
-    return result_msg,
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)
@@ -117,8 +115,6 @@ def post_cicd_for_iac_resume_repository(organization_id, workspace_id, uuid, bod
 
     :rtype: InlineResponse20011
     """
-    result_msg = g.appmsg.get_api_message("MSG-90042", [uuid])
-    return result_msg,
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)

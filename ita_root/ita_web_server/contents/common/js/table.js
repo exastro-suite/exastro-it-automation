@@ -3031,13 +3031,14 @@ buttonAction( columnInfo, item, columnKey ) {
                 
                 if ( endPoint && valueKeys ) {
                     let api = endPoint.replace(/^\/ita/, '');
-                    for ( const key of valueKeys ) {
-                        const value = item.parameter[ key ];
-                        if ( value ) {
-                            // keyを値に置換
-                            api = api.replace(`{${key}}`, value );
+                    const replaceTarget = api.match(/\{[^\{\}]*\}/g);
+                    if ( replaceTarget !== null ) {
+                        const replaceLength = replaceTarget.length;
+                        for ( let i = 0; i < replaceLength; i++ ) {
+                            const value = ( valueKeys[i] )? fn.cv( item.parameter[ valueKeys[i] ] ): '';
+                            if ( value ) api = api.replace( replaceTarget[i], value );
                         }
-                    }
+                    }                    
                     buttonAttrs.restapi = api;
                 }
                 
@@ -4650,7 +4651,8 @@ restApi( buttonText, method, endpoint, body ) {
                 fn.fetch( endpoint, null, method, body ).then(function( result ){
                     fn.alert( getMessage.FTE00121, result );                 
                 }).catch(function( error ){
-                    fn.alert( getMessage.FTE00121, error );
+                    const errorMessage = ( error.message )? error.message: 'Error!';
+                    fn.alert( getMessage.FTE00121, errorMessage );
                 }).then(function(){
                     process.close();
                     process = null;

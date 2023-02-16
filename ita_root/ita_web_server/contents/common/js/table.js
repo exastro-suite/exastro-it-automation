@@ -4768,7 +4768,7 @@ scheduleSettingOpen( itemId, buttonText ) {
                           m = $mbody.find(`.input[data-key="${key}_minutes"]:visible`).val(),
                           s = $mbody.find(`.input[data-key="${key}_seconds"]:visible`).val();
                     if ( h && m && s ) {
-                        after = `${h}:${fn.zeroPadding(m,2)}:${fn.zeroPadding(s,2)}`;
+                        after = `${fn.zeroPadding(h,2)}:${fn.zeroPadding(m,2)}:${fn.zeroPadding(s,2)}`;
                     }
                 } else {
                     after = $mbody.find(`.input[data-key="${key}"]:visible`).val();

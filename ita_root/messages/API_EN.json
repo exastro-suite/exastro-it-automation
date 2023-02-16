@@ -1415,6 +1415,7 @@
     "MSG-80004": "The target Workspace is not been registered. Target: {}",
     "MSG-80005": "The target Workspace is already been registered. Target: {}",
     "MSG-80006": "The target Workspace is already registered, but there is an update in the Terraform version. Target: {}",
+    "MSG-80007": "The format of the tf file is invalid. ({})",
     "MSG-90001": " The selected Protocol is invalid.",
     "MSG-90002": " The selected Visibility type is invalid.",
     "MSG-90003": " If the File's link type is anything else than Ansible-Common console/Template list, this item is not required. (Item:Variable Definition)",

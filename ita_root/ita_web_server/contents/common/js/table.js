@@ -4753,7 +4753,6 @@ scheduleSettingOpen( itemId, buttonText ) {
                   value = $target.val();
             initScheduleValue[ key ] = value;
         }
-        console.log(initScheduleValue);
         
         // モーダルで設定したスケジュールをセットする
         const setSchedule = function() {

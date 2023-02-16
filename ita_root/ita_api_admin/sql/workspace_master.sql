@@ -4,6 +4,20 @@ Extension to prohibit file upload(single byte semicolon delimiter)','0',_____DAT
 INSERT INTO T_COMN_SYSTEM_CONFIG_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,ITEM_ID,CONFIG_ID,CONFIG_NAME,VALUE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1,_____DATE_____,'INSERT',1,'FORBIDDEN_UPLOAD','Upload prohibition extension','.exe;.com;.php;.cgi;.sh;.sql;.vbs;.js;.pl;.ini;.htaccess','ファイルアップロード禁止拡張子（半角セミコロン区切り）
 
 Extension to prohibit file upload(single byte semicolon delimiter)','0',_____DATE_____,1);
+INSERT INTO T_COMN_SYSTEM_CONFIG (ITEM_ID,CONFIG_ID,CONFIG_NAME,VALUE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2,'INTERVAL_TIME','Interval time of conductor regularly execution','3','定期作業実行に登録されたConductorが未実行（予約）ステータスに遷移するまでのインターバル時間（分）
+1～525600：設定した値
+上記以外：3
+
+Minutes before the conductor, registered in the "Regularly execution" menu, changes status to "Not yet executed".
+Configured value: 1 ~ 525600
+Other than the above: 3','0',_____DATE_____,1);
+INSERT INTO T_COMN_SYSTEM_CONFIG_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,ITEM_ID,CONFIG_ID,CONFIG_NAME,VALUE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2,_____DATE_____,'INSERT',2,'INTERVAL_TIME','Interval time of conductor regularly execution','3','定期作業実行に登録されたConductorが未実行（予約）ステータスに遷移するまでのインターバル時間（分）
+1～525600：設定した値
+上記以外：3
+
+Minutes before the conductor, registered in the "Regularly execution" menu, changes status to "Not yet executed".
+Configured value: 1 ~ 525600
+Other than the above: 3','0',_____DATE_____,1);
 
 INSERT INTO T_COMN_MENU_GROUP (MENU_GROUP_ID,PARENT_MENU_GROUP_ID,MENU_GROUP_NAME_JA,MENU_GROUP_NAME_EN,MENU_GROUP_ICON,MENU_CREATE_TARGET_FLAG,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(101,NULL,'管理コンソール','Management Console','kanri.png','0',10,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_GROUP_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,MENU_GROUP_ID,PARENT_MENU_GROUP_ID,MENU_GROUP_NAME_JA,MENU_GROUP_NAME_EN,MENU_GROUP_ICON,MENU_CREATE_TARGET_FLAG,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(101,_____DATE_____,'INSERT',101,NULL,'管理コンソール','Management Console','kanri.png','0',10,NULL,'0',_____DATE_____,1);
@@ -1337,5 +1351,9 @@ INSERT INTO T_COMN_PROC_LOADED_LIST (ROW_ID,PROC_NAME,LOADED_FLG,LAST_UPDATE_TIM
 INSERT INTO T_COMN_PROC_LOADED_LIST (ROW_ID,PROC_NAME,LOADED_FLG,LAST_UPDATE_TIMESTAMP) VALUES(203,'ky_pioneer_varsautolistup-workflow','0',_____DATE_____);
 
 INSERT INTO T_COMN_PROC_LOADED_LIST (ROW_ID,PROC_NAME,LOADED_FLG,LAST_UPDATE_TIMESTAMP) VALUES(204,'ky_legacy_role_varsautolistup-workflow','0',_____DATE_____);
+
+INSERT INTO T_COMN_PROC_LOADED_LIST (ROW_ID,PROC_NAME,LOADED_FLG,LAST_UPDATE_TIMESTAMP) VALUES(801,'ky_terraform_cloud_ep_varsautolistup-workflow','0',_____DATE_____);
+
+INSERT INTO T_COMN_PROC_LOADED_LIST (ROW_ID,PROC_NAME,LOADED_FLG,LAST_UPDATE_TIMESTAMP) VALUES(901,'ky_terraform_cli_varsautolistup-workflow','0',_____DATE_____);
 
 

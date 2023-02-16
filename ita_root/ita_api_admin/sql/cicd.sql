@@ -17,6 +17,7 @@ CREATE TABLE T_CICD_REPOSITORY_LIST
     AUTO_SYNC_FLG                   VARCHAR(2),                                 -- 自動同期有無
     SYNC_INTERVAL                   INT,                                        -- 同期周期(単位:秒)
     SYNC_STATUS_ROW_ID              VARCHAR(2),                                 -- 同期状態
+    SYNC_LAST_TIMESTAMP             DATETIME(6),                                -- 最終同期日時
     SYNC_ERROR_NOTE                 TEXT,                                       -- 同期エラー時の内容
     RETRAY_INTERVAL                 INT,                                        -- リトライ周期 単位:秒
     RETRAY_COUNT                    INT,                                        -- リトライ回数
@@ -48,6 +49,7 @@ CREATE TABLE T_CICD_REPOSITORY_LIST_JNL
     AUTO_SYNC_FLG                   VARCHAR(2),                                 -- 自動同期有無
     SYNC_INTERVAL                   INT,                                        -- 同期周期(単位:秒)
     SYNC_STATUS_ROW_ID              VARCHAR(2),                                 -- 同期状態
+    SYNC_LAST_TIMESTAMP             DATETIME(6),                                -- 最終同期日時
     SYNC_ERROR_NOTE                 TEXT,                                       -- 同期エラー時の内容
     RETRAY_INTERVAL                 INT,                                        -- リトライ周期 単位:秒
     RETRAY_COUNT                    INT,                                        -- リトライ回数
@@ -97,7 +99,7 @@ CREATE TABLE T_CICD_MATL_LINK
     DEL_EXEC_TYPE                   VARCHAR(2),                                 -- 構築時のドライラン
     DEL_ERROR_NOTE                  TEXT,                                       -- 構築エラー時の内容
     DEL_EXEC_INS_NO                 VARCHAR(40),                                -- 構築時の作業インスタンス番号
-    DEL_MENU_NO                     VARCHAR(40),                                -- 構築時の作業実行確認メニューID
+    DEL_MENU_NO                     VARCHAR(128),                               -- 構築時の作業実行確認メニューID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -127,7 +129,7 @@ CREATE TABLE T_CICD_MATL_LINK_JNL
     DEL_EXEC_TYPE                   VARCHAR(2),                                 -- 構築時のドライラン
     DEL_ERROR_NOTE                  TEXT,                                       -- 構築エラー時の内容
     DEL_EXEC_INS_NO                 VARCHAR(40),                                -- 構築時の作業インスタンス番号
-    DEL_MENU_NO                     VARCHAR(40),                                -- 構築時の作業実行確認メニューID
+    DEL_MENU_NO                     VARCHAR(128),                               -- 構築時の作業実行確認メニューID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -222,30 +224,7 @@ CREATE TABLE T_CICD_MATL_FILE_TYPE
 
 
 
--- T001 リポジトリ同期状態
-CREATE TABLE T_CICD_SYNC_STATUS
-(
-    ROW_ID                          VARCHAR(40),                                -- 項番
-    SYNC_LAST_TIMESTAMP             DATETIME(6),                                -- 最終同期日時
-    PRIMARY KEY(ROW_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
-
--- V001 リモートリポジトリ管理とリポジトリ同期状態の結合ビュ
-CREATE VIEW V_CICD_REPOSITORY_SYNCSTS_LINK AS
-SELECT
-    TAB_A.*,
-    TAB_B.ROW_ID,                     -- リポジトリ一覧 項番
-    TAB_B.SYNC_LAST_TIMESTAMP         -- 最終同期日時
-FROM
-    T_CICD_REPOSITORY_LIST TAB_A
-    LEFT JOIN T_CICD_SYNC_STATUS TAB_B ON ( TAB_A.REPO_ROW_ID = TAB_B.ROW_ID );
-
-
-
--- V002 リモートリポジトリとリポジトリ資材の結合ビュー
+-- V001 リモートリポジトリとリポジトリ資材の結合ビュー
 CREATE VIEW V_CICD_REPOSITORY_MATL_PATH_LINK AS
 SELECT
      CONCAT(TAB_1.REPO_NAME,':',TAB_2.MATL_FILE_PATH)     MATL_FILE_PATH_PULLDOWN,

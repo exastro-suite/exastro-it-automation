@@ -316,6 +316,14 @@ background-color: #2C3034;
 .commonTd {
 background-color: #26292D;
 }
+.commonErrorItem {
+background-color: #280000;
+border-color: #A00000;
+color: #D00;
+}
+.commonErrorItem > .icon {
+color: #D00;
+}
 
 .dialogBody {
 background-color: #222528;
@@ -687,4 +695,8 @@ background-image: linear-gradient( rgba( 255,255,255,.1 ), rgba( 255,255,255,.05
 }
 .exportImportMenuGroupList, .exportImportSubMenuGroupList {
 background-color: rgba(0,0,0,.2);
+}
+
+.schedulePeriodRadioList {
+border-bottom-color: var(--black75);
 }

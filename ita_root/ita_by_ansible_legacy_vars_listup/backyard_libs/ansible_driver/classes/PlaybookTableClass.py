@@ -60,7 +60,6 @@ class PlaybookTable(TableBase):
 
             # 変数抽出
             for var_name in result_vars[AnscConst.DF_VAR_TYPE_VAR]:
-                print(f"PlaybookTableClass.py Line63: {var_name}")
                 result_dict[playbook_matter_id].add(var_name)
 
             # テンプレート内の変数抽出

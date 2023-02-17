@@ -18,66 +18,52 @@ import os
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 from common_libs.ansible_driver.classes.SubValueAutoReg import SubValueAutoReg
-from backyard_libs.ansible_driver.classes.VariableClass import Variable
-from backyard_libs.ansible_driver.classes.VariableManagerClass import VariableManager
 
 """
 ライブラリ
 """
 
 
-def extract_variable_for_movement(mov_records, mov_matl_lnk_records, dialog_varmgr_dict):
+def extract_variable_for_movement(mov_records, mov_matl_lnk_records, dialog_vars_dict):
     """
     変数を抽出する（movement）
 
     Arguments:
         mov_records: { pkey: { COL_NAME: value, ... }, ... }
         mov_matl_lnk_records: { pkey: { COL_NAME: value, ... }, ... }
+        dialog_vars_dict: { dialog_matter_id: set(var_name), ... }
 
     Returns:
-        mov_vars_dict: { (movement_id): VariableManager }
+        mov_vars_dict: { (movement_id): set(var_name), ... }
     """
     g.applogger.debug("[Trace] Call util.extract_variable_for_movement()")
 
-    mov_vars_dict = {mov_id: VariableManager() for mov_id in mov_records.keys()}
+    mov_vars_dict = {}
 
-    var_extractor = WrappedStringReplaceAdmin()
     for matl_lnk in mov_matl_lnk_records.values():
+        # Movementごとの対話ファイル変数の追加
         movement_id = matl_lnk['MOVEMENT_ID']
-        mov_vars_mgr = mov_vars_dict[movement_id]
+        dialog_matter_id = matl_lnk['DIALOG_MATTER_ID']
 
-        # Movementの追加オプションの変数の追加
-        ans_exec_options = mov_records[movement_id]['ANS_EXEC_OPTIONS']
+        if movement_id not in mov_vars_dict:
+            mov_vars_dict[movement_id] = set()
 
-        var_heder_id = AnscConst.DF_HOST_VAR_HED  # VAR変数
-        mt_varsLineArray = []  # [{行番号:変数名}, ...]
-        mt_varsArray = []  # 不要
-        arrylocalvars = []  # 不要
-        is_success, mt_varsLineArray = var_extractor.SimpleFillterVerSearch(var_heder_id, ans_exec_options, mt_varsLineArray, mt_varsArray, arrylocalvars)  # noqa: E501
-        for mov_var in mt_varsLineArray:
-            for line_no, var_name in mov_var.items():  # forで回すが要素は1つしかない
-                var_attr = AnscConst.GC_VARS_ATTR_STD
-                item = Variable(var_name, var_attr)
-
-                # item を add するがオプション変数扱い
-                mov_vars_mgr.add_variable(item, is_option_var=True)
-
-        mov_vars_dict[movement_id] = mov_vars_mgr
+        mov_vars_dict[movement_id] |= dialog_vars_dict[dialog_matter_id]
 
     return mov_vars_dict
 
 
-def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, ws_db):
+def extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, ws_db):
     """
     変数を抽出する（実行時相当）
 
     Arguments:
-        mov_vars_dict: { (movement_id): VariableManager, ... }
-        tpl_varmng_dict: { (tpl_var_name): VariableManager, ... }
+        mov_vars_dict: { (movement_id): set(var_name), ... }
+        tpl_vars_dict: { (tpl_var_name): set(var_name), ... }
         ws_db: DBConnectWs
 
     Returns:
-        mov_vars_dict: { (movement_id): VariableManager }
+        mov_vars_dict: { (movement_id): set(var_name) }
     """
     g.applogger.debug("[Trace] Call util.extract_variable_for_execute()")
 
@@ -89,6 +75,6 @@ def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, ws_db):
 
     for movement_id, tpl_var_set in template_list.items():
         tpl_var_name = tpl_var_set.keys()[0]
-        mov_vars_dict[movement_id].merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
+        mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
 
     return mov_vars_dict

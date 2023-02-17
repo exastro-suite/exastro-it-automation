@@ -12,12 +12,9 @@
 # limitations under the License.
 #
 
-import os
-
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath, getPioneerDialogUploadDirPath
-from flask import g
 
 
 class MaterialVarsAnalyzer():
@@ -41,21 +38,19 @@ class MaterialVarsAnalyzer():
         """
 
         data_string = self._read_material_file(uuid, file_name)
-        print(f"MaterialVarsAnalyzerClass.py Line43: {data_string}")
-        var_extractor = WrappedStringReplaceAdmin()
+        var_extractor = WrappedStringReplaceAdmin(self._ws_db)
+        FillterVars = True  # Fillterを含む変数の抜き出しあり
         result_vars = {}
 
         # VAR変数
-        is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(AnscConst.DF_HOST_VAR_HED, data_string, [], [], [])
+        is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(AnscConst.DF_HOST_VAR_HED, data_string, [], [], [], FillterVars)
         vars_array = self._vars_line_array_to_vars_array(vars_line_array)
         result_vars[AnscConst.DF_VAR_TYPE_VAR] = vars_array
 
-        if AnscConst.DF_LEGACY_DRIVER_ID == self._driver_id:
-            # TPF変数
-            FillterVars = True  # Fillterを含む変数の抜き出しあり
-            is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(AnscConst.DF_HOST_TPF_HED, data_string, [], [], [], FillterVars)
-            vars_array = self._vars_line_array_to_vars_array(vars_line_array)
-            result_vars[AnscConst.DF_VAR_TYPE_TPF] = vars_array
+        # TPF変数
+        is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(AnscConst.DF_HOST_TPF_HED, data_string, [], [], [], FillterVars)
+        vars_array = self._vars_line_array_to_vars_array(vars_line_array)
+        result_vars[AnscConst.DF_VAR_TYPE_TPF] = vars_array
 
         return result_vars
 
@@ -69,7 +64,6 @@ class MaterialVarsAnalyzer():
             raise NotImplementedError()
 
         file_path = "{}/{}/{}".format(upload_column_path, uuid, file_name)
-        print(file_path)
 
         with open(file_path, "rb") as f:
             result = f.read().decode('utf-8')

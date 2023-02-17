@@ -40,11 +40,10 @@ class MovementVarsLinkTable(TableBase):
         g.applogger.debug(f"[Trace] Call {self.__class__.__name__} register_and_discard()")
 
         extracted_records_by_tuple_key = {}
-        for movement_id, varmng in mov_vars_dict.items():
-            mov_vars_list = varmng.export_var_list()
-            for mov_vars_item in mov_vars_list:
-                tuple_key = (movement_id, mov_vars_item.var_name)
-                extracted_records_by_tuple_key[tuple_key] = mov_vars_item
+        for movement_id, vars_set in mov_vars_dict.items():
+            for var_name in vars_set:
+                tuple_key = (movement_id, var_name)
+                extracted_records_by_tuple_key[tuple_key] = var_name
 
         extracted_keys = extracted_records_by_tuple_key.keys()
 
@@ -61,11 +60,10 @@ class MovementVarsLinkTable(TableBase):
         for_register_keys = extracted_keys - stored_keys
         register_list = []
         for key in for_register_keys:
-            var_item = extracted_records_by_tuple_key[key]
+            var_name = extracted_records_by_tuple_key[key]
             register_list.append({
                 'MOVEMENT_ID': key[0],
-                'VARS_NAME': var_item.var_name,
-                'VARS_ATTRIBUTE_01': var_item.var_attr,
+                'VARS_NAME': var_name,
                 'DISUSE_FLAG': '0',
                 'LAST_UPDATE_USER': user_id
             })

@@ -142,7 +142,7 @@ def getLegacyPlaybookUploadDirPath():
       Returns:
         作業管理結果データディレクトリバス
     """
-    return getDataRelayStorageDir() + "/uploadfiles/20202/playbook_files"
+    return getDataRelayStorageDir() + "/uploadfiles/20202/playbook_file"
 
 
 def getPioneerDialogUploadDirPath():

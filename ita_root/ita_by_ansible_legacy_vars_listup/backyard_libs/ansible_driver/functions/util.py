@@ -29,6 +29,7 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_va
     Arguments:
         mov_records: { pkey: { COL_NAME: value, ... }, ... }
         mov_matl_lnk_records: { pkey: { COL_NAME: value, ... }, ... }
+        playbook_vars_dict: { playbook_matter_id: set(var_name), ... }
 
     Returns:
         mov_vars_dict: { (movement_id): set(var_name), ...  }
@@ -41,12 +42,12 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_va
     for matl_lnk in mov_matl_lnk_records.values():
         # Movementごとのplaybook変数の追加
         movement_id = matl_lnk['MOVEMENT_ID']
-        playbook_id = matl_lnk['PLAYBOOK_MATTER_ID']
+        playbook_matter_id = matl_lnk['PLAYBOOK_MATTER_ID']
 
         if movement_id not in mov_vars_dict:
             mov_vars_dict[movement_id] = set()
 
-        mov_vars_dict[movement_id] |= playbook_vars_dict[playbook_id]
+        mov_vars_dict[movement_id] |= playbook_vars_dict[playbook_matter_id]
 
     for movement_id, vars_set in mov_vars_dict.items():
         # Movementの追加オプションの変数の追加

@@ -11,10 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from flask import g
 import json
 
-from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from flask import g
+
 from .TableBaseClass import TableBase
 
 

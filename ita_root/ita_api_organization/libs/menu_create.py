@@ -127,7 +127,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         "sheet_type_name": sheet_type_name,
         "disp_seq": ret[0].get('DISP_SEQ'),
         "vertical": vertical,
-        ### "hostgroup": hostgroup,
+        "hostgroup": hostgroup,
         "menu_group_for_input_id": menu_group_for_input_id,
         "menu_group_for_subst_id": menu_group_for_subst_id,
         "menu_group_for_ref_id": menu_group_for_ref_id,
@@ -836,7 +836,7 @@ def _insert_t_menu_define(objdbca, menu_data):
                 "description_en": menu_data.get('description'),  # 説明(en)
                 "remarks": menu_data.get('remarks'),  # 備考
                 "vertical": vertical,  # 縦メニュー利用有無
-                ### "hostgroup": hostgroup,  # ホストグループ利用有無
+                "hostgroup": hostgroup,  # ホストグループ利用有無
                 "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                 "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
                 "menu_group_for_ref": menu_data.get('menu_group_for_ref')  # 参照用メニューグループ名
@@ -935,9 +935,9 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
             if not current_vertical == vertical_id:
                 raise Exception("499-00704", ["vertical"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
-            ### hostgroup_id = "1" if hostgroup == "True" else "0"
-            ### if not current_hostgroup == hostgroup_id:
-            ###     raise Exception("499-00704", ["hostgroup"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
+            hostgroup_id = "1" if hostgroup == "True" else "0"
+            if not current_hostgroup == hostgroup_id:
+                raise Exception("499-00704", ["hostgroup"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
         # 対象のuuidを取得
         menu_create_id = menu_data.get('menu_create_id')
@@ -1896,8 +1896,8 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
             raise Exception("499-00712", [])  # 「縦メニュー利用」の場合、項目数が0件のメニューを作成できません。
 
         # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
-        ### if sheet_id == "2" and hostgroup == "True":
-        ###    raise Exception("499-00713", [])
+        if sheet_id == "2" and hostgroup == "True":
+            raise Exception("499-00713", [])
 
         # ロールを取得
         role_list = menu_data.get('role_list')

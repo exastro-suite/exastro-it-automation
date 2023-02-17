@@ -424,6 +424,8 @@ CREATE TABLE T_TERE_EXEC_STS_INST
     TIME_BOOK                       DATETIME(6),                                -- 作業状況/予約日時
     TIME_START                      DATETIME(6),                                -- 作業状況/開始日時
     TIME_END                        DATETIME(6),                                -- 作業状況/終了日時
+    LOGFILELIST_JSON                TEXT,                                       -- 分割された実行ログ情報
+    MULTIPLELOG_MODE                INT,                                        -- 実行ログ分割フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -456,6 +458,8 @@ CREATE TABLE T_TERE_EXEC_STS_INST_JNL
     TIME_BOOK                       DATETIME(6),                                -- 作業状況/予約日時
     TIME_START                      DATETIME(6),                                -- 作業状況/開始日時
     TIME_END                        DATETIME(6),                                -- 作業状況/終了日時
+    LOGFILELIST_JSON                TEXT,                                       -- 分割された実行ログ情報
+    MULTIPLELOG_MODE                INT,                                        -- 実行ログ分割フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

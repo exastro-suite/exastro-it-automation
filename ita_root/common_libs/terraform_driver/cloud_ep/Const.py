@@ -11,13 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+from common_libs.terraform_driver.common.Const import Const as CommonConst
 """
 terraformドライバー（terraform Cloud/EP）に必要な定数定義モジュール
 """
 
 
-class Const:
+class Const(CommonConst):
     """
     terraformドライバー（terraform Cloud/EP）に必要な定数定義クラス
     """
@@ -94,3 +94,21 @@ class Const:
     DIR_RESILT_DATA = '/uploadfiles/80114/result_data'  # 結果データ
     DIR_EXECUTE = '/driver/terraform_cloud_ep/execute'  # 作業状態確認
     DIR_TEMP = '/tmp/driver/terraform_cloud_ep'  # Temporary
+
+    # Terraform RUN Status
+    TF_RUN_CANCEL = 'canceled'
+
+    # Terraform Plan Status
+    TF_PLAN_ERROR = 'errored'
+    TF_PLAN_FINISH = 'finished'
+    TF_PLAN_CANCEL = 'canceled'
+    TF_PLAN_RUNNING = 'running'
+
+    # Terraform Apply Status
+    TF_APPLY_ERROR = 'errored'
+    TF_APPLY_FINISH = 'finished'
+    TF_APPLY_CANCEL = 'canceled'
+    TF_APPLY_UNREACH = 'unreachable'
+    TF_APPLY_RUNNING = 'running'
+
+

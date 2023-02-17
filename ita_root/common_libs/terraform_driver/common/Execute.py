@@ -20,7 +20,9 @@ from common_libs.common.util import get_exastro_platform_users
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
-
+import os
+import json
+import pathlib
 
 def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_row, scheduled_date=None, conductor_id=None, conductor_name=None):
     """
@@ -172,8 +174,11 @@ def get_execution_info(objdbca, target, execution_no):
         RETRUN:
             data
     """
+    base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
+    execution_list_menu_name_rest = target['execution_list']
+
     # 該当の作業管理を取得(ID変換のためloadTableで取得)
-    objmenu = load_table.loadTable(objdbca, target['execution_list'])  # noqa: F405
+    objmenu = load_table.loadTable(objdbca, execution_list_menu_name_rest)  # noqa: F405
     filter_parameter = {
         "execution_no": {"LIST": [execution_no]}
     }
@@ -202,41 +207,43 @@ def get_execution_info(objdbca, target, execution_no):
     # ステータスIDはコード値も返却
     execution_info['status_id'] = table_row['STATUS_ID']
 
-    # ####メモ：ログファイルの取得について未実装
-    # # ログ情報
+    # ログ情報
     execution_info['progress'] = {}
     execution_info['progress']['execution_log'] = {}
     execution_info['progress']['execution_log']['exec_log'] = {}
+    if execution_list_menu_name_rest == TFCloudEPConst.RN_EXECUTION_LIST:
+        path = base_dir + TFCloudEPConst.DIR_EXECUTE + '/' + execution_no
+    else:
+        path = base_dir + TFCLIConst.DIR_EXECUTE + '/' + execution_no
 
-    # path = getAnsibleExecutDirPath(target['ansConstObj'], execution_no)
-    # if table_row['MULTIPLELOG_MODE'] == 1:
-    #     if not table_row['LOGFILELIST_JSON']:
-    #         list_log = []
-    #     else:
-    #         list_log = json.loads(table_row['LOGFILELIST_JSON'])
-    #     for log in list_log:
-    #         log_file_path = path + '/out/' + log
-    #         if os.path.isfile(log_file_path):
-    #             lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
-    #             execution_info['progress']['execution_log']['exec_log'][log] = lcstr
+    # print("対象のパスは：")
+    # print(path)
+    if table_row['MULTIPLELOG_MODE'] == 1:
+        if not table_row['LOGFILELIST_JSON']:
+            list_log = []
+        else:
+            list_log = json.loads(table_row['LOGFILELIST_JSON'])
+        for log in list_log:
+            log_file_path = path + '/out/' + log
+            if os.path.isfile(log_file_path):
+                lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+                execution_info['progress']['execution_log']['exec_log'][log] = lcstr
 
-    # log_file_path = path + '/out/exec.log'
-    # if os.path.isfile(log_file_path):
-    #     lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
-    #     execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
+    log_file_path = path + '/out/error.log'
+    if os.path.isfile(log_file_path):
+        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+        execution_info['progress']['execution_log']['error_log'] = lcstr
 
-    # log_file_path = path + '/out/error.log'
-    # if os.path.isfile(log_file_path):
-    #     lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
-    #     execution_info['progress']['execution_log']['error_log'] = lcstr
-
-    # ####メモ：進行状態表示件数の取得について未実装
-    # # 状態監視周期・進行状態表示件数
-    # where = ""
-    # tmp_data_list = objdbca.table_select("T_ANSC_IF_INFO", where)
-    # for tmp_row in tmp_data_list:
-    #     execution_info['status_monitoring_cycle'] = tmp_row['ANSIBLE_REFRESH_INTERVAL']
-    #     execution_info['number_of_rows_to_display_progress_status'] = tmp_row['ANSIBLE_TAILLOG_LINES']
+    # 状態監視周期・進行状態表示件数
+    if execution_list_menu_name_rest == TFCloudEPConst.RN_EXECUTION_LIST:
+        if_info_table = TFCloudEPConst.T_IF_INFO
+    else:
+        if_info_table = TFCLIConst.T_IF_INFO
+    where = ""
+    tmp_data_list = objdbca.table_select(if_info_table, where)
+    for tmp_row in tmp_data_list:
+        execution_info['status_monitoring_cycle'] = tmp_row['TERRAFORM_REFRESH_INTERVAL']
+        execution_info['number_of_rows_to_display_progress_status'] = tmp_row['TERRAFORM_TAILLOG_LINES']
 
     return execution_info
 

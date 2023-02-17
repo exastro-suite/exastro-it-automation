@@ -26,7 +26,7 @@ class Const:
     STATUS_NOT_YET = '1'            # 未実行
     STATUS_PREPARE = '2'            # 準備中
     STATUS_PROCESSING = '3'         # 実行中
-    PROCESS_DELAYED = '4'           # 実行中(遅延)
+    STATUS_PROCESS_DELAYED = '4'    # 実行中(遅延)
     STATUS_COMPLETE = '5'           # 完了
     STATUS_FAILURE = '6'            # 完了(異常)
     STATUS_EXCEPTION = '7'          # 想定外エラー

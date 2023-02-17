@@ -271,7 +271,6 @@ def create_organization(objdbca, parameters):
         raise AppException("999-99999", [], [])  # noqa: F405
 
     # contentsを作成
-    print(parameters)
     tf_organization_name = parameters.get('tf_organization_name')
     email_address = parameters.get('email_address')
     request_contents = {

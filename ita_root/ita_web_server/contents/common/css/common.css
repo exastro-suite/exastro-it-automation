@@ -3876,7 +3876,7 @@ border-color: rgba( 0,0,0,.2 );
 .startCell .calButton,
 .endCell .calButton,
 .currentCell .calButton {
-background-color: var(--mainColor80)!important;
+background-color: var(--accentColor80)!important;
 color: var(--white100)!important;
 }
 .calTd.sat .calButton {
@@ -3931,7 +3931,7 @@ padding-left: 2px;
 .startCell .calTdInner {
 padding-left: 2px;
 border-radius: 17px 0 0 17px;
-background-color: var(--mainColor10);
+background-color: var(--accentColor20);
 }
 .endCell {
 padding-right: 2px;
@@ -3939,10 +3939,10 @@ padding-right: 2px;
 .endCell .calTdInner {
 padding-right: 2px;
 border-radius: 0 17px 17px 0;
-background-color: var(--mainColor10);
+background-color: var(--accentColor20);
 }
 .periodCell .calTdInner {
-background-color: var(--mainColor10);
+background-color: var(--accentColor20);
 }
 .startCell.endCell .calTdInner {
 padding: 2px;
@@ -4354,7 +4354,7 @@ padding: 16px;
 .commonTitle {
 position: sticky;
 top: 0;
-z-index: 20;
+z-index: 30;
 display: flex;
 align-items: center;
 width: 100%;
@@ -4639,6 +4639,80 @@ margin-top: 16px;
 }
 .tableInputColorTable.colorOpen {
 display: block;
+}
+
+.commonErrorList {
+padding-top: 8px;
+}
+.commonErrorItem {
+overflow: hidden;
+margin-bottom: 4px;
+padding: 8px 8px 7px;
+background-color: #FAE5E5;
+border: 1px solid #D33333;
+border-radius: 4px;
+word-break: break-all;
+color: #C80000;
+}
+.commonErrorItem:last-child {
+margin-bottom: 0;
+}
+.commonErrorItem > .icon {
+margin-right: .5em;
+color: #C80000;
+}
+
+/*
+##################################################
+   Schedule
+##################################################
+*/
+.scheduleInputFromToDate {
+overflow: auto;
+}
+.scheduleInputFromToDate .commonInputTable {
+width: auto;
+}
+.scheduleInput {
+width: 168px;
+}
+.schedulePeriodRadioList {
+flex-wrap: wrap;
+margin-bottom: 16px; padding-bottom: 12px;
+border-bottom: 1px solid var(--black20);
+}
+.schedulePeriodRadioItem {
+width: calc( 100% / 3 );
+}
+.schedulePeriodInput {
+width: 64px;
+}
+.schedulePeriodDetailTr .inputFaderAfter {
+width: auto;
+padding: 0 8px;
+white-space: nowrap;
+}
+.scheduleSelect {
+display: inline-block;
+width: auto; min-width: auto;
+}
+.schedulePeriodDetailTr {
+display: none;
+}
+.commonInputTable .period_T,
+.commonInputTable[data-type="period_1"] .period_1,
+.commonInputTable[data-type="period_2"] .period_2,
+.commonInputTable[data-type="period_3"] .period_3,
+.commonInputTable[data-type="period_4"] .period_4,
+.commonInputTable[data-type="period_5"] .period_5,
+.commonInputTable[data-type="period_6"] .period_6 {
+display: table-row;
+}
+.commonInputTable[data-type="period_1"] .period_T {
+display: none;
+}
+.scheduleNote {
+resize: vertical;
 }
 
 /*

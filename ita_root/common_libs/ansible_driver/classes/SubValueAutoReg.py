@@ -2152,7 +2152,7 @@ class SubValueAutoReg():
             if len(vars_line_array) == 1:
                 if movement_id not in template_list:
                     template_list[movement_id] = {}
-                row_num, tpf_var_name = vars_line_array[0]
+                tpf_var_name = list(vars_line_array[0].values())[0]
                 template_list[movement_id][tpf_var_name] = 0
 
         # 作業対象ホストの情報を退避

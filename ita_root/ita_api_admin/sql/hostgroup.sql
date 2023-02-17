@@ -3,7 +3,7 @@ CREATE TABLE T_HGSP_HOSTGROUP_LIST
 (
     ROW_ID                          VARCHAR(40),                                -- ホストグループID
     HOSTGROUP_NAME                  VARCHAR(255),                               -- ホストグループ名
-    PRIORITY                        VARCHAR(40),                                -- 優先順位
+    PRIORITY                        INT,                                        -- 優先順位
     NOTE                            VARCHAR(4000),                              -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -18,7 +18,7 @@ CREATE TABLE T_HGSP_HOSTGROUP_LIST_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     ROW_ID                          VARCHAR(40),                                -- ホストグループID
     HOSTGROUP_NAME                  VARCHAR(255),                               -- ホストグループ名
-    PRIORITY                        VARCHAR(40),                                -- 優先順位
+    PRIORITY                        INT,                                        -- 優先順位
     NOTE                            VARCHAR(4000),                              -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時

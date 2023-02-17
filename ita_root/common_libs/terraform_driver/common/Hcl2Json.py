@@ -15,17 +15,6 @@ import hcl2
 import json
 import re
 
-# ####メモ：呼び出し方例
-# # file_path = "/storage/org1/workspace-1/uploadfiles/80105/module_file/d252cb3a-a6f7-4425-bcdd-5117ddad793b/variable.tf"
-# # file_path = "/exastro/list_list_str.tf"
-# file_path = "/exastro/obj_obj_tuple.tf"
-# hcl2json = HCL2JSONParse(file_path)
-# ret = hcl2json.executeParse()
-# if ret:
-    # result = hcl2json.getParseResult()
-# print("呼び出し元の最終的なresultは：")
-# print(result)
-
 
 class HCL2JSONParse():
     """
@@ -73,9 +62,6 @@ class HCL2JSONParse():
                 parse_result = hcl2.load(file)
                 result_json = json.dumps(parse_result)
 
-            print("パーサー実行結果")
-            print(parse_result)
-
             # typeがnullの場合を考慮し、処理しやすい形に変換
             pattern = r'\"type\"\:\s(null)'
             replacement = r'"type": "${null}"'
@@ -97,137 +83,139 @@ class HCL2JSONParse():
                     block_default = block.get('default')
                     type_str = block.get('type')
 
-                    # typeのエスケープ文字を消去
-                    pattern = r'\\'
-                    replacement = r''
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                    # type_strがNoneではない場合は整形処理を通す
+                    if type_str:
+                        # typeのエスケープ文字を消去
+                        pattern = r'\\'
+                        replacement = r''
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    pattern = r'/\"(.*?)\"/'
-                    replacement = r'\'\1\''
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        pattern = r'/\"(.*?)\"/'
+                        replacement = r'\'\1\''
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    pattern = r'\'(.*?)\''
-                    replacement = r'"\1"'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        pattern = r'\'(.*?)\''
+                        replacement = r'"\1"'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    type_str = '"' + type_str + '"'
+                        type_str = '"' + type_str + '"'
 
-                    # ),)のカンマを削除
-                    pattern = r'\)\,\)'
-                    replacement = r'))'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # ),)のカンマを削除
+                        pattern = r'\)\,\)'
+                        replacement = r'))'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # typeがlist/setの場合の対応(1~4)
-                    # 1. list(string) => list(string) 代入順序なし、メンバー変数なしの場合は対応なし
-                    # pattern = r'\$\{([a-z]+?)\(([a-z]+?)\((.*?)\)\)\}'
-                    # replacement = r'"${\1(\2)}"'
+                        # typeがlist/setの場合の対応(1~4)
+                        # 1. list(string) => list(string) 代入順序なし、メンバー変数なしの場合は対応なし
+                        # pattern = r'\$\{([a-z]+?)\(([a-z]+?)\((.*?)\)\)\}'
+                        # replacement = r'"${\1(\2)}"'
 
-                    # 2. list(list(string)) => ${list(list)} + ${list(string)}
-                    pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\((.*?)\)\)\}\"'
-                    replacement = r'{"${\1(\2)}": ["${\2(\3)}"]}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # 2. list(list(string)) => ${list(list)} + ${list(string)}
+                        pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\((.*?)\)\)\}\"'
+                        replacement = r'{"${\1(\2)}": ["${\2(\3)}"]}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # 3. tuple
-                    pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\(\[(.*)\]\)\)\}\"'
-                    replacement = r'{"${\1}": ["${\2([\3])}"]}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # 3. tuple
+                        pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\(\[(.*)\]\)\)\}\"'
+                        replacement = r'{"${\1}": ["${\2([\3])}"]}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # 4. object
-                    pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\(\{(.*)\}\)\)\}\"'
-                    replacement = r'{"${\1}": ["${\2({\3})}"]}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # 4. object
+                        pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\(\{(.*)\}\)\)\}\"'
+                        replacement = r'{"${\1}": ["${\2({\3})}"]}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # typeがtupleの場合の対応
-                    # 入れ子になっている場合
-                    pattern = r'\"\$\{([a-z]+?)\(\[(.*)\]\)\}\"'
-                    replacement = r'{"${\1}": [\2]}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # typeがtupleの場合の対応
+                        # 入れ子になっている場合
+                        pattern = r'\"\$\{([a-z]+?)\(\[(.*)\]\)\}\"'
+                        replacement = r'{"${\1}": [\2]}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    pattern = r'\$\{([a-z]+?)\(\[(.*)\]\)\}'
-                    replacement = r'{"${\1}": [\2]}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        pattern = r'\$\{([a-z]+?)\(\[(.*)\]\)\}'
+                        replacement = r'{"${\1}": [\2]}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # 入れ子以外で並んでいる場合
-                    pattern = r'\"\$\{([a-z]*?)\(\[(.*)\]\)\}\"'
-                    replacement = r'{"${\1}": [\2]}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # 入れ子以外で並んでいる場合
+                        pattern = r'\"\$\{([a-z]*?)\(\[(.*)\]\)\}\"'
+                        replacement = r'{"${\1}": [\2]}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    pattern = r'\]\)\}\"(.*)\"\$\{([a-z]*?)\(\[(.*)'
-                    replacement = r']}\1{"${\2}": [\3'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        pattern = r'\]\)\}\"(.*)\"\$\{([a-z]*?)\(\[(.*)'
+                        replacement = r']}\1{"${\2}": [\3'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # typeがobjectの場合
-                    # 入れ子になっている場合
-                    pattern = r'\"\$\{([a-z]+?)\(\{(.*)\}\)\}\"'
-                    replacement = r'{"${\1}": {\2}}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # typeがobjectの場合
+                        # 入れ子になっている場合
+                        pattern = r'\"\$\{([a-z]+?)\(\{(.*)\}\)\}\"'
+                        replacement = r'{"${\1}": {\2}}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # 入れ子以外で並んでいる場合
-                    pattern = r'\"\$\{([a-z]*?)\(\{(.*)\}\)\}\"'
-                    replacement = r'{"${\1}": {\2}}'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # 入れ子以外で並んでいる場合
+                        pattern = r'\"\$\{([a-z]*?)\(\{(.*)\}\)\}\"'
+                        replacement = r'{"${\1}": {\2}}'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    pattern = r'\}\)\}\"(.*)\"\$\{([a-z]*?)\(\{(.*)'
-                    replacement = r'}}\1{"${\2}": {\3'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        pattern = r'\}\)\}\"(.*)\"\$\{([a-z]*?)\(\{(.*)'
+                        replacement = r'}}\1{"${\2}": {\3'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # typeがNoneの場合の対応
-                    pattern = r'\"(.*?)\\:\s(None)\"'
-                    replacement = r'\1: "${null}"'
-                    match = re.findall(pattern, type_str)
-                    if match:
-                        type_str = re.sub(pattern, replacement, type_str)
+                        # typeがNoneの場合の対応
+                        pattern = r'\"(.*?)\\:\s(None)\"'
+                        replacement = r'\1: "${null}"'
+                        match = re.findall(pattern, type_str)
+                        if match:
+                            type_str = re.sub(pattern, replacement, type_str)
 
-                    # json.loads可能かどうかを判定し、可能であれば実行
-                    try:
-                        block_type = json.loads(type_str)
-                    except json.JSONDecodeError:
-                        block_type = type_str
+                        # json.loads可能かどうかを判定し、可能であれば実行
+                        try:
+                            block_type = json.loads(type_str)
+                        except Exception:
+                            block_type = type_str
 
-                    # map型が含まれる場合はすべてをmap型とみなす
-                    is_map_flag = self.isMapCheck(block_type, False)
-                    if is_map_flag:
-                        block_type = '${map}'
+                        # map型が含まれる場合はすべてをmap型とみなす
+                        is_map_flag = self.isMapCheck(block_type, False)
+                        if is_map_flag:
+                            block_type = '${map}'
+
+                        # Module変数紐付管理に登録するための値に変換
+                        module_record_type = self.getModuleRecord(block_type)
+
+                        # typeのvalueについている${}を除外
+                        pattern = r'^\$\{(.*?)\}$'
+                        match = re.findall(pattern, module_record_type)
+                        if match:
+                            block_type_str = match[0]
 
                     # 変換前のtypeをセット
                     convert_block['type'] = block_type
-
-                    # Module変数紐付管理に登録するための値に変換
-                    module_record_type = self.getModuleRecord(block_type)
-
-                    # typeのvalueについている${}を除外
-                    pattern = r'^\$\{(.*?)\}$'
-                    match = re.findall(pattern, module_record_type)
-                    if match:
-                        block_type_str = match[0]
 
                     # string型に変換したtypeをセット
                     convert_block['type_str'] = block_type_str
@@ -237,7 +225,6 @@ class HCL2JSONParse():
 
                     # defaultをセット
                     convert_block['default'] = block_default
-
                     # variable_block_listに格納
                     self.variable_block_list.append(convert_block)
 

@@ -364,7 +364,7 @@ CREATE TABLE T_TERE_VALUE_AUTOREG
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
     COL_TYPE                        VARCHAR(2),                                 -- 登録方式
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
-    MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 変数名(ID連携)
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名(ID連携)
     HCL_FLAG                        VARCHAR(2),                                 -- HCL設定
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数(ID連携)
     ASSIGN_SEQ                      INT,                                        -- 代入順序
@@ -387,7 +387,7 @@ CREATE TABLE T_TERE_VALUE_AUTOREG_JNL
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
     COL_TYPE                        VARCHAR(2),                                 -- 登録方式
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
-    MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 変数名(ID連携)
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名(ID連携)
     HCL_FLAG                        VARCHAR(2),                                 -- HCL設定
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数(ID連携)
     ASSIGN_SEQ                      INT,                                        -- 代入順序
@@ -476,7 +476,7 @@ CREATE TABLE T_TERE_VALUE
     EXECUTION_NO                    VARCHAR(40),                                -- 作業No.
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション(ID連携)
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
-    MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 変数名(ID連携)
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名(ID連携)
     HCL_FLAG                        VARCHAR(2),                                 -- HCL設定
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数名(ID連携)
     ASSIGN_SEQ                      INT,                                        -- 代入順序
@@ -498,7 +498,7 @@ CREATE TABLE T_TERE_VALUE_JNL
     EXECUTION_NO                    VARCHAR(40),                                -- 作業No.
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション(ID連携)
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
-    MODULE_VARS_LINK_ID             VARCHAR(40),                                -- 変数名(ID連携)
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- 変数名(ID連携)
     HCL_FLAG                        VARCHAR(2),                                 -- HCL設定
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数名(ID連携)
     ASSIGN_SEQ                      INT,                                        -- 代入順序
@@ -648,6 +648,29 @@ SELECT
         LAST_UPDATE_TIMESTAMP,
         LAST_UPDATE_USER
 FROM    T_TERE_VAR_MEMBER AS TAB_A;
+
+
+
+-- Movement-変数紐付(VIEW)
+CREATE OR REPLACE VIEW V_TERE_MVMT_VAR_LINK AS
+SELECT
+        TAB_A.MVMT_VAR_LINK_ID,
+        TAB_A.MOVEMENT_ID,
+        TAB_B.MOVEMENT_NAME,
+        TAB_A.MODULE_VARS_LINK_ID,
+        TAB_C.MODULE_MATTER_ID,
+        TAB_C.VARS_NAME,
+        TAB_C.TYPE_ID,
+        TAB_C.VARS_VALUE,
+        CONCAT(TAB_B.MOVEMENT_NAME,':',TAB_C.VARS_NAME) MOVEMENT_VARS_NAME,
+        TAB_A.NOTE,
+        TAB_A.DISUSE_FLAG,
+        TAB_A.LAST_UPDATE_TIMESTAMP,
+        TAB_A.LAST_UPDATE_USER
+FROM    T_TERE_MVMT_VAR_LINK AS TAB_A
+LEFT JOIN V_TERE_MOVEMENT TAB_B ON ( TAB_A.MOVEMENT_ID = TAB_B.MOVEMENT_ID )
+LEFT JOIN T_TERE_MOD_VAR_LINK TAB_C ON ( TAB_A.MODULE_VARS_LINK_ID = TAB_C.MODULE_VARS_LINK_ID )
+;
 
 
 

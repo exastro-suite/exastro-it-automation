@@ -37,6 +37,7 @@ class Const(CommonConst):
     T_MOVEMENT_VAR = 'T_TERC_MVMT_VAR_LINK'  # Movement-変数紐付
     V_MOVEMENT = 'V_TERC_MOVEMENT'  # Movement一覧(VIEW)
     V_VAR_MEMVER = 'V_TERC_VAR_MEMBER'  # メンバー変数管理(VIEW)
+    V_MOVEMENT_VAR = 'V_TERC_MVMT_VAR_LINK'  # Movement-変数紐付(VIEW)
 
     # メニュー名(REST)
     RN_IF_INFO = 'intarface_info_terraform_cli'  # インターフェース情報
@@ -55,20 +56,20 @@ class Const(CommonConst):
     RN_MOVEMENT_VAR = 'movement_variable_link_terraform_cli'  # Movement-変数紐付
 
     # メニューID
-    ID_IF_INFO = '90101'
-    ID_WORKSPACE = '90102'
-    ID_MOVEMENT = '90103'
-    ID_MODULE = '90104'
-    ID_MOVEMENT_MODULE = '90105'
-    ID_NESTVARS_MEMBER_MAX = '90106'
-    ID_VALUE_AUTOREG = '90107'
-    ID_EXECTION = '90108'
-    ID_EXECUTION_LIST = '90109'
-    ID_CHECK_OPERATION = '90110'
-    ID_VALUE = '90111'
-    ID_MODULE_VAR = '90112'
-    ID_VAR_MEMBER = '90113'
-    ID_MOVEMENT_VAR = '90114'
+    ID_IF_INFO = '90101'  # インターフェース情報
+    ID_WORKSPACE = '90102'  # Workspace管理
+    ID_MOVEMENT = '90103'  # Movement一覧
+    ID_MODULE = '90104'  # Module素材集
+    ID_MOVEMENT_MODULE = '90105'  # Movement-Module紐付
+    ID_NESTVARS_MEMBER_MAX = '90106'  # 変数ネスト管理
+    ID_VALUE_AUTOREG = '90107'  # 代入値自動登録設定
+    ID_EXECTION = '90108'  # 作業実行
+    ID_EXECUTION_LIST = '90109'  # 作業管理
+    ID_CHECK_OPERATION = '90110'  # 作業状態確認
+    ID_VALUE = '90111'  # 代入値管理
+    ID_MODULE_VAR = '90112'  # Module-変数紐付
+    ID_VAR_MEMBER = '90113'  # メンバー変数管理
+    ID_MOVEMENT_VAR = '90114'  # Movement-変数紐付
 
     # 作業実行関連ディレクトリ
     DIR_MODULE = '/uploadfiles/90104/module_file'  # Module素材集

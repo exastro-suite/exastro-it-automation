@@ -526,7 +526,7 @@ class Column():
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu())
-            exec_func = importlib.import_module(external_validate_path)
+            importlib.import_module(external_validate_path)
             eval_str = 'exec_func.{}(self.objdbca, self.objtable, option)'.format(exec_config)
             tmp_exec = eval(eval_str)
             if tmp_exec[0] is not True:
@@ -799,7 +799,7 @@ class Column():
         return result
 
     # [filter] SQL生成用のwhere句
-    def get_filter_query(self, search_mode, search_conf):
+    def get_filter_query(self, search_mode, search_conf):   # noqa: C901
         """
             SQL生成用のwhere句関連
             ARGS:
@@ -837,7 +837,11 @@ class Column():
                 if len(str_where) != 0:
                     str_where = '(' + str_where + ')'
             else:
+                if None in tmp_conf:
+                    str_where = "`{col_name}` IS NULL ".format(col_name=self.get_col_name())
                 for bindvalue in tmp_conf:
+                    if bindvalue is None:
+                        continue
                     tmp_result = self.convert_value_input(bindvalue)
                     if tmp_result[0] is True:
                         bindvalue = tmp_result[2]
@@ -847,11 +851,16 @@ class Column():
                     bindvalues.setdefault(bindkey, bindvalue)
                     listno = listno + 1
 
-                bindkey = "{}".format(",".join(map(str, bindkeys)))
-                str_where = " `{col_name}` IN ( {bindkey} ) ".format(
-                    col_name=self.get_col_name(),
-                    bindkey=bindkey
-                )
+                if listno > 0:
+                    if len(str_where) != 0:
+                        str_where = str_where + 'or '
+
+                    bindkey = "{}".format(",".join(map(str, bindkeys)))
+                    str_where = str_where + " `{col_name}` IN ( {bindkey} ) ".format(
+                        col_name=self.get_col_name(),
+                        bindkey=bindkey
+                    )
+                str_where = '(' + str_where + ')'
             result.setdefault("bindkey", bindkeys)
             result.setdefault("bindvalue", bindvalues)
             result.setdefault("where", str_where)

@@ -42,6 +42,7 @@ RUN dnf install -y \
     pymysql \
     python-dotenv \
     pycryptodome \
+    openpyxl \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

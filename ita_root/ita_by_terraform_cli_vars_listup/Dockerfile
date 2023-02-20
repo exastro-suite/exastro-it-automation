@@ -93,7 +93,7 @@ ARG APP_PATH
 USER $USERNAME
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_ansible_pioneer_vars_listup/ $APP_PATH/
+COPY ./ita_root/ita_by_terraform_cli_vars_listup/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/

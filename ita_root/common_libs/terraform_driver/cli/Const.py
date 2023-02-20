@@ -24,7 +24,7 @@ class Const(CommonConst):
     """
 
     # テーブル/ビュー名
-    T_IF_INFO = 'T_TERC_IF_INFO'  # インターフェース情報
+    # T_IF_INFO = 'T_TERC_IF_INFO'  # インターフェース情報
     T_WORKSPACE = 'T_TERC_WORKSPACE'  # Workspace管理
     T_MODULE = 'T_TERC_MODULE'  # Module素材集
     T_MOVEMENT_MODULE = 'T_TERC_MVMT_MOD_LINK'  # Movement-Module紐付
@@ -39,7 +39,7 @@ class Const(CommonConst):
     V_VAR_MEMVER = 'V_TERC_VAR_MEMBER'  # メンバー変数管理(VIEW)
 
     # メニュー名(REST)
-    RN_IF_INFO = 'intarface_info_terraform_cli'  # インターフェース情報
+    # RN_IF_INFO = 'intarface_info_terraform_cli'  # インターフェース情報
     RN_WORKSPACE = 'workspace_list_terraform_cli'  # Workspace管理
     RN_MOVEMENT = 'movement_list_terraform_cli'  # Movement一覧
     RN_MODULE = 'module_files_terraform_cli'  # Module素材集
@@ -75,5 +75,5 @@ class Const(CommonConst):
     DIR_POPLATED_DATA = '/uploadfiles/90109/populated_data'  # 投入データ
     DIR_RESILT_DATA = '/uploadfiles/90109/result_data'  # 結果データ
     DIR_EXECUTE = '/driver/terraform_cli/execute'  # 作業状態確認
-    DIR_WORK = '/driver/terraform_cli/work'  # Terraform CLIコマンド実行用
+    DIR_WORK = '/driver/terraform_cli/workspace'  # Terraform CLIコマンド実行用
     DIR_TEMP = '/tmp/driver/terraform_cli'  # Temporary

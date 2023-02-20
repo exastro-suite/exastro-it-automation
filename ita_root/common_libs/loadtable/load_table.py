@@ -802,7 +802,7 @@ class loadTable():
             required_item = self.get_objcol(rest_key).get(COLNAME_REQUIRED_ITEM)
             input_item = self.get_objcol(rest_key).get(COLNAME_INPUT_ITEM)
             auto_input = self.get_objcol(rest_key).get(COLNAME_AUTO_INPUT)
-            if required_item == '1' and input_item == '1' and auto_input != '1':
+            if required_item == '1' and input_item in ['1', '3'] and auto_input != '1':
                 required_restkey_list.append(rest_key)
 
         return required_restkey_list
@@ -943,29 +943,50 @@ class loadTable():
                     base_datetime_condition = parameter.get('base_datetime')
                     if not base_datetime_condition:
                         # 「基準日時」に指定が無い場合のwhereを作成
-                        ref_where_str = textwrap.dedent("""
-                            BASE_TIMESTAMP = (
-                                select max(BASE_TIMESTAMP)
-                                from `{table_name}` as tbl
-                                where `{table_name}`.HOST_ID = tbl.HOST_ID
-                                and DISUSE_FLAG = "0"
-                            )
-                            and DISUSE_FLAG = "0"
-                        """).format(table_name=table_name).strip()
-                    else:
-                        # 「基準日時」に指定がある場合のwhereを作成
-                        base_datetime = base_datetime_condition.get('NORMAL')
-                        if base_datetime:
+                        if str(self.get_sheet_type()) == "5":  # シートタイプが「5: 参照用（ホスト/オペレーションあり）」
                             ref_where_str = textwrap.dedent("""
                                 BASE_TIMESTAMP = (
                                     select max(BASE_TIMESTAMP)
                                     from `{table_name}` as tbl
                                     where `{table_name}`.HOST_ID = tbl.HOST_ID
                                     and DISUSE_FLAG = "0"
-                                    and tbl.BASE_TIMESTAMP <= '{base_datetime}'
                                 )
                                 and DISUSE_FLAG = "0"
-                            """).format(table_name=table_name, base_datetime=base_datetime).strip()
+                            """).format(table_name=table_name).strip()
+                        else:  # シートタイプが「6: 参照用（オペレーションあり）」
+                            ref_where_str = textwrap.dedent("""
+                                BASE_TIMESTAMP = (
+                                    select max(BASE_TIMESTAMP)
+                                    from `{table_name}` as tbl
+                                    where DISUSE_FLAG = "0"
+                                )
+                                and DISUSE_FLAG = "0"
+                            """).format(table_name=table_name).strip()
+                    else:
+                        # 「基準日時」に指定がある場合のwhereを作成
+                        base_datetime = base_datetime_condition.get('NORMAL')
+                        if base_datetime:
+                            if str(self.get_sheet_type()) == "5":  # シートタイプが「5: 参照用（ホスト/オペレーションあり）」
+                                ref_where_str = textwrap.dedent("""
+                                    BASE_TIMESTAMP = (
+                                        select max(BASE_TIMESTAMP)
+                                        from `{table_name}` as tbl
+                                        where `{table_name}`.HOST_ID = tbl.HOST_ID
+                                        and DISUSE_FLAG = "0"
+                                        and tbl.BASE_TIMESTAMP <= '{base_datetime}'
+                                    )
+                                    and DISUSE_FLAG = "0"
+                                """).format(table_name=table_name, base_datetime=base_datetime).strip()
+                            else:  # シートタイプが「6: 参照用（オペレーションあり）」
+                                ref_where_str = textwrap.dedent("""
+                                    BASE_TIMESTAMP = (
+                                        select max(BASE_TIMESTAMP)
+                                        from `{table_name}` as tbl
+                                        where DISUSE_FLAG = "0"
+                                        and tbl.BASE_TIMESTAMP <= '{base_datetime}'
+                                    )
+                                    and DISUSE_FLAG = "0"
+                                """).format(table_name=table_name, base_datetime=base_datetime).strip()
 
                         # parameterから「基準日時(key:base_datetime)」を削除する
                         parameter.pop('base_datetime')
@@ -1270,7 +1291,7 @@ class loadTable():
         return status_code, result, msg,
 
     # [maintenance]:メニューのレコード操作
-    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False):
+    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False, import_mode=False):
         """
             RESTAPI[filter]:メニューのレコード操作
             ARGS:
@@ -1378,7 +1399,7 @@ class loadTable():
                 if objcol is not None:
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                 # INPUT_ITEMが1の場合
-                if input_item == '1' or force_conv is True:
+                if input_item in ['1', '3'] or force_conv is True:
                     if rest_key in self.restkey_list:
                         target_col_option = {
                             'uuid': target_uuid,
@@ -1425,28 +1446,44 @@ class loadTable():
                         # カラムクラス呼び出し
                         objcolumn = self.get_columnclass(rest_key, cmd_type)
 
-                        # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前
-                        tmp_exec = objcolumn.before_iud_action(rest_val, copy.deepcopy(target_col_option))
-                        if tmp_exec[0] is not True:
-                            dict_msg = {
-                                'status_code': '',
-                                'msg_args': '',
-                                'msg': tmp_exec[1],
-                            }
-                            self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
-                        else:
-                            tmp_target_col_option = tmp_exec[3]
-                            entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
-                            entry_file = tmp_target_col_option.get('entry_parameter').get('file')
-                            rest_val = entry_parameter.get(rest_key)
-                            # entry_file[rest_key] = target_col_option.get('file_data')
+                        if import_mode is False:
+                            # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前
+                            tmp_exec = objcolumn.before_iud_action(rest_val, copy.deepcopy(target_col_option))
+                            if tmp_exec[0] is not True:
+                                dict_msg = {
+                                    'status_code': '',
+                                    'msg_args': '',
+                                    'msg': tmp_exec[1],
+                                }
+                                self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                            else:
+                                tmp_target_col_option = tmp_exec[3]
+                                entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
+                                entry_file = tmp_target_col_option.get('entry_parameter').get('file')
+                                rest_val = entry_parameter.get(rest_key)
+                                # entry_file[rest_key] = target_col_option.get('file_data')
 
-                            if rest_val is not None:
-                                if self.get_col_class_name(rest_key) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
-                                    sensitive_col_name = objcolumn.get_objcol().get(COLNAME_SENSITIVE_COL_NAME)
-                                    sensitive_settings = entry_parameter.get(sensitive_col_name)
-                                    # SENSITIVEがONの場合
-                                    if sensitive_settings == '1':
+                                if rest_val is not None:
+                                    if self.get_col_class_name(rest_key) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
+                                        sensitive_col_name = objcolumn.get_objcol().get(COLNAME_SENSITIVE_COL_NAME)
+                                        sensitive_settings = entry_parameter.get(sensitive_col_name)
+                                        # SENSITIVEがONの場合
+                                        if sensitive_settings == '1':
+                                            tmp_exec = objcolumn.convert_value_input(rest_val)
+                                            if tmp_exec[0] is True:
+                                                entry_parameter[rest_key] = tmp_exec[2]
+                                            else:
+                                                dict_msg = {
+                                                    'status_code': '',
+                                                    'msg_args': '',
+                                                    'msg': tmp_exec[1],
+                                                }
+                                                self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                                        else:
+                                            entry_parameter[rest_key] = rest_val
+
+                                    else:
+                                        # VALUE 変換処理不要ならVALUE変更無し
                                         tmp_exec = objcolumn.convert_value_input(rest_val)
                                         if tmp_exec[0] is True:
                                             entry_parameter[rest_key] = tmp_exec[2]
@@ -1457,21 +1494,6 @@ class loadTable():
                                                 'msg': tmp_exec[1],
                                             }
                                             self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
-                                    else:
-                                        entry_parameter[rest_key] = rest_val
-
-                                else:
-                                    # VALUE 変換処理不要ならVALUE変更無し
-                                    tmp_exec = objcolumn.convert_value_input(rest_val)
-                                    if tmp_exec[0] is True:
-                                        entry_parameter[rest_key] = tmp_exec[2]
-                                    else:
-                                        dict_msg = {
-                                            'status_code': '',
-                                            'msg_args': '',
-                                            'msg': tmp_exec[1],
-                                        }
-                                        self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
 
             # メニュー共通処理:レコード操作前 組み合わせ一意制約
             self.exec_unique_constraint(entry_parameter, target_uuid)
@@ -1873,7 +1895,7 @@ class loadTable():
                             else:
                                 col_val = None
                     else:
-                        if mode not in ['input']:
+                        if mode not in ['input', 'export']:
                             tmp_exec = objcolumn.convert_value_output(col_val)
                             if tmp_exec[0] is True:
                                 col_val = tmp_exec[2]
@@ -2246,7 +2268,7 @@ class loadTable():
                 if objcol is not None:
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                     tmp_col_name = self.get_col_name(tmp_keys)
-                    if input_item != '1':
+                    if input_item != '1' and input_item != '3':
                         if tmp_col_name not in primary_key_list:
                             if tmp_keys in parameter:
                                 del parameter[tmp_keys]

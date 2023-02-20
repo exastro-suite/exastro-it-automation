@@ -686,8 +686,10 @@ class SubValueAutoReg():
         # 具体値にテンプレート変数が記述されているか判定
         VARS_ENTRY_USE_TPFVARS = "0"
         if type(in_varsAssignList['VARS_ENTRY']) is str:
-            ret = in_varsAssignList['VARS_ENTRY'].find('TPF_')
-            if ret == 0:
+            vars_line_array = []
+            var_extractor = WrappedStringReplaceAdmin(WS_DB)
+            is_success, vars_line_array = var_extractor.SimpleFillterVerSearch("TPF_", in_varsAssignList['VARS_ENTRY'], vars_line_array, [], [])
+            if len(vars_line_array) == 1:
                 # テンプレート変数が記述されていることを記録
                 VARS_ENTRY_USE_TPFVARS = "1"
                 db_update_flg = True
@@ -783,8 +785,10 @@ class SubValueAutoReg():
         # 具体値にテンプレート変数が記述されているか判定
         VARS_ENTRY_USE_TPFVARS = "0"
         if type(in_varsAssignList['VARS_ENTRY']) is str:
-            ret = in_varsAssignList['VARS_ENTRY'].find('TPF_')
-            if ret == 0:
+            vars_line_array = []
+            var_extractor = WrappedStringReplaceAdmin(WS_DB)
+            is_success, vars_line_array = var_extractor.SimpleFillterVerSearch("TPF_", in_varsAssignList['VARS_ENTRY'], vars_line_array, [], [])
+            if len(vars_line_array) == 1:
                 # テンプレート変数が記述されていることを記録
                 VARS_ENTRY_USE_TPFVARS = "1"
                 db_update_flg = True
@@ -1003,7 +1007,10 @@ class SubValueAutoReg():
                                                 # TPF/CPF変数カラム判定
                                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                                        col_val = "'{{ " + col_val + " }}'"
+                                                        if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
+                                                            col_val = "'{{ " + col_val + " }}'"
+                                                        else:
+                                                            continue
 
                                     # オブジェクト解放
                                     del objmenu
@@ -1042,8 +1049,10 @@ class SubValueAutoReg():
                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
                                         if col_val is not None:
-                                            col_val = "'{{ " + col_val + " }}'"
-
+                                            if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
+                                                col_val = "'{{ " + col_val + " }}'"
+                                            else:
+                                                continue
                                 # オブジェクト解放
                                 del objmenu
                                 exec_flag = True
@@ -2143,7 +2152,7 @@ class SubValueAutoReg():
             if len(vars_line_array) == 1:
                 if movement_id not in template_list:
                     template_list[movement_id] = {}
-                row_num, tpf_var_name = vars_line_array[0]
+                tpf_var_name = list(vars_line_array[0].values())[0]
                 template_list[movement_id][tpf_var_name] = 0
 
         # 作業対象ホストの情報を退避

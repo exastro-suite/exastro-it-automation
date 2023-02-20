@@ -73,16 +73,17 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['driver', 'ansible', 'legacy_role'],
             ['driver', 'ansible', 'git_repositories'],
             ['driver', 'conductor'],
-            # ['driver', 'terraform_cloud_ep'],
-            # ['driver', 'terraform_cli'],
+            ['driver', 'terraform_cloud_ep'],
+            ['driver', 'terraform_cli'],
+            ['driver', 'cicd', 'repositories'],
             ['uploadfiles'],
             ['tmp', 'driver', 'ansible'],
             ['tmp', 'driver', 'import_menu'],
             ['tmp', 'driver', 'import_excel'],
             ['tmp', 'driver', 'export_menu'],
             ['tmp', 'driver', 'export_excel'],
-            # ['tmp', 'driver', 'terraform_cloud_ep'],
-            # ['tmp', 'driver', 'terraform_cli'],
+            ['tmp', 'driver', 'terraform_cloud_ep'],
+            ['tmp', 'driver', 'terraform_cli'],
         ]
         for dir in dir_list:
             abs_dir = workspace_dir + "/".join(dir)
@@ -145,10 +146,11 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['ansible.sql', 'ansible_master.sql'],
             ['export_import.sql', 'export_import_master.sql'],
             ['compare.sql', 'compare_master.sql'],
-            # ['terraform_common.sql', 'terraform_common_master.sql'],
-            # ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
-            # ['terraform_cli.sql', 'terraform_cli_master.sql'],
+            ['terraform_common.sql', 'terraform_common_master.sql'],
+            ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
+            ['terraform_cli.sql', 'terraform_cli_master.sql'],
             ['hostgroup.sql', 'hostgroup_master.sql'],
+            ['cicd.sql', 'cicd_master.sql'],
         ]
         last_update_timestamp = str(get_timestamp())
 
@@ -186,6 +188,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # 初期データ設定(ansible)
         if (inistial_data_ansible_if is not None) and (len(inistial_data_ansible_if) != 0):
             ws_db.db_transaction_start()
+            g.WORKSPACE_ID = workspace_id
             initial_settings_ansible(ws_db, json.loads(inistial_data_ansible_if))
             ws_db.db_commit()
 

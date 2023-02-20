@@ -11,13 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+from common_libs.terraform_driver.common.Const import Const as CommonConst
 """
 terraformドライバー（terraform Cloud/EP）に必要な定数定義モジュール
 """
 
 
-class Const:
+class Const(CommonConst):
     """
     terraformドライバー（terraform Cloud/EP）に必要な定数定義クラス
     """
@@ -41,6 +41,7 @@ class Const:
     T_MOVEMENT_VAR = 'T_TERE_MVMT_VAR_LINK'  # Movement-変数紐付
     V_MOVEMENT = 'V_TERE_MOVEMENT'  # Movement一覧(VIEW)
     V_VAR_MEMVER = 'V_TERE_VAR_MEMBER'  # メンバー変数管理(VIEW)
+    V_MOVEMENT_VAR = 'V_TERE_MVMT_VAR_LINK'  # Movement-変数紐付(VIEW)
     V_ORGANIZATION_WORKSPACE = 'V_TERE_ORGANIZATION_WORKSPACE_LINK'  # Organizatioin-Workspace紐付(VIEW)
 
     # メニュー名(REST)
@@ -66,26 +67,26 @@ class Const:
     RN_MOVEMENT_VAR = 'movement_variable_link_terraform_cloud_ep'  # Movement-変数紐付
 
     # メニューID
-    ID_IF_INFO = '80101'
-    ID_ORGANIZATION = '80102'
-    ID_WORKSPACE = '80103'
-    ID_MOVEMENT = '80104'
-    ID_MODULE = '80105'
-    ID_POLICY = '80106'
-    ID_POLICYSET = '80107'
-    ID_POLICYSET_POLICY = '80108'
-    ID_POLICYSET_WORKSPACE = '80109'
-    ID_MOVEMENT_MODULE = '80110'
-    ID_NESTVARS_MEMBER_MAX = '80111'
-    ID_VALUE_AUTOREG = '80112'
-    ID_EXECTION = '80113'
-    ID_EXECUTION_LIST = '80114'
-    ID_CHECK_OPERATION = '80115'
-    ID_VALUE = '80116'
-    ID_TERRAFORM_MANAGEMENT = '80117'
-    ID_MODULE_VAR = '80118'
-    ID_VAR_MEMBER = '80119'
-    ID_MOVEMENT_VAR = '80120'
+    ID_IF_INFO = '80101'  # インターフェース情報
+    ID_ORGANIZATION = '80102'  # Organization管理
+    ID_WORKSPACE = '80103'  # Workspace管理
+    ID_MOVEMENT = '80104'  # Movement一覧
+    ID_MODULE = '80105'  # Module素材集
+    ID_POLICY = '80106'  # Policy管理
+    ID_POLICYSET = '80107'  # PolicySet管理
+    ID_POLICYSET_POLICY = '80108'  # PolicySet-Policy紐付
+    ID_POLICYSET_WORKSPACE = '80109'  # PolicySet-Workspace紐付
+    ID_MOVEMENT_MODULE = '80110'  # Movement-Module紐付
+    ID_NESTVARS_MEMBER_MAX = '80111'  # 変数ネスト管理
+    ID_VALUE_AUTOREG = '80112'  # 代入値自動登録設定
+    ID_EXECTION = '80113'  # 作業実行
+    ID_EXECUTION_LIST = '80114'  # 作業管理
+    ID_CHECK_OPERATION = '80115'  # 作業状態確認
+    ID_VALUE = '80116'  # 代入値管理
+    ID_TERRAFORM_MANAGEMENT = '80117'  # 連携先Terraform管理
+    ID_MODULE_VAR = '80118'  # Module-変数紐付
+    ID_VAR_MEMBER = '80119'  # メンバー変数管理
+    ID_MOVEMENT_VAR = '80120'  # Movement-変数紐付
 
     # 作業実行関連ディレクトリ
     DIR_MODULE = '/uploadfiles/80105/module_file'  # Module素材集
@@ -94,3 +95,21 @@ class Const:
     DIR_RESILT_DATA = '/uploadfiles/80114/result_data'  # 結果データ
     DIR_EXECUTE = '/driver/terraform_cloud_ep/execute'  # 作業状態確認
     DIR_TEMP = '/tmp/driver/terraform_cloud_ep'  # Temporary
+
+    # Terraform RUN Status
+    TF_RUN_CANCEL = 'canceled'
+
+    # Terraform Plan Status
+    TF_PLAN_ERROR = 'errored'
+    TF_PLAN_FINISH = 'finished'
+    TF_PLAN_CANCEL = 'canceled'
+    TF_PLAN_RUNNING = 'running'
+
+    # Terraform Apply Status
+    TF_APPLY_ERROR = 'errored'
+    TF_APPLY_FINISH = 'finished'
+    TF_APPLY_CANCEL = 'canceled'
+    TF_APPLY_UNREACH = 'unreachable'
+    TF_APPLY_RUNNING = 'running'
+
+

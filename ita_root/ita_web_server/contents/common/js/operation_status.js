@@ -101,7 +101,7 @@ static string = {
         movementClassName: 'node-terraform-cloud-ep',
         movementListMenu: 'movement_list_terraform_cloud_ep',
         targetHostMenu: '',
-        substValueMenu: 'subst_value_auto_reg_setting__terraform_cloud_ep',
+        substValueMenu: 'subst_value_auto_reg_setting_terraform_cloud_ep',
         executionListMenu: 'execution_list_terraform_cloud_ep'
     },
     check_operation_status_terraform_cli: {
@@ -110,7 +110,7 @@ static string = {
         movementClassName: 'node-terraform-cli',
         movementListMenu: 'movement_list_terraform_cli',
         targetHostMenu: '',
-        substValueMenu: 'subst_value_auto_reg_setting__terraform_cli',
+        substValueMenu: 'subst_value_auto_reg_setting_terraform_cli',
         executionListMenu: 'execution_list_terraform_cli'
     }
 }

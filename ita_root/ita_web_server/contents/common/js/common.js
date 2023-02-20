@@ -83,7 +83,7 @@ const fn = ( function() {
         
         for ( const key in attrs ) {
             if ( attrs[key] !== undefined ) {
-                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class']; // dataをつけない
+                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class', 'readonly']; // dataをつけない
                 if ( attrName.indexOf( key ) !== -1) {
                     attr.push(`${key}="${attrs[key]}"`);
                 } else {
@@ -1020,7 +1020,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
     $datePicker.find('.datePickerButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
-        
+
         switch ( type ) {
             case 'prevYear': monthCount -= 12; break;
             case 'nextYear': monthCount += 12; break;
@@ -1045,6 +1045,14 @@ datePicker: function( timeFlag, className, date, start, end ) {
         year = ckickDate[0];
         month = Number( ckickDate[1] ) - 1;
         day = ckickDate[2];
+        
+        if ( $button.closest('.nextMonth').length ) {
+            monthCount += 1;
+        }
+        
+        if ( $button.closest('.lastMonth').length ) {
+            monthCount -= 1;
+        }
         
         $year.text( year );
         $month.text( monthText[month] );
@@ -1171,6 +1179,14 @@ datePicker: function( timeFlag, className, date, start, end ) {
 },
 /*
 ##################################################
+   Check date
+##################################################
+*/
+checkDate: function( date ) {
+    return !Number.isNaN( new Date( date ).getTime() );
+},
+/*
+##################################################
    Date picker dialog
 ##################################################
 */
@@ -1229,6 +1245,9 @@ datePickerDialog: function( type, timeFlag, title, date ){
         if ( type === 'fromTo') {
             $dataPicker.addClass('datePickerFromToContainer').html(`<div class="datePickerFrom"></div>`
             + `<div class="datePickerTo"></div>`);
+            
+            if ( !cmn.checkDate( date.from ) ) date.from = '';
+            if ( !cmn.checkDate( date.to ) ) date.to = '';
 
             $dataPicker.find('.datePickerFrom').html( cmn.datePicker( timeFlag, 'datePickerFromDateText', date.from, null, date.to ) );
             $dataPicker.find('.datePickerTo').html( cmn.datePicker( timeFlag, 'datePickerToDateText', date.to, date.from, null ) );
@@ -1244,6 +1263,7 @@ datePickerDialog: function( type, timeFlag, title, date ){
             });
             
         } else {
+            if ( !cmn.checkDate( date ) ) date = '';
             $dataPicker.html( cmn.datePicker( timeFlag, 'datePickerDateText', date ) );
         }
         
@@ -2813,7 +2833,6 @@ uiSetting() {
                 let html = '';
                 for ( const key in list ) {
                     const value = ( uiSettingData && uiSettingData.ui && uiSettingData.ui.filter )? uiSettingData.ui.filter[ key ]: list[key][5];
-                    console.log( value )
                     html += ``
                     + `<tr class="commonInputTr">`
                         + `<th class="commonInputTh"><div class="commonInputTitle">${list[key][0]}</div></th>`

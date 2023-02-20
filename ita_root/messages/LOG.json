@@ -1081,5 +1081,14 @@
     "BKY-30002": "pkey is None,",
     "BKY-30003": "Insert record to `{}` was failed.,",
     "BKY-30004": "Update(restore) record to `{}` was failed.,",
-    "BKY-30005": "Update(discard) record to `{}` was failed."
+    "BKY-30005": "Update(discard) record to `{}` was failed.",
+    "BKY-40001": "No records in status: In preparation.",
+    "BKY-40002": "No target conductor to reserve.",
+    "BKY-40003": "Execution user disused. (User id: \"{}\")",
+    "BKY-40004": "Conductor disused. (Conductor class id: \"{}\")",
+    "BKY-40005": "Operation disused. (Operation id: \"{}\")",
+    "BKY-40006": "Failed to register conductor instance. (Conductor_class_id: \"{}\", Operation_id: \"{}\", Schedule date: \"{}\"）",
+    "BKY-40007": "Start registration of conductor instance.",
+    "BKY-40008": "Start registration of node instance.",
+    "BKY-40009": "Status set as \"In operation\". (Regularly id: \"{}\")"
 }

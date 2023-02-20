@@ -32,10 +32,8 @@ class RestApiCaller():
     def __init__(self, protocol, hostName, portNo=None, encryptedAuthToken=None, proxySetting=None):
         if portNo:
             self.baseURI = '%s://%s:%s%s' % (protocol, hostName, portNo, self.API_BASE_PATH)
-            self.directURI = '%s://%s:%s' % (protocol, hostName, portNo)
         else:
-            self.baseURI = '%s://%s:%s' % (protocol, hostName, self.API_BASE_PATH)
-            self.directURI = '%s://%s' % (protocol, hostName)
+            self.baseURI = '%s://%s%s' % (protocol, hostName, self.API_BASE_PATH)
         if encryptedAuthToken:
             self.decryptedAuthToken = ky_decrypt(encryptedAuthToken)
         else:
@@ -52,7 +50,7 @@ class RestApiCaller():
 
         return response_array
 
-    def rest_call(self, method, api_uri, content=None, header=None, rest_stdout_flg=False, direct_url=False):  # noqa: C901
+    def rest_call(self, method, api_uri, content=None, header=None, module_upload_flag=False, direct_url="", get_log=False):  # noqa: C901
         # 変数定義
         httpContext = {}
         httpContext['http'] = {}
@@ -60,18 +58,25 @@ class RestApiCaller():
         ssl_context = None
         self.RestResultList = []
         response_array = {}
+        proxy_address = ""
 
         # コンテンツ付与
-        if content is not None:
-            httpContext['http']['content'] = json.dumps(content).encode('utf-8')
+        if module_upload_flag is True:
+            headers['Content-type'] = 'application/octet-stream'
+        else:
             headers['Content-type'] = 'application/vnd.api+json'
+            if content is not None:
+                httpContext['http']['content'] = json.dumps(content).encode('utf-8')
 
         # Header精査
         if self.accessToken:
             headers['Authorization'] = 'Bearer %s' % (self.accessToken)
 
         if self.hasHeaderField(headers, "Accept") is False:
-            headers['Accept'] = 'application/vnd.api+json'
+            if module_upload_flag is True:
+                headers['Accept'] = 'application/octet-stream'
+            else:
+                headers['Accept'] = 'application/vnd.api+json'
 
         # HTTPコンテキスト作成
         httpContext['http']['method'] = method
@@ -79,11 +84,11 @@ class RestApiCaller():
 
         # Proxy設定
         if 'address' in self.proxySetting and self.proxySetting['address']:
-            address = self.proxySetting['address']
+            proxy_address = self.proxySetting['address']
             if 'port' in self.proxySetting and self.proxySetting['port']:
-                address = '%s:%s' % (address, self.proxySetting['port'])
+                proxy_address = '%s:%s' % (proxy_address, self.proxySetting['port'])
 
-            httpContext['http']['proxy'] = address
+            httpContext['http']['proxy'] = proxy_address
             httpContext['http']['request_fulluri'] = True
 
         # [暫定対応] SSL認証エラー無視
@@ -94,7 +99,7 @@ class RestApiCaller():
 
         # URL定義
         if direct_url:
-            url = '%s%s' % (self.directURI, api_uri)
+            url = direct_url
         else:
             url = '%s%s' % (self.baseURI, api_uri)
 
@@ -106,16 +111,19 @@ class RestApiCaller():
         ################################
         http_response_header = None
         data = None
-        if 'content' in httpContext['http']:
-            data = httpContext['http']['content']
+        if module_upload_flag is True:
+            data = content
+        else:
+            if 'content' in httpContext['http']:
+                data = httpContext['http']['content']
 
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
-        if 'address' in self.proxySetting and self.proxySetting['address']:
-            req.set_proxy(self.proxySetting['address'], 'http')
-            req.set_proxy(self.proxySetting['address'], 'https')
+        if proxy_address:
+            req.set_proxy(proxy_address, 'http')
+            req.set_proxy(proxy_address, 'https')
 
         try:
-            with urllib.request.urlopen(req, context=ssl_context) as resp:
+            with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
                 status_code = resp.getcode()
                 http_response_header = resp.getheaders()
                 responseContents = resp.read().decode('utf-8')
@@ -228,6 +236,66 @@ class RestApiCaller():
                     self.apperrorloger(print_ResponseContents)
 
         return response_array
+
+    def get_log_data(self, method, direct_url):  # noqa: C901
+        # 変数定義
+        httpContext = {}
+        httpContext['http'] = {}
+        headers = {}
+        ssl_context = None
+        self.RestResultList = []
+        proxy_address = ""
+
+        # コンテンツ付与
+        headers['Content-type'] = 'application/vnd.api+json'
+
+        # Header精査
+        if self.accessToken:
+            headers['Authorization'] = 'Bearer %s' % (self.accessToken)
+
+        # HTTPコンテキスト作成
+        httpContext['http']['method'] = method
+        httpContext['http']['ignore_errors'] = True
+
+        # Proxy設定
+        if 'address' in self.proxySetting and self.proxySetting['address']:
+            proxy_address = self.proxySetting['address']
+            if 'port' in self.proxySetting and self.proxySetting['port']:
+                proxy_address = '%s:%s' % (proxy_address, self.proxySetting['port'])
+
+            httpContext['http']['proxy'] = proxy_address
+            httpContext['http']['request_fulluri'] = True
+
+        # [暫定対応] SSL認証エラー無視
+        ssl_context = ssl._create_unverified_context()
+        httpContext['ssl'] = {}
+        httpContext['ssl']['verify_peer'] = False
+        httpContext['ssl']['verify_peer_name'] = False
+
+        print_HttpContext = 'http context\n%s' % (httpContext)
+        print_url = "URL: %s\n" % (direct_url)
+
+        ################################
+        # RestCall
+        ################################
+        responseContents = ''
+        req = urllib.request.Request(direct_url, headers=headers, method=method)
+        if proxy_address:
+            req.set_proxy(proxy_address, 'http')
+            req.set_proxy(proxy_address, 'https')
+        try:
+            with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
+                # status_code = resp.getcode()
+                # http_response_header = resp.getheaders()
+                responseContents = resp.read().decode('utf-8')
+
+        except Exception as e:
+            self.apperrorloger(self.backtrace())
+            self.apperrorloger(e)
+            self.apperrorloger(print_url)
+            self.apperrorloger(print_HttpContext)
+
+        return responseContents
 
     def hasHeaderField(self, header, field):
 

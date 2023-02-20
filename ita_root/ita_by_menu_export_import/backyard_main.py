@@ -14,10 +14,16 @@
 import json
 import re
 import ast
+import base64
+import datetime
+import tarfile
+import mimetypes
+import secrets
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.exception import AppException  # noqa: F401
+from pathlib import Path
 import shutil
 import subprocess
 
@@ -27,7 +33,7 @@ def backyard_main(organization_id, workspace_id):
         ARGS:
             organization_id: Organization ID
             workspace_id: Workspace ID
-        RETRUN:
+        RETURN:
 
     """
     # DB接続
@@ -39,6 +45,7 @@ def backyard_main(organization_id, workspace_id):
 
     strage_path = os.environ.get('STORAGEPATH')
     export_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/export_menu"
+    import_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu"
     uploadfiles_dir = strage_path + "/".join([organization_id, workspace_id]) + "/uploadfiles/60103"
     if not os.path.isdir(uploadfiles_dir):
         os.makedirs(uploadfiles_dir)
@@ -81,6 +88,8 @@ def backyard_main(organization_id, workspace_id):
         # execution_typeに応じたエクスポート/インポート処理を実行(メイン処理)
         if execution_type == "1":  # 1: エクスポート
             main_func_result, msg = menu_export_exec(objdbca, record, export_menu_dir)
+        elif execution_type == "2":  # 1: インポート
+            main_func_result, msg = menu_import_exec(objdbca, record, import_menu_dir, uploadfiles_dir)
 
         # メイン処理がFalseの場合、異常系処理
         if not main_func_result:
@@ -124,14 +133,125 @@ def backyard_main(organization_id, workspace_id):
     g.applogger.debug(debug_msg)
     return
 
+def menu_import_exec(objdbca, record, import_menu_dir, uploadfiles_dir):
+    msg = None
+
+    try:
+        execution_no = str(record.get('EXECUTION_NO'))
+        file_name = str(record.get('FILE_NAME'))
+
+        execution_no_path = uploadfiles_dir + '/file_name/' + execution_no
+
+        file_path = execution_no_path + '/' + file_name
+
+        if os.path.isfile(file_path) is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
+
+        # zip解凍
+        with tarfile.open(file_path, 'r:gz') as tar:
+            tar.extractall(path=execution_no_path)
+
+        if os.path.isfile(execution_no_path + '/MENU_NAME_REST_LIST') is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
+
+        # MENU_NAME_REST_LISTファイル読み込み
+        menu_name_rest_list = Path(execution_no_path + '/MENU_NAME_REST_LIST').read_text(encoding='utf-8').split(',')
+
+        for menu_name_rest in menu_name_rest_list:
+            # テーブルが存在するか確認する
+            # 対象のDBのテーブル定義を出力（sqldump
+            menu_id_sql = " SELECT MENU_ID, MENU_NAME_REST  FROM `T_COMN_MENU` WHERE `DISUSE_FLAG` <> 1 AND `MENU_NAME_REST` = %s "
+            t_comn_menu_record = objdbca.sql_execute(menu_id_sql, [menu_name_rest])
+
+            # テーブルが存在しない場合は作成する
+            if len(t_comn_menu_record) == 0:
+                # T_COMN_MENU_DATAからデータを取得して登録する
+                objmenu = load_table.loadTable(objdbca, 'menu_list')   # noqa: F405
+                # T_COMN_MENU_DATAファイル読み込み
+                t_comn_menu_data = Path(execution_no_path + '/T_COMN_MENU_DATA').read_text(encoding='utf-8')
+                t_comn_menu_data_json = json.loads(t_comn_menu_data)
+
+                menu_id_list = []
+                for record in t_comn_menu_data_json:
+                    param = record['parameter']
+                    tmp_menu_name_rest = param.get('menu_name_rest')
+                    if tmp_menu_name_rest == menu_name_rest:
+                        # 該当レコードをT_COMN_MENUに登録
+                        menu_id = param.get('menu_id')
+                        menu_id_list.append(menu_id)
+                        # 登録用パラメータを作成
+                        file_param = record['file']
+                        # 登録用パラメータを作成
+                        parameters = {
+                            "file": {
+                                "file_name": file_param
+                            },
+                            "parameter": param,
+                            "type": "Register"
+                        }
+
+                        # 登録を実行
+                        exec_result = objmenu.exec_maintenance(parameters, menu_id, "", True, False, True, False, True)  # noqa: E999
+                        if not exec_result[0]:
+                            result_msg = _format_loadtable_msg(exec_result[2])
+                            result_msg = json.dumps(result_msg, ensure_ascii=False)
+                            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+
+                # 該当レコードをT_COMN_MENU_TABLE_LINKに登録
+                # MENU_ID_TABLE_LISTファイル読み込み
+                menu_id_table_list = Path(execution_no_path + '/MENU_ID_TABLE_LIST').read_text(encoding='utf-8')
+                menu_id_table_list_json = json.loads(menu_id_table_list)
+                for record in menu_id_table_list_json:
+                    param = record['parameter']
+                    menu_id = param.get('uuid')
+                    if menu_id in menu_id_list:
+                        table_name = param.get('table_name')
+
+                        # DBデータファイル読み込み
+                        db_data_path = execution_no_path + '/' + table_name + '.sql'
+
+                        # テーブルを作成
+                        objdbca.sqlfile_execute(db_data_path)
+                        # objdbca.sqlfile_execute(create_table_str)
+
+                        history_flg = param.get('history_table_flag')
+                        if history_flg == '1':
+                            table_name_jnl = table_name + '_JNL'
+                            # DBデータファイル読み込み
+                            db_data_path = execution_no_path + '/' + table_name_jnl + '.sql'
+                            # テーブルを作成
+                            objdbca.sqlfile_execute(db_data_path)
+
+                        # 該当レコードを作成したテーブルに登録
+                        _regist_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
+            else:
+                menu_id = t_comn_menu_record[0].get('MENU_ID')
+                table_name_sql = " SELECT TABLE_NAME FROM `T_COMN_MENU_TABLE_LINK` WHERE `DISUSE_FLAG` <> 1 AND `MENU_ID` = %s "
+                t_comn_menu_table_link_record = objdbca.sql_execute(table_name_sql, [menu_id])
+                table_name = t_comn_menu_table_link_record[0].get('TABLE_NAME')
+
+                _regist_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
+
+        # 正常系リターン
+        return True, msg
+
+    except Exception as msg:
+        # エラー時はtmpの作業ファイルを削除する
+        # shutil.rmtree(import_menu_dir)
+
+        # 異常系リターン
+        return False, msg
+
 def menu_export_exec(objdbca, record, export_menu_dir):  # noqa: C901
     """
         メニューエクスポート実行
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            execution_no: メニューエクスポートの対象となる「メニューエクスポート・インポート管理」のレコードのID
-            create_type: 「新規作成(create_new」「初期化(initialize)」「編集(edit)」のいずれか
-        RETRUN:
+            record: メニューエクスポートの対象となる「メニューエクスポート・インポート管理」のレコード
+            export_menu_dir: export_menuディレクトリのパス
+        RETURN:
             boolean, msg
     """
     msg = None
@@ -180,16 +300,11 @@ def menu_export_exec(objdbca, record, export_menu_dir):  # noqa: C901
                 api_msg_args = [msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)
 
-            param_list = []
-            for param in result:
-                param_line = ''
-                param_line += str(param) + '\n'
-                param_list.append(param_line)
-            with open(DB_path, 'w', encoding='utf-8', newline='\n') as f:
-                f.writelines(param_list)
+            with open(DB_path, 'w') as f:
+                json.dump(result, f, ensure_ascii=False)
 
-        # 対象のDBのテーブル定義を出力（sqldump
-        menu_id_sql = " SELECT MENU_ID, MENU_NAME_REST  FROM `T_COMN_MENU` WHERE `DISUSE_FLAG` <> 1 AND `MENU_NAME_REST` IN %s "
+        # 対象のDBのテーブル定義を出力（sqldump用
+        menu_id_sql = " SELECT * FROM `T_COMN_MENU` WHERE `DISUSE_FLAG` <> 1 AND `MENU_NAME_REST` IN %s "
         t_comn_menu_record = objdbca.sql_execute(menu_id_sql, [menu_list])
         menu_id_dict = {}
         menu_id_list = []
@@ -199,7 +314,7 @@ def menu_export_exec(objdbca, record, export_menu_dir):  # noqa: C901
             menu_id_list.append(menu_id)
             menu_id_dict[menu_id] = menu_name_rest
 
-        table_name_sql = " SELECT TABLE_NAME FROM `T_COMN_MENU_TABLE_LINK` WHERE `DISUSE_FLAG` <> 1 AND `MENU_ID` IN %s "
+        table_name_sql = " SELECT * FROM `T_COMN_MENU_TABLE_LINK` WHERE `DISUSE_FLAG` <> 1 AND `MENU_ID` IN %s "
         t_comn_menu_table_link_record = objdbca.sql_execute(table_name_sql, [menu_id_list])
         table_name_list = []
         for record in t_comn_menu_table_link_record:
@@ -232,11 +347,45 @@ def menu_export_exec(objdbca, record, export_menu_dir):  # noqa: C901
             with open(sqldump_path, 'w', encoding='utf-8') as f:
                 f.write(sp_sqldump)
 
-        # インポート時に利用するMENU_ID_LIST、MENU_ID_TABLE_LISTを作成する
+        # インポート時に利用するMENU_NAME_REST_LISTを作成する
         menu_name_rest_list = ",".join(menu_list)
         menu_name_rest_path = dir_path + '/' + 'MENU_NAME_REST_LIST'
         with open(menu_name_rest_path, "w") as f:
             f.write(menu_name_rest_list)
+
+        # インポート時に利用するT_COMN_MENU_DATAを作成する
+        t_comn_menu_data_path = dir_path + '/T_COMN_MENU_DATA'
+        objmenu = load_table.loadTable(objdbca, 'menu_list')   # noqa: F405
+        filter_parameter = {"discard": {"LIST": ["0"]}, "menu_name_rest": {"LIST": menu_list}}
+        status_code, result, msg = objmenu.rest_filter(filter_parameter, filter_mode)
+        if status_code != '000-00000':
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException(status_code, log_msg_args, api_msg_args)
+        with open(t_comn_menu_data_path, 'w') as f:
+            json.dump(result, f, ensure_ascii=False)
+
+        # インポート時に利用するMENU_ID_TABLE_LISTを作成する
+        menu_id_table_list_path = dir_path + '/MENU_ID_TABLE_LIST'
+        objmenu = load_table.loadTable(objdbca, 'menu_table_link_list')   # noqa: F405
+        filter_parameter = {"discard": {"LIST": ["0"]}, "uuid": {"LIST": menu_id_list}}
+        status_code, result, msg = objmenu.rest_filter(filter_parameter, filter_mode)
+        if status_code != '000-00000':
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException(status_code, log_msg_args, api_msg_args)
+        with open(menu_id_table_list_path, 'w') as f:
+            json.dump(result, f, ensure_ascii=False)
+
+        # アップロード時に利用するDP_INFOファイルを作成する
+        dp_info = {
+            "DP_MODE": mode,
+            "ABOLISHED_TYPE": abolished_type,
+            "SPECIFIED_TIMESTAMP": specified_time
+        }
+        dp_info_path = dir_path + '/' + 'DP_INFO'
+        with open(dp_info_path, "w") as f:
+            json.dump(dp_info, f)
 
         # データをtar.gzにまとめる
         gztar_path = shutil.make_archive(base_name=dir_path, format="gztar", root_dir=dir_path)
@@ -295,7 +444,7 @@ def _update_t_menu_export_import(objdbca, execution_no, status):
             objdbca: DB接クラス DBConnectWs()
             execution_no: 「メニューエクスポート・インポート管理」対象レコードのUUID
             status: ステータスID(1:未実行, 2:実行中, 3:完了, 4:完了(異常))
-        RETRUN:
+        RETURN:
             result, msg, ret_data
     """
     # テーブル名
@@ -319,7 +468,7 @@ def _format_loadtable_msg(loadtable_msg):
         【内部呼び出し用】loadTableから受け取ったバリデーションエラーメッセージをフォーマットする
         ARGS:
             loadtable_msg: loadTableから返却されたメッセージ(dict)
-        RETRUN:
+        RETURN:
             format_msg
     """
     result_msg = {}
@@ -338,7 +487,7 @@ def _check_menu_info(menu, wsdb_istc=None):
     Arguments:
         menu: menu_name_rest
         wsdb_istc: (class)DBConnectWs Instance
-    Returns:
+    return:
         (dict)T_COMN_MENUの該当レコード
     """
     if not wsdb_istc:
@@ -351,3 +500,68 @@ def _check_menu_info(menu, wsdb_istc=None):
         raise AppException("499-00002", log_msg_args, api_msg_args)  # noqa: F405
 
     return menu_record
+
+def _regist_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name):
+    t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
+
+    # DATAファイル確認
+    if os.path.isfile(execution_no_path + '/' + menu_name_rest) is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+
+    # DATAファイル読み込み
+    sql_data = Path(execution_no_path + '/' + menu_name_rest).read_text(encoding='utf-8')
+    json_sql_data = json.loads(sql_data)
+
+    # データを登録する
+    objmenu = load_table.loadTable(objdbca, menu_name_rest)   # noqa: F405
+    pk = objmenu.get_primary_key()
+    # uc = objmenu.get_unique_constraint()
+
+    pass_column = ["8", "25", "26"]
+    pass_column_list = []
+    ret_pass_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s', [menu_id, pass_column])  # noqa: E501
+    if len(ret_pass_column) != 0:
+        for record in ret_pass_column:
+            # pass_col_name = record['COL_NAME']
+            pass_col_name_rest = record['COLUMN_NAME_REST']
+            pass_column_list.append(pass_col_name_rest)
+
+    for json_record in json_sql_data:
+        file_param = json_record['file']
+        param = json_record['parameter']
+
+        # 移行先に主キーの重複データが既に存在するか確認
+        param_type = "Register"
+        ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
+        pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST')
+
+        pk_value = param[pk_name]
+        chk_pk_sql = " SELECT * FROM `" + table_name + "` WHERE `" + pk + "` = '" + pk_value + "'"
+        chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
+        if len(chk_pk_record) != 0:
+            # 主キーが重複する場合は更新で上書きする
+            param_type = "Update"
+
+        # PasswordColumnかを判定
+        for k, v in param.items():
+            if k in pass_column_list:
+                if v is not None:
+                    v = ky_encrypt(v)
+                    param[k] = v
+
+        # 登録用パラメータを作成
+        parameters = {
+            "file": {
+                "file_name": file_param
+            },
+            "parameter": param,
+            "type": param_type
+        }
+
+        # import_mode=Trueで登録を実行
+        exec_result = objmenu.exec_maintenance(parameters, pk_value, "", False, False, True, False, True)  # noqa: E999
+        if not exec_result[0]:
+            result_msg = _format_loadtable_msg(exec_result[2])
+            result_msg = json.dumps(result_msg, ensure_ascii=False)
+            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー

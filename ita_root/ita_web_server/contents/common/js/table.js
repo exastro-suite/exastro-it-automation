@@ -158,7 +158,7 @@ tableStructuralData() {
         if ( tb.structural.column_group_info[ itemId ].length === 0 ) {
             delete tb.structural.column_group_info[ itemId ];
         }
-    }    
+    }
 }
 /*
 ##################################################
@@ -1435,42 +1435,6 @@ setTableEvents() {
                 }
             }
         });
-        
-        // アクションボタン
-        tb.$.tbody.on('click', '.actionButton', function(){
-            if ( !tb.checkWork ) {
-                const $button = $( this ),
-                      type = $button.attr('data-type');
-                
-                switch ( type ) {
-                    case 'redirect': {
-                        const redirect = $button.attr('data-redirect');
-                        if ( redirect ) {
-                            window.location.href = redirect;
-                        }
-                    } break;
-                    case 'download': {
-                        $button.prop('disabled', true );
-                        const url = $button.attr('data-url'),
-                              method = $button.attr('data-method'),
-                              nameKey = $button.attr('data-filename'),
-                              dataKey = $button.attr('data-filedata');
-                        fn.fetch( url, null, method ).then(function( result ){
-                            if ( result[ dataKey ] && result[ nameKey] ) {
-                                fn.download('base64', result[ dataKey ], result[ nameKey]);
-                            } else {
-                                alert('Download error.');
-                            }
-                        }).catch(function( error ){
-                            alert( error.message );
-                            window.console.error( error );
-                        }).then(function(){
-                            $button.prop('disabled', false );
-                        });
-                    } break;
-                }
-            }
-        });
     }
     
     /*
@@ -1652,6 +1616,15 @@ setTableEvents() {
                 $select.change();
             }
         });
+        
+        // input hidden変更時にテキストも変更する
+        tb.$.tbody.on('change', '.tableEditInputHidden', function(){
+            const $input = $( this ),
+                  value = $input.val(),
+                  $text = $input.prev('.tableEditInputHiddenText');
+            $text.text( value );
+        });
+        
     }
     
     /*
@@ -1660,6 +1633,61 @@ setTableEvents() {
     ------------------------------
     */
     if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'view' || tb.mode === 'edit') {
+        
+        // アクションボタン
+        tb.$.tbody.on('click', '.actionButton', function(){
+            if ( !tb.checkWork ) {
+                const $button = $( this ),
+                      type = $button.attr('data-type');
+                
+                switch ( type ) {
+                    case 'redirect': case 'redirect2': {
+                        const redirect = $button.attr('data-redirect');
+                        if ( redirect ) {
+                            window.location.href = redirect;
+                        }
+                    } break;
+                    case 'download': {
+                        $button.prop('disabled', true );
+                        const url = $button.attr('data-url'),
+                              method = $button.attr('data-method'),
+                              nameKey = $button.attr('data-filename'),
+                              dataKey = $button.attr('data-filedata');
+                        fn.fetch( url, null, method ).then(function( result ){
+                            if ( result[ dataKey ] && result[ nameKey] ) {
+                                fn.download('base64', result[ dataKey ], result[ nameKey]);
+                            } else {
+                                alert('Download error.');
+                            }
+                        }).catch(function( error ){
+                            alert( error.message );
+                            window.console.error( error );
+                        }).then(function(){
+                            $button.prop('disabled', false );
+                        });
+                    } break;
+                    case 'modal': {
+                        $button.prop('disabled', true );
+                        const modalType = $button.attr('data-modal'),
+                              dataId = $button.attr('data-id'),
+                              buttonText = $button.text();
+                        tb.actionModalOpen( modalType, dataId, buttonText ).then(function(){
+                            $button.prop('disabled', false );
+                        });
+                    } break;
+                    case 'restapi': {
+                        $button.prop('disabled', true );
+                        const text = $button.text(),
+                              method = $button.attr('data-method'),
+                              endpoint = $button.attr('data-restapi'),
+                              body = $button.attr('data-body');
+                        tb.restApi( text, method, endpoint, body ).then(function(){
+                            $button.prop('disabled', false );
+                        });
+                    } break;
+                }
+            }
+        });
         
         // 行選択チェックボックスの外がクリックされても変更する
         tb.$.thead.find('.tHeadRowSelect').on('click', function( e ){
@@ -2097,12 +2125,20 @@ filterSelectOpen( $button ) {
     
     fn.fetch(`${tb.rest.filterPulldown}${rest}/`).then(function( result ){
         $select.html( tb.filterSelectBoxHtml( result, name, rest ) );
+        
+        const $first = $select.find('option').eq(0);
+        if ( $first.val() === '') {
+            $first.val('_blank_');
+            setTimeout(function(){ $first.val(''); },1);
+        }
         $select.find('select').select2({
             placeholder: "Pulldown select",
             dropdownAutoWidth: false,
-            width: width
+            width: width,
+            closeOnSelect: false
         }).select2('open');
     }).catch( function( e ) {
+        window.console.error( e.message );
         fn.gotoErrPage( e.message );
     });    
 }
@@ -2225,6 +2261,10 @@ getFilterParameter() {
                 break;
                 case 'select':
                     filterParams[ rest ].LIST = value;
+                    // 空白がある場合nullに変換
+                    for ( let i = 0; i < filterParams[ rest ].LIST.length; i++ ) {
+                        if ( filterParams[ rest ].LIST[i] === '' ) filterParams[ rest ].LIST[i] = null;
+                    }
                 break;
                 case 'fromNumber':
                     if ( !filterParams[ rest ].RANGE ) filterParams[ rest ].RANGE = {};
@@ -2281,12 +2321,18 @@ filterSelectBoxHtml( list, name, rest ) {
     
     // listをソートする
     list.sort(function( a, b ){
+        a = fn.cv( a, '');
+        b = fn.cv( b, '');
         return a.localeCompare( b );
     });
     
     for ( const item of list ) {
         const value = fn.cv( item, '', true );
-        select.push(`<option value="${value}">${value}</option>`)
+        if ( value !== '') {
+            select.push(`<option value="${value}">${value}</option>`)
+        } else {
+            select.push(`<option value="">{空白}</option>`)
+        }
     }
     return `<select class="filterSelect filterInput" name="${name}" data-type="select" data-rest="${rest}" multiple="multiple">${select.join('')}</select>`;
 }
@@ -2723,7 +2769,7 @@ cellHtml( item, columnKey, journal ) {
           columnType = columnInfo.column_type;
     
     // 一部のモードではボタンカラムを表示しない
-    const buttonColumnHide = ['select', 'edit', 'history'];
+    const buttonColumnHide = ['select',  'history'];
     if ( columnInfo.column_type === 'ButtonColumn' && buttonColumnHide.indexOf( tb.mode ) !== -1 ) {
         return '';
     }
@@ -2891,7 +2937,7 @@ viewCellHtml( item, columnKey, journal ) {
         }
         // ボタン
         case 'ButtonColumn':
-            return tb.buttonAction( columnInfo, item );
+            return tb.buttonAction( columnInfo, item, columnKey );
         
         // JSON
         case 'JsonColumn':
@@ -2914,10 +2960,10 @@ viewCellHtml( item, columnKey, journal ) {
 }
 /*
 ##################################################
-   View mode Button action
+  Button action
 ##################################################
 */
-buttonAction( columnInfo, item ) {    
+buttonAction( columnInfo, item, columnKey ) {
     const tb = this;
     
     // ボタンアクション
@@ -2970,6 +3016,47 @@ buttonAction( columnInfo, item ) {
                     buttonAttrs.disabled = 'disabled';
                 }                
             } break;
+            // モーダル
+            case 'modal': {
+                buttonAttrs.modal = action[1];
+                buttonAttrs.action = 'default';
+                buttonAttrs.id = item.parameter[ tb.idNameRest ];
+            } break;
+            // REST API
+            case 'restapi': {
+                const method = action[1],
+                      endPoint = action[2],
+                      valueKeys = action[3],
+                      bodyKeys = action[4];
+                
+                if ( endPoint && valueKeys ) {
+                    let api = endPoint.replace(/^\/ita/, '');
+                    const replaceTarget = api.match(/\{[^\{\}]*\}/g);
+                    if ( replaceTarget !== null ) {
+                        const replaceLength = replaceTarget.length;
+                        for ( let i = 0; i < replaceLength; i++ ) {
+                            const value = ( valueKeys[i] )? fn.cv( item.parameter[ valueKeys[i] ] ): '';
+                            if ( value ) api = api.replace( replaceTarget[i], value );
+                        }
+                    }                    
+                    buttonAttrs.restapi = api;
+                }
+                
+                if ( endPoint && bodyKeys ) {
+                    const body = {};
+                    for ( const key of bodyKeys ) {
+                        const value = item.parameter[ key ];
+                        if ( value ) {
+                            // keyを値に置換
+                            body[ key ] = value;
+                        }
+                    }
+                    buttonAttrs.body = fn.escape( JSON.stringify( body ) );
+                }
+                buttonAttrs.action = 'default';
+                buttonAttrs.key = columnKey;
+                buttonAttrs.method = method;
+            } break;
         }
     }
     
@@ -2993,7 +3080,8 @@ editCellHtml( item, columnKey ) {
           columnType = columnInfo.column_type,
           inputClassName = [],
           inputRequired = fn.cv( columnInfo.required_item, '0'),
-          autoInput = '<span class="tBodyAutoInput"></span>';
+          autoInput = '<span class="tBodyAutoInput"></span>',
+          inputItem = columnInfo.input_item;
 
     let value = fn.cv( parameter[ columnName ], '', true );
 
@@ -3069,12 +3157,18 @@ editCellHtml( item, columnKey ) {
     }
     
     // 編集不可（input_item）
-    if ( columnInfo.input_item === '0' || columnType === 'LastUpdateUserColumn') {
+    if ( inputItem === '0' || columnType === 'LastUpdateUserColumn') {
         if ( value !== '') {
             return value;
         } else {
             return autoInput;
         }
+    }
+    
+    // input_item 3
+    if ( inputItem === '3') {
+        inputClassName.push('tableEditInputHidden');
+        return `<div class="tableEditInputHiddenText">${value}</div>` + fn.html.inputHidden( inputClassName, value, name, attr );
     }
     
     switch ( columnType ) {
@@ -3130,6 +3224,10 @@ editCellHtml( item, columnKey ) {
         case 'FileUploadColumn': case 'FileUploadEncryptColumn':
             inputClassName.push('tableEditSelectFile');
             return fn.html.fileSelect( value, inputClassName, attr );
+        
+        // ボタン
+        case 'ButtonColumn':
+            return tb.buttonAction( columnInfo, item, columnKey );
         
         // 不明
         default:
@@ -3966,9 +4064,10 @@ setTableSettingValue() {
           tableSetting = ( restUser.web_table_settings && restUser.web_table_settings.table )? restUser.web_table_settings.table: {};
     
     const general = fn.cv( tableSetting.general, {}),
-          individual = ( tableSetting.individual && tableSetting.individual[ tb.params.menuNameRest ] )?
-              tableSetting.individual[ tb.params.menuNameRest ]: {};
-    
+          individual = ( tableSetting.individual && tableSetting.individual[ tb.params.menuNameRest ] && tableSetting.individual[ tb.params.menuNameRest ][ tb.id ] )?
+              tableSetting.individual[ tb.params.menuNameRest ][ tb.id ]: {};
+
+    // 値をセット
     if ( !tb.tableSetting ) tb.tableSetting = {};
     tb.tableSetting = {
         individual: individual,
@@ -4104,7 +4203,8 @@ saveTableSetting() {
         // 共通
         if ( !set.table.individual ) set.table.individual = {};
         if ( !set.table.individual[ tb.params.menuNameRest ] ) set.table.individual[ tb.params.menuNameRest ] = {};
-        set.table.individual[ tb.params.menuNameRest ][ tb.tableMode ]  = settingData.individual[ tb.tableMode ];
+        if ( !set.table.individual[ tb.params.menuNameRest ][ tb.id ] ) set.table.individual[ tb.params.menuNameRest ][ tb.id ] = {};        
+        set.table.individual[ tb.params.menuNameRest ][ tb.id ][ tb.tableMode ]  = settingData.individual[ tb.tableMode ];
         
         fn.fetch('/user/table_settings/', null, 'POST', set ).then(function(){
             tb.resetTable();
@@ -4356,6 +4456,9 @@ tableSettingListHtml() {
                         text += fn.html.required();
                         attr.disabled = 'disabled';
                     }
+                    if ( data.input_item === '3') {
+                        attr.disabled = 'disabled';
+                    }
                 }
                 
                 if ( exclusion.indexOf( data.column_name_rest ) === -1 ) {
@@ -4514,6 +4617,482 @@ tableSettingCustomCSS() {
     } else {
         return '';
     }
+}
+/*
+##################################################
+   アクションボタンモーダル
+##################################################
+*/
+actionModalOpen( type, itemId, text ) {
+    const tb = this;
+    
+    return new Promise(function( resolve ){
+        switch( type ){
+            case 'schedule_regulary':
+                tb.scheduleSettingOpen( itemId, text ).then( function(){
+                    resolve();
+                });
+            break;
+        }
+    });
+}
+/*
+##################################################
+   REST API
+##################################################
+*/
+restApi( buttonText, method, endpoint, body ) {    
+    return new Promise(function( resolve ){
+        const text = getMessage.FTE00119( buttonText );
+        
+        fn.alert(`${buttonText}${getMessage.FTE00118}`, text, 'confiarm', {
+            ok: { text: getMessage.FTE00122, action: 'default', style: 'width:160px', className: 'dialogPositive'},
+            cancel: { text: getMessage.FTE00123, action: 'negative', style: 'width:120px'}
+        }, '400px').then( function( flag ){
+            if ( flag ) {
+                let process = fn.processingModal( getMessage.FTE00120 );
+                fn.fetch( endpoint, null, method, body ).then(function( result ){
+                    fn.alert( getMessage.FTE00121, result );                 
+                }).catch(function( error ){
+                    const errorMessage = ( error.message )? error.message: 'Error!';
+                    fn.alert( getMessage.FTE00121, errorMessage );
+                }).then(function(){
+                    process.close();
+                    process = null;
+                    resolve();
+                });
+            } else {
+                resolve(); 
+            }
+        });
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   個別対応
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+##################################################
+   Conductor定期作業実行 スケジュール設定
+##################################################
+*/
+scheduleSettingData() {
+    return {
+        input: ['start_date', 'end_date', 'period', 'interval', 'week_number', 'day_of_week', 'day', 'time', 'execution_stop_start_date', 'execution_stop_end_date', 'remarks'],
+        period: {
+            period_1: getMessage.FTE00126,
+            period_2: getMessage.FTE00127,
+            period_3: getMessage.FTE00128,
+            period_4: getMessage.FTE00129,
+            period_5: getMessage.FTE00130,
+            period_6: getMessage.FTE00131,
+        },
+        schedule: {
+            scheduleIntervalHourInput: [ getMessage.FTE00132, 1, 99, getMessage.FTE00133, 1, 'period_1', 'interval'],
+            scheduleIntervalDayInput: [ getMessage.FTE00132, 1, 99, getMessage.FTE00134, 1, 'period_2', 'interval'],
+            scheduleIntervalWeekInput: [ getMessage.FTE00132,  1, 99, getMessage.FTE00135, 1, 'period_3', 'interval'],
+            scheduleIntervalMonthInput: [ getMessage.FTE00132, 1, 99, getMessage.FTE00136, 1 ,'period_4 period_5 period_6', 'interval'],
+            scheduleDayInput: [ getMessage.FTE00137, 1, 31, getMessage.FTE00138, 1, 'period_4', 'day'],
+            scheduleDayWeekInput: [ getMessage.FTE00139, 0, 0, null, 0, 'period_3', 'day_of_week'],
+            scheduleMonthDayWeekInput: [ getMessage.FTE00139, 0, 0, null, 0, 'period_5', 'week_number'],
+            scheduleHourInput: [ getMessage.FTE00140, 0, 23, getMessage.FTE00140, 0, 'period_T', 'time'],
+            scheduleMinutesInput: [ getMessage.FTE00141, 0, 59, getMessage.FTE00141, 0, 'period_T', 'time_minutes'],
+            scheduleSecondsInput: [ getMessage.FTE00165, 0, 59, getMessage.FTE00165, 0, 'period_T', 'time_seconds'],
+        }
+    };
+}
+scheduleSettingOpen( itemId, buttonText ) {
+    const tb = this;
+    
+    return new Promise(function( resolve ){  
+        
+        // モーダル function
+        const funcs = {
+            ok: function(){
+                setSchedule();
+                closeFunc();
+            },
+            cancel: function(){
+                closeFunc();
+            }
+        };
+        
+        // モーダル設定
+        const config = {
+            mode: 'modeless',
+            position: 'top',
+            header: {
+                title: buttonText
+            },
+            width: '640px',
+            footer: {
+                button: {
+                    ok: { text: getMessage.FTE00143, action: 'default', width: '160px', className: 'dialogPositive'},
+                    cancel: { text: getMessage.FTE00144, action: 'normal'}
+                }
+            }
+        };
+        
+        // スケジュールデータ
+        const data = tb.scheduleSettingData();
+        
+        // モーダルを閉じる
+        const closeFunc = function() {
+            modal.close();
+            modal = null;
+            resolve();
+        };
+        
+        // 初期値を取得
+        const initScheduleValue = {};
+        for ( const key of data.input ) {
+            const $target = tb.$.tbody.find(`.tableEditInputHidden[data-id="${itemId}"][data-key="${key}"]`),
+                  value = $target.val();
+            initScheduleValue[ key ] = value;
+        }
+        
+        // モーダルで設定したスケジュールをセットする
+        const setSchedule = function() {
+            for ( const key of data.input ) {
+                const $target = tb.$.tbody.find(`.tableEditInputHidden[data-id="${itemId}"][data-key="${key}"]`),
+                      before = $target.val();
+                
+                let after = '';
+                if ( key === 'period') {
+                    after = $mbody.find(`.schedulePeriodType:checked`).val();
+                } else if ( key === 'time') {
+                    const h = $mbody.find(`.input[data-key="${key}"]:visible`).val(),
+                          m = $mbody.find(`.input[data-key="${key}_minutes"]:visible`).val(),
+                          s = $mbody.find(`.input[data-key="${key}_seconds"]:visible`).val();
+                    if ( h && m && s ) {
+                        after = `${fn.zeroPadding(h,2)}:${fn.zeroPadding(m,2)}:${fn.zeroPadding(s,2)}`;
+                    }
+                } else {
+                    after = $mbody.find(`.input[data-key="${key}"]:visible`).val();
+                }
+                after = fn.cv( after, '');
+                if ( before !== after ) {
+                    $target.val( after ).change();
+                }
+            }
+        };
+        
+        // 曜日選択
+        const weekSelect = function( type, key ) {
+            const week = ( type === 'num')? getMessage.FTE00124: getMessage.FTE00125,
+                  weekHtml = [];
+            for ( const val of week ) {
+                if ( val === initScheduleValue[ key ] ) {
+                    weekHtml.push(`<option value="${val}" selected>${val}</option>`)
+                } else {
+                    weekHtml.push(`<option value="${val}">${val}</option>`)
+                }
+            }
+            return `<select class="scheduleSelect input" data-key="${key}">${weekHtml.join('')}</select>`;
+        };
+        
+        // スケジュール欄個別HTML
+        const schedulePeriodItemHtml = function( type, item ) {
+            switch( type ) {
+                case 'scheduleDayWeekInput':
+                    return weekSelect('day', 'day_of_week');
+                case 'scheduleMonthDayWeekInput':
+                    return weekSelect('num', 'week_number') + '&nbsp;' +  weekSelect('day', 'day_of_week');
+                default:
+                    return fn.html.inputFader('schedulePeriodInput', item[4], item[1], { min: item[1], max: item[2], key: item[6] }, { after: item[3] });
+            }
+        };
+        
+        // 周期選択
+        let selectPeriod = '';
+        if ( !initScheduleValue.period ) {
+            initScheduleValue.period = data.period.period_1;
+            selectPeriod = 'period_1';
+        }
+        const schedulePeriodRadio = function() {
+            const list = [];
+            for ( const key in data.period ) {
+                const attr = { type: key };
+                if ( initScheduleValue.period === data.period[key] ){
+                    attr.checked = 'checked';
+                    selectPeriod = key;
+                }
+                const id = itemId + '_schedulePeriodType',
+                      html = `<li class="commonRadioItem schedulePeriodRadioItem">`
+                    + fn.html.radioText('schedulePeriodType', data.period[key], id, id + key, attr, data.period[key] )
+                + `</li>`;
+                list.push( html );
+            }
+            return list.join('');
+        };
+        
+        // スケジュール欄
+        const feaderList = function() {
+            let html = '';
+            for ( const type in data.schedule ) {
+                const sc = data.schedule[type];
+                // 初期値を設定
+                if ( sc[6] === 'interval' && initScheduleValue.interval ) {
+                    if ( sc[5].indexOf( selectPeriod ) !== -1 ) {
+                        sc[4] = initScheduleValue.interval;
+                    }
+                } else if ( sc[6] === 'time' && initScheduleValue.time ) {
+                    sc[4] = Number( fn.cv( initScheduleValue.time.split(':')[0], 0 ) );
+                } else if ( sc[6] === 'time_minutes' && initScheduleValue.time ) {
+                    sc[4] = Number( fn.cv( initScheduleValue.time.split(':')[1], 0 ) );
+                } else if ( sc[6] === 'time_seconds' && initScheduleValue.time ) {
+                    sc[4] = Number( fn.cv( initScheduleValue.time.split(':')[2], 0 ) );
+                } else {
+                    if ( initScheduleValue[ sc[6] ] ) {
+                        sc[4] = initScheduleValue[ sc[6] ];
+                    }
+                }
+                html += ``
+                + `<tr class="commonInputTr schedulePeriodDetailTr ${sc[5]}">`
+                    + `<th class="commonInputTh"><div class="commonInputTitle">${sc[0]}</div></th>`
+                    + `<td class="commonInputTd">${schedulePeriodItemHtml( type, sc )}</td>`
+                + `</tr>`;
+            }
+            return html;
+        };
+        
+        // モーダルHTML
+        const html = ``
+        + `<div class="commonSection">`
+            + `<div class="commonTitle">${getMessage.FTE00145}</div>`
+            + `<div class="commonBody scheduleInputFromToDate">`
+                + `<div class="commonInputGroup">`
+                    + `<table class="commonInputTable">`
+                        + `<tbody class="commonInputTbody">`
+                            + `<tr class="commonInputTr">`
+                                + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00146}${fn.html.required()}</div></th>`
+                                + `<td class="commonInputTd">`
+                                    + `<div class="scheduleInputFromDateWrap">`
+                                        + fn.html.inputText(['scheduleInput', 'scheduleFromDate'], fn.cv( initScheduleValue.start_date, ''), 'start_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'fromDate', key: 'start_date'})
+                                    + `</div>`
+                                + `</td>`
+                                + `<td class="commonInputTd">${getMessage.FTE00148}</td>`
+                                + `<th class="commonInputTh">${getMessage.FTE00147}</th>`
+                                + `<td class="commonInputTd">`
+                                    + `<div class="scheduleInputFromDateWrap">`
+                                        + fn.html.inputText(['scheduleInput', 'scheduleToDate'], fn.cv( initScheduleValue.end_date, ''), 'end_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'toDate', key: 'end_date'})
+                                    + `</div>`
+                                + `</td>`
+                                + `<td class="commonInputTd">`
+                                    + `<div class="scheduleInputDateCalendar">`
+                                        + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'scheduleInputDatePicker'], { action: 'normal'})
+                                    + `</div>`
+                                + `</td>`
+                            + `</tr>`
+                        + `</tbody>`
+                    + `</table>`
+                + `</div>`
+                + `<div class="commonBody periodErrorBlock"></div>`
+            + `</div>`
+            + `<div class="commonTitle">${getMessage.FTE00149}</div>`
+            + `<div class="commonBody">`
+                + `<div class="scheduleType">`
+                    + `<div class="scheduleDetaile">`
+                        + `<div class="commonInputGroup">`
+                            + `<ul class="commonRadioList schedulePeriodRadioList">`
+                                + schedulePeriodRadio()
+                            + `</ul>`
+                            + `<table class="commonInputTable" data-type="${selectPeriod}">`
+                                + `<tbody class="commonInputTbody">`
+                                    + feaderList()
+                                + `</tbody>`
+                            + `</table>`
+                        + `</div>`
+                    + `</div>`
+                + `</div>`
+            + `</div>`
+            + `<div class="commonTitle">${getMessage.FTE00150}</div>`
+            + `<div class="commonBody scheduleInputFromToDate">`
+                + `<div class="commonInputGroup">`
+                    + `<table class="commonInputTable">`
+                        + `<tbody class="commonInputTbody">`
+                            + `<tr class="commonInputTr">`
+                                + `<th class="commonInputTh"><div class="commonInputTitle">${getMessage.FTE00151}</div></th>`
+                                + `<td class="commonInputTd">`
+                                    + `<div class="scheduleInputFromDateWrap">`
+                                        + fn.html.inputText(['scheduleInput', 'scheduleFromDate'], fn.cv( initScheduleValue.execution_stop_start_date, ''), 'execution_stop_start_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'fromDate', key: 'execution_stop_start_date'})
+                                    + `</div>`
+                                + `</td>`
+                                + `<td class="commonInputTd">${getMessage.FTE00148}</td>`
+                                + `<th class="commonInputTh">${getMessage.FTE00152}</th>`
+                                + `<td class="commonInputTd">`
+                                    + `<div class="scheduleInputFromDateWrap">`
+                                        + fn.html.inputText(['scheduleInput', 'scheduleToDate'], fn.cv( initScheduleValue.execution_stop_end_date, ''), 'execution_stop_end_date_' + itemId, { placeholder: 'yyyy/MM/dd HH:mm:ss', type: 'toDate', key: 'execution_stop_end_date'})
+                                    + `</div>`
+                                + `</td>`
+                                + `<td class="commonInputTd">`
+                                    + `<div class="scheduleInputDateCalendar">`
+                                        + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'scheduleInputDatePicker'], { action: 'normal'})
+                                    + `</div>`
+                                + `</td>`
+                            + `</tr>`
+                        + `</tbody>`
+                    + `</table>`
+                + `</div>`
+                + `<div class="commonBody stopErrorBlock"></div>`
+            + `</div>`
+            + `<div class="commonTitle">${getMessage.FTE00153}</div>`
+            + `<div class="commonBody">`
+                + fn.html.textarea('scheduleNote',  fn.cv( initScheduleValue.remarks, ''), null, {key: 'remarks'})
+            + `</div>`
+        + `</div>`;
+        
+        // モーダル作成
+        let modal = new Dialog( config, funcs );
+        modal.open( html );
+        
+        const $mbody = modal.$.dbody;
+        
+        // 周期選択
+        $mbody.find('.schedulePeriodType').on('change', function(){
+            const $radio = $( this ),
+                  type = $radio.attr('data-type');
+            $mbody.find('.commonInputTable').attr('data-type', type );
+        });
+        
+        // フェーダー
+        $mbody.find('.inputFaderWrap').each(function(){
+            fn.faderEvent( $( this ) );
+        });
+        
+        // フェーダー未入力の場合はmin値を入れる
+        $mbody.find('.schedulePeriodInput').on('change', function(){
+            const $input = $( this ),
+                  value = $input.val(),
+                  min = $input.attr('data-min');
+            if ( value === '') {
+                $input.val( min ).change();
+            }
+        });
+        
+        // 日付欄入力チェック
+        const $scheduleInput = $mbody.find('.scheduleInput'),
+              $errorPeriod = $mbody.find('.periodErrorBlock'),
+              $errorStop = $mbody.find('.stopErrorBlock');
+        
+        const errorListHtml = function( text ) {
+            return `<li class="commonErrorItem">${fn.html.icon('circle_exclamation')}${text}</li>`;
+        };
+        
+        const checkPeriod = function() {
+            const scheduleInputValue = {},
+                  periodErrorHtml = [],
+                  stopErrorHtml = [];
+            
+            let errorCount = 0;
+                  
+            $scheduleInput.each(function(){
+                const $input = $( this ),
+                      value = $input.val(),
+                      key = $input.attr('data-key');
+                
+                // 必須チェック
+                if ( key === 'start_date' && value === '') {
+                    periodErrorHtml.push( errorListHtml(getMessage.FTE00154) );
+                    errorCount++;
+                }
+                
+                // 形式チェック
+                const dateValidationRule = /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/;
+                
+                const checkPeriodText = {
+                    start_date: getMessage.FTE00155,
+                    end_date: getMessage.FTE00156,
+                    execution_stop_start_date: getMessage.FTE00157,
+                    execution_stop_end_date: getMessage.FTE00158
+                };
+                if ( value !== '' && ( !dateValidationRule.test( value ) || Number.isNaN(new Date( value ).getTime()) ) ) {
+                    const error = errorListHtml( getMessage.FTE00159( checkPeriodText[ key ] ) );
+                    if ( key === 'start_date' || key === 'end_date') {
+                        periodErrorHtml.push( error );
+                    } else {
+                        stopErrorHtml.push( error );
+                    }
+                    errorCount++;
+                } else {
+                    scheduleInputValue[ key ] = value;
+                }
+            });
+            
+            // 作業期間チェック
+            if ( scheduleInputValue.start_date && scheduleInputValue.end_date ) {
+                if ( scheduleInputValue.start_date >= scheduleInputValue.end_date ) {
+                    periodErrorHtml.push( errorListHtml(getMessage.FTE00160) );
+                    errorCount++;
+                }
+            }
+            // 作業停止期間チェック
+            if ( scheduleInputValue.execution_stop_start_date && scheduleInputValue.execution_stop_end_date ) {
+                if ( scheduleInputValue.execution_stop_start_date >= scheduleInputValue.execution_stop_end_date ) {
+                    stopErrorHtml.push( errorListHtml(getMessage.FTE00161) );
+                    errorCount++;
+                }
+            }
+            // 両方入力されているかチェック
+            if ( ( scheduleInputValue.execution_stop_start_date && !scheduleInputValue.execution_stop_end_date ) ||
+                 ( !scheduleInputValue.execution_stop_start_date && scheduleInputValue.execution_stop_end_date ) ) {
+                stopErrorHtml.push( errorListHtml(getMessage.FTE00162) );
+                errorCount++;
+            }
+            // 作業期間内かチェック
+            if ( scheduleInputValue.execution_stop_start_date && scheduleInputValue.execution_stop_end_date ) {
+                if ( ( scheduleInputValue.start_date > scheduleInputValue.execution_stop_start_date ) ||
+                     ( scheduleInputValue.end_date < scheduleInputValue.execution_stop_end_date ) ) {
+                    stopErrorHtml.push( errorListHtml(getMessage.FTE00163) );
+                    errorCount++;
+                }
+            }
+            
+            // 作業期間エラー表示
+            if ( periodErrorHtml.length ) {
+                $errorPeriod.html(`<ul class="commonErrorList">${periodErrorHtml.join('')}</ul>`);
+            } else {
+                $errorPeriod.empty();
+            }
+            
+            // 作業停止期間エラー表示
+            if ( stopErrorHtml.length ) {
+                $errorStop.html(`<ul class="commonErrorList">${stopErrorHtml.join('')}</ul>`);
+            } else {
+                $errorStop.empty();
+            }
+            
+            // 反映ボタン活性化チェック
+            const errorFlag = ( errorCount > 0 )? true: false;
+            modal.buttonPositiveDisabled( errorFlag );
+        };
+        checkPeriod();
+        
+        $scheduleInput.on('change', function(){
+            checkPeriod();            
+        });
+        
+        // データピッカー
+        $mbody.find('.scheduleInputDatePicker').on('click', function(){
+            const $button = $( this );
+
+            const $from = $button.closest('.scheduleInputFromToDate').find('.scheduleFromDate'),
+                  $to = $button.closest('.scheduleInputFromToDate').find('.scheduleToDate');
+
+            const from = $from.val(),
+                  to = $to.val();
+
+            fn.datePickerDialog('fromTo', true, getMessage.FTE00164, { from: from, to: to } ).then(function( result ){
+                if ( result !== 'cancel') {
+                    $from.val( result.from );
+                    $to.val( result.to ).change();
+                }
+            });
+        });
+    });
 }
 
 }

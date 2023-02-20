@@ -253,7 +253,7 @@ class FileUploadColumn(Column):
 
         return result
 
-    def get_file_data_path(self, file_name, target_uuid, target_uuid_jnl=''):
+    def get_file_data_path(self, file_name, target_uuid, target_uuid_jnl='', file_chk=True):
         """
             ファイルのパスを取得
             ARGS:
@@ -282,14 +282,14 @@ class FileUploadColumn(Column):
                     # target_uuid_jnl指定時
                     # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
                     result = file_encode(old_file_path)  # noqa: F405
-                    if result is False or result == "":
+                    if result is False or result == "" and file_chk is True:
                         result = None
                     else:
                         result = old_file_path  # noqa: F405
                 else:
                     # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
                     result = file_encode(dir_path)  # noqa: F405
-                    if result is False or result == "":
+                    if result is False or result == "" and file_chk is True:
                         result = None
                     else:
                         result = dir_path  # noqa: F405

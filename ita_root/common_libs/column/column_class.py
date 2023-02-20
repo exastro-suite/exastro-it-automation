@@ -102,7 +102,7 @@ class Column():
         self.db_qm = "'"
 
         self.objdbca = objdbca
-        
+
         self.cmd_type = cmd_type
 
         # デフォルト処理名
@@ -159,7 +159,7 @@ class Column():
                 self.primary_key
         """
         return self.primary_key
-    
+
     def get_menu(self):
         """
             menuを取得
@@ -284,7 +284,7 @@ class Column():
                 cmd_type
         """
         self.cmd_type = cmd_type
-        
+
     def get_save_type(self):
         """
             単一カラムのsave_typeを取得
@@ -424,14 +424,14 @@ class Column():
         """
         retBool = True
         msg = ''
-        
+
         # カラムクラス毎個別処理レコード操作前
         result_0 = self.before_iud_common_action(val, option)
         if result_0[0] is not True:
             return result_0
         else:
             option = result_0[2]
-        
+
         # 標準バリデーションレコード操作前
         result_1 = self.before_iud_validate_check(val, option)
         if result_1[0] is not True:
@@ -526,7 +526,7 @@ class Column():
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu())
-            exec_func = importlib.import_module(external_validate_path)
+            importlib.import_module(external_validate_path)
             eval_str = 'exec_func.{}(self.objdbca, self.objtable, option)'.format(exec_config)
             tmp_exec = eval(eval_str)
             if tmp_exec[0] is not True:
@@ -595,9 +595,9 @@ class Column():
                 msg = tmp_exec[1]
             else:
                 option = tmp_exec[2]
-                    
+
         return retBool, msg, option,
-    
+
     # [maintenance] カラム個別処理 レコード操作後の状態回復処理
     def after_iud_restore_action(self, val="", option={}):
         """
@@ -610,7 +610,7 @@ class Column():
         retBool = True
         msg = ''
         return retBool, msg,
-        
+
     # [maintenance] 共通バリデーション呼び出し
     def is_valid(self, val, option={}):
         """
@@ -658,7 +658,7 @@ class Column():
                     if option.get('uuid') is not None:
                         where_str = where_str + " and `{}` <> %s ".format(primary_key_list[0])
                         bind_value_list.append(option.get('uuid'))
-                
+
                 result = self.objdbca.table_select(self.table_name, where_str, bind_value_list)
                 if result:
                     tmp_uuids = []
@@ -681,24 +681,24 @@ class Column():
                                         if jsonval == val:
                                             tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
                                             retBool = False
-                    
+
                     if not retBool:
                         status_code = 'MSG-00025'
                         str_uuids = ', '.join(map(str, tmp_uuids))
                         msg_args = [str_uuids, val]
                         msg = g.appmsg.get_api_message(status_code, msg_args)
                         return retBool, msg
-                        
+
             else:
                 # 通常のカラムの場合
                 where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
                 bind_value_list = [val]
-                
+
                 if 'uuid' in option:
                     if option.get('uuid') is not None:
                         where_str = where_str + " and `{}` <> %s ".format(primary_key_list[0])
                         bind_value_list.append(option.get('uuid'))
-                
+
                 result = self.objdbca.table_select(self.table_name, where_str, bind_value_list)
                 tmp_uuids = []
                 if len(result) != 0:
@@ -737,7 +737,7 @@ class Column():
                 status_code = 'MSG-00030'
                 msg_args = []
                 msg = g.appmsg.get_api_message(status_code, msg_args)
-                    
+
         return retBool, msg,
 
     # [load_table] 内部処理用の値へ変換
@@ -779,7 +779,7 @@ class Column():
         """
         result = '{} base64 string :{}_{}'.format(file_name, target_uuid, target_uuid_jnl)
         return result
-    
+
     # [load_table][filter] ID変換用のリスト取得
     def get_convert_list(self):
         """
@@ -799,7 +799,7 @@ class Column():
         return result
 
     # [filter] SQL生成用のwhere句
-    def get_filter_query(self, search_mode, search_conf):
+    def get_filter_query(self, search_mode, search_conf):   # noqa: C901
         """
             SQL生成用のwhere句関連
             ARGS:
@@ -822,18 +822,26 @@ class Column():
                 for bindvalue in tmp_conf:
                     tmp_result = self.convert_value_input(bindvalue)
                     if tmp_result[0] is True:
-                        bindvalue = tmp_result[2]
+                        bindvalue = json.dumps(tmp_result[2])
                     if len(str_where) != 0:
                         conjunction = 'or'
-                    str_where = str_where + ' ' + conjunction + ' JSON_CONTAINS(`{}`, \'"{}"\', "$.{}")'.format(
+                    bindkey = "__{}__{}__".format(self.get_col_name(), listno)
+                    bindkeys.append(bindkey)
+                    bindvalues.setdefault(bindkey, bindvalue)
+                    listno = listno + 1
+                    str_where = str_where + ' ' + conjunction + ' JSON_CONTAINS(`{}`, {}, "$.{}")'.format(
                         self.get_col_name(),
-                        bindvalue,
+                        bindkey,
                         self.get_rest_key_name()
                     )
                 if len(str_where) != 0:
                     str_where = '(' + str_where + ')'
             else:
+                if None in tmp_conf:
+                    str_where = "`{col_name}` IS NULL ".format(col_name=self.get_col_name())
                 for bindvalue in tmp_conf:
+                    if bindvalue is None:
+                        continue
                     tmp_result = self.convert_value_input(bindvalue)
                     if tmp_result[0] is True:
                         bindvalue = tmp_result[2]
@@ -843,11 +851,16 @@ class Column():
                     bindvalues.setdefault(bindkey, bindvalue)
                     listno = listno + 1
 
-                bindkey = "{}".format(",".join(map(str, bindkeys)))
-                str_where = " `{col_name}` IN ( {bindkey} ) ".format(
-                    col_name=self.get_col_name(),
-                    bindkey=bindkey
-                )
+                if listno > 0:
+                    if len(str_where) != 0:
+                        str_where = str_where + 'or '
+
+                    bindkey = "{}".format(",".join(map(str, bindkeys)))
+                    str_where = str_where + " `{col_name}` IN ( {bindkey} ) ".format(
+                        col_name=self.get_col_name(),
+                        bindkey=bindkey
+                    )
+                str_where = '(' + str_where + ')'
             result.setdefault("bindkey", bindkeys)
             result.setdefault("bindvalue", bindvalues)
             result.setdefault("where", str_where)

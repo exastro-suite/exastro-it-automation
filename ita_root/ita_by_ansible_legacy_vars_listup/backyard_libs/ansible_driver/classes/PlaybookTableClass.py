@@ -14,10 +14,8 @@
 from flask import g
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
-from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
+from common_libs.ansible_driver.classes.MaterialVarsAnalyzerClass import MaterialVarsAnalyzer
 from .TableBaseClass import TableBase
-from .VariableClass import Variable
-from .VariableManagerClass import VariableManager
 
 
 class PlaybookTable(TableBase):
@@ -36,33 +34,36 @@ class PlaybookTable(TableBase):
         self.table_name = PlaybookTable.TABLE_NAME
         self.pkey = PlaybookTable.PKEY
 
-    def extract_variable(self):
+    def extract_variable(self, tpl_vars_dict):
         """
         変数を抽出する（playbook_file）
 
+        Arguments:
+            tpl_vars_dict: { (tpl_var_name): set(var_name), ... }
+
         Returns:
-            playbook_varmgr_dict: { playbook_matter_id: VariableManager }
+            result_dict: { playbook_matter_id: set(var_name), ...  }
         """
         g.applogger.debug(f"[Trace] Call {self.__class__.__name__} extract_variable()")
 
-        var_extractor = WrappedStringReplaceAdmin()
-        playbook_varmgr_dict = {}
+        playbook_analyzer = MaterialVarsAnalyzer(AnscConst.DF_LEGACY_DRIVER_ID, self._ws_db)
+
+        result_dict = {}
         for playbook_matter_row in self._stored_records.values():
             playbook_matter_id = playbook_matter_row[self.pkey]
 
             # ファイル読み込み
-            #TODO playbook_vars = xxxxx(playbook_matter_row['PLAYBOOK_MATTER_FILE'])
-            playbook_vars = {}
+            result_vars = playbook_analyzer.analyze(playbook_matter_id, playbook_matter_row['PLAYBOOK_MATTER_FILE'])
+
+            if playbook_matter_id not in result_dict:
+                result_dict[playbook_matter_id] = set()
 
             # 変数抽出
-            varmgr = VariableManager()
-            #TODO
-            for var_name, attr_flag in playbook_vars.items():
-                var_attr = AnscConst.GC_VARS_ATTR_STD if attr_flag == 0 else AnscConst.GC_VARS_ATTR_LIST
-                item = Variable(var_name, var_attr)
-                varmgr.add_variable(item)
-                # print(f"item: {item}") # debug
+            for var_name in result_vars[AnscConst.DF_VAR_TYPE_VAR]:
+                result_dict[playbook_matter_id].add(var_name)
 
-            playbook_varmgr_dict[playbook_matter_id] = varmgr
+            # テンプレート内の変数抽出
+            for tpl_var_name in result_vars[AnscConst.DF_VAR_TYPE_TPF]:
+                result_dict[playbook_matter_id] |= tpl_vars_dict[tpl_var_name]
 
-        return playbook_varmgr_dict
+        return result_dict

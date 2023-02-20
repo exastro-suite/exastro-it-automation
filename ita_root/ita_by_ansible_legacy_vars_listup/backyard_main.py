@@ -66,18 +66,18 @@ def backyard_main(organization_id, workspace_id):
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     g.applogger.debug("[Trace] Start extracting variables.")
     # Playbook素材集変数チェック
-    playbook_varmgr_dict = playbook_table.extract_variable()
+    tpl_vars_dict = tpl_table.extract_variable()
+    playbook_vars_dict = playbook_table.extract_variable(tpl_vars_dict)
 
-    # Movement変数チェック（Movement - Role 変数紐づけ、Movement追加オプション）
+    # Movement変数チェック（Movement - Playbook 変数紐づけ、Movement追加オプション）
     mov_records = mov_table.get_stored_records()
     mov_matl_lnk_records = mov_material_link_table.get_stored_records()
 
-    mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_varmgr_dict)
+    mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_vars_dict)
 
     # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する、作業対象ホストのインベントリファイル追加オプション）
-    device_varmng_dict = device_table.extract_variable()
-    tpl_varmng_dict = tpl_table.extract_variable()
-    mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_dict, ws_db)
+    device_vars_dict = device_table.extract_variable()
+    mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, device_vars_dict, ws_db)
 
     # Movement変数 登録・廃止
     mov_vars_link_table.register_and_discard(mov_vars_dict)

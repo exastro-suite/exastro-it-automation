@@ -243,6 +243,28 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # ループパターン(対象メニューグループのリスト)を設定
             target_menu_group_list = ['MENU_GROUP_ID_INPUT']
 
+        elif sheet_type == "3":  # パラメータシート（オペレーションあり）
+            # テーブル名/ビュー名を生成
+            create_table_name = 'T_CMDB_' + str(menu_create_id)
+            create_table_name_jnl = 'T_CMDB_' + str(menu_create_id) + '_JNL'
+            create_view_name = 'V_CMDB_' + str(menu_create_id)
+            create_view_name_jnl = 'V_CMDB_' + str(menu_create_id) + '_JNL'
+
+            if vertical_flag:
+                # パラメータシート(縦メニュー利用あり)用テーブル作成SQL
+                sql_file_path = "./sql/parameter_sheet_cmdb_vertical.sql"
+
+                # 「縦メニュー利用あり」かつ「項目が0件」の場合はエラー判定
+                if not record_t_menu_column:
+                    msg = g.appmsg.get_log_message("BKY-20214", [])
+                    raise Exception(msg)
+            else:
+                # パラメータシート用テーブル作成SQL
+                sql_file_path = "./sql/parameter_sheet_cmdb.sql"
+
+            # ループパターン(対象メニューグループのリスト)を設定
+            target_menu_group_list = ['MENU_GROUP_ID_INPUT', 'MENU_GROUP_ID_SUBST', 'MENU_GROUP_ID_REF']
+
         else:
             msg = g.appmsg.get_log_message("BKY-20201", [sheet_type])
             raise Exception(msg)
@@ -253,7 +275,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             g.applogger.debug(debug_msg)
             with open(sql_file_path, "r") as f:
                 file = f.read()
-                if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
+                if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
                     file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
                     file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
                     file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
@@ -530,6 +552,9 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
             sort_key_target_record = record_t_menu_column[0]
             sort_key_column_name_rest = sort_key_target_record.get('COLUMN_NAME_REST')
             sort_key = '[{{"ASC":"{}"}}]'.format(sort_key_column_name_rest)
+        elif sheet_type == "3":
+            # オペレーションでソート（後ろに記載したほうが優先される）
+            sort_key = '[{"ASC":"operation_name_disp"}]'
 
         # 「メニュー管理」にレコードを登録
         data_list = {
@@ -587,6 +612,9 @@ def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, men
             sort_key_target_record = record_t_menu_column[0]
             sort_key_column_name_rest = sort_key_target_record.get('COLUMN_NAME_REST')
             sort_key = '[{{"ASC":"{}"}}]'.format(sort_key_column_name_rest)
+        elif sheet_type == "3":
+            # オペレーションでソート（後ろに記載したほうが優先される）
+            sort_key = '[{"ASC":"operation_name_disp"}]'
 
         # 更新対象のレコードを特定
         ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s', [menu_name_rest])  # noqa: E501
@@ -737,6 +765,10 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         if sheet_type == "1" and menu_group_col_name == "MENU_GROUP_ID_REF":
             sheet_type = "5"
 
+        # シートタイプが「3: パラメータシート（オペレーションあり）」かつ「参照用」メニューグループの場合、シートタイプを「5: 参照用（/オペレーションあり）」とする。
+        if sheet_type == "3" and menu_group_col_name == "MENU_GROUP_ID_REF":
+            sheet_type = "6"
+
         # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」かつfile_upload_only_flagがTrueの場合、シートタイプを「4: パラメータシート（ファイルアップロードあり）」とする。
         if sheet_type == "1" and file_upload_only_flag:
             sheet_type = "4"
@@ -770,6 +802,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             if hostgroup_flag and substitution_value_link_flag == "1":
                 data_list["TABLE_NAME"] = sv_create_table_name
                 data_list["VIEW_NAME"] = sv_create_view_name
+            elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
+                data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
 
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_update(t_comn_menu_table_link, data_list, primary_key_name)
@@ -799,7 +833,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             if hostgroup_flag and substitution_value_link_flag == "1":
                 data_list["TABLE_NAME"] = sv_create_table_name
                 data_list["VIEW_NAME"] = sv_create_view_name
-
+            elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
+                data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
@@ -959,65 +994,67 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         # 表示順序を加算
         disp_seq_num = int(disp_seq_num) + 10
 
-        # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」の場合のみ
-        if sheet_type == "1":
-            # 「ホスト名」用のレコードを作成
-            res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "host_name")
-            if not res_valid:
-                raise Exception(msg)
+        # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」「3: パラメータシート（オペレーションあり）」の場合のみ
+        if sheet_type == "1" or sheet_type == "3":
+            # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」の場合のみ
+            if sheet_type == "1":
+                # 「ホスト名」用のレコードを作成
+                res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "host_name")
+                if not res_valid:
+                    raise Exception(msg)
 
-            data_list = {
-                "MENU_ID": menu_uuid,
-                "COLUMN_NAME_JA": "ホスト名",
-                "COLUMN_NAME_EN": "Host name",
-                "COLUMN_NAME_REST": "host_name",
-                "COL_GROUP_ID": None,
-                "COLUMN_CLASS": 7,  # IDColumn
-                "COLUMN_DISP_SEQ": disp_seq_num,
-                "REF_TABLE_NAME": "T_ANSC_DEVICE",
-                "REF_PKEY_NAME": "SYSTEM_ID",
-                "REF_COL_NAME": "HOST_NAME",
-                "REF_SORT_CONDITIONS": None,
-                "REF_MULTI_LANG": 0,  # False
-                "REFERENCE_ITEM": None,
-                "SENSITIVE_COL_NAME": None,
-                "FILE_UPLOAD_PLACE": None,
-                "BUTTON_ACTION": None,
-                "COL_NAME": "HOST_ID",
-                "SAVE_TYPE": None,
-                "AUTO_INPUT": 0,  # False
-                "INPUT_ITEM": 1,  # True
-                "VIEW_ITEM": 1,  # True
-                "UNIQUE_ITEM": 0,  # False
-                "REQUIRED_ITEM": 1,  # True
-                "AUTOREG_HIDE_ITEM": 1,  # True
-                "AUTOREG_ONLY_ITEM": 0,  # False
-                "INITIAL_VALUE": None,
-                "VALIDATE_OPTION": None,
-                "VALIDATE_REG_EXP": None,
-                "BEFORE_VALIDATE_REGISTER": None,
-                "AFTER_VALIDATE_REGISTER": None,
-                "DESCRIPTION_JA": "[元データ]Ansible共通/機器一覧",
-                "DESCRIPTION_EN": "[Original data] Ansible Common/Device list",
-                "DISUSE_FLAG": "0",
-                "LAST_UPDATE_USER": g.get('USER_ID')
-            }
+                data_list = {
+                    "MENU_ID": menu_uuid,
+                    "COLUMN_NAME_JA": "ホスト名",
+                    "COLUMN_NAME_EN": "Host name",
+                    "COLUMN_NAME_REST": "host_name",
+                    "COL_GROUP_ID": None,
+                    "COLUMN_CLASS": 7,  # IDColumn
+                    "COLUMN_DISP_SEQ": disp_seq_num,
+                    "REF_TABLE_NAME": "T_ANSC_DEVICE",
+                    "REF_PKEY_NAME": "SYSTEM_ID",
+                    "REF_COL_NAME": "HOST_NAME",
+                    "REF_SORT_CONDITIONS": None,
+                    "REF_MULTI_LANG": 0,  # False
+                    "REFERENCE_ITEM": None,
+                    "SENSITIVE_COL_NAME": None,
+                    "FILE_UPLOAD_PLACE": None,
+                    "BUTTON_ACTION": None,
+                    "COL_NAME": "HOST_ID",
+                    "SAVE_TYPE": None,
+                    "AUTO_INPUT": 0,  # False
+                    "INPUT_ITEM": 1,  # True
+                    "VIEW_ITEM": 1,  # True
+                    "UNIQUE_ITEM": 0,  # False
+                    "REQUIRED_ITEM": 1,  # True
+                    "AUTOREG_HIDE_ITEM": 1,  # True
+                    "AUTOREG_ONLY_ITEM": 0,  # False
+                    "INITIAL_VALUE": None,
+                    "VALIDATE_OPTION": None,
+                    "VALIDATE_REG_EXP": None,
+                    "BEFORE_VALIDATE_REGISTER": None,
+                    "AFTER_VALIDATE_REGISTER": None,
+                    "DESCRIPTION_JA": "[元データ]Ansible共通/機器一覧",
+                    "DESCRIPTION_EN": "[Original data] Ansible Common/Device list",
+                    "DISUSE_FLAG": "0",
+                    "LAST_UPDATE_USER": g.get('USER_ID')
+                }
 
-            # ホストグループ利用時、参照先テーブル変更
-            if hostgroup_flag:
-                data_list["REF_TABLE_NAME"] = "V_HGSP_UQ_HOST_LIST"
-                data_list["REF_PKEY_NAME"] = "KY_KEY"
-                data_list["REF_COL_NAME"] = "KY_VALUE"
+                # ホストグループ利用時、入力用の参照先テーブル変更
+                if hostgroup_flag and menu_group_col_name == "MENU_GROUP_ID_INPUT":
+                    data_list["REF_TABLE_NAME"] = "V_HGSP_UQ_HOST_LIST"
+                    data_list["REF_PKEY_NAME"] = "KY_KEY"
+                    data_list["REF_COL_NAME"] = "KY_VALUE"
 
-            primary_key_name = 'COLUMN_DEFINITION_ID'
-            if column_definition_id:
-                data_list['COLUMN_DEFINITION_ID'] = column_definition_id
-                objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
-            else:
-                objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
+                primary_key_name = 'COLUMN_DEFINITION_ID'
+                if column_definition_id:
+                    data_list['COLUMN_DEFINITION_ID'] = column_definition_id
+                    objdbca.table_update(t_comn_menu_column_link, data_list, primary_key_name)
+                else:
+                    objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
-            # 表示順序を加算
-            disp_seq_num = int(disp_seq_num) + 10
+                # 表示順序を加算
+                disp_seq_num = int(disp_seq_num) + 10
 
             # カラムグループ「オペレーション」の情報を取得
             operation_name_ja = 'オペレーション'
@@ -1373,6 +1410,10 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # カラムクラスが「5:日時」「6:日付」の場合は代入値自動登録対象外とするため、autoreg_hide_itemを1とする。
             autoreg_hide_item = 0
             if column_class == "5" or column_class == "6":
+                autoreg_hide_item = 1
+
+            # カラムクラスが「9:ファイルアップロード」かつ、シートタイプが「3: パラメータシート（オペレーションあり）」の場合は代入値自動登録対象外とするため、autoreg_hide_itemを1とする。
+            if column_class == "9" and sheet_type == "3":
                 autoreg_hide_item = 1
 
             # カラムクラスが「プルダウン選択」の場合、「他メニュー連携」のレコードからIDColumnに必要なデータを取得し変数に格納

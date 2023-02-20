@@ -1015,9 +1015,9 @@ def create_column_info(
         # 登録
         # 更新
         tmp = '×'
-        if auto_input != '1' and input_item == '1' and required_item == '1' and column_class not in column_class_file:
+        if auto_input != '1' and input_item in ['1', '3'] and required_item == '1' and column_class not in column_class_file:
             tmp = '●'
-        elif auto_input != '1' and input_item == '1' and required_item == '0' and column_class not in column_class_file:
+        elif auto_input != '1' and input_item in ['1', '3'] and required_item == '0' and column_class not in column_class_file:
             tmp = '○'
         ws.cell(row=startRow, column=column_num).font = font_bl
         ws.cell(row=startRow, column=column_num).fill = fill_gr

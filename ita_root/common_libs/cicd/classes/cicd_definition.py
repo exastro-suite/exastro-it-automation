@@ -28,17 +28,17 @@ class TD_SYNC_STATUS_NAME_DEFINE():
     @staticmethod
     def NORMAL():
         # 正常
-        return g.appmsg.get_api_message("ITACICDFORIAC-STD-2030")  # ToDo
+        return g.appmsg.get_api_message("MSG-90071")
 
     @staticmethod
     def ERROR():
         # 異常
-        return g.appmsg.get_api_message("ITACICDFORIAC-STD-2031")  # ToDo
+        return g.appmsg.get_api_message("MSG-90072")
 
     @staticmethod
     def RESTART():
         # 再開
-        return g.appmsg.get_api_message("ITACICDFORIAC-STD-2032")  # ToDo
+        return g.appmsg.get_api_message("MSG-90073")
 
 
 class TD_B_CICD_MATERIAL_FILE_TYPE_NAME():

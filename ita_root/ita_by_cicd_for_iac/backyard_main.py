@@ -25,29 +25,233 @@ import base64
 
 from flask import g
 
-from libs import driver_controll
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from common_libs.common.encrypt import decrypt_str
+from common_libs.loadtable import *
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
+from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath, getPioneerDialogUploadDirPath, getRolePackageContentUploadDirPath, getFileContentUploadDirPath, getTemplateContentUploadDirPath
 from common_libs.ansible_driver.functions.rest_libs import insert_execution_list as a_insert_execution_list
 from common_libs.terraform_driver.common.Execute import insert_execution_list as t_insert_execution_list
 from common_libs.cicd.classes.cicd_definition import TD_SYNC_STATUS_NAME_DEFINE, TD_B_CICD_MATERIAL_FILE_TYPE_NAME, TD_B_CICD_MATERIAL_TYPE_NAME, TD_C_PATTERN_PER_ORCH, TD_B_CICD_GIT_PROTOCOL_TYPE_NAME, TD_B_CICD_GIT_REPOSITORY_TYPE_NAME, TD_B_CICD_MATERIAL_LINK_LIST
-from common_libs.cicd.functions.local_functions import MatlLinkColumnValidator2, MatlLinkColumnValidator3, MatlLinkColumnValidator4, MatlLinkColumnValidator5
+from common_libs.cicd.functions.local_functions import MatlLinkColumnValidator2, MatlLinkColumnValidator3, MatlLinkColumnValidator5
 
 
 ################################################################
 # 共通処理
 ################################################################
-def makeLogiFileOutputString(file, line, logstr1, logstr2):
+def makeLogiFileOutputString(file, line, logstr1, logstr2=''):
 
     msg = '[FILE]:%s [LINE]:%s %s' % (file, line, logstr1)
     if logstr2:
         msg = '%s\n%s' % (msg, logstr2)
 
     return msg
+
+
+################################################################
+# CICD例外クラス
+################################################################
+class CICDException(Exception):
+
+    def __init__(self, RetCode, LogStr, UIMsg):
+
+        self.ary = {}
+        self.ary['RetCode'] = RetCode
+        self.ary['log'] = LogStr
+        self.ary['UImsg'] = UIMsg
+
+    def __str__(self):
+
+        return json.dumps(self.ary)
+
+
+################################################################
+# CICD資材配置パラメーター作成クラス
+################################################################
+class CICDMakeParamBase():
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        self.table_name = table_name
+        self.primary_key = pkey
+        self.file_col_name = fcol_name
+        self.menu_name = menu_name
+
+    def make_param(self, *args, **kwargs):
+
+        return {}
+
+    def make_rest_param(self, *args, **kwargs):
+
+        return {}
+
+    def diff_file(self, *args, **kwargs):
+
+        return False
+
+    def get_record(self, DBobj, **kwargs):
+
+        sql = ""
+        sql_where = ""
+        where_list = []
+
+        sql = "SELECT * FROM %s " % (self.table_name)
+        for k, v in kwargs.items():
+            if sql_where:
+                sql_where += "AND "
+
+            if v is None:
+                sql_where += "%s IS NULL " % (k)
+
+            else:
+                sql_where += "%s=%%s " % (k)
+                where_list.append(v)
+
+        if sql_where:
+            sql_where = "WHERE %s" % (sql_where)
+
+        sql = "%s %s ORDER BY LAST_UPDATE_TIMESTAMP;" % (sql, sql_where)
+
+        rset = DBobj.sql_execute(sql, where_list)
+
+        return rset
+
+class CICDMakeParamLegacy(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamLegacy, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self, row, tgtFileName):
+
+        param = {}
+        param['PLAYBOOK_MATTER_NAME'] = row['MATL_LINK_NAME']
+        param['PLAYBOOK_MATTER_FILE'] = tgtFileName
+
+        return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['item_no'] = kwargs['PLAYBOOK_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['playbook_name'] = linkname
+        data['playbook_file'] = filename
+        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        data['discard'] = '0'
+        data['last_update_date_time'] = datetime.datetime.now()
+        data['last_updated_user'] = g.USER_ID
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['playbook_file'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        filepath = '%s/%s/%s' % (getLegacyPlaybookUploadDirPath(), mid, name)
+        if os.path.exists(filepath) is False:
+            return True
+
+        cur_filedata = ""
+        with open(filepath) as fp:
+            cur_filedata = fp.read()
+
+        cur_filedata = base64.b64encode(cur_filedata.encode())
+
+        if filedata == cur_filedata:
+            return False
+
+        return True
+
+class CICDMakeParamPioneer(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamPioneer, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self):
+
+        param = {}
+
+        return param
+
+class CICDMakeParamRole(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamRole, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self):
+
+        param = {}
+
+        return param
+
+class CICDMakeParamContent(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamContent, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self):
+
+        param = {}
+
+        return param
+
+class CICDMakeParamTemplate(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamTemplate, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self):
+
+        param = {}
+
+        return param
+
+class CICDMakeParamModule(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamModule, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self):
+
+        param = {}
+
+        return param
+
+class CICDMakeParamPolicy(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamPolicy, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self):
+
+        param = {}
+
+        return param
+
+class CICDMakeParamModuleCLI(CICDMakeParamBase):
+
+    def __init__(self, table_name, pkey, fcol_name, menu_name):
+
+        super(CICDMakeParamModuleCLI, self).__init__(table_name, pkey, fcol_name, menu_name)
+
+    def make_param(self):
+
+        param = {}
+
+        return param
 
 
 ################################################################
@@ -69,7 +273,7 @@ class ControlGit():
         self.libPath = libPath
         self.ClearGitCommandLastErrorMsg()
         self.ClearLastErrorMsg()
-        self.branch = RepoInfo['BRANCH_NAME'] if 'BRANCH_NAME' in RepoInfo['BRANCH_NAME'] else "__undefine_branch__"
+        self.branch = RepoInfo['BRANCH_NAME'] if 'BRANCH_NAME' in RepoInfo and RepoInfo['BRANCH_NAME'] else "__undefine_branch__"
         self.retryCount = self.dict_to_int(RepoInfo, 'RETRAY_COUNT', 3) + 1
         self.retryWaitTime = self.dict_to_int(RepoInfo, 'RETRAY_INTERVAL', 1000) / 1000
         ProxyAddress = RepoInfo['PROXY_ADDRESS'] if 'PROXY_ADDRESS' in RepoInfo else None
@@ -125,41 +329,35 @@ class ControlGit():
             reg_flg = False
             cmd = ["git", "config", "--global", "-l"]
 
-            if os.path.exists("/root/.gitconfig"):  # ToDo ファイルパス
-                return_var = subprocess.run(cmd, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if os.path.exists("/home/app_user/.gitconfig"):
+                return_var = subprocess.run(cmd, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 if return_var.returncode == 0:
                     if "core.sshcommand" in return_var.stdout:
                         reg_flg = True
 
                 else:
-                    logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1036", [cmd,])  # ToDo
+                    logstr = g.appmsg.get_api_message("MSG-90091", [cmd,])
                     logaddstr = '%s\n%s\nexit code:(%s)' % (' '.join(cmd), return_var.stdout, return_var.returncode)
                     FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
                     self.SetGitCommandLastErrorMsg('%s\n%s' % (logstr, logaddstr))
                     self.SetLastErrorMsg(FREE_LOG)
                     return False
 
+            """
             if reg_flg is False:
                 cmd = "git config --global core.sshCommand 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'"
-                return_var = subprocess.run(cmd, check=True, text=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                return_var = subprocess.run(cmd, encoding='utf-8', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 if return_var.returncode != 0:
-                    logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1036", [cmd,])  # ToDo
+                    logstr = g.appmsg.get_api_message("MSG-90091", [cmd,])
                     logaddstr = '%s\n%s\nexit code:(%s)' % (' '.join(cmd), return_var.stdout, return_var.returncode)
                     FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
                     self.SetGitCommandLastErrorMsg('%s\n%s' % (logstr, logaddstr))
                     self.SetLastErrorMsg(FREE_LOG)
                     return False
-
-        except subprocess.CalledProcessError as e:
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1036", [cmd,])  # ToDo
-            logaddstr = '%s\n%s\nexit code:(%s)' % (' '.join(cmd), e.stdout, e.returncode)
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
-            self.SetGitCommandLastErrorMsg('%s\n%s' % (logstr, logaddstr))
-            self.SetLastErrorMsg(FREE_LOG)
-            return False
+            """
 
         except Exception as e:
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1036", [cmd,])  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90091", [cmd,])
             logaddstr = '%s\n%s' % (' '.join(cmd), str(e.stdout))
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg('%s\n%s' % (logstr, logaddstr))
@@ -197,7 +395,7 @@ class ControlGit():
                     cmd_ok = True
 
         else:
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1023")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90085")
             logaddstr = "%s\nexit code:(%s)" % (return_var.stdout if return_var else '', return_var.returncode if return_var else '')
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg(return_var.stdout if return_var else '')
@@ -205,7 +403,7 @@ class ControlGit():
             return -1
 
         if cmd_ok is False:
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1022", [self.remortRepoUrl,])  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90084", [self.remortRepoUrl,])
             logaddstr = "%s\nexit code:(%s)" % (return_var.stdout if return_var else '', return_var.returncode if return_var else '')
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg(return_var.stdout if return_var else '')
@@ -221,9 +419,10 @@ class ControlGit():
         DefaultBranch = ""
         if self.branch == "__undefine_branch__":
             cmd1 = [
+                "sh",
                 "%s/ky_GitCommand.sh" % (self.libPath),
                 self.ProxyURL, Authtype, self.cloneRepoDir,
-                "'remote show origin'",
+                "remote show origin",
                 self.user, self.password, self.sshPassword, self.sshPassphrase,
                 self.sshExtraArgsStr
             ]
@@ -235,14 +434,15 @@ class ControlGit():
                     break
 
                 logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
-                g.applogger.debug(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+                g.applogger.debug(FREE_LOG)
 
                 if self.retryCount - 1 > idx:
                     time.sleep(self.retryWaitTime)
 
             if return_var is None or return_var.returncode != 0:
                 # Git remote show origin commandに失敗しました
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1024")  # ToDo
+                logstr = g.appmsg.get_api_message("MSG-90086")
                 logaddstr = "%s\nexit code:(%s)" % (return_var.stdout if return_var else '', return_var.returncode if return_var else '')
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
                 self.SetGitCommandLastErrorMsg(return_var.stdout if return_var else '')
@@ -252,29 +452,35 @@ class ControlGit():
             else:
                 output1 = return_var.stdout.split('\n')
                 for op in output1:
+                    # HEAD branch: xxx の確認
                     ret = re.match('[\s]+HEAD[\s]branch', op)
                     if ret:
-                        DefaultBranch = re.split('[\s]+HEAD[\s]branch', op)[1]
-                        break
-
-                    else:
-                        ret = re.match('[\s]+HEAD[\s]branch[\s]\(remote HEAD is ambiguous, may be one of the following\):', op)
+                        ret = re.match('[\s]+HEAD[\s]branch:[\s]+', op)
                         if ret:
-                            return True
+                            DefaultBranch = re.split('[\s]+HEAD[\s]branch:[\s]+', op)[1]
+                            break
 
                         else:
-                            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1024")  # ToDo
-                            logaddstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1032")  # ToDo
-                            logaddstr = '%s\n%s\nexit code:(%s)' % (logaddstr, op, return_var.returncode)
-                            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
-                            self.SetGitCommandLastErrorMsg(logaddstr)
-                            self.SetLastErrorMsg(FREE_LOG)
-                            return -1
+                            ret = re.match('[\s]+HEAD[\s]branch[\s]\(remote HEAD is ambiguous, may be one of the following\):', op)
+                            if ret:
+                                return True
+
+                            else:
+                                logstr = g.appmsg.get_api_message("MSG-90086")
+                                logaddstr = g.appmsg.get_api_message("MSG-90089")
+                                logaddstr = '%s\n%s\nexit code:(%s)' % (logaddstr, op, return_var.returncode)
+                                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
+                                self.SetGitCommandLastErrorMsg(logaddstr)
+                                self.SetLastErrorMsg(FREE_LOG)
+                                return -1
 
         # カレントブランチ確認
         return_var = None
         CurrentBranch = ""
-        cmd2 = ["git", self.gitOption, "branch"]
+        cmd2 = []
+        cmd2.append("git")
+        cmd2.extend(self.gitOption.split(' '))
+        cmd2.append("branch")
 
         # Git コマンドが失敗した場合、指定時間Waitし指定回数リトライする
         for idx in range(self.retryCount):
@@ -283,14 +489,15 @@ class ControlGit():
                 break
 
             logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
-            g.applogger.debug(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+            g.applogger.debug(FREE_LOG)
 
             if self.retryCount - 1 > idx:
                 time.sleep(self.retryWaitTime)
 
         if return_var is None or return_var.returncode != 0:
             # Git remote show origin commandに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1024")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90086")
             logaddstr = "%s\nexit code:(%s)" % (return_var.stdout if return_var else '', return_var.returncode if return_var else '')
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg(return_var.stdout if return_var else '')
@@ -303,7 +510,7 @@ class ControlGit():
                 CurrentBranch = "(unknown)"
 
             else:
-                CurrentBranch = return_var.stdout[2:]
+                CurrentBranch = return_var.stdout.split('\n')[0][2:]
 
         if self.branch == "__undefine_branch__":
             if DefaultBranch == "":
@@ -354,14 +561,17 @@ class ControlGit():
         # Git Cloneコマンドが失敗した場合、指定時間Waitし指定回数リトライする
         for idx in range(self.retryCount):
             cmd = [
+                "sh",
                 "%s/ky_GitClone.sh" % (self.libPath),
                 self.ProxyURL,
+                Authtype,
                 self.remortRepoUrl, self.cloneRepoDir, self.branch,
                 self.user, self.password, self.sshPassword, self.sshPassphrase,
                 self.sshExtraArgsStr
             ]
 
             self.ClearGitCommandLastErrorMsg()
+            os.chdir(self.cloneRepoDir)
             return_var = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             if return_var.returncode == 0:
                 comd_ok = True
@@ -383,7 +593,7 @@ class ControlGit():
             return_var = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             # Git clone commandに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1021")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90083")
             logaddstr = "%s\nexit code:(%s)" % (output, return_code)
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg(output)
@@ -392,11 +602,15 @@ class ControlGit():
 
         # 日本語文字化け対応
         return_var = None
-        cmd = ["git", self.gitOption, "config", "--local", "core.quotepath", "false"]
+        cmd = []
+        cmd.append("git")
+        cmd.extend(self.gitOption.split(' '))
+        cmd.extend(["config", "--local", "core.quotepath", "false"])
+        os.chdir(self.cloneRepoDir)
         return_var = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if return_var.returncode != 0:
             # Git config の設定に失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1020")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90082")
             logaddstr = "%s\nexit code:(%s)" % (return_var.stdout, return_var.returncode)
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg(return_var.stdout)
@@ -417,17 +631,19 @@ class ControlGit():
                 break
 
             logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
-            g.applogger.debug(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+            g.applogger.debug(FREE_LOG)
 
             if self.retryCount - 1 > idx:
                 time.sleep(self.retryWaitTime)
 
         if return_var.returncode == 0:
             ret_val = return_var.stdout.split('\n')
+            ret_val = [val for val in ret_val if val]
 
         else:
             # Git ls-files commandに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1026")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90087")
             logaddstr = "%s\nexit code:(%s)" % (return_var.stdout, return_var.returncode)
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg(return_var.stdout)
@@ -442,14 +658,15 @@ class ControlGit():
         ResultParsStr = self.GitCmdRsltParsAry['pull']['allrady-up-to-date']
 
         # Git Cloneコマンドが失敗した場合、指定時間Waitし指定回数リトライする
-        for idx in self.retryCount:
+        for idx in range(self.retryCount):
             return_var = None
             cmd = [
+                "sh",
                 "%s/ky_GitCommand.sh" % (self.libPath),
                 self.ProxyURL,
                 Authtype,
                 self.cloneRepoDir,
-                "pull", "--rebase", "--ff",
+                "pull --rebase --ff",
                 self.user, self.password, self.sshPassword, self.sshPassphrase,
                 self.sshExtraArgsStr
             ]
@@ -492,7 +709,7 @@ class ControlGit():
 
         if comd_ok is False:
             # Git pull commandに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1030")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90088")
             logaddstr = "%s\nexit code:(%s)" % (return_var.stdout, return_var.returncode)
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
             self.SetGitCommandLastErrorMsg(return_var.stdout)
@@ -520,6 +737,7 @@ class CICD_GrandChildWorkflow():
         self.cloneRepoDir = '/storage/%s/%s/driver/cicd/repositories/%s' % (org_id, ws_id, RepoId)
 
         self.error_flag = 0
+        self.MatlLinkUpdate_Flg = False
 
         self.UIDelvExecInsNo = ""
         self.UIDelvExecMenuId = ""
@@ -527,15 +745,28 @@ class CICD_GrandChildWorkflow():
         self.UIMatlUpdateStatusDisplayMsg = ""
         self.UIDelvStatusDisplayMsg = ""
 
-        self.ansible_driver = True
-        self.terraform_driver = True
+        self.AddRepoIdMatlLinkIdStr = g.appmsg.get_api_message("MSG-90074", [RepoId, MatlLinkId])
+        self.AddMatlLinkIdStr = g.appmsg.get_api_message("MSG-90075", [RepoId, MatlLinkId])
+
+    def setDefaultUIDisplayMsg(self):
+
+        self.UIMatlUpdateStatusDisplayMsg = g.appmsg.get_api_message("MSG-90109")
+        if self.DelvExecFlg is True:
+            self.UIDelvStatusDisplayMsg = g.appmsg.get_api_message("MSG-90110")
+
+        else:
+            self.UIDelvStatusDisplayMsg = ""
+
+        self.UIMatlUpdateStatusID = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
+        self.UIDelvExecInsNo = ""
+        self.UIDelvExecMenuId = ""
 
     def setUIMatlSyncStatus(self, UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId):
 
         self.UIMatlUpdateStatusDisplayMsg = UIMatlSyncMsg
         if UIDelvMsg == "def":
             if self.DelvExecFlg is True:
-                self.UIDelvStatusDisplayMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4001")  # ToDo
+                self.UIDelvStatusDisplayMsg = g.appmsg.get_api_message("MSG-90110")
 
             else:
                 self.UIDelvStatusDisplayMsg = ""
@@ -546,6 +777,16 @@ class CICD_GrandChildWorkflow():
         self.UIMatlUpdateStatusID = SyncSts
         self.UIDelvExecInsNo = DelvExecInsNo
         self.UIDelvExecMenuId = DelvExecMenuId
+
+    def getUIMatlSyncStatus(self):
+
+        return [
+            self.UIMatlUpdateStatusDisplayMsg,
+            self.UIDelvStatusDisplayMsg,
+            self.UIMatlUpdateStatusID,
+            self.UIDelvExecInsNo,
+            self.UIDelvExecMenuId
+        ]
 
     def CreateZipFile(self, inRolesDir, outRolesDir, zipFileName):
 
@@ -565,22 +806,63 @@ class CICD_GrandChildWorkflow():
 
         return True, outRolesDir, zipFileName
 
+    def UpdateMatlLinkRecode(self, UpdateColumnAry):
+
+        sql = "SELECT * FROM T_CICD_MATL_LINK WHERE MATL_LINK_ROW_ID=%s"
+        objQuery = self.DBobj.sql_execute(sql, [self.MatlLinkId, ])
+        if len(objQuery) != 1:
+            self.error_flag = 1
+
+            # データベースのアクセスに失敗しました
+            logstr = g.appmsg.get_api_message("MSG-90077")
+            logstr = "%s%s" % (logstr, self.AddRepoIdMatlLinkIdStr)
+            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+            return FREE_LOG
+
+        row = objQuery[0]
+        Update = False
+        for column, value in UpdateColumnAry.items():
+            if column in row and row[column] != value:
+                row[column] = value
+                Update = True
+
+        if Update is False:
+            FREE_LOG = g.appmsg.get_api_message("MSG-90069", [self.AddMatlLinkIdStr, ])
+            g.applogger.debug(FREE_LOG)
+            return True
+
+        ret = self.DBobj.table_update('T_CICD_MATL_LINK', row, 'MATL_LINK_ROW_ID', is_register_history=False)
+        if ret is False:
+            self.error_flag = 1
+
+            # データベースのアクセスに失敗しました
+            logstr = g.appmsg.get_api_message("MSG-90077")
+            logstr = "%s%s" % (logstr, self.AddRepoIdMatlLinkIdStr)
+            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+            return FREE_LOG
+
+        FREE_LOG = g.appmsg.get_api_message("MSG-90068", [self.AddMatlLinkIdStr, ])
+        g.applogger.debug(FREE_LOG)
+
+        return True
+
     def getTargetMatlLinkRow(self, tgtMatlLinkRow):
 
         # 資材紐付管理取得
         sql = (
             "SELECT "
             "  T1.*, "
-            #"  T0.HOSTNAME  M_HOSTNAME, "
-            #"  T0.PROTOCOL  M_PROTOCOL, "
-            #"  T0.PORT      M_PORT, "
             "  T3.MATL_FILE_PATH         M_MATL_FILE_PATH, "
             "  T3.MATL_FILE_TYPE_ROW_ID  M_MATL_FILE_TYPE_ROW_ID, "
-            #"  T4.USER_ID   M_REST_USER_ID, "
-            #"  T4.LOGIN_PW  M_REST_LOGIN_PW, "
+            "  T7.OPERATION_ID      OPE_OPERATION_NAME, "
             "  T8.ITA_EXT_STM_ID    M_ITA_EXT_STM_ID, "
-            #"  T9.USERNAME          M_REST_USERNAME, "
-            #"  T9.USERNAME_JP       M_USERNAME_JP, "
+            "  T8.MOVEMENT_NAME     MV_MOVEMENT_NAME, "
+            "  T8.TIME_LIMIT        MV_TIME_LIMIT, "
+            "  T8.ANS_WINRM_ID      MV_ANS_WINRM_ID, "
+            "  T8.ANS_PLAYBOOK_HED_DEF            MV_ANS_PLAYBOOK_HED_DEF, "
+            "  T8.ANS_HOST_DESIGNATE_TYPE_ID      MV_ANS_HOST_DESIGNATE_TYPE_ID, "
+            "  T8.ANS_EXECUTION_ENVIRONMENT_NAME  MV_ANS_EXECUTION_ENVIRONMENT_NAME, "
+            "  T8.ANS_ANSIBLE_CONFIG_FILE         MV_ANS_ANSIBLE_CONFIG_FILE, "
             "  T6.OS_TYPE_ID        M_OS_TYPE_ID, "
             "  T6.OS_TYPE_NAME      M_OS_TYPE_NAME, "
             "  T6.DISUSE_FLAG       OS_DISUSE_FLAG, "
@@ -589,10 +871,8 @@ class CICD_GrandChildWorkflow():
             "  T5.DISUSE_FLAG       DALG_DISUSE_FLAG, "
             "  T2.DISUSE_FLAG       REPO_DISUSE_FLAG, "
             "  T3.DISUSE_FLAG       MATL_DISUSE_FLAG, "
-            #"  T4.DISUSE_FLAG       RACCT_DISUSE_FLAG, "
             "  T7.DISUSE_FLAG       OPE_DISUSE_FLAG, "
             "  T8.DISUSE_FLAG       PTN_DISUSE_FLAG "
-            #"  T9.DISUSE_FLAG       ACT_DISUSE_FLAG "
             "FROM "
             "  T_CICD_MATL_LINK     T1 "
             "LEFT OUTER JOIN T_CICD_REPOSITORY_LIST T2 ON T1.REPO_ROW_ID=T2.REPO_ROW_ID "
@@ -612,98 +892,155 @@ class CICD_GrandChildWorkflow():
 
         return True, tgtMatlLinkRow
 
-    def materialsRestAccess(self, materialType, filename, base64file):
+    def materialsRestAccess(self, row, tgtFilePath, base64file, NoUpdateFlg):
 
-        editType = ""
-        restExecFlg = False
+        NoUpdateFlg = False
+        materialType = row['MATL_TYPE_ROW_ID']
+        linkname = row['MATL_LINK_NAME']
+        filename = os.path.basename(tgtFilePath)
 
-        table_info = {
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_LEGACY     : {'tn':'T_ANSL_MATL_COLL', 'tk':'PLAYBOOK_MATTER_ID'},
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_PIONEER    : {'tn':'T_ANSP_MATL_COLL', 'tk':'DIALOG_MATTER_ID'},
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE       : {'tn':'T_ANSR_MATL_COLL', 'tk':'ROLE_PACKAGE_ID'},
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_CONTENT    : {'tn':'T_ANSC_CONTENTS_FILE', 'tk':'CONTENTS_FILE_ID'},
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_TEMPLATE   : {'tn':'T_ANSC_TEMPLATE_FILE', 'tk':'ANS_TEMPLATE_ID'},
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE     : {'tn':'', 'tk':''},  # ToDo
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_POLICY     : {'tn':'', 'tk':''},  # ToDo
-            TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE_CLI : {'tn':'', 'tk':''},  # ToDo
-        }
+        # 素材タイプ別のパラメーター作成クラスを生成
+        filter_dict = {}
+        obj_make_param = None
+        if materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_LEGACY:
+            filter_dict = {'PLAYBOOK_MATTER_NAME': linkname}
+            obj_make_param = CICDMakeParamLegacy('T_ANSL_MATL_COLL', 'PLAYBOOK_MATTER_ID', 'PLAYBOOK_MATTER_FILE', 'playbook_files')
 
-        table_name = table_info[materialType]['tn']
-        tgtkey = table_info[materialType]['tk']
+        elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_PIONEER:
+            filter_dict = {'DIALOG_TYPE_ID': row['M_DIALOG_TYPE_ID'], 'OS_TYPE_ID': row['M_OS_TYPE_ID']}
+            obj_make_param = CICDMakeParamPioneer('T_ANSP_MATL_COLL', 'DIALOG_MATTER_ID', 'DIALOG_MATTER_FILE', 'dialog_files')
 
-        sql = (
-            "SELECT * FROM %s WHERE %s=%%s "
-        ) % (table_name, tgtkey)
-        arrayBind = [filename, ]
+        elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE:
+            filter_dict = {'ROLE_PACKAGE_NAME': linkname}
+            obj_make_param = CICDMakeParamRole('T_ANSR_MATL_COLL', 'ROLE_PACKAGE_ID', 'ROLE_PACKAGE_FILE', 'role_package_list')
 
-        objQuery = self.DBobj.sql_execute(sql, arrayBind)
-        RecordLength = len(objQuery)
-        if RecordLength == 0:
-            editType = g.appmsg.get_api_message("ITAWDCH-STD-12202")  # ToDo
+        elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_CONTENT:
+            filter_dict = {'CONTENTS_FILE_VARS_NAME': linkname}
+            obj_make_param = CICDMakeParamContent('T_ANSC_CONTENTS_FILE', 'CONTENTS_FILE_ID', 'CONTENTS_FILE', 'file_list')
 
-        elif RecordLength > 0:
-            editType = g.appmsg.get_api_message("ITAWDCH-STD-12203")  # ToDo
+        elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_TEMPLATE:
+            filter_dict = {'ANS_TEMPLATE_VARS_NAME': linkname}
+            obj_make_param = CICDMakeParamTemplate('T_ANSC_TEMPLATE_FILE', 'ANS_TEMPLATE_ID', 'ANS_TEMPLATE_FILE', 'template_list')
 
+        elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE:
+            filter_dict = {'': linkname}
+            obj_make_param = CICDMakeParamModule('', '', '', '')
+
+        elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_POLICY:
+            filter_dict = {'': linkname}
+            obj_make_param = CICDMakeParamPolicy('', '', '', '')
+
+        elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE_CLI:
+            filter_dict = {'': linkname}
+            obj_make_param = CICDMakeParamModuleCLI('', '', '', '')
+
+        if obj_make_param is None:
+            return True
+
+        editType_list = []
+
+        # 素材の登録状況から操作種別を設定
+        param = obj_make_param.make_param(row, filename)
+        rset = obj_make_param.get_record(self.DBobj, **filter_dict)
+        if len(rset) <= 0:
+            # 素材が未登録の場合は「登録」
+            editType_list.append(load_table.CMD_REGISTER)
+            rset = {}
+
+        else:
+            # 登録されているレコードから操作対象の要素を1件にしぼる
             targetNum = -1
-            recentNum = -1
-            recent_dt = None
-
-            # 廃止されていないデータを更新対象とする
-            for i, tmpval in enumerate(objQuery):
+            for i, tmpval in enumerate(rset):
                 if tmpval['DISUSE_FLAG'] == '0':
                     targetNum = i
 
-                elif recent_dt is None or recent_dt < tmpval['LAST_UPDATE_TIMESTAMP']:
-                    recentNum = i
-                    recent_dt = tmpval['LAST_UPDATE_TIMESTAMP']
-
-            # 全て廃止されている場合は最新のデータを更新対象とする
             if targetNum < 0:
-                targetNum = recentNum
-                restExecFlg = True
+                targetNum = len(rset) - 1
 
-            # ファイル差分チェック
+            rset = rset[targetNum]
 
-        if restExecFlg:
-            pass
+            # 素材ファイルに差分がある場合は「更新」
+            diff_flg = obj_make_param.diff_file(rset[obj_make_param.primary_key], rset[obj_make_param.file_col_name], base64file)
+            if diff_flg is True:
+                editType_list.append(load_table.CMD_UPDATE)
 
-    def executeMovement(self, run_mode):
+            # 廃止レコードが操作対象の場合は「復活」を追加
+            if rset['DISUSE_FLAG'] == '1':
+                editType_list.insert(0, load_table.CMD_RESTORE)
 
-        useed = True
-        # 予約日時のフォーマットチェック
-        # yyyy/mm/dd hh:mmをyyyy/mm/dd hh:mm:ssにしている
-        schedule_date = driver_controll.scheduled_format_check(parameter, useed)
+            # 廃止されていないレコードが操作対象の場合
+            else:
+                # 最終更新者が異なる場合は処理を中断
+                if g.USER_ID != rset['LAST_UPDATE_USER']:
+                    logstr = g.appmsg.get_api_message("MSG-90111")
+                    FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                    return FREE_LOG, True
 
-        Required = True
-        # Movementチェック
-        movement_row = driver_controll.movement_registr_check(self.DBobj, parameter, Required)
+                # 素材ファイル差分がなくとも、レコードに変更があれば「更新」
+                if diff_flg is False:
+                    for tmpkey, tmpval in param.items():
+                        if tmpkey in rset and tmpval != rset[tmpkey]:
+                            editType_list.append(load_table.CMD_UPDATE)
+                            break
 
-        # オペレーションチェック
-        operation_row = driver_controll.operation_registr_check(self.DBobj, parameter, Required)
+        if len(editType_list) <= 0:
+            NoUpdateFlg = True
 
-        target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
-                  'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-                  'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
-                  TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
-                  TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
+        # 素材ファイルのアップ、および、レコードの操作
+        for editType in editType_list:
+            uuid = rset[obj_make_param.primary_key] if obj_make_param.primary_key in rset else ''
+            req_param = obj_make_param.make_rest_param(editType, linkname, filename, base64file, **rset)
+            objmenu = load_table.loadTable(self.DBobj, obj_make_param.menu_name)
+            result = objmenu.exec_maintenance(req_param, uuid, editType, pk_use_flg=False, auth_check=False)
+            if result[0] is False:
+                return False, NoUpdateFlg
 
-        # トランザクション開始
-        self.DBobj.db_transaction_start()
+        return True, NoUpdateFlg
 
-        # 作業管理に登録
+    def executeMovement(self, row, run_mode):
+
+        driver_info = {
+            TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_LEGACY: AnscConst.DF_LEGACY_DRIVER_ID,
+            TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_PIONEER: AnscConst.DF_PIONEER_DRIVER_ID,
+            TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_ROLE: AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+            TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_TERRAFORM: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+            TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_TERRAFORM_CLI: TFCommonConst.DRIVER_TERRAFORM_CLI
+        }
+        ansible_driver_list = [
+            AnscConst.DF_LEGACY_DRIVER_ID, AnscConst.DF_PIONEER_DRIVER_ID, AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+        ]
+
+        DriverType = driver_info[row['M_ITA_EXT_STM_ID']]
+        schedule_date = None
         conductor_id = None
         conductor_name = None
-        run_mode = "3"
-        if 'ansible' in menu:
+
+        operation_row = {
+            "OPERATION_ID": row['DEL_OPE_ID'],
+            "OPERATION_NAME": row['OPE_OPERATION_NAME'],
+        }
+
+        movement_row = {
+            "MOVEMENT_ID": row['DEL_MOVE_ID'],
+            "MOVEMENT_NAME": row['MV_MOVEMENT_NAME'],
+            "TIME_LIMIT": row['MV_TIME_LIMIT'],
+            "ANS_WINRM_ID": row['MV_ANS_WINRM_ID'],
+            "ANS_PLAYBOOK_HED_DEF": row['MV_ANS_PLAYBOOK_HED_DEF'],
+            "ANS_HOST_DESIGNATE_TYPE_ID": row['MV_ANS_HOST_DESIGNATE_TYPE_ID'],
+            "ANS_EXECUTION_ENVIRONMENT_NAME": row['MV_ANS_EXECUTION_ENVIRONMENT_NAME'],
+            "ANS_ANSIBLE_CONFIG_FILE": row['MV_ANS_ANSIBLE_CONFIG_FILE'],
+        }
+
+        # 作業管理に登録
+        if DriverType in ansible_driver_list:
             # Ansible用 作業実行登録
-            result = a_insert_execution_list(self.DBobj, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+            result = a_insert_execution_list(self.DBobj, run_mode, DriverType, operation_row, movement_row, schedule_date, conductor_id, conductor_name)
 
         else:
             # Terraform用 作業実行登録
-            result = t_insert_execution_list(self.DBobj, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+            result = t_insert_execution_list(self.DBobj, run_mode, DriverType, operation_row, movement_row, schedule_date, conductor_id, conductor_name)
 
-        # コミット・トランザクション終了
-        self.DBobj.db_transaction_end(True)
+        return result[0], result[1]['execution_no'] if result[0] is True else None
 
     def MailLinkExecute(self):
 
@@ -718,9 +1055,9 @@ class CICD_GrandChildWorkflow():
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, ret)
 
             # 想定外のエラー
-            UIMatlSyncMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")  # ToDo
+            UIMatlSyncMsg = g.appmsg.get_api_message("MSG-90109")
             UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
@@ -732,11 +1069,11 @@ class CICD_GrandChildWorkflow():
             self.error_flag = 1
 
             # 資材紐付管理の対象レコードが見つかりません。資材紐付処理をスキップします
-            LogStr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-2040", [self.RepoId, self.MatlLinkId])  # ToDo
+            LogStr = g.appmsg.get_api_message("MSG-90095", [self.RepoId, self.MatlLinkId])
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, "")
             UIMatlSyncMsg = LogStr
             UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
@@ -753,25 +1090,9 @@ class CICD_GrandChildWorkflow():
             elif row['AUTO_SYNC_FLG'] == TD_B_CICD_MATERIAL_LINK_LIST.C_AUTO_SYNC_FLG_OFF:
                 return True
 
-        # 資材紐付管理 紐付先資材タイプとインストール状態をチェック
-        LogStr = ""
-        ret, LogStr = MatlLinkColumnValidator4(self.RepoId, self.MatlLinkId, row['MATL_TYPE_ROW_ID'], LogStr, self.ansible_driver, self.terraform_driver)
-        if ret is False:
-            # 異常フラグON
-            self.error_flag = 1
-
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, "")
-            UIMatlSyncMsg = LogStr
-            UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
-            DelvExecInsNo = ""
-            DelvExecMenuId = ""
-            self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
-            return FREE_LOG
-
         # 紐付先資材タイプと資材パスの組み合わせチェック
         LogStr = ""
-        ret = MatlLinkColumnValidator2(row['MATL_TYPE_ROW_ID'], row['M_MATL_FILE_TYPE_ROW_ID'], self.RepoId, self.MatlLinkId, LogStr)
+        ret, LogStr = MatlLinkColumnValidator2(row['MATL_TYPE_ROW_ID'], row['M_MATL_FILE_TYPE_ROW_ID'], self.RepoId, self.MatlLinkId, LogStr)
         if ret is False:
             # 異常フラグON
             self.error_flag = 1
@@ -779,7 +1100,7 @@ class CICD_GrandChildWorkflow():
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, "")
             UIMatlSyncMsg = LogStr
             UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
@@ -787,7 +1108,7 @@ class CICD_GrandChildWorkflow():
 
         # 紐付先資材タイプとMovemnetの組み合わせチェック
         LogStr = ""
-        ret = MatlLinkColumnValidator5(self.RepoId, self.MatlLinkId, row['M_ITA_EXT_STM_ID'], row['MATL_TYPE_ROW_ID'], LogStr)
+        ret, LogStr = MatlLinkColumnValidator5(self.RepoId, self.MatlLinkId, row['M_ITA_EXT_STM_ID'], row['MATL_TYPE_ROW_ID'], LogStr)
         if ret is False:
             # 異常フラグON
             self.error_flag = 1
@@ -795,7 +1116,7 @@ class CICD_GrandChildWorkflow():
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, "")
             UIMatlSyncMsg = LogStr
             UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
@@ -803,7 +1124,7 @@ class CICD_GrandChildWorkflow():
 
         # 対象レコードのリレーション先確認
         LogStr = ""
-        ret = MatlLinkColumnValidator3(row, LogStr)
+        ret, LogStr = MatlLinkColumnValidator3(row, LogStr)
         if ret is False:
             # 異常フラグON
             self.error_flag = 1
@@ -811,7 +1132,7 @@ class CICD_GrandChildWorkflow():
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, "")
             UIMatlSyncMsg = LogStr
             UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
@@ -824,12 +1145,12 @@ class CICD_GrandChildWorkflow():
             self.error_flag = 1
 
             # 資材ファイルがローカルクローンディレクトリ内に見つかりません
-            LogStr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-2043", [self.RepoId, self.MatlLinkId, tgtFileName])  # ToDo
+            LogStr = g.appmsg.get_api_message("MSG-90096", [self.RepoId, self.MatlLinkId, tgtFileName])
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, "")
 
-            UIMatlSyncMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")
+            UIMatlSyncMsg = g.appmsg.get_api_message("MSG-90109")
             UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
@@ -848,12 +1169,12 @@ class CICD_GrandChildWorkflow():
                 self.error_flag = 1
 
                 # zipファイルの作成に失敗しました
-                LogStr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-2043", [self.RepoId, self.MatlLinkId, tgtFileName])  # ToDo
+                LogStr = g.appmsg.get_api_message("MSG-90096", [self.RepoId, self.MatlLinkId, tgtFileName])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, ret)
 
-                UIMatlSyncMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")
+                UIMatlSyncMsg = g.appmsg.get_api_message("MSG-90109")
                 UIDelvMsg = "def"
-                SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+                SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
                 DelvExecInsNo = ""
                 DelvExecMenuId = ""
                 self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
@@ -865,42 +1186,189 @@ class CICD_GrandChildWorkflow():
         with open(tgtFileName) as fp:
             tgtFileData = fp.read()
 
-        tgtFileBase64enc = base64.b64encode(tgtFileData)
+        tgtFileBase64enc = base64.b64encode(tgtFileData.encode()).decode()
 
-        subprocess.run(["/bin/rm", "-rf", outRolesDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        if outRolesDir:
+            subprocess.run(["/bin/rm", "-rf", outRolesDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         # 資材更新
-        ret = self.materialsRestAccess(row['MATL_TYPE_ROW_ID'], row['MATL_LINK_NAME'], tgtFileBase64enc)
-        if ret is not True:
+        NoUpdateFlg = True
+        ret, NoUpdateFlg = self.materialsRestAccess(row, tgtFileName, tgtFileBase64enc, NoUpdateFlg)
+        if ret is True:
+            if NoUpdateFlg is True:
+                if row['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL:
+                    self.MatlLinkUpdate_Flg = True
+
+                else:
+                    UIMatlSyncMsg = ""
+                    UIDelvMsg = ""
+                    SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
+                    DelvExecInsNo = ""
+                    DelvExecMenuId = ""
+                    self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
+
+                return True
+
+        else:
             # 異常フラグON
             self.error_flag = 1
 
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, ret)
-            UIMatlSyncMsg = ret
+            ErrorMsgHeder = {
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_LEGACY: g.appmsg.get_api_message("MSG-90098", [self.RepoId, self.MatlLinkId]),
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_PIONEER: g.appmsg.get_api_message("MSG-90099", [self.RepoId, self.MatlLinkId]),
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE: g.appmsg.get_api_message("MSG-90100", [self.RepoId, self.MatlLinkId]),
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_CONTENT: g.appmsg.get_api_message("MSG-90101", [self.RepoId, self.MatlLinkId]),
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_TEMPLATE: g.appmsg.get_api_message("MSG-90102", [self.RepoId, self.MatlLinkId]),
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE: g.appmsg.get_api_message("MSG-90103", [self.RepoId, self.MatlLinkId]),
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_POLICY: g.appmsg.get_api_message("MSG-90104", [self.RepoId, self.MatlLinkId]),
+                TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE_CLI: g.appmsg.get_api_message("MSG-90103", [self.RepoId, self.MatlLinkId]),
+            }
+
+            LogStr = ErrorMsgHeder[row['MATL_TYPE_ROW_ID']] if row['MATL_TYPE_ROW_ID'] in ErrorMsgHeder else ""
+            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, ret)
+            UIMatlSyncMsg = "%s\n%s" % (LogStr, ret)
             UIDelvMsg = "def"
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
             return FREE_LOG
 
-        if DelvExecFlg is False:
+        if self.DelvExecFlg is False:
             UIMatlSyncMsg = ""
             UIDelvMsg = ""
-            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.NORMAL()
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
             DelvExecInsNo = ""
             DelvExecMenuId = ""
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
             return True
 
         # Movement実行
-        ret = self.executeMovement(row['DEL_EXEC_TYPE'])
+        runMode = 2
+        if row['DEL_EXEC_TYPE'] is None or row['DEL_EXEC_TYPE'] == "" or row['DEL_EXEC_TYPE'] == "0":
+            runMode = 1
+
+        ret, exec_no = self.executeMovement(row, runMode)
+        if ret is True:
+            UIMatlSyncMsg = ""
+            UIDelvMsg = ""
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
+            DelvExecInsNo = exec_no
+            DelvExecMenuId = TD_C_PATTERN_PER_ORCH[row['M_ITA_EXT_STM_ID']]
+            self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
+
+        else:
+            self.error_flag = 1
+
+            ErrorMsgHeder = {
+                TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_LEGACY: g.appmsg.get_api_message("MSG-90105", [self.RepoId, self.MatlLinkId]),
+                TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_PIONEER: g.appmsg.get_api_message("MSG-90106", [self.RepoId, self.MatlLinkId]),
+                TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_ROLE: g.appmsg.get_api_message("MSG-90107", [self.RepoId, self.MatlLinkId]),
+                TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_TERRAFORM: g.appmsg.get_api_message("MSG-90108", [self.RepoId, self.MatlLinkId]),
+                TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_TERRAFORM_CLI: g.appmsg.get_api_message("MSG-90108", [self.RepoId, self.MatlLinkId]),
+            }
+
+            LogStr = ErrorMsgHeder[row['M_ITA_EXT_STM_ID']] if row['M_ITA_EXT_STM_ID'] in ErrorMsgHeder else ""
+            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, ret)
+            UIMatlSyncMsg = ""
+            UIDelvMsg = "%s\n%s" % (LogStr, ret)
+            SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
+            DelvExecInsNo = ""
+            DelvExecMenuId = ""
+            self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
+            return FREE_LOG
+
+        return True
 
     def main(self):
 
-        ret = self.MailLinkExecute()
+        try:
+            self.DBobj.db_transaction_start()
+
+            # リモートリポジトリ管理の情報を取得
+            ret = self.MailLinkExecute()
+            if ret is not True:
+                self.error_flag = 1
+
+                # 紐付資材の更新に失敗しました
+                logstr = g.appmsg.get_api_message("MSG-90097", [self.RepoId, self.MatlLinkId])
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
+                raise Exception(FREE_LOG)
+
+            # 資材紐付管理の同期状態・デリバリ状態更新
+            if self.MatlLinkUpdate_Flg is False:
+                reyAry = self.getUIMatlSyncStatus()
+
+                UpdateColumnAry = {}
+                UpdateColumnAry['SYNC_STATUS_ROW_ID'] = reyAry[2]
+                UpdateColumnAry['SYNC_ERROR_NOTE'] = reyAry[0]
+                UpdateColumnAry['SYNC_LAST_TIME'] = datetime.datetime.now()
+                UpdateColumnAry['SYNC_LAST_UPDATE_USER'] = g.USER_ID
+                UpdateColumnAry['DEL_ERROR_NOTE'] = reyAry[1]
+                UpdateColumnAry['DEL_EXEC_INS_NO'] = reyAry[3]
+                UpdateColumnAry['DEL_MENU_NO'] = reyAry[4]
+
+                ret = self.UpdateMatlLinkRecode(UpdateColumnAry)
+                if ret is not True:
+                    self.error_flag = 1
+                    self.setDefaultUIDisplayMsg()
+
+                    # データベースの更新に失敗しました
+                    logstr = g.appmsg.get_api_message("MSG-90079", [self.AddMatlLinkIdStr,])
+                    FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
+                    raise Exception(FREE_LOG)
+
+            ret = self.DBobj.db_transaction_end(True)
+            if ret is not True:
+                self.setDefaultUIDisplayMsg()
+                self.error_flag = 1
+
+                # ランザクション処理に失敗しました
+                logstr = g.appmsg.get_api_message("MSG-90076")
+                logstr = "%s%s" % (logstr, self.AddRepoIdMatlLinkIdStr)
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                raise Exception(FREE_LOG)
+
+            self.MatlLinkUpdate_Flg = True
+
+        except Exception as e:
+            FREE_LOG = str(e)
+            g.applogger.error(FREE_LOG)
+            self.DBobj.db_transaction_end(False)
+
+        if self.MatlLinkUpdate_Flg is False:
+            reyAry = self.getUIMatlSyncStatus()
+
+            UpdateColumnAry = {}
+            UpdateColumnAry['SYNC_STATUS_ROW_ID'] = reyAry[2]
+            UpdateColumnAry['SYNC_ERROR_NOTE'] = reyAry[0]
+            UpdateColumnAry['SYNC_LAST_TIME'] = datetime.datetime.now()
+            UpdateColumnAry['SYNC_LAST_UPDATE_USER'] = g.USER_ID
+            UpdateColumnAry['DEL_ERROR_NOTE'] = reyAry[1]
+            UpdateColumnAry['DEL_EXEC_INS_NO'] = reyAry[3]
+            UpdateColumnAry['DEL_MENU_NO'] = reyAry[4]
+
+            ret = self.UpdateMatlLinkRecode(UpdateColumnAry)
+            if ret is not True:
+                self.error_flag = 1
+                self.setDefaultUIDisplayMsg()
+
+                # データベースの更新に失敗しました
+                logstr = g.appmsg.get_api_message("MSG-90079", [self.AddMatlLinkIdStr,])
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
+                g.applogger.error(FREE_LOG)
+
+        # 結果出力
+        if self.error_flag != 0:
+            FREE_LOG = g.appmsg.get_api_message("MSG-90051")
+            g.applogger.error(FREE_LOG)
+
+        else:
+            FREE_LOG = g.appmsg.get_api_message("MSG-90050")
+            g.applogger.debug(FREE_LOG)
 
         return 0
+
 
 ################################################################
 # リポジトリ同期処理クラス
@@ -910,12 +1378,14 @@ class CICD_ChildWorkflow():
     def __init__(self, org_id, ws_id, DBobj, RepoId, ExecMode, RepoListRow):
 
         self.error_flag = 0
+        self.warning_flag = 0
         self.UIDisplayMsg = ""
 
         self.org_id = org_id
         self.ws_id = ws_id
         self.DBobj = DBobj
-        self.config = configparser.ConfigParser()
+
+        config = configparser.ConfigParser()
 
         self.RepoId = RepoId
         self.ExecMode = ExecMode
@@ -925,18 +1395,18 @@ class CICD_ChildWorkflow():
         if ExecMode == "Normal":
             self.MatlListUpdateExeFlg = False
 
-        if RepoListRow['SYNC_STATUS_ROW_ID'] is None or RepoListRow['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.RESTART():
+        if RepoListRow['SYNC_STATUS_ROW_ID'] is None or RepoListRow['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.STS_RESTART:
             self.MatlListUpdateExeFlg = True
 
         self.cloneRepoDir = '/storage/%s/%s/driver/cicd/repositories/%s' % (org_id, ws_id, RepoId)
-        libPath = '/exastro/backyard'
-        GitCmdRsltParsStrFileNamePath = '/exastro/backyard/gitCommandResultParsingStringDefinition.ini'
-        GitCmdRsltParsAry = self.config.read(GitCmdRsltParsStrFileNamePath)
-        self.Gitobj = ControlGit(RepoId, RepoListRow, self.cloneRepoDir, libPath, GitCmdRsltParsAry)
+        libPath = '/exastro/common_libs/cicd/shells'
+        GitCmdRsltParsStrFileNamePath = '/exastro/common_libs/cicd/shells/gitCommandResultParsingStringDefinition.ini'
+        config.read(GitCmdRsltParsStrFileNamePath)
+        self.Gitobj = ControlGit(RepoId, RepoListRow, self.cloneRepoDir, libPath, config)
 
     def setDefaultUIDisplayMsg(self):
 
-        self.UIDisplayMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")  # ToDo
+        self.UIDisplayMsg = g.appmsg.get_api_message("MSG-90109")
 
     def makeReturnArray(self, RetCode, LogStr, UIMsg):
 
@@ -978,29 +1448,32 @@ class CICD_ChildWorkflow():
 
         ret = self.Gitobj.setSshExtraArgs()
         if ret is False:
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1033")  # ToDo
+            self.error_flag = 1
+
+            logstr = g.appmsg.get_api_message("MSG-90090")
             logaddstr = self.Gitobj.GetLastErrorMsg()
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
 
             self.UIDisplayMsg = '%s\n%s' % (logstr, self.Gitobj.GetGitCommandLastErrorMsg())
 
-            retary = self.makeReturnArray(False, FREE_LOG, self.UIDisplayMsg)
-            raise Exception(retary)
+            raise CICDException(False, FREE_LOG, self.UIDisplayMsg)
 
         return True
 
     def LocalCloneRemoteRepoChk(self):
 
+        # ローカルクローンのリモートリポジトリ確認
         ret = self.Gitobj.GitRemoteChk()
         if ret == -1:
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1023")  # ToDo
+            self.error_flag = 1
+
+            logstr = g.appmsg.get_api_message("MSG-90085")
             logaddstr = self.Gitobj.GetLastErrorMsg()
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
 
             self.UIDisplayMsg = '%s\n%s' % (logstr, self.Gitobj.GetGitCommandLastErrorMsg())
 
-            retary = self.makeReturnArray(False, FREE_LOG, self.UIDisplayMsg)
-            raise Exception(retary)
+            raise CICDException(False, FREE_LOG, self.UIDisplayMsg)
 
         return ret
 
@@ -1012,7 +1485,7 @@ class CICD_ChildWorkflow():
         # ローカルクローンのブランチ確認
         ret = self.Gitobj.GitBranchChk(AuthTypeName)
         if ret == -1:
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1024")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90086")
             logaddstr = self.Gitobj.GetLastErrorMsg()
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
 
@@ -1042,8 +1515,9 @@ class CICD_ChildWorkflow():
             ret = self.DBobj.table_update(table_name, row, 'MATL_ROW_ID', is_register_history=False)
             if ret is False:
                 # Clone異常時の処理なのでログを出力してReturn
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1005")  # ToDo
+                logstr = g.appmsg.get_api_message("MSG-90077")
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                g.applogger.error(FREE_LOG)
                 return False
 
         return True
@@ -1051,22 +1525,23 @@ class CICD_ChildWorkflow():
     def MatlListRecodeDisuse(self):
 
         # 資材一覧のレコードを全て廃止
+        self.DBobj.db_transaction_start()
         ret = self.MatlListRecodeDisuseUpdate()
 
         # トランザクションをコミット・ロールバック
         if ret is True:
-            ret = self.DBobj.db_commit()
+            ret = self.DBobj.db_transaction_end(True)
             if ret is False:
                 # Clone異常時の処理なのでログを出力してReturn
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
+                logstr = g.appmsg.get_api_message("MSG-90076")
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
                 return False
 
         else:
-            ret = self.DBobj.db_rollback()
+            ret = self.DBobj.db_transaction_end(False)
             if ret is False:
                 # Clone異常時の処理なのでログを出力してReturn
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
+                logstr = g.appmsg.get_api_message("MSG-90076")
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
                 return False
 
@@ -1078,48 +1553,39 @@ class CICD_ChildWorkflow():
         if ret is False:
             # 該当のリモートリポジトリに紐づいている資材を資材一覧から廃止
             self.MatlListRecodeDisuse()
-
-            # 異常フラグON
             self.error_flag = 1
 
             # ローカルクローンディレクトリの作成に失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1006", [self.cloneRepoDir, ])  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90078", [self.cloneRepoDir, ])
             logaddstr = self.Gitobj.GetLastErrorMsg()
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
 
-            # UIに表示するメッセージ
             self.UIDisplayMsg = "%s\n%s" % (logstr, self.Gitobj.GetGitCommandLastErrorMsg())
 
-            # 戻り値編集
-            retary = self.makeReturnArray(False, FREE_LOG, self.UIDisplayMsg)
-            raise Exception(retary)
+            raise CICDException(False, FREE_LOG, self.UIDisplayMsg)
 
-        FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2016", [self.RepoId, ])  # ToDo
+        FREE_LOG = g.appmsg.get_api_message("MSG-90058", [self.RepoId, ])
         g.applogger.debug(FREE_LOG)
 
         # 認証方式か判定
-        AuthTypeName = self.getAuthType(self.RepoListRow)
+        AuthTypeName = self.getAuthType()
         ret = self.Gitobj.GitClone(AuthTypeName)
         if ret is False:
             # 該当のリモートリポジトリに紐づいている資材を資材一覧から廃止
             self.MatlListRecodeDisuse()
 
-            # 異常フラグON
             self.error_flag = 1
 
             # Git clone commandに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1019")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90081")
             logaddstr = self.Gitobj.GetLastErrorMsg()
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
 
-            # UIに表示するメッセージ
             self.UIDisplayMsg = "%s\n%s" % (logstr, self.Gitobj.GetGitCommandLastErrorMsg())
 
-            # 戻り値編集
-            retary = self.makeReturnArray(False, FREE_LOG, self.UIDisplayMsg)
-            raise Exception(retary)
+            raise CICDException(False, FREE_LOG, self.UIDisplayMsg)
 
-        FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2018", [self.RepoId, ])  # ToDo
+        FREE_LOG = g.appmsg.get_api_message("MSG-90059", [self.RepoId, ])
         g.applogger.debug(FREE_LOG)
 
         return True
@@ -1128,28 +1594,24 @@ class CICD_ChildWorkflow():
 
         ret, GitFiles = self.Gitobj.GitLsFiles()
         if ret is False:
-            # 異常フラグON
             self.error_flag = 1
 
             # Git ls-files commandに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1026")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90087")
             logaddstr = self.Gitobj.GetLastErrorMsg()
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
 
-            # UIに表示するメッセージ
             self.UIDisplayMsg = "%s\n%s" % (logstr, self.Gitobj.GetGitCommandLastErrorMsg())
 
-            # 戻り値編集
-            retary = self.makeReturnArray(False, FREE_LOG, self.UIDisplayMsg)
-            raise Exception(retary)
+            raise CICDException(False, FREE_LOG, self.UIDisplayMsg)
 
-        return True
+        return True, GitFiles
 
     def getRolesPath(self, GitFiles):
 
         RolesPath = {}
         for FilePath in GitFiles:
-            FilePath = "/\n" % (FilePath)
+            FilePath = "/%s" % (FilePath)
             if "/roles/" not in FilePath:
                 continue
 
@@ -1167,7 +1629,7 @@ class CICD_ChildWorkflow():
                             addPath = path[1:]
                             RolesPath[addPath] = 0
 
-        FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2009", [self.RepoId, ])  # ToDo
+        FREE_LOG = g.appmsg.get_api_message("MSG-90054", [self.RepoId, ])
         g.applogger.debug(FREE_LOG)
 
         return RolesPath
@@ -1187,7 +1649,7 @@ class CICD_ChildWorkflow():
             self.error_flag = 1
 
             # Git pull commandに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1030")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90088")
             logaddstr = self.Gitobj.GetLastErrorMsg()
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, logaddstr)
 
@@ -1198,7 +1660,7 @@ class CICD_ChildWorkflow():
             retary = self.makeReturnArray(-1, FREE_LOG, self.UIDisplayMsg)
             raise Exception(retary)
 
-        FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2023", [self.RepoId, UpdateFlg])  # ToDo
+        FREE_LOG = g.appmsg.get_api_message("MSG-90064", [self.RepoId, UpdateFlg])
         g.applogger.debug(FREE_LOG)
 
         return True, pullResultAry, UpdateFiles, UpdateFlg
@@ -1252,11 +1714,11 @@ class CICD_ChildWorkflow():
             self.error_flag = 1
 
             # データベースのアクセスに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1005")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90077")
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
 
             # UIに表示するメッセージ
-            self.UIDisplayMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")  # ToDo
+            self.UIDisplayMsg = g.appmsg.get_api_message("MSG-90109")
 
             # 戻り値編集
             retary = self.makeReturnArray(-1, FREE_LOG, self.UIDisplayMsg)
@@ -1280,19 +1742,18 @@ class CICD_ChildWorkflow():
 
         ret = self.DBobj.table_insert(table_name, ColumnValueArray, 'MATL_ROW_ID', is_register_history=False)
         if ret is False:
-            # 異常フラグON
             self.error_flag = 1
 
             # データベースのアクセスに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1005")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90077")
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
 
-            # UIに表示するメッセージ
-            self.UIDisplayMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")  # ToDo
+            self.UIDisplayMsg = g.appmsg.get_api_message("MSG-90109")
 
             # 戻り値編集
-            retary = self.makeReturnArray(-1, FREE_LOG, self.UIDisplayMsg)
-            raise Exception(retary)
+            raise CICDException(-1, FREE_LOG, self.UIDisplayMsg)
+
+        row['MATL_ROW_ID'] = ret[0]['MATL_ROW_ID']
 
         return True
 
@@ -1321,7 +1782,7 @@ class CICD_ChildWorkflow():
         # ファイルの増減確認
         for path in GitFiles:
             FileType = TD_B_CICD_MATERIAL_FILE_TYPE_NAME.C_MATL_FILE_TYPE_ROW_ID_FILE
-            if FileType in MatlListRecodes and path in MatlListRecodes[FileType] and MatlListRecodes[FileType][path] is not None:
+            if FileType in MatlListRecodes and path in MatlListRecodes[FileType] and MatlListRecodes[FileType][path]:
                 # 廃止確認
                 if MatlListRecodes[FileType][path]['DISUSE_FLAG'] == '0':
                     del MatlListRecodes[FileType][path]
@@ -1332,6 +1793,12 @@ class CICD_ChildWorkflow():
 
             else:
                 # レコードの項目値設定
+                if FileType not in MatlListRecodes:
+                    MatlListRecodes[FileType] = {}
+
+                if path not in MatlListRecodes[FileType]:
+                    MatlListRecodes[FileType][path] = {}
+
                 MatlListRecodes[FileType][path]['MATL_ROW_ID'] = 0
                 MatlListRecodes[FileType][path]['REPO_ROW_ID'] = self.RepoId
                 MatlListRecodes[FileType][path]['MATL_FILE_PATH'] = path
@@ -1345,22 +1812,21 @@ class CICD_ChildWorkflow():
                 if row['RECODE_ACCTION'] == 'disuse':
                     del row['RECODE_ACCTION']
                     ret = self.MatlListDisuseUpdate(row, '1')
-                    FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2022", [path,])  # ToDo
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90063", [path,])
                     g.applogger.debug(FREE_LOG)
 
                 # 資材管理にレコード追加
                 elif row['RECODE_ACCTION'] == 'Insert':
                     del row['RECODE_ACCTION']
                     ret = self.MatlListInsert(row)
-                    FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2020", [path,])  # ToDo
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90061", [path,])
                     g.applogger.debug(FREE_LOG)
-
 
                 # 資材管理のレコード復活
                 elif row['RECODE_ACCTION'] == 'use':
                     del row['RECODE_ACCTION']
                     ret = self.MatlListDisuseUpdate(row, '0')
-                    FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2021", [path,])  # ToDo
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90062", [path,])
                     g.applogger.debug(FREE_LOG)
 
         return True, MatlListRecodes
@@ -1413,22 +1879,22 @@ class CICD_ChildWorkflow():
                     self.error_flag = 1
 
                     # データベースのアクセスに失敗しました
-                    logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1005")  # ToDo
+                    logstr = g.appmsg.get_api_message("MSG-90077")
                     FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
 
                     # UIに表示するメッセージ
-                    self.UIDisplayMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")  # ToDo
+                    self.UIDisplayMsg = g.appmsg.get_api_message("MSG-90109")
 
                     # 戻り値編集
                     retary = self.makeReturnArray(-1, FREE_LOG, self.UIDisplayMsg)
                     raise Exception(retary)
 
                 if Acction == "use":
-                    FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2021", [row['MATL_FILE_PATH'], ])  # ToDo
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90062", [row['MATL_FILE_PATH'], ])
                     g.applogger.debug(FREE_LOG)
 
                 else:
-                    FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2022", [row['MATL_FILE_PATH'], ])  # ToDo
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90063", [row['MATL_FILE_PATH'], ])
                     g.applogger.debug(FREE_LOG)
 
         return True
@@ -1436,14 +1902,14 @@ class CICD_ChildWorkflow():
     def UpdateSyncStatusRecode(self):
 
         sql = (
-            "UPDATE T_CICD_SYNC_STATUS "
+            "UPDATE T_CICD_REPOSITORY_LIST "
             "SET SYNC_LAST_TIMESTAMP = %s "
-            "WHERE ROW_ID = %s "
+            "WHERE REPO_ROW_ID = %s "
         )
-        arrayBind = [self.RepoId, datetime.datetime.now()]
+        arrayBind = [datetime.datetime.now(), self.RepoId]
         self.DBobj.sql_execute(sql, arrayBind)
 
-        FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2026", [self.RepoId, ])  # ToDo
+        FREE_LOG = g.appmsg.get_api_message("MSG-90067", [self.RepoId, ])
         g.applogger.debug(FREE_LOG)
 
         return True
@@ -1467,7 +1933,7 @@ class CICD_ChildWorkflow():
             self.error_flag = 1
 
             # データベースのアクセスに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1005")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90077")
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
             return FREE_LOG
 
@@ -1480,23 +1946,23 @@ class CICD_ChildWorkflow():
                 Update = True
 
         if Update is False:
-            FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2028", [self.RepoId, ])  # ToDo
+            FREE_LOG = g.appmsg.get_api_message("MSG-90069", [self.RepoId, ])
             g.applogger.debug(FREE_LOG)
 
             return True
 
-        ret = self.DBobj.table_update(table_name, row, "REPO_ROW_ID", is_register_history=True)
+        ret = self.DBobj.table_update(table_name, row, "REPO_ROW_ID", is_register_history=False)
         if ret is False:
             # 異常フラグON
             self.error_flag = 1
 
             # データベースのアクセスに失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1005")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90077")
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
 
             return FREE_LOG
 
-        FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2027", [self.RepoId, ])  # ToDo
+        FREE_LOG = g.appmsg.get_api_message("MSG-90068", [self.RepoId, ])
         g.applogger.debug(FREE_LOG)
 
         return True
@@ -1506,7 +1972,7 @@ class CICD_ChildWorkflow():
         UpdateColumnAry = {}
         UpdateColumnAry['REPO_ROW_ID'] = self.RepoId
         UpdateColumnAry['SYNC_STATUS_ROW_ID'] = SyncStatus
-        if SyncStatus == TD_SYNC_STATUS_NAME_DEFINE.NORMAL():
+        if SyncStatus == TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL:
             UpdateColumnAry['SYNC_ERROR_NOTE'] = ""
 
         else:
@@ -1518,25 +1984,13 @@ class CICD_ChildWorkflow():
 
     def getTargetMatlLinkRow(self, tgtMatlLinkRow):
 
-        # ToDo
-        # ansible/terraformのリリースファイル有無確認(インストール状態確認)
-        ansible_driver = True
-        terraform_driver = True
-
         # 資材紐付管理取得
         sql = (
             "SELECT "
             "  T1.*, "
-            #"  T0.HOSTNAME  M_HOSTNAME, "
-            #"  T0.PROTOCOL  M_PROTOCOL, "
-            #"  T0.PORT      M_PORT, "
             "  T3.MATL_FILE_PATH         M_MATL_FILE_PATH, "
             "  T3.MATL_FILE_TYPE_ROW_ID  M_MATL_FILE_TYPE_ROW_ID, "
-            #"  T4.USER_ID   M_REST_USER_ID, "
-            #"  T4.LOGIN_PW  M_REST_LOGIN_PW, "
             "  T8.ITA_EXT_STM_ID    M_ITA_EXT_STM_ID, "
-            #"  T9.USERNAME          M_REST_USERNAME, "
-            #"  T9.USERNAME_JP       M_USERNAME_JP, "
             "  T6.OS_TYPE_ID        M_OS_TYPE_ID, "
             "  T6.OS_TYPE_NAME      M_OS_TYPE_NAME, "
             "  T6.DISUSE_FLAG       OS_DISUSE_FLAG, "
@@ -1545,10 +1999,8 @@ class CICD_ChildWorkflow():
             "  T5.DISUSE_FLAG       DALG_DISUSE_FLAG, "
             "  T2.DISUSE_FLAG       REPO_DISUSE_FLAG, "
             "  T3.DISUSE_FLAG       MATL_DISUSE_FLAG, "
-            #"  T4.DISUSE_FLAG       RACCT_DISUSE_FLAG, "
             "  T7.DISUSE_FLAG       OPE_DISUSE_FLAG, "
             "  T8.DISUSE_FLAG       PTN_DISUSE_FLAG "
-            #"  T9.DISUSE_FLAG       ACT_DISUSE_FLAG "
             "FROM "
             "  T_CICD_MATL_LINK     T1 "
             "LEFT OUTER JOIN T_CICD_REPOSITORY_LIST T2 ON T1.REPO_ROW_ID=T2.REPO_ROW_ID "
@@ -1575,10 +2027,9 @@ class CICD_ChildWorkflow():
         tgtMatlLinkRow = []
         ret, tgtMatlLinkRow = self.getTargetMatlLinkRow(tgtMatlLinkRow)
         if ret is not True:
-            # 異常フラグON
             self.error_flag = 1
 
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-2002")  # ToDo
+            logstr = g.appmsg.get_api_message("MSG-90093")
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
             return FREE_LOG
 
@@ -1586,12 +2037,12 @@ class CICD_ChildWorkflow():
             go = False
             if MargeExeFlg is True or self.MatlListUpdateExeFlg is True:
                 # 同期状態が異常以外の場合を判定
-                if row['SYNC_STATUS_ROW_ID'] != TD_SYNC_STATUS_NAME_DEFINE.ERROR():
+                if row['SYNC_STATUS_ROW_ID'] != TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR:
                     go = True
 
             else:
                 # 同期状態が再開か空白の場合を判定
-                if row['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.RESTART() \
+                if row['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.STS_RESTART \
                 or row['SYNC_STATUS_ROW_ID'] is None or len(row['SYNC_STATUS_ROW_ID']) == 0:
                     go = True
 
@@ -1603,9 +2054,17 @@ class CICD_ChildWorkflow():
 
                 # 資材紐付を行う孫プロセス起動
                 MatlLinkId = row['MATL_LINK_ROW_ID']
-                g.appmsg.get_api_message("ITACICDFORIAC-STD-2010", [self.RepoId, MatlLinkId])  # ToDo
+                g.appmsg.get_api_message("MSG-90055", [self.RepoId, MatlLinkId])
                 grand_child_obj = CICD_GrandChildWorkflow(self.org_id, self.ws_id, self.DBobj, self.RepoId, MatlLinkId, DelvFlg)
-                grand_child_obj.main()
+                ret = grand_child_obj.main()
+                if ret == 0:
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90060", [self.RepoId, MatlLinkId])
+                    g.applogger.debug(FREE_LOG)
+
+                else:
+                    self.warning_flag = 1
+                    logaddstr = ret
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90092", [self.RepoId, MatlLinkId, logaddstr])
 
         return True
 
@@ -1613,193 +2072,237 @@ class CICD_ChildWorkflow():
 
         SyncTimeUpdate_Flg = False
         RepoListSyncStatusUpdate_Flg = False
-
-        self.LocalsetSshExtraArgs()
-
-        # ローカルクローンディレクトリ有無判定
         CloneExeFlg = False
-        ret = self.Gitobj.LocalCloneDirCheck()
-        if ret is False:
-            CloneExeFlg = True
+        MargeExeFlg = True
 
-        if CloneExeFlg is False:
-            FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2007", [self.RepoId,])  # ToDo
-            g.applogger.debug(FREE_LOG)
+        try:
+            try:
+                self.LocalsetSshExtraArgs()
 
-            # ローカルクローンのリモートリポジトリ(URL)が正しいか判定
-            ret = self.LocalCloneRemoteRepoChk(self.RepoId)
+                # ローカルクローンディレクトリ有無判定
+                ret = self.Gitobj.LocalCloneDirCheck()
+                if ret is False:
+                    CloneExeFlg = True
+
+                # ローカルクローンのリモートリポジトリ(URL)が正しいか判定
+                if CloneExeFlg is False:
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90053", [self.RepoId,])
+                    g.applogger.debug(FREE_LOG)
+
+                    ret = self.LocalCloneRemoteRepoChk()
+                    if ret is False:
+                        # リモートリポジトリ不一致
+                        CloneExeFlg = True
+                        FREE_LOG = g.appmsg.get_api_message("MSG-90057", [self.RepoId,])
+                        g.applogger.debug(FREE_LOG)
+
+                # ローカルクローンのブランチが正しいか判定
+                if CloneExeFlg is False:
+                    ret = self.LocalCloneBranchChk()
+                    if ret is False:
+                        # ブランチ不一致
+                        CloneExeFlg = True
+                        FREE_LOG = g.appmsg.get_api_message("MSG-90070", [self.RepoId,])
+                        g.applogger.debug(FREE_LOG)
+
+                # ローカルクローン作成
+                if CloneExeFlg is True:
+                    # ローカルクローン作成
+                    ret = self.CreateLocalClone()
+
+                    # Git ファイル一覧取得
+                    ret, GitFiles = self.getLocalCloneFileList()
+
+                    # rolesディレクトリ取得
+                    RolesPath = self.getRolesPath(GitFiles)
+
+                else:
+                    # Git差分抽出(git pull)
+                    ret, pullResultAry, UpdateFiles, MargeExeFlg = self.GitPull()
+                    if MargeExeFlg is True or self.MatlListUpdateExeFlg is True:
+                        # Git ファイル一覧取得
+                        ret, GitFiles = self.getLocalCloneFileList()
+
+                        # rolesディレクトリ取得
+                        RolesPath = self.getRolesPath(GitFiles)
+
+                #  資材管理更新
+                if MargeExeFlg is True or self.MatlListUpdateExeFlg is True:
+                    self.DBobj.db_transaction_start()
+
+                    # 資材管理にGit ファイル情報を登録
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90065", [self.RepoId, ])
+                    g.applogger.debug(FREE_LOG)
+
+                    ret, MatlListRecodes = self.getMatlListRecodes()
+                    ret, MatlListRecodes = self.MatlListMerge(MatlListRecodes, RolesPath, GitFiles)
+                    ret = self.MatlListRolesRecodeUpdate()
+
+                    # 資材一覧を更新したタイミングでコミット
+                    ret = self.DBobj.db_transaction_end(True)
+                    if ret is False:
+                        # 異常フラグON
+                        self.error_flag = 1
+
+                        # トランザクション処理に失敗しました
+                        logstr = g.appmsg.get_api_message("MSG-90076")
+                        FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+
+                        # UIに表示するメッセージ
+                        self.UIDisplayMsg = g.appmsg.get_api_message("MSG-90109")
+
+                        # 戻り値編集
+                        retary = self.makeReturnArray(-1, FREE_LOG, self.UIDisplayMsg)
+                        raise Exception(retary)
+
+                    FREE_LOG = g.appmsg.get_api_message("MSG-90066", [self.RepoId, ])
+                    g.applogger.debug(FREE_LOG)
+
+            except CICDException as e:
+                print(e)
+
+                self.error_flag = 1
+                self.DBobj.db_transaction_end(False)
+                self.UIDisplayMsg = e.ary['UImsg']
+                logstr = g.appmsg.get_api_message("MSG-90080", [self.RepoId, ])
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, e.ary['log'])
+                raise Exception(FREE_LOG)
+
+            except Exception as e:
+                # ToDo delete traceback
+                import traceback
+                print(traceback.format_exc())
+
+                self.error_flag = 1
+                self.DBobj.db_transaction_end(False)
+                self.UIDisplayMsg = str(e)
+                logstr = g.appmsg.get_api_message("MSG-90080", [self.RepoId, ])
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, e)
+                raise Exception(FREE_LOG)
+
+            # トランザクション再開
+            """
+            ret = self.DBobj.db_transaction_end(True)
             if ret is False:
-                # リモートリポジトリ不一致
-                CloneExeFlg = True
-                FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2014", [self.RepoId,])  # ToDo
-                g.applogger.debug(FREE_LOG)
+                # UIに表示するエラーメッセージ設定
+                self.setDefaultUIDisplayMsg()
 
-        # ローカルクローンのブランチが正しいか判定
-        if CloneExeFlg is False:
-            ret = self.LocalCloneBranchChk()
+                # 異常フラグON
+                self.error_flag = 1
+
+                # トランザクション処理に失敗しました
+                logstr = g.appmsg.get_api_message("MSG-90076")
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                raise Exception(FREE_LOG)
+            """
+
+            ret = self.DBobj.db_transaction_start()
             if ret is False:
-                # ブランチ不一致
-                CloneExeFlg = True
-                FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2029", [self.RepoId,])  # ToDo
-                g.applogger.debug(FREE_LOG)
+                # UIに表示するエラーメッセージ設定
+                self.setDefaultUIDisplayMsg()
 
-        if CloneExeFlg is True:
-            # ローカルクローン作成
-            ret = self.CreateLocalClone()
+                # 異常フラグON
+                self.error_flag = 1
 
-            # Git ファイル一覧取得
-            ret, GitFiles = self.getLocalCloneFileList()
+                # トランザクション処理に失敗しました
+                logstr = g.appmsg.get_api_message("MSG-90076")
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                raise Exception(FREE_LOG)
 
-            # rolesディレクトリ取得
-            RolesPath = self.getRolesPath(GitFiles)
+            # 同期状態テーブル 処理時間更新
+            if SyncTimeUpdate_Flg is False:
+                ret = self.UpdateSyncStatusRecode()
+                if ret is False:
+                    self.error_flag = 1
+                    self.setDefaultUIDisplayMsg()
 
-        else:
-            # Git差分抽出(git pull)
-            ret, pullResultAry, UpdateFiles, MargeExeFlg = self.GitPull()
-            if MargeExeFlg is True or self.MatlListUpdateExeFlg is True:
-                # Git ファイル一覧取得
-                ret, GitFiles = self.getLocalCloneFileList()
+                    # データベースの更新に失敗しました
+                    logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
+                    FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
+                    raise Exception(FREE_LOG)
 
-                # rolesディレクトリ取得
-                RolesPath = self.getRolesPath(GitFiles)
+            if RepoListSyncStatusUpdate_Flg is False:
+                SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
+                ret = self.UpdateRepoListSyncStatus(SyncStatus)
+                if ret is not True:
+                    self.error_flag = 1
+                    self.setDefaultUIDisplayMsg()
 
-        #  資材管理更新
-        if MargeExeFlg is True or self.MatlListUpdateExeFlg is True:
-            # 資材管理にGit ファイル情報を登録
-            FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2024", [self.RepoId, ])  # ToDo
-            g.applogger.debug(FREE_LOG)
+                    # データベースの更新に失敗しました
+                    logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
+                    FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
+                    raise Exception(FREE_LOG)
 
-            ret, MatlListRecodes = self.getMatlListRecodes()
-            ret, MatlListRecodes = self.MatlListMerge(MatlListRecodes, RolesPath, GitFiles)
-            ret = self.MatlListRolesRecodeUpdate()
+            ret = self.DBobj.db_transaction_end(True)
+            if ret is False:
+                # UIに表示するエラーメッセージ設定
+                self.setDefaultUIDisplayMsg()
 
-            # 資材一覧を更新したタイミングでコミット
-            ret = self.DBobj.db_commit()
+                # 異常フラグON
+                self.error_flag = 1
+
+                # トランザクション処理に失敗しました
+                logstr = g.appmsg.get_api_message("MSG-90076")
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                raise Exception(FREE_LOG)
+
+            # commit後に同期状態テーブル 処理時間更新とリモートリポジトリ管理の状態を更新をマーク
+            SyncTimeUpdate_Flg = True
+            RepoListSyncStatusUpdate_Flg = True
+
+            """
+            ret = self.DBobj.db_transaction_start()
             if ret is False:
                 # 異常フラグON
                 self.error_flag = 1
 
                 # トランザクション処理に失敗しました
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
+                logstr = g.appmsg.get_api_message("MSG-90076")
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                raise Exception(FREE_LOG)
+            """
 
-                # UIに表示するメッセージ
-                self.UIDisplayMsg = g.appmsg.get_api_message("ITACICDFORIAC-ERR-4000")  # ToDo
+            # 資材紐付管理に登録されている資材を展開
+            ret = self.MatlLinkExecute(MargeExeFlg)
+            if ret is not True:
+                self.error_flag = 1
 
-                # 戻り値編集
-                retary = self.makeReturnArray(-1, FREE_LOG, self.UIDisplayMsg)
-                raise Exception(retary)
+                logstr = g.appmsg.get_api_message("MSG-90094")
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
+                raise Exception(FREE_LOG)
 
-            FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2025", [self.RepoId, ])  # ToDo
-            g.applogger.debug(FREE_LOG)
-
-        # トランザクション再開
-        ret = self.DBobj.db_transaction_end(True)
-        if ret is False:
-            # UIに表示するエラーメッセージ設定
-            self.setDefaultUIDisplayMsg()
-
-            # 異常フラグON
-            self.error_flag = 1
-
-            # トランザクション処理に失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-            raise Exception(FREE_LOG)
-
-        ret = self.DBobj.db_transaction_start()
-        if ret is False:
-            # UIに表示するエラーメッセージ設定
-            self.setDefaultUIDisplayMsg()
-
-            # 異常フラグON
-            self.error_flag = 1
-
-            # トランザクション処理に失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-            raise Exception(FREE_LOG)
-
-        # 同期状態テーブル 処理時間更新
-        if SyncTimeUpdate_Flg is False:
-            ret = self.UpdateSyncStatusRecode()
+            """
+            # トランザクションを終了
+            ret = self.DBobj.db_transaction_end(True)
             if ret is False:
                 # 異常フラグON
                 self.error_flag = 1
 
-                # UIに表示するエラーメッセージ設定
-                self.setDefaultUIDisplayMsg()
-
-                # データベースの更新に失敗しました
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1007", [self.RepoId, ])  # ToDo
-                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
+                # トランザクション処理に失敗しました
+                logstr = g.appmsg.get_api_message("MSG-90076")
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
                 raise Exception(FREE_LOG)
+            """
 
-        if RepoListSyncStatusUpdate_Flg is False:
-            SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.NORMAL()
-            ret = self.UpdateRepoListSyncStatus(SyncStatus)
-            if ret is not True:
-                # 異常フラグON
-                self.error_flag = 1
 
-                # UIに表示するエラーメッセージ設定
-                self.setDefaultUIDisplayMsg()
 
-                # データベースの更新に失敗しました
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1007", [self.RepoId, ])  # ToDo
-                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
-                raise Exception(FREE_LOG)
+            return
 
-        ret = self.DBobj.db_commit()
-        if ret is False:
-            # UIに表示するエラーメッセージ設定
-            self.setDefaultUIDisplayMsg()
 
-            # 異常フラグON
-            self.error_flag = 1
 
-            # トランザクション処理に失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-            raise Exception(FREE_LOG)
+        except CICDException as e:
+            print(e)
 
-        # commit後に同期状態テーブル 処理時間更新とリモートリポジトリ管理の状態を更新をマーク
-        SyncTimeUpdate_Flg = True
-        RepoListSyncStatusUpdate_Flg = True
+            self.DBobj.db_transaction_end(False)
+            FREE_LOG = str(e)
 
-        self.DBobj.db_transaction_end(True)
-        ret = self.DBobj.db_transaction_start()
-        if ret is False:
-            # 異常フラグON
-            self.error_flag = 1
+        except Exception as e:
+            # ToDo delete traceback
+            import traceback
+            print(traceback.format_exc())
 
-            # トランザクション処理に失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-            raise Exception(FREE_LOG)
-
-        # 資材紐付管理に登録されている資材を展開
-        ret = self.MatlLinkExecute(MargeExeFlg)
-        if ret is not True:
-            # 異常フラグON
-            self.error_flag = 1
-
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-2003")  # ToDo
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
-            raise Exception(FREE_LOG)
-
-        # トランザクションを終了
-        ret = self.DBobj.db_transaction_end(True)
-        if ret is False:
-            # 異常フラグON
-            self.error_flag = 1
-
-            # トランザクション処理に失敗しました
-            logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1003")  # ToDo
-            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-            raise Exception(FREE_LOG)
-
-        # 例外
+            self.DBobj.db_transaction_end(False)
+            FREE_LOG = str(e)
 
         if SyncTimeUpdate_Flg is False:
             ret = self.UpdateSyncStatusRecode()
@@ -1811,16 +2314,16 @@ class CICD_ChildWorkflow():
                 self.setDefaultUIDisplayMsg()
 
                 # データベースの更新に失敗しました
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1007", [self.RepoId, ])  # ToDo
+                logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                 g.applogger.debug(FREE_LOG)
 
         if RepoListSyncStatusUpdate_Flg is False:
             if len(self.UIDisplayMsg) <= 0:
-                SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.NORMAL()
+                SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
 
             else:
-                SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.ERROR()
+                SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
 
             ret = self.UpdateRepoListSyncStatus(SyncStatus)
             if ret is not True:
@@ -1828,17 +2331,22 @@ class CICD_ChildWorkflow():
                 self.error_flag = 1
 
                 # データベースの更新に失敗しました
-                logstr = g.appmsg.get_api_message("ITACICDFORIAC-ERR-1007", [self.RepoId, ])  # ToDo
+                logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                 g.applogger.debug(FREE_LOG)
 
         # 結果出力
         if self.error_flag != 0:
-            FREE_LOG = g.appmsg.get_api_message("ITAWDCH-ERR-50001")  # ToDo
+            FREE_LOG = g.appmsg.get_api_message("MSG-90051")
             g.applogger.debug(FREE_LOG)
             return 2
 
-        FREE_LOG = g.appmsg.get_api_message("ITAWDCH-STD-50002")  # ToDo
+        elif self.warning_flag != 0:
+            FREE_LOG = g.appmsg.get_api_message("MSG-90052")
+            g.applogger.debug(FREE_LOG)
+            return 2
+
+        FREE_LOG = g.appmsg.get_api_message("MSG-90050")
         g.applogger.debug(FREE_LOG)
 
         return 0
@@ -1847,118 +2355,79 @@ class CICD_ChildWorkflow():
 ################################################################
 # 親
 ################################################################
-def chkRepoListAndSyncStatusRow(DBobj):
-
-    # リポジトリ管理、同期状態管理のいずれかにしか存在しないIDを抽出
-    SyncStatusAdd = []
-    SyncStatusDel = []
-
-    sql = (
-        "SELECT TAB_A.REPO_ROW_ID, TAB_B.ROW_ID AS SYNC_STATUS_ROW_ID "
-        "FROM ("
-        "  SELECT REPO_ROW_ID AS ROW_ID FROM T_CICD_REPOSITORY_LIST "
-        "  UNION "
-        "  SELECT ROW_ID FROM T_CICD_SYNC_STATUS "
-        ") L "
-        "LEFT OUTER JOIN T_CICD_REPOSITORY_LIST TAB_A "
-        "ON L.ROW_ID=TAB_A.REPO_ROW_ID "
-        "LEFT OUTER JOIN T_CICD_SYNC_STATUS TAB_B "
-        "ON L.ROW_ID=TAB_B.ROW_ID "
-    )
-
-    rset = DBobj.sql_execute(sql, [])
-    for row in rset:
-        if row['REPO_ROW_ID'] is not None and row['SYNC_STATUS_ROW_ID'] is None:
-            SyncStatusAdd.append(row['REPO_ROW_ID'])
-
-        elif row['REPO_ROW_ID'] is None and row['SYNC_STATUS_ROW_ID'] is not None:
-            SyncStatusDel.append(row['SYNC_STATUS_ROW_ID'])
-
-    # リポジトリ管理にのみ存在するIDを同期状態管理に追加
-    for repoId in SyncStatusAdd:
-        sql = (
-            "INSERT INTO T_CICD_SYNC_STATUS (ROW_ID, SYNC_LAST_TIMESTAMP) "
-            "VALUES (%s, %s) "
-        )
-
-        DBobj.sql_execute(sql, [repoId, None])
-
-    # 同期状態管理にのみ存在するIDを同期状態管理から削除
-    if len(SyncStatusDel) > 0:
-        sql = ""
-        for repoId in SyncStatusDel:
-            if sql:
-                sql += " ,%s"
-
-            else:
-                sql += "%s"
-
-        sql = "DELETE FROM T_CICD_SYNC_STATUS WHERE ROW_ID IN (%s) " % (sql)
-        DBobj.sql_execute(sql, SyncStatusDel)
-
-    return True
-
 def getTargetRepoListRow(DBobj):
 
     # リポジトリ管理抽出(廃止レコードではない、自動同期が有効、(同期状態が異常ではない or 同期実行状態が未実施))
     sql = (
         "SELECT "
-        "  TAB_A.*, "
-        "  TAB_B.* "
+        "  TAB_A.* "
         "FROM "
         "  T_CICD_REPOSITORY_LIST TAB_A "
-        "INNER JOIN "
-        "  T_CICD_SYNC_STATUS TAB_B "
-        "ON "
-        "  TAB_A.REPO_ROW_ID = TAB_B.ROW_ID "
         "WHERE "
         "  TAB_A.DISUSE_FLAG = '0' "
         "  AND TAB_A.AUTO_SYNC_FLG = %s "
-        "  AND (TAB_A.SYNC_STATUS_ROW_ID <> %s OR TAB_A.SYNC_STATUS_ROW_ID IS NULL) "
+        "  AND (TAB_A.SYNC_STATUS_ROW_ID <> %s OR TAB_A.SYNC_LAST_TIMESTAMP IS NULL) "
     )
 
-    tgtRepoListRow = DBobj.sql_execute(sql, ['1', TD_SYNC_STATUS_NAME_DEFINE.ERROR()])
+    tgtRepoListRow = DBobj.sql_execute(sql, ['1', TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR])
 
     return tgtRepoListRow
+
 
 def backyard_main(organization_id, workspace_id):
 
     print("backyard_main called")
 
-    DBobj = DBConnectWs()
-    DBobj.db_transaction_start()
+    error_flag = 0
+    if getattr(g, 'LANGUAGE', None) is None:
+        g.LANGUAGE = 'en'
 
-    # リポジトリ管理と同期状態管理テーブルのレコード紐付確認
-    chkRepoListAndSyncStatusRow(DBobj)
+    if getattr(g, 'USER_ID', None) is None:
+        g.USER_ID = '100101'
 
-    # リポジトリ管理から処理対象のリポジトリ取得
-    tgtRepoListRow = getTargetRepoListRow(DBobj)
-    print(tgtRepoListRow)
-    for row in tgtRepoListRow:
-        ExecuteTime = datetime.datetime.now()
-        RepoId = row['REPO_ROW_ID']
-        ExecMode = "Remake"
-        if row['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.NORMAL():
-            ExecMode = "Normal"
+    try:
+        DBobj = DBConnectWs()
 
-        sync_last_timestamp = row['SYNC_LAST_TIMESTAMP']
-        if sync_last_timestamp is None:
-            sync_last_timestamp = datetime.datetime.fromtimestamp(0)
+        # リポジトリ管理から処理対象のリポジトリ取得
+        tgtRepoListRow = getTargetRepoListRow(DBobj)
+        for row in tgtRepoListRow:
+            ExecuteTime = datetime.datetime.now()
+            RepoId = row['REPO_ROW_ID']
+            ExecMode = "Remake"
+            if row['SYNC_STATUS_ROW_ID'] == TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL:
+                ExecMode = "Normal"
 
-        if row['SYNC_INTERVAL'] is None or row['SYNC_INTERVAL'] == "":
-            row['SYNC_INTERVAL'] = 60
+            sync_last_timestamp = row['SYNC_LAST_TIMESTAMP']
+            if sync_last_timestamp is None:
+                sync_last_timestamp = datetime.datetime.fromtimestamp(0)
 
-        # 前回同期から指定秒を経過しているかチェック
-        sync_interval = int(row['SYNC_INTERVAL'])
-        if ExecuteTime >= sync_last_timestamp + datetime.timedelta(seconds=sync_interval):
-            FREE_LOG = g.appmsg.get_api_message("ITACICDFORIAC-STD-2013", [RepoId, ])
-            g.applogger.debug(FREE_LOG)
+            if row['SYNC_INTERVAL'] is None or row['SYNC_INTERVAL'] == "":
+                row['SYNC_INTERVAL'] = 60
 
-            child_obj = CICD_ChildWorkflow(organization_id, workspace_id, DBobj, RepoId, ExecMode, row)
-            child_obj.main()
+            # 前回同期から指定秒を経過しているかチェック
+            sync_interval = int(row['SYNC_INTERVAL'])
+            if ExecuteTime >= sync_last_timestamp + datetime.timedelta(seconds=sync_interval):
+                FREE_LOG = g.appmsg.get_api_message("MSG-90056", [RepoId, ])
+                g.applogger.debug(FREE_LOG)
 
+                child_obj = CICD_ChildWorkflow(organization_id, workspace_id, DBobj, RepoId, ExecMode, row)
+                child_obj.main()
 
-    DBobj.db_commit()
+    except Exception as e:
+        # ToDo traceback を削除
+        import traceback
+        print(traceback.format_exc())
+        error_flag = 1
+
+    # 結果出力
+    FREE_LOG = ""
+    if error_flag != 0:
+        FREE_LOG = g.appmsg.get_api_message("MSG-90051")
+
+    else:
+        FREE_LOG = g.appmsg.get_api_message("MSG-90050")
+
+    g.applogger.debug(FREE_LOG)
 
     print("backyard_main end")
 

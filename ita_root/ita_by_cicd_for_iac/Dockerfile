@@ -43,6 +43,7 @@ RUN dnf install -y \
     python-dotenv \
     chardet \
     pycryptodome \
+    python-hcl2 \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

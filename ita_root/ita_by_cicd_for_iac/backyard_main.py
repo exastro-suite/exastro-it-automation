@@ -32,7 +32,7 @@ from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
-from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath, getPioneerDialogUploadDirPath, getRolePackageContentUploadDirPath, getFileContentUploadDirPath, getTemplateContentUploadDirPath
+from common_libs.ansible_driver.functions.util import getDataRelayStorageDir, getLegacyPlaybookUploadDirPath, getPioneerDialogUploadDirPath, getRolePackageContentUploadDirPath, getFileContentUploadDirPath, getTemplateContentUploadDirPath
 from common_libs.ansible_driver.functions.rest_libs import insert_execution_list as a_insert_execution_list
 from common_libs.terraform_driver.common.Execute import insert_execution_list as t_insert_execution_list
 from common_libs.cicd.classes.cicd_definition import TD_SYNC_STATUS_NAME_DEFINE, TD_B_CICD_MATERIAL_FILE_TYPE_NAME, TD_B_CICD_MATERIAL_TYPE_NAME, TD_C_PATTERN_PER_ORCH, TD_B_CICD_GIT_PROTOCOL_TYPE_NAME, TD_B_CICD_GIT_REPOSITORY_TYPE_NAME, TD_B_CICD_MATERIAL_LINK_LIST
@@ -88,9 +88,34 @@ class CICDMakeParamBase():
 
         return {}
 
-    def diff_file(self, *args, **kwargs):
+    def diff_file(self, filedata, cur_filedata, *args, **kwargs):
 
-        return False
+        if cur_filedata is None:
+            func = None
+            if 'func' in kwargs:
+                func = kwargs['func']
+
+            subpath = []
+            if 'path' in kwargs:
+                subpath = kwargs['path']
+
+            if not func and not subpath:
+                return True
+
+            filepath = (func() if func else '') + subpath
+            if os.path.exists(filepath) is False:
+                return True
+
+            cur_filedata = ""
+            with open(filepath) as fp:
+                cur_filedata = fp.read()
+
+            cur_filedata = base64.b64encode(cur_filedata.encode()).decode()
+
+        if filedata == cur_filedata:
+            return False
+
+        return True
 
     def get_record(self, DBobj, **kwargs):
 
@@ -141,7 +166,7 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
         data['playbook_file'] = filename
         data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
         data['discard'] = '0'
-        data['last_update_date_time'] = datetime.datetime.now()
+        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
         data['last_updated_user'] = g.USER_ID
 
         param = {}
@@ -154,6 +179,7 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
 
     def diff_file(self, mid, name, filedata):
 
+        """
         filepath = '%s/%s/%s' % (getLegacyPlaybookUploadDirPath(), mid, name)
         if os.path.exists(filepath) is False:
             return True
@@ -162,12 +188,18 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
         with open(filepath) as fp:
             cur_filedata = fp.read()
 
-        cur_filedata = base64.b64encode(cur_filedata.encode())
+        cur_filedata = base64.b64encode(cur_filedata.encode()).decode()
 
         if filedata == cur_filedata:
             return False
+        """
+        ret = super(CICDMakeParamLegacy, self).diff_file(
+            filedata,
+            None,
+            func=getLegacyPlaybookUploadDirPath, path=("/%s/%s" % (mid, name))
+        )
 
-        return True
+        return ret
 
 class CICDMakeParamPioneer(CICDMakeParamBase):
 
@@ -175,7 +207,7 @@ class CICDMakeParamPioneer(CICDMakeParamBase):
 
         super(CICDMakeParamPioneer, self).__init__(table_name, pkey, fcol_name, menu_name)
 
-    def make_param(self):
+    def make_param(self, row, tgtFileName):
 
         param = {}
 
@@ -187,7 +219,7 @@ class CICDMakeParamRole(CICDMakeParamBase):
 
         super(CICDMakeParamRole, self).__init__(table_name, pkey, fcol_name, menu_name)
 
-    def make_param(self):
+    def make_param(self, row, tgtFileName):
 
         param = {}
 
@@ -199,7 +231,7 @@ class CICDMakeParamContent(CICDMakeParamBase):
 
         super(CICDMakeParamContent, self).__init__(table_name, pkey, fcol_name, menu_name)
 
-    def make_param(self):
+    def make_param(self, row, tgtFileName):
 
         param = {}
 
@@ -211,7 +243,7 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
 
         super(CICDMakeParamTemplate, self).__init__(table_name, pkey, fcol_name, menu_name)
 
-    def make_param(self):
+    def make_param(self, row, tgtFileName):
 
         param = {}
 
@@ -223,11 +255,38 @@ class CICDMakeParamModule(CICDMakeParamBase):
 
         super(CICDMakeParamModule, self).__init__(table_name, pkey, fcol_name, menu_name)
 
-    def make_param(self):
+    def make_param(self, row, tgtFileName):
 
         param = {}
+        param['MODULE_MATTER_NAME'] = row['MATL_LINK_NAME']
+        param['MODULE_MATTER_FILE'] = tgtFileName
 
         return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['item_no'] = kwargs['MODULE_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['module_file_name'] = linkname
+        data['module_file'] = filename
+        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        data['discard'] = '0'
+        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+        data['last_updated_user'] = g.USER_ID
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['module_file'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCLIConst.DIR_MODULE, mid, name)
+        ret = super(CICDMakeParamLegacy, self).diff_file(filedata, None, path=filepath)
+        return ret
 
 class CICDMakeParamPolicy(CICDMakeParamBase):
 
@@ -235,7 +294,7 @@ class CICDMakeParamPolicy(CICDMakeParamBase):
 
         super(CICDMakeParamPolicy, self).__init__(table_name, pkey, fcol_name, menu_name)
 
-    def make_param(self):
+    def make_param(self, row, tgtFileName):
 
         param = {}
 
@@ -247,11 +306,38 @@ class CICDMakeParamModuleCLI(CICDMakeParamBase):
 
         super(CICDMakeParamModuleCLI, self).__init__(table_name, pkey, fcol_name, menu_name)
 
-    def make_param(self):
+    def make_param(self, row, tgtFileName):
 
         param = {}
+        param['MODULE_MATTER_NAME'] = row['MATL_LINK_NAME']
+        param['MODULE_MATTER_FILE'] = tgtFileName
 
         return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['item_no'] = kwargs['MODULE_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['module_file_name'] = linkname
+        data['module_file'] = filename
+        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        data['discard'] = '0'
+        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+        data['last_updated_user'] = g.USER_ID
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['module_file'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCloudEPConst.DIR_MODULE, mid, name)
+        ret = super(CICDMakeParamLegacy, self).diff_file(filedata, None, path=filepath)
+        return ret
 
 
 ################################################################
@@ -732,7 +818,7 @@ class CICD_GrandChildWorkflow():
 
         self.RepoId = RepoId
         self.MatlLinkId = MatlLinkId
-        self.DelvExecFlg = DelvFlg
+        self.DelvExecFlg = True if DelvFlg != 0 else False
 
         self.cloneRepoDir = '/storage/%s/%s/driver/cicd/repositories/%s' % (org_id, ws_id, RepoId)
 
@@ -863,6 +949,8 @@ class CICD_GrandChildWorkflow():
             "  T8.ANS_HOST_DESIGNATE_TYPE_ID      MV_ANS_HOST_DESIGNATE_TYPE_ID, "
             "  T8.ANS_EXECUTION_ENVIRONMENT_NAME  MV_ANS_EXECUTION_ENVIRONMENT_NAME, "
             "  T8.ANS_ANSIBLE_CONFIG_FILE         MV_ANS_ANSIBLE_CONFIG_FILE, "
+            "  T8.TERE_WORKSPACE_ID MV_TERE_WORKSPACE_ID, "
+            "  T8.TERC_WORKSPACE_ID MV_TERC_WORKSPACE_ID, "
             "  T6.OS_TYPE_ID        M_OS_TYPE_ID, "
             "  T6.OS_TYPE_NAME      M_OS_TYPE_NAME, "
             "  T6.DISUSE_FLAG       OS_DISUSE_FLAG, "
@@ -923,16 +1011,16 @@ class CICD_GrandChildWorkflow():
             obj_make_param = CICDMakeParamTemplate('T_ANSC_TEMPLATE_FILE', 'ANS_TEMPLATE_ID', 'ANS_TEMPLATE_FILE', 'template_list')
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE:
-            filter_dict = {'': linkname}
-            obj_make_param = CICDMakeParamModule('', '', '', '')
+            filter_dict = {'MODULE_MATTER_NAME': linkname}
+            obj_make_param = CICDMakeParamModule('T_TERE_MODULE', 'MODULE_MATTER_ID', 'MODULE_MATTER_FILE', 'module_files_terraform_cloud_ep')
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_POLICY:
-            filter_dict = {'': linkname}
-            obj_make_param = CICDMakeParamPolicy('', '', '', '')
+            filter_dict = {'POLICY_NAME': linkname}
+            obj_make_param = CICDMakeParamPolicy('T_TERE_POLICY', 'POLICY_ID', 'POLICY_MATTER_FILE', 'policy_list_terraform_cloud_ep')
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE_CLI:
-            filter_dict = {'': linkname}
-            obj_make_param = CICDMakeParamModuleCLI('', '', '', '')
+            filter_dict = {'MODULE_MATTER_NAME': linkname}
+            obj_make_param = CICDMakeParamModuleCLI('T_TERC_MODULE', 'MODULE_MATTER_ID', 'MODULE_MATTER_FILE', 'module_files_terraform_cli')
 
         if obj_make_param is None:
             return True
@@ -1020,16 +1108,28 @@ class CICD_GrandChildWorkflow():
             "OPERATION_NAME": row['OPE_OPERATION_NAME'],
         }
 
-        movement_row = {
-            "MOVEMENT_ID": row['DEL_MOVE_ID'],
-            "MOVEMENT_NAME": row['MV_MOVEMENT_NAME'],
-            "TIME_LIMIT": row['MV_TIME_LIMIT'],
-            "ANS_WINRM_ID": row['MV_ANS_WINRM_ID'],
-            "ANS_PLAYBOOK_HED_DEF": row['MV_ANS_PLAYBOOK_HED_DEF'],
-            "ANS_HOST_DESIGNATE_TYPE_ID": row['MV_ANS_HOST_DESIGNATE_TYPE_ID'],
-            "ANS_EXECUTION_ENVIRONMENT_NAME": row['MV_ANS_EXECUTION_ENVIRONMENT_NAME'],
-            "ANS_ANSIBLE_CONFIG_FILE": row['MV_ANS_ANSIBLE_CONFIG_FILE'],
-        }
+        movement_row = {}
+        if DriverType in ansible_driver_list:
+            movement_row = {
+                "MOVEMENT_ID": row['DEL_MOVE_ID'],
+                "MOVEMENT_NAME": row['MV_MOVEMENT_NAME'],
+                "TIME_LIMIT": row['MV_TIME_LIMIT'],
+                "ANS_WINRM_ID": row['MV_ANS_WINRM_ID'],
+                "ANS_PLAYBOOK_HED_DEF": row['MV_ANS_PLAYBOOK_HED_DEF'],
+                "ANS_HOST_DESIGNATE_TYPE_ID": row['MV_ANS_HOST_DESIGNATE_TYPE_ID'],
+                "ANS_EXECUTION_ENVIRONMENT_NAME": row['MV_ANS_EXECUTION_ENVIRONMENT_NAME'],
+                "ANS_ANSIBLE_CONFIG_FILE": row['MV_ANS_ANSIBLE_CONFIG_FILE'],
+            }
+
+        else:
+            col_name_dst = "%s_WORKSPACE_ID" % (DriverType)
+            col_name_src = "MV_%s" % (col_name_dst)
+            movement_row = {
+                "MOVEMENT_ID": row['DEL_MOVE_ID'],
+                "MOVEMENT_NAME": row['MV_MOVEMENT_NAME'],
+                "TIME_LIMIT": row['MV_TIME_LIMIT'],
+                col_name_dst: row[col_name_src],
+            }
 
         # 作業管理に登録
         if DriverType in ansible_driver_list:
@@ -1040,7 +1140,7 @@ class CICD_GrandChildWorkflow():
             # Terraform用 作業実行登録
             result = t_insert_execution_list(self.DBobj, run_mode, DriverType, operation_row, movement_row, schedule_date, conductor_id, conductor_name)
 
-        return result[0], result[1]['execution_no'] if result[0] is True else None
+        return True, result['execution_no']
 
     def MailLinkExecute(self):
 
@@ -1254,7 +1354,7 @@ class CICD_GrandChildWorkflow():
             UIDelvMsg = ""
             SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
             DelvExecInsNo = exec_no
-            DelvExecMenuId = TD_C_PATTERN_PER_ORCH[row['M_ITA_EXT_STM_ID']]
+            DelvExecMenuId = TD_C_PATTERN_PER_ORCH.C_CHECK_OPERATION_STATUS_MENU_NAME[row['M_ITA_EXT_STM_ID']]
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
 
         else:
@@ -1332,6 +1432,9 @@ class CICD_GrandChildWorkflow():
             self.MatlLinkUpdate_Flg = True
 
         except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+
             FREE_LOG = str(e)
             g.applogger.error(FREE_LOG)
             self.DBobj.db_transaction_end(False)
@@ -1941,7 +2044,7 @@ class CICD_ChildWorkflow():
         Update = False
         for column, value in UpdateColumnAry.items():
             # 更新が必要か判定
-            if row[column] != value:
+            if column != "SYNC_LAST_TIMESTAMP" and row[column] != value:
                 row[column] = value
                 Update = True
 
@@ -1972,6 +2075,7 @@ class CICD_ChildWorkflow():
         UpdateColumnAry = {}
         UpdateColumnAry['REPO_ROW_ID'] = self.RepoId
         UpdateColumnAry['SYNC_STATUS_ROW_ID'] = SyncStatus
+        UpdateColumnAry['SYNC_LAST_TIMESTAMP'] = datetime.datetime.now()
         if SyncStatus == TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL:
             UpdateColumnAry['SYNC_ERROR_NOTE'] = ""
 
@@ -2210,6 +2314,7 @@ class CICD_ChildWorkflow():
                 raise Exception(FREE_LOG)
 
             # 同期状態テーブル 処理時間更新
+            """
             if SyncTimeUpdate_Flg is False:
                 ret = self.UpdateSyncStatusRecode()
                 if ret is False:
@@ -2220,6 +2325,7 @@ class CICD_ChildWorkflow():
                     logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
                     FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                     raise Exception(FREE_LOG)
+            """
 
             if RepoListSyncStatusUpdate_Flg is False:
                 SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
@@ -2284,12 +2390,6 @@ class CICD_ChildWorkflow():
                 raise Exception(FREE_LOG)
             """
 
-
-
-            return
-
-
-
         except CICDException as e:
             print(e)
 
@@ -2304,6 +2404,7 @@ class CICD_ChildWorkflow():
             self.DBobj.db_transaction_end(False)
             FREE_LOG = str(e)
 
+        """
         if SyncTimeUpdate_Flg is False:
             ret = self.UpdateSyncStatusRecode()
             if ret is not True:
@@ -2317,6 +2418,7 @@ class CICD_ChildWorkflow():
                 logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                 g.applogger.debug(FREE_LOG)
+        """
 
         if RepoListSyncStatusUpdate_Flg is False:
             if len(self.UIDisplayMsg) <= 0:

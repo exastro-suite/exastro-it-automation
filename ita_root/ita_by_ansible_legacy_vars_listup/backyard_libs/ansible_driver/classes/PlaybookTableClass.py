@@ -53,17 +53,26 @@ class PlaybookTable(TableBase):
             playbook_matter_id = playbook_matter_row[self.pkey]
 
             # ファイル読み込み
-            result_vars = playbook_analyzer.analyze(playbook_matter_id, playbook_matter_row['PLAYBOOK_MATTER_FILE'])
+            file_name = playbook_matter_row['PLAYBOOK_MATTER_FILE']
+            result_vars = playbook_analyzer.analyze(playbook_matter_id, file_name)
+            if result_vars is None:
+                debug_msg = g.appmsg.get_log_message("MSG-10100", [f"{playbook_matter_id}:{file_name}"])
+                g.applogger.debug(debug_msg)
+                continue
 
-            if playbook_matter_id not in result_dict:
-                result_dict[playbook_matter_id] = set()
+            result_dict[playbook_matter_id] = set()
 
             # 変数抽出
             for var_name in result_vars[AnscConst.DF_VAR_TYPE_VAR]:
                 result_dict[playbook_matter_id].add(var_name)
 
             # テンプレート内の変数抽出
-            for tpl_var_name in result_vars[AnscConst.DF_VAR_TYPE_TPF]:
-                result_dict[playbook_matter_id] |= tpl_vars_dict[tpl_var_name]
+            for tpf_var_name, line_array in result_vars[AnscConst.DF_VAR_TYPE_TPF].items():
+                if tpf_var_name in tpl_vars_dict:
+                    result_dict[playbook_matter_id] |= tpl_vars_dict[tpf_var_name]
+                else:
+                    playbook_name_with_pkey = f"{playbook_matter_id}:{playbook_matter_row['PLAYBOOK_MATTER_NAME']}"
+                    debug_msg = g.appmsg.get_log_message("MSG-10123", [playbook_name_with_pkey, ','.join([str(line_no) for line_no in line_array]), tpf_var_name])
+                    g.applogger.debug(debug_msg)
 
         return result_dict

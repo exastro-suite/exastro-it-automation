@@ -11,10 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import sys
+import traceback
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath, getPioneerDialogUploadDirPath
+from common_libs.conductor.classes.exec_util import addline_msg
+from flask import g
 
 
 class MaterialVarsAnalyzer():
@@ -37,20 +41,36 @@ class MaterialVarsAnalyzer():
             result_vars: { playbook_matter_id: set(var_name) }
         """
 
-        data_string = self._read_material_file(uuid, file_name)
+        try:
+            data_string = self._read_material_file(uuid, file_name)
+        except Exception as e:
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            type_, value, traceback_ = sys.exc_info()
+            msg = traceback.format_exception(type_, value, traceback_)
+            g.applogger.debug(msg)
+            return None
+
         var_extractor = WrappedStringReplaceAdmin(self._ws_db)
         FillterVars = True  # Fillterを含む変数の抜き出しあり
         result_vars = {}
 
         # VAR変数
         is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(AnscConst.DF_HOST_VAR_HED, data_string, [], [], [], FillterVars)
-        vars_array = self._vars_line_array_to_vars_array(vars_line_array)
-        result_vars[AnscConst.DF_VAR_TYPE_VAR] = vars_array
+        vars_array = set()
+        for var_dict in vars_line_array:
+            for line_no, var_name in var_dict.items():  # forで回すが要素は1つしかない
+                vars_array.add(var_name)
+        result_vars[AnscConst.DF_VAR_TYPE_VAR] = list(vars_array)
 
         # TPF変数
         is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(AnscConst.DF_HOST_TPF_HED, data_string, [], [], [], FillterVars)
-        vars_array = self._vars_line_array_to_vars_array(vars_line_array)
-        result_vars[AnscConst.DF_VAR_TYPE_TPF] = vars_array
+        tpf_vars_dict = {}
+        for var_dict in vars_line_array:
+            for line_no, var_name in var_dict.items():  # forで回すが要素は1つしかない
+                if var_name not in tpf_vars_dict:
+                    tpf_vars_dict[var_name] = []
+                tpf_vars_dict[var_name].append(line_no)
+        result_vars[AnscConst.DF_VAR_TYPE_TPF] = tpf_vars_dict
 
         return result_vars
 

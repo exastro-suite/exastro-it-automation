@@ -904,7 +904,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         if not vertical:
             vertical = "False"
 
-        # 縦メニュー利用有無のkeyが無い場合はFalseを指定
+        # ホストグループ利用有無のkeyが無い場合はFalseを指定
         if not hostgroup:
             hostgroup = "False"
 
@@ -958,6 +958,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
                     "description_en": menu_data.get('description'),  # 説明(en)
                     "remarks": menu_data.get('remarks'),  # 備考
                     "vertical": vertical,  # 縦メニュー利用有無
+                    "hostgroup": hostgroup,  # ホストグループ利用有無
                     "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                     "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
                     "menu_group_for_ref": menu_data.get('menu_group_for_ref'),  # 参照用メニューグループ名
@@ -976,6 +977,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
                     "description_en": menu_data.get('description'),  # 説明(en)
                     "remarks": menu_data.get('remarks'),  # 備考
                     "vertical": vertical,  # 縦メニュー利用有無
+                    "hostgroup": hostgroup,  # ホストグループ利用有無
                     "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                     "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
                     "menu_group_for_ref": menu_data.get('menu_group_for_ref'),  # 参照用メニューグループ名

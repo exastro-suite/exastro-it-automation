@@ -15,26 +15,26 @@ from flask import g
 from common_libs.common.exception import AppException
 
 
-def get_interface_info(wsDb, const):
-    """
-    インタフェース情報を取得
+# def get_interface_info(wsDb, const):
+#     """
+#     インタフェース情報を取得
 
-    Arguments:
-        WsDb: db instance
-    Returns:
-        result: bool
-        record or err_msg:
-    """
-    condition = 'WHERE `DISUSE_FLAG`=0'
-    records = wsDb.table_select(const.T_IF_INFO, condition)
-    record_num = len(records)
+#     Arguments:
+#         WsDb: db instance
+#     Returns:
+#         result: bool
+#         record or err_msg:
+#     """
+#     condition = 'WHERE `DISUSE_FLAG`=0'
+#     records = wsDb.table_select(const.T_IF_INFO, condition)
+#     record_num = len(records)
 
-    if record_num == 0:
-        return False, "MSG-10048"
-    elif record_num != 1:
-        return False, "MSG-10049"
+#     if record_num == 0:
+#         return False, "MSG-10048"
+#     elif record_num != 1:
+#         return False, "MSG-10049"
 
-    return True, records[0]
+#     return True, records[0]
 
 
 def get_conductor_interface_info(wsDb):

@@ -144,10 +144,7 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
                 result = cm.update_execution_record(wsDb, const, data)
                 if result[0] is True:
                     wsDb.db_commit()
-                    g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [ execution_no, tf_workspace_id]))
-                else:
-                    log_err(g.appmsg.get_log_message(result[1], [execution_no]))
-                    return False
+                    g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
 
     return True
 
@@ -262,12 +259,6 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
 
     # 現在の実行数
     num_of_run_instance = 0
-
-    # インタフェース情報
-    retBool, result = cm.get_interface_info(wsDb, const)
-    if retBool is False:
-        return False, g.appmsg.get_log_message(result, [execution_no])
-    interface_info = result
     # 並列実行数の上限
     num_of_parallel_exec = 100
 
@@ -355,14 +346,14 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
         return False, g.appmsg.get_log_message("BKY-10002", [execution_no])
 
     # ワークスペース毎のディレクトリを準備
-    base_path = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
-    workspace_dir = base_path + "/driver/terraform_cli/workspace/{}/work/".format(tf_workspace_id)
-    os.makedirs(workspace_dir, exist_ok=True)
-    os.chmod(workspace_dir, 0o755)
+    base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
+    workspace_work_dir = base_dir + const.DIR_WORK + "/{}/work".format(tf_workspace_id)
+    os.makedirs(workspace_work_dir, exist_ok=True)
+    os.chmod(workspace_work_dir, 0o777)
 
     # （前回実行した）ファイルを削除しておく
     # ・緊急停止ファイル
-    emergency_stop_file_path = "{}/emergency_stop".format(workspace_dir)
+    emergency_stop_file_path = "{}/emergency_stop".format(workspace_work_dir)
     rm_file_list = [emergency_stop_file_path]
     for rm_file in rm_file_list:
         if os.path.isfile(rm_file):
@@ -373,6 +364,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
 
     command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, tf_workspace_id, execution_no]
     # cp = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    cp = subprocess.Popen(command)  # noqa: F841
+    print(" ".join(command))
+    # cp = subprocess.Popen(command)  # noqa: F841
 
     return True,

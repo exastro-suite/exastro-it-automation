@@ -829,11 +829,11 @@ background-color: rgba(255,255,255,.05);
 }
 .tHeadLeftSticky:nth-child(2),
 .tBodyLeftSticky:nth-child(2) {
-left: 42px;
+left: 41px;
 }
 .tHeadLeftSticky:nth-child(3),
 .tBodyLeftSticky:nth-child(3) {
-left: 84px;
+left: 82px;
 }
 .tHeadGroup > .ci {
 left: 389px
@@ -1535,11 +1535,12 @@ box-shadow: 0 0 0 1px #111, 0 0 4px rgba( 0,0,0,.2 ) inset;
 border-color: rgba( 0,0,0,.3 );
 outline: none;
 }
-
+.panel-check-tr .checkboxTextLabel {
+min-height: 24px;
+}
 #menu-editor[data-editor-mode="view"] .editor-header {
 display: none;
 }
-
 #property tr.parameter-sheet,
 #property tr.parameter-operation,
 #property tr.data-sheet,

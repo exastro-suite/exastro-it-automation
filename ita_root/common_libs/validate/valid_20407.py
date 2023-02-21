@@ -14,6 +14,7 @@ from flask import g
 
 from common_libs.ansible_driver.functions.chkVarsAssociate import chkVarsAssociate, getChildVars
 
+
 def external_valid_menu_after(objdbca, objtable, option):
     retBool = True
     msg = ''
@@ -25,26 +26,26 @@ def external_valid_menu_after(objdbca, objtable, option):
 
     # --UPD--
     pattan_tbl = "V_ANSR_MOVEMENT"
-    
+
     autoreg_only_item = "0"
     rg_menu_id = ""
-    
+
     if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
         # ----更新前のレコードから、各カラムの値を取得
-        rg_column_list_id         = option["current_parameter"]["parameter"]["menu_group_menu_item"]
-        
-        rg_col_type               = option["current_parameter"]["parameter"]["registration_method"]
-        
-        rg_col_sub_order       = option["current_parameter"]["parameter"]["column_substitution_order"]
-        
-        rg_pattern_id             = option["current_parameter"]["parameter"]['movement']
-        
-        rg_vars_link_id       = option["current_parameter"]["parameter"]["variable_name"]
-        
-        rg_col_seq_comb_id    = option["current_parameter"]["parameter"]['member_variable_name']
-        
-        rg_assign_seq         = option["current_parameter"]["parameter"]['substitution_order']
-        
+        rg_column_list_id = option["current_parameter"]["parameter"]["menu_group_menu_item"]
+
+        rg_col_type = option["current_parameter"]["parameter"]["registration_method"]
+
+        rg_col_sub_order = option["current_parameter"]["parameter"]["column_substitution_order"]
+
+        rg_pattern_id = option["current_parameter"]["parameter"]['movement']
+
+        rg_vars_link_id = option["current_parameter"]["parameter"]["variable_name"]
+
+        rg_col_seq_comb_id = option["current_parameter"]["parameter"]['member_variable_name']
+
+        rg_assign_seq = option["current_parameter"]["parameter"]['substitution_order']
+
         if option["cmd_type"] == "Discard":
             # ----廃止の場合はチェックしない
             boolExecuteContinue = False
@@ -54,7 +55,7 @@ def external_valid_menu_after(objdbca, objtable, option):
             if len(rg_column_list_id) == 0 or len(rg_col_type) == 0 or len(rg_pattern_id) == 0:
                 boolSystemErrorFlag = True
             # 復活の場合----
-            
+
             columnId = option["current_parameter"]["parameter"]["item_no"]
         # 更新前のレコードから、各カラムの値を取得----
     elif option["cmd_type"] == "Register" or option["cmd_type"] == "Update":
@@ -63,37 +64,37 @@ def external_valid_menu_after(objdbca, objtable, option):
             rg_column_list_id = option["entry_parameter"]["parameter"]["menu_group_menu_item"]
         else:
             rg_column_list_id = None
-        
+
         if "registration_method" in option["entry_parameter"]["parameter"]:
             rg_col_type = option["entry_parameter"]["parameter"]["registration_method"]
         else:
             rg_col_type = None
-        
+
         if "column_substitution_order" in option["entry_parameter"]["parameter"]:
             rg_col_sub_order = option["entry_parameter"]["parameter"]["column_substitution_order"]
         else:
             rg_col_sub_order = None
-        
+
         if "movement" in option["entry_parameter"]["parameter"]:
             rg_pattern_id = option["entry_parameter"]["parameter"]["movement"]
         else:
             rg_pattern_id = None
-        
+
         if "variable_name" in option["entry_parameter"]["parameter"]:
             rg_vars_link_id = option["entry_parameter"]["parameter"]["variable_name"]
         else:
             rg_vars_link_id = None
-        
+
         if "member_variable_name" in option["entry_parameter"]["parameter"]:
             rg_col_seq_comb_id = option["entry_parameter"]["parameter"]["member_variable_name"]
         else:
             rg_col_seq_comb_id = None
-        
+
         if "substitution_order" in option["entry_parameter"]["parameter"]:
             rg_assign_seq = option["entry_parameter"]["parameter"]["substitution_order"]
         else:
             rg_assign_seq = None
-        
+
         # 主キーの値を取得する。
         if option["cmd_type"] == "Update":
             # 更新処理の場合
@@ -155,7 +156,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                     retBool = False
                     boolExecuteContinue = False
             else:
-                # メニューカラム紐付け管理が不正です。
+                # メニューカラム紐付け管理が不正です。(ID: {})
                 msg = g.appmsg.get_api_message("MSG-10900", [rg_column_list_id])
                 retBool = False
                 boolExecuteContinue = False
@@ -191,13 +192,31 @@ def external_valid_menu_after(objdbca, objtable, option):
                     msg = g.appmsg.get_api_message("MSG-10381")
                     retBool = False
                     boolExecuteContinue = False
-                    
+
+    # 変数の無いパラメータシート
+    if boolExecuteContinue is True and boolSystemErrorFlag is False:
+        if autoreg_only_item == "1":
+            if rg_col_sub_order or rg_assign_seq:
+                retBool = False
+                boolExecuteContinue = False
+                # 項目がないメニューの場合、代入順序は入力が不要な項目です。
+                msg = g.appmsg.get_api_message("MSG-10896")
+            elif rg_vars_link_id or rg_col_seq_comb_id:
+                retBool = False
+                boolExecuteContinue = False
+                # 項目がないメニューの場合、変数名とメンバー変数は選択が不要な項目です。
+                msg = g.appmsg.get_api_message("MSG-10897")
+        else:
+            if not rg_vars_link_id:
+                retBool = False
+                boolExecuteContinue = False
+                # 変数が未選択です。
+                msg = g.appmsg.get_api_message("MSG-10383")
+
     if boolExecuteContinue is True and boolSystemErrorFlag is False:
         chk_pattern_id = rg_pattern_id
-        if chk_pattern_id and rg_vars_link_id and rg_col_type == '2':
-            # key変数
-            strColType = g.appmsg.get_api_message("MSG-10420")
-            ret = chkVarsAssociate(objdbca, strColType, rg_vars_link_id, rg_col_seq_comb_id)
+        if chk_pattern_id and rg_vars_link_id:
+            ret = chkVarsAssociate(objdbca, rg_vars_link_id, rg_col_seq_comb_id)
             if ret[0] is False:
                 retBool = False
                 msg = ret[1]
@@ -210,23 +229,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                 if chk_pattern_id != rg_pattern_id:
                     retBool = False
                     boolExecuteContinue = False
-                    msg = g.appmsg.get_api_message("MSG-10893")
-        elif chk_pattern_id and rg_vars_link_id and rg_col_type == '1':
-            # Value変数
-            strColType = g.appmsg.get_api_message("MSG-10421")
-            ret = chkVarsAssociate(objdbca, strColType, rg_vars_link_id, rg_col_seq_comb_id)
-            if ret[0] is False:
-                retBool = False
-                msg = ret[1]
-                boolExecuteContinue = False
-            else:
-                rg_pattern_id = ret[2]
-                rg_vars_link_id = ret[3]
-                rg_col_seq_comb_id = ret[4]
-                # movementが全部同じものか確認。
-                if chk_pattern_id != rg_pattern_id:
-                    retBool = False
-                    boolExecuteContinue = False
+                    # MovementとMovement名:変数名で異なるMovementが選択されています。
                     msg = g.appmsg.get_api_message("MSG-10893")
 
     if boolExecuteContinue is True and boolSystemErrorFlag is False:
@@ -253,12 +256,12 @@ def external_valid_menu_after(objdbca, objtable, option):
         boolExecuteContinue = False
         # movementidを使用してデータが存在するか確認。
         query = "SELECT" \
-                +" COUNT(*) AS PATTAN_CNT" \
-                +" FROM" \
-                +" {} TBL_A".format(pattan_tbl) \
-                +" WHERE" \
-                +" TBL_A.MOVEMENT_ID = %s AND" \
-                +" TBL_A.DISUSE_FLAG = '0'"
+                + " COUNT(*) AS PATTAN_CNT" \
+                + " FROM" \
+                + " {} TBL_A".format(pattan_tbl) \
+                + " WHERE" \
+                + " TBL_A.MOVEMENT_ID = %s AND" \
+                + " TBL_A.DISUSE_FLAG = '0'"
 
         aryForBind = {}
         aryForBind['PATTERN_ID'] = rg_pattern_id
@@ -277,8 +280,7 @@ def external_valid_menu_after(objdbca, objtable, option):
             boolSystemErrorFlag = True
         del row
     # 作業パターンのチェックの組み合わせチェック----
-    
-    # ----変数部分のチェック
+
     if boolExecuteContinue is True and boolSystemErrorFlag is False:
         for i in range(1):
             # rg_col_type 登録方式
@@ -292,26 +294,24 @@ def external_valid_menu_after(objdbca, objtable, option):
                 intVarsLinkId = rg_vars_link_id
                 intColSeqCombId = rg_col_seq_comb_id
                 intSeqOfAssign = rg_assign_seq
-                strColType = g.appmsg.get_api_message("MSG-10420")
             elif rg_col_type in ["1"]:
                 intVarsLinkId = rg_vars_link_id
                 intColSeqCombId = rg_col_seq_comb_id
                 intSeqOfAssign = rg_assign_seq
-                strColType = g.appmsg.get_api_message("MSG-10421")
             else:
                 continue
-            
+
             # ----変数タイプを取得
             intVarType = -1
             strQuery = "SELECT" \
-                       +" TAB_1.MVMT_VAR_LINK_ID," \
-                       +"TAB_1.VARS_ATTRIBUTE_01" \
-                       +" FROM" \
-                       +" V_ANSR_VAL_VARS_LINK TAB_1" \
-                       +" WHERE" \
-                       +" TAB_1.DISUSE_FLAG IN ('0')" \
-                       +" AND TAB_1.MVMT_VAR_LINK_ID = %s" \
-                       +" AND TAB_1.MOVEMENT_ID = %s"
+                       + " TAB_1.MVMT_VAR_LINK_ID," \
+                       + "TAB_1.VARS_ATTRIBUTE_01" \
+                       + " FROM" \
+                       + " V_ANSR_VAL_VARS_LINK TAB_1" \
+                       + " WHERE" \
+                       + " TAB_1.DISUSE_FLAG IN ('0')" \
+                       + " AND TAB_1.MVMT_VAR_LINK_ID = %s" \
+                       + " AND TAB_1.MOVEMENT_ID = %s"
 
             aryForBind = {}
             aryForBind['MVMT_VAR_LINK_ID'] = intVarsLinkId
@@ -331,8 +331,8 @@ def external_valid_menu_after(objdbca, objtable, option):
                         break
                     del tmpRow
                 else:
-                    # 変数(Key)が未登録です。,変数(Value)が未登録です。
-                    strMsgId = "MSG-10402"if rg_col_type == "2" else "MSG-10403"
+                    # 変数が未登録です。
+                    strMsgId = "MSG-10402"
                     msg = g.appmsg.get_api_message(strMsgId)
                     retBool = False
                     boolExecuteContinue = False
@@ -351,14 +351,14 @@ def external_valid_menu_after(objdbca, objtable, option):
                     retBool = False
                     boolExecuteContinue = False
                     # 一般変数の場合は、メンバー変数の入力はできません。
-                    msg = g.appmsg.get_api_message("MSG-10422", [strColType])
+                    msg = g.appmsg.get_api_message("MSG-10422", [])
                     break
                 # 代入順序のチェック
                 if intSeqOfAssign:
                     retBool = False
                     boolExecuteContinue = False
                     # 一般変数の場合は、代入順序の入力はできません。
-                    msg = g.appmsg.get_api_message("MSG-10423", [strColType])
+                    msg = g.appmsg.get_api_message("MSG-10423", [])
                     break
             # 変数タイプが「複数具体値変数」の場合
             elif "2" == intVarType:
@@ -367,14 +367,14 @@ def external_valid_menu_after(objdbca, objtable, option):
                     retBool = False
                     boolExecuteContinue = False
                     # 複数具体値変数の場合は、メンバー変数の入力はできません。
-                    msg = g.appmsg.get_api_message("MSG-10425", [strColType])
+                    msg = g.appmsg.get_api_message("MSG-10425", [])
                     break
                 # 代入順序のチェック
                 if not intSeqOfAssign:
                     retBool = False
                     boolExecuteContinue = False
                     # 複数具体値変数の場合は、代入順序の入力は必須です。
-                    msg = g.appmsg.get_api_message("MSG-10426", [strColType])
+                    msg = g.appmsg.get_api_message("MSG-10426", [])
                     break
             # 変数タイプが「多次元変数」の場合
             elif "3" == intVarType:
@@ -383,7 +383,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                     retBool = False
                     boolExecuteContinue = False
                     # 多段変数の場合は、メンバー変数の入力は必須です。
-                    msg = g.appmsg.get_api_message("MSG-10427", [strColType])
+                    msg = g.appmsg.get_api_message("MSG-10427", [])
                     break
                 else:
                     # メンバー変数管理テーブル取得
@@ -400,7 +400,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                         retBool = False
                         boolExecuteContinue = False
                         # メンバー変数は、多段変数のメンバーではありません。
-                        msg = g.appmsg.get_api_message("MSG-10424", [strColType])
+                        msg = g.appmsg.get_api_message("MSG-10424", [])
                         break
                     else:
                         boolSystemErrorFlag = True
@@ -411,7 +411,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                         retBool = False
                         boolExecuteContinue = False
                         # メンバー変数は、代入順序の入力は必須です。
-                        msg = g.appmsg.get_api_message("MSG-10428", [strColType])
+                        msg = g.appmsg.get_api_message("MSG-10428", [])
                         break
                 # 代入順序の有無が無の場合
                 else:
@@ -419,27 +419,27 @@ def external_valid_menu_after(objdbca, objtable, option):
                         retBool = False
                         boolExecuteContinue = False
                         # メンバー変数は、代入順序の入力はできません。
-                        msg = g.appmsg.get_api_message("MSG-10429", [strColType])
+                        msg = g.appmsg.get_api_message("MSG-10429", [])
                         break
     # 変数部分のチェック----
 
     # 代入値自動登録設定テーブルの重複レコードチック
     if boolExecuteContinue is True and boolSystemErrorFlag is False:
-        strQuery =  "SELECT" \
-                    +" COLUMN_ID" \
-                    +" FROM" \
-                    +" T_ANSR_VALUE_AUTOREG" \
-                    +" WHERE" \
-                    +" COLUMN_ID <> %s AND" \
-                    +" MENU_ID = %s AND " \
-                    +" MOVEMENT_ID = %s AND" \
-                    +" DISUSE_FLAG = '0'" \
-                    +" AND("
+        strQuery = "SELECT" \
+                   + " COLUMN_ID" \
+                   + " FROM" \
+                   + " T_ANSR_VALUE_AUTOREG" \
+                   + " WHERE" \
+                   + " COLUMN_ID <> %s AND" \
+                   + " MENU_ID = %s AND " \
+                   + " MOVEMENT_ID = %s AND" \
+                   + " DISUSE_FLAG = '0'" \
+                   + " AND("
 
         aryForBind = {}
-        aryForBind['COLUMN_ID']    = columnId
-        aryForBind['MENU_ID']      = rg_menu_id
-        aryForBind['MOVEMENT_ID']   = rg_pattern_id
+        aryForBind['COLUMN_ID'] = columnId
+        aryForBind['MENU_ID'] = rg_menu_id
+        aryForBind['MOVEMENT_ID'] = rg_pattern_id
 
         # Key変数が必須の場合
         strQuery += " ("
@@ -466,10 +466,10 @@ def external_valid_menu_after(objdbca, objtable, option):
             if len(dupnostr) != 0:
                 retBool = False
                 boolExecuteContinue = False
-                # 次の項目が、[項番]:({})のレコードと重複しています。\n[(メニューグループ:メニュー),(Movement),(変数),(代入順序)]
+                # 次の項目が、[項番]:({})のレコードと重複しています。\n[(Movement),(変数),(代入順序)]
                 msg = g.appmsg.get_api_message("MSG-10430", [dupnostr])
         del retArray
-        
+
         # 縦型メニューかの確認。
         table_name = "V_ANSC_COLUMN_LIST"
         where_str = "WHERE COLUMN_DEFINITION_ID = %s"
@@ -479,28 +479,19 @@ def external_valid_menu_after(objdbca, objtable, option):
         if row[0]["VERTICAL"] == "1" and not rg_col_sub_order:
             retBool = False
             boolExecuteContinue = False
+            # 縦メニューの場合、代入順序は必須です。
             msg = g.appmsg.get_api_message("MSG-10895")
         # 縦型メニューではないのに代入順序がある場合
         elif row[0]["VERTICAL"] == "0" and rg_col_sub_order:
             retBool = False
             boolExecuteContinue = False
+            # 縦メニューでない場合、代入順序は入力が不要な項目です。
             msg = g.appmsg.get_api_message("MSG-10899")
 
-    if boolExecuteContinue is True and boolSystemErrorFlag is False:
-        # 変数の無いパラメータシート
-        if autoreg_only_item == "1":
-            if rg_col_sub_order or rg_assign_seq:
-                retBool = False
-                boolExecuteContinue = False
-                msg = g.appmsg.get_api_message("MSG-10896")
-            elif rg_vars_link_id or rg_col_seq_comb_id:
-                retBool = False
-                boolExecuteContinue = False
-                msg = g.appmsg.get_api_message("MSG-10897")
-    
     if boolSystemErrorFlag is True:
         retBool = False
         # ----システムエラー
+        # システムエラーが発生しました。",
         msg = g.appmsg.get_api_message("MSG-10886")
 
     return retBool, msg, option,

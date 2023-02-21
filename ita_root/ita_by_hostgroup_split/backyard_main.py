@@ -59,22 +59,23 @@ def backyard_main(organization_id, workspace_id):
     try:
         hierarchy = 0
         # ツリー作成
-        tmp_msg = 'make_tree'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tree_array, hierarchy = make_tree(objdbca, hierarchy)  # noqa: F405
-        if tree_array is False:
+        retBool, tree_array, hierarchy = make_tree(objdbca, hierarchy)  # noqa: F405
+        if retBool is False:
+            tmp_msg = 'make_tree faild'
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             raise Exception()
 
         # 対象ホスト-オペレーション-ホストグループ
         tmp_hosts = [[_t['HOST_ID'], _t['OPERATION'], _t['PARENT_IDS']] for _t in tree_array if _t['OPERATION'] is not None if _t['OPERATION'] != []]
         all_ids = get_all_list(objdbca)  # noqa: F405
+        tmp_target_host = [[x[0], [y for y in x[1]], [z for z in x[2]]] for x in tmp_hosts]
+        tmp_msg = 'target_host - operation, hostgroup:{}'.format(tmp_target_host)
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_target_host = [[all_ids.get(x[0]), [all_ids.get(y) for y in x[1]], [all_ids.get(z) for z in x[2]]] for x in tmp_hosts]
-        tmp_msg = 'target host,operation, hostgroup:{}'.format(tmp_target_host)
+        tmp_msg = 'target_host - operation, hostgroup id->name:{}'.format(tmp_target_host)
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 処理対象メニュー取得
-        tmp_msg = 'get_target_menu'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         retBool, result = get_target_menu(objdbca)  # noqa: F405
         if retBool:
             target_menus = result
@@ -130,7 +131,7 @@ def backyard_main(organization_id, workspace_id):
                     "output_view": output_view,
                     "file_columns_info": file_columns_info,
                     "target_row_id": target['ROW_ID'],
-                    # "target_timestamp": target['TIMESTAMP'],
+                    "target_timestamp": target['TIMESTAMP'],
                     "input_menu_id": target['INPUT_MENU_ID'],
                     "output_menu_id": target['OUTPUT_MENU_ID'],
                     "vertical_flg": target['VERTICAL'],

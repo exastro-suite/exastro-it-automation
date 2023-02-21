@@ -231,6 +231,10 @@ panelContainerHtml( editorMode ) {
                         <th class="panel-th">` + getMessage.FTE01015 + `</th>
                         <td class="panel-td"><span id="create-menu-order" class="panel-span"></span></td>
                     </tr>
+                    <tr class="parameter-sheet">
+                        <th class="panel-th"">` + getMessage.FTE01153 + `</th>
+                        <td class="panel-td"><span id="create-menu-use-host-group" class="panel-span"></span></td>
+                    </tr>
                     <tr class="parameter-sheet parameter-operation">
                         <th class="panel-th"">` + getMessage.FTE01016 + `</th>
                         <td class="panel-td"><span id="create-menu-use-vertical" class="panel-span"></span></td>
@@ -338,12 +342,26 @@ panelContainerHtml( editorMode ) {
                         <th class="panel-th">${getMessage.FTE01015 + fn.html.required()}</th>
                         <td class="panel-td"><input id="create-menu-order" class="panel-number" type="number" data-min="0" data-max="2147483647"></td>
                     </tr>
-                    <tr class="parameter-sheet parameter-operation" title="` + getMessage.FTE01033 + `">
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
+                    <tr class="parameter-sheet parameter-operation panel-check-tr" title="` + getMessage.FTE01154 + `">
+                        <th class="panel-th">${getMessage.FTE01153}</th>
+                        <td class="panel-td">
+                            ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-host-group', 'create-menu-use-host-group', {disabled: 'disabled'})}
+                        </td>
+                    </tr>
+                    <tr class="parameter-sheet parameter-operation panel-check-tr" title="` + getMessage.FTE01033 + `">
                         <th class="panel-th">` + getMessage.FTE01016 + `</th>
                         <td class="panel-td">
                             ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-vertical', 'create-menu-use-vertical', {disabled: 'disabled'})}
                         </td>
                     </tr>
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
                     <tr>
                         <th class="panel-th">` + getMessage.FTE01017 + `</th>
                         <td class="panel-td" colspan="3"><span id="create-menu-last-modified" class="panel-span" data-value=""><span class="editorAutoInput">${getMessage.FTE01011}</span></span></td>
@@ -454,14 +472,28 @@ panelContainerHtml( editorMode ) {
                 <tbody>
                     <tr title="` + getMessage.FTE01032 + `">
                         <th class="panel-th">${getMessage.FTE01015 + fn.html.required()}</th>
-                        <td class="panel-td" colspan="3"><input id="create-menu-order" class="panel-number" type="number" data-min="0" data-max="2147483647"></td>
+                        <td class="panel-td"><input id="create-menu-order" class="panel-number" type="number" data-min="0" data-max="2147483647"></td>
                     </tr>
-                    <tr class="parameter-sheet parameter-operation" title="` + getMessage.FTE01033 + `">
-                        <th class="panel-th" colspan="2">` + getMessage.FTE01016 + `</th>
-                        <td class="panel-td" colspan="2">
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
+                    <tr class="parameter-sheet panel-check-tr" title="` + getMessage.FTE01154 + `">
+                        <th class="panel-th">${getMessage.FTE01153}</th>
+                        <td class="panel-td">
+                            ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-host-group', 'create-menu-use-host-group')}
+                        </td>
+                    </tr>
+                    <tr class="parameter-sheet parameter-operation panel-check-tr" title="` + getMessage.FTE01033 + `">
+                        <th class="panel-th">` + getMessage.FTE01016 + `</th>
+                        <td class="panel-td">
                             ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-vertical', 'create-menu-use-vertical')}
                         </td>
                     </tr>
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
                     <tr>
                         <th class="panel-th">` + getMessage.FTE01017 + `</th>
                         <td class="panel-td" colspan="3"><span id="create-menu-last-modified" class="panel-span" data-value=""><span class="editorAutoInput">${getMessage.FTE01011}</span></span></td>
@@ -3873,26 +3905,22 @@ const getPanelParameter = function() {
     const type = $('#create-menu-type').val();
     if ( type === '1' || type === '3') {
       // パラメータシート
-        /*
         if ( type === '1' ) {
           // ホストグループ利用有無
           const hostgroup = $('#create-menu-use-host-group').prop('checked');
           if ( hostgroup ) {
-            parameterArray['PURPOSE'] = menuEditorArray.selectParamPurpose[1]['purpose_id'];
+            parameterArray['hostgroup'] = "True";
           } else {
-            parameterArray['PURPOSE'] = menuEditorArray.selectParamPurpose[0]['purpose_id'];
+            parameterArray['hostgroup'] = "False";
           }
         } else {
-          parameterArray['PURPOSE'] = null;
+          parameterArray['hostgroup'] = null;
         }
-        */
         // 縦メニュー利用有無
         const vertical = $('#create-menu-use-vertical').prop('checked');
         if ( vertical ) {
-          //parameterArray['vertical'] = '1';
           parameterArray['vertical'] = "True";
         } else {
-          //parameterArray['VERTICAL'] = null;
           parameterArray['vertical'] = "False";
         }
         parameterArray['menu_group_for_input'] = $('#create-menu-for-input').text(); // 入力用
@@ -3997,15 +4025,13 @@ const setPanelParameter = function( setData ) {
     // パラメータシート
     if ( type === '1') {
       // ホストグループ利用有無
-      /*
-      if ( setData['menu']['PURPOSE'] === '2' ) {
+      if ( setData['menu']['hostgroup'] === '1' ) {
         if ( menuEditorMode === 'view') {
           $('#create-menu-use-host-group').text(getMessage.FTE01085);
         } else {
           $('#create-menu-use-host-group').prop('checked', true );
         }
       }
-      */
     }
     // 縦メニュー利用有無
     if ( setData['menu']['vertical'] === '1') {

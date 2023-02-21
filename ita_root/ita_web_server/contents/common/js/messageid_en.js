@@ -354,6 +354,8 @@ getMessage = ( function() {
         'FTE01150' : "Enter the maximum number of bytes.\nThe maximum size is 255 bytes.\nFor editing, it is possible to increase it from the original value.\nThe byte count of half-width alphanumeric characters are equivalent to the number of characters.\nFor full-width characters, the number of characters x 3 + 2 bytes is required.",
         'FTE01151' : "Create(New)",
         'FTE01152' : "There are no items available for reference.",
+        'FTE01153' : "Create as hostgroup menu",
+        'FTE01154' : "If the &quot;use&quot; checkbox is checked, a &quot;Host name/Host Group name&quot; parameter sheet will be created in the &quot;Input&quot; Menu group.\nIf the &quot;use &quot; checkbox is unchecked, a &quot;host name&quot; parameter sheet will be created.",
         
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",

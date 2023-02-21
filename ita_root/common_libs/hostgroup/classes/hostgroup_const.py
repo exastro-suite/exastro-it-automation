@@ -19,6 +19,9 @@ class hostGroupConst():
     # ホストグループ親子関係の階層制限値
     HIERARCHY_LIMIT = 15
 
+    # ホストグループ親子関係の階層制限値(backyard用): HIERARCHY_LIMIT + 1
+    HIERARCHY_LIMIT_BKY = HIERARCHY_LIMIT + 1
+
     # 優先順位(最小-最大)
     MIN_PRIORITY = 0
     MAX_PRIORITY = 2147483647

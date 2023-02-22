@@ -1080,6 +1080,7 @@
     "BKY-30003": "Insert record to `{}` was failed.,",
     "BKY-30004": "Update(restore) record to `{}` was failed.,",
     "BKY-30005": "Update(discard) record to `{}` was failed.",
+    "BKY-30006": "Failed to parse template variables json string.",
     "BKY-40001": "No records in status: In preparation.",
     "BKY-40002": "No target conductor to reserve.",
     "BKY-40003": "Execution user disused. (User id: \"{}\")",

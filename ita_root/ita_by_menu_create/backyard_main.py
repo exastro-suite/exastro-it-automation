@@ -2559,7 +2559,7 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
             ret = objdbca.table_select(
                 t_hgsp_split_target,
                 'WHERE INPUT_MENU_ID = %s AND OUTPUT_MENU_ID = %s AND DISUSE_FLAG = %s',
-                [split_target_menu_ids.get('input'), split_target_menu_ids.get('output'), 0]
+                [split_target_menu_ids.get('split'), split_target_menu_ids.get('register'), 0]
             )
             if ret:
                 # 対象の DIVIDED_FLG を '0' で更新

@@ -73,6 +73,11 @@ class HCL2JSONParse():
             # variableブロックのみを抽出
             variable_list = result_dict.get('variable')
 
+            # variableブロックがない場合は終了
+            if not variable_list:
+                self.res = result
+                return result
+
             # variableブロックのtypeを形成する
             for variable_block in variable_list:
                 for variable, block in variable_block.items():

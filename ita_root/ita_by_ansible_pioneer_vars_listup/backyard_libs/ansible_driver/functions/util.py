@@ -31,7 +31,7 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, dialog_vars
     Arguments:
         mov_records: { pkey: { COL_NAME: value, ... }, ... }
         mov_matl_lnk_records: { pkey: { COL_NAME: value, ... }, ... }
-        dialog_vars_dict: { dialog_matter_id: set(var_name), ... }
+        dialog_vars_dict: { dialog_type_id: set(var_name), ... }
 
     Returns:
         mov_vars_dict: { (movement_id): set(var_name), ... }
@@ -43,12 +43,13 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, dialog_vars
     for matl_lnk in mov_matl_lnk_records.values():
         # Movementごとの対話ファイル変数の追加
         movement_id = matl_lnk['MOVEMENT_ID']
-        dialog_matter_id = matl_lnk['DIALOG_MATTER_ID']
+        dialog_type_id = matl_lnk['DIALOG_TYPE_ID']
 
         if movement_id not in mov_vars_dict:
             mov_vars_dict[movement_id] = set()
 
-        mov_vars_dict[movement_id] |= dialog_vars_dict[dialog_matter_id]
+        if dialog_type_id in dialog_vars_dict:
+            mov_vars_dict[movement_id] |= dialog_vars_dict[dialog_type_id]
 
     return mov_vars_dict
 
@@ -74,7 +75,11 @@ def extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, ws_db):
     # host_list = { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 
     for movement_id, tpl_var_set in template_list.items():
-        tpl_var_name = tpl_var_set.keys()[0]
-        mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
+        tpl_var_name = list(tpl_var_set.keys())[0]
+        if tpl_var_name in tpl_vars_dict:
+            mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
+        else:
+            debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
+            g.applogger.debug(debug_msg)
 
     return mov_vars_dict

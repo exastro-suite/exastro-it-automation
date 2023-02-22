@@ -43,6 +43,8 @@ RUN dnf install -y \
     python-dotenv \
     pycryptodome \
     openpyxl \
+    six \
+    pyrsistent \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

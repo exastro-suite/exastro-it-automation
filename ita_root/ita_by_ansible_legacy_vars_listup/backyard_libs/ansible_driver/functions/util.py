@@ -47,7 +47,8 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_va
         if movement_id not in mov_vars_dict:
             mov_vars_dict[movement_id] = set()
 
-        mov_vars_dict[movement_id] |= playbook_vars_dict[playbook_matter_id]
+        if playbook_matter_id in playbook_vars_dict:
+            mov_vars_dict[movement_id] |= playbook_vars_dict[playbook_matter_id]
 
     for movement_id, vars_set in mov_vars_dict.items():
         # Movementの追加オプションの変数の追加
@@ -87,8 +88,12 @@ def extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, device_vars_dict,
     # host_list = { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 
     for movement_id, tpl_var_set in template_list.items():
-        tpl_var_name = tpl_var_set.keys()[0]
-        mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
+        tpl_var_name = list(tpl_var_set.keys())[0]
+        if tpl_var_name in tpl_vars_dict:
+            mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
+        else:
+            debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
+            g.applogger.debug(debug_msg)
 
     for movement_id, ope_host_dict in host_list.items():
         for _, system_dict in ope_host_dict.items():

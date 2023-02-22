@@ -28,6 +28,7 @@ import sys
 import traceback
 import inspect
 import os
+import copy
 
 from pprint import pprint  # noqa: F401
 import shutil
@@ -49,6 +50,8 @@ def get_target_menu(objdbca):
             target_array: list
     """
     try:
+        tmp_msg = 'get_target_menu start'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # ホストグループ分割対象テーブルを検索:SQL実行
         split_target_table = SplitTargetTable(objdbca)  # noqa: F405
@@ -108,8 +111,13 @@ def get_target_menu(objdbca):
             # 縦メニュー
             if input_vertical[0] == '1' and output_vertical[0] == '1':
                 vertical = True
-            else:
+            elif input_vertical[0] == '0' and output_vertical[0] == '0':
                 vertical = False
+            else:
+                # ホストグループ分割対象不備
+                tmp_msg = 'split target is Faild: split menu({}) -> input menu({})'.format(input_menu_name_rest, output_menu_name_rest)
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                raise Exception()
 
             tmp_target_array = {
                 'INPUT_TABLE_NAME': input_table_name[0],
@@ -127,9 +135,14 @@ def get_target_menu(objdbca):
             }
             target_array.append(tmp_target_array)
 
+        tmp_msg = 'get_target_menu end'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
         return True, target_array
 
     except Exception as e:
+        tmp_msg = 'get_target_menu end: Exception'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
@@ -149,149 +162,167 @@ def make_tree(objdbca, hierarchy=0):
             tree_array: list
             hierarchy: int
     """
-    # ホストグループ親子紐付テーブルを検索:SQL実行
-    hostLinkListTable = HostLinkListTable(objdbca)  # noqa: F405
-    sql = hostLinkListTable.create_sselect("WHERE DISUSE_FLAG = '0'")
-    result = hostLinkListTable.select_table(sql)
-    if result is False:
-        tmp_msg = 'select table error HostLinkListTable'
+    try:
+        tmp_msg = 'make_tree start'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        raise Exception()
-    hostLinkListArray = result
 
-    # ホスト紐付管理テーブルを検索:SQL実行
-    hostLinkTable = HostLinkTable(objdbca)  # noqa: F405
-    sql = hostLinkTable.create_sselect("WHERE DISUSE_FLAG = '0'")
-    result = hostLinkTable.select_table(sql)
-    if result is False:
-        tmp_msg = 'select table error HostLinkTable'
+        # ホストグループ親子紐付テーブルを検索:SQL実行
+        hostLinkListTable = HostLinkListTable(objdbca)  # noqa: F405
+        sql = hostLinkListTable.create_sselect("WHERE DISUSE_FLAG = '0'")
+        result = hostLinkListTable.select_table(sql)
+        if result is False:
+            tmp_msg = 'select table error HostLinkListTable'
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            raise Exception()
+        hostLinkListArray = result
+
+        # ホスト紐付管理テーブルを検索:SQL実行
+        hostLinkTable = HostLinkTable(objdbca)  # noqa: F405
+        sql = hostLinkTable.create_sselect("WHERE DISUSE_FLAG = '0'")
+        result = hostLinkTable.select_table(sql)
+        if result is False:
+            tmp_msg = 'select table error HostLinkTable'
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            raise Exception()
+        hostLinkArray = result
+
+        tree_array = []
+        # ホスト紐付管理テーブルのレコード数分ループ
+        for hostLink in hostLinkArray:
+            parent_match_flg = False
+            child_match_flg = False
+            # ツリー用配列の数分ループ
+            for tree_data in tree_array:
+                tree_data_key = tree_array.index(tree_data)
+                # すでに子が登録されている場合
+                if tree_data['HOST_ID'] == hostLink['HOSTNAME']:
+                    # 親を配列に追加
+                    tree_array[tree_data_key]['PARENT_IDS'].append(hostLink['HOSTGROUP_NAME'])
+                    tree_array[tree_data_key]['OPERATION'].append(hostLink['OPERATION_ID'])
+                    child_match_flg = True
+
+                # すでに親が登録されている場合
+                if tree_array[tree_data_key]['HOST_ID'] == hostLink['HOSTGROUP_NAME']:
+                    # 子を配列に追加
+                    tree_array[tree_data_key]['CHILD_IDS'].append(hostLink['HOSTNAME'])
+                    tree_array[tree_data_key]['ALL_CHILD_IDS'].append(hostLink['HOSTNAME'])
+                    parent_match_flg = True
+
+            if child_match_flg is False:
+                # 子追加
+                tree_array.append(
+                    {
+                        'HOST_ID': hostLink['HOSTNAME'],
+                        'OPERATION': [hostLink['OPERATION_ID']],
+                        'HIERARCHY': 1,
+                        'DATA': None,
+                        'PARENT_IDS': [hostLink['HOSTGROUP_NAME']],
+                        'CHILD_IDS': [],
+                        'ALL_CHILD_IDS': [],
+                        'UPLOAD_FILES': {},
+                    }
+                )
+
+            if parent_match_flg is False:
+                # 親追加
+                tree_array.append(
+                    {
+                        'HOST_ID': hostLink['HOSTGROUP_NAME'],
+                        'OPERATION': [],
+                        'HIERARCHY': 2,
+                        'DATA': None,
+                        'PARENT_IDS': [],
+                        'CHILD_IDS': [hostLink['HOSTNAME']],
+                        'ALL_CHILD_IDS': [hostLink['HOSTNAME']],
+                        'UPLOAD_FILES': {},
+                    }
+                )
+
+        # tree_array
+        tmp_msg = 'set tree_array'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        raise Exception()
-    hostLinkArray = result
+        tmp_msg = tree_array
+        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    tree_array = []
-    # ホスト紐付管理テーブルのレコード数分ループ
-    for hostLink in hostLinkArray:
-        parent_match_flg = False
-        child_match_flg = False
-        # ツリー用配列の数分ループ
-        for tree_data in tree_array:
-            tree_data_key = tree_array.index(tree_data)
-            # すでに子が登録されている場合
-            if tree_data['HOST_ID'] == hostLink['HOSTNAME']:
-                # 親を配列に追加
-                tree_array[tree_data_key]['PARENT_IDS'].append(hostLink['HOSTGROUP_NAME'])
-                tree_array[tree_data_key]['OPERATION'].append(hostLink['OPERATION_ID'])
-                child_match_flg = True
+        stop_flg = False
+        hierarchy = 1
 
-            # すでに親が登録されている場合
-            if tree_array[tree_data_key]['HOST_ID'] == hostLink['HOSTGROUP_NAME']:
-                # 子を配列に追加
-                tree_array[tree_data_key]['CHILD_IDS'].append(hostLink['HOSTNAME'])
-                tree_array[tree_data_key]['ALL_CHILD_IDS'].append(hostLink['HOSTNAME'])
-                parent_match_flg = True
+        while stop_flg is False:
+            hierarchy += 1
 
-        if child_match_flg is False:
-            # 子追加
-            tree_array.append(
-                {
-                    'HOST_ID': hostLink['HOSTNAME'],
-                    'OPERATION': [hostLink['OPERATION_ID']],
-                    'HIERARCHY': 1,
-                    'DATA': None,
-                    'PARENT_IDS': [hostLink['HOSTGROUP_NAME']],
-                    'CHILD_IDS': [],
-                    'ALL_CHILD_IDS': [],
-                    'UPLOAD_FILES': {},
-                }
-            )
+            # 階層が一定数に達した場合、処理を終了する
+            if hostgroup_const.HIERARCHY_LIMIT_BKY < hierarchy:
+                tmp_msg = 'hierarchy over the limit'
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                return False, [], hierarchy
 
-        if parent_match_flg is False:
-            # 親追加
-            tree_array.append(
-                {
-                    'HOST_ID': hostLink['HOSTGROUP_NAME'],
-                    'OPERATION': [],
-                    'HIERARCHY': 2,
-                    'DATA': None,
-                    'PARENT_IDS': [],
-                    'CHILD_IDS': [hostLink['HOSTNAME']],
-                    'ALL_CHILD_IDS': [hostLink['HOSTNAME']],
-                    'UPLOAD_FILES': {},
-                }
-            )
+            tree_upd_flg = False
 
-    # tree_array
-    tmp_msg = 'set tree_array'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    tmp_msg = tree_array
-    # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-    stop_flg = False
-    hierarchy = 1
-
-    while stop_flg is False:
-        hierarchy += 1
-
-        # 階層が一定数に達した場合、処理を終了する
-        if hostgroup_const.HIERARCHY_LIMIT < hierarchy:
-            return False
-
-        tree_upd_flg = False
-
-        # ツリー用配列の数分ループ
-        for tree_data in tree_array:
-            tree_data_key = tree_array.index(tree_data)
-            if tree_array[tree_data_key]['HIERARCHY'] != hierarchy:
-                continue
-
-            # ホストグループ親子紐付テーブルのレコード数分ループ
-            for hostLinkList in hostLinkListArray:
-                if tree_array[tree_data_key]['HOST_ID'] != hostLinkList['CH_HOSTGROUP']:
+            # ツリー用配列の数分ループ
+            for tree_data in tree_array:
+                tree_data_key = tree_array.index(tree_data)
+                if tree_array[tree_data_key]['HIERARCHY'] != hierarchy:
                     continue
 
-                tree_upd_flg = True
+                # ホストグループ親子紐付テーブルのレコード数分ループ
+                for hostLinkList in hostLinkListArray:
+                    if tree_array[tree_data_key]['HOST_ID'] != hostLinkList['CH_HOSTGROUP']:
+                        continue
 
-                # 親を配列に追加
-                tree_array[tree_data_key]['PARENT_IDS'].append(hostLinkList['PA_HOSTGROUP'])
+                    tree_upd_flg = True
 
-                # すでに親が登録されているか確認
-                tree_match_flg = False
-                for tree_data2 in tree_array:
-                    tree_data_key2 = tree_array.index(tree_data2)
-                    if tree_array[tree_data_key2]['HOST_ID'] == hostLinkList['PA_HOSTGROUP'] \
-                            and tree_array[tree_data_key2]['HIERARCHY'] == hierarchy + 1:
-                        # 子を配列に追加
-                        tree_array[tree_data_key2]['CHILD_IDS'].append(hostLinkList['CH_HOSTGROUP'])
-                        tree_array[tree_data_key2]['ALL_CHILD_IDS'].append(tree_data['ALL_CHILD_IDS'])
+                    # 親を配列に追加
+                    tree_array[tree_data_key]['PARENT_IDS'].append(hostLinkList['PA_HOSTGROUP'])
 
-                        tree_match_flg = True
-                        break
+                    # すでに親が登録されているか確認
+                    tree_match_flg = False
+                    for tree_data2 in tree_array:
+                        tree_data_key2 = tree_array.index(tree_data2)
+                        if tree_array[tree_data_key2]['HOST_ID'] == hostLinkList['PA_HOSTGROUP'] \
+                                and tree_array[tree_data_key2]['HIERARCHY'] == hierarchy + 1:
+                            # 子を配列に追加
+                            tree_array[tree_data_key2]['CHILD_IDS'].append(hostLinkList['CH_HOSTGROUP'])
+                            tree_array[tree_data_key2]['ALL_CHILD_IDS'].append(tree_data['ALL_CHILD_IDS'])
 
-                if tree_match_flg is False:
-                    # 親追加
-                    tree_array.append(
-                        {
-                            'HOST_ID': hostLinkList['PA_HOSTGROUP'],
-                            'OPERATION': None,
-                            'HIERARCHY': hierarchy + 1,
-                            'DATA': None,
-                            'PARENT_IDS': [],
-                            'CHILD_IDS': [hostLinkList['CH_HOSTGROUP']],
-                            'ALL_CHILD_IDS': tree_data['ALL_CHILD_IDS'],
-                            'UPLOAD_FILES': {},
-                        }
-                    )
-        if tree_upd_flg is False:
-            stop_flg = True
+                            tree_match_flg = True
+                            break
 
-    # tree_array add hierarchy
-    tmp_msg = 'tree_array add hierarchy'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    tmp_msg = tree_array
-    # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    if tree_match_flg is False:
+                        # 親追加
+                        tree_array.append(
+                            {
+                                'HOST_ID': hostLinkList['PA_HOSTGROUP'],
+                                'OPERATION': None,
+                                'HIERARCHY': hierarchy + 1,
+                                'DATA': None,
+                                'PARENT_IDS': [],
+                                'CHILD_IDS': [hostLinkList['CH_HOSTGROUP']],
+                                'ALL_CHILD_IDS': tree_data['ALL_CHILD_IDS'],
+                                'UPLOAD_FILES': {},
+                            }
+                        )
+            if tree_upd_flg is False:
+                stop_flg = True
 
-    return tree_array, hierarchy
+        # tree_array add hierarchy
+        tmp_msg = 'tree_array add hierarchy'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        tmp_msg = tree_array
+        # ### g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        tmp_msg = 'make_tree end'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        return True, tree_array, hierarchy
+
+    except Exception as e:
+        tmp_msg = 'tree_array end: Exception'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        type_, value, traceback_ = sys.exc_info()
+        msg = traceback.format_exception(type_, value, traceback_)
+        g.applogger.error(msg)
+        return False, tree_array, hierarchy
 
 
 # ホストグループ分解
@@ -337,8 +368,8 @@ def split_host_grp(hgsp_config, hgsp_data):
         target_row_id = hgsp_config.get('target_row_id')
         vertical_flg = hgsp_config.get('vertical_flg')
 
-        update_cnt = hgsp_data.get('update_cnt')
-        insert_cnt = hgsp_data.get('insert_cnt')
+        # update_cnt = hgsp_data.get('update_cnt')
+        # insert_cnt = hgsp_data.get('insert_cnt')
         disuse_cnt = hgsp_data.get('disuse_cnt')
 
         # トランザクション開始
@@ -425,6 +456,9 @@ def split_host_grp(hgsp_config, hgsp_data):
 
         # 分割対象、入力対象0件: 処理終了
         if len(input_data_array) == 0 and len(output_data_array) == 0:
+            tmp_msg = 'update_split_target_flg 0 -> 1'
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            result = update_split_target_flg(objdbca, target_row_id, "1")
             tmp_msg = 'split, input menu no data'
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             result = objdbca.db_transaction_end(True)
@@ -461,7 +495,11 @@ def split_host_grp(hgsp_config, hgsp_data):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 対象ホスト、ホストグループ-オペレーション
-        tmp_msg = "target_host-operation"
+        tmp_msg = "target hostgroup-operation"
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array]
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        tmp_msg = "target hostgroup-operation id->name"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array]
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -499,14 +537,9 @@ def split_host_grp(hgsp_config, hgsp_data):
                     continue
 
             # オペレーションIDが異なっていた場合、ホストデータを作成する
-            tmp_msg = 'make_host_data Start'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             hgsp_data['sameid_array'] = sameid_array
             result, hgsp_config, hgsp_data = make_host_data(hgsp_config, hgsp_data)
-
-            tmp_msg = 'make_host_data End'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             if result is False:
                 return False
 
@@ -518,14 +551,9 @@ def split_host_grp(hgsp_config, hgsp_data):
 
         if sameid_array is not None:
             # オペレーションIDが異なっていた場合、ホストデータを作成する
-            tmp_msg = 'make_host_data Start'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             hgsp_data['sameid_array'] = sameid_array
             result, hgsp_config, hgsp_data = make_host_data(hgsp_config, hgsp_data)
-
-            tmp_msg = 'make_host_data End'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             if result is False:
                 return False
 
@@ -545,13 +573,13 @@ def split_host_grp(hgsp_config, hgsp_data):
             # 分割データにある場合は廃止しない
             hold_key = create_hold_key(vertical_flg, output_data.get('HOST_ID'), output_data.get('OPERATION_ID'), output_data.get('INPUT_ORDER'))
             if hold_key in hold_host_id:
-                tmp_msg = 'not discard in split data'
+                tmp_msg = 'not discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
 
             # すでに廃止の場合は廃止しない
             if output_data['DISUSE_FLAG'] == "1":
-                tmp_msg = 'already discard in split data'
+                tmp_msg = 'already discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
 
@@ -572,37 +600,36 @@ def split_host_grp(hgsp_config, hgsp_data):
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             if result is False:
+                tmp_msg = 'update_table is faild'
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
 
             disuse_cnt += 1
         hgsp_data['disuse_cnt'] = disuse_cnt
 
-        # 登録/更新/廃止の実行件数
-        update_cnt = hgsp_data.get('update_cnt')
-        insert_cnt = hgsp_data.get('insert_cnt')
-        disuse_cnt = hgsp_data.get('disuse_cnt')
-
-        # 登録/更新/廃止/復活があった場合、代入値自動登録設定のbackyard処理の処理済みフラグをOFFにする
-        # インストールドライバ取得:SQL実行
-        version_table = VersionTable(objdbca)  # noqa: F405
-        sql = version_table.create_sselect("WHERE DISUSE_FLAG = '0'")
-        result = version_table.select_table(sql)
+        # ホストグループ分割対象テーブルを検索:SQL実行
+        split_target_table = SplitTargetTable(objdbca)  # noqa: F405
+        sql = split_target_table.create_sselect(
+            "WHERE DISUSE_FLAG = '0' AND ROW_ID = '{}'".format(hgsp_config['target_row_id'])
+        )
+        result = split_target_table.select_table(sql)
         if result is False:
+            tmp_msg = 'select table error SplitTargetTable'
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             raise Exception()
-        version_list = result[0].get("{}_{}".format("INSTALLED_DRIVER", g.get('LANGUAGE').upper()))
-        version_list = json.loads(version_list)
+        split_target_array = result
 
-        # 更新/登録/廃止0件以上の時
-        if 0 != insert_cnt or 0 != update_cnt or 0 != disuse_cnt:
-            if "Ansible" in version_list or "Terraform" in version_list:
-                result = update_ploc_loaded_flg(objdbca, "0")
-                if result is False:
-                    raise Exception()
+        target_timestamp = hgsp_config['target_timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
+        target_timestamp_now = split_target_array[0]['LAST_UPDATE_TIMESTAMP'].strftime('%Y-%m-%d %H:%M:%S.%f')
 
-        # ホストグループ分割対象の分割済みフラグをONにする
-        tmp_msg = 'update_split_target_flg 0 -> 1'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        result = update_split_target_flg(objdbca, target_row_id, "1")
+        # 分割処理の開始時、終了時の最終更新日時が一致した場合、ホストグループ分割対象の分割済みフラグをONにする
+        if target_timestamp == target_timestamp_now:
+            tmp_msg = 'update_split_target_flg 0 -> 1'
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            result = update_split_target_flg(objdbca, target_row_id, "1")
+        else:
+            tmp_msg = 'updated split_target: split_target_flg no update and next cycle'
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # アップロードファイルコピー
         tmp_msg = 'copy_upload_file split->input'
@@ -671,7 +698,9 @@ def make_host_data(hgsp_config, hgsp_data):
     Returns:
         (bool, hgsp_config, hgsp_data)
     """
-    import copy
+    tmp_msg = 'make_host_data Start'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
     try:
         output_table = hgsp_config.get('output_table')
         file_columns_info = hgsp_config.get('file_columns_info')
@@ -770,6 +799,7 @@ def make_host_data(hgsp_config, hgsp_data):
             hold_key = create_hold_key(vertical_flg, alone_data.get('HOST_ID'), alone_data.get('OPERATION_ID'), alone_data.get('INPUT_ORDER'))
             hold_host_id.append(hold_key)
 
+            # 代入値自動登録用のデータ検索
             match_flg = False
             for output_data in output_data_array:
                 update_data = None
@@ -812,8 +842,14 @@ def make_host_data(hgsp_config, hgsp_data):
                     if output_file_name:
                         # output_file_path = file_columns_info['output'][rest_key].get_file_data_path(output_file_name, alone_id, None, False)
                         output_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
+
+                    # ファイル名,ファイルに差分があるか判定
                     if alone_file_name != output_file_name and input_file_data != output_file_data:
                         chgFlg = True
+
+                    # ファイル解放
+                    input_file_data = None
+                    output_file_data = None
 
                 if chgFlg is True:
                     # 更新する
@@ -836,6 +872,8 @@ def make_host_data(hgsp_config, hgsp_data):
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                     if result is False:
+                        tmp_msg = 'update_table is faild'
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         raise Exception()
 
                     # ファイルコピー情報設定
@@ -872,6 +910,8 @@ def make_host_data(hgsp_config, hgsp_data):
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 if result is False:
+                    tmp_msg = 'insert_table is faild'
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     raise Exception()
 
                 # ファイルコピー情報設定
@@ -943,8 +983,9 @@ def make_host_data(hgsp_config, hgsp_data):
                                         child_data_json = json.loads(child_data)
                                         base_data_json = dict((x, y) for x, y in sorted(output_table.objmenu.get_json_cols_base().items()))
                                         for rest_name in base_data_json.keys():
-                                            child_val = child_data_json.get(rest_name)
-                                            parent_val = parent_data_json.get(rest_name)
+                                            # 空文字の扱いを統一してNoneとして扱う  "" '' -> None
+                                            child_val = length0_empty_conv(child_data_json.get(rest_name))
+                                            parent_val = length0_empty_conv(parent_data_json.get(rest_name))
                                             # 親も子も値が入っていない場合
                                             if child_val is None and parent_val is None:
                                                 base_data_json[rest_name] = None
@@ -964,7 +1005,6 @@ def make_host_data(hgsp_config, hgsp_data):
                                                 elif child_data_hierarchy == parent_data_hierarchy:
                                                     # 子のデータの優先順位が親のデータの優先順位より小さい場合
                                                     if child_priority < parent_priority:
-                                                        # base_data_json[rest_name] = parent_val
                                                         # 親のデータ利用:None場合、子のデータ使用
                                                         if parent_val is not None:
                                                             base_data_json[rest_name] = parent_val
@@ -972,7 +1012,6 @@ def make_host_data(hgsp_config, hgsp_data):
                                                             base_data_json[rest_name] = child_val
                                                         chgFlg = True
                                                     else:
-                                                        # base_data_json[rest_name] = child_val
                                                         # 子のデータ利用:Noneの場合、親のデータ使用
                                                         if child_val is not None:
                                                             base_data_json[rest_name] = child_val
@@ -986,14 +1025,20 @@ def make_host_data(hgsp_config, hgsp_data):
                                                     pass
                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = json.dumps(base_data_json, ensure_ascii=False)
                                     else:
+                                        # 空文字の扱いを統一してNoneとして扱う  "" '' -> None
+                                        child_data = length0_empty_conv(child_data)
+                                        parent_data = length0_empty_conv(parent_data)
+
                                         # 親も子も値が入っていない場合
-                                        if child_data == "" and parent_data == "":
+                                        if child_data is None and parent_data is None:
+                                            tree_array[tree_data_child_key]['DATA'][tmp_column_name] = None
                                             pass
                                         # 親のみに値が入っている場合
-                                        elif child_data == "" and parent_data != "":
+                                        elif child_data is None and parent_data is not None:
                                             tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
                                         # 子のみに値が入っている場合
-                                        elif child_data != "" and parent_data == "":
+                                        elif child_data is not None and parent_data is None:
+                                            tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
                                             pass
                                         # 親も子も値が入っている場合
                                         else:
@@ -1005,9 +1050,19 @@ def make_host_data(hgsp_config, hgsp_data):
                                             elif child_data_hierarchy == parent_data_hierarchy:
                                                 # 子のデータの優先順位が親のデータの優先順位より小さい場合
                                                 if child_priority < parent_priority:
-                                                    if tree_array[tree_data_child_key]['HOST_ID'] in tree_array[parent_key]['CHILD_IDS']:
+                                                    # 親のデータ利用:None場合、子のデータ使用
+                                                    if parent_val is not None:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
-                                                        chgFlg = True
+                                                    else:
+                                                        tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
+                                                    chgFlg = True
+                                                else:
+                                                    # 子のデータ利用:Noneの場合、親のデータ使用
+                                                    if child_val is not None:
+                                                        tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
+                                                    else:
+                                                        tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
+                                                    chgFlg = True
                                             # 子のデータの階層が親のデータの階層よりも小さい場合
                                             else:
                                                 # 何もしない
@@ -1068,7 +1123,6 @@ def make_host_data(hgsp_config, hgsp_data):
                         # if "" == host_data['OPERATION'][parent_id_Key] \
                         #         or host_data['DATA']['OPERATION_ID'] in host_data['OPERATION']:
                         #     opematch_flg = True
-                        #     # print(hgsp_config['alllist'][host_data['DATA']['HOST_ID']], hgsp_config['alllist'][host_data['DATA']['OPERATION_ID']])
                         if len(host_data['OPERATION']) >= parent_id_Key \
                                 or host_data['DATA']['OPERATION_ID'] in host_data['OPERATION']:
                             opematch_flg = True
@@ -1134,6 +1188,10 @@ def make_host_data(hgsp_config, hgsp_data):
                     if alone_file_name != output_file_name and input_file_data != output_file_data:
                         chgFlg = True
 
+                    # ファイル解放
+                    input_file_data = None
+                    output_file_data = None
+
                 # 廃止になっている場合は復活する
                 if "1" == output_data['DISUSE_FLAG']:
                     chgFlg = True
@@ -1160,6 +1218,8 @@ def make_host_data(hgsp_config, hgsp_data):
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                     if result is False:
+                        tmp_msg = 'update_table is faild'
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         raise Exception()
 
                     # ファイルコピー情報設定
@@ -1202,20 +1262,21 @@ def make_host_data(hgsp_config, hgsp_data):
                 insert_data['DISUSE_FLAG'] = "0"  # 廃止フラグ
                 insert_data['LAST_UPDATE_USER'] = g.USER_ID  # 最終更新者
 
+                # 出力用テーブルに登録
+                result = output_table.insert_table(insert_data)
+
                 tmp_msg = 'insert: data'
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 tmp_msg = insert_data
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-                # 出力用テーブルに登録
-                result = output_table.insert_table(insert_data)
-
                 tmp_msg = 'insert: result'
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 tmp_msg = result
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 if result is False:
+                    tmp_msg = 'insert_table is faild'
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     raise Exception()
 
                 # ファイルコピー情報設定
@@ -1223,15 +1284,21 @@ def make_host_data(hgsp_config, hgsp_data):
 
                 insert_cnt += 1
 
+        # 返却値設定
         hgsp_data['copy_file_array'] = copy_file_array
         hgsp_data['hold_host_id'] = hold_host_id
         hgsp_data['insert_cnt'] = insert_cnt
         hgsp_data['update_cnt'] = update_cnt
         hgsp_data['disuse_cnt'] = disuse_cnt
 
+        tmp_msg = 'make_host_data End'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
         return True, hgsp_config, hgsp_data
 
     except Exception as e:
+        tmp_msg = 'make_host_data End: Exception'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
@@ -1318,6 +1385,7 @@ def chk_file_file_columns(file_columns_info, output_table, input_data, target_da
             jnl_uuid = jnl_data[0]["JOURNAL_SEQ_NO"]
             output_file_path = file_columns_info['output'][rest_key].get_file_data_path(alone_file_name, target_data['ROW_ID'], jnl_uuid, False)
             link_file_path = file_columns_info['output'][rest_key].get_file_data_path(alone_file_name, target_data['ROW_ID'], None, False)
+            # 現在のリンク先のパスを取得
             try:
                 old_dest_file_path = os.readlink(link_file_path)
             except Exception:
@@ -1356,8 +1424,6 @@ def copy_upload_file(copy_file_array):
             # ファイル、ディレクトリの確認
             tmp_isdir = os.path.isdir(copy_file['dest_dir'])  # noqa: F405
             tmp_isfile = os.path.isfile(copy_file['src'])  # noqa: F405
-            tmp_msg = 'isdir:{} ({}) isfile:{} ({})'.format(tmp_isdir, copy_file['dest_dir'], tmp_isfile, copy_file['dest_dir'])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             if tmp_isdir is False and tmp_isfile is True:
 
                 # コピー先のディレクトリ作成
@@ -1413,6 +1479,7 @@ def reset_split_target_flg(objdbca):
     Returns:
         bool
     """
+    # ホストグループ分割対象テーブルを検索:SQL実行(UPDATE)
     split_target_table = SplitTargetTable(objdbca)  # noqa: F405
     sql = textwrap.dedent("""
         UPDATE
@@ -1436,6 +1503,7 @@ def update_split_target_flg(objdbca, target_row_id, divided_flg):
     Returns:
         bool
     """
+    # ホストグループ分割対象テーブルを検索:UPDATE実行
     split_target_table = SplitTargetTable(objdbca)  # noqa: F405
     update_data = {
         'ROW_ID': target_row_id,
@@ -1486,10 +1554,7 @@ def update_ploc_loaded_flg(objdbca, loaded_flg="0"):
             WHERE ROW_ID IN (202, 203, 204)
         ;
     """).format(tablename=comn_proc_loaded_table.table_name).strip()
-    print(sql, [loaded_flg, get_now_datetime()])
-    # SQL実行
     result = comn_proc_loaded_table.exec_query(sql, [loaded_flg, get_now_datetime()])
-    print(result)
     if result is False:
         return False
     return True
@@ -1608,6 +1673,22 @@ def id_conv(data, iddict={}, mode='dict'):
     if mode == 'dict':
         xxxx = json.loads(xxxx)
     return xxxx
+
+
+def length0_empty_conv(str_data):
+    """
+    length0_empty_conv: "" -> None convert
+    Args:
+        str_data: str
+    Returns:
+        str_data or None
+    """
+    if str_data is None:
+        return None
+    elif len(str_data) == 0:
+        return None
+    else:
+        return str_data
 
 
 def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):

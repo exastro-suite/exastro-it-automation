@@ -15,7 +15,7 @@
         "cwd": "/exastro",
         "pathMappings": [
           {
-            "localRoot": "${workspaceFolder}/ita_root/ita_by_terraform_cli_execute",
+            "localRoot": "${workspaceFolder}/ita_root/ita_by_terraform_cloud_ep_execute",
             "remoteRoot": "/exastro"
           },
         ],
@@ -38,7 +38,7 @@
         "cwd": "/exastro",
         "pathMappings": [
           {
-            "localRoot": "${workspaceFolder}/ita_root/ita_by_terraform_cli_execute",
+            "localRoot": "${workspaceFolder}/ita_root/ita_by_terraform_cloud_ep_execute",
             "remoteRoot": "/exastro"
           },
         ],

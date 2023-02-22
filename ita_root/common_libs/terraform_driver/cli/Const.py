@@ -24,7 +24,7 @@ class Const(CommonConst):
     """
 
     # テーブル/ビュー名
-    # T_IF_INFO = 'T_TERC_IF_INFO'  # インターフェース情報
+    T_IF_INFO = 'T_TERC_IF_INFO'  # インターフェース情報
     T_WORKSPACE = 'T_TERC_WORKSPACE'  # Workspace管理
     T_MODULE = 'T_TERC_MODULE'  # Module素材集
     T_MOVEMENT_MODULE = 'T_TERC_MVMT_MOD_LINK'  # Movement-Module紐付
@@ -40,7 +40,7 @@ class Const(CommonConst):
     V_MOVEMENT_VAR = 'V_TERC_MVMT_VAR_LINK'  # Movement-変数紐付(VIEW)
 
     # メニュー名(REST)
-    # RN_IF_INFO = 'intarface_info_terraform_cli'  # インターフェース情報
+    RN_IF_INFO = 'intarface_info_terraform_cli'  # インターフェース情報
     RN_WORKSPACE = 'workspace_list_terraform_cli'  # Workspace管理
     RN_MOVEMENT = 'movement_list_terraform_cli'  # Movement一覧
     RN_MODULE = 'module_files_terraform_cli'  # Module素材集

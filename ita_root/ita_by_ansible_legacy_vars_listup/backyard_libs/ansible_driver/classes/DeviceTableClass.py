@@ -43,7 +43,7 @@ class DeviceTable(TableBase):
         """
         g.applogger.debug(f"[Trace] Call {self.__class__.__name__} extract_variable()")
 
-        var_extractor = WrappedStringReplaceAdmin()
+        var_extractor = WrappedStringReplaceAdmin(self._ws_db)
         result_dict = {}
         for row in self._stored_records.values():
 

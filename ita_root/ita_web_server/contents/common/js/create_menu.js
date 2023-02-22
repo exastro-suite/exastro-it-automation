@@ -1071,10 +1071,11 @@ for ( let i = 0; i < type3PulldownListDataLength ; i++ ) {
 // 作成対象 select
 if ( menuEditorMode !== 'view') {
     const selectParamTargetData = menuEditorArray.sheet_type_list,
-        selectParamTargetDataLength = selectParamTargetData.length;
+        selectParamTargetDataLength = selectParamTargetData.length,
+        sortOrder = [0,2,1];
     let selectParamTargetHTML = '';
     for ( let i = 0; i < selectParamTargetDataLength ; i++ ) {
-        selectParamTargetHTML += '<option value="' + selectParamTargetData[i].sheet_type_id + '">' + selectParamTargetData[i].sheet_type_name + '</option>';
+        selectParamTargetHTML += '<option value="' + selectParamTargetData[sortOrder[i]].sheet_type_id + '">' + selectParamTargetData[sortOrder[i]].sheet_type_name + '</option>';
     }
     $('#create-menu-type').html( selectParamTargetHTML );
 }

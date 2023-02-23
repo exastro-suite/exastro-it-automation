@@ -1511,7 +1511,7 @@ def update_split_target_flg(objdbca, target_row_id, divided_flg):
         'LAST_UPDATE_TIMESTAMP': get_now_datetime(),
         'LAST_UPDATE_USER': g.USER_ID
     }
-    result = split_target_table.update_table(update_data)
+    result = split_target_table.update_record(update_data)
     if result is False:
         return False
     return True

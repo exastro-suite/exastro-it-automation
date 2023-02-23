@@ -22,7 +22,7 @@ from common_libs.ansible_driver.classes.SubValueAutoReg import SubValueAutoReg
 """
 
 
-def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_vars_dict):
+def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_vars_dict, ws_db):
     """
     変数を抽出する（movement）
 
@@ -38,7 +38,7 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_va
 
     mov_vars_dict = {}
 
-    var_extractor = WrappedStringReplaceAdmin()
+    var_extractor = WrappedStringReplaceAdmin(ws_db)
     for matl_lnk in mov_matl_lnk_records.values():
         # Movementごとのplaybook変数の追加
         movement_id = matl_lnk['MOVEMENT_ID']

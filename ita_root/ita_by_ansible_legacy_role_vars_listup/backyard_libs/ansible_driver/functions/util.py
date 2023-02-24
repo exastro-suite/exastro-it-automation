@@ -59,11 +59,13 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_r
                 mov_vars_mgr.merge_variable_list(role_varmgr.export_var_list())
             else:
                 # データ不整合（ロールパッケージ管理のVAR_STRUCT_ANAL_JSON_STRINGカラム内 "Role_name_list" に無いロールがMovementロール紐づけに存在）
-                g.applogger.debug("Data mismatch between role_package table(json_string column) and material_link table.")
+                debug_msg = g.appmsg.get_log_message("BKY-30009", [matl_lnk['MVMT_MATL_LINK_ID']].extend(list(role_varmgr_key)))
+                g.applogger.debug(debug_msg)
 
         else:
             # データ不整合（ロール名管理に無いデータがMovementロール紐づけに存在）
-            g.applogger.debug("Data mismatch between role_name table and material_link table.")
+            debug_msg = g.appmsg.get_log_message("BKY-30010", [matl_lnk['MVMT_MATL_LINK_ID']])
+            g.applogger.debug(debug_msg)
 
         # Movementの追加オプションの変数の追加
         ans_exec_options = mov_records[movement_id]['ANS_EXEC_OPTIONS']
@@ -109,7 +111,11 @@ def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_d
 
     for movement_id, tpl_var_set in template_list.items():
         tpl_var_name = list(tpl_var_set.keys())[0]
-        mov_vars_dict[movement_id].merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
+        if tpl_var_name in tpl_varmng_dict:
+            mov_vars_dict[movement_id].merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
+        else:
+            debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
+            g.applogger.debug(debug_msg)
 
     for movement_id, ope_host_dict in host_list.items():
         for _, system_dict in ope_host_dict.items():

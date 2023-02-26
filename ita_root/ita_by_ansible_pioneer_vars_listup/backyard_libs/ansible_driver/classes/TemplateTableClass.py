@@ -12,9 +12,12 @@
 # limitations under the License.
 #
 import json
+import sys
+import traceback
 
 from flask import g
 
+from common_libs.conductor.classes.exec_util import addline_msg
 from .TableBaseClass import TableBase
 
 
@@ -45,13 +48,22 @@ class TemplateTable(TableBase):
 
         result_dict = {}
         for row in self._stored_records.values():
-            tpl_var_name = row['ANS_TEMPLATE_VARS_NAME']
-            var_struct = json.loads(row['VAR_STRUCT_ANAL_JSON_STRING'])
+            try:
+                tpl_var_name = row['ANS_TEMPLATE_VARS_NAME']
+                var_struct = json.loads(row['VAR_STRUCT_ANAL_JSON_STRING'])
 
-            if tpl_var_name not in result_dict:
-                result_dict[tpl_var_name] = set()
+                if tpl_var_name not in result_dict:
+                    result_dict[tpl_var_name] = set()
 
-            for var_name, attr_flag in var_struct['Vars_list'].items():
-                result_dict[tpl_var_name].add(var_name)
+                for var_name, attr_flag in var_struct['Vars_list'].items():
+                    result_dict[tpl_var_name].add(var_name)
+
+            except Exception as e:
+                debug_msg = g.appmsg.get_log_message("BKY-30006", [])
+                g.applogger.debug(debug_msg)
+                g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                type_, value, traceback_ = sys.exc_info()
+                msg = traceback.format_exception(type_, value, traceback_)
+                g.applogger.debug(msg)
 
         return result_dict

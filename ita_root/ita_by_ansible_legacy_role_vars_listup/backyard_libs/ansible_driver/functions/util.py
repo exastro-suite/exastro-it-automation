@@ -26,7 +26,7 @@ from backyard_libs.ansible_driver.classes.VariableManagerClass import VariableMa
 """
 
 
-def extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_role_records, role_varmgr_dict):
+def extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_role_records, role_varmgr_dict, ws_db):
     """
     変数を抽出する（movement）
 
@@ -45,7 +45,7 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_r
 
     key_convert_dict = {x['ROLE_ID']: (x['ROLE_NAME'], x['ROLE_PACKAGE_ID']) for x in registerd_role_records.values()}
 
-    var_extractor = WrappedStringReplaceAdmin()
+    var_extractor = WrappedStringReplaceAdmin(ws_db)
     for matl_lnk in mov_matl_lnk_records.values():
         movement_id = matl_lnk['MOVEMENT_ID']
         mov_vars_mgr = mov_vars_dict[movement_id]

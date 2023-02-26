@@ -2572,7 +2572,7 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
                         'DISUSE_FLAG': '0',
                         'LAST_UPDATE_USER': g.get('USER_ID')
                     }
-                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name)
+                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
             else:
                 # 「分割対象メニュー」*「登録対象メニュー」で DIVIDED_FLG を '0' で登録
                 data_list = {
@@ -2582,7 +2582,7 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
                     'DISUSE_FLAG': '0',
                     'LAST_UPDATE_USER': g.get('USER_ID')
                 }
-                objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name)
+                objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name, False)
 
     except Exception as msg:
         return False, msg

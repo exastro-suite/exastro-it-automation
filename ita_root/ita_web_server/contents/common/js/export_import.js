@@ -618,7 +618,7 @@ fileSelect() {
             
             let listHtml = '';
             if ( ex.type === 'excelImport') {
-                const importList = ex.createMenuGroupList( ex.changeExcelImportList( ex.importData.IMPORT_LIST, ex.importData.UNIMPORT_LIST ) );
+                const importList = ex.createMenuGroupList( ex.changeExcelImportList( ex.importData.import_list, ex.importData.umimport_list ) );
                 listHtml += ex.menuGroupHtml( importList );
             } else {
                 const importList = ex.createMenuGroupList( ex.importData.import_list.menu_groups );

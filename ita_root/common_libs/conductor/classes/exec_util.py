@@ -3164,10 +3164,21 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 suppress_start_date = ""
                 suppress_end_date = ""
 
-                # 通知に必要な情報とnotice_name, jump_urlの定義
+                # notice_nameの定義
                 notice_name = def_item["notice_name"]
-                jump_url = def_item["fqdn"] if bool(def_item["fqdn"]) else ""
 
+                # jump_urlの設定
+                jump_url = ""
+                org_id = g.ORGANIZATION_ID
+                ws_id = g.WORKSPACE_ID
+                path_str = f"/{org_id}/workspaces/{ws_id}/ita/?menu=conductor_confirmation&conductor_instance_id={conductor_instance_id}"
+                if bool(def_item["fqdn"]):
+                    fqdn = def_item["fqdn"]
+                    if fqdn[-1] == "/":
+                        fqdn = fqdn[:-1]
+                    jump_url = fqdn + path_str
+
+                # ステータスの取得
                 target_status = notice_info[notice_name]
 
                 # 通知名・作業確認url・ステータス名を予約変数dictに追加

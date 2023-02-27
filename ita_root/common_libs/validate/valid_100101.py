@@ -122,6 +122,7 @@ def external_valid_menu_before(objdbca, objtable, option):
                                                   TD_B_CICD_GIT_PROTOCOL_TYPE_NAME.C_GIT_PROTOCOL_TYPE_ROW_ID_SSH_KEY,
                                                   TD_B_CICD_GIT_PROTOCOL_TYPE_NAME.C_GIT_PROTOCOL_TYPE_ROW_ID_SSH_KEY_NOPASS):
         # リポジトリタイプ未入力チェック
+        """
         if ColValue['GIT_REPO_TYPE_ROW_ID']:
             # プロトコルでhttps以外を選択している場合は、入力が不要な項目です。(項目:Visibilityタイプ)
             status_code = "MSG-90013"
@@ -130,6 +131,7 @@ def external_valid_menu_before(objdbca, objtable, option):
                 msg += "\n"
             msg += g.appmsg.get_api_message(status_code, msg_args)
             retBool = False
+        """
 
         # Gitユーザ未入力チェック
         if ColValue['GIT_USER']:

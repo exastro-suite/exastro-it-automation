@@ -24,6 +24,7 @@ ENV USER_ID=100101
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=1
 
 RUN dnf install -y \
     gcc \
@@ -32,6 +33,7 @@ RUN dnf install -y \
     python39-mod_wsgi \
     langpacks-en \
     wget \
+    zip \
     unzip \
 &&  pip3.9 install --upgrade pip setuptools \
 &&  pip3.9 install \

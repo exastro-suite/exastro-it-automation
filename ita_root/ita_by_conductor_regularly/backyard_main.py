@@ -43,7 +43,6 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
     # ################次回実行日付の設定（初回）
     table_name = "T_COMN_CONDUCTOR_REGULARLY_LIST"
     where_str = "WHERE DISUSE_FLAG=0 AND NEXT_EXECUTION_DATE IS NULL AND `STATUS_ID`=%s"
-    # 次回実行日付がNULL, ステータス「準備中」の行を取得し、リストに格納
     prep_list = objdbca.table_select(table_name, where_str, status_ids_list["STATUS_IN_PREPARATION"])
     if len(prep_list) != 0:
 
@@ -174,6 +173,9 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                         status_id = status_ids_list["STATUS_LINKING_ERROR"]
             else:
                 status_id = status_ids_list["STATUS_IN_PREPARATION"]
+                next_execution_date = None
+
+            if status_id == status_ids_list["STATUS_COMPLETED"]:
                 next_execution_date = None
 
             try:
@@ -409,7 +411,7 @@ def calc_period_time(next_execution_date, start_date, interval, current_datetime
             added_time = calcd_next_date
             while stop_end_date >= calcd_next_date:
                 added_time = added_time + datetime.timedelta(hours=interval)
-                if loop_check_date >= calcd_next_date:
+                if loop_check_date >= added_time:
                     calcd_next_date = None
                     return calcd_next_date
                 calcd_next_date = added_time

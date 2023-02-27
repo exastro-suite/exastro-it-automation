@@ -11,10 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from common_libs.terraform_driver.common.Const import Const as CommonConst
+
 """
 terraformドライバー（terraform Cloud/EP）に必要な定数定義モジュール
 """
+from common_libs.terraform_driver.common.Const import Const as CommonConst
 
 
 class Const(CommonConst):
@@ -39,9 +40,11 @@ class Const(CommonConst):
     T_MODULE_VAR = 'T_TERE_MOD_VAR_LINK'  # Module-変数紐付
     T_VAR_MEMBER = 'T_TERE_VAR_MEMBER'  # メンバー変数管理
     T_MOVEMENT_VAR = 'T_TERE_MVMT_VAR_LINK'  # Movement-変数紐付
+    T_MOVEMENT_VAR_MEMBER = 'T_TERE_MVMT_VAR_MEMBER_LINK'  # Movement-メンバー変数紐付
     V_MOVEMENT = 'V_TERE_MOVEMENT'  # Movement一覧(VIEW)
     V_VAR_MEMVER = 'V_TERE_VAR_MEMBER'  # メンバー変数管理(VIEW)
     V_MOVEMENT_VAR = 'V_TERE_MVMT_VAR_LINK'  # Movement-変数紐付(VIEW)
+    V_MOVEMENT_VAR_MEMBER = 'V_TERE_MVMT_VAR_MEMBER_LINK'  # Movement-メンバー変数紐付(VIEW)
     V_ORGANIZATION_WORKSPACE = 'V_TERE_ORGANIZATION_WORKSPACE_LINK'  # Organizatioin-Workspace紐付(VIEW)
 
     # メニュー名(REST)
@@ -65,6 +68,7 @@ class Const(CommonConst):
     RN_MODULE_VAR = 'module_variable_link_terraform_cloud_ep'  # Module-変数紐付
     RN_VAR_MEMBER = 'member_variable_terraform_cloud_ep'  # メンバー変数管理
     RN_MOVEMENT_VAR = 'movement_variable_link_terraform_cloud_ep'  # Movement-変数紐付
+    RN_MOVEMENT_VAR_MEMBER = 'movement_member_variable_link_terraform_cloud_ep'  # Movement-メンバー変数紐付
 
     # メニューID
     ID_IF_INFO = '80101'  # インターフェース情報
@@ -87,6 +91,7 @@ class Const(CommonConst):
     ID_MODULE_VAR = '80118'  # Module-変数紐付
     ID_VAR_MEMBER = '80119'  # メンバー変数管理
     ID_MOVEMENT_VAR = '80120'  # Movement-変数紐付
+    ID_MOVEMENT_VAR_MEMBER = '80121'  # Movement-メンバー変数紐付
 
     # 作業実行関連ディレクトリ
     DIR_MODULE = '/uploadfiles/80105/module_file'  # Module素材集
@@ -111,5 +116,3 @@ class Const(CommonConst):
     TF_APPLY_CANCEL = 'canceled'
     TF_APPLY_UNREACH = 'unreachable'
     TF_APPLY_RUNNING = 'running'
-
-

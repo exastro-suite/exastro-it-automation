@@ -640,6 +640,7 @@ CREATE TABLE T_COMN_WEB_TABLE_SETTINGS
     ROW_ID                          VARCHAR(40),                                -- UUID
     USER_ID                         VARCHAR(64),                                -- ユーザID
     WEB_TABLE_SETTINGS              LONGTEXT,                                   -- テーブル設定
+    WIDGET_SETTINGS                 LONGTEXT,                                   -- ウィジェット設定
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;

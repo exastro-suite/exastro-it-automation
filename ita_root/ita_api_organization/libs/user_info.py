@@ -244,3 +244,110 @@ def regist_table_settings(objdbca, parameter):
     objdbca.db_transaction_end(True)
 
     return g.appmsg.get_api_message("000-00001")
+
+
+def collect_widget_settings(objdbca):
+    """
+        Dashboardのwidget設定を取得
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            widget_data
+    """
+
+    # 応答情報の初期化
+    widget_data = {}
+    widget_data['data'] = []
+    widget_data['menu'] = {}
+    widget_data['widget'] = []
+    widget_data['movement'] = {}
+    widget_data['work_info'] = {}
+    widget_data['work_result'] = {}
+
+    # メニュー情報の取得
+    menu_info = {}
+    menu_info['101'] = {}
+    menu_info['101']['name'] = ''
+    menu_info['101']['order'] = 0
+    menu_info['101']['icon'] = ''
+    menu_info['101']['remarks'] = ''
+    menu_info['101']['position'] = ''
+
+    # widget情報の取得
+    widget_list = []
+
+    widget_info = {}
+    widget_info['widget_id'] = '1'
+    widget_info['name'] = ''
+    widget_info['display_name'] = ''
+    widget_info['colspan'] = ''
+    widget_info['rowspan'] = ''
+    widget_info['display'] = ''
+    widget_info['title'] = ''
+    widget_info['background'] = ''
+    widget_info['data'] = {}
+    widget_info['data']['menu_col_number'] = ''
+    widget_info['set_id'] = ''
+    widget_info['area'] = ''
+    widget_info['row'] = ''
+    widget_info['col'] = ''
+
+    widget_list.append(widget_info)
+
+    # Movement情報の取得
+    movement_info = {}
+    movement_info['3'] = {}
+    movement_info['3']['name'] = ''
+    movement_info['3']['menu_id'] = ''
+    movement_info['3']['number'] = 0
+
+    # 作業状況の取得
+    work_info = {}
+    work_info['conductor'] = []
+
+    conductor_info = {}
+    conductor_info['2'] = {}
+    conductor_info['2']['status'] = ''
+    conductor_info['2']['end'] = 'YYYY-MM-DD HH:MI:SS.nnnnnn'
+
+    work_info['conductor'].append(conductor_info)
+
+    # 作業結果の取得
+    work_result_info = {}
+    work_result_info['conductor'] = []
+
+    conductor_info = {}
+    conductor_info['1'] = {}
+    conductor_info['1']['status'] = ''
+    conductor_info['1']['end'] = 'YYYY-MM-DD HH:MI:SS.nnnnnn'
+
+    work_result_info['conductor'].append(conductor_info)
+
+    # 応答情報の作成
+    widget_data['menu'] = menu_info
+    widget_data['widget'] = widget_list
+    widget_data['movement'] = movement_info
+    widget_data['work_info'] = work_info
+    widget_data['work_result'] = work_result_info
+
+    return widget_data
+
+
+def regist_widget_settings(objdbca, parameter):
+    """
+        Dashboardのwidget設定を登録する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+            parameter: bodyの中身
+        RETRUN:
+            data
+    """
+    # DBコネクション開始
+    objdbca.db_transaction_start()
+
+
+    # DBコネクション終了
+    objdbca.db_transaction_end(True)
+
+    return g.appmsg.get_api_message("000-00001")
+

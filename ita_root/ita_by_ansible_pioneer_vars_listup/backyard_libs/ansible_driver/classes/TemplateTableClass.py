@@ -49,6 +49,7 @@ class TemplateTable(TableBase):
         result_dict = {}
         for row in self._stored_records.values():
             try:
+                tpl_var_id = row[self.pkey]
                 tpl_var_name = row['ANS_TEMPLATE_VARS_NAME']
                 var_struct = json.loads(row['VAR_STRUCT_ANAL_JSON_STRING'])
 
@@ -59,7 +60,7 @@ class TemplateTable(TableBase):
                     result_dict[tpl_var_name].add(var_name)
 
             except Exception as e:
-                debug_msg = g.appmsg.get_log_message("BKY-30006", [])
+                debug_msg = g.appmsg.get_log_message("BKY-30006", [tpl_var_id, tpl_var_name])
                 g.applogger.debug(debug_msg)
                 g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
                 type_, value, traceback_ = sys.exc_info()

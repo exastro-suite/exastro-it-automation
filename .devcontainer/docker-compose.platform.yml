@@ -96,6 +96,8 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - MYSQL_ROOT_PASSWORD=password
+    ports:
+      - "0.0.0.0:3307:3306"
 
   platform-api:
     user: 1000:1000

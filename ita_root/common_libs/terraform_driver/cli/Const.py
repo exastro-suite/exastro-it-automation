@@ -35,9 +35,11 @@ class Const(CommonConst):
     T_MODULE_VAR = 'T_TERC_MOD_VAR_LINK'  # Module-変数紐付
     T_VAR_MEMBER = 'T_TERC_VAR_MEMBER'  # メンバー変数管理
     T_MOVEMENT_VAR = 'T_TERC_MVMT_VAR_LINK'  # Movement-変数紐付
+    T_MOVEMENT_VAR_MEMBER = 'T_TERC_MVMT_VAR_MEMBER_LINK'  # Movement-メンバー変数紐付
     V_MOVEMENT = 'V_TERC_MOVEMENT'  # Movement一覧(VIEW)
     V_VAR_MEMVER = 'V_TERC_VAR_MEMBER'  # メンバー変数管理(VIEW)
     V_MOVEMENT_VAR = 'V_TERC_MVMT_VAR_LINK'  # Movement-変数紐付(VIEW)
+    V_MOVEMENT_VAR_MEMBER = 'V_TERC_MVMT_VAR_MEMBER_LINK'  # Movement-メンバー変数紐付(VIEW)
 
     # メニュー名(REST)
     RN_IF_INFO = 'intarface_info_terraform_cli'  # インターフェース情報
@@ -54,6 +56,7 @@ class Const(CommonConst):
     RN_MODULE_VAR = 'module_variable_link_terraform_cli'  # Module-変数紐付
     RN_VAR_MEMBER = 'member_variable_terraform_cli'  # メンバー変数管理
     RN_MOVEMENT_VAR = 'movement_variable_link_terraform_cli'  # Movement-変数紐付
+    RN_MOVEMENT_VAR = 'movement_member_variable_link_terraform_cli'  # Movement-変数紐付
 
     # メニューID
     ID_IF_INFO = '90101'  # インターフェース情報
@@ -70,6 +73,7 @@ class Const(CommonConst):
     ID_MODULE_VAR = '90112'  # Module-変数紐付
     ID_VAR_MEMBER = '90113'  # メンバー変数管理
     ID_MOVEMENT_VAR = '90114'  # Movement-変数紐付
+    ID_MOVEMENT_VAR = '90115'  # Movement-変数紐付
 
     # 作業実行関連ディレクトリ
     DIR_MODULE = '/uploadfiles/90104/module_file'  # Module素材集

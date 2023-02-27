@@ -81,6 +81,8 @@ services:
       - MARIADB_DATABASE=${MARIADB_DATABASE}
       - MARIADB_USER=${MARIADB_USER}
       - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+    ports:
+      - "0.0.0.0:3306:3306"
 
   ita-by-ansible-execute:
     user: 1000:1000

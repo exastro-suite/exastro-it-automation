@@ -13,6 +13,7 @@
 #   limitations under the License.
 from flask import g
 from common_libs.terraform_driver.common.Hcl2Json import HCL2JSONParse
+from common_libs.terraform_driver.common.member_vars_function import *  # noqa: F403
 import os
 import re
 import json
@@ -50,9 +51,10 @@ def get_variable_block(file_path):
     return result
 
 
-def set_module_vars_link(objdbca, TFConst):
+def set_module_vars_link(objdbca, TFConst):  # noqa: C901
     """
         Module素材集に登録されたtfファイルからvariableブロックが記載されたものをModule-変数紐付テーブルに対し更新する
+        また階層のある変数についてはメンバー変数管理テーブルに対しての処理も行う
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             TFConst: 定数呼び出しクラス
@@ -63,6 +65,7 @@ def set_module_vars_link(objdbca, TFConst):
         # 変数定義
         result = True
         msg = ''
+        exist_member_vars_list = []
         base_path = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
         variable_block_data = {}  # すべてのModule素材に記載されているvariableブロックを格納
 
@@ -105,7 +108,7 @@ def set_module_vars_link(objdbca, TFConst):
             for variable_data in variable_list:
                 variable_name = variable_data.get('variable')
                 variable_type = variable_data.get('type_str')
-                variable_type_id = get_variable_type_id(objdbca, variable_type)
+                variable_type_id = get_variable_type_id(objdbca, TFConst, variable_type)  # noqa: F405
                 default = variable_data.get('default')
                 if isinstance(default, dict) or isinstance(default, list):
                     default = json.dumps(default)
@@ -120,7 +123,7 @@ def set_module_vars_link(objdbca, TFConst):
                     r_variable_name = record.get('VARS_NAME')
                     r_variable_type = record.get('TYPE_ID')
                     r_default = record.get('VARS_VALUE')
-                    if module_matter_id == r_module_matter_id and variable_name == r_variable_name and variable_type_id == r_variable_type and default == r_default:  # noqa: F405, E501
+                    if module_matter_id == r_module_matter_id and variable_name == r_variable_name and variable_type_id == r_variable_type:  # noqa: F405, E501
                         # 一致するレコードがあればexist_flagをTrueにしbreak
                         exist_flag = True
                         exist_record_id = r_module_vars_link_id
@@ -133,6 +136,7 @@ def set_module_vars_link(objdbca, TFConst):
                         # 対象のレコードが廃止済みであれば、「復活」を実行
                         data_list = {
                             "MODULE_VARS_LINK_ID": exist_record_id,
+                            "VARS_VALUE": default,
                             "DISUSE_FLAG": "0",
                             "LAST_UPDATE_USER": g.get('USER_ID'),
                         }
@@ -146,6 +150,20 @@ def set_module_vars_link(objdbca, TFConst):
                         # 対象を廃止しないためにactive_record_listに追加
                         active_record_list.append(exist_record_id)
                     else:
+                        # 一致するレコードのデフォルト値が違う場合は更新
+                        if not default == r_default:
+                            data_list = {
+                                "MODULE_VARS_LINK_ID": exist_record_id,
+                                "VARS_VALUE": default,
+                                "LAST_UPDATE_USER": g.get('USER_ID'),
+                            }
+                            primary_key_name = 'MODULE_VARS_LINK_ID'
+                            ret_data = objdbca.table_update(TFConst.T_MODULE_VAR, data_list, primary_key_name)
+                            if not ret_data:
+                                # ####メモ：Log出力メッセージ（英語）
+                                msg = 'Module-変数紐付テーブルのレコード更新に失敗しました'
+                                raise Exception(msg)
+
                         # 一致するレコードがアクティブ状態なので対象を廃止しないためにactive_record_listに追加
                         active_record_list.append(exist_record_id)
 
@@ -166,6 +184,11 @@ def set_module_vars_link(objdbca, TFConst):
                         msg = 'Module-変数紐付テーブルのレコード更新に失敗しました'
                         raise Exception(msg)
 
+                # メンバー変数テーブルに対する処理を実行
+                ret, msg, exist_member_vars_list = set_member_vars(objdbca, TFConst, module_matter_id, variable_data)  # noqa: F405
+                if not ret:
+                    raise Exception(msg)
+
         # Module-変数紐付テーブルから不要レコードを廃止する
         for record in t_mod_var_link_records:
             disuse_flag = record.get('DISUSE_FLAG')
@@ -180,6 +203,11 @@ def set_module_vars_link(objdbca, TFConst):
                 primary_key_name = 'MODULE_VARS_LINK_ID'
                 ret_data = objdbca.table_update(TFConst.T_MODULE_VAR, data_list, primary_key_name)
 
+        # メンバー変数管理/変数ネスト管理から不要なレコードを廃止する
+        ret, msg = discard_member_vars(objdbca, TFConst, exist_member_vars_list)  # noqa: F405
+        if not ret:
+            raise Exception(msg)
+
         # トランザクション終了(正常)
         objdbca.db_transaction_end(True)
 
@@ -193,7 +221,7 @@ def set_module_vars_link(objdbca, TFConst):
     return result, msg
 
 
-def set_movement_vars_link(objdbca, TFConst):
+def set_movement_var_link(objdbca, TFConst):
     """
         Movement-Module紐付テーブルに登録されたレコードから、Movement-変数紐付テーブルを更新する
         ARGS:
@@ -241,7 +269,7 @@ def set_movement_vars_link(objdbca, TFConst):
                             break
 
                     if exist_flag:
-                        # 一致するレコードがあれば、対象のレコードが対象のレコードが廃止済みかどうかを判定する。廃止されていない場合は何も処理を行わない。
+                        # 一致するレコードがあれば、対象のレコードが廃止済みかどうかを判定する。廃止されていない場合は何も処理を行わない。
                         if exist_record_disuse_flag == "1":
                             # 対象のレコードが廃止済みであれば、「復活」を実行
                             data_list = {
@@ -274,7 +302,7 @@ def set_movement_vars_link(objdbca, TFConst):
                         ret_data = objdbca.table_insert(TFConst.T_MOVEMENT_VAR, data_list, primary_key_name)
                         if not ret_data:
                             # ####メモ：Log出力メッセージ（英語）
-                            msg = 'Movement-変数紐付テーブルのレコード更新に失敗しました'
+                            msg = 'Movement-変数紐付テーブルのレコード登録に失敗しました'
                             raise Exception(msg)
 
         # Module-変数紐付テーブルから不要レコードを廃止する)
@@ -302,23 +330,3 @@ def set_movement_vars_link(objdbca, TFConst):
         objdbca.db_transaction_end(False)
 
     return result, msg
-
-
-def get_variable_type_id(objdbca, variable_type):
-    """
-        variableブロックのtypeからidをreturnする
-        ARGS:
-        objdbca: DB接クラス DBConnectWs()
-            variable_type: type名称
-        RETRUN:
-            variable_type_id
-    """
-    t_terf_type_master = 'T_TERF_TYPE_MASTER'
-    where_str = where_str = 'WHERE TYPE_NAME = %s'
-    record = objdbca.table_select(t_terf_type_master, where_str, [variable_type])
-    if record:
-        variable_type_id = record[0].get('TYPE_ID')
-    else:
-        variable_type_id = None
-
-    return variable_type_id

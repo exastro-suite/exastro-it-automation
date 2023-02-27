@@ -10,10 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from flask import g
-from common_libs.terraform_driver.common.Hcl2Json import HCL2JSONParse
-from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
-import re
+
 
 def external_valid_menu_before(objdbca, objtable, option):
     retBool = True

@@ -21,8 +21,13 @@ from common_libs.column import *  # noqa: F403
 
 from common_libs.conductor.classes.util import ConductorCommonLibs  # noqa: F401
 
-from common_libs.ansible_driver.functions.rest_libs import *  # noqa: F403
+from common_libs.ansible_driver.functions.rest_libs import insert_execution_list as anscmn_insert_execution_list  # noqa: F403
+from common_libs.ansible_driver.functions.rest_libs import execution_scram as anscmn_execution_scram  # noqa: F403
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+
+# from common_libs.terraform_driver.common.Execute import insert_execution_list as tfccmn_insert_execution_list  # noqa: F403
+# from common_libs.terraform_driver.common.Execute import execution_scram as tfccmn_execution_scram  # noqa: F403
+from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 
 import json
 import uuid
@@ -1518,14 +1523,19 @@ class ConductorExecuteLibs():
                 # orchestra_id->driver_idの紐付
                 if orchestra_id in ["1", "Ansible Legacy"]:
                     driver_id = AnscConst.DF_LEGACY_DRIVER_ID
-                    manu_id = ""
+                    manu_id = "20210"
                 if orchestra_id in ["2", "Ansible Pioneer"]:
                     driver_id = AnscConst.DF_PIONEER_DRIVER_ID
-                    manu_id = ""
+                    manu_id = "20312"
                 if orchestra_id in ["3", "Ansible Legacy Role"]:
                     driver_id = AnscConst.DF_LEGACY_ROLE_DRIVER_ID
                     manu_id = "20412"
-
+                if orchestra_id in ["4", "Terraform Cloud/EP"]:
+                    driver_id = TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP
+                    manu_id = "80114"
+                if orchestra_id in ["5", "Terraform CLI"]:
+                    driver_id = TFCommonConst.DRIVER_TERRAFORM_CLI
+                    manu_id = "90109"
                 result['id'].setdefault(
                     orchestra_id,
                     {
@@ -1571,18 +1581,18 @@ class ConductorExecuteLibs():
         try:
             result = {
                 "1": {
-                    'menu': 'check_operation_status_ansible',
+                    'menu': 'check_operation_status_ansible_legacy',
                     'path': 'ansible/legacy',
                     'execute': 'T_COMN_MOVEMENT',
                     'abort': '',
-                    'status': ''
+                    'status': 'T_ANSL_EXEC_STS_INST'
                 },
                 "2": {
                     'menu': 'check_operation_status_ansible_pioneer',
                     'path': 'ansible/pioneer',
                     'execute': 'T_COMN_MOVEMENT',
-                    'post_abort': '',
-                    'status': ''
+                    'abort': '',
+                    'status': 'T_ANSP_EXEC_STS_INST'
                 },
                 "3": {
                     'menu': 'check_operation_status_ansible_role',
@@ -1592,10 +1602,18 @@ class ConductorExecuteLibs():
                     'status': 'T_ANSR_EXEC_STS_INST'
                 },
                 "4": {
-                    'menu': '',
+                    'menu': 'check_operation_status_terraform_cloud_ep',
+                    'path': '',
                     'execute': 'T_COMN_MOVEMENT',
                     'abort': '',
-                    'status': ''
+                    'status': 'T_TERE_EXEC_STS_INST'
+                },
+                "5": {
+                    'menu': 'check_operation_status_terraform_cli',
+                    'path': '',
+                    'execute': 'T_COMN_MOVEMENT',
+                    'abort': '',
+                    'status': 'T_TERC_EXEC_STS_INST'
                 }
             }
 
@@ -3013,6 +3031,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             orchestra_info = self.get_orchestra_info()
             action_config = orchestra_info.get('name').get(orchestra_id).get(action_type)
             driver_id = orchestra_info.get('name').get(orchestra_id).get('driver_id')
+            tmp_orchestra_id = orchestra_info.get('name').get(orchestra_id).get('id')
             if action_type == 'execute':
                 operation_id = action_options.get('operation_id')
                 # operation_name = action_options.get('operation_name')
@@ -3040,17 +3059,27 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     operation_row = row
 
                 # 作業実行
-                tmp_execute = insert_execution_list(self.objdbca, 1, driver_id, operation_row, movement_row, None, conductor_id, conductor_name)  # noqa: F405 E501
+                if tmp_orchestra_id in ["1", "2", "3"]:
+                    tmp_execute = anscmn_insert_execution_list(self.objdbca, 1, driver_id, operation_row, movement_row, None, conductor_id, conductor_name)  # noqa: F405 E501
+                elif tmp_orchestra_id in ["4", "5"]:
+                    pass
+                    # tmp_execute = tfccmn_insert_execution_list(self.objdbca, 1, driver_id, operation_row, movement_row, None, conductor_id, conductor_name)  # noqa: F405 E501
                 tmp_result = tmp_execute.get('execution_no')
 
             elif action_type == 'abort':
                 execution_id = action_options.get('execution_id')
                 # 緊急停止
-                try:
-                    tmp_result = execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
-                except Exception:
-                    pass
-
+                if tmp_orchestra_id in ["1", "2", "3"]:
+                    try:
+                        tmp_result = anscmn_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
+                    except Exception:
+                        pass
+                elif tmp_orchestra_id in ["4", "5"]:
+                    try:
+                        pass
+                        # tmp_result = tfccmn_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
+                    except Exception:
+                        pass
             elif action_type == 'status':
                 # ステータス取得
                 execution_id = action_options.get('execution_id')

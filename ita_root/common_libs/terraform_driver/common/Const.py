@@ -44,7 +44,12 @@ class Const:
     DRIVER_TERRAFORM_CLOUD_EP = 'TERE'
     DRIVER_TERRAFORM_CLI = 'TERC'
 
+    # カラムタイプ
+    COL_TYPE_VAL = '1'    # Value型
+    COL_TYPE_KEY = '2'    # Key型
+
     # テーブル/ビュー名
     T_EXEC_STATUS = 'T_TERF_EXEC_STATUS'
     T_EXEC_MODE = 'T_TERF_EXEC_MODE'
     T_TYPE_MASTER = 'T_TERF_TYPE_MASTER'
+    V_COLUMN_LIST = 'V_TERF_COLUMN_LIST'

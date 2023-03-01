@@ -1004,6 +1004,10 @@ class ConductorCommonLibs():
                     data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [self.conductor_data['id']])  # noqa E501
                     self.conductor_data['conductor_name'] = data_list[0]['CONDUCTOR_NAME']
 
+            # notice_info
+            if self.conductor_data.get('notice_info') is None:
+                self.conductor_data['notice_info'] = {}
+
             for key, block_1 in self.node_datas.items():
                 node_type = block_1['type']
 

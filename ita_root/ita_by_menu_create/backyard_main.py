@@ -38,6 +38,25 @@ def backyard_main(organization_id, workspace_id):
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
+    # 「メニュー作成履歴」から「実行中(ID:2)」のレコードを取得
+    ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [2, 0])
+
+    # ステータス「実行中」の対象がある場合、なんらかの原因で「実行中」のまま止まってしまった対象であるため、「4:完了(異常)」に更新する。
+    for record in ret:
+        history_id = str(record.get('HISTORY_ID'))
+        menu_create_id = str(record.get('MENU_CREATE_ID'))
+        create_type = str(record.get('CREATE_TYPE'))
+
+        # 「メニュー作成履歴」ステータスを「4:完了(異常)」に更新
+        objdbca.db_transaction_start()
+        status_id = 4
+        result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
+        if not result:
+            # エラーログ出力
+            g.applogger.error(msg)
+            continue
+        objdbca.db_transaction_end(True)
+
     # 「メニュー作成履歴」から「未実行(ID:1)」のレコードを取得
     ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [1, 0])
 

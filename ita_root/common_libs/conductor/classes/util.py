@@ -804,7 +804,6 @@ class ConductorCommonLibs():
                     continue
 
         if len(err_msg_args) != 0:
-            print(err_msg_args)
             return False, ','.join(err_msg_args)
         else:
             return True,

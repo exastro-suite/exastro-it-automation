@@ -776,6 +776,7 @@ class ConductorCommonLibs():
                 is_conditon_invalid = True
                 for condition in terminalinfo['condition']:
                     if condition is None or len(condition) == 0 or len(condition) > 255:
+                        is_conditon_invalid = False
                         # err_msg_args.append('terminal.{}.condition'.format(terminalname))
                         tmp_msg = g.appmsg.get_api_message('MSG-40024', [condition])
                         err_msg_args.append(tmp_msg)

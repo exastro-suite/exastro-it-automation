@@ -28,55 +28,60 @@ def compare_validate(objdbca, objtable, option):
     msg = ""
 
     try:
-        entry_parameter = option.get("entry_parameter").get("parameter")
+        cmd_type = option.get('cmd_type')
+        if cmd_type != "Discard":
 
-        target_menus = {}
-        target_menus_data = {}
-        target_menus.setdefault("target_menu_1", entry_parameter.get("target_menu_1"))
-        target_menus.setdefault("target_menu_2", entry_parameter.get("target_menu_2"))
+            entry_parameter = option.get("entry_parameter").get("parameter")
+            if cmd_type == "Restore":
+                entry_parameter = option.get("current_parameter").get("parameter")
 
-        # get target menu + vertical
-        for target_key, target_menu in target_menus.items():
-            sql_str = textwrap.dedent("""
-                SELECT
-                    `TAB_A`.*,
-                    `TAB_B`.`VERTICAL`
-                FROM
-                    `T_COMN_MENU` `TAB_A`
-                LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TAB_B` ON ( `TAB_A`.`MENU_ID` = `TAB_B`.`MENU_ID` )
-                WHERE `TAB_A`.`MENU_ID` = %s
-                AND `TAB_A`.`DISUSE_FLAG` <> 1
-                AND `TAB_B`.`DISUSE_FLAG` <> 1
-            """).format().strip()
+            target_menus = {}
+            target_menus_data = {}
+            target_menus.setdefault("target_menu_1", entry_parameter.get("target_menu_1"))
+            target_menus.setdefault("target_menu_2", entry_parameter.get("target_menu_2"))
 
-            bind_list = [target_menu]
-            rows = objdbca.sql_execute(sql_str, bind_list)
-            tmp_row = {}
-            if len(rows) == 1:
-                tmp_row = rows[0]
-            target_menus_data.setdefault(target_key, tmp_row)
+            # get target menu + vertical
+            for target_key, target_menu in target_menus.items():
+                sql_str = textwrap.dedent("""
+                    SELECT
+                        `TAB_A`.*,
+                        `TAB_B`.`VERTICAL`
+                    FROM
+                        `T_COMN_MENU` `TAB_A`
+                    LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TAB_B` ON ( `TAB_A`.`MENU_ID` = `TAB_B`.`MENU_ID` )
+                    WHERE `TAB_A`.`MENU_ID` = %s
+                    AND `TAB_A`.`DISUSE_FLAG` <> 1
+                    AND `TAB_B`.`DISUSE_FLAG` <> 1
+                """).format().strip()
 
-        target_menu1_vertical = target_menus_data.get("target_menu_1").get("VERTICAL")
-        target_menu2_vertical = target_menus_data.get("target_menu_2").get("VERTICAL")
+                bind_list = [target_menu]
+                rows = objdbca.sql_execute(sql_str, bind_list)
+                tmp_row = {}
+                if len(rows) == 1:
+                    tmp_row = rows[0]
+                target_menus_data.setdefault(target_key, tmp_row)
 
-        # check target menu constraint: [OK:0-0,1-1 , NG:0-1,1-0]
-        if target_menu1_vertical == "1":
-            if target_menu2_vertical == "0":
-                retBool = False
-                # target menu constraint nomal * vertical
-                status_code = "MSG-60001"
-                msg_args = []
-                msg = g.appmsg.get_api_message(status_code, msg_args)
-        elif target_menu1_vertical == "0":
-            if target_menu2_vertical == "1":
-                retBool = False
-                # target menu constraint nomal * vertical
-                status_code = "MSG-60001"
-                msg_args = []
-                msg = g.appmsg.get_api_message(status_code, msg_args)
+            target_menu1_vertical = target_menus_data.get("target_menu_1").get("VERTICAL")
+            target_menu2_vertical = target_menus_data.get("target_menu_2").get("VERTICAL")
 
-        # set default value: detail_flg
-        option["entry_parameter"]["parameter"].setdefault("detail_flg", "0")
+            # check target menu constraint: [OK:0-0,1-1 , NG:0-1,1-0]
+            if target_menu1_vertical == "1":
+                if target_menu2_vertical == "0":
+                    retBool = False
+                    # target menu constraint nomal * vertical
+                    status_code = "MSG-60001"
+                    msg_args = []
+                    msg = g.appmsg.get_api_message(status_code, msg_args)
+            elif target_menu1_vertical == "0":
+                if target_menu2_vertical == "1":
+                    retBool = False
+                    # target menu constraint nomal * vertical
+                    status_code = "MSG-60001"
+                    msg_args = []
+                    msg = g.appmsg.get_api_message(status_code, msg_args)
+
+            # set default value: detail_flg
+            option["entry_parameter"]["parameter"].setdefault("detail_flg", "0")
 
     except Exception as e:
         retBool = False

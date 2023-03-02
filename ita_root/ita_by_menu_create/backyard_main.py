@@ -780,6 +780,18 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 else:
                     unique_constraint = '[["operation_name_select", "host_name"]]'
 
+        # シートタイプが「3: パラメータシート（オペレーションあり）」かつ縦メニュー利用がある場合は「オペレーション/代入順序」の一意制約(複数項目)を追加する。
+        if menu_group_col_name == "MENU_GROUP_ID_INPUT" and sheet_type == "3":
+            if unique_constraint:
+                tmp_unique_constraint = json.loads(unique_constraint)
+                if vertical_flag:
+                    add_unique_constraint = ["operation_name_select", "input_order"]
+                    tmp_unique_constraint.insert(0, add_unique_constraint)
+                    unique_constraint = json.dumps(tmp_unique_constraint)
+            else:
+                if vertical_flag:
+                    unique_constraint = '[["operation_name_select", "input_order"]]'
+
         # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」かつ「参照用」メニューグループの場合、シートタイプを「5: 参照用（ホスト/オペレーションあり）」とする。
         if sheet_type == "1" and menu_group_col_name == "MENU_GROUP_ID_REF":
             sheet_type = "5"
@@ -1089,6 +1101,12 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             if not res_valid:
                 raise Exception(msg)
 
+            # シートタイプが「3: パラメータシート（オペレーションあり）」かつ縦メニュー利用ではない場合のみ、一意制約をTrueにする。
+            if sheet_type == "3" and not vertical_flag:
+                unique_item = 1
+            else:
+                unique_item = 0
+
             data_list = {
                 "MENU_ID": menu_uuid,
                 "COLUMN_NAME_JA": "オペレーション名",
@@ -1111,7 +1129,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 "AUTO_INPUT": 0,  # False
                 "INPUT_ITEM": 1,  # True
                 "VIEW_ITEM": 0,  # False
-                "UNIQUE_ITEM": 0,  # False
+                "UNIQUE_ITEM": unique_item,
                 "REQUIRED_ITEM": 1,  # True
                 "AUTOREG_HIDE_ITEM": 1,  # True
                 "AUTOREG_ONLY_ITEM": 0,  # False

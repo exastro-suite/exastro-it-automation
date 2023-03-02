@@ -690,16 +690,25 @@ class Column():
                         return retBool, msg
 
             else:
-                # 通常のカラムの場合
-                where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
-                bind_value_list = [val]
+                if self.class_name == "IDColumn":
+                    # IDColumnの場合はID変換後の値と比較
+                    convert_val = val
+                    tmp_result = self.convert_value_input(val)
+                    if tmp_result[0] is True:
+                        convert_val = tmp_result[2]
+                    where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
+                    bind_value_list = [convert_val]
+                else:
+                    # 通常のカラムの場合
+                    where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
+                    bind_value_list = [val]
 
                 if 'uuid' in option:
                     if option.get('uuid') is not None:
                         where_str = where_str + " and `{}` <> %s ".format(primary_key_list[0])
                         bind_value_list.append(option.get('uuid'))
-
                 result = self.objdbca.table_select(self.table_name, where_str, bind_value_list)
+
                 tmp_uuids = []
                 if len(result) != 0:
                     for tmp_rows in result:

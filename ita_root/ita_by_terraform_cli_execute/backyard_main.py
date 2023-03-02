@@ -79,7 +79,6 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
     Returns:
         bool
     """
-    global const
     # psコマンドでbackyard_child_init.pyの起動プロセスリストを作成
     # psコマンドがマレに起動プロセスリストを取りこぼすことがあるので3回分を作成
     # command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, execution_no]
@@ -199,8 +198,6 @@ def get_running_process(wsDb):
     Returns:
         records
     """
-    global const
-
     status_id_list = [const.STATUS_PREPARE, const.STATUS_PROCESSING, const.STATUS_PROCESS_DELAYED]
     prepared_list = list(map(lambda a: "%s", status_id_list))
 
@@ -226,8 +223,6 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
         bool
         err_msg
     """
-    global const
-
     condition = """WHERE `DISUSE_FLAG`=0 AND (
         ( `TIME_BOOK` IS NULL AND `STATUS_ID` = %s ) OR
         ( `TIME_BOOK` <= %s AND `STATUS_ID` = %s )
@@ -280,8 +275,8 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
 
         # ワークスペースを配列にキャッシュ
         executed_worksapce_id_list.append(tf_workspace_id)
-        # データを取り直して、作業実行
 
+        # データを取り直して、作業実行
         result = run_child_process(wsDb, execute_data, organization_id, workspace_id)
         if result[0] is False:
             # 準備中にエラーが発生
@@ -314,8 +309,6 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
         bool
         err_msg
     """
-    global const
-
     execution_no = execute_data['EXECUTION_NO']
     tf_workspace_id = execute_data['I_WORKSPACE_ID']
     # tf_workspace_name = execute_data['I_WORKSPACE_NAME']
@@ -337,13 +330,12 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     data = {
         "EXECUTION_NO": execution_no,
         "STATUS_ID": const.STATUS_PREPARE,
+        "TIME_END": get_timestamp()
     }
-
     result = cm.update_execution_record(wsDb, const, data)
     if result[0] is True:
         wsDb.db_commit()
-    else:
-        return False, g.appmsg.get_log_message("BKY-10002", [execution_no])
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10745", [execution_no, tf_workspace_id]))
 
     # ワークスペース毎のディレクトリを準備
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
@@ -363,8 +355,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     g.applogger.debug(g.appmsg.get_log_message("MSG-10745", [execution_no, tf_workspace_id]))
 
     command = ["python3", "backyard/backyard_child_init.py", organization_id, workspace_id, tf_workspace_id, execution_no]
-    # cp = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print(" ".join(command))
-    # cp = subprocess.Popen(command)  # noqa: F841
+    # print(" ".join(command))
+    cp = subprocess.Popen(command)  # noqa: F841
 
     return True,

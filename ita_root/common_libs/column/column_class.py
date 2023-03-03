@@ -526,7 +526,7 @@ class Column():
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu())
-            importlib.import_module(external_validate_path)
+            exec_func = importlib.import_module(external_validate_path)
             eval_str = 'exec_func.{}(self.objdbca, self.objtable, option)'.format(exec_config)
             tmp_exec = eval(eval_str)
             if tmp_exec[0] is not True:

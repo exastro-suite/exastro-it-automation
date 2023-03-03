@@ -855,10 +855,6 @@ changeExcelImportList( importList, unImportList ) {
         if ( importKeys.indexOf( key ) === -1 ) unImporOnlyKeys.push( key );
     }
     
-    for ( const key of unImporOnlyKeys ) {
-        importList[ key ] = unImportList[ key ];
-    }    
-    
     for ( const key in importList ) {
         if ( unImportList[ key ] ) {
             for ( const num in unImportList[ key ].menu ) {
@@ -867,6 +863,10 @@ changeExcelImportList( importList, unImportList ) {
             }
         }
     }
+    
+    for ( const key of unImporOnlyKeys ) {
+        importList[ key ] = unImportList[ key ];
+    }    
 
     for ( const key in importList ) {
         const menus = [];

@@ -516,7 +516,7 @@ class CheckAnsibleRoleFiles():
                 errmsg = '%s(%s)' % (errmsg, f_line)
                 self.SetLastError(os.path.basename(inspect.currentframe().f_code.co_filename), inspect.currentframe().f_lineno, errmsg)
                 return False, ina_def_vars_list, ina_def_varsval_list, ina_def_array_vars_list, ina_copyvars_list, ina_tpfvars_list, ina_ITA2User_var_list, ina_User2ITA_var_list
-            
+
             # ita readmeに定義されている変数(親)を取り出す
             for parent_var_name, parent_var_info in parent_vars_list.items():
                 all_parent_vars_list[parent_var_name] = 0
@@ -1175,6 +1175,7 @@ class CheckAnsibleRoleFiles():
         strErrMsg = ""
 
         # エラーメッセージのファイル名を生成
+        # Filename: /storage/org1/workspace-1/tmp/driver/ansible/LegacyRoleZipFileUpload_49189/roles/role_name1/defaults/main.yml
         ary = Filename.split('/roles/')
         if len(ary) <= 1:
             # ITAreadmeや読替表の場合
@@ -1182,23 +1183,24 @@ class CheckAnsibleRoleFiles():
 
         else:
             # role内のファイルの場合
-            del ary[0:2]
-            dispFilename = '/roles/'.join(ary)
+            # dispFilename: /roles/role_name1/defaults/main.yml
+            del ary[0]
+            dispFilename = "/roles/" + "/roles/".join(ary)
 
         boolRet = True
         yaml = pathlib.Path(Filename).read_bytes()
         # 変数定義ファイルが空の場合
         if len(yaml) == 0:
             return boolRet, strErrMsg
-            
+
         encode = detect(yaml)
         encode = encode['encoding'].upper()
-        if encode in ["ASCII", "UTF-8"]:
-            if yaml[0:3] == b'\xef\xbb\xbf':
-                strErrMsg = g.appmsg.get_api_message('MSG-10642', [dispFilename])
-                boolRet = False
+        # BOM有をチェック
+        if encode in ["UTF-8-SIG"]:
+            strErrMsg = g.appmsg.get_api_message('MSG-10642', [dispFilename])
+            boolRet = False
 
-        else:
+        elif encode not in ["ASCII", "UTF-8"]:
             strErrMsg = g.appmsg.get_api_message('MSG-10641', [dispFilename])
             boolRet = False
 
@@ -1650,7 +1652,7 @@ class DefaultVarsFileAnalysis():
                             and var_name in ina_vars_list[chk_pkg_name][chk_role_name] \
                             and ina_vars_list[chk_pkg_name][chk_role_name][var_name] is not None \
                             and (
-                                type(ina_vars_list[chk_pkg_name][chk_role_name][var_name]) not in (list, dict) 
+                                type(ina_vars_list[chk_pkg_name][chk_role_name][var_name]) not in (list, dict)
                                 or len(ina_vars_list[chk_pkg_name][chk_role_name][var_name]) > 0
                             ):
                                 # エラーになった変数とロールを退避
@@ -1690,7 +1692,7 @@ class DefaultVarsFileAnalysis():
                             and var_name in ina_def_array_vars_list[chk_pkg_name][chk_role_name] \
                             and ina_def_array_vars_list[chk_pkg_name][chk_role_name][var_name] is not None \
                             and (
-                                type(ina_def_array_vars_list[chk_pkg_name][chk_role_name][var_name]) not in (list, dict) 
+                                type(ina_def_array_vars_list[chk_pkg_name][chk_role_name][var_name]) not in (list, dict)
                                 or len(ina_def_array_vars_list[chk_pkg_name][chk_role_name][var_name]) > 0
                             ):
                                 # 多次元構造を比較する
@@ -1860,14 +1862,14 @@ class DefaultVarsFileAnalysis():
         処理内容
           ロールパッケージ内のPlaybookで定義されている変数がデェフォルト変数定義
           ファイルで定義されているか判定
-       
+
         パラメータ
           ina_play_vars_list:     ロールパッケージ内のPlaybookで定義している変数リスト
                                      [role名][変数名]=0
           ina_def_vars_list:      defalte変数ファイルの変数リスト
                                      非配列変数  ina_vars_list[ロール名][変数名] = 0;
                                      配列変数    ina_vars_list[ロール名][変数名] = array(配列変数名, ....)
-       
+
         戻り値
           true:   正常
           false:  異常
@@ -2197,7 +2199,7 @@ class DefaultVarsFileAnalysis():
           in_errmsg:                  エラー時のエラーメッセージ
           in_f_name:                  エラー時のファイル名
           in_f_line:                  エラー時の行番号
-          
+
         戻り値
           true: 正常  false:異常
         """
@@ -2361,7 +2363,7 @@ class DefaultVarsFileAnalysis():
             in_error_code = "MSG-10301"
             in_line = inspect.currentframe().f_lineno
             return False, ina_vars_list, ina_varval_list, ina_array_col_count_list, in_error_code, in_line, in_col_count, in_assign_count
-        
+
         for var, val in self.php_array(ina_parent_var_array):
             # 多次元複数具体値の判定
             # VAR_list:
@@ -2789,7 +2791,7 @@ class DefaultVarsFileAnalysis():
             if self.is_num(var):
                 if var == 0:
                     break
-            
+
         return True, ina_vars_chain_list, in_error_code, in_line, in_col_count, in_assign_count, in_chl_var_key
 
     def MakeMultiArrayToLastVarChainArray(
@@ -2861,7 +2863,7 @@ class DefaultVarsFileAnalysis():
                     info_array['MAX_COL_SEQ'] = "0"
 
                 ina_vars_chain_list.append(info_array)
-        
+
         # 代入値管理系で表示する変数をマークする。列順序が必要な変数をマークする
         row_count = len(ina_vars_chain_list)
         var_key_list = []
@@ -2989,7 +2991,7 @@ class DefaultVarsFileAnalysis():
                 in_errmsg = '%s\n%s' % (in_errmsg, g.appmsg.get_api_message("MSG-10516", [os.path.basename(in_filepath), line]))
                 ret_code = False
                 continue
-            
+
             # 任意変数が重複登録の二重登録判定
             if  user_var_name in ina_User2ITA_var_list \
             and ina_User2ITA_var_list[user_var_name] is not None \
@@ -3293,7 +3295,7 @@ class DefaultVarsFileAnalysis():
         処理内容
           VarPosAnalysisで変数定義を解析する元データの種別を設定する
           (テンプレート変数の変数定義、default変数定義,ITA-radme)
-       
+
         パラメータ
           種別
           DF_DEF_VARS:    default変数定義

@@ -1893,6 +1893,10 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         if sheet_id == "2" and not column_data_list:
             raise Exception("499-00711", [])  # シートタイプが「データシート」の場合、項目数が0件のメニューを作成できません。
 
+        # シートタイプが「3: パラメータシート（オペレーションあり）」かつ、登録する項目が無い場合エラー判定
+        if sheet_id == "3" and not column_data_list:
+            raise Exception("499-00714", [])  # シートタイプが「パラメータシート（オペレーションあり）」の場合、項目数が0件のメニューを作成できません。
+
         # 「縦メニュー利用」かつ、登録する項目が無い場合エラー判定
         if vertical == "True" and not column_data_list:
             raise Exception("499-00712", [])  # 「縦メニュー利用」の場合、項目数が0件のメニューを作成できません。

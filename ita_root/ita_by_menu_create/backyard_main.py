@@ -38,6 +38,25 @@ def backyard_main(organization_id, workspace_id):
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
+    # 「メニュー作成履歴」から「実行中(ID:2)」のレコードを取得
+    ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [2, 0])
+
+    # ステータス「実行中」の対象がある場合、なんらかの原因で「実行中」のまま止まってしまった対象であるため、「4:完了(異常)」に更新する。
+    for record in ret:
+        history_id = str(record.get('HISTORY_ID'))
+        menu_create_id = str(record.get('MENU_CREATE_ID'))
+        create_type = str(record.get('CREATE_TYPE'))
+
+        # 「メニュー作成履歴」ステータスを「4:完了(異常)」に更新
+        objdbca.db_transaction_start()
+        status_id = 4
+        result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
+        if not result:
+            # エラーログ出力
+            g.applogger.error(msg)
+            continue
+        objdbca.db_transaction_end(True)
+
     # 「メニュー作成履歴」から「未実行(ID:1)」のレコードを取得
     ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [1, 0])
 
@@ -244,6 +263,11 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             target_menu_group_list = ['MENU_GROUP_ID_INPUT']
 
         elif sheet_type == "3":  # パラメータシート（オペレーションあり）
+            # パラメータシート（オペレーションあり）かつ「項目が0件」の場合はエラー判定
+            if not record_t_menu_column:
+                msg = g.appmsg.get_log_message("BKY-20215", [])
+                raise Exception(msg)
+
             # テーブル名/ビュー名を生成
             create_table_name = 'T_CMDB_' + str(menu_create_id)
             create_table_name_jnl = 'T_CMDB_' + str(menu_create_id) + '_JNL'
@@ -253,11 +277,6 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             if vertical_flag:
                 # パラメータシート(縦メニュー利用あり)用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb_vertical.sql"
-
-                # 「縦メニュー利用あり」かつ「項目が0件」の場合はエラー判定
-                if not record_t_menu_column:
-                    msg = g.appmsg.get_log_message("BKY-20214", [])
-                    raise Exception(msg)
             else:
                 # パラメータシート用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb.sql"
@@ -761,6 +780,18 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 else:
                     unique_constraint = '[["operation_name_select", "host_name"]]'
 
+        # シートタイプが「3: パラメータシート（オペレーションあり）」かつ縦メニュー利用がある場合は「オペレーション/代入順序」の一意制約(複数項目)を追加する。
+        if menu_group_col_name == "MENU_GROUP_ID_INPUT" and sheet_type == "3":
+            if unique_constraint:
+                tmp_unique_constraint = json.loads(unique_constraint)
+                if vertical_flag:
+                    add_unique_constraint = ["operation_name_select", "input_order"]
+                    tmp_unique_constraint.insert(0, add_unique_constraint)
+                    unique_constraint = json.dumps(tmp_unique_constraint)
+            else:
+                if vertical_flag:
+                    unique_constraint = '[["operation_name_select", "input_order"]]'
+
         # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」かつ「参照用」メニューグループの場合、シートタイプを「5: 参照用（ホスト/オペレーションあり）」とする。
         if sheet_type == "1" and menu_group_col_name == "MENU_GROUP_ID_REF":
             sheet_type = "5"
@@ -1070,6 +1101,12 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             if not res_valid:
                 raise Exception(msg)
 
+            # シートタイプが「3: パラメータシート（オペレーションあり）」かつ縦メニュー利用ではない場合のみ、一意制約をTrueにする。
+            if sheet_type == "3" and not vertical_flag:
+                unique_item = 1
+            else:
+                unique_item = 0
+
             data_list = {
                 "MENU_ID": menu_uuid,
                 "COLUMN_NAME_JA": "オペレーション名",
@@ -1092,7 +1129,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 "AUTO_INPUT": 0,  # False
                 "INPUT_ITEM": 1,  # True
                 "VIEW_ITEM": 0,  # False
-                "UNIQUE_ITEM": 0,  # False
+                "UNIQUE_ITEM": unique_item,
                 "REQUIRED_ITEM": 1,  # True
                 "AUTOREG_HIDE_ITEM": 1,  # True
                 "AUTOREG_ONLY_ITEM": 0,  # False
@@ -2572,7 +2609,7 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
                         'DISUSE_FLAG': '0',
                         'LAST_UPDATE_USER': g.get('USER_ID')
                     }
-                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name)
+                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
             else:
                 # 「分割対象メニュー」*「登録対象メニュー」で DIVIDED_FLG を '0' で登録
                 data_list = {
@@ -2582,7 +2619,7 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
                     'DISUSE_FLAG': '0',
                     'LAST_UPDATE_USER': g.get('USER_ID')
                 }
-                objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name)
+                objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name, False)
 
     except Exception as msg:
         return False, msg

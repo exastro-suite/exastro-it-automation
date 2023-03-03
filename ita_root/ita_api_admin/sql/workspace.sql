@@ -640,10 +640,81 @@ CREATE TABLE T_COMN_WEB_TABLE_SETTINGS
     ROW_ID                          VARCHAR(40),                                -- UUID
     USER_ID                         VARCHAR(64),                                -- ユーザID
     WEB_TABLE_SETTINGS              LONGTEXT,                                   -- テーブル設定
+    WIDGET_SETTINGS                 LONGTEXT,                                   -- ウィジェット設定
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
+
+
+
+-- オペレーション削除管理
+CREATE TABLE T_COMN_DEL_OPERATION_LIST
+(
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    LG_DAYS                         INT,                                        -- 論理削除日数
+    PH_DAYS                         INT,                                        -- 物理削除日数
+    MENU_NAME                       VARCHAR(40),                                -- メニューグループ：メニュー名
+    OPE_ID_COL_NAME                 VARCHAR(255),                               -- オペレーションIDカラム名
+    DATA_STORAGE_PATH               VARCHAR(1024),                              -- データストレージパス
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_COMN_DEL_OPERATION_LIST_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    LG_DAYS                         INT,                                        -- 論理削除日数
+    PH_DAYS                         INT,                                        -- 物理削除日数
+    MENU_NAME                       VARCHAR(40),                                -- メニューグループ：メニュー名
+    OPE_ID_COL_NAME                 VARCHAR(255),                               -- オペレーションIDカラム名
+    DATA_STORAGE_PATH               VARCHAR(1024),                              -- データストレージパス
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- ファイル削除管理
+CREATE TABLE T_COMN_DEL_FILE_LIST
+(
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    DEL_DAYS                        INT,                                        -- 削除日数
+    TARGET_DIR                      VARCHAR(1024),                              -- 削除対象ディレクトリ
+    TARGET_FILE                     VARCHAR(1024),                              -- 削除対象ファイル
+    DEL_SUB_DIR_FLG                 VARCHAR(40),                                -- サブディレクトリ削除有無
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_COMN_DEL_FILE_LIST_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    DEL_DAYS                        INT,                                        -- 削除日数
+    TARGET_DIR                      VARCHAR(1024),                              -- 削除対象ディレクトリ
+    TARGET_FILE                     VARCHAR(1024),                              -- 削除対象ファイル
+    DEL_SUB_DIR_FLG                 VARCHAR(40),                                -- サブディレクトリ削除有無
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 

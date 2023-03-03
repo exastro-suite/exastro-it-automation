@@ -775,7 +775,7 @@ class ConductorCommonLibs():
 
                 is_conditon_invalid = True
                 for condition in terminalinfo['condition']:
-                    if condition not in self._node_status_list:
+                    if condition is None or len(condition) == 0 or len(condition) > 255:
                         is_conditon_invalid = False
                         # err_msg_args.append('terminal.{}.condition'.format(terminalname))
                         tmp_msg = g.appmsg.get_api_message('MSG-40024', [condition])
@@ -1003,6 +1003,10 @@ class ConductorCommonLibs():
                 if self.cmd_type != 'Register':
                     data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [self.conductor_data['id']])  # noqa E501
                     self.conductor_data['conductor_name'] = data_list[0]['CONDUCTOR_NAME']
+
+            # notice_info
+            if self.conductor_data.get('notice_info') is None:
+                self.conductor_data['notice_info'] = {}
 
             for key, block_1 in self.node_datas.items():
                 node_type = block_1['type']

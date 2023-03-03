@@ -54,7 +54,8 @@ def external_valid_menu_after(objDBCA, objtable, option):
     # 登録/更新時の場合、dialogの正常性チェック
     elif cmd_type in ["Register", "Update"]:
         dialog_data_binary = base64.b64decode(dialog_data)
-        dialog_data_decoded = dialog_data_binary.decode('utf-8')
+        # 文字コードがUTF-8以外もありうるので'ignore'を付ける
+        dialog_data_decoded = dialog_data_binary.decode('utf-8', 'ignore')
         filepath_tmp = "%s/20304_dialog_file_%s.yml" % (get_AnsibleDriverTmpPath(), os.getpid())
         with open(filepath_tmp, "w") as fd:
             fd.write(dialog_data_decoded)
@@ -72,15 +73,15 @@ def external_valid_menu_after(objDBCA, objtable, option):
         # 文字コードをチェック
         encode = detect(dialog_data_binary)
         encode = encode['encoding'].upper()
-        if encode not in ["ASCII", "UTF-8"]:
-            retBool = False
-            msg_tmp = g.appmsg.get_api_message("MSG-10638")
-            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
-
-        # BOM有無をチェック
-        elif dialog_data_binary[0:3] == b'\xef\xbb\xbf':
+        # BOM有をチェック
+        if encode in ["UTF-8-SIG"]:
             retBool = False
             msg_tmp = g.appmsg.get_api_message("MSG-10640")
+            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+
+        elif encode not in ["ASCII", "UTF-8"]:
+            retBool = False
+            msg_tmp = g.appmsg.get_api_message("MSG-10638")
             msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
         # 変数抜出

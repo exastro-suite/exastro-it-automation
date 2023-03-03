@@ -22,6 +22,7 @@ import subprocess
 import json
 import re
 import base64
+import shutil
 
 from flask import g
 
@@ -84,9 +85,12 @@ class CICDMakeParamBase():
 
         return {}
 
-    def make_rest_param(self, *args, **kwargs):
+    def make_rest_param(self, data, *args, **kwargs):
 
-        return {}
+        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        data['discard'] = '0'
+        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+        data['last_updated_user'] = g.USER_ID
 
     def diff_file(self, filedata, cur_filedata, *args, **kwargs):
 
@@ -106,11 +110,18 @@ class CICDMakeParamBase():
             if os.path.exists(filepath) is False:
                 return True
 
+            o_mode = "r"
+            if 'o_mode' in kwargs:
+                o_mode = kwargs['o_mode']
+
             cur_filedata = ""
-            with open(filepath) as fp:
+            with open(filepath, o_mode) as fp:
                 cur_filedata = fp.read()
 
-            cur_filedata = base64.b64encode(cur_filedata.encode()).decode()
+            if isinstance(cur_filedata, str) is True:
+                cur_filedata = cur_filedata.encode()
+
+            cur_filedata = base64.b64encode(cur_filedata).decode()
 
         if filedata == cur_filedata:
             return False
@@ -164,10 +175,9 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
         data['item_no'] = kwargs['PLAYBOOK_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
         data['playbook_name'] = linkname
         data['playbook_file'] = filename
-        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        data['discard'] = '0'
-        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
-        data['last_updated_user'] = g.USER_ID
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamLegacy, self).make_rest_param(data, note=note)
 
         param = {}
         param['type'] = editType
@@ -179,20 +189,6 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
 
     def diff_file(self, mid, name, filedata):
 
-        """
-        filepath = '%s/%s/%s' % (getLegacyPlaybookUploadDirPath(), mid, name)
-        if os.path.exists(filepath) is False:
-            return True
-
-        cur_filedata = ""
-        with open(filepath) as fp:
-            cur_filedata = fp.read()
-
-        cur_filedata = base64.b64encode(cur_filedata.encode()).decode()
-
-        if filedata == cur_filedata:
-            return False
-        """
         ret = super(CICDMakeParamLegacy, self).diff_file(
             filedata,
             None,
@@ -210,8 +206,41 @@ class CICDMakeParamPioneer(CICDMakeParamBase):
     def make_param(self, row, tgtFileName):
 
         param = {}
+        param['DIALOG_TYPE_ID'] = row['M_DIALOG_TYPE_ID']
+        param['OS_TYPE_ID'] = row['M_OS_TYPE_ID']
+        param['DIALOG_MATTER_FILE'] = tgtFileName
 
         return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['item_no'] = kwargs['DIALOG_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['dialog_type'] = linkname['DIALOG_TYPE_ID']
+        data['os_type'] = linkname['OS_TYPE_ID']
+        data['dialog_file'] = filename
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamPioneer, self).make_rest_param(data, note=note)
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['dialog_file'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        ret = super(CICDMakeParamPioneer, self).diff_file(
+            filedata,
+            None,
+            func=getPioneerDialogUploadDirPath, path=("/%s/%s" % (mid, name))
+        )
+
+        return ret
+
 
 class CICDMakeParamRole(CICDMakeParamBase):
 
@@ -222,8 +251,40 @@ class CICDMakeParamRole(CICDMakeParamBase):
     def make_param(self, row, tgtFileName):
 
         param = {}
+        param['ROLE_PACKAGE_NAME'] = row['MATL_LINK_NAME']
+        param['ROLE_PACKAGE_FILE'] = tgtFileName
 
         return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['item_no'] = kwargs['ROLE_PACKAGE_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['role_package_name'] = linkname
+        data['zip_format_role_package_file'] = filename
+        data['variable_definition_analysis_result'] = ''
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamRole, self).make_rest_param(data, note=note)
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['zip_format_role_package_file'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        ret = super(CICDMakeParamRole, self).diff_file(
+            filedata,
+            None,
+            func=getRolePackageContentUploadDirPath, path=("/%s/%s" % (mid, name)), o_mode="rb"
+        )
+
+        return ret
+
 
 class CICDMakeParamContent(CICDMakeParamBase):
 
@@ -234,8 +295,39 @@ class CICDMakeParamContent(CICDMakeParamBase):
     def make_param(self, row, tgtFileName):
 
         param = {}
+        param['CONTENTS_FILE_VARS_NAME'] = row['MATL_LINK_NAME']
+        param['CONTENTS_FILE'] = tgtFileName
 
         return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['file_id'] = kwargs['CONTENTS_FILE_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['file_embedded_variable_name'] = linkname
+        data['files'] = filename
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamContent, self).make_rest_param(data, note=note)
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['files'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        ret = super(CICDMakeParamContent, self).diff_file(
+            filedata,
+            None,
+            func=getFileContentUploadDirPath, path=("/%s/%s" % (mid, name))
+        )
+
+        return ret
+
 
 class CICDMakeParamTemplate(CICDMakeParamBase):
 
@@ -246,8 +338,39 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
     def make_param(self, row, tgtFileName):
 
         param = {}
+        param['ANS_TEMPLATE_VARS_NAME'] = row['MATL_LINK_NAME']
+        param['ANS_TEMPLATE_FILE'] = tgtFileName
 
         return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['template_id'] = kwargs['ANS_TEMPLATE_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['template_embedded_variable_name'] = linkname
+        data['template_files'] = filename
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamTemplate, self).make_rest_param(data, note=note)
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['template_files'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        ret = super(CICDMakeParamTemplate, self).diff_file(
+            filedata,
+            None,
+            func=getTemplateContentUploadDirPath, path=("/%s/%s" % (mid, name))
+        )
+
+        return ret
+
 
 class CICDMakeParamModule(CICDMakeParamBase):
 
@@ -269,10 +392,9 @@ class CICDMakeParamModule(CICDMakeParamBase):
         data['item_no'] = kwargs['MODULE_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
         data['module_file_name'] = linkname
         data['module_file'] = filename
-        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        data['discard'] = '0'
-        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
-        data['last_updated_user'] = g.USER_ID
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamModule, self).make_rest_param(data, note=note)
 
         param = {}
         param['type'] = editType
@@ -284,8 +406,8 @@ class CICDMakeParamModule(CICDMakeParamBase):
 
     def diff_file(self, mid, name, filedata):
 
-        filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCLIConst.DIR_MODULE, mid, name)
-        ret = super(CICDMakeParamLegacy, self).diff_file(filedata, None, path=filepath)
+        filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCloudEPConst.DIR_MODULE, mid, name)
+        ret = super(CICDMakeParamModule, self).diff_file(filedata, None, path=filepath)
         return ret
 
 class CICDMakeParamPolicy(CICDMakeParamBase):
@@ -297,8 +419,34 @@ class CICDMakeParamPolicy(CICDMakeParamBase):
     def make_param(self, row, tgtFileName):
 
         param = {}
+        param['POLICY_NAME'] = row['MATL_LINK_NAME']
+        param['POLICY_MATTER_FILE'] = tgtFileName
 
         return param
+
+    def make_rest_param(self, editType, linkname, filename, filedata, **kwargs):
+
+        data = {}
+        data['item_no'] = kwargs['POLICY_ID'] if editType != load_table.CMD_REGISTER else ''
+        data['policy_name'] = linkname
+        data['policy_file'] = filename
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamPolicy, self).make_rest_param(data, note=note)
+
+        param = {}
+        param['type'] = editType
+        param['file'] = {}
+        param['file']['policy_file'] = filedata
+        param['parameter'] = data
+
+        return param
+
+    def diff_file(self, mid, name, filedata):
+
+        filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCloudEPConst.DIR_POLICY, mid, name)
+        ret = super(CICDMakeParamPolicy, self).diff_file(filedata, None, path=filepath)
+        return ret
 
 class CICDMakeParamModuleCLI(CICDMakeParamBase):
 
@@ -320,10 +468,9 @@ class CICDMakeParamModuleCLI(CICDMakeParamBase):
         data['item_no'] = kwargs['MODULE_MATTER_ID'] if editType != load_table.CMD_REGISTER else ''
         data['module_file_name'] = linkname
         data['module_file'] = filename
-        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        data['discard'] = '0'
-        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
-        data['last_updated_user'] = g.USER_ID
+
+        note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        super(CICDMakeParamModuleCLI, self).make_rest_param(data, note=note)
 
         param = {}
         param['type'] = editType
@@ -335,8 +482,8 @@ class CICDMakeParamModuleCLI(CICDMakeParamBase):
 
     def diff_file(self, mid, name, filedata):
 
-        filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCloudEPConst.DIR_MODULE, mid, name)
-        ret = super(CICDMakeParamLegacy, self).diff_file(filedata, None, path=filepath)
+        filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCLIConst.DIR_MODULE, mid, name)
+        ret = super(CICDMakeParamModuleCLI, self).diff_file(filedata, None, path=filepath)
         return ret
 
 
@@ -465,7 +612,8 @@ class ControlGit():
                 break
 
             logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
-            g.applogger.debug(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+            FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+            g.applogger.debug(FREE_LOG)
 
             if self.retryCount - 1 > idx:
                 time.sleep(self.retryWaitTime)
@@ -667,7 +815,8 @@ class ControlGit():
                 output = return_var.stdout
                 return_code = return_var.returncode
                 logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (output, return_code)
-                g.applogger.debug(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+                g.applogger.debug(FREE_LOG)
 
                 # リトライ中のログは表示しない
                 if self.retryCount - 1 > idx:
@@ -710,6 +859,7 @@ class ControlGit():
         ret_val = []
 
         # Git コマンドが失敗した場合、指定時間Waitし指定回数リトライする
+        os.chdir(self.cloneRepoDir)
         cmd = ["git", "ls-files"]
         for idx in range(self.retryCount):
             return_var = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -882,7 +1032,16 @@ class CICD_GrandChildWorkflow():
         subprocess.run(["/bin/mkdir", "-p", outRolesDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         inRolesDir = re.sub(r'/roles$', '', inRolesDir)
-        zipFileName = "%s.zip" % (os.path.basename(inRolesDir))
+        zipFileNameBase = os.path.basename(inRolesDir)
+        zipFileName = "%s.zip" % (zipFileNameBase)
+
+        """
+        try:
+            shutil.make_archive("%s/%s" % (outRolesDir, zipFileNameBase), 'zip', inRolesDir)
+
+        except Exception as e:
+            return str(e), outRolesDir, zipFileName
+        """
 
         cmd = "cd %s;zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
         ret = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -996,6 +1155,7 @@ class CICD_GrandChildWorkflow():
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_PIONEER:
             filter_dict = {'DIALOG_TYPE_ID': row['M_DIALOG_TYPE_ID'], 'OS_TYPE_ID': row['M_OS_TYPE_ID']}
+            linkname = {'DIALOG_TYPE_ID': row['M_DIALOG_TYPE_NAME'], 'OS_TYPE_ID': row['M_OS_TYPE_NAME']}
             obj_make_param = CICDMakeParamPioneer('T_ANSP_MATL_COLL', 'DIALOG_MATTER_ID', 'DIALOG_MATTER_FILE', 'dialog_files')
 
         elif materialType == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE:
@@ -1023,7 +1183,7 @@ class CICD_GrandChildWorkflow():
             obj_make_param = CICDMakeParamModuleCLI('T_TERC_MODULE', 'MODULE_MATTER_ID', 'MODULE_MATTER_FILE', 'module_files_terraform_cli')
 
         if obj_make_param is None:
-            return True
+            return True, True
 
         editType_list = []
 
@@ -1256,6 +1416,7 @@ class CICD_GrandChildWorkflow():
             self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
             return FREE_LOG
 
+        o_mode = "r"
         outRolesDir = ""
         zipFileName = ""
 
@@ -1280,13 +1441,17 @@ class CICD_GrandChildWorkflow():
                 self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)
                 return FREE_LOG
 
+            o_mode = "rb"
             tgtFileName = "%s/%s" % (outRolesDir, zipFileName)
 
         tgtFileData = ""
-        with open(tgtFileName) as fp:
+        with open(tgtFileName, o_mode) as fp:
             tgtFileData = fp.read()
 
-        tgtFileBase64enc = base64.b64encode(tgtFileData.encode()).decode()
+        if isinstance(tgtFileData, str) is True:
+            tgtFileData = tgtFileData.encode()
+
+        tgtFileBase64enc = base64.b64encode(tgtFileData).decode()
 
         if outRolesDir:
             subprocess.run(["/bin/rm", "-rf", outRolesDir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -1432,9 +1597,6 @@ class CICD_GrandChildWorkflow():
             self.MatlLinkUpdate_Flg = True
 
         except Exception as e:
-            import traceback
-            print(traceback.format_exc())
-
             FREE_LOG = str(e)
             g.applogger.error(FREE_LOG)
             self.DBobj.db_transaction_end(False)
@@ -1791,7 +1953,13 @@ class CICD_ChildWorkflow():
                 row['RECODE_ACCTION'] = 'disuse'
 
             # 資材一覧更新状態
-            MatlListRecodes[row['MATL_FILE_TYPE_ROW_ID']][row['MATL_FILE_PATH']]
+            if row['MATL_FILE_TYPE_ROW_ID'] not in MatlListRecodes:
+                MatlListRecodes[row['MATL_FILE_TYPE_ROW_ID']] = {}
+
+            if row['MATL_FILE_PATH'] not in MatlListRecodes[row['MATL_FILE_TYPE_ROW_ID']]:
+                MatlListRecodes[row['MATL_FILE_TYPE_ROW_ID']][row['MATL_FILE_PATH']] = None
+
+            MatlListRecodes[row['MATL_FILE_TYPE_ROW_ID']][row['MATL_FILE_PATH']] = row
 
         return True, MatlListRecodes
 
@@ -1876,6 +2044,12 @@ class CICD_ChildWorkflow():
 
             else:
                 # レコードの項目値設定
+                if FileType not in MatlListRecodes:
+                    MatlListRecodes[FileType] = {}
+
+                if path not in MatlListRecodes[FileType]:
+                    MatlListRecodes[FileType][path] = {}
+
                 MatlListRecodes[FileType][path]['MATL_ROW_ID'] = 0
                 MatlListRecodes[FileType][path]['REPO_ROW_ID'] = self.RepoId
                 MatlListRecodes[FileType][path]['MATL_FILE_PATH'] = path
@@ -2043,8 +2217,7 @@ class CICD_ChildWorkflow():
         row = objQuery[0]
         Update = False
         for column, value in UpdateColumnAry.items():
-            # 更新が必要か判定
-            if column != "SYNC_LAST_TIMESTAMP" and row[column] != value:
+            if row[column] != value:
                 row[column] = value
                 Update = True
 
@@ -2263,70 +2436,35 @@ class CICD_ChildWorkflow():
                     g.applogger.debug(FREE_LOG)
 
             except CICDException as e:
-                print(e)
-
                 self.error_flag = 1
-                self.DBobj.db_transaction_end(False)
                 self.UIDisplayMsg = e.ary['UImsg']
                 logstr = g.appmsg.get_api_message("MSG-90080", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, e.ary['log'])
                 raise Exception(FREE_LOG)
 
             except Exception as e:
-                # ToDo delete traceback
-                import traceback
-                print(traceback.format_exc())
-
                 self.error_flag = 1
-                self.DBobj.db_transaction_end(False)
                 self.UIDisplayMsg = str(e)
                 logstr = g.appmsg.get_api_message("MSG-90080", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, e)
                 raise Exception(FREE_LOG)
 
             # トランザクション再開
-            """
-            ret = self.DBobj.db_transaction_end(True)
-            if ret is False:
-                # UIに表示するエラーメッセージ設定
-                self.setDefaultUIDisplayMsg()
-
-                # 異常フラグON
-                self.error_flag = 1
-
-                # トランザクション処理に失敗しました
-                logstr = g.appmsg.get_api_message("MSG-90076")
-                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-                raise Exception(FREE_LOG)
-            """
-
-            ret = self.DBobj.db_transaction_start()
-            if ret is False:
-                # UIに表示するエラーメッセージ設定
-                self.setDefaultUIDisplayMsg()
-
-                # 異常フラグON
-                self.error_flag = 1
-
-                # トランザクション処理に失敗しました
-                logstr = g.appmsg.get_api_message("MSG-90076")
-                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-                raise Exception(FREE_LOG)
-
-            # 同期状態テーブル 処理時間更新
-            """
-            if SyncTimeUpdate_Flg is False:
-                ret = self.UpdateSyncStatusRecode()
+            if self.DBobj._db_con.open is True and self.DBobj._is_transaction is False:
+                ret = self.DBobj.db_transaction_start()
                 if ret is False:
-                    self.error_flag = 1
+                    # UIに表示するエラーメッセージ設定
                     self.setDefaultUIDisplayMsg()
 
-                    # データベースの更新に失敗しました
-                    logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
-                    FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
-                    raise Exception(FREE_LOG)
-            """
+                    # 異常フラグON
+                    self.error_flag = 1
 
+                    # トランザクション処理に失敗しました
+                    logstr = g.appmsg.get_api_message("MSG-90076")
+                    FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
+                    raise Exception(FREE_LOG)
+
+            # 同期状態テーブル 処理時間更新
             if RepoListSyncStatusUpdate_Flg is False:
                 SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
                 ret = self.UpdateRepoListSyncStatus(SyncStatus)
@@ -2356,18 +2494,6 @@ class CICD_ChildWorkflow():
             SyncTimeUpdate_Flg = True
             RepoListSyncStatusUpdate_Flg = True
 
-            """
-            ret = self.DBobj.db_transaction_start()
-            if ret is False:
-                # 異常フラグON
-                self.error_flag = 1
-
-                # トランザクション処理に失敗しました
-                logstr = g.appmsg.get_api_message("MSG-90076")
-                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-                raise Exception(FREE_LOG)
-            """
-
             # 資材紐付管理に登録されている資材を展開
             ret = self.MatlLinkExecute(MargeExeFlg)
             if ret is not True:
@@ -2377,48 +2503,13 @@ class CICD_ChildWorkflow():
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                 raise Exception(FREE_LOG)
 
-            """
-            # トランザクションを終了
-            ret = self.DBobj.db_transaction_end(True)
-            if ret is False:
-                # 異常フラグON
-                self.error_flag = 1
-
-                # トランザクション処理に失敗しました
-                logstr = g.appmsg.get_api_message("MSG-90076")
-                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-                raise Exception(FREE_LOG)
-            """
-
         except CICDException as e:
-            print(e)
-
             self.DBobj.db_transaction_end(False)
             FREE_LOG = str(e)
 
         except Exception as e:
-            # ToDo delete traceback
-            import traceback
-            print(traceback.format_exc())
-
             self.DBobj.db_transaction_end(False)
             FREE_LOG = str(e)
-
-        """
-        if SyncTimeUpdate_Flg is False:
-            ret = self.UpdateSyncStatusRecode()
-            if ret is not True:
-                # 異常フラグON
-                self.error_flag = 1
-
-                # UIに表示するエラーメッセージ設定
-                self.setDefaultUIDisplayMsg()
-
-                # データベースの更新に失敗しました
-                logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
-                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
-                g.applogger.debug(FREE_LOG)
-        """
 
         if RepoListSyncStatusUpdate_Flg is False:
             if len(self.UIDisplayMsg) <= 0:
@@ -2515,10 +2606,7 @@ def backyard_main(organization_id, workspace_id):
                 child_obj = CICD_ChildWorkflow(organization_id, workspace_id, DBobj, RepoId, ExecMode, row)
                 child_obj.main()
 
-    except Exception as e:
-        # ToDo traceback を削除
-        import traceback
-        print(traceback.format_exc())
+    except Exception:
         error_flag = 1
 
     # 結果出力

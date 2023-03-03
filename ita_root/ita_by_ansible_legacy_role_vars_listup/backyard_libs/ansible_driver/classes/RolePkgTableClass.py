@@ -11,10 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from flask import g
 import json
+import sys
+import traceback
+
+from flask import g
 
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.conductor.classes.exec_util import addline_msg
 from .TableBaseClass import TableBase
 from .VariableClass import Variable
 from .VariableManagerClass import VariableManager
@@ -49,32 +53,40 @@ class RolePkgTable(TableBase):
         role_name_list = []
         role_varmgr_dict = {}
         for role_pkg_row in self._stored_records.values():
-            role_pkg_id = role_pkg_row['ROLE_PACKAGE_ID']
-            var_struct = json.loads(role_pkg_row['VAR_STRUCT_ANAL_JSON_STRING'])
+            try:
+                role_pkg_id = role_pkg_row['ROLE_PACKAGE_ID']
+                role_pkg_name = role_pkg_row['ROLE_PACKAGE_NAME']
+                var_struct = json.loads(role_pkg_row['VAR_STRUCT_ANAL_JSON_STRING'])
 
-            # ロール名抽出
-            for role_name in var_struct['Role_name_list']:
-                role_name_list.append({'ROLE_NAME': role_name, 'ROLE_PACKAGE_ID': role_pkg_id})
-                role_varmgr_dict[(role_name, role_pkg_id)] = VariableManager()
+                # ロール名抽出
+                for role_name in var_struct['Role_name_list']:
+                    role_name_list.append({'ROLE_NAME': role_name, 'ROLE_PACKAGE_ID': role_pkg_id})
+                    role_varmgr_dict[(role_name, role_pkg_id)] = VariableManager()
 
-            # ロール変数抽出
-            # - 一般変数、複数具体値変数
-            for role_name, role_vars in var_struct['Vars_list'].items():
-                varmgr = role_varmgr_dict[(role_name, role_pkg_id)]
-                for var_name, attr_flag in role_vars.items():
-                    var_attr = AnscConst.GC_VARS_ATTR_STD if attr_flag == 0 else AnscConst.GC_VARS_ATTR_LIST
-                    item = Variable(var_name, var_attr)
-                    varmgr.add_variable(item)
-                    # print(f"role_name: {role_name}, item: {item}") # debug
+                # ロール変数抽出
+                # - 一般変数、複数具体値変数
+                for role_name, role_vars in var_struct['Vars_list'].items():
+                    varmgr = role_varmgr_dict[(role_name, role_pkg_id)]
+                    for var_name, attr_flag in role_vars.items():
+                        var_attr = AnscConst.GC_VARS_ATTR_STD if attr_flag == 0 else AnscConst.GC_VARS_ATTR_LIST
+                        item = Variable(var_name, var_attr)
+                        varmgr.add_variable(item)
 
-            # - 多次元変数
-            var_attr = AnscConst.GC_VARS_ATTR_M_ARRAY
-            for role_name, role_vars in var_struct['Array_vars_list'].items():
-                varmgr = role_varmgr_dict[(role_name, role_pkg_id)]
-                for var_name, var_detail in role_vars.items():
-                    var_struct = var_detail
-                    item = Variable(var_name, var_attr, var_struct)
-                    varmgr.add_variable(item)
-                    # print(f"role_name: {role_name}, item: {item}") # debug
+                # - 多次元変数
+                var_attr = AnscConst.GC_VARS_ATTR_M_ARRAY
+                for role_name, role_vars in var_struct['Array_vars_list'].items():
+                    varmgr = role_varmgr_dict[(role_name, role_pkg_id)]
+                    for var_name, var_detail in role_vars.items():
+                        var_struct = var_detail
+                        item = Variable(var_name, var_attr, var_struct)
+                        varmgr.add_variable(item)
+
+            except Exception as e:
+                debug_msg = g.appmsg.get_log_message("BKY-30007", [role_pkg_id, role_pkg_name])
+                g.applogger.debug(debug_msg)
+                g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                type_, value, traceback_ = sys.exc_info()
+                msg = traceback.format_exception(type_, value, traceback_)
+                g.applogger.debug(msg)
 
         return role_name_list, role_varmgr_dict

@@ -24,6 +24,7 @@ import os
 import json
 import pathlib
 
+
 def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_row, scheduled_date=None, conductor_id=None, conductor_name=None):
     """
         作業実行を登録

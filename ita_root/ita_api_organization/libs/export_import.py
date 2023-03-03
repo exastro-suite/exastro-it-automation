@@ -455,7 +455,6 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
 
         with zipfile.ZipFile(uploadPath + fileName) as z:
             for info in z.infolist():
-                info.filename = info.filename.encode('cp437').decode('cp932')
                 z.extract(info, path=uploadPath + upload_id)
 
         # zipファイルの中身確認

@@ -167,7 +167,6 @@ CREATE TABLE T_TERC_MVMT_MOD_LINK_JNL
 CREATE TABLE T_TERC_NESTVAR_MEMBER_MAX_COL
 (
     MAX_COL_SEQ_ID                  VARCHAR(40),                                -- 項番(UUID)
-    MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
     VARS_ID                         VARCHAR(40),                                -- 変数(ID連携)
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数(ID連携)
     MAX_COL_SEQ                     INT,                                        -- 最大繰り返し数
@@ -184,7 +183,6 @@ CREATE TABLE T_TERC_NESTVAR_MEMBER_MAX_COL_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     MAX_COL_SEQ_ID                  VARCHAR(40),                                -- 項番(UUID)
-    MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
     VARS_ID                         VARCHAR(40),                                -- 変数(ID連携)
     MEMBER_VARS_ID                  VARCHAR(40),                                -- メンバー変数(ID連携)
     MAX_COL_SEQ                     INT,                                        -- 最大繰り返し数
@@ -459,6 +457,38 @@ CREATE TABLE T_TERC_MVMT_VAR_LINK_JNL
 
 
 
+-- Movement-メンバー変数紐付
+CREATE TABLE T_TERC_MVMT_VAR_MEMBER_LINK
+(
+    MVMT_VAR_MEMBER_LINK_ID         VARCHAR(40),                                -- 項番(UUID)
+    MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
+    MODULE_VARS_LINK_ID             VARCHAR(40),                                -- Module-変数紐付(ID連携)
+    CHILD_MEMBER_VARS_ID            VARCHAR(40),                                -- メンバー変数ID(ID連携)
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(MVMT_VAR_MEMBER_LINK_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_TERC_MVMT_VAR_MEMBER_LINK_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    MVMT_VAR_MEMBER_LINK_ID         VARCHAR(40),                                -- 項番(UUID)
+    MOVEMENT_ID                     VARCHAR(40),                                -- Movement(ID連携)
+    MODULE_VARS_LINK_ID             VARCHAR(40),                                -- Module-変数紐付(ID連携)
+    CHILD_MEMBER_VARS_ID            VARCHAR(40),                                -- メンバー変数ID(ID連携)
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- メンバー変数管理(VIEW)
 CREATE OR REPLACE VIEW V_TERC_VAR_MEMBER AS
 SELECT
@@ -480,14 +510,45 @@ SELECT
             NOT EXISTS(
               SELECT CHILD_MEMBER_VARS_ID FROM T_TERC_VAR_MEMBER AS TAB_B WHERE PARENT_VARS_ID = TAB_A.PARENT_VARS_ID AND TAB_B.CHILD_VARS_TYPE_ID = 7 AND TAB_B.DISUSE_FLAG = 0
             )
-            THEN 1
-            ELSE 0
+            THEN "1"
+            ELSE "0"
           END AS VARS_ASSIGN_FLAG,
         NOTE,
         DISUSE_FLAG,
         LAST_UPDATE_TIMESTAMP,
         LAST_UPDATE_USER
 FROM    T_TERC_VAR_MEMBER AS TAB_A;
+CREATE OR REPLACE VIEW V_TERC_VAR_MEMBER_JNL AS
+SELECT
+        JOURNAL_SEQ_NO,
+        JOURNAL_REG_DATETIME,
+        JOURNAL_ACTION_CLASS,
+        CHILD_MEMBER_VARS_ID,
+        PARENT_VARS_ID,
+        PARENT_MEMBER_VARS_ID,
+        CHILD_MEMBER_VARS_NEST,
+        CHILD_MEMBER_VARS_KEY,
+        CHILD_VARS_TYPE_ID,
+        ARRAY_NEST_LEVEL,
+        ASSIGN_SEQ,
+        CHILD_MEMBER_VARS_VALUE,
+          CASE
+            WHEN
+            NOT EXISTS(
+              SELECT PARENT_MEMBER_VARS_ID FROM T_TERC_VAR_MEMBER AS TAB_B WHERE TAB_B.PARENT_MEMBER_VARS_ID = TAB_A.CHILD_MEMBER_VARS_ID AND TAB_B.DISUSE_FLAG = 0 OR TAB_A.CHILD_VARS_TYPE_ID = 7 AND TAB_B.DISUSE_FLAG = 0
+            )
+            AND
+            NOT EXISTS(
+              SELECT CHILD_MEMBER_VARS_ID FROM T_TERC_VAR_MEMBER AS TAB_B WHERE PARENT_VARS_ID = TAB_A.PARENT_VARS_ID AND TAB_B.CHILD_VARS_TYPE_ID = 7 AND TAB_B.DISUSE_FLAG = 0
+            )
+            THEN "1"
+            ELSE "0"
+          END AS VARS_ASSIGN_FLAG,
+        NOTE,
+        DISUSE_FLAG,
+        LAST_UPDATE_TIMESTAMP,
+        LAST_UPDATE_USER
+FROM    T_TERC_VAR_MEMBER_JNL AS TAB_A;
 
 
 
@@ -511,6 +572,68 @@ FROM    T_TERC_MVMT_VAR_LINK AS TAB_A
 LEFT JOIN V_TERC_MOVEMENT TAB_B ON ( TAB_A.MOVEMENT_ID = TAB_B.MOVEMENT_ID )
 LEFT JOIN T_TERC_MOD_VAR_LINK TAB_C ON ( TAB_A.MODULE_VARS_LINK_ID = TAB_C.MODULE_VARS_LINK_ID )
 ;
+CREATE OR REPLACE VIEW V_TERC_MVMT_VAR_LINK_JNL AS
+SELECT
+        TAB_A.JOURNAL_SEQ_NO,
+        TAB_A.JOURNAL_REG_DATETIME,
+        TAB_A.JOURNAL_ACTION_CLASS,
+        TAB_A.MODULE_VARS_LINK_ID,
+        TAB_C.MODULE_MATTER_ID,
+        TAB_C.VARS_NAME,
+        TAB_C.TYPE_ID,
+        TAB_C.VARS_VALUE,
+        CONCAT(TAB_B.MOVEMENT_NAME,':',TAB_C.VARS_NAME) MOVEMENT_VARS_NAME,
+        TAB_A.NOTE,
+        TAB_A.DISUSE_FLAG,
+        TAB_A.LAST_UPDATE_TIMESTAMP,
+        TAB_A.LAST_UPDATE_USER
+FROM    T_TERC_MVMT_VAR_LINK_JNL AS TAB_A
+LEFT JOIN V_TERC_MOVEMENT_JNL TAB_B ON ( TAB_A.MOVEMENT_ID = TAB_B.MOVEMENT_ID )
+LEFT JOIN T_TERC_MOD_VAR_LINK_JNL TAB_C ON ( TAB_A.MODULE_VARS_LINK_ID = TAB_C.MODULE_VARS_LINK_ID )
+;
+
+
+
+-- Movement-メンバー変数紐付(VIEW)
+CREATE OR REPLACE VIEW V_TERC_MVMT_VAR_MEMBER_LINK AS
+SELECT
+        TAB_A.MVMT_VAR_MEMBER_LINK_ID,
+        TAB_A.MOVEMENT_ID,
+        TAB_B.MOVEMENT_NAME,
+        TAB_A.MODULE_VARS_LINK_ID,
+        TAB_A.CHILD_MEMBER_VARS_ID,
+        TAB_D.CHILD_MEMBER_VARS_NEST,
+        CONCAT(TAB_B.MOVEMENT_NAME,':',TAB_C.VARS_NAME,':',TAB_D.CHILD_MEMBER_VARS_NEST) MOVEMENT_VAR_MEMBER_NAME,
+        TAB_A.NOTE,
+        TAB_A.DISUSE_FLAG,
+        TAB_A.LAST_UPDATE_TIMESTAMP,
+        TAB_A.LAST_UPDATE_USER
+FROM    T_TERC_MVMT_VAR_MEMBER_LINK AS TAB_A
+LEFT JOIN V_TERC_MOVEMENT TAB_B ON ( TAB_A.MOVEMENT_ID = TAB_B.MOVEMENT_ID )
+LEFT JOIN T_TERC_MOD_VAR_LINK TAB_C ON ( TAB_A.MODULE_VARS_LINK_ID = TAB_C.MODULE_VARS_LINK_ID )
+LEFT JOIN T_TERC_VAR_MEMBER TAB_D ON ( TAB_A.CHILD_MEMBER_VARS_ID = TAB_D.CHILD_MEMBER_VARS_ID )
+;
+CREATE OR REPLACE VIEW V_TERC_MVMT_VAR_MEMBER_LINK_JNL AS
+SELECT
+        TAB_A.JOURNAL_SEQ_NO,
+        TAB_A.JOURNAL_REG_DATETIME,
+        TAB_A.JOURNAL_ACTION_CLASS,
+        TAB_A.MVMT_VAR_MEMBER_LINK_ID,
+        TAB_A.MOVEMENT_ID,
+        TAB_B.MOVEMENT_NAME,
+        TAB_A.MODULE_VARS_LINK_ID,
+        TAB_A.CHILD_MEMBER_VARS_ID,
+        TAB_D.CHILD_MEMBER_VARS_NEST,
+        CONCAT(TAB_B.MOVEMENT_NAME,':',TAB_C.VARS_NAME,':',TAB_D.CHILD_MEMBER_VARS_NEST) MOVEMENT_VAR_MEMBER_NAME,
+        TAB_A.NOTE,
+        TAB_A.DISUSE_FLAG,
+        TAB_A.LAST_UPDATE_TIMESTAMP,
+        TAB_A.LAST_UPDATE_USER
+FROM    T_TERC_MVMT_VAR_MEMBER_LINK_JNL AS TAB_A
+LEFT JOIN V_TERC_MOVEMENT_JNL TAB_B ON ( TAB_A.MOVEMENT_ID = TAB_B.MOVEMENT_ID )
+LEFT JOIN T_TERC_MOD_VAR_LINK_JNL TAB_C ON ( TAB_A.MODULE_VARS_LINK_ID = TAB_C.MODULE_VARS_LINK_ID )
+LEFT JOIN T_TERC_VAR_MEMBER_JNL TAB_D ON ( TAB_A.CHILD_MEMBER_VARS_ID = TAB_D.CHILD_MEMBER_VARS_ID )
+;
 
 
 
@@ -526,6 +649,7 @@ CREATE INDEX T_TERC_VALUE_01 ON T_TERC_VALUE (DISUSE_FLAG);
 CREATE INDEX T_TERC_MOD_VAR_LINK_01 ON T_TERC_MOD_VAR_LINK (DISUSE_FLAG);
 CREATE INDEX T_TERC_VAR_MEMBER_01 ON T_TERC_VAR_MEMBER (DISUSE_FLAG);
 CREATE INDEX T_TERC_MVMT_VAR_LINK_01 ON T_TERC_MVMT_VAR_LINK (DISUSE_FLAG);
+CREATE INDEX T_TERC_MVMT_VAR_MEMBER_LINK_01 ON T_TERC_MVMT_VAR_MEMBER_LINK (DISUSE_FLAG);
 
 
 

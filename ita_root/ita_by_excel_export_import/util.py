@@ -74,29 +74,30 @@ def getExportedMenuIDList(taskId, export_path):
     menuIdAry = json.loads(json)
     return menuIdAry
 
-def getMenuInfoByMenuId(menuId, objdbca=None):
+def getMenuInfoByMenuId(menuNameRest, objdbca=None):
     """
 
     メニュー情報
 
     Arguments:
-        menuId: メニューID
+        menuNameRest: メニューREST名
         objdbca: DBオブジェクト
     Returns:
         実行結果
     """
     sql = "SELECT "
-    sql += " T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN "
+    sql += " T_COMN_MENU.MENU_ID, T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN "
     sql += "FROM T_COMN_MENU "
     sql += "LEFT OUTER JOIN "
     sql += " T_COMN_MENU_GROUP "
     sql += "ON T_COMN_MENU.MENU_GROUP_ID = T_COMN_MENU_GROUP.MENU_GROUP_ID "
-    sql += "WHERE T_COMN_MENU.MENU_ID = %s "
+    sql += "WHERE T_COMN_MENU.MENU_NAME_REST = %s "
     sql += "AND T_COMN_MENU.DISUSE_FLAG = 0 "
     sql += "AND T_COMN_MENU_GROUP.DISUSE_FLAG = 0 "
 
-    data_list = objdbca.sql_execute(sql, [menuId])
+    data_list = objdbca.sql_execute(sql, [menuNameRest])
 
+    data = []
     for data in data_list:
         if data is None or len(data) == 0:
             return []
@@ -122,9 +123,9 @@ def dumpResultMsg(msg, taskId, uploadDir):
     if not os.path.isdir(uploadDir + "/" + taskId):
         os.makedirs(uploadDir + "/" + taskId)
         os.chmod(uploadDir + "/" + taskId, 0o777)
-    if not os.path.exists(uploadFilePath):
-        f = open(uploadFilePath, 'w')
-        f.write(msg + "\n")
+    if os.path.exists(uploadFilePath):
+        with open(uploadFilePath, 'a') as f:
+            f.write(msg)
         f.close()
     else:
         pathlib.Path(uploadFilePath).write_text(msg + "\n", encoding="utf-8")

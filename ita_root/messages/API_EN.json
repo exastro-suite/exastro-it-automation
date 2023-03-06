@@ -1335,7 +1335,7 @@
     "MSG-30028": "Input file:{}\n",
     "MSG-30029": "The target Menu does not exist.",
     "MSG-30030": "There are multiple files with the same name.",
-    "MSG-30031": "The target Menu ID is written multiple times in the MENU_LIST.txt file.",
+    "MSG-30031": "The target Menu is written multiple times in the MENU_LIST.txt file.",
     "MSG-30032": "The target file does not exist.",
     "MSG-30033": "You don’t have permission to maintain this menu.",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",

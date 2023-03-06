@@ -609,10 +609,7 @@ fileSelect() {
         let process = fn.processingModal( getMessage. FTE07036 );
         
         fn.fetch( fileRest, null, 'POST', postData ).then(function( result ){
-            
-            process.close();
-            process = null;
-            
+                        
             // インポートデータ
             ex.importData = result;
             
@@ -634,12 +631,20 @@ fileSelect() {
                     + listHtml
                 +  '</div>');
             
-            ex.commonEvents();
-            ex.importButtonCheck();
-            
+            ex.commonEvents();            
         }).catch(function( error ){
             window.console.error( error );
-            alert( getMessage.FTE07023 );
+            if ( error.message ) {
+                alert( error.message );
+            } else {
+                alert( getMessage.FTE07023 );
+            }
+            ex.$.importBody.html( ex.initBodyHtml() );
+        }).then(function(){
+            process.close();
+            process = null;
+            
+            ex.importButtonCheck();
         });
     }).catch(function( error ){
         if ( error !== 'cancel') {
@@ -669,10 +674,19 @@ importHtml() {
       + fn.html.operationMenu( menu )
     + '</div>'
     + '<div class="exportImportBody">'
-        + '<div class="commonMessage">'
-            + '<div class="commonMessageInner">'
-                + '<span class=" icon icon-circle_info"></span>' + getMessage.FTE07026
-            + '</div>'
+        + ex.initBodyHtml()
+    + '</div>';
+}
+/*
+##################################################
+   Message HTML
+##################################################
+*/
+initBodyHtml() {
+    return ''
+    + '<div class="commonMessage">'
+        + '<div class="commonMessageInner">'
+            + '<span class=" icon icon-circle_info"></span>' + getMessage.FTE07026
         + '</div>'
     + '</div>';
 }

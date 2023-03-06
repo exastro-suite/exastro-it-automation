@@ -3222,9 +3222,9 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
                 # 抑止の設定
                 if bool(def_item["suppress_start"]):
-                    suppress_start_date = datetime.strptime(str(def_item["suppress_start"]), "%Y/%m/%d")
+                    suppress_start_date = datetime.strptime(str(def_item["suppress_start"]), "%Y/%m/%d %H:%M:%S")
                 if bool(def_item["suppress_end"]):
-                    suppress_end_date = datetime.strptime(str(def_item["suppress_end"]), "%Y/%m/%d")
+                    suppress_end_date = datetime.strptime(str(def_item["suppress_end"]), "%Y/%m/%d %H:%M:%S")
                 today = datetime.now()
 
                 if bool(suppress_start_date) and bool(suppress_end_date):

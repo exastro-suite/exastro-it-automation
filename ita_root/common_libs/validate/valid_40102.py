@@ -31,65 +31,69 @@ def compare_detail_validate(objdbca, objtable, option):
     retBool = True
     msg = ""
     try:
-        entry_parameter = option.get("entry_parameter").get("parameter")
+        cmd_type = option.get('cmd_type')
+        if cmd_type != "Discard":
+            entry_parameter = option.get("entry_parameter").get("parameter")
+            if cmd_type == "Restore":
+                entry_parameter = option.get("current_parameter").get("parameter")
 
-        # check compare target menus discard
-        compare_id = entry_parameter.get("compare")
-        sql_str = textwrap.dedent("""
-            SELECT
-                `TAB_A`.*
-            FROM
-                `T_COMPARE_CONFG_LIST` `TAB_A`
-            LEFT JOIN `T_COMN_MENU` `TAB_B` ON ( `TAB_A`.`TARGET_MENU_1` = `TAB_B`.`MENU_ID` )
-            LEFT JOIN `T_COMN_MENU` `TAB_C` ON ( `TAB_A`.`TARGET_MENU_2` = `TAB_C`.`MENU_ID` )
-            LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TAB_D` ON ( `TAB_A`.`TARGET_MENU_1` = `TAB_D`.`MENU_ID` )
-            LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TAB_E` ON ( `TAB_A`.`TARGET_MENU_2` = `TAB_E`.`MENU_ID` )
-            WHERE `TAB_A`.`COMPARE_ID` = %s
-            AND `TAB_A`.`DISUSE_FLAG` <> 1
-            AND `TAB_B`.`DISUSE_FLAG` <> 1
-            AND `TAB_C`.`DISUSE_FLAG` <> 1
-            AND `TAB_D`.`DISUSE_FLAG` <> 1
-            AND `TAB_E`.`DISUSE_FLAG` <> 1
-        """).format().strip()
-        bind_list = [compare_id]
+            # check compare target menus discard
+            compare_id = entry_parameter.get("compare")
+            sql_str = textwrap.dedent("""
+                SELECT
+                    `TAB_A`.*
+                FROM
+                    `T_COMPARE_CONFG_LIST` `TAB_A`
+                LEFT JOIN `T_COMN_MENU` `TAB_B` ON ( `TAB_A`.`TARGET_MENU_1` = `TAB_B`.`MENU_ID` )
+                LEFT JOIN `T_COMN_MENU` `TAB_C` ON ( `TAB_A`.`TARGET_MENU_2` = `TAB_C`.`MENU_ID` )
+                LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TAB_D` ON ( `TAB_A`.`TARGET_MENU_1` = `TAB_D`.`MENU_ID` )
+                LEFT JOIN `T_COMN_MENU_TABLE_LINK` `TAB_E` ON ( `TAB_A`.`TARGET_MENU_2` = `TAB_E`.`MENU_ID` )
+                WHERE `TAB_A`.`COMPARE_ID` = %s
+                AND `TAB_A`.`DISUSE_FLAG` <> 1
+                AND `TAB_B`.`DISUSE_FLAG` <> 1
+                AND `TAB_C`.`DISUSE_FLAG` <> 1
+                AND `TAB_D`.`DISUSE_FLAG` <> 1
+                AND `TAB_E`.`DISUSE_FLAG` <> 1
+            """).format().strip()
+            bind_list = [compare_id]
 
-        rows = objdbca.sql_execute(sql_str, bind_list)
+            rows = objdbca.sql_execute(sql_str, bind_list)
 
-        if len(rows) == 1:
-            tmp_row = rows[0]
-            detail_flg = tmp_row.get("DETAIL_FLAG")
-            target_menu_1 = tmp_row.get("TARGET_MENU_1")
-            target_menu_2 = tmp_row.get("TARGET_MENU_2")
-            if detail_flg == "0":
-                retBool = False
-                # target compare is detail_flg false
-                status_code = "MSG-60003"
-                msg_args = []
-                msg = g.appmsg.get_api_message(status_code, msg_args)
-            else:
-                sql_str = textwrap.dedent("""
-                    SELECT
-                        *
-                    FROM
-                        `T_COMN_MENU` `TAB_A`
-                    WHERE `TAB_A`.`MENU_ID` IN ( %s , %s )
-                    AND `TAB_A`.`DISUSE_FLAG` <> 1
-                """).format().strip()
-
-                bind_list = [target_menu_1, target_menu_2]
-                rows = objdbca.sql_execute(sql_str, bind_list)
-                if len(rows) not in [1, 2]:
+            if len(rows) == 1:
+                tmp_row = rows[0]
+                detail_flg = tmp_row.get("DETAIL_FLAG")
+                target_menu_1 = tmp_row.get("TARGET_MENU_1")
+                target_menu_2 = tmp_row.get("TARGET_MENU_2")
+                if detail_flg == "0":
                     retBool = False
-                    # target manu discard error
-                    status_code = "MSG-60004"
+                    # target compare is detail_flg false
+                    status_code = "MSG-60003"
                     msg_args = []
                     msg = g.appmsg.get_api_message(status_code, msg_args)
-        else:
-            retBool = False
-            # target compare error
-            status_code = "MSG-60002"
-            msg_args = []
-            msg = g.appmsg.get_api_message(status_code, msg_args)
+                else:
+                    sql_str = textwrap.dedent("""
+                        SELECT
+                            *
+                        FROM
+                            `T_COMN_MENU` `TAB_A`
+                        WHERE `TAB_A`.`MENU_ID` IN ( %s , %s )
+                        AND `TAB_A`.`DISUSE_FLAG` <> 1
+                    """).format().strip()
+
+                    bind_list = [target_menu_1, target_menu_2]
+                    rows = objdbca.sql_execute(sql_str, bind_list)
+                    if len(rows) not in [1, 2]:
+                        retBool = False
+                        # target manu discard error
+                        status_code = "MSG-60004"
+                        msg_args = []
+                        msg = g.appmsg.get_api_message(status_code, msg_args)
+            else:
+                retBool = False
+                # target compare error
+                status_code = "MSG-60002"
+                msg_args = []
+                msg = g.appmsg.get_api_message(status_code, msg_args)
     except Exception as e:
         retBool = False
         # except

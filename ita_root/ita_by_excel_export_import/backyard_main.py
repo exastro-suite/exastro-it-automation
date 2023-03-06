@@ -122,7 +122,7 @@ def backyard_main(organization_id, workspace_id):
                     menuNameRest = data['MENU_NAME_REST']
                 # ファイル名が重複しないためにsleep
                 time.sleep(1)
-                menuInfo = util.getMenuInfoByMenuId(menuId, objdbca)
+                menuInfo = util.getMenuInfoByMenuId(menuNameRest, objdbca)
 
                 # メニュー周りの情報
                 menuGroupId = menuInfo["MENU_GROUP_ID"]
@@ -178,7 +178,7 @@ def backyard_main(organization_id, workspace_id):
                     request[menuGroupId]["menu"] = {}
                     request[menuGroupId]["menu"][""] = {"menu_id": menuId, "menu_name": menuNameRest}
 
-                fileNameList += "#" + menuGroupId + "(" + menuGroupName + ")\n" + menuId + ":" + fileName + "\n"
+                fileNameList += "#" + menuGroupName + "\n" + menuNameRest + ":" + fileName + "\n"
 
             # ファイル一覧をJSONに変換
             tmpExportPath = EXPORT_PATH + "/" + taskId + "/tmp_zip"
@@ -235,12 +235,13 @@ def backyard_main(organization_id, workspace_id):
                     if not value == "":
                         menuIdFileInfo = value.split(":")
                         if len(menuIdFileInfo) == 2:
-                            menuId = menuIdFileInfo[0]
+                            menuNameRest = menuIdFileInfo[0]
                             menuFileName = menuIdFileInfo[1]
-                            retImportAry[menuId] = menuFileName
+                            retImportAry[menuNameRest] = menuFileName
 
-            for menuId, fileName in retImportAry.items():
-                menuInfo = util.getMenuInfoByMenuId(menuId, objdbca)
+            for menuNameRest, fileName in retImportAry.items():
+                menuInfo = util.getMenuInfoByMenuId(menuNameRest, objdbca)
+                menuId = menuInfo["MENU_ID"]
                 chk_path1 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_JA"] + "/" + fileName
                 chk_path2 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_EN"] + "/" + fileName
                 if not os.path.exists(chk_path1) and not os.path.exists(chk_path2) or fileName == "":
@@ -258,10 +259,6 @@ def backyard_main(organization_id, workspace_id):
                     targetImportPath = chk_path2
 
                 excel_data = util.file_encode(targetImportPath)
-                sql = " SELECT MENU_NAME_REST FROM T_COMN_MENU WHERE DISUSE_FLAG <> 1 AND MENU_ID = %s "
-                data_list = objdbca.sql_execute(sql, [menuId])
-                for data in data_list:
-                    menuNameRest = data['MENU_NAME_REST']
 
                 # メニューの存在確認
                 menu_record = util.check_menu_info(menuNameRest, objdbca)
@@ -275,11 +272,12 @@ def backyard_main(organization_id, workspace_id):
                 aryRetBody = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menuNameRest, menu_record, excel_data, True, lang)
 
                 # リザルトファイルの作成
-                menuInfo = util.getMenuInfoByMenuId(menuId, objdbca)
+                menuInfo = util.getMenuInfoByMenuId(menuNameRest, objdbca)
                 msg = menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_" + lang.upper()] + ":" + menuId + "_" + menuInfo["MENU_NAME_" + lang.upper()] + "\n"
 
                 strErrCountExplainTail = g.appmsg.get_api_message("MSG-30027")
                 msg += g.appmsg.get_api_message("MSG-30028", [fileName])
+                msg += "\n"
                 idx = 0
                 msg_result = []
                 msg_result.append(g.appmsg.get_api_message('MSG-30004'))
@@ -289,6 +287,7 @@ def backyard_main(organization_id, workspace_id):
                 for name, ct in aryRetBody.items():
                     msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
                     idx += 1
+                msg += "\n"
 
                 util.dumpResultMsg(msg, taskId, RESULT_PATH)
 
@@ -312,4 +311,7 @@ def backyard_main(organization_id, workspace_id):
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     continue
+
+            # 一時ディレクトリ削除
+            shutil.rmtree(IMPORT_PATH + "/import/" + upload_id)
     return

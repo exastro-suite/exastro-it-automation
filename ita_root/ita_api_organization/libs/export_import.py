@@ -453,9 +453,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
             os.makedirs(uploadPath + upload_id)
             os.chmod(uploadPath + upload_id, 0o777)
 
-        with zipfile.ZipFile(uploadPath + fileName) as z:
-            for info in z.infolist():
-                z.extract(info, path=uploadPath + upload_id)
+        unzip_file(fileName, uploadPath, upload_id)
 
         # zipファイルの中身確認
         declare_list = checkZipFile(upload_id, organization_id, workspace_id)
@@ -478,7 +476,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
                 menuName = menuInfo["menu_name"]
                 fileName = menuInfo["file_name"]
 
-                tmpMenuInfo = getMenuInfoByMenuId(menuId, objdbca)
+                tmpMenuInfo = getMenuInfoByMenuId(menuId, "", objdbca)
                 group_disp_seq = tmpMenuInfo["GROUP_DISP_SEQ"]
                 parent_id = tmpMenuInfo["PARENT_MENU_GROUP_ID"]
                 disp_seq = tmpMenuInfo["DISP_SEQ"]
@@ -543,6 +541,11 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
         intResultCode = "000"
 
     except Exception as e:
+        # ファイルの削除
+        cmd = "rm -rf " + importPath + upload_id
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        if ret.returncode != 0:
+            return False
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args, None
@@ -668,6 +671,27 @@ def _format_loadtable_msg(loadtable_msg):
 
     return result_msg
 
+def unzip_file(fileName, uploadPath, upload_id):
+    """
+        zipファイルを解凍する
+
+        args:
+            fileName: ファイル名
+            uploadPath: 解凍先パス
+            upload_id: アップロードID
+    """
+    try:
+        with zipfile.ZipFile(uploadPath + fileName) as z:
+            for info in z.infolist():
+                info.filename = info.orig_filename.encode('cp437').decode('cp932')
+                if os.sep != "/" and os.sep in info.filename:
+                    info.filename = info.filename.replace(os.sep, "/")
+                z.extract(info, path=uploadPath + upload_id)
+
+    except Exception as e:
+        cmd = "unzip -d " + uploadPath + upload_id + " " + uploadPath + fileName
+        subprocess.run(cmd, capture_output=True, text=True, shell=True)
+
 def checkZipFile(upload_id, organization_id, workspace_id):
     """
         zipファイルの中身を確認する
@@ -761,8 +785,8 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
         if not file == "":
             tmpFileAry = file.split("/")
-            fileName = tmpFileAry[len(tmpFileAry) - 1]
-            declare_check_list.append(fileName)
+            tmpfileName = tmpFileAry[len(tmpFileAry) - 1]
+            declare_check_list.append(tmpfileName)
 
     declare_list = collections.Counter(declare_check_list)
     for value in fileAry:
@@ -808,6 +832,15 @@ def checkZipFile(upload_id, organization_id, workspace_id):
         api_msg_args = [msgstr]
         raise AppException("499-00005", log_msg_args, api_msg_args)
 
+    #アップロードファイル削除
+    cmd = "rm " + uploadPath + fileName
+    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+    if ret.returncode != 0:
+        msgstr = g.appmsg.get_api_message("MSG-30029")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
     cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     if ret.returncode != 0:
@@ -846,23 +879,30 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
     for menuFileInfo in tmpMenuIdFileAry:
         # フォーマットチェック
         result1 = re.match('^#', menuFileInfo)
-        result2 = re.match('^\d{5}:.*$', menuFileInfo)
 
-        if not result1 and result2:
+        if not result1 and not menuFileInfo == "":
             menuIdFileInfo = menuFileInfo.split(":")
-            menuId = menuIdFileInfo[0]
+            menuNameRest = menuIdFileInfo[0]
             menuFileName = menuIdFileInfo[1]
-            menuInfo = getMenuInfoByMenuId(menuId, objdbca)
+            menuInfo = getMenuInfoByMenuId("", menuNameRest, objdbca)
 
-            menuGroupId = menuInfo["MENU_GROUP_ID"]
-            if g.get('LANGUAGE') == 'ja':
-                menuGroupName = menuInfo["MENU_GROUP_NAME_JA"]
-                menuName = menuInfo["MENU_NAME_JA"]
+            if not len(menuInfo) == 0:
+                menuGroupId = menuInfo["MENU_GROUP_ID"]
+                menuId = menuInfo["MENU_ID"]
+                if g.get('LANGUAGE') == 'ja':
+                    menuGroupName = menuInfo["MENU_GROUP_NAME_JA"]
+                    menuName = menuInfo["MENU_NAME_JA"]
+                else:
+                    menuGroupName = menuInfo["MENU_GROUP_NAME_EN"]
+                    menuName = menuInfo["MENU_NAME_EN"]
+
+                menuGroupFolderName = menuGroupId + "_" + menuGroupName
             else:
-                menuGroupName = menuInfo["MENU_GROUP_NAME_EN"]
-                menuName = menuInfo["MENU_NAME_EN"]
-
-            menuGroupFolderName = menuGroupId + "_" + menuGroupName
+                menuId = ""
+                menuGroupId = ""
+                menuGroupName = ""
+                menuName = ""
+                menuGroupFolderName = ""
 
             if len(retImportAry) == 0 or len(menuInfo) == 0:
                 declare_key = False
@@ -889,7 +929,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                     declare_file_name_key = False
 
             # メニューの存在チェック
-            if menuInfo == 0:
+            if len(menuInfo) == 0:
                 tmpMenuInfo = {"menu_id": menuId,
                                 "menu_name": menuName,
                                 "disabled": True,
@@ -1010,28 +1050,35 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
 
     return retImportAry
 
-def getMenuInfoByMenuId(menuId, objdbca=None):
+def getMenuInfoByMenuId(menu_id, menuNameRest, objdbca=None):
     """
     メニュー情報取得
 
     Arguments:
-        menuId: メニューID
+        menuId: メニューREST名
         objdbca: DBオブジェクト
     Returns:
         実行結果
     """
     sql = "SELECT "
-    sql += " T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN, "
+    sql += " T_COMN_MENU.MENU_ID, T_COMN_MENU.MENU_NAME_JA, T_COMN_MENU.MENU_GROUP_ID, T_COMN_MENU_GROUP.MENU_GROUP_NAME_JA, T_COMN_MENU_GROUP.MENU_GROUP_NAME_EN, "
     sql += " T_COMN_MENU.DISP_SEQ, T_COMN_MENU_GROUP.PARENT_MENU_GROUP_ID, T_COMN_MENU_GROUP.DISP_SEQ AS GROUP_DISP_SEQ "
     sql += "FROM T_COMN_MENU "
     sql += "LEFT OUTER JOIN "
     sql += " T_COMN_MENU_GROUP "
     sql += "ON T_COMN_MENU.MENU_GROUP_ID = T_COMN_MENU_GROUP.MENU_GROUP_ID "
-    sql += "WHERE T_COMN_MENU.MENU_ID = %s "
+    if menu_id == "":
+        sql += "WHERE T_COMN_MENU.MENU_NAME_REST = %s "
+    else:
+        sql += "WHERE T_COMN_MENU.MENU_ID = %s "
     sql += "AND T_COMN_MENU.DISUSE_FLAG = 0 "
     sql += "AND T_COMN_MENU_GROUP.DISUSE_FLAG = 0 "
 
-    data_list = objdbca.sql_execute(sql, [menuId])
+    if menu_id == "":
+        data_list = objdbca.sql_execute(sql, [menuNameRest])
+    else:
+        data_list = objdbca.sql_execute(sql, [menu_id])
+    data = []
 
     for data in data_list:
         if data is None or len(data) == 0:

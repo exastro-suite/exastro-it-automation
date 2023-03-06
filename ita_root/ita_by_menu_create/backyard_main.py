@@ -263,6 +263,11 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             target_menu_group_list = ['MENU_GROUP_ID_INPUT']
 
         elif sheet_type == "3":  # パラメータシート（オペレーションあり）
+            # パラメータシート（オペレーションあり）かつ「項目が0件」の場合はエラー判定
+            if not record_t_menu_column:
+                msg = g.appmsg.get_log_message("BKY-20215", [])
+                raise Exception(msg)
+
             # テーブル名/ビュー名を生成
             create_table_name = 'T_CMDB_' + str(menu_create_id)
             create_table_name_jnl = 'T_CMDB_' + str(menu_create_id) + '_JNL'
@@ -272,11 +277,6 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             if vertical_flag:
                 # パラメータシート(縦メニュー利用あり)用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb_vertical.sql"
-
-                # 「縦メニュー利用あり」かつ「項目が0件」の場合はエラー判定
-                if not record_t_menu_column:
-                    msg = g.appmsg.get_log_message("BKY-20214", [])
-                    raise Exception(msg)
             else:
                 # パラメータシート用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb.sql"

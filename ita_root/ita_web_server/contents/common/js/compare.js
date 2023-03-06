@@ -28,7 +28,7 @@ class Compare {
 */
 constructor( menu ) {
     const cp = this;
-    
+
     cp.menu = menu;
     cp.setRestApiUrls();
 }
@@ -39,9 +39,9 @@ constructor( menu ) {
 */
 setRestApiUrls() {
     const cp = this;
-    
+
     cp.rest = {};
-    
+
     cp.rest.info = `/menu/${cp.menu}/compare/info/`;
     cp.rest.list = `/menu/${cp.menu}/compare/execute/info/`;
     cp.rest.compare = `/menu/${cp.menu}/compare/execute/`;
@@ -53,8 +53,8 @@ setRestApiUrls() {
 ##################################################
 */
 setup() {
-    const cp = this;    
-    
+    const cp = this;
+
     fn.fetch( [ cp.rest.info, cp.rest.list ] ).then(function( result ){
         cp.info = result[0];
         cp.list = result[1];
@@ -70,32 +70,32 @@ setup() {
 */
 init() {
     const cp = this;
-    
+
     cp.$ = {};
     cp.$.content = $('#content').find('.sectionBody');
-    
+
     cp.compareData = {
         compare: '',
         host: []
     };
-    
+
     cp.$.content.html( cp.compareHtml() );
-    
+
     cp.$.setting = cp.$.content.find('.compareSetting');
     cp.$.host = cp.$.content.find('.compareHost');
     cp.$.result = cp.$.content.find('.compareResult');
-    
+
     cp.$.compareButton = cp.$.content.find('.compareButton');
     cp.$.compareDownloadButton = cp.$.content.find('.compareDownloadButton');
-    
+
     cp.compareEvents();
-    
+
     // 結果ホスト切替
     cp.$.content.on('click', '.compareExecuteItem', function(){
         const $item = $( this ),
               host = cp.escape( $item.attr('data-id') );
-        
-        cp.$.content.find('.compareOpen').removeClass('compareOpen');        
+
+        cp.$.content.find('.compareOpen').removeClass('compareOpen');
         $item.add( cp.$.result.find(`.comparaResultBlock[data-id="${host}"]`) ).addClass('compareOpen');
     });
 }
@@ -114,8 +114,8 @@ escape( val ) {
 */
 compareButtonCheck() {
     const cp = this;
-    
-    const flag = !( cp.compareData.compare !== '' );   
+
+    const flag = !( cp.compareData.compare !== '' );
     cp.$.compareButton.prop('disabled', flag );
     cp.$.compareDownloadButton.prop('disabled', flag );
 }
@@ -124,9 +124,9 @@ compareButtonCheck() {
    Compare HTML
 ##################################################
 */
-compareHtml() {    
+compareHtml() {
     const cp = this;
-    
+
     const menu = {
         Main: [
             { button: { icon: 'menuList', text: getMessage.FTE06001, type: 'compareSelect', action: 'default', minWidth: '160px'} },
@@ -201,7 +201,7 @@ compareSettingHtml( info ) {
                 + `<dt class="commonStatusKey">${getMessage.FTE06009}</dt>`
                 + `<dd class="commonStatusValue">${fn.cv( info.selectOtherKeys.detail_flg, '', true )}</dd>`
             + '</dl>'
-        + '</div>'    
+        + '</div>'
         + '<div class="commonSubTitle">'
             + getMessage.FTE06015
         + '</div>'
@@ -230,14 +230,14 @@ compareSettingHtml( info ) {
                     + fn.html.dateInput( true, 'referenceDate', '', 'referenceDate2')
                 + '</dd>'
             + '</dl>'
-        + '</div>'    
-        + '<div class="commonSubTitle">'
-            + getMessage.FTE06017
         + '</div>'
-        + '<div class="commonBody commonWrap">'
-            + fn.html.radioText('compareOutput', '1', 'compareOutput', 'compareOutputAll', {checked: 'checked'}, getMessage.FTE06013)
-            + fn.html.radioText('compareOutput', '2', 'compareOutput', 'compareOutputDiff', null, getMessage.FTE06014)
-        + '</div>'
+        // + '<div class="commonSubTitle">'
+        //     + getMessage.FTE06017
+        // + '</div>'
+        // + '<div class="commonBody commonWrap">'
+        //     + fn.html.radioText('compareOutput', '1', 'compareOutput', 'compareOutputAll', {checked: 'checked'}, getMessage.FTE06013)
+        //     + fn.html.radioText('compareOutput', '2', 'compareOutput', 'compareOutputDiff', null, getMessage.FTE06014)
+        // + '</div>'
     + '</div>';
 }
 /*
@@ -247,13 +247,13 @@ compareSettingHtml( info ) {
 */
 hostHtml( hostList ) {
     const cp = this;
-    
+
     if ( !hostList.length ) {
         return cp.compareHostMessageHtml();
     }
-    
+
     cp.compareData.host = [];
-    
+
     const html = ['<ul class="compareHostList">'];
     for ( const host of hostList ) {
         const name = ( fn.typeof( host ) === 'string')? host: host.name,
@@ -266,7 +266,7 @@ hostHtml( hostList ) {
         cp.compareData.host.push( name );
     }
     html.push('</ul>');
-    
+
     return ''
     + '<div class="compareContentHeader">'
         + `<div class="commonTitle">${getMessage.FTE06020}</div>`
@@ -282,23 +282,23 @@ hostHtml( hostList ) {
 */
 compareEvents() {
     const cp = this;
-    
+
     cp.$.content.find('.operationMenuButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
-        
+
         switch ( type ) {
             case 'compareSelect':
                 cp.selectModalOpen('compare').then(function( result ){
                     if ( result ) {
                         cp.compareData.compare = result[0].name;
-                        cp.$.setting.html( cp.compareSettingHtml( result[0] ) );                        
+                        cp.$.setting.html( cp.compareSettingHtml( result[0] ) );
                         cp.$.result.html( cp.compareResultMessageHtml() );
-                        
+
                         cp.$.referenceDate1 = cp.$.setting.find('#referenceDate1');
                         cp.$.referenceDate2 = cp.$.setting.find('#referenceDate2');
                         cp.$.output = cp.$.setting.find('.compareOutput');
-                        
+
                         cp.compareSettingEvents();
                         cp.compareButtonCheck();
                         cp.restExeHost();
@@ -314,7 +314,7 @@ compareEvents() {
                     }
                 });
             break;
-            case 'compare': {                
+            case 'compare': {
                 $button.prop('disabled', true );
                 cp.getCompareSettingData();
                 fn.fetch( cp.rest.compare, null, 'POST', cp.compareData ).then(function( result ){
@@ -349,7 +349,7 @@ compareEvents() {
 */
 compareSettingEvents() {
     const cp = this;
-    
+
     // データピッカー
     fn.setDatePickerEvent( cp.$.referenceDate1, getMessage.FTE06022);
     fn.setDatePickerEvent( cp.$.referenceDate2, getMessage.FTE06023);
@@ -361,7 +361,7 @@ compareSettingEvents() {
 */
 getCompareSettingData() {
     const cp = this;
-    
+
     const output = cp.$.output.filter(':checked').val(),
           targetDate1 = cp.$.referenceDate1.val(),
           targetDate2 = cp.$.referenceDate2.val();
@@ -377,7 +377,7 @@ getCompareSettingData() {
 */
 selectModalOpen( type ) {
     const cp = this;
-    
+
     return new Promise(function( resolve ){
 
         const selectConfig = {};
@@ -402,7 +402,7 @@ selectModalOpen( type ) {
         fn.selectModalOpen( type, title, cp.menu, selectConfig ).then(function( selectResut ){
             resolve( selectResut );
         });
-        
+
     });
 }
 /*
@@ -412,7 +412,7 @@ selectModalOpen( type ) {
 */
 restExeHost() {
     const cp = this;
-    
+
     cp.$.host.removeClass('compareExecuteHost');
     cp.$.host.find('.compareHostItem').removeAttr('data-flag');
     cp.$.host.find('.compareOpen').removeClass('compareOpen');
@@ -425,16 +425,16 @@ restExeHost() {
 */
 setCompareResult( info ) {
     const cp = this;
-    
+
     let html = '';
-    
+
     const hostList = info.config.target_host_list,
           cols = info.config.target_column_info;
-    
+
     let comapreCount = 0;
-    
+
     cp.$.host.addClass('compareExecuteHost');
-    
+
     for ( const host of hostList ) {
         const hostName = fn.escape( host ),
               compareData = info.compare_data[ host ];
@@ -468,13 +468,13 @@ setCompareResult( info ) {
                 + '</tr>'
             + '</thead>'
             + '<tbody class="tbody">';
-            
+
             // 項目出力
             for ( const col of cols ) {
                 const colName = fn.cv( col.col_name, '', true ),
                       diff = compareData._data_diff_flg[ colName ];
-                if ( diff === null ) continue;
-                
+                if ( diff === null || diff === undefined) continue;
+
                 const t1Value = fn.cv( compareData.target_data_1[ colName ], '', true ),
                       t2Value = fn.cv( compareData.target_data_2[ colName ], '', true ),
                       filediff = fn.cv( compareData._file_compare_execute_flg[ colName ], undefined );
@@ -512,7 +512,7 @@ setCompareResult( info ) {
         html = ''
         + `<div class="commonMessage failedMessage"><div class="commonMessageInner">${fn.html.icon('compare') + getMessage.FTE06028}</div></div>`;
     }
-    
+
     cp.$.result.html(''
     + '<div class="compareContentHeader">'
         + `<div class="commonTitle">${getMessage.FTE06029}</div>`
@@ -520,11 +520,11 @@ setCompareResult( info ) {
     + '<div class="compareContentBody commonScroll">'
         + html
     + '</div>');
-    
+
     if ( comapreCount > 0 ) {
           cp.$.host.find('.compareExecuteItem').eq( 0 ).click();
     }
-    
+
     // ファイル比較
     cp.$.result.find('.fileDiffButton').on('click', function(){
         const $button = $( this ),
@@ -532,7 +532,7 @@ setCompareResult( info ) {
               name = $button.attr('data-colName');
 
         const fileDiffData = info.compare_data[ host ]._file_compare_execute_info[ name ];
-        
+
         fn.fetch(`/menu/${cp.menu}/compare/execute/file/`, null, 'POST', fileDiffData.parameter ).then(function(result){
             const config = {
                 className: 'diffModal',
@@ -555,7 +555,7 @@ setCompareResult( info ) {
                 }
             };
             const modal = new Dialog( config, func );
- 
+
             const diffHtml = Diff2Html.html( result.unified_diff.diff_result, {
               drawFileList: false,
               matching: 'lines',

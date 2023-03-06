@@ -472,16 +472,17 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
     for menuGroupId, menuGroupInfo in tmpRetImportAry.items():
         for k, menuInfo in menuGroupInfo["menu"].items():
             if menuGroupId == "none":
+                # メニューが存在しない
                 error = menuInfo["error"]
-                retUnImportAry[menuGroupId] = {"disp_seq": "",
-                                                    "menu_group_id": "",
-                                                    "menu_group_name": "",
-                                                    "menu": {idx_unimport: {"disp_seq": "",
-                                                            "menu_id": "",
-                                                            "menu_name": "",
-                                                            "file_name": fileName,
-                                                            "error": error}},
-                                                    "parent_id": None}
+                fileName = menuInfo["file_name"]
+                if menuGroupId not in retUnImportAry:
+                    retUnImportAry[menuGroupId] = {}
+                    retUnImportAry[menuGroupId]["menu"] = {}
+                retUnImportAry[menuGroupId]["menu"][idx_unimport] = {"disp_seq": "",
+                                                                        "menu_id": "",
+                                                                        "menu_name": "",
+                                                                        "file_name": fileName,
+                                                                        "error": error}
                 idx_unimport += 1
                 continue
 
@@ -544,12 +545,6 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
                                                 "parent_id": parent_id}
 
                     idx += 1
-
-    if len(retImportAry) == 0:
-        # ファイルの削除
-        cmd = "rm -rf " + importPath + upload_id
-        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-        raise AppException("499-01305", [], [])
 
     intResultCode = "000"
 

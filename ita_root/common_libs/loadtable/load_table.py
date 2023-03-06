@@ -1010,13 +1010,7 @@ class loadTable():
                                         if objcolumn.__class__.__name__ == "NumColumn":
                                             convert_search_conf = {}
                                             for k, v in search_conf.items():
-                                                if str.isnumeric(v):
-                                                    if int(v) == 0:
-                                                        convert_search_conf[k] = v
-                                                    else:
-                                                        convert_search_conf[k] = int(v)
-                                                else:
-                                                    convert_search_conf[k] = v
+                                                convert_search_conf[k] = v
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
@@ -1049,12 +1043,12 @@ class loadTable():
                             if isinstance(bindkeys, str):
                                 bindkey = bindkeys
                                 tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                if filter_query.get('bindvalue').get(bindkey):
+                                if filter_query.get('bindvalue').get(bindkey) is not None:
                                     bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             elif isinstance(bindkeys, list):
                                 for bindkey in bindkeys:
                                     tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                    if filter_query.get('bindvalue').get(bindkey):
+                                    if filter_query.get('bindvalue').get(bindkey) is not None:
                                         bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             where_str = where_str + tmp_where_str
 

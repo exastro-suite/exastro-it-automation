@@ -17,7 +17,8 @@ from datetime import datetime
 
 from .column_class import Column
 from flask import g
-
+from common_libs.common.exception import AppException
+import json
 
 class LastUpdateDateColumn(Column):
     """
@@ -50,14 +51,14 @@ class LastUpdateDateColumn(Column):
                 col_name = objcol.get('COL_NAME')
 
         self.col_name = col_name
-        
+
         # rest用項目名
         self.rest_key_name = rest_key_name
 
         self.db_qm = "'"
 
         self.objdbca = objdbca
-        
+
         self.cmd_type = cmd_type
 
         # 下限値
@@ -86,14 +87,14 @@ class LastUpdateDateColumn(Column):
 
         if len(str(val)) == 0:
             return retBool,
-        
+
         # 登録時はチェックしない
         if self.get_cmd_type() == 'Register':
             return retBool,
 
         # 日付形式のチェック
         # YYYY/MM/DD hh:mm:ss.ffffffの場合OK
-        if re.match(r'^[0-9]{4}/[0-9]{2}/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}$', val) is not None:
+        if re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{6}$', val) is not None:
             retBool = True
         else:
             msg = g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])
@@ -150,3 +151,40 @@ class LastUpdateDateColumn(Column):
         retBool = True
         msg = ''
         return retBool, msg, val
+
+    # RANGE検索のフォーマットチェック
+    def check_range_format(self, val):
+        """
+            出力用の値へ変換
+            ARGS:
+                val:値
+            RETRUN:
+                retBool
+        """
+
+        # 日付形式のチェック
+        # Noneまたは空文字の場合はエラー
+        if val is None or len(val) == 0:
+            retBool = False
+        # YYYY/MM/DD hh:mm:ss.ffffffの場合OK
+        elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{6}$', val) is not None:
+            retBool = True
+        # YYYY/MM/DD hh:mm:ssの場合OK
+        elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$', val) is not None:
+            retBool = True
+        # YYYY/MM/DD hh:mmの場合OK
+        elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]$', val) is not None:
+            retBool = True
+        # YYYY/MM/DDの場合OK
+        elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])$', val) is not None:
+            retBool = True
+        else:
+            retBool = False
+
+        if retBool is False:
+            msg_tmp = {0: {}}
+            msg_tmp[0][self.rest_key_name] = [g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])]
+            msg = json.dumps(msg_tmp, ensure_ascii=False)
+            raise AppException("499-00201", [msg], [msg])
+
+        return retBool

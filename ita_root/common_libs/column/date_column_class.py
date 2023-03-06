@@ -16,6 +16,8 @@ import re
 from datetime import datetime
 from .column_class import Column
 from flask import g
+from common_libs.common.exception import AppException
+import json
 
 
 class DateColumn(Column):
@@ -48,7 +50,7 @@ class DateColumn(Column):
                 col_name = objcol.get('COL_NAME')
 
         self.col_name = col_name
-        
+
         # rest用項目名
         self.rest_key_name = rest_key_name
 
@@ -87,7 +89,7 @@ class DateColumn(Column):
 
         # 日付形式のチェック
         # YYYY/MM/DDの場合OK
-        if re.match(r'^[0-9]{4}/[0-9]{2}/[0-9]{2}$', val) is not None:
+        if re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])$', val) is not None:
             retBool = True
         else:
             msg = g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])
@@ -127,3 +129,31 @@ class DateColumn(Column):
             val = val[0:10]
 
         return retBool, msg, val
+
+    # RANGE検索のフォーマットチェック
+    def check_range_format(self, val):
+        """
+            出力用の値へ変換
+            ARGS:
+                val:値
+            RETRUN:
+                retBool
+        """
+
+        # 日付形式のチェック
+        # Noneまたは空文字の場合はエラー
+        if val is None or len(val) == 0:
+            retBool = False
+        # YYYY/MM/DDの場合OK
+        elif re.match(r'^[0-9]{4}/(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])$', val) is not None:
+            retBool = True
+        else:
+            retBool = False
+
+        if retBool is False:
+            msg_tmp = {0: {}}
+            msg_tmp[0][self.rest_key_name] = [g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])]
+            msg = json.dumps(msg_tmp, ensure_ascii=False)
+            raise AppException("499-00201", [msg], [msg])
+
+        return retBool

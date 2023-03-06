@@ -17,7 +17,7 @@ import json
 import uuid
 
 
-def set_member_vars(objdbca, TFConst, module_matter_id, variable_data):  # noqa: C901
+def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_member_vars_list):  # noqa: C901
     """
         メンバー変数テーブルに対する処理を実行する。
         ARGS:
@@ -25,6 +25,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data):  # noqa:
             TFConst: 定数呼び出しクラス
             module_matter_id: 対象のmodule素材ID
             variable_data: tfファイルから抽出したvariableブロックのデータ
+            exist_member_vars_list: 廃止対象としないメンバー変数のリスト
         RETRUN:
             boolean, msg
     """
@@ -32,7 +33,6 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data):  # noqa:
         # 返却値の変数定義
         result = True
         msg = ""
-        exist_member_vars_list = []
 
         # メンバー変数関連処理の開始
         child_vars_id = 0

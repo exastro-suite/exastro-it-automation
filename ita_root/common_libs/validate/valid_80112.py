@@ -167,33 +167,42 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
     var_member_vars_flag = t_type_master_record.get('MEMBER_VARS_FLAG')
     var_assign_seq_flag = t_type_master_record.get('ASSIGN_SEQ_FLAG')
 
-    # Movement名:変数名(variable_name)の変数タイプから、メンバー変数(member_variable_name)に値が必要かどうかを判定
-    if str(var_member_vars_flag) == "1":
-        if not member_variable_name:
-            # var_member_vars_flagがTrue(1)かつMovement名:変数名:メンバー変数(member_variable_name)がない場合はバリデーションエラー
+    # HCL設定(hcl_setting)が1:Trueの場合、Movement名:変数名:メンバー変数(member_variable_name)、代入順序(substitution_order)は入力不可
+    if str(hcl_setting) == "1":
+        if member_variable_name or substitution_order:
             retBool = False
-            msg = g.appmsg.get_api_message("MSG-80015")
-            return retBool, msg, option,
-    else:
-        if member_variable_name:
-            # var_member_vars_flagがFalse(0)かつMovement名:変数名:メンバー変数(member_variable_name)がある場合はバリデーションエラー
-            retBool = False
-            msg = g.appmsg.get_api_message("MSG-80016")
+            msg = g.appmsg.get_api_message("MSG-80019")
             return retBool, msg, option,
 
-    # Movement名:変数名(variable_name)の変数タイプから、代入順序(substitution_order)に値が必要かどうかを判定
-    if str(var_assign_seq_flag) == "1":
-        if not substitution_order:
-            # var_assign_seq_flagがTrue(1)かつ代入順序(substitution_order)がない場合はバリデーションエラー
-            retBool = False
-            msg = g.appmsg.get_api_message("MSG-80017")
-            return retBool, msg, option,
-    else:
-        if substitution_order:
-            # var_assign_seq_flagがFalse(0)かつ代入順序(substitution_order)がある場合はバリデーションエラー
-            retBool = False
-            msg = g.appmsg.get_api_message("MSG-80018")
-            return retBool, msg, option,
+    # 以下、「HCL設定」がOFFの場合のみ判定
+    if str(hcl_setting) == "0":
+        # Movement名:変数名(variable_name)の変数タイプから、メンバー変数(member_variable_name)に値が必要かどうかを判定
+        if str(var_member_vars_flag) == "1":
+            if not member_variable_name:
+                # var_member_vars_flagがTrue(1)かつMovement名:変数名:メンバー変数(member_variable_name)がない場合はバリデーションエラー
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-80015")
+                return retBool, msg, option,
+        else:
+            if member_variable_name:
+                # var_member_vars_flagがFalse(0)かつMovement名:変数名:メンバー変数(member_variable_name)がある場合はバリデーションエラー
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-80016")
+                return retBool, msg, option,
+
+        # Movement名:変数名(variable_name)の変数タイプから、代入順序(substitution_order)に値が必要かどうかを判定
+        if str(var_assign_seq_flag) == "1":
+            if not substitution_order:
+                # var_assign_seq_flagがTrue(1)かつ代入順序(substitution_order)がない場合はバリデーションエラー
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-80017")
+                return retBool, msg, option,
+        else:
+            if substitution_order:
+                # var_assign_seq_flagがFalse(0)かつ代入順序(substitution_order)がある場合はバリデーションエラー
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-80018")
+                return retBool, msg, option,
 
     # Movement名:変数名(variable_name)が一致するレコードがほかにある場合、HCL設定(hcl_setting)の値が統一になっているかどうかを判定
     if cmd_type == 'Update':
@@ -213,10 +222,10 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
             if not str(hcl_setting) == str(record.get('HCL_FLAG')):
                 hcl_check_flag = False
 
-        # HCL設定の値に差異があればバリデーションエラー
+        # HCL設定(hcl_setting)の値に差異があればバリデーションエラー
         if not hcl_check_flag:
             retBool = False
-            msg = g.appmsg.get_api_message("MSG-80019")
+            msg = g.appmsg.get_api_message("MSG-80020")
             return retBool, msg, option,
 
     return retBool, msg, option,

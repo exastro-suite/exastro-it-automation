@@ -2,9 +2,6 @@
 CREATE TABLE T_TERC_IF_INFO
 (
     TERRAFORM_IF_INFO_ID            VARCHAR(40),                                -- 項番(UUID)
-    TERRAFORM_HOSTNAME              VARCHAR(255),                               -- Terraform Hostname
-    TERRAFORM_PROXY_ADDRESS         VARCHAR(255),                               -- プロキシサーバアドレス
-    TERRAFORM_PROXY_PORT            INT,                                        -- プロキシサーバポート
     NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL連携
     TERRAFORM_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
     TERRAFORM_TAILLOG_LINES         INT,                                        -- 進行状態表示行数
@@ -21,9 +18,6 @@ CREATE TABLE T_TERC_IF_INFO_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     TERRAFORM_IF_INFO_ID            VARCHAR(40),                                -- 項番(UUID)
-    TERRAFORM_HOSTNAME              VARCHAR(255),                               -- Terraform Hostname
-    TERRAFORM_PROXY_ADDRESS         VARCHAR(255),                               -- プロキシサーバアドレス
-    TERRAFORM_PROXY_PORT            INT,                                        -- プロキシサーバポート
     NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL連携
     TERRAFORM_REFRESH_INTERVAL      INT,                                        -- 状態監視周期(単位ミリ秒)
     TERRAFORM_TAILLOG_LINES         INT,                                        -- 進行状態表示行数

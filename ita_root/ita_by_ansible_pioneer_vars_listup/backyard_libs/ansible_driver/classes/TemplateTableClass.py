@@ -12,6 +12,8 @@
 # limitations under the License.
 #
 import json
+import os
+import inspect
 import sys
 import traceback
 
@@ -51,6 +53,13 @@ class TemplateTable(TableBase):
             try:
                 tpl_var_id = row[self.pkey]
                 tpl_var_name = row['ANS_TEMPLATE_VARS_NAME']
+
+                if "1" == str(row['ROLE_ONLY_FLAG']):
+                    msgstr = g.appmsg.get_api_message("MSG-10599", [tpl_var_name])
+                    msgstr = g.appmsg.get_api_message("MSG-10579", [msgstr])
+                    g.applogger.debug(msgstr)
+                    continue
+
                 var_struct = json.loads(row['VAR_STRUCT_ANAL_JSON_STRING'])
 
                 if tpl_var_name not in result_dict:

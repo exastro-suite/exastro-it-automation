@@ -80,8 +80,9 @@ def compare_validate(objdbca, objtable, option):
                     msg_args = []
                     msg = g.appmsg.get_api_message(status_code, msg_args)
 
-            # set default value: detail_flg
-            option["entry_parameter"]["parameter"].setdefault("detail_flg", "0")
+            if cmd_type == "Register":
+                # set default value: detail_flg
+                option["entry_parameter"]["parameter"].setdefault("detail_flg", "0")
 
     except Exception as e:
         retBool = False

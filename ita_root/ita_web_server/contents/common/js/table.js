@@ -752,7 +752,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
     const headRowspan = rowLength + 1;
     if ( filterHeaderFlag ) {
         switch ( tb.mode ) {
-            case 'view':
+            case 'view': {
                 if ( tb.flag.update ) {
                     const selectButton = fn.html.button('', 'rowSelectButton');
                     html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
@@ -761,8 +761,8 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
                 const itemText = ( tb.getTableSettingValue('menu') === 'show')? '項目メニュー': fn.html.icon('ellipsis_v');
                 html[0] += fn.html.cell( itemText, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowMenu'], 'th', headRowspan );
                 tb.data.filterHeadColspan++;
-            break;
-            case 'select': case 'execute':
+            } break;
+            case 'select': case 'execute': {
                 if ( tb.mode === 'select' && tb.params.selectType === 'multi') {
                     const selectButton = fn.html.button('', 'rowSelectButton');
                     html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
@@ -770,21 +770,21 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
                     html[0] += fn.html.cell(getMessage.FTE00032, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
                 }
                 tb.data.filterHeadColspan++;
-            break;
+            } break;
             case 'edit': {
                 if ( tb.flag.edit || tb.flag.disuse || tb.flag.reuse ) {
                     const selectButton = fn.html.button('', 'rowSelectButton');
                     html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
                 }
             } break;
-            case 'diff':
+            case 'diff': {
                 html[0] += fn.html.cell(getMessage.FTE00033, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
-            break;
-            case 'history':
+            } break;
+            case 'history': {
                 html[0] += fn.html.cell(getMessage.FTE00034, ['tHeadTh', 'tHeadLeftSticky'], 'th', headRowspan );
                 html[0] += fn.html.cell(getMessage.FTE00035, ['tHeadTh'], 'th', headRowspan );
                 html[0] += fn.html.cell(getMessage.FTE00036, ['tHeadTh'], 'th', headRowspan );
-            break;
+            } break;
         }
     }
 
@@ -1078,7 +1078,7 @@ filterHtml( filterHeaderFlag = true ) {
                             + fn.html.inputText(['filterInput', 'filterToDate'], initValue.end, name, { type: 'toDate', rest: rest, placeholder: 'To' })
                         + `</div>`
                         + `<div class="filterInputDateCalendar">`
-                            + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'filterInputDatePicker'], { rest: rest, action: 'normal'})
+                            + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'filterInputDatePicker'], { type: 'dateTime', rest: rest, action: 'normal'})
                         + `</div>`
                     + `</div>`);
                 break;
@@ -1098,7 +1098,7 @@ filterHtml( filterHeaderFlag = true ) {
                             + fn.html.inputText(['filterInput', 'filterToDate'], initValue.end, name, { type: 'toDate', rest: rest, placeholder: 'To' })
                         + `</div>`
                         + `<div class="filterInputDateCalendar">`
-                            + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'filterInputDatePicker'], { rest: rest, action: 'normal'})
+                            + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'filterInputDatePicker'], { type: 'date', rest: rest, action: 'normal'})
                         + `</div>`
                     + `</div>`);
                 break;
@@ -1320,6 +1320,10 @@ setTableEvents() {
         // フィルタボタン
         $eventTarget.on('click', '.filterMenuButton', function(){
             if ( !tb.checkWork ) {
+                
+                tb.$.container.removeClass('tableError');
+                tb.$.errorMessage.empty();
+                
                 const $button = $( this ),
                       type = $button.attr('data-type');
                 switch ( type ) {
@@ -1347,15 +1351,18 @@ setTableEvents() {
             $eventTarget.find('.filterInputDatePicker').on('click', function(){
                 if ( !tb.checkWork ) {
                     const $button = $( this ),
-                          rest = $button.attr('data-rest');
+                          rest = $button.attr('data-rest'),
+                          type = $button.attr('data-type');
 
                     const $from = tb.$.thead.find(`.filterFromDate[data-rest="${rest}"]`),
                           $to = tb.$.thead.find(`.filterToDate[data-rest="${rest}"]`);
 
                     const from = $from.val(),
                           to = $to.val();
+                    
+                    const dateFlag = ( type === 'dateTime')? true: false;
 
-                    fn.datePickerDialog('fromTo', true, tb.data.restNames[ rest ], { from: from, to: to } ).then(function( result ){
+                    fn.datePickerDialog('fromTo', dateFlag, tb.data.restNames[ rest ], { from: from, to: to } ).then(function( result ){
                         if ( result !== 'cancel') {
                             $from.val( result.from );
                             $to.val( result.to ).trigger('change');
@@ -2202,8 +2209,7 @@ filterSelectParamsOpen( filterParams ) {
 requestTbody() {
     const tb = this;
     
-    tb.filterParams = tb.getFilterParameter();    
-    
+    tb.filterParams = tb.getFilterParameter();
     
     if ( tb.flag.countSkip ) {
         // 件数を確認しない
@@ -2231,7 +2237,10 @@ requestTbody() {
 
             tb.workerPost('filter', tb.filterParams );
         }).catch(function( error ){
-            fn.gotoErrPage( error.message );
+            tb.filterError( error );
+            setTimeout( function() {
+                tb.workEnd();
+            }, 300 );
         });
     }
 }
@@ -2276,11 +2285,11 @@ getFilterParameter() {
                 break;
                 case 'fromDate':
                     if ( !filterParams[ rest ].RANGE ) filterParams[ rest ].RANGE = {};
-                    filterParams[ rest ].RANGE.START = fn.date( value, 'yyyy/MM/dd HH:mm:ss');
+                    filterParams[ rest ].RANGE.START = String( value );
                 break;
                 case 'toDate':
                     if ( !filterParams[ rest ].RANGE ) filterParams[ rest ].RANGE = {};
-                    filterParams[ rest ].RANGE.END = fn.date( value, 'yyyy/MM/dd HH:mm:ss');
+                    filterParams[ rest ].RANGE.END = String( value );
                 break;
                 case 'discard':
                     if ( value === getMessage.FTE00040) {
@@ -3518,6 +3527,10 @@ changeEdtiMode( changeMode ) {
     // テーブルモードの変更
     tb.tableMode = 'input';
     
+    // エラーリセット
+    tb.$.container.removeClass('tableError');
+    tb.$.errorMessage.empty();
+    
     // テーブル構造を再セット
     tb.setHeaderHierarchy();
     
@@ -3751,6 +3764,10 @@ editOk() {
     
     tb.data.editOrder = [];
     
+    // エラーリセット
+    tb.$.container.removeClass('tableError');
+    tb.$.errorMessage.empty();
+    
     const editData = [];
     
     for ( const itemId of tb.data.order ) {
@@ -3911,6 +3928,56 @@ execute( type ) {
 }
 /*
 ##################################################
+   Filter error
+   エラー表示
+##################################################
+*/
+filterError( error ) {
+    const tb = this;
+      
+    let errorMessage;
+    try {
+        errorMessage = JSON.parse( error.message );
+    } catch ( e ) {
+        //JSONを作成
+        errorMessage["0"][ getMessage.FTE00064 ] = error.message;
+    }
+    
+    const errorHtml = [];
+    
+    for ( const item in errorMessage ) {
+        for ( const error in errorMessage[item] ) {
+            const name = fn.cv( tb.data.restNames[ error ], error, true );
+            let   body = fn.cv( errorMessage[item][error].join(''), '?', true );
+            
+            if ( fn.typeof( body ) === 'string') body = body.replace(/\r?\n/g, '<br>');
+            errorHtml.push(`<tr class="tBodyTr tr">`
+                + fn.html.cell( name, 'tBodyTh', 'th')
+                + fn.html.cell( body, 'tBodyTd')
+            + `</tr>`);
+        }
+    }
+    
+    tb.$.container.addClass('tableError');
+    tb.$.errorMessage.html(`
+    <div class="errorBorder"></div>
+    <div class="errorTableContainer">
+        <div class="errorTitle"><span class="errorTitleInner">${fn.html.icon('circle_exclamation')}${getMessage.FTE00166}</span></div>
+        <table class="table errorTable">
+            <thead class="thead">
+                <tr class="tHeadTr tr">
+                <th class="tHeadTh th tHeadErrorColumn"><div class="ci">${getMessage.FTE00070}</div></th>
+                <th class="tHeadTh th tHeadErrorBody"><div class="ci">${getMessage.FTE00071}</div></th>
+                </tr>
+            </thead>
+            <tbody class="tbody">
+                ${errorHtml.join('')}
+            </tbody>
+        </table>
+    </div>`);
+}
+/*
+##################################################
    Edit error
    エラー表示
 ##################################################
@@ -3926,14 +3993,13 @@ editError( error ) {
     } catch ( e ) {
         //JSONを作成
         let key = getMessage.FTE00064;
-        //errorMessage = {"0":{key:[error.message]}};
         errorMessage["0"][key] = error.message;
     }
 
     //一意のキーの値を取り出す
     const param = error.data.map(function(result) {
         const params = result.parameter;
-            return params[target];
+        return params[target];
     });
 
     const errorHtml = [];

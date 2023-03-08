@@ -372,6 +372,70 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
 
     return result,
 
+@api_filter
+def post_driver_execute_delete_resource(organization_id, workspace_id, menu, body=None):  # noqa: E501
+    """post_driver_execute_delete_resource
+
+    Driver作業実行(リソース削除) # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param menu: メニュー名
+    :type menu: str
+    :param body:
+    :type body: dict | bytes
+
+    :rtype: InlineResponse20018
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['11']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    parameter = {}
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        parameter = body
+
+    # Terraformメニューであること
+    if not menu == TFCloudEPConst.RN_EXECTION and not menu == TFCLIConst.RN_EXECTION:
+        # リソース削除はTerraformドライバのみ実施可能です。
+        raise AppException("499-00917", [], [])  # noqa: F405
+
+    # トランザクション開始
+    objdbca.db_transaction_start()
+
+    # ドライバIDを選定
+    if menu == TFCloudEPConst.RN_EXECTION:
+        driver_id = TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP
+    else:
+        driver_id = TFCommonConst.DRIVER_TERRAFORM_CLI
+
+    # パラメータの抽出
+    tf_workspace_name = parameter.get('tf_workspace_name')
+    if not tf_workspace_name:
+        # 必要なパラメータが指定されていません。
+        raise AppException("499-00908", ['tf_workspace_name'], ['tf_workspace_name'])  # noqa: F405
+
+    # 作業実行登録
+    run_mode = TFCommonConst.RUN_MODE_DESTROY
+    result = t_insert_execution_list(objdbca, run_mode, driver_id, None, None, None, None, None, tf_workspace_name)
+
+    # コミット・トランザクション終了
+    objdbca.db_transaction_end(True)
+
+    return result,
+
 
 @api_filter
 def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):  # noqa: E501

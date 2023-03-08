@@ -139,7 +139,12 @@ class RestApiCaller():
             e_read = json.loads(e.read())
             if e_read:
                 errors = e_read.get('errors')
-                error_detail = errors[0].get('detail')
+                if isinstance(errors, list):
+                    error_detail = errors[0]
+                elif isinstance(errors, dict):
+                    error_detail = errors[0].get('detail')
+                else:
+                    error_detail = errors
                 if error_detail:
                     response_array['responseContents'] = {"errorMessage": error_detail}
                 else:

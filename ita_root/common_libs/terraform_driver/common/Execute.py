@@ -25,7 +25,7 @@ import json
 import pathlib
 
 
-def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_row, scheduled_date=None, conductor_id=None, conductor_name=None):
+def insert_execution_list(objdbca, run_mode, driver_id, operation_row=None, movement_row=None, scheduled_date=None, conductor_id=None, conductor_name=None, tf_workspace_name=None):  # noqa: E501
     """
         作業実行を登録
         ARGS:
@@ -93,52 +93,85 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
     user_list = search_user_list(objdbca)
 
     # 実行ユーザの登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["EXECUTION_USER"]] = user_list[user_id]
+    exec_sts_inst_table_confg[rest_name_config["EXECUTION_USER"]] = user_list.get(user_id)
 
     # 登録日時の登録値を設定
     exec_sts_inst_table_confg[rest_name_config["TIME_REGISTER"]] = now_time
 
-    # Movement/IDの登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["MOVEMENT_ID"]] = movement_row["MOVEMENT_ID"]
+    # 実行種別により登録する値が異なる
+    if run_mode == TFCommonConst.RUN_MODE_DESTROY:
+        # 実行種別「リソース削除」の場合
+        # tf_workspace_nameの存在有無を確認
+        where_str = 'WHERE WORKSPACE_NAME = %s AND DISUSE_FLAG = %s'
+        if driver_id == TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP:
+            tf_work_record = objdbca.table_select(TFCloudEPConst.V_ORGANIZATION_WORKSPACE, where_str, [tf_workspace_name, 0])
+        else:
+            tf_work_record = objdbca.table_select(TFCLIConst.T_WORKSPACE, where_str, [tf_workspace_name, 0])
+        if not tf_work_record:
+            # 対処のTerraform Workspaceのレコードが存在しません。(tf_workspace_name: {})
+            raise AppException("499-00918", [tf_workspace_name], [tf_workspace_name])
 
-    # Movement/名称の登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["I_MOVEMENT_NAME"]] = movement_row["MOVEMENT_NAME"]
+        # id/nameを取得
+        tf_workspace_id = tf_work_record[0].get('WORKSPACE_ID')
+        if driver_id == TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP:
+            tf_workspace_name = tf_work_record[0].get('ORGANIZATION_WORKSPACE')
+        else:
+            tf_workspace_name = tf_work_record[0].get('WORKSPACE_NAME')
 
-    # Movement/遅延タイマーの登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["I_TIME_LIMIT"]] = movement_row["TIME_LIMIT"]
+        # Movement/Terraform利用情報/workspace_idの登録値を設定
+        column_workspace_id = driver_id + "_WORKSPACE_ID"
+        exec_sts_inst_table_confg[rest_name_config["I_WORKSPACE_ID"]] = tf_workspace_id
 
-    # Mogement/Terraform利用情報/workspace_idの登録値を設定
-    column_workspace_id = driver_id + "_WORKSPACE_ID"
-    exec_sts_inst_table_confg[rest_name_config["I_WORKSPACE_ID"]] = movement_row[column_workspace_id]
+        # Terraform Workspace名称の登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["I_WORKSPACE_NAME"]] = tf_workspace_name
 
-    # 対象のWorkspace名称を取得
-    if driver_id == "TERE":
-        sql = "SELECT ORGANIZATION_WORKSPACE AS WORKSPACE_NAME FROM V_TERE_ORGANIZATION_WORKSPACE_LINK WHERE WORKSPACE_ID = %s AND DISUSE_FLAG = '0'"
     else:
-        sql = "SELECT WORKSPACE_NAME AS WORKSPACE_NAME FROM T_TERC_WORKSPACE WHERE WORKSPACE_ID = %s AND DISUSE_FLAG = '0'"
-    rows = objdbca.sql_execute(sql, [movement_row[column_workspace_id]])
-    if rows:
-        row = rows[0]
-        exec_sts_inst_table_confg[rest_name_config["I_WORKSPACE_NAME"]] = row["WORKSPACE_NAME"]
-    else:
-        # レコードが0件の場合エラー判定
-        # ####メモ：メッセージ一覧から取得。Movementに紐付くWorkspaceが不正です。
-        raise AppException("999-99999", [movement_row[column_workspace_id]], [movement_row[column_workspace_id]])
+        # 実行種別「通常」「Plan確認」「パラメータ確認」の場合
+        # Movement/IDの登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["MOVEMENT_ID"]] = movement_row["MOVEMENT_ID"]
 
-    # オペレーション/Noの登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["OPERATION_ID"]] = operation_row["OPERATION_ID"]
+        # Movement/名称の登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["I_MOVEMENT_NAME"]] = movement_row["MOVEMENT_NAME"]
 
-    # オペレーション/名称の登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["I_OPERATION_NAME"]] = operation_row["OPERATION_NAME"]
+        # Movement/遅延タイマーの登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["I_TIME_LIMIT"]] = movement_row["TIME_LIMIT"]
 
-    # 作業状況/予約日時
-    exec_sts_inst_table_confg[rest_name_config["TIME_BOOK"]] = scheduled_date
+        # Movement/Terraform利用情報/workspace_idの登録値を設定
+        column_workspace_id = driver_id + "_WORKSPACE_ID"
+        exec_sts_inst_table_confg[rest_name_config["I_WORKSPACE_ID"]] = movement_row[column_workspace_id]
 
-    # 呼び出し元Conductor名の登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["CONDUCTOR_NAME"]] = conductor_name
+        # 対象のWorkspace名称を取得
+        where_str = 'WHERE WORKSPACE_NAME = %s AND DISUSE_FLAG = %s'
+        if driver_id == TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP:
+            tf_work_record = objdbca.table_select(TFCloudEPConst.V_ORGANIZATION_WORKSPACE, where_str, [tf_workspace_name, 0])
+        else:
+            tf_work_record = objdbca.table_select(TFCLIConst.T_WORKSPACE, where_str, [tf_workspace_name, 0])
 
-    # 呼び出し元ConductorIDの登録値を設定
-    exec_sts_inst_table_confg[rest_name_config["CONDUCTOR_INSTANCE_NO"]] = conductor_id
+        if not tf_work_record:
+            # メッセージ一覧から取得。Movementに紐付くWorkspaceが不正です。
+            raise AppException("499-00919", [movement_row[column_workspace_id]], [movement_row[column_workspace_id]])
+
+        # Terraform Workspace名称の登録値を設定
+        if driver_id == TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP:
+            tf_workspace_name = tf_work_record[0].get('ORGANIZATION_WORKSPACE')
+        else:
+            tf_workspace_name = tf_work_record[0].get('WORKSPACE_NAME')
+        exec_sts_inst_table_confg[rest_name_config["I_WORKSPACE_NAME"]] = tf_workspace_name
+
+        # オペレーション/Noの登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["OPERATION_ID"]] = operation_row["OPERATION_ID"]
+
+        # オペレーション/名称の登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["I_OPERATION_NAME"]] = operation_row["OPERATION_NAME"]
+
+        # 作業状況/予約日時
+        exec_sts_inst_table_confg[rest_name_config["TIME_BOOK"]] = scheduled_date
+
+        # 呼び出し元Conductor名の登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["CONDUCTOR_NAME"]] = conductor_name
+
+        # 呼び出し元ConductorIDの登録値を設定
+        exec_sts_inst_table_confg[rest_name_config["CONDUCTOR_INSTANCE_NO"]] = conductor_id
 
     # 廃止フラグの登録値を設定
     exec_sts_inst_table_confg[rest_name_config["DISUSE_FLAG"]] = '0'

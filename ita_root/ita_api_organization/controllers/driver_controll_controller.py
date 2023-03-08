@@ -30,7 +30,8 @@ from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from common_libs.terraform_driver.common.Execute import insert_execution_list as t_insert_execution_list, get_execution_info as t_get_execution_info, reserve_cancel as t_reserve_cancel  # noqa: E501
-
+from common_libs.terraform_driver.cloud_ep.Execute import execution_scram as t_cloud_ep_execution_scram
+from common_libs.terraform_driver.cli.Execute import execution_scram as t_cli_execution_scram
 
 @api_filter
 def get_driver_execute_data(organization_id, workspace_id, menu, execution_no):  # noqa: E501
@@ -537,8 +538,17 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
               'check_operation_status_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
               'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
 
-    # result = a_exectuion_scram(objdbca, target[menu], execution_no)
-    a_exectuion_scram(objdbca, target[menu], execution_no)
+    if 'ansible' in menu:
+        # Ansible用 緊急停止処理
+        # result = a_exectuion_scram(objdbca, target[menu], execution_no)
+        a_exectuion_scram(objdbca, target[menu], execution_no)
+    else:
+        if 'terraform_cloud_ep' in menu:
+            # Terraform Cloud/EP用 緊急停止処理
+            t_cloud_ep_execution_scram(objdbca, execution_no)
+        else:
+            # Terraform CLI用 緊急停止処理
+            t_cli_execution_scram(objdbca, execution_no)
 
     objdbca.db_transaction_end(False)  # roleback
 

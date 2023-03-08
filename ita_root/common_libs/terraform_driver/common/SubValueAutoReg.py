@@ -31,8 +31,11 @@ class SubValueAutoReg():
         処理内容
             コンストラクタ
         パラメータ
-            ansible_driver: ansibleドライバ名
             ws_db: WorkspaceDBインスタンス
+            TFConset: 定数クラス
+            operation_id: オペレーションID
+            movement_id: MovementID
+            execution_id: 作業実行ID
         戻り値
             なし
         """

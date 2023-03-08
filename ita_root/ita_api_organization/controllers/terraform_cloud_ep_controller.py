@@ -204,6 +204,89 @@ def delete_terraform_organization(organization_id, workspace_id, tf_organization
 
 
 @api_filter
+def delete_terraform_policy(organization_id, workspace_id, tf_organization_name, policy_name):  # noqa: E501
+    """delete_terraform_policy
+
+    連携しているTerraform Cloud/EnterpriseからPolicyを削除する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param tf_organization_name: Terraform Organization Name
+    :type tf_organization_name: str
+    :param policy_name: Policy Name
+    :type policy_name: str
+
+    :rtype: InlineResponse2006
+    """
+    return 'do some magic!'
+
+
+@api_filter
+def delete_terraform_policy_set(organization_id, workspace_id, tf_organization_name, policy_set_name):  # noqa: E501
+    """delete_terraform_policy_set
+
+    連携しているTerraform Cloud/EnterpriseからPolicySetを削除する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param tf_organization_name: Terraform Organization Name
+    :type tf_organization_name: str
+    :param policy_set_name: Policy Name
+    :type policy_set_name: str
+
+    :rtype: InlineResponse2006
+    """
+    return 'do some magic!'
+
+
+@api_filter
+def delete_terraform_policy_set_relationship_policy(organization_id, workspace_id, tf_organization_name, policy_set_name, policy_name):  # noqa: E501
+    """delete_terraform_policy_set_relationship_policy
+
+    連携しているTerraform Cloud/EnterpriseからPolicySetとPolicyの紐付けを解除する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param tf_organization_name: Terraform Organization Name
+    :type tf_organization_name: str
+    :param policy_set_name: Policy Name
+    :type policy_set_name: str
+    :param policy_name: Terraform Workspace Name
+    :type policy_name: str
+
+    :rtype: InlineResponse2006
+    """
+    return 'do some magic!'
+
+@api_filter
+def delete_terraform_policy_set_relationship_workspace(organization_id, workspace_id, tf_organization_name, policy_set_name, tf_workspace_name):  # noqa: E501
+    """delete_terraform_policy_set_relationship_workspace
+
+    連携しているTerraform Cloud/EnterpriseからPolicySetとWorkspaceの紐付けを解除する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param tf_organization_name: Terraform Organization Name
+    :type tf_organization_name: str
+    :param policy_set_name: Policy Name
+    :type policy_set_name: str
+    :param tf_workspace_name: Terraform Workspace Name
+    :type tf_workspace_name: str
+
+    :rtype: InlineResponse2006
+    """
+    return 'do some magic!'
+
+
+@api_filter
 def delete_terraform_workspace(organization_id, workspace_id, tf_organization_name, tf_workspace_name):  # noqa: E501
     """delete_terraform_workspace
 
@@ -270,6 +353,58 @@ def get_terraform_organization_list(organization_id, workspace_id):  # noqa: E50
     data = terraform_cloud_ep.get_organization_list(objdbca)
 
     return data,
+
+
+@api_filter
+def get_terraform_policy_file(organization_id, workspace_id, tf_organization_name, policy_name):  # noqa: E501
+    """get_terraform_policy_file
+
+    連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param tf_organization_name: Terraform Organization Name
+    :type tf_organization_name: str
+    :param policy_name: Policy Name
+    :type policy_name: str
+
+    :rtype: InlineResponse2006
+    """
+    return 'do some magic!'
+
+
+@api_filter
+def get_terraform_policy_list(organization_id, workspace_id):  # noqa: E501
+    """get_terraform_policy_list
+
+    連携しているTerraform Cloud/EnterpriseからPolicyの一覧を取得する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2006
+    """
+    return 'do some magic!'
+
+
+@api_filter
+def get_terraform_policy_set_list(organization_id, workspace_id):  # noqa: E501
+    """get_terraform_policy_set_list
+
+    連携しているTerraform Cloud/EnterpriseからPolicySetの一覧を取得する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2006
+    """
+    return 'do some magic!'
 
 
 @api_filter

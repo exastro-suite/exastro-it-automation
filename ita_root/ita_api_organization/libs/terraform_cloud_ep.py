@@ -19,6 +19,7 @@ from flask import g  # noqa: F401
 from libs.organization_common import check_auth_menu  # noqa: F401
 from common_libs.api import check_request_body_key  # noqa: F401
 from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
+from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
 
 
 def check_organization(objdbca, tf_organization_name):
@@ -145,26 +146,12 @@ def get_organization_list(objdbca):
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
-
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
     # RESTAPIコール
-    api_uri = '/organizations'
-    response_array = restApiCaller.rest_call('GET', api_uri)
+    response_array = get_tf_organization_list(restApiCaller)  # noqa: F405
     response_status_code = response_array.get('statusCode')
     if response_status_code == 200:
         # 正常系
@@ -199,26 +186,12 @@ def get_workspace_list(objdbca, tf_organization_name):
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
-
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces' % (tf_organization_name)
-    response_array = restApiCaller.rest_call('GET', api_uri)
+    response_array = get_tf_workspace_list(restApiCaller, tf_organization_name)  # noqa: F405
     response_status_code = response_array.get('statusCode')
     if response_status_code == 200:
         # 正常系
@@ -253,39 +226,16 @@ def create_organization(objdbca, parameters):
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
-
-    # contentsを作成
+    # parameterを取得
     tf_organization_name = parameters.get('tf_organization_name')
     email_address = parameters.get('email_address')
-    request_contents = {
-        "data": {
-            "type": "organizations",
-            "attributes": {
-                "name": tf_organization_name,
-                "email": email_address
-            }
-        }
-    }
 
     # RESTAPIコール
-    api_uri = '/organizations'
-    response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
+    response_array = create_tf_organization(restApiCaller, tf_organization_name, email_address)  # noqa: F405
     response_status_code = response_array.get('statusCode')
     if response_status_code == 201:
         # 正常系
@@ -327,45 +277,16 @@ def create_workspace(objdbca, tf_organization_name, parameters):
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
-
-    # contentsを作成
-    execution_mode = True  # リモート実行モードをしようするかどうか。ITAからWorkspaceを作成する際はTrue固定とする
-    auto_apply = False  # Planが成功した際に自動でApplyを実行するかどうか。ITAからWorkspaceを作成する際はFalse固定とする
-    working_directory = ''  # Terraformが実行される相対パス。ITAからWorkspaceを作成する際は空欄固定とする。
+    # parameterを取得
     tf_workspace_name = parameters.get('tf_workspace_name')
     terraform_version = parameters.get('terraform_version') or ''
-    request_contents = {
-        "data": {
-            "type": "workspaces",
-            "attributes": {
-                "name": tf_workspace_name,
-                "operations": execution_mode,
-                "auto-apply": auto_apply,
-                "terraform-version": terraform_version,
-                "working-directory": working_directory
-            }
-        }
-    }
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces' % (tf_organization_name)
-    response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
+    response_array = create_tf_workspace(restApiCaller, tf_organization_name, tf_workspace_name, terraform_version)  # noqa: F405
     response_status_code = response_array.get('statusCode')
     if response_status_code == 201:
         # 正常系
@@ -407,38 +328,15 @@ def update_organization(objdbca, tf_organization_name, parameters):
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
-
-    # contentsを作成
+    # parameterを取得
     email_address = parameters.get('email_address')
-    request_contents = {
-        "data": {
-            "type": "organizations",
-            "attributes": {
-                "name": tf_organization_name,
-                "email": email_address
-            }
-        }
-    }
 
     # RESTAPIコール
-    api_uri = '/organizations/%s' % (tf_organization_name)
-    response_array = restApiCaller.rest_call('PATCH', api_uri, request_contents)
+    response_array = update_tf_organization(restApiCaller, tf_organization_name, email_address)  # noqa: F405
     response_status_code = response_array.get('statusCode')
     if response_status_code == 200:
         # 正常系
@@ -480,43 +378,15 @@ def update_workspace(objdbca, tf_organization_name, tf_workspace_name, parameter
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
-
-    # contentsを作成
-    execution_mode = True  # リモート実行モードをしようするかどうか。ITAからWorkspaceを作成する際はTrue固定とする
-    auto_apply = False  # Planが成功した際に自動でApplyを実行するかどうか。ITAからWorkspaceを作成する際はFalse固定とする
-    working_directory = ''  # Terraformが実行される相対パス。ITAからWorkspaceを作成する際は空欄固定とする。
+    # parameterを取得
     terraform_version = parameters.get('terraform_version') or ''
-    request_contents = {
-        "data": {
-            "type": "workspaces",
-            "attributes": {
-                "operations": execution_mode,
-                "auto-apply": auto_apply,
-                "terraform-version": terraform_version,
-                "working-directory": working_directory
-            }
-        }
-    }
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces/%s' % (tf_organization_name, tf_workspace_name)
-    response_array = restApiCaller.rest_call('PATCH', api_uri, request_contents)
+    response_array = update_tf_workspace(restApiCaller, tf_organization_name, tf_workspace_name, terraform_version)  # noqa: F405
     response_status_code = response_array.get('statusCode')
     if response_status_code == 200:
         # 正常系
@@ -558,29 +428,12 @@ def delete_organization(objdbca, tf_organization_name):
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
-
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
-
-    # contentsを作成'
-    request_contents = {}
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
     # RESTAPIコール
-    api_uri = '/organizations/%s' % (tf_organization_name)
-    response_array = restApiCaller.rest_call('DELETE', api_uri, request_contents)
+    response_array = delete_tf_organization(restApiCaller, tf_organization_name)  # noqa: F405
     response_status_code = response_array.get('statusCode')
     if response_status_code == 204:
         # 正常系
@@ -609,31 +462,15 @@ def delete_workspace(objdbca, tf_organization_name, tf_workspace_name):
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
     interface_info_data = get_intarface_info_data(objdbca)
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
-
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
-
-    # contentsを作成'
-    request_contents = {}
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
 
     # RESTAPIコール
-    api_uri = '/organizations/%s/workspaces/%s/actions/safe-delete' % (tf_organization_name, tf_workspace_name)
-    response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
+    response_array = delete_tf_workspace(restApiCaller, tf_organization_name, tf_workspace_name)  # noqa: F405
     response_status_code = response_array.get('statusCode')
-    if response_status_code == 204:
+
+    if response_status_code == 204 or response_status_code == 200:
         # 正常系
         return_data = {}
     elif response_status_code == 404 or response_status_code == 401:
@@ -679,3 +516,31 @@ def get_intarface_info_data(objdbca):
     }
 
     return return_data
+
+
+def call_restapi_class(interface_info_data):
+    """
+        Terraform用RESTAPIクラスを呼び出す
+        ARGS:
+            interface_info_data: インターフェース情報
+        RETRUN:
+            return_data
+    """
+    protocol = interface_info_data.get('protocol')
+    hostname = interface_info_data.get('hostname')
+    port_no = interface_info_data.get('port_no')
+    encrypted_user_token = interface_info_data.get('user_token')
+    proxy_address = interface_info_data.get('proxy_address')
+    proxy_port = interface_info_data.get('proxy_port')
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
+
+    # RESTAPI Call Class呼び出し
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
+
+    # トークンをセット
+    response_array = restApiCaller.authorize()
+    if not response_array['success']:
+        # システムエラー
+        raise AppException("999-99999", [], [])  # noqa: F405
+
+    return restApiCaller

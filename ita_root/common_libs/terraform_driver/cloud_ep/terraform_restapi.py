@@ -29,6 +29,69 @@ def get_tf_organization_list(restApiCaller):
     return response_array
 
 
+def create_tf_organization(restApiCaller, tf_organization_name, email_address):
+    """
+        連携先TerraformにOrganizationを作成する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/organizations'
+    request_contents = {
+        "data": {
+            "type": "organizations",
+            "attributes": {
+                "name": tf_organization_name,
+                "email": email_address
+            }
+        }
+    }
+    response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
+
+    return response_array
+
+
+def update_tf_organization(restApiCaller, tf_organization_name, email_address):
+    """
+        連携先TerraformにOrganizationを作成する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/organizations/%s' % (tf_organization_name)
+    request_contents = {
+        "data": {
+            "type": "organizations",
+            "attributes": {
+                "name": tf_organization_name,
+                "email": email_address
+            }
+        }
+    }
+    response_array = restApiCaller.rest_call('PATCH', api_uri, request_contents)
+
+    return response_array
+
+
+def delete_tf_organization(restApiCaller, tf_organization_name):
+    """
+        連携先TerraformにOrganizationを削除する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/organizations/%s' % (tf_organization_name)
+    response_array = restApiCaller.rest_call('DELETE', api_uri)
+
+    return response_array
+
+
 def get_tf_workspace_list(restApiCaller, tf_organization_name):
     """
         連携先TerraformからWorkspacenの一覧を取得する
@@ -41,6 +104,81 @@ def get_tf_workspace_list(restApiCaller, tf_organization_name):
     """
     api_uri = '/organizations/%s/workspaces' % (tf_organization_name)
     response_array = restApiCaller.rest_call('GET', api_uri)
+
+    return response_array
+
+
+def create_tf_workspace(restApiCaller, tf_organization_name, tf_workspace_name, terraform_version):
+    """
+        連携先TerraformにWorkspaceを作成する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/organizations/%s/workspaces' % (tf_organization_name)
+    execution_mode = True  # リモート実行モードをしようするかどうか。ITAからWorkspaceを作成する際はTrue固定とする
+    auto_apply = False  # Planが成功した際に自動でApplyを実行するかどうか。ITAからWorkspaceを作成する際はFalse固定とする
+    working_directory = ''  # Terraformが実行される相対パス。ITAからWorkspaceを作成する際は空欄固定とする。
+    request_contents = {
+        "data": {
+            "type": "workspaces",
+            "attributes": {
+                "name": tf_workspace_name,
+                "operations": execution_mode,
+                "auto-apply": auto_apply,
+                "terraform-version": terraform_version,
+                "working-directory": working_directory
+            }
+        }
+    }
+    response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
+
+    return response_array
+
+
+def update_tf_workspace(restApiCaller, tf_organization_name, tf_workspace_name, terraform_version):
+    """
+        連携先TerraformのWorkspaceを更新する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/organizations/%s/workspaces/%s' % (tf_organization_name, tf_workspace_name)
+    execution_mode = True  # リモート実行モードをしようするかどうか。ITAからWorkspaceを作成する際はTrue固定とする
+    auto_apply = False  # Planが成功した際に自動でApplyを実行するかどうか。ITAからWorkspaceを作成する際はFalse固定とする
+    working_directory = ''  # Terraformが実行される相対パス。ITAからWorkspaceを作成する際は空欄固定とする。
+    request_contents = {
+        "data": {
+            "type": "workspaces",
+            "attributes": {
+                "name": tf_workspace_name,
+                "operations": execution_mode,
+                "auto-apply": auto_apply,
+                "terraform-version": terraform_version,
+                "working-directory": working_directory
+            }
+        }
+    }
+    response_array = restApiCaller.rest_call('PATCH', api_uri, request_contents)
+
+    return response_array
+
+
+def delete_tf_workspace(restApiCaller, tf_organization_name, tf_workspace_name):
+    """
+        連携先TerraformのWorkspaceを削除する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/organizations/%s/workspaces/%s' % (tf_organization_name, tf_workspace_name)
+    response_array = restApiCaller.rest_call('DELETE', api_uri)
 
     return response_array
 

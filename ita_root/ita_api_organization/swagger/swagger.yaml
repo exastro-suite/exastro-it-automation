@@ -4512,6 +4512,403 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicyの一覧を取得する
+      operationId: get_terraform_policy_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/download/{policy_name}/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする
+      operationId: get_terraform_policy_file
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/delete/{policy_name}/:
+    delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicyを削除する
+      operationId: delete_terraform_policy
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetの一覧を取得する
+      operationId: get_terraform_policy_set_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/delete/{policy_set_name}/:
+    delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetを削除する
+      operationId: delete_terraform_policy_set
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_set_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/{tf_workspace_name}/
+  : delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetとWorkspaceの紐付けを解除する
+      operationId: delete_terraform_policy_set_relationship_workspace
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_set_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_workspace_name
+        in: path
+        description: Terraform Workspace Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/{policy_name}/
+  : delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetとPolicyの紐付けを解除する
+      operationId: delete_terraform_policy_set_relationship_policy
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_set_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_name
+        in: path
+        description: Terraform Workspace Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/repository/{uuid}/:
     post:
       tags:

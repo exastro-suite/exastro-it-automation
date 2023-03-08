@@ -141,11 +141,11 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row=None, move
         exec_sts_inst_table_confg[rest_name_config["I_WORKSPACE_ID"]] = movement_row[column_workspace_id]
 
         # 対象のWorkspace名称を取得
-        where_str = 'WHERE WORKSPACE_NAME = %s AND DISUSE_FLAG = %s'
+        where_str = 'WHERE WORKSPACE_ID = %s AND DISUSE_FLAG = %s'
         if driver_id == TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP:
-            tf_work_record = objdbca.table_select(TFCloudEPConst.V_ORGANIZATION_WORKSPACE, where_str, [tf_workspace_name, 0])
+            tf_work_record = objdbca.table_select(TFCloudEPConst.V_ORGANIZATION_WORKSPACE, where_str, [movement_row[column_workspace_id], 0])
         else:
-            tf_work_record = objdbca.table_select(TFCLIConst.T_WORKSPACE, where_str, [tf_workspace_name, 0])
+            tf_work_record = objdbca.table_select(TFCLIConst.T_WORKSPACE, where_str, [movement_row[column_workspace_id], 0])
 
         if not tf_work_record:
             # メッセージ一覧から取得。Movementに紐付くWorkspaceが不正です。

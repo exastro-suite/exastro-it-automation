@@ -491,7 +491,7 @@ def get_workspace_state_version(restApiCaller, tf_organization_name, tf_workspac
     return response_array
 
 
-def get_policy_set_list(restApiCaller, tf_organization_name):
+def get_tf_policy_set_list(restApiCaller, tf_organization_name):
     """
         連携先TerraformからPolicySetの一覧を取得する
         ARGS:
@@ -507,15 +507,45 @@ def get_policy_set_list(restApiCaller, tf_organization_name):
     return response_array
 
 
+def delete_tf_policy(restApiCaller, tf_manage_policy_id):
+    """
+        Policyを削除する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+            tf_manage_policy_id: Terraformで管理しているpolicyのID
+        RETRUN:
+            response_array: RESTAPI返却値
+    """
+    api_uri = '/policies/%s' % (tf_manage_policy_id)
+    response_array = restApiCaller.rest_call('DELETE', api_uri)
+
+    return response_array
+
+
+def delete_tf_policy_set(restApiCaller, tf_manage_policy_set_id):
+    """
+        PolicySetを削除する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+            tf_manage_policy_set_id: Terraformで管理しているpolicySetのID
+        RETRUN:
+            response_array: RESTAPI返却値
+    """
+    api_uri = '/policy-sets/%s' % (tf_manage_policy_set_id)
+    response_array = restApiCaller.rest_call('DELETE', api_uri)
+
+    return response_array
+
+
 def delete_relationships_workspace(restApiCaller, tf_manage_policy_set_id, tf_manage_workspace_id):
     """
         PolicySetからWorkspaceを切り離す
         ARGS:
             restApiCaller: RESTAPIコールクラス
-            tf_manage_variable_id: Terraformで管理しているVarableのID
+            tf_manage_policy_set_id: Terraformで管理しているpolicySetのID
+            tf_manage_workspace_id: Terraformで管理しているWorkspaceのID
         RETRUN:
             response_array: RESTAPI返却値
-
     """
     api_uri = '/policy-sets/%s/relationships/workspaces' % (tf_manage_policy_set_id)
     request_contents = {
@@ -584,7 +614,7 @@ def relationships_policy(restApiCaller, tf_manage_policy_set_id, policy_data):
     return response_array
 
 
-def get_policy_list(restApiCaller, tf_organization_name):
+def get_tf_policy_list(restApiCaller, tf_organization_name):
     """
         連携先TerraformからPolicyの一覧を取得する
         ARGS:

@@ -430,125 +430,123 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
     msg_args = ""
     intResultCode = ""
 
-    try:
-        body_zipfile = body.get('zipfile')
-        # upload_idの作成
-        date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        upload_id = date + str(secrets.randbelow(9999999999))
+    body_zipfile = body.get('zipfile')
+    # upload_idの作成
+    date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    upload_id = date + str(secrets.randbelow(9999999999))
 
-        fileName = upload_id + '_ita_data.zip'
+    fileName = upload_id + '_ita_data.zip'
 
-        # ファイル保存
-        uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/" + fileName
-        uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
-        importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
-        ret = upload_file(uploadFilePath, body_zipfile['base64'])
+    # ファイル保存
+    uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/" + fileName
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
+    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+    ret = upload_file(uploadFilePath, body_zipfile['base64'])
 
-        if ret == 0:
-            if os.path.exists(uploadPath + fileName):
-                os.remove(uploadPath + fileName)
-
-        # zip解凍
+    if ret == 0:
         if os.path.exists(uploadPath + fileName):
-            os.makedirs(uploadPath + upload_id)
-            os.chmod(uploadPath + upload_id, 0o777)
+            os.remove(uploadPath + fileName)
 
-        unzip_file(fileName, uploadPath, upload_id)
+    # zip解凍
+    if os.path.exists(uploadPath + fileName):
+        os.makedirs(uploadPath + upload_id)
+        os.chmod(uploadPath + upload_id, 0o777)
 
-        # zipファイルの中身確認
-        declare_list = checkZipFile(upload_id, organization_id, workspace_id)
+    unzip_file(fileName, uploadPath, upload_id)
 
-        # メニューリストの取得
-        tmpRetImportAry = makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, objdbca)
-        if len(tmpRetImportAry) == 0:
-            msgstr = g.appmsg.get_api_message("MSG-30037")
-            log_msg_args = [msgstr]
-            api_msg_args = [msgstr]
-            raise AppException("499-00005", log_msg_args, api_msg_args)
+    # zipファイルの中身確認
+    declare_list = checkZipFile(upload_id, organization_id, workspace_id)
 
-        retImportAry = {}
-        retUnImportAry = {}
-        idx = 0
-        idx_unimport = 0
-        for menuGroupId, menuGroupInfo in tmpRetImportAry.items():
-            for k, menuInfo in menuGroupInfo["menu"].items():
-                menuId = menuInfo["menu_id"]
-                menuName = menuInfo["menu_name"]
-                fileName = menuInfo["file_name"]
-
-                tmpMenuInfo = getMenuInfoByMenuId(menuId, "", objdbca)
-                group_disp_seq = tmpMenuInfo["GROUP_DISP_SEQ"]
-                parent_id = tmpMenuInfo["PARENT_MENU_GROUP_ID"]
-                disp_seq = tmpMenuInfo["DISP_SEQ"]
-
-                # 『メニューテーブル紐付管理』テーブルから対象のデータを取得
-                ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])
-
-                for record in ret_role_menu_link:
-                    if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0":
-                        # 権限エラー
-                        msgstr = g.appmsg.get_api_message("MSG-30038")
-                        menuInfo["error"] = msgstr
-
-                if "error" in menuInfo:
-                    error = menuInfo["error"]
-                    if menuGroupId in retUnImportAry:
-                        retUnImportAry[menuGroupId]["menu"][idx_unimport] = {"disp_seq": disp_seq,
-                                                                            "menu_id": menuId,
-                                                                            "menu_name": menuName,
-                                                                            "file_name": fileName,
-                                                                            "error": error}
-
-                        idx_unimport += 1
-                    else:
-                        retUnImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
-                                                    "menu_group_id": menuGroupId,
-                                                    "menu_group_name": menuGroupInfo["menu_group_name"],
-                                                    "menu": {idx_unimport: {"disp_seq": disp_seq,
-                                                            "menu_id": menuId,
-                                                            "menu_name": menuName,
-                                                            "file_name": fileName,
-                                                            "error": error}},
-                                                    "parent_id": parent_id}
-
-                        idx_unimport += 1
-                else:
-                    if menuGroupId in retImportAry:
-                        retImportAry[menuGroupId]["menu"][idx] = {"disp_seq": disp_seq,
-                                                                    "menu_id": menuId,
-                                                                    "menu_name": menuName,
-                                                                    "file_name": fileName}
-
-                        idx += 1
-                    else:
-                        retImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
-                                                    "menu_group_id": menuGroupId,
-                                                    "menu_group_name": menuGroupInfo["menu_group_name"],
-                                                    "menu": {idx: {"disp_seq": disp_seq,
-                                                            "menu_id": menuId,
-                                                            "menu_name": menuName,
-                                                            "file_name": fileName}},
-                                                    "parent_id": parent_id}
-
-                        idx += 1
-
-        if len(retImportAry) == 0:
-            msgstr = g.appmsg.get_api_message("MSG-30037")
-            log_msg_args = [msgstr]
-            api_msg_args = [msgstr]
-            raise AppException("499-00005", log_msg_args, api_msg_args)
-
-        intResultCode = "000"
-
-    except Exception as e:
+    # メニューリストの取得
+    tmpRetImportAry = makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, objdbca)
+    if len(tmpRetImportAry) == 0:
         # ファイルの削除
         cmd = "rm -rf " + importPath + upload_id
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-        if ret.returncode != 0:
-            return False
-        result_code = e.args[0]
-        msg_args = e.args[1]
-        return False, result_code, msg_args, None
+        raise AppException("499-01305", [], [])
+
+    retImportAry = {}
+    retUnImportAry = {}
+    idx = 0
+    idx_unimport = 0
+    for menuGroupId, menuGroupInfo in tmpRetImportAry.items():
+        for k, menuInfo in menuGroupInfo["menu"].items():
+            if menuGroupId == "none":
+                # メニューが存在しない
+                error = menuInfo["error"]
+                fileName = menuInfo["file_name"]
+                if menuGroupId not in retUnImportAry:
+                    retUnImportAry[menuGroupId] = {}
+                    retUnImportAry[menuGroupId]["menu"] = {}
+                retUnImportAry[menuGroupId]["menu"][idx_unimport] = {"disp_seq": "",
+                                                                        "menu_id": "",
+                                                                        "menu_name": "",
+                                                                        "file_name": fileName,
+                                                                        "error": error}
+                idx_unimport += 1
+                continue
+
+            menuId = menuInfo["menu_id"]
+            menuName = menuInfo["menu_name"]
+            fileName = menuInfo["file_name"]
+
+            tmpMenuInfo = getMenuInfoByMenuId(menuId, "", objdbca)
+            group_disp_seq = tmpMenuInfo["GROUP_DISP_SEQ"]
+            parent_id = tmpMenuInfo["PARENT_MENU_GROUP_ID"]
+            disp_seq = tmpMenuInfo["DISP_SEQ"]
+
+            # 『メニューテーブル紐付管理』テーブルから対象のデータを取得
+            ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])
+
+            for record in ret_role_menu_link:
+                if record["ROW_INSERT_FLAG"] == "0" and record["ROW_UPDATE_FLAG"] == "0" and record["ROW_DISUSE_FLAG"] == "0" and record["ROW_REUSE_FLAG"] == "0":
+                    # 権限エラー
+                    msgstr = g.appmsg.get_api_message("MSG-30033")
+                    menuInfo["error"] = msgstr
+
+            if "error" in menuInfo:
+                error = menuInfo["error"]
+                if menuGroupId in retUnImportAry:
+                    retUnImportAry[menuGroupId]["menu"][idx_unimport] = {"disp_seq": disp_seq,
+                                                                        "menu_id": menuId,
+                                                                        "menu_name": menuName,
+                                                                        "file_name": fileName,
+                                                                        "error": error}
+
+                    idx_unimport += 1
+                else:
+                    retUnImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
+                                                "menu_group_id": menuGroupId,
+                                                "menu_group_name": menuGroupInfo["menu_group_name"],
+                                                "menu": {idx_unimport: {"disp_seq": disp_seq,
+                                                        "menu_id": menuId,
+                                                        "menu_name": menuName,
+                                                        "file_name": fileName,
+                                                        "error": error}},
+                                                "parent_id": parent_id}
+
+                    idx_unimport += 1
+            else:
+                if menuGroupId in retImportAry:
+                    retImportAry[menuGroupId]["menu"][idx] = {"disp_seq": disp_seq,
+                                                                "menu_id": menuId,
+                                                                "menu_name": menuName,
+                                                                "file_name": fileName}
+
+                    idx += 1
+                else:
+                    retImportAry[menuGroupId] = {"disp_seq": group_disp_seq,
+                                                "menu_group_id": menuGroupId,
+                                                "menu_group_name": menuGroupInfo["menu_group_name"],
+                                                "menu": {idx: {"disp_seq": disp_seq,
+                                                        "menu_id": menuId,
+                                                        "menu_name": menuName,
+                                                        "file_name": fileName}},
+                                                "parent_id": parent_id}
+
+                    idx += 1
+
+    intResultCode = "000"
 
     arrayResult["upload_id"] = upload_id
     arrayResult["data_portability_upload_file_name"] = body['zipfile']['name']
@@ -703,9 +701,6 @@ def checkZipFile(upload_id, organization_id, workspace_id):
     uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
     importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
 
-    # tmpfileAry = os.scandir(uploadPath + upload_id)
-    # tmpfileAry = zipfile.ZipFile(uploadPath + fileName)
-    # lst = tmpfileAry.namelist()
     lst = os.listdir(uploadPath + upload_id)
 
     fileAry = []
@@ -724,11 +719,9 @@ def checkZipFile(upload_id, organization_id, workspace_id):
     if len(fileAry) == 0:
         if os.path.exists(uploadPath + fileName):
             os.remove(uploadPath + fileName)
+        shutil.rmtree(uploadPath + upload_id)
 
-        msgstr = g.appmsg.get_api_message("MSG-30030")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        raise AppException("499-01301", [], [])
 
     # 必須ファイルの確認
     errCnt = 0
@@ -739,17 +732,19 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
     if errFlg == 1:
         errCnt += 1
-        msgstr = g.appmsg.get_api_message("MSG-30031")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+        shutil.rmtree(uploadPath + upload_id)
+
+        raise AppException("499-01302", [], [])
 
     tmp_menu_list = Path(uploadPath + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
     if tmp_menu_list == "":
-        msgstr = g.appmsg.get_api_message("MSG-30032")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+        shutil.rmtree(uploadPath + upload_id)
+
+        raise AppException("499-01303", [], [])
 
     if errCnt > 0:
         if os.path.exists(uploadPath + fileName):
@@ -757,10 +752,7 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
         shutil.rmtree(uploadPath + upload_id)
 
-        msgstr = g.appmsg.get_api_message("MSG-30030")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        raise AppException("499-01301", [], [])
 
     # ファイル移動
     if not os.path.exists(importPath):
@@ -814,40 +806,25 @@ def checkZipFile(upload_id, organization_id, workspace_id):
         cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if ret.returncode != 0:
-            msgstr = g.appmsg.get_api_message("MSG-30029")
-            log_msg_args = [msgstr]
-            api_msg_args = [msgstr]
-            raise AppException("499-00005", log_msg_args, api_msg_args)
+            raise AppException("499-01304", [], [])
 
         cmd = "rm -rf " + importPath + upload_id + " 2>&1"
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if ret.returncode != 0:
-            msgstr = g.appmsg.get_api_message("MSG-30029")
-            log_msg_args = [msgstr]
-            api_msg_args = [msgstr]
-            raise AppException("499-00005", log_msg_args, api_msg_args)
+            raise AppException("499-01304", [], [])
 
-        msgstr = g.appmsg.get_api_message("MSG-30030")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        raise AppException("499-01301", [], [])
 
     #アップロードファイル削除
     cmd = "rm " + uploadPath + fileName
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     if ret.returncode != 0:
-        msgstr = g.appmsg.get_api_message("MSG-30029")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        raise AppException("499-01304", [], [])
 
     cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     if ret.returncode != 0:
-        msgstr = g.appmsg.get_api_message("MSG-30029")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        raise AppException("499-01304", [], [])
 
     return declare_list
 
@@ -869,13 +846,15 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
     tmpMenuIdFileAry = menuIdFile.split("\n")
 
     if len(tmpMenuIdFileAry) == 0:
-        msgstr = g.appmsg.get_api_message("MSG-30032")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        # ファイルの削除
+        cmd = "rm -rf " + path + upload_id
+        subprocess.run(cmd, capture_output=True, text=True, shell=True)
+
+        raise AppException("499-01303", [], [])
 
     retImportAry = {}
     idx = 0
+    none_idx = 0
     for menuFileInfo in tmpMenuIdFileAry:
         # フォーマットチェック
         result1 = re.match('^#', menuFileInfo)
@@ -929,11 +908,11 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                     declare_file_name_key = False
 
             # メニューの存在チェック
-            if len(menuInfo) == 0:
+            if menuId == "":
                 tmpMenuInfo = {"menu_id": menuId,
                                 "menu_name": menuName,
                                 "disabled": True,
-                                "error": g.appmsg.get_api_message("MSG-30033"),
+                                "error": g.appmsg.get_api_message("MSG-30029"),
                                 "file_name": menuFileName}
 
                 if menuGroupId in retImportAry:
@@ -946,12 +925,18 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                                                     "menu": {idx: tmpMenuInfo}}
 
                     idx += 1
+                else:
+                    if "none" not in retImportAry:
+                        retImportAry["none"] = {"menu": {idx: tmpMenuInfo}}
+                    else:
+                        retImportAry["none"]["menu"][idx] = tmpMenuInfo
+                    idx += 1
             # ファイルの拡張子チェック
             elif not menuFileName.endswith(".xlsx") and not menuFileName == "":
                 tmpMenuInfo = {"menu_id": menuId,
                                 "menu_name": menuName,
                                 "disabled": True,
-                                "error": g.appmsg.get_api_message("MSG-30033"),
+                                "error": g.appmsg.get_api_message("MSG-30029"),
                                 "file_name": menuFileName}
 
                 if menuGroupId in retImportAry:
@@ -975,11 +960,11 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                             tmpMenuInfo = {"menu_id": menuId,
                                 "menu_name": menuName,
                                 "disabled": True,
-                                "error": g.appmsg.get_api_message("MSG-30034"),
+                                "error": g.appmsg.get_api_message("MSG-30030"),
                                 "file_name": menuFileName}
 
                             declare_menu_info["disabled"] = True
-                            declare_menu_info["error"] = g.appmsg.get_api_message("MSG-30034")
+                            declare_menu_info["error"] = g.appmsg.get_api_message("MSG-30030")
 
                             retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
                             retImportAry[menuGroupId]["menu"][declare_file_name_key] = declare_menu_info
@@ -988,11 +973,11 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                             tmpMenuInfo = {"menu_id": menuId,
                                 "menu_name": menuName,
                                 "disabled": True,
-                                "error": g.appmsg.get_api_message("MSG-30035"),
+                                "error": g.appmsg.get_api_message("MSG-30031"),
                                 "file_name": menuFileName}
 
                             declare_menu_info["disabled"] = True
-                            declare_menu_info["error"] = g.appmsg.get_api_message("MSG-30035")
+                            declare_menu_info["error"] = g.appmsg.get_api_message("MSG-30031")
 
                             retImportAry[menuGroupId]["menu"][idx] = tmpMenuInfo
                             retImportAry[menuGroupId]["menu"][declare_file_name_key] = declare_menu_info
@@ -1009,7 +994,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                             retImportAry[menuGroupId] = {"menu_group_name": menuGroupName,
                                                         "menu": {idx: {"menu_id": menuId,
                                                             "menu_name": menuName,
-                                                            "error": g.appmsg.get_api_message("MSG-30034"),
+                                                            "error": g.appmsg.get_api_message("MSG-30030"),
                                                             "disabled": True,
                                                             "file_name": menuFileName}}}
 
@@ -1027,7 +1012,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                     tmpMenuInfo = {"menu_id": menuId,
                                 "menu_name": menuName,
                                 "disabled": True,
-                                "error": g.appmsg.get_api_message("MSG-30036"),
+                                "error": g.appmsg.get_api_message("MSG-30032"),
                                 "file_name": menuFileName}
                     if menuGroupId in retImportAry:
                         # メニューグループは存在するがメニューがない場合
@@ -1043,10 +1028,11 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                         idx += 1
 
     if len(retImportAry) == 0:
-        msgstr = g.appmsg.get_api_message("MSG-30032")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise Exception("499-00005", log_msg_args, api_msg_args)
+        # ファイルの削除
+        cmd = "rm -rf " + path + upload_id
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+
+        raise AppException("499-01303", [], [])
 
     return retImportAry
 

@@ -20,14 +20,14 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 ENV PYTHONPATH=/exastro/
-ENV USER_ID=90101
+ENV USER_ID=110101
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=1
 
 RUN dnf install -y \
     gcc \
-    openssh-clients \
     python39 \
     python39-devel \
     python39-mod_wsgi \
@@ -49,6 +49,10 @@ RUN dnf install -y \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
+COPY ./ita_root/ita_by_execinstance_dataautoclean/config/centos8.repo /etc/yum.repos.d/centos8.repo
+
+RUN dnf install -y --enablerepo=baseos expect
+
 #
 # Build for development
 #   Specify options when creating this image: --target develop_build
@@ -58,8 +62,6 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
-RUN sed -i -e "/^\[main\]$/a sslverify\=false" /etc/dnf/dnf.conf
-RUN dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 RUN dnf install -y \
     sudo \
     git \
@@ -67,7 +69,6 @@ RUN dnf install -y \
     diffutils \
     bind-utils \
     iputils \
-    terraform \
 &&  pip3.9 install \
     debugpy \
     flake8 \
@@ -83,7 +84,7 @@ RUN mkdir ~/.config \
 
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_terraform_cli_execute/ $APP_PATH/
+COPY ./ita_root/ita_by_execinstance_dataautoclean/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
@@ -96,14 +97,10 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
-RUN dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
-RUN dnf install -y \
-    terraform
-
 USER $USERNAME
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_terraform_cli_execute/ $APP_PATH/
+COPY ./ita_root/ita_by_execinstance_dataautoclean/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/

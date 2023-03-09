@@ -134,14 +134,14 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
                 # 想定外エラーに更新
                 wsDb.db_transaction_start()
                 time_stamp = get_timestamp()
-                data = {
+                update_data = {
                     "EXECUTION_NO": execution_no,
                     "STATUS_ID": const.STATUS_EXCEPTION,
                     "TIME_START": time_stamp,
                     "TIME_END": time_stamp,
                 }
-                result = cm.update_execution_record(wsDb, const, data)
-                if result[0] is True:
+                result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+                if result is True:
                     wsDb.db_commit()
                     g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
 
@@ -285,15 +285,16 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
             # 処理対象の作業インスタンスのステータスを想定外エラーに設定
             wsDb.db_transaction_start()
             time_stamp = get_timestamp()
-            data = {
+            update_data = {
                 "EXECUTION_NO": execution_no,
                 "STATUS_ID": const.STATUS_EXCEPTION,
                 "TIME_START": time_stamp,
                 "TIME_END": time_stamp,
             }
-            result = cm.update_execution_record(wsDb, const, data)
-            if result[0] is True:
+            result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+            if result is True:
                 wsDb.db_commit()
+                g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
 
     if is_fail is True:
         return False, g.appmsg.get_log_message("BKY-10001")
@@ -327,13 +328,13 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
 
     # 処理対象の作業インスタンスのステータスを準備中に設定
     wsDb.db_transaction_start()
-    data = {
+    update_data = {
         "EXECUTION_NO": execution_no,
         "STATUS_ID": const.STATUS_PREPARE,
         "TIME_END": get_timestamp()
     }
-    result = cm.update_execution_record(wsDb, const, data)
-    if result[0] is True:
+    result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+    if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10745", [execution_no, tf_workspace_id]))
 

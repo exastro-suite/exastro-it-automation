@@ -80,33 +80,43 @@ def get_execution_process_info(wsDb, const, execution_no):
     return True, records[0]
 
 
-def update_execution_record(wsDb, const, data):
+def update_execution_record(wsDb, const, update_data):
     """
     作業実行の情報を更新
 
     Arguments:
         WsDb: db instance
         const: 共通定数オブジェクト
-        data: 更新データ
+        update_data: 更新データ
     Returns:
         result: bool
         record:
     """
     try:
         sql = "SELECT * FROM {} WHERE EXECUTION_NO=%s".format(const.T_EXEC_STS_INST)
-        rows = wsDb.sql_execute(sql, [data['EXECUTION_NO']])
-        row = rows[0]
+        rows = wsDb.sql_execute(sql, [update_data['EXECUTION_NO']])
+        res_data = rows[0]
 
-        if "TIME_START" in data and row["TIME_START"]:
-            del data["TIME_START"]
-        if "TIME_END" in data and row["TIME_END"]:
-            del data["TIME_END"]
-        if "LAST_UPDATE_USER" not in data:
-            data["LAST_UPDATE_USER"] = g.USER_ID
+        if "TIME_START" in update_data and res_data["TIME_START"]:
+            del update_data["TIME_START"]
+        if "TIME_END" in update_data and res_data["TIME_END"]:
+            del update_data["TIME_END"]
+        if "LAST_UPDATE_USER" not in update_data:
+            update_data["LAST_UPDATE_USER"] = g.USER_ID
 
-        result = wsDb.table_update(const.T_EXEC_STS_INST, [data], 'EXECUTION_NO')
+        result = wsDb.table_update(const.T_EXEC_STS_INST, [update_data], 'EXECUTION_NO')
 
-        return True, result
+        if result is False:
+            wsDb.db_rollback()
+            return False, None
+        # transactionは呼び元で管理したいので、commitだけはやらない
+        # else:
+        #     wsDb.db_commit()
+
+        for column, value in update_data.items():
+            res_data[column] = value
+
+        return True, res_data
     except AppException as e:
         wsDb.db_rollback()
         raise AppException(e)

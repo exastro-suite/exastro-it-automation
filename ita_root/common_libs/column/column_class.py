@@ -896,9 +896,16 @@ class Column():
             tmp_conf = search_conf
             bindkeys = []
             bindvalues = {}
-            if save_type == 'JSON':
+            str_where = ''
+            start_val = None
+            end_val = None
+            if 'START' in tmp_conf:
                 start_val = tmp_conf.get('START')
+                self.check_range_format(start_val)
+            if 'END' in tmp_conf:
                 end_val = tmp_conf.get('END')
+                self.check_range_format(end_val)
+            if save_type == 'JSON':
                 bindkey_s = "__{}_S__".format(self.get_col_name())
                 bindkey_e = "__{}_E__".format(self.get_col_name())
                 str_where_s = ''
@@ -911,14 +918,17 @@ class Column():
                     conjunction = 'and'
                 else:
                     conjunction = ''
-                str_where = '(' + str_where_s + conjunction + str_where_e + ')'
+                if len(str_where_s) != 0 or len(str_where_e) != 0:
+                    str_where = '(' + str_where_s + conjunction + str_where_e + ')'
+                else:
+                    str_where = None
                 bindkeys.append(bindkey_s)
                 bindkeys.append(bindkey_e)
                 bindvalues.setdefault(bindkey_s, start_val)
                 bindvalues.setdefault(bindkey_e, end_val)
             else:
-                start_val = tmp_conf.get('START')
-                end_val = tmp_conf.get('END')
+                bindkey_s = "__{}_S__".format(self.get_col_name())
+                bindkey_e = "__{}_E__".format(self.get_col_name())
                 if start_val is None:
                     start_val = ''
                 if end_val is None:
@@ -952,6 +962,8 @@ class Column():
                         )
                         bindkeys.append(bindkey_e)
                         bindvalues.setdefault(bindkey_e, end_val)
+                    else:
+                        str_where = None
 
             result.setdefault("bindkey", bindkeys)
             result.setdefault("bindvalue", bindvalues)
@@ -973,3 +985,15 @@ class Column():
                 ( True / False , メッセージ )
         """
         return True,
+
+    # RANGE検索のフォーマットチェック
+    def check_range_format(self, val):
+        """
+            出力用の値へ変換
+            ARGS:
+                val:値
+            RETRUN:
+                retBool
+        """
+        retBool = True
+        return retBool

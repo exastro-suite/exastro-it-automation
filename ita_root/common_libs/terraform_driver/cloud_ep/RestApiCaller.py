@@ -32,8 +32,10 @@ class RestApiCaller():
     def __init__(self, protocol, hostName, portNo=None, encryptedAuthToken=None, proxySetting=None):
         if portNo:
             self.baseURI = '%s://%s:%s%s' % (protocol, hostName, portNo, self.API_BASE_PATH)
+            self.targetHost = '%s://%s:%s' % (protocol, hostName, portNo)
         else:
             self.baseURI = '%s://%s%s' % (protocol, hostName, self.API_BASE_PATH)
+            self.targetHost = '%s://%s' % (protocol, hostName)
         if encryptedAuthToken:
             self.decryptedAuthToken = ky_decrypt(encryptedAuthToken)
         else:
@@ -137,7 +139,12 @@ class RestApiCaller():
             e_read = json.loads(e.read())
             if e_read:
                 errors = e_read.get('errors')
-                error_detail = errors[0].get('detail')
+                if isinstance(errors, list):
+                    error_detail = errors[0]
+                elif isinstance(errors, dict):
+                    error_detail = errors[0].get('detail')
+                else:
+                    error_detail = errors
                 if error_detail:
                     response_array['responseContents'] = {"errorMessage": error_detail}
                 else:
@@ -237,7 +244,7 @@ class RestApiCaller():
 
         return response_array
 
-    def get_log_data(self, method, direct_url):  # noqa: C901
+    def get_log_data(self, method, url, direct_flag):  # noqa: C901
         # 変数定義
         httpContext = {}
         httpContext['http'] = {}
@@ -266,6 +273,10 @@ class RestApiCaller():
             httpContext['http']['proxy'] = proxy_address
             httpContext['http']['request_fulluri'] = True
 
+        # URL定義
+        if not direct_flag:
+            url = '%s%s' % (self.targetHost, url)
+
         # [暫定対応] SSL認証エラー無視
         ssl_context = ssl._create_unverified_context()
         httpContext['ssl'] = {}
@@ -273,13 +284,13 @@ class RestApiCaller():
         httpContext['ssl']['verify_peer_name'] = False
 
         print_HttpContext = 'http context\n%s' % (httpContext)
-        print_url = "URL: %s\n" % (direct_url)
+        print_url = "URL: %s\n" % (url)
 
         ################################
         # RestCall
         ################################
         responseContents = ''
-        req = urllib.request.Request(direct_url, headers=headers, method=method)
+        req = urllib.request.Request(url, headers=headers, method=method)
         if proxy_address:
             req.set_proxy(proxy_address, 'http')
             req.set_proxy(proxy_address, 'https')

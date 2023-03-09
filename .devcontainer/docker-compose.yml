@@ -116,6 +116,9 @@ services:
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
     # init: true
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-ansible-execute
 
   ita-by-ansible-legacy-role-vars-listup:
     user: 1000:1000
@@ -140,6 +143,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-ansible-legacy-role-vars-listup
 
   ita-by-ansible-legacy-vars-listup:
     user: 1000:1000
@@ -164,6 +170,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-ansible-legacy-vars-listup
 
   ita-by-ansible-pioneer-vars-listup:
     user: 1000:1000
@@ -188,6 +197,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-ansible-pioneer-vars-listup
 
   ita-by-ansible-towermaster-sync:
     user: 1000:1000
@@ -212,6 +224,10 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-ansible-towermaster-sync
+
   ita-by-collector:
     user: 1000:1000
     build:
@@ -235,6 +251,10 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-collector
+
   ita-by-conductor-synchronize:
     user: 1000:1000
     build:
@@ -258,6 +278,10 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-conductor-synchronize
+
   ita-by-conductor-regularly:
     user: 1000:1000
     build:
@@ -281,6 +305,10 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-conductor-regularly
+
   ita-by-menu-create:
     user: 1000:1000
     build:
@@ -304,6 +332,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-menu-create
 
   ita-by-menu-export-import:
     user: 1000:1000
@@ -328,6 +359,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-menu-export-import
 
   ita-by-excel-export-import:
     user: 1000:1000
@@ -352,6 +386,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-excel-export-import
 
   ita-by-terraform-cloud-ep-execute:
     user: 1000:1000
@@ -376,6 +413,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-terraform-cloud-ep-execute
 
   ita-by-terraform-cloud-ep-vars-listup:
     user: 1000:1000
@@ -400,6 +440,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-terraform-cloud-ep-vars-listup
 
   ita-by-terraform-cli-execute:
     user: 1000:1000
@@ -424,6 +467,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-terraform-cli-execute
 
   ita-by-terraform-cli-vars-listup:
     user: 1000:1000
@@ -448,6 +494,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-terraform-cli-vars-listup
 
   ita-by-hostgroup-split:
     user: 1000:1000
@@ -472,6 +521,9 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-hostgroup-split
 
   ita-by-cicd-for-iac:
     user: 1000:1000
@@ -496,4 +548,33 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-cicd-for-iac
 
+  ita-by-execinstance-dataautoclean:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_by_execinstance_dataautoclean/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-execinstance-dataautoclean

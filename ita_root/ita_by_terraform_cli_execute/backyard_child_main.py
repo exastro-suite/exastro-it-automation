@@ -16,15 +16,16 @@ import sys
 import os
 import subprocess
 import time
+import json
 
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.common.exception import AppException, ValidationException
+from common_libs.common.exception import AppException
 from common_libs.common.util import get_timestamp, file_encode, ky_encrypt
 from common_libs.loadtable import load_table
-
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
-
 from common_libs.terraform_driver.cli.Const import Const
+from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
+
 from libs import common_functions as cm
 
 
@@ -60,7 +61,7 @@ def backyard_child_main(organization_id, workspace_id):
     g.applogger.debug("tf_workspace_id=" + tf_workspace_id)
     g.applogger.debug("execution_no=" + execution_no)
     g.applogger.set_tag("EXECUTION_NO", execution_no)
-    g.applogger.debug(g.appmsg.get_log_message("MSG-10720", [execution_no]))
+    g.applogger.debug(g.appmsg.get_log_message("MSG-10720", [execution_no, tf_workspace_id]))
 
     # db instance
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
@@ -69,19 +70,19 @@ def backyard_child_main(organization_id, workspace_id):
         result = main_logic(wsDb)
         if result[0] is True:
             # 正常終了
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10721", [tf_workspace_id, execution_no]))
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10721", [execution_no, tf_workspace_id]))
         else:
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [tf_workspace_id, execution_no]))
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no, tf_workspace_id]))
     except AppException as e:
         update_status_error(wsDb)
 
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [tf_workspace_id, execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no, tf_workspace_id]))
 
         raise e
     except Exception as e:
         update_status_error(wsDb)
 
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [tf_workspace_id, execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no, tf_workspace_id]))
 
         raise e
 
@@ -98,31 +99,6 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
         bool
         err_msg
     """
-    # 処理対象の作業インスタンス情報取得
-    retBool, execute_data = cm.get_execution_process_info(wsDb, const, execution_no)
-    if retBool is False:
-        err_log = g.appmsg.get_log_message(execute_data, [execution_no])
-        raise Exception(err_log)
-
-    # 処理対象の作業インスタンス実行
-    retBool, execute_data = instance_execution(wsDb, execute_data)
-
-    # 実行結果から、処理対象の作業インスタンスのステータス更新
-    if retBool is False:
-        # ステータスを想定外エラーに設定
-        update_status_error(wsDb)
-
-    # ステータスが実行中以外は終了（緊急停止）
-    if execute_data["STATUS_ID"] != const.STATUS_PROCESSING:
-        return True,
-
-    # [処理]処理対象インスタンス 作業確認の終了(作業No.:{})
-    g.applogger.debug(g.appmsg.get_log_message("MSG-10738", [execution_no]))
-
-    return True,
-
-
-def instance_execution(wsDb: DBConnectWs, execute_data):
     global base_dir
     global workspace_work_dir
     global exe_lock_file_path
@@ -131,36 +107,22 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     global secure_tfvars_file_path
     global emergency_stop_file_path
 
-    module_matter_id_str_arr = []  # モジュール素材IDを格納する配列
-    module_matter_arr = {}  # モジュール素材情報を格納する配列
-    input_matter_arr = []  # 投入ファイルに必要なファイルリスト
-    result_matter_arr = []  # 結果ファイルに必要なファイルリスト
+    # 処理対象の作業インスタンス情報取得
+    retBool, execute_data = cm.get_execution_process_info(wsDb, const, execution_no)
+    if retBool is False:
+        err_log = g.appmsg.get_log_message(execute_data, [execution_no])
+        raise Exception(err_log)
 
-    vars_set_flag = False  # 変数追加処理を行うかの判定
-    vars_data_arr = []  # 対象の変数を格納する配列
-
-    variable_tfvars = []  # terraform.tfvarsに書き込むkey=value
-    secure_tfvars = []  # secure.tfvarsに書き込むkey=value
-    secure_tfvars_flg = False  # secure.tfvarsが存在している
-
-    # 作業実行データ
-    # tf_workspace_name_org = execute_data['I_WORKSPACE_NAME']
     run_mode = execute_data['RUN_MODE']
     movement_id = execute_data['MOVEMENT_ID']
     operation_id = execute_data['OPERATION_ID']
-    conductor_instance_no = execute_data["CONDUCTOR_INSTANCE_NO"]
 
-    # [処理]処理対象インスタンス 作業実行開始(作業No.:{})
-    g.applogger.debug(g.appmsg.get_log_message("MSG-10763", [execution_no]))
-
-    # 代入値自動登録とパラメータシートからデータを抜く
-    # 		該当のオペレーション、Movementのデータを代入値管理に登録
-    # 一時的に呼ばないように
-    # sub_value_auto_reg = SubValueAutoReg(wsDb, tf_workspace_id)
-    # try:
-    #     sub_value_auto_reg.get_data_from_parameter_sheet(operation_id, movement_id, execution_no)
-    # except ValidationException as e:
-    #     raise ValidationException(e)
+    # 「代入値管理」へのレコード登録実行。resultにはboolが、msgにはエラー時のメッセージが入る。
+    sub_value_auto_reg = SubValueAutoReg(wsDb, const, operation_id, movement_id, execution_no)
+    result, msg = sub_value_auto_reg.set_assigned_value_from_parameter_sheet()
+    if result is False:
+        g.applogger.error(msg)
+        return False, execute_data
 
     # 実行モードが「パラメータ確認」の場合は終了
     if run_mode == const.RUN_MODE_PARAM:
@@ -170,26 +132,15 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
             "STATUS_ID": const.STATUS_COMPLETE,
             "TIME_END": get_timestamp(),
         }
-        result = cm.update_execution_record(wsDb, const, update_data)
-        if result[0] is True:
+        result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+        if result is True:
             wsDb.db_commit()
             g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
 
-        return True, execute_data
+        return True,
 
-    # logファイルを生成
+    # パスの生成
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
-    log_dir = base_dir + const.DIR_EXECUTE + "/{}/out/".format(execution_no)
-
-    error_log = log_dir + "/error.log"
-    init_log = log_dir + "/init.log"
-    plan_log = log_dir + "/plan.log"
-    apply_log = log_dir + "/apply.log"
-
-    os.makedirs(log_dir, exist_ok=True)
-    os.chmod(log_dir, 0o777)
-
-    # ディレクトリを準備
     workspace_work_dir = base_dir + const.DIR_WORK + "/{}/work".format(tf_workspace_id)  # CLI実行場所
 
     exe_lock_file_path = workspace_work_dir + "/.tf_exec_lock"  # ロックファイル
@@ -215,9 +166,54 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         subprocess.run(cmd, cwd=workspace_work_dir, shell=True)
 
     # 緊急停止のチェック
-    ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data, result_matter_arr)
+    ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data, [])
     if ret_emgy is False:
         True, execute_data
+
+    # 処理対象の作業インスタンス実行
+    retBool, execute_data = instance_execution(wsDb, execute_data)
+
+    # 実行結果から、処理対象の作業インスタンスのステータス更新
+    if retBool is False:
+        # ステータスを想定外エラーに設定
+        update_status_error(wsDb)
+
+    return True,
+
+
+def instance_execution(wsDb: DBConnectWs, execute_data):
+    module_matter_id_str_arr = []  # モジュール素材IDを格納する配列
+    module_matter_arr = {}  # モジュール素材情報を格納する配列
+    input_matter_arr = []  # 投入ファイルに必要なファイルリスト
+    result_matter_arr = []  # 結果ファイルに必要なファイルリスト
+
+    vars_set_flag = False  # 変数追加処理を行うかの判定
+    vars_data_arr = []  # 対象の変数を格納する配列
+
+    variable_tfvars = []  # terraform.tfvarsに書き込むkey=value
+    secure_tfvars = []  # secure.tfvarsに書き込むkey=value
+    secure_tfvars_flg = False  # secure.tfvarsが存在している
+
+    # 作業実行データ
+    # tf_workspace_name_org = execute_data['I_WORKSPACE_NAME']
+    run_mode = execute_data['RUN_MODE']
+    movement_id = execute_data['MOVEMENT_ID']
+    operation_id = execute_data['OPERATION_ID']
+    conductor_instance_no = execute_data["CONDUCTOR_INSTANCE_NO"]
+
+    # [処理]処理対象インスタンス 作業実行開始(作業No.:{})
+    g.applogger.debug(g.appmsg.get_log_message("MSG-10763", [execution_no]))
+
+    # logファイルを生成
+    log_dir = base_dir + const.DIR_EXECUTE + "/{}/out/".format(execution_no)
+
+    error_log = log_dir + "error.log"
+    init_log = log_dir + "init.log"
+    plan_log = log_dir + "plan.log"
+    apply_log = log_dir + "apply.log"
+
+    os.makedirs(log_dir, exist_ok=True)
+    os.chmod(log_dir, 0o777)
 
     # WORKSPACE_IDから対象Workspace(B_TERRAFORM_CLI_WORKSPACES)のレコードを取得して、workspace名をキャッシュ
     # condition = """WHERE `DISUSE_FLAG`=0 AND WORKSPACE_ID = %s"""
@@ -255,8 +251,14 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
 
         # 作業実行ディレクトリに、対象のModuleファイルをコピー
         for module_matter_id, val in module_matter_arr.items():
-            matter_file_path = "{}{}/{}/{}/".format(base_dir, const.DIR_MODULE, module_matter_id, val["matter_file_name"])
-            cmd = '/bin/cp -rfp {} {}/.'.format(matter_file_path, workspace_work_dir)
+            matter_file_path = "{}{}/{}/{}".format(base_dir, const.DIR_MODULE, module_matter_id, val["matter_file_name"])
+            command = '/bin/cp -rfp {} {}/.'.format(matter_file_path, workspace_work_dir)
+            cp = subprocess.run(command, shell=True)
+            if cp.returncode != 0 or cp.stderr:
+                # 対象のModuleファイルをコピーに失敗しました
+                g.applogger.debug(cp)
+                g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Copying ModuleFile", ""]))
+                return False, execute_data
 
             # 投入ファイルのリストに追加
             input_matter_arr.append(workspace_work_dir + "/" + val["matter_file_name"])
@@ -286,12 +288,12 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
                 input_matter_arr.append(default_tfvars_file_path)
                 # 変数のkey&valueをtfvarsファイルに書き込み
                 str_variable_tfvars = "\n".join(variable_tfvars)
-                with open(default_tfvars_file_path, 'w', encoding='UTF-8') as f:
+                with open(default_tfvars_file_path, mode='w', encoding='UTF-8') as f:
                     f.write(str_variable_tfvars)
             if len(secure_tfvars) > 0:
                 # 変数のkey&valueをtfvarsファイルに書き込み
                 str_secure_tfvars = "\n".join(secure_tfvars)
-                with open(secure_tfvars_file_path, 'w', encoding='UTF-8') as f:
+                with open(secure_tfvars_file_path, mode='w', encoding='UTF-8') as f:
                     f.write(str_secure_tfvars)
                 # secure.tfvarsが存在
                 secure_tfvars_flg = True
@@ -309,19 +311,22 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
 
     # ステータスを実行中に更新
     wsDb.db_transaction_start()
-    execute_data["STATUS_ID"] = const.STATUS_PROCESSING
+    update_data = {
+        "EXECUTION_NO": execution_no,
+        "STATUS_ID": const.STATUS_PROCESSING,
+    }
     if input_zip_file_name:
-        execute_data["FILE_INPUT"] = input_zip_file_name
+        update_data["FILE_INPUT"] = input_zip_file_name
     # ログリストを保存
     logfilelist_json = ["init.log", "plan.log"]
     if const.RUN_MODE_APPLY or const.RUN_MODE_DESTROY:
         logfilelist_json.append("apply.log")
-    execute_data["LOGFILELIST_JSON"] = logfilelist_json
-    execute_data["MULTIPLELOG_MODE"] = 1
-    result = cm.update_execution_record(wsDb, const, execute_data)
-    if result[0] is True:
+    update_data["LOGFILELIST_JSON"] = json.dumps(logfilelist_json)
+    update_data["MULTIPLELOG_MODE"] = 1
+    result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+    if result is True:
         wsDb.db_transaction_start()
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10708", [execution_no]))
 
     # 緊急停止のチェック
     ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data, result_matter_arr)
@@ -339,14 +344,14 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     # initコマンド
     command_options = ["-no-color"]
     command = "terraform init " + " ".join(command_options)
-    ret_status, execute_data = ExecCommand(wsDb, execute_data, command, init_log, error_log, True)
+    ret_status, execute_data = ExecCommand(wsDb, execute_data, command, init_log, error_log)
     if ret_status != const.STATUS_COMPLETE:
         update_status = ret_status
     result_matter_arr.append(error_log)
     result_matter_arr.append(workspace_work_dir + "/.terraform.lock.hcl")
     result_matter_arr.append(init_log)
 
-    if ret_status != const.STATUS_COMPLETE:
+    if ret_status == const.STATUS_COMPLETE:
         # 緊急停止のチェック
         ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data, result_matter_arr)
         if ret_emgy is False:
@@ -366,7 +371,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
             update_status = ret_status
         result_matter_arr.append(plan_log)
 
-    if ret_status != const.STATUS_COMPLETE:
+    if ret_status == const.STATUS_COMPLETE:
         # 緊急停止のチェック
         ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data, result_matter_arr)
         if ret_emgy is False:
@@ -398,12 +403,12 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
 
     # 最終ステータスを更新
     wsDb.db_transaction_start()
-    execute_data["STATUS_ID"] = update_status
-    execute_data["TIME_END"] = get_timestamp()
+    update_data["STATUS_ID"] = update_status
+    update_data["TIME_END"] = get_timestamp()
     if result_zip_file_name:
-        execute_data["FILE_RESULT"] = result_zip_file_name
-    result = cm.update_execution_record(wsDb, const, execute_data)
-    if result[0] is True:
+        update_data["FILE_RESULT"] = result_zip_file_name
+    result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+    if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
 
@@ -446,79 +451,81 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
     if init_flg is True and os.path.exists(result_file_path):
         return const.STATUS_EXCEPTION, execute_data
 
-    try:
-        proc = subprocess.Popen(command, cwd=workspace_work_dir, shell=True, stdout=cmd_log, stderr=error_log)
+    proc = subprocess.Popen(command, cwd=workspace_work_dir, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        # 結果ファイルにコマンドとPIDを書き込む
-        str_body = command + " : PID=" + proc.pid + "\n"
-        if init_flg is True:
-            with open(result_file_path, 'X', encoding='UTF-8') as f:
-                f.write(str_body)
-        else:
-            with open(result_file_path, 'a', encoding='UTF-8') as f:
-                f.write(str_body)
-
-        # ステータスが実行中(3)、かつ制限時間が設定されている場合のみ遅延判定する
-        delay_flag = False
-        if current_status == const.STATUS_PROCESSING and time_limit:
-            check_interval = 3
-            while True:
-                time.sleep(check_interval)
-
-                # 開始時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
-                rec_time_start = execute_data['TIME_START']
-                starttime_unixtime = rec_time_start.timestamp()
-                # 開始時刻(マイクロ秒)＋制限時間(分→秒)＝制限時刻(マイクロ秒)
-                limit_unixtime = starttime_unixtime + (time_limit * 60)
-                # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
-                now_unixtime = time.time()
-                # 制限時刻と現在時刻を比較
-                if limit_unixtime < now_unixtime:
-                    delay_flag = True
-                    g.applogger.debug(g.appmsg.get_log_message("MSG-10707", [execution_no]))
-                else:
-                    g.applogger.debug(g.appmsg.get_log_message("MSG-10708", [execution_no]))
-
-                if delay_flag is True:
-                    # ステータスを「実行中(遅延)」とする
-                    wsDb.db_transaction_start()
-                    update_data = {
-                        "EXECUTION_NO": execution_no,
-                        "STATUS_ID": const.STATUS_PROCESS_DELAYED,
-                    }
-                    result = cm.update_execution_record(wsDb, const, update_data)
-                    if result[0] is True:
-                        wsDb.db_commit()
-                        g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
-
-                # プロセスが実行中はNoneを返す
-                if proc.poll() is not None:
-                    # 終了判定
-                    break
-        else:
-            # 遅延判定しない場合は、終了するまで待つ
-            proc.wait()
-
-        exit_status = proc.returncode
-        if exit_status == 0:
-            # 正常終了した場合
-            update_status = const.STATUS_COMPLETE
-            str_body = "COMPLETED(0)\n"
-        else:
-            # 異常終了した場合
-            update_status = const.STATUS_FAILURE
-            str_body = "PREVENTED({})\n".format(exit_status)
-
-        # 結果を書き込む
-        with open(result_file_path, 'a', encoding='UTF-8') as f:
+    # 結果ファイルにコマンドとPIDを書き込む
+    str_body = command + " : PID=" + str(proc.pid) + "\n"
+    if init_flg is True:
+        with open(result_file_path, mode='w', encoding='UTF-8') as f:
+            f.write(str_body)
+    else:
+        with open(result_file_path, mode='a', encoding='UTF-8') as f:
             f.write(str_body)
 
-        return update_status, execute_data
-    except AppException as e:
-        raise e
-    except Exception as e:
-        g.applogger.error(e)
-        return const.STATUS_EXCEPTION, execute_data
+    # ステータスが実行中(3)、かつ制限時間が設定されている場合のみ遅延判定する
+    delay_flag = False
+    if current_status == const.STATUS_PROCESSING and time_limit:
+        check_interval = 3
+        while True:
+            time.sleep(check_interval)
+
+            # 開始時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
+            rec_time_start = execute_data['TIME_START']
+            starttime_unixtime = rec_time_start.timestamp()
+            # 開始時刻(マイクロ秒)＋制限時間(分→秒)＝制限時刻(マイクロ秒)
+            limit_unixtime = starttime_unixtime + (time_limit * 60)
+            # 現在時刻(「エポック秒.マイクロ秒」)を生成(localタイムでutcタイムではない)
+            now_unixtime = time.time()
+            # 制限時刻と現在時刻を比較
+            if limit_unixtime < now_unixtime:
+                delay_flag = True
+                g.applogger.debug(g.appmsg.get_log_message("MSG-10707", [execution_no]))
+            else:
+                g.applogger.debug(g.appmsg.get_log_message("MSG-10708", [execution_no]))
+
+            if delay_flag is True:
+                # ステータスを「実行中(遅延)」とする
+                wsDb.db_transaction_start()
+                update_data = {
+                    "EXECUTION_NO": execution_no,
+                    "STATUS_ID": const.STATUS_PROCESS_DELAYED,
+                }
+                result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+                if result is True:
+                    wsDb.db_commit()
+                    g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
+
+            # プロセスが実行中はNoneを返す
+            if proc.poll() is not None:
+                # 終了判定
+                break
+    else:
+        # 遅延判定しない場合は、終了するまで待つ
+        stdout_data, stderr_data = proc.communicate()
+        g.applogger.debug(stdout_data)
+        if stdout_data:
+            with open(cmd_log, mode='w', encoding='UTF-8') as f:
+                f.write(stdout_data)
+        g.applogger.debug(stderr_data)
+        if stderr_data:
+            with open(error_log, mode='w', encoding='UTF-8') as f:
+                f.write(stderr_data)
+
+    exit_status = proc.returncode
+    if exit_status == 0:
+        # 正常終了した場合
+        update_status = const.STATUS_COMPLETE
+        str_body = "COMPLETED(0)\n"
+    else:
+        # 異常終了した場合
+        update_status = const.STATUS_FAILURE
+        str_body = "PREVENTED({})\n".format(exit_status)
+
+    # 結果を書き込む
+    with open(result_file_path, mode='a', encoding='UTF-8') as f:
+        f.write(str_body)
+
+    return update_status, execute_data
 
 
 # terraformのstateファイルを暗号化
@@ -543,12 +550,12 @@ def SaveEncryptStateFile(execute_data):
     else:
         # stateファイルの中身を取得
         str_body = ""
-        with open(org_state_file, 'r', encoding='UTF-8') as f:
+        with open(org_state_file, mode='r', encoding='UTF-8') as f:
             str_body = f.read()
 
     # ファイルに中身を新規書き込み
     str_encrypt_body = ky_encrypt(str_body)
-    with open(encrypt_state_file, 'x', encoding='UTF-8') as f:
+    with open(encrypt_state_file, mode='w', encoding='UTF-8') as f:
         f.write(str_encrypt_body)
 
     # 2:tfstate.backup
@@ -560,12 +567,12 @@ def SaveEncryptStateFile(execute_data):
     else:
         # stateファイルの中身を取得
         str_body = ""
-        with open(org_state_file, 'r', encoding='UTF-8') as f:
+        with open(org_state_file, mode='r', encoding='UTF-8') as f:
             str_body = f.read()
 
     # ファイルに中身を新規書き込み
     str_encrypt_body = ky_encrypt(str_body)
-    with open(encrypt_state_file, 'x', encoding='UTF-8') as f:
+    with open(encrypt_state_file, mode='w', encoding='UTF-8') as f:
         f.write(str_encrypt_body)
 
     return True
@@ -598,11 +605,15 @@ def MakeInputZipFile(input_matter_arr):
     str_input_matter = " ".join(input_matter_arr)
 
     # ZIPファイルを作成
-    command = ["zip", "-j", zip_path + "/" + input_zip_file_name, str_input_matter]
-    cp = subprocess.run(command, capture_output=True, text=True)
-    if cp.returncode != 0 or cp.stderr:
+    command = "zip -j {} {}".format(zip_path + "/" + input_zip_file_name, str_input_matter)
+    # g.applogger.debug(command)
+    cp = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # g.applogger.debug(cp)
+    if cp.returncode != 0:
         # zipファイルの作成に失敗しました
-        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", ""]))
+        g.applogger.debug(cp.returncode)
+        g.applogger.debug(cp.stdout)
+        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Creating InputZipFile", ""]))
         return False
 
     return True
@@ -618,16 +629,21 @@ def MakeResultZipFile(result_matter_arr):
     os.chmod(zip_path, 0o777)
 
     # ファイル名の定義
-    result_zip_file_name = 'InputData_' + execution_no + '.zip'
+    result_zip_file_name = 'ResultData_' + execution_no + '.zip'
     # 圧縮するファイル名のリスト
     str_result_matter = " ".join(result_matter_arr)
 
     # ZIPファイルを作成
-    command = ["zip", "-j", zip_path + "/" + result_zip_file_name, str_result_matter]
-    cp = subprocess.run(command, capture_output=True, text=True)
-    if cp.returncode != 0 and cp.stderr:
+    command = "zip -j {} {}".format(zip_path + "/" + result_zip_file_name, str_result_matter)
+    # g.applogger.debug(command)
+    cp = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # g.applogger.debug(cp)
+    if cp.returncode != 0:
         # zipファイルの作成に失敗しました
-        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", ""]))
+        g.applogger.debug(cp.returncode)
+        g.applogger.debug(cp.stdout)
+        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Creating ResultZipFile", ""]))
+        return False
 
     return True
 
@@ -647,15 +663,18 @@ def IsEmergencyStop(wsDb: DBConnectWs, execute_data, result_matter_arr):
 
     # ステータスを緊急停止に更新
     wsDb.db_transaction_start()
-    execute_data["STATUS_ID"] = const.STATUS_SCRAM
-    execute_data["TIME_END"] = get_timestamp()
+    update_data = {
+        "EXECUTION_NO": execution_no,
+        "STATUS_ID": const.STATUS_SCRAM,
+        "TIME_END": get_timestamp()
+    }
     if input_zip_file_name:
-        execute_data["FILE_INPUT"] = input_zip_file_name
+        update_data["FILE_INPUT"] = input_zip_file_name
     if result_zip_file_name:
-        execute_data["FILE_RESULT"] = result_zip_file_name
+        update_data["FILE_RESULT"] = result_zip_file_name
 
-    result = cm.update_execution_record(wsDb, const, execute_data)
-    if result[0] is True:
+    result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+    if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
 

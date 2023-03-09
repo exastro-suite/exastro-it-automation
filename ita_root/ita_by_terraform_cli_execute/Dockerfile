@@ -27,6 +27,7 @@ ENV STORAGEPATH=/storage/
 
 RUN dnf install -y \
     gcc \
+    openssh-clients \
     python39 \
     python39-devel \
     python39-mod_wsgi \
@@ -57,6 +58,8 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
+RUN sed -i -e "/^\[main\]$/a sslverify\=false" /etc/dnf/dnf.conf
+RUN dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 RUN dnf install -y \
     sudo \
     git \
@@ -64,6 +67,7 @@ RUN dnf install -y \
     diffutils \
     bind-utils \
     iputils \
+    terraform \
 &&  pip3.9 install \
     debugpy \
     flake8 \
@@ -91,6 +95,10 @@ FROM    common_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
+
+RUN dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+RUN dnf install -y \
+    terraform
 
 USER $USERNAME
 WORKDIR $APP_PATH

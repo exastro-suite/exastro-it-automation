@@ -750,7 +750,7 @@ def update_policy_set(restApiCaller, tf_manage_policy_set_id, policy_set_name, p
 
 def policy_file_upload(restApiCaller, tf_manage_policy_id, policy_file_data):
     """
-        Terraformにtar.gzファイルをアップロードする
+        Terraformにpolicyファイルをアップロードする
         ARGS:
             restApiCaller: RESTAPIコールクラス
             gztar_path: アップロードするtar.gzファイルのフルパス
@@ -761,8 +761,6 @@ def policy_file_upload(restApiCaller, tf_manage_policy_id, policy_file_data):
     """
     # Moduleファイルアップロード用RESTAPIの特殊な仕様として、module_upload_flagをTrueとしてRESTAPIを実行する
     api_uri = '/policies/%s/upload' % (tf_manage_policy_id)
-    # ####メモ：アップロードURLは通常のapi_urlなので、仕様をちょっと変える必要があるかも。
-    # そのままupload_urlに入れちゃうと、httpsとかのプロトコルが違くなっちゃう。
     upload_url = None
     content = pathlib.Path(policy_file_data).read_bytes()
     header = None
@@ -770,3 +768,25 @@ def policy_file_upload(restApiCaller, tf_manage_policy_id, policy_file_data):
     response_array = restApiCaller.rest_call('PUT', api_uri, content, header, module_upload_flag, upload_url)
 
     return response_array
+
+
+def policy_file_download(restApiCaller, download_path, direct_flag=False):
+    """
+        policyファイルをダウンロードする
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+            gztar_path: アップロードするtar.gzファイルのフルパス
+            upload_url: アップロード先のURL
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    # api_uri = '/policies/%s/upload' % (tf_manage_policy_id)
+    # upload_url = None
+    # content = pathlib.Path(policy_file_data).read_bytes()
+    # header = None
+    # module_upload_flag = True
+    # response_array = restApiCaller.rest_call('PUT', api_uri, content, header, module_upload_flag, upload_url)
+    responseContents = restApiCaller.get_log_data('GET', download_path, direct_flag)
+
+    return responseContents

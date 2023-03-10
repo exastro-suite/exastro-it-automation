@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import json
+import datetime
 from common_libs.common import *  # noqa: F403
 from flask import g
 from libs.organization_common import check_auth_menu, get_auth_menus
@@ -255,6 +256,49 @@ def collect_widget_settings(objdbca):
             widget_data
     """
 
+    def get_conductor_info(objdbca, status_list, lang, days=None):
+
+        sql = (
+            "SELECT TAB_A.CONDUCTOR_INSTANCE_ID, "
+            "       IFNULL(TAB_A.TIME_END, TAB_A.LAST_UPDATE_TIMESTAMP) TIME_END, "
+            "       TAB_A.I_CONDUCTOR_NAME, "
+            "       TAB_A.I_OPERATION_NAME, "
+            "       TAB_A.TIME_BOOK, "
+            "       TAB_B.STATUS_NAME_%s STATUS_NAME "
+            "FROM T_COMN_CONDUCTOR_INSTANCE TAB_A "
+            "LEFT OUTER JOIN T_COMN_CONDUCTOR_STATUS TAB_B "
+            "ON TAB_A.STATUS_ID=TAB_B.STATUS_ID "
+            "WHERE TAB_A.DISUSE_FLAG='0' "
+            "AND TAB_B.DISUSE_FLAG='0' "
+        ) % (lang)
+
+        if len(status_list) > 0:
+            sql += "AND TAB_A.STATUS_ID IN ("
+            for sts in status_list:
+                sql += '%s,'
+
+            sql = sql.rstrip(',')
+            sql += ") "
+
+        if isinstance(days, int):
+            now = datetime.datetime.now()
+            sql += "AND TAB_A.TIME_BOOK>=%s "
+            status_list.append(now)
+
+            if days > 0:
+                to_datetime = now + datetime.timedelta(days=days)
+                to_datetime = datetime.datetime(
+                    to_datetime.year, to_datetime.month, to_datetime.day, 23, 59, 59, 999999
+                )
+                sql += "AND TAB_A.TIME_BOOK<=%s "
+                status_list.append(to_datetime)
+
+        rset = objdbca.sql_execute(sql, status_list)
+
+        return rset
+
+    lang = g.get('LANGUAGE')
+
     # 応答情報の初期化
     widget_data = {}
     widget_data['data'] = []
@@ -263,65 +307,170 @@ def collect_widget_settings(objdbca):
     widget_data['movement'] = {}
     widget_data['work_info'] = {}
     widget_data['work_result'] = {}
+    widget_data['work_reserve'] = {}
+
+    # Widget情報を取得
+    current_widget = {}
+    rset = objdbca.table_select('T_COMN_WEB_TABLE_SETTINGS', 'WHERE USER_ID = %s', g.USER_ID)
+    if len(rset) > 0 and type(rset[0]['WIDGET_SETTINGS']) is not None:
+        current_widget = json.loads(rset[0]['WIDGET_SETTINGS'])
+
+    # アクセス権限のあるメニュー一覧を取得
+    menu_rest_names = []
+    rset = objdbca.table_select('T_COMN_MENU', 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
+    for r in rset:
+        menu_rest_names.append(r.get('MENU_NAME_REST'))
+
+    menus = []
+    menu_groups = []
+    rset = get_auth_menus(menu_rest_names, objdbca)
+    for r in rset:
+        menus.append(r.get('MENU_ID'))
+        menu_groups.append(r.get('MENU_GROUP_ID'))
+
+    menu_groups = list(set(menu_groups))
 
     # メニュー情報の取得
     menu_info = {}
-    menu_info['101'] = {}
-    menu_info['101']['name'] = ''
-    menu_info['101']['order'] = 0
-    menu_info['101']['icon'] = ''
-    menu_info['101']['remarks'] = ''
-    menu_info['101']['position'] = ''
+
+    if len(menu_groups) > 0:
+        where_sql = 'WHERE DISUSE_FLAG = %s AND MENU_GROUP_ID IN ('
+        bind_list = ['0', ]
+        for mgid in menu_groups:
+            where_sql += '%s,'
+            bind_list.append(mgid)
+
+        where_sql = where_sql.rstrip(',')
+        where_sql += ') ORDER BY DISP_SEQ ASC '
+
+        rset = objdbca.table_select('T_COMN_MENU_GROUP', where_sql, bind_list)
+        for r in rset:
+            mgid = r['MENU_GROUP_ID']
+            if mgid not in menu_info:
+                menu_info[mgid] = {}
+
+            menu_info[mgid]['name'] = r['MENU_GROUP_NAME_' + lang.upper()]
+            menu_info[mgid]['remarks'] = r['NOTE']
+
+            file_name = r.get('MENU_GROUP_ICON')
+            file_paths = get_upload_file_path(g.get('WORKSPACE_ID'), '10102', mgid, 'menu_group_icon', file_name, '')  # noqa: F405
+            encoded = file_encode(file_paths.get('file_path'))  # noqa: F405
+            if not encoded:
+                encoded = None
+
+            menu_info[mgid]['icon'] = encoded
+
+            menu_info[mgid]['position'] = ''
+            if 'menu' in current_widget and mgid in current_widget['menu'] and 'position' in current_widget['menu'][mgid]:
+                menu_info[mgid]['position'] = current_widget['menu'][mgid]['position']
+
+            menu_info[mgid]['order'] = r['DISP_SEQ']
+            if 'menu' in current_widget and mgid in current_widget['menu'] and 'order' in current_widget['menu'][mgid]:
+                menu_info[mgid]['order'] = current_widget['menu'][mgid]['order']
 
     # widget情報の取得
     widget_list = []
-
-    widget_info = {}
-    widget_info['widget_id'] = '1'
-    widget_info['name'] = ''
-    widget_info['display_name'] = ''
-    widget_info['colspan'] = ''
-    widget_info['rowspan'] = ''
-    widget_info['display'] = ''
-    widget_info['title'] = ''
-    widget_info['background'] = ''
-    widget_info['data'] = {}
-    widget_info['data']['menu_col_number'] = ''
-    widget_info['set_id'] = ''
-    widget_info['area'] = ''
-    widget_info['row'] = ''
-    widget_info['col'] = ''
-
-    widget_list.append(widget_info)
+    if 'widget' in current_widget:
+        widget_list = current_widget['widget']
 
     # Movement情報の取得
     movement_info = {}
-    movement_info['3'] = {}
-    movement_info['3']['name'] = ''
-    movement_info['3']['menu_id'] = ''
-    movement_info['3']['number'] = 0
+
+    sql = (
+        "SELECT TAB_A.ORCHESTRA_ID, TAB_A.ORCHESTRA_NAME, TAB_C.MENU_ID, COUNT(*) CNT "
+        "FROM T_COMN_ORCHESTRA TAB_A "
+        "LEFT OUTER JOIN T_COMN_MOVEMENT TAB_B "
+        "ON TAB_A.ORCHESTRA_ID=TAB_B.ITA_EXT_STM_ID "
+        "LEFT OUTER JOIN ("
+        "  SELECT '1' ORCHESTRA_ID, '20201' MENU_ID "
+        "  UNION "
+        "  SELECT '2' ORCHESTRA_ID, '20301' MENU_ID "
+        "  UNION "
+        "  SELECT '3' ORCHESTRA_ID, '20402' MENU_ID "
+        "  UNION "
+        "  SELECT '4' ORCHESTRA_ID, '80104' MENU_ID "
+        "  UNION "
+        "  SELECT '5' ORCHESTRA_ID, '90103' MENU_ID "
+        ") TAB_C "
+        "ON TAB_A.ORCHESTRA_ID=TAB_C.ORCHESTRA_ID "
+        "WHERE TAB_A.DISUSE_FLAG='0' "
+        "AND TAB_B.DISUSE_FLAG='0' "
+        "GROUP BY TAB_A.ORCHESTRA_ID, TAB_A.ORCHESTRA_NAME, TAB_C.MENU_ID "
+        "ORDER BY TAB_A.DISP_SEQ "
+    )
+
+    rset = objdbca.sql_execute(sql)
+    for r in rset:
+        orch_id = r['ORCHESTRA_ID']
+        if orch_id not in movement_info:
+            movement_info[orch_id] = {}
+
+        movement_info[orch_id]['name'] = r['ORCHESTRA_NAME']
+        movement_info[orch_id]['menu_id'] = r['MENU_ID']
+        movement_info[orch_id]['number'] = r['CNT'] if r['MENU_ID'] in menus else '0'
 
     # 作業状況の取得
     work_info = {}
     work_info['conductor'] = []
 
-    conductor_info = {}
-    conductor_info['2'] = {}
-    conductor_info['2']['status'] = ''
-    conductor_info['2']['end'] = 'YYYY-MM-DD HH:MI:SS.nnnnnn'
+    if '30105' in menus:  # 30105:Conductor作業一覧
+        status_list = ['1', '2', '3', '4', '5']  # 1:未実行, 2:未実行(予約), 3:実行中, 4:実行中(遅延), 5:一時停止
+        rset = get_conductor_info(objdbca, status_list, lang)
+        for r in rset:
+            cond_ins_id = r['CONDUCTOR_INSTANCE_ID']
+            conductor_info = {}
+            conductor_info[cond_ins_id] = {}
+            conductor_info[cond_ins_id]['status'] = r['STATUS_NAME']
+            conductor_info[cond_ins_id]['end'] = r['TIME_END'].strftime('%Y/%m/%d %H:%M:%S.%f') if isinstance(r['TIME_END'], datetime.datetime) else r['TIME_END']
 
-    work_info['conductor'].append(conductor_info)
+            work_info['conductor'].append(conductor_info)
 
     # 作業結果の取得
     work_result_info = {}
     work_result_info['conductor'] = []
 
-    conductor_info = {}
-    conductor_info['1'] = {}
-    conductor_info['1']['status'] = ''
-    conductor_info['1']['end'] = 'YYYY-MM-DD HH:MI:SS.nnnnnn'
+    if '30105' in menus:  # 30105:Conductor作業一覧
+        status_list = ['6', '7', '8', '9', '10', '11']  # 6:正常, 7:異常, 8:警告, 9:緊急停止, 10:予約取消, 11:想定外
+        rset = get_conductor_info(objdbca, status_list, lang)
+        for r in rset:
+            cond_ins_id = r['CONDUCTOR_INSTANCE_ID']
+            conductor_info = {}
+            conductor_info[cond_ins_id] = {}
+            conductor_info[cond_ins_id]['status'] = r['STATUS_NAME']
+            conductor_info[cond_ins_id]['end'] = r['TIME_END'].strftime('%Y/%m/%d %H:%M:%S.%f') if isinstance(r['TIME_END'], datetime.datetime) else r['TIME_END']
 
-    work_result_info['conductor'].append(conductor_info)
+            work_result_info['conductor'].append(conductor_info)
+
+    # 予約作業確認
+    work_reserve_info = {}
+    work_reserve_info['conductor'] = []
+
+    if '30105' in menus:  # 30105:Conductor作業一覧
+        days = 0
+        if 'widget' in current_widget:
+            for cw in current_widget['widget']:
+                if 'name' in cw and cw['name'] == 'work_reserve' and 'data' in cw and 'days' in cw['data']:
+                    days = cw['data']['days']
+                    try:
+                        days = int(days)
+                        days = days if days >= 0 or days <= 365 else 0
+                    except Exception:
+                        days = 0
+
+                    break
+
+        status_list = ['2', ]  # 2:未実行(予約)
+        rset = get_conductor_info(objdbca, status_list, lang, days=days)
+        for r in rset:
+            cond_ins_id = r['CONDUCTOR_INSTANCE_ID']
+            conductor_info = {}
+            conductor_info[cond_ins_id] = {}
+            conductor_info[cond_ins_id]['conductor_name'] = r['I_CONDUCTOR_NAME']
+            conductor_info[cond_ins_id]['operation_name'] = r['I_OPERATION_NAME']
+            conductor_info[cond_ins_id]['time_book'] = r['TIME_BOOK'].strftime('%Y/%m/%d %H:%M:%S.%f') if isinstance(r['TIME_BOOK'], datetime.datetime) else r['TIME_BOOK']
+            conductor_info[cond_ins_id]['status'] = r['STATUS_NAME']
+
+            work_reserve_info['conductor'].append(conductor_info)
 
     # 応答情報の作成
     widget_data['menu'] = menu_info
@@ -329,6 +478,7 @@ def collect_widget_settings(objdbca):
     widget_data['movement'] = movement_info
     widget_data['work_info'] = work_info
     widget_data['work_result'] = work_result_info
+    widget_data['work_reserve'] = work_reserve_info
 
     return widget_data
 
@@ -345,6 +495,22 @@ def regist_widget_settings(objdbca, parameter):
     # DBコネクション開始
     objdbca.db_transaction_start()
 
+    # 要求情報を取得
+    data_list = {
+        'USER_ID': g.USER_ID,
+        'WIDGET_SETTINGS': str(json.dumps(parameter)),
+    }
+
+    # Webテーブル設定を取得
+    ret = objdbca.table_select('T_COMN_WEB_TABLE_SETTINGS', 'WHERE USER_ID = %s', g.USER_ID)
+
+    if len(ret) == 0:
+        # Webテーブル設定にINSERT
+        ret = objdbca.table_insert('T_COMN_WEB_TABLE_SETTINGS', data_list, 'ROW_ID', False)
+    else:
+        data_list['ROW_ID'] = ret[0]['ROW_ID']
+        # Webテーブル設定にUPDATE
+        ret = objdbca.table_update('T_COMN_WEB_TABLE_SETTINGS', data_list, 'ROW_ID', False)
 
     # DBコネクション終了
     objdbca.db_transaction_end(True)

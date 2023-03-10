@@ -59,7 +59,7 @@ class policySetting():
 
         try:
             # [RESTAPI]連携先TerraformからPolicySetの一覧を取得する
-            response_array = get_policy_set_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
+            response_array = get_tf_policy_set_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             # ステータスコードが200以外の場合はエラー判定
             if not response_status_code == 200:
@@ -152,13 +152,13 @@ class policySetting():
                 policy_data_dict[policy_id] = {"policy_id": policy_id, "policy_name": ret[0].get('POLICY_NAME'), "policy_file": ret[0].get('POLICY_MATTER_FILE'), "policy_note": ret[0].get('NOTE')}  # noqa: E501
 
             # [RESTAPI]連携先TerraformからPolicyの一覧を取得する
-            response_array = get_policy_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
+            response_array = get_tf_policy_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             # ステータスコードが200以外の場合はエラー判定
             if not response_status_code == 200:
                 # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
                 # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                msg = "[API Error]Organization一覧取得に失敗しました。"
+                msg = "[API Error]Policy一覧取得に失敗しました。"
                 g.applogger.error(msg)
                 return False, msg, policy_data_dict
 

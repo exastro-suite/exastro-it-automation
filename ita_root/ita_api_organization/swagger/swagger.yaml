@@ -4225,7 +4225,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/:
     get:
       tags:
       - Terraform Cloud EP
@@ -4243,14 +4243,6 @@ paths:
       - name: workspace_id
         in: path
         description: WorkspaceID
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: string
-      - name: tf_organization_name
-        in: path
-        description: Terraform Organization Name
         required: true
         style: simple
         explode: false
@@ -4276,6 +4268,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
     post:
       tags:
       - Terraform Cloud EP
@@ -4556,7 +4549,7 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/download/{policy_name}/:
-    get:
+    post:
       tags:
       - Terraform Cloud EP
       description: 連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする
@@ -4594,6 +4587,11 @@ paths:
         explode: false
         schema:
           type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/download_policy_name_body'
       responses:
         "200":
           description: Success
@@ -4775,7 +4773,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/{tf_workspace_name}/
+  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/workspace/{tf_workspace_name}/
   : delete:
       tags:
       - Terraform Cloud EP
@@ -4842,7 +4840,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.terraform_cloud_ep_controller
-  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/{policy_name}/
+  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/policy/{policy_name}/
   : delete:
       tags:
       - Terraform Cloud EP
@@ -6483,7 +6481,7 @@ components:
       description: emailを指定
     workspace_tf_organization_name_body:
       properties:
-        workspace_name:
+        tf_workspace_name:
           type: string
           example: example_workspace
         terraform_version:
@@ -6496,6 +6494,12 @@ components:
           type: string
           example: 1.0.0
       description: Versionを指定
+    download_policy_name_body:
+      properties:
+        download_path:
+          type: string
+          example: /api/v2/policies/pol-xxxxxxxxxx/download
+      description: policyコードのダウンロードパスを記載
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:

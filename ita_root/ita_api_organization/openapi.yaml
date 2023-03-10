@@ -4850,7 +4850,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/:
     get:
       tags:
         - Terraform Cloud EP
@@ -4867,12 +4867,6 @@ paths:
         - name: workspace_id
           in: path
           description: WorkspaceID
-          required: true
-          schema:
-            type: string
-        - name: tf_organization_name
-          in: path
-          description: Terraform Organization Name
           required: true
           schema:
             type: string
@@ -4904,6 +4898,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
     post:
       tags:
         - Terraform Cloud EP
@@ -4935,7 +4930,7 @@ paths:
             schema:
               description: Workspace名およびVersionを指定(Versionがnullの場合、自動的に最新のVersionが適用されます。)
               properties:
-                workspace_name:
+                tf_workspace_name:
                   type: string
                   example: "example_workspace"
                 terraform_version:
@@ -5206,7 +5201,7 @@ paths:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
   /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/download/{policy_name}/:
-    get:
+    post:
       tags:
         - Terraform Cloud EP
       description: 連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする
@@ -5237,6 +5232,15 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: policyコードのダウンロードパスを記載
+              properties:
+                download_path:
+                  type: string
+                  example: "/api/v2/policies/pol-xxxxxxxxxx/download"
       responses:
         '200':
           description: Success
@@ -5434,7 +5438,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/{tf_workspace_name}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/workspace/{tf_workspace_name}/:
     delete:
       tags:
         - Terraform Cloud EP
@@ -5500,7 +5504,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/{policy_name}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/policy/{policy_name}/:
     delete:
       tags:
         - Terraform Cloud EP

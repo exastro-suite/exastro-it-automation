@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import json
+import base64
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from flask import g  # noqa: F401
@@ -251,7 +252,7 @@ def get_workspace_list(objdbca):
         raise AppException("499-01101", [], [])  # noqa: F405
 
     # Workspace一覧取得RESTAPIコール
-    tf_workspace_dict = {}
+    tf_workspace_list = []
     for tf_organization_name in tf_organization_list:
         response_array = get_tf_workspace_list(restApiCaller, tf_organization_name)  # noqa: F405
         response_status_code = response_array.get('statusCode')
@@ -261,7 +262,6 @@ def get_workspace_list(objdbca):
             if respons_contents_json:
                 respons_contents = json.loads(respons_contents_json)
                 respons_contents_data = respons_contents.get('data')
-                tf_organization_workspace_dict = {}
                 for data in respons_contents_data:
                     # workspace名とversionを格納
                     attributes = data['attributes']
@@ -269,7 +269,7 @@ def get_workspace_list(objdbca):
                     terraform_version = attributes['terraform-version']
                     # 返却値を作成
                     ita_workspace_data_target = ita_workspace_data.get(tf_workspace_name)
-                    workspace_data = {'terraform_version': terraform_version}
+                    workspace_data = {'tf_organization_name':tf_organization_name, 'tf_workspace_name':tf_workspace_name, 'terraform_version': terraform_version}
                     # ITAに登録済みかどうかを判定する
                     if ita_workspace_data_target:
                         if ita_workspace_data_target.get('tf_organization_name') == tf_organization_name:
@@ -278,15 +278,13 @@ def get_workspace_list(objdbca):
                             workspace_data['ita_registered'] = False
                     else:
                         workspace_data['ita_registered'] = False
+                    tf_workspace_list.append(workspace_data)
 
-                    tf_organization_workspace_dict[tf_workspace_name] = workspace_data
-
-            tf_workspace_dict[tf_organization_name] = tf_organization_workspace_dict
         else:
             # 異常系
             raise AppException("499-01101", [], [])  # noqa: F405
 
-    return_data = tf_workspace_dict
+    return_data = tf_workspace_list
 
     return return_data
 
@@ -734,12 +732,11 @@ def get_policy_list(objdbca):
         ita_policy_list.append(record.get('POLICY_NAME'))
 
     # Organizationに紐づくPolicy一覧を取得
-    tf_policy_dict = {}
+    tf_policy_list = []
     for tf_organization_name in tf_organization_list:
         response_array = get_tf_policy_list(restApiCaller, tf_organization_name)  # noqa: F405
         response_status_code = response_array.get('statusCode')
         if response_status_code == 200:
-            tf_organization_policy = {}
             respons_contents_json = response_array.get('responseContents')
             respons_contents = json.loads(respons_contents_json)
             respons_contents_data = respons_contents.get('data')
@@ -749,21 +746,56 @@ def get_policy_list(objdbca):
                 policy_links = data.get('links')
                 name = policy_attributest.get('name')
                 download = policy_links.get('download')
+                policy_detail = {'tf_organization_name':tf_organization_name, 'policy_name': name}
                 if name in ita_policy_list:
                     policy_detail['ita_registered'] = True
-                    policy_detail['download_link'] = download
+                    policy_detail['download_path'] = download
                 else:
                     policy_detail['ita_registered'] = False
-                    policy_detail['download_link'] = None
-                tf_organization_policy[name] = policy_detail
+                    policy_detail['download_path'] = None
+                tf_policy_list.append(policy_detail)
         else:
             # 異常系
             raise AppException("499-01101", [], [])  # noqa: F405
 
-        # tf_organization_nameをkeyにしたdictに格納
-        tf_policy_dict[tf_organization_name] = tf_organization_policy
+    return_data = tf_policy_list
 
-    return_data = tf_policy_dict
+    return return_data
+
+
+def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
+    """
+        連携先TerraformからPolicyコードを取得する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            return_data
+    """
+    return_data = {}
+    file = None
+
+    # インターフェース情報からRESTAPI実行に必要な値を取得
+    interface_info_data = get_intarface_info_data(objdbca)
+
+    # RESTAPIコールクラス
+    restApiCaller = call_restapi_class(interface_info_data)
+
+    # download
+    download_path = parameters.get('download_path')
+    if not download_path:
+        raise AppException("400-00002", ['download_path'], ['download_path'])  # noqa: F405
+
+    # policyファイルを取得
+    responseContents = policy_file_download(restApiCaller, download_path, False)  # noqa: F405
+
+    # ファイル名を作成
+    file_name = str(policy_name) + '.sentinel'
+
+    # ファイルをエンコード
+    if responseContents:
+        file = base64.b64encode(responseContents.encode('utf-8')).decode()
+
+    return_data = {'file_name': file_name, 'file': file}
 
     return return_data
 
@@ -864,12 +896,11 @@ def get_policy_set_list(objdbca):  # noqa: C901
         ita_policy_set_list.append(record.get('POLICY_SET_NAME'))
 
     # Organizationに紐づくPolicySet一覧を取得
-    tf_policy_set_dict = {}
+    tf_policy_set_list = []
     for tf_organization_name in tf_organization_list:
         response_array = get_tf_policy_set_list(restApiCaller, tf_organization_name)  # noqa: F405
         response_status_code = response_array.get('statusCode')
         if response_status_code == 200:
-            tf_organization_policy_set = {}
             respons_contents_json = response_array.get('responseContents')
             respons_contents = json.loads(respons_contents_json)
             respons_contents_data = respons_contents.get('data')
@@ -878,6 +909,7 @@ def get_policy_set_list(objdbca):  # noqa: C901
                 policy_set_attributest = data.get('attributes')
                 relationships = data.get('relationships')
                 name = policy_set_attributest.get('name')
+                policy_set_detail = {'tf_organization_name': tf_organization_name, 'policy_set_name': name}
 
                 # policySetがITAに登録されているかどうかの判定
                 if name in ita_policy_set_list:
@@ -911,16 +943,13 @@ def get_policy_set_list(objdbca):  # noqa: C901
                         ps_pl_dict[pl_name] = {'ita_registered': False}
                 policy_set_detail['policy'] = ps_pl_dict
 
-                tf_organization_policy_set[name] = policy_set_detail
+                tf_policy_set_list.append(policy_set_detail)
 
         else:
             # 異常系
             raise AppException("499-01101", [], [])  # noqa: F405
 
-        # tf_organization_nameをkeyにしたdictに格納
-        tf_policy_set_dict[tf_organization_name] = tf_organization_policy_set
-
-    return_data = tf_policy_set_dict
+    return_data = tf_policy_set_list
 
     return return_data
 

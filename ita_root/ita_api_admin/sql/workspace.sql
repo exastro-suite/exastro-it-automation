@@ -655,7 +655,6 @@ CREATE TABLE T_COMN_DEL_OPERATION_LIST
     LG_DAYS                         INT,                                        -- 論理削除日数
     PH_DAYS                         INT,                                        -- 物理削除日数
     MENU_NAME                       VARCHAR(40),                                -- メニューグループ：メニュー名
-    OPE_ID_COL_NAME                 VARCHAR(255),                               -- オペレーションIDカラム名
     DATA_STORAGE_PATH               VARCHAR(1024),                              -- データストレージパス
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
@@ -673,7 +672,6 @@ CREATE TABLE T_COMN_DEL_OPERATION_LIST_JNL
     LG_DAYS                         INT,                                        -- 論理削除日数
     PH_DAYS                         INT,                                        -- 物理削除日数
     MENU_NAME                       VARCHAR(40),                                -- メニューグループ：メニュー名
-    OPE_ID_COL_NAME                 VARCHAR(255),                               -- オペレーションIDカラム名
     DATA_STORAGE_PATH               VARCHAR(1024),                              -- データストレージパス
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

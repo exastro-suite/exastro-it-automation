@@ -295,7 +295,7 @@ def _set_base_config(parameter):
             {}
     """
 
-    # not use rest_key
+    # accept file mimetype
     accept_compare_file_list = [
         "text/plain",
         "application/json",
@@ -303,7 +303,56 @@ def _set_base_config(parameter):
         "text/html",
         "text/javascript",
         "application/ld+json",
+        'text/x-yaml',
+        'text/yaml',
+        'application/yaml',
+        'application/x-yaml',
     ]
+
+    add_ext_mimetype = {
+        ".yaml": [
+            "text/yaml",
+            'text/x-yaml',
+            'text/yaml',
+            'application/yaml',
+            'application/x-yaml',
+        ],
+        ".yml": [
+            "text/yaml",
+            'text/x-yaml',
+            'text/yaml',
+            'application/yaml',
+            'application/x-yaml',
+        ]
+    }
+
+    for k_ext, l_mimes in add_ext_mimetype.items():
+        for v_mime in l_mimes:
+            mimetypes.add_type(v_mime, k_ext, False)
+
+    ban_ext = [
+        "zip",
+        "gzip",
+        "gz",
+        "tar",
+        "rar",
+        "7z",
+        "bzip2",
+        "bz2",
+        "exe",
+        "lzh",
+    ]
+
+    accept_compare_file_list.extend([_v for _k, _v in mimetypes.types_map.items() if _v.startswith('text') or _v.startswith('application')])
+    accept_compare_file_list.extend([_v for _k, _v in mimetypes.common_types.items() if _v.startswith('text') or _v.startswith('application')])
+    accept_compare_file_list = list(set(accept_compare_file_list))
+
+    for _v in accept_compare_file_list:
+        _ind = accept_compare_file_list.index(_v)
+        if _v is not None and (_v.startswith('text') or _v.startswith('application')):
+            for _bk in ban_ext:
+                if _v.find(_bk) != -1:
+                    accept_compare_file_list.pop(_ind)
 
     # not use rest_key
     del_parameter_list = [
@@ -404,7 +453,7 @@ def _set_base_config(parameter):
     compare_config.setdefault("target_menus_lang", {"menu_1": "", "menu_2": ""})
     # 代入順序リスト {"menu_1":[],"menu_2":[]}
     compare_config.setdefault("input_order_list", [])
-    # 対象メニューobjtable　{"menu_1": objtable, "menu_2": objtable}
+    # 対象メニューobjtable {"menu_1": objtable, "menu_2": objtable}
     compare_config.setdefault("objtable", {})
     # 比較結果(ホスト毎)
     compare_config.setdefault("result_compare_host", {})
@@ -886,8 +935,8 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
     str_rdiff = ""
     if mimetype_1 in accept_compare_file_list and mimetype_2 in accept_compare_file_list:
         try:
-            data_1_dec = base64.b64decode(data_1.encode()).decode().split()
-            data_2_dec = base64.b64decode(data_2.encode()).decode().split()
+            data_1_dec = base64.b64decode(data_1.encode()).decode().splitlines()
+            data_2_dec = base64.b64decode(data_2.encode()).decode().splitlines()
         except Exception:
             # read file is faild
             status_code = "499-01006"
@@ -1394,7 +1443,7 @@ def _set_compare_config(objdbca, compare_config, options):
 
             vertical_1 = target_menu_info.get("menu_1").get("vertical")
             vertical_2 = target_menu_info.get("menu_2").get("vertical")
-            # set vertical_compare_flg　
+            # set vertical_compare_flg
             if vertical_1 == "1" and vertical_2 == "1":
                 compare_config = _set_flg(compare_config, "vertical_compare_flg", True)
             elif vertical_1 == "1" and vertical_1 != vertical_2:
@@ -2199,7 +2248,12 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
         objcolumn = eval(eval_class_str)
         file_data = objcolumn.get_file_data(file_name, target_uuid, None)
         file_path = objcolumn.get_file_data_path(file_name, target_uuid, None)
-        file_mimetype, encoding = mimetypes.guess_type(file_path)
+        file_mimetype, encoding = mimetypes.guess_type(file_path, False)
+        if file_mimetype is None:
+            # check binary file
+            ret, file_mimetype, encoding = no_mimetype_is_binary_chk(file_path, file_mimetype, encoding)
+            if ret is False and file_mimetype is None:
+                file_mimetype = "text/plain"
 
     except AppException as _app_e:  # noqa: F405
         raise AppException(_app_e)  # noqa: F405
@@ -2745,6 +2799,36 @@ def ws_target_host_create_table(wb, file_name, exec_time, config, compare_data, 
         ws[target_cell].hyperlink = target_link
     return ws
 
+
+# mime判定不可ファイルのバイナリ判定
+def no_mimetype_is_binary_chk(target_file_path, file_mimetype, encoding):
+    """
+        check binary file :no mimetype file
+        ARGS:
+            target_file_path
+            file_mimetype
+            encoding
+        RETRUN:
+        (ret, file_mimetype, encode)
+    """
+    import chardet
+    ret = False
+    encode = encoding
+    if file_mimetype is None:
+        # check encode -> check ASCII -08
+        with open(target_file_path, 'rb') as f:
+            fd = f.read()
+            encode = chardet.detect(fd)['encoding']
+            if encode is None:
+                ret = True
+            else:
+                tmp_code = [fdcode for fdcode in list(fd)]
+                # check ASCII -08
+                for n in range(0, 9):
+                    if n in tmp_code:
+                        ret = True
+                        break
+    return ret, file_mimetype, encode,
 
 # add filename lineno
 def addline_msg(msg=''):

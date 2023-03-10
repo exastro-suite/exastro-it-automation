@@ -331,7 +331,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     update_data = {
         "EXECUTION_NO": execution_no,
         "STATUS_ID": const.STATUS_PREPARE,
-        "TIME_END": get_timestamp()
+        "TIME_START": get_timestamp()
     }
     result, execute_data = cm.update_execution_record(wsDb, const, update_data)
     if result is True:

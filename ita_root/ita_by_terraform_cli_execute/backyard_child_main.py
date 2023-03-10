@@ -325,8 +325,8 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     update_data["MULTIPLELOG_MODE"] = 1
     result, execute_data = cm.update_execution_record(wsDb, const, update_data)
     if result is True:
-        wsDb.db_transaction_start()
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10708", [execution_no]))
+        wsDb.db_commit()
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10761", [execution_no]))
 
     # 緊急停止のチェック
     ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data, result_matter_arr)
@@ -451,6 +451,7 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
     if init_flg is True and os.path.exists(result_file_path):
         return const.STATUS_EXCEPTION, execute_data
 
+    g.applogger.debug(command)
     proc = subprocess.Popen(command, cwd=workspace_work_dir, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # 結果ファイルにコマンドとPIDを書き込む
@@ -494,22 +495,23 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
                 if result is True:
                     wsDb.db_commit()
                     g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no]))
+                    break
 
             # プロセスが実行中はNoneを返す
             if proc.poll() is not None:
                 # 終了判定
                 break
-    else:
-        # 遅延判定しない場合は、終了するまで待つ
-        stdout_data, stderr_data = proc.communicate()
-        g.applogger.debug(stdout_data)
-        if stdout_data:
-            with open(cmd_log, mode='w', encoding='UTF-8') as f:
-                f.write(stdout_data)
-        g.applogger.debug(stderr_data)
-        if stderr_data:
-            with open(error_log, mode='w', encoding='UTF-8') as f:
-                f.write(stderr_data)
+
+    # 結果を受け取る
+    stdout_data, stderr_data = proc.communicate()
+
+    if stdout_data:
+        with open(cmd_log, mode='w', encoding='UTF-8') as f:
+            f.write(stdout_data)
+
+    if stderr_data:
+        with open(error_log, mode='w', encoding='UTF-8') as f:
+            f.write(stderr_data)
 
     exit_status = proc.returncode
     if exit_status == 0:

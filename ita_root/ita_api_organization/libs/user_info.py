@@ -129,7 +129,7 @@ def collect_user_auth(objdbca):
     return user_auth_data
 
 
-def collect_menus(objdbca):
+def collect_menus(objdbca, extra_flag=False):
     """
         ユーザがアクセス可能なメニューグループ・メニューの一覧を取得
         ARGS:
@@ -201,6 +201,9 @@ def collect_menus(objdbca):
         add_menu_group['menu_group_name'] = recode.get('MENU_GROUP_NAME_' + lang.upper())
         add_menu_group['disp_seq'] = recode.get('DISP_SEQ')
         add_menu_group['menus'] = target_menus
+        if extra_flag:
+            add_menu_group['icon'] = recode.get('MENU_GROUP_ICON')
+            add_menu_group['remarks'] = recode.get('NOTE')
 
         menu_group_list.append(add_menu_group)
 
@@ -315,58 +318,30 @@ def collect_widget_settings(objdbca):
     if len(rset) > 0 and type(rset[0]['WIDGET_SETTINGS']) is not None:
         current_widget = json.loads(rset[0]['WIDGET_SETTINGS'])
 
-    # アクセス権限のあるメニュー一覧を取得
-    menu_rest_names = []
-    rset = objdbca.table_select('T_COMN_MENU', 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
-    for r in rset:
-        menu_rest_names.append(r.get('MENU_NAME_REST'))
-
-    menus = []
+    # メニュー情報を取得
+    menus = {}
     menu_groups = []
-    rset = get_auth_menus(menu_rest_names, objdbca)
-    for r in rset:
-        menus.append(r.get('MENU_ID'))
-        menu_groups.append(r.get('MENU_GROUP_ID'))
+    menu_list = collect_menus(objdbca, extra_flag=True)['menu_groups']
+    for mg in menu_list:
+        mgid = mg['id']
+        menu_groups.append(mgid)
+        for m in mg['menus']:
+            menus[m['id']] = m['menu_name_rest']
 
-    menu_groups = list(set(menu_groups))
+        file_name = mg['icon']
+        file_paths = get_upload_file_path(g.get('WORKSPACE_ID'), '10102', mgid, 'menu_group_icon', file_name, '')  # noqa: F405
+        encoded = file_encode(file_paths.get('file_path'))  # noqa: F405
+        if not encoded:
+            encoded = None
 
-    # メニュー情報の取得
-    menu_info = {}
+        mg['icon'] = encoded
 
-    if len(menu_groups) > 0:
-        where_sql = 'WHERE DISUSE_FLAG = %s AND MENU_GROUP_ID IN ('
-        bind_list = ['0', ]
-        for mgid in menu_groups:
-            where_sql += '%s,'
-            bind_list.append(mgid)
+        mg['position'] = ''
+        if 'menu' in current_widget and mgid in current_widget['menu'] and 'position' in current_widget['menu'][mgid]:
+            mg['position'] = current_widget['menu'][mgid]['position']
 
-        where_sql = where_sql.rstrip(',')
-        where_sql += ') ORDER BY DISP_SEQ ASC '
-
-        rset = objdbca.table_select('T_COMN_MENU_GROUP', where_sql, bind_list)
-        for r in rset:
-            mgid = r['MENU_GROUP_ID']
-            if mgid not in menu_info:
-                menu_info[mgid] = {}
-
-            menu_info[mgid]['name'] = r['MENU_GROUP_NAME_' + lang.upper()]
-            menu_info[mgid]['remarks'] = r['NOTE']
-
-            file_name = r.get('MENU_GROUP_ICON')
-            file_paths = get_upload_file_path(g.get('WORKSPACE_ID'), '10102', mgid, 'menu_group_icon', file_name, '')  # noqa: F405
-            encoded = file_encode(file_paths.get('file_path'))  # noqa: F405
-            if not encoded:
-                encoded = None
-
-            menu_info[mgid]['icon'] = encoded
-
-            menu_info[mgid]['position'] = ''
-            if 'menu' in current_widget and mgid in current_widget['menu'] and 'position' in current_widget['menu'][mgid]:
-                menu_info[mgid]['position'] = current_widget['menu'][mgid]['position']
-
-            menu_info[mgid]['order'] = r['DISP_SEQ']
-            if 'menu' in current_widget and mgid in current_widget['menu'] and 'order' in current_widget['menu'][mgid]:
-                menu_info[mgid]['order'] = current_widget['menu'][mgid]['order']
+        if 'menu' in current_widget and mgid in current_widget['menu'] and 'order' in current_widget['menu'][mgid]:
+            mg['disp_seq'] = current_widget['menu'][mgid]['order']
 
     # widget情報の取得
     widget_list = []
@@ -408,6 +383,7 @@ def collect_widget_settings(objdbca):
         movement_info[orch_id]['name'] = r['ORCHESTRA_NAME']
         movement_info[orch_id]['menu_id'] = r['MENU_ID']
         movement_info[orch_id]['number'] = r['CNT'] if r['MENU_ID'] in menus else '0'
+        movement_info[orch_id]['menu_name_rest'] = menus[r['MENU_ID']] if r['MENU_ID'] in menus else ''
 
     # 作業状況の取得
     work_info = {}
@@ -422,6 +398,7 @@ def collect_widget_settings(objdbca):
             conductor_info[cond_ins_id] = {}
             conductor_info[cond_ins_id]['status'] = r['STATUS_NAME']
             conductor_info[cond_ins_id]['end'] = r['TIME_END'].strftime('%Y/%m/%d %H:%M:%S.%f') if isinstance(r['TIME_END'], datetime.datetime) else r['TIME_END']
+            conductor_info[cond_ins_id]['menu_name_rest'] = menus['30105']
 
             work_info['conductor'].append(conductor_info)
 
@@ -438,6 +415,7 @@ def collect_widget_settings(objdbca):
             conductor_info[cond_ins_id] = {}
             conductor_info[cond_ins_id]['status'] = r['STATUS_NAME']
             conductor_info[cond_ins_id]['end'] = r['TIME_END'].strftime('%Y/%m/%d %H:%M:%S.%f') if isinstance(r['TIME_END'], datetime.datetime) else r['TIME_END']
+            conductor_info[cond_ins_id]['menu_name_rest'] = menus['30105']
 
             work_result_info['conductor'].append(conductor_info)
 
@@ -469,11 +447,12 @@ def collect_widget_settings(objdbca):
             conductor_info[cond_ins_id]['operation_name'] = r['I_OPERATION_NAME']
             conductor_info[cond_ins_id]['time_book'] = r['TIME_BOOK'].strftime('%Y/%m/%d %H:%M:%S.%f') if isinstance(r['TIME_BOOK'], datetime.datetime) else r['TIME_BOOK']
             conductor_info[cond_ins_id]['status'] = r['STATUS_NAME']
+            conductor_info[cond_ins_id]['menu_name_rest'] = menus['30106'] if '30106' in menus else ''
 
             work_reserve_info['conductor'].append(conductor_info)
 
     # 応答情報の作成
-    widget_data['menu'] = menu_info
+    widget_data['menu'] = menu_list
     widget_data['widget'] = widget_list
     widget_data['movement'] = movement_info
     widget_data['work_info'] = work_info

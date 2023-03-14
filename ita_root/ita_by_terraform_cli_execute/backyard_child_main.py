@@ -17,6 +17,7 @@ import os
 import subprocess
 import time
 import json
+from shlex import quote
 from zc import lockfile
 from zc.lockfile import LockError
 
@@ -63,8 +64,8 @@ def backyard_child_main(organization_id, workspace_id):
     args = sys.argv
     tf_workspace_id = args[3]
     execution_no = args[4]
-    # g.applogger.debug("tf_workspace_id=" + tf_workspace_id)
-    # g.applogger.debug("execution_no=" + execution_no)
+    g.applogger.debug("tf_workspace_id=" + tf_workspace_id)
+    g.applogger.debug("execution_no=" + execution_no)
     g.applogger.set_tag("EXECUTION_NO", execution_no)
     g.applogger.debug(g.appmsg.get_log_message("MSG-10720", [execution_no, tf_workspace_id]))
 
@@ -171,18 +172,20 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     os.chmod(tmp_execution_dir, 0o777)
 
     # 前回の実行ファイルの削除
-    # destroy以外・・・tfファイルなど、stateファイル以外の全てを削除
-    # destroy・・・・・結果ファイル・ロックファイルのみを削除（前回実行状態にする）
-    rm_list = [exe_lock_file_path, result_file_path, emergency_stop_file_path]  # ロックファイル、結果ファイル、緊急停止ファイル
+    # destroy以外・・・stateファイル以外の全てを削除
+    # destroy・・・・・↓（前回実行状態にする）
+    # ロックファイル、結果ファイル、緊急停止ファイルは必ず削除
+    rm_list = []
+    rm_list.append(quote(exe_lock_file_path))
+    rm_list.append(quote(result_file_path))
+    rm_list.append(quote(emergency_stop_file_path))
 
     if run_mode != TFCLIConst.RUN_MODE_DESTROY:
-        cmd = ['/bin/rm', '-fr', '*.tf', '*.tfvars']
-        cmd.extend(rm_list)
-        subprocess.run(cmd, cwd=workspace_work_dir)
+        cmd = '/bin/rm -fr *.tf *.tfvars {}' + ' '.join(rm_list)
+        subprocess.run(cmd, shell=True, cwd=workspace_work_dir)
     else:
-        cmd = ['/bin/rm', '-fr']
-        cmd.extend(rm_list)
-        subprocess.run(cmd, cwd=workspace_work_dir)
+        cmd = '/bin/rm -fr {}' + ' '.join(rm_list)
+        subprocess.run(cmd, shell=True, cwd=workspace_work_dir)
 
     # 変数ファイルの準備
     PrepareVarsFile(wsDb, execute_data)
@@ -387,14 +390,16 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
 
     # すでに結果ファイルが存在していた（重複処理が走らなければ、ありえない)
     if init_flg is True and os.path.exists(result_file_path):
+        g.applogger.debug("result.txt still exists")
         return TFCLIConst.STATUS_EXCEPTION, execute_data
 
-    g.applogger.debug(command)
+    str_command = " ".join(command)
+    g.applogger.debug(str_command)
     command.insert(0, "sudo")  # sudo権限
     proc = subprocess.Popen(command, cwd=workspace_work_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # 結果ファイルにコマンドとPIDを書き込む
-    str_body = command + " : PID=" + str(proc.pid) + "\n"
+    str_body = str_command + " : PID=" + str(proc.pid) + "\n"
     if init_flg is True:
         with open(result_file_path, mode='w', encoding='UTF-8') as f:
             f.write(str_body)
@@ -516,8 +521,8 @@ def MakeResultZipFile():
     # g.applogger.debug(cp)
     if cp.returncode != 0:
         # zipファイルの作成に失敗しました
-        g.applogger.debug(cp.returncode)
-        g.applogger.debug(cp.stdout)
+        # g.applogger.debug(cp.returncode)
+        # g.applogger.debug(cp.stdout)
         g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Creating ResultZipFile", ""]))
         return False
 

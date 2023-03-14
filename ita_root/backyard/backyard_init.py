@@ -14,6 +14,7 @@
 from flask import Flask, g
 from dotenv import load_dotenv  # python-dotenv
 import os
+import sys
 
 # from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
@@ -35,7 +36,9 @@ def main():
         g.applogger = AppLog()
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
-        wrapper_job(main_logic)
+        args = sys.argv
+        loop_count = 500 if len(args) == 1 else args[1]
+        wrapper_job(main_logic, None, None, loop_count)
 
 
 if __name__ == '__main__':

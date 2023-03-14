@@ -107,7 +107,7 @@ def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_d
     # host_list = { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 
     for movement_id, tpl_var_set in template_list.items():
-        tpl_var_name = tpl_var_set.keys()[0]
+        tpl_var_name = list(tpl_var_set.keys())[0]
         mov_vars_dict[movement_id].merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
 
     for movement_id, ope_host_dict in host_list.items():

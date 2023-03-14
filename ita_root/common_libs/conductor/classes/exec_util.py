@@ -2354,10 +2354,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             # 一時作業ディレクトリ指定
             tmp_work_dir = uuid.uuid4()
             strage_path = os.environ.get('STORAGEPATH')  # noqa: F405
-            tmp_work_dir_path = "{}/{}/{}/tmp/{}".format(
-                strage_path,
-                self.organization_id,
-                self.workspace_id,
+            tmp_work_dir_path = "/tmp/{}".format(
                 tmp_work_dir
             ).replace('//', '/')
 

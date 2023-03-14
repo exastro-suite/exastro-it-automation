@@ -200,6 +200,7 @@ getMessage = ( function() {
         'FTE00163' : "The work suspension period must be within the work period.",
         'FTE00164' : "Period",
         'FTE00165' : "Seconds",
+        'FTE00166' : "Filter validation error",
         
         // Create menu
         'FTE01001' : "Item",

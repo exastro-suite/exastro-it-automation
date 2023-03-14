@@ -110,6 +110,9 @@ class Const(CommonConst):
     TF_PLAN_CANCEL = 'canceled'
     TF_PLAN_RUNNING = 'running'
 
+    # Terraform PolicyCheck Status
+    TF_POLICY_CANCEL = 'canceled'
+
     # Terraform Apply Status
     TF_APPLY_ERROR = 'errored'
     TF_APPLY_FINISH = 'finished'

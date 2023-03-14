@@ -459,14 +459,14 @@ def backyard_main(organization_id, workspace_id):
                         aryRetBody = []
                         strCollectTargetPath = strCollectTargetPath_in
                         arrTargetfiles = getTargetPath(strCollectTargetPath_in, aryRetBody)
-                        if arrTargetfiles is False:
+                        if not arrTargetfiles:
                             aryRetBody = []
                             strCollectTargetPath = strCollectTargetPath_out
                             arrTargetfiles = getTargetPath(strCollectTargetPath_out, aryRetBody)
 
                         aryRetBody = []
                         arrTargetUploadfiles = getTargetPath(strCollectTargetFilesPath_in, aryRetBody)
-                        if arrTargetUploadfiles is False:
+                        if not arrTargetUploadfiles:
                             aryRetBody = []
                             arrTargetUploadfiles = getTargetPath(strCollectTargetFilesPath_out, aryRetBody)
 

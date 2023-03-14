@@ -12,6 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from flask import g
+import os
+import pathlib
+
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from common_libs.common.exception import AppException
 
@@ -50,5 +53,11 @@ def execution_scram(objdbca, execution_no):
         raise AppException("499-00904", [row["NAME"]], [row["NAME"]])
 
     # 緊急停止処理を実行
+    tf_workspace_id = t_exec_sts_inst_record.get('I_WORKSPACE_ID')
+    base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
+    workspace_work_dir = base_dir + TFCLIConst.DIR_WORK + "/{}/work".format(tf_workspace_id)  # CLI実行場所
+    emergency_stop_file_path = workspace_work_dir + "/" + TFCLIConst.FILE_EMERGENCY_STOP  # 緊急停止ファイル
+    p = pathlib.Path(emergency_stop_file_path)
+    p.touch(mode=0o777, exist_ok=False)  # ファイルが既にあればException
 
     return True

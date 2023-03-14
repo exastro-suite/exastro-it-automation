@@ -24,14 +24,12 @@ from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException
 from common_libs.common.util import get_timestamp, ky_encrypt
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
-from common_libs.terraform_driver.cli.Const import Const
+from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
 
 from libs import common_functions as cm
 
 
-# 定数をロード
-const = Const()
 # 基本情報
 execution_no = ""
 tf_workspace_id = ""
@@ -50,6 +48,8 @@ result_matter_arr = []  # 結果ファイルに必要なファイルリスト
 
 input_zip_file_name = ""  # 投入ファイルのパス
 result_zip_file_name = ""  # 結果ファイルのパス
+#
+secure_tfvars_flg = False  # secure.tfvarsが存在している
 
 
 def backyard_child_main(organization_id, workspace_id):
@@ -116,7 +116,7 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     global tmp_execution_dir
 
     # 処理対象の作業インスタンス情報取得
-    retBool, execute_data = cm.get_execution_process_info(wsDb, const, execution_no)
+    retBool, execute_data = cm.get_execution_process_info(wsDb, TFCLIConst, execution_no)
     if retBool is False:
         err_log = g.appmsg.get_log_message(execute_data, [execution_no])
         raise Exception(err_log)
@@ -126,38 +126,43 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     operation_id = execute_data['OPERATION_ID']
 
     # 「代入値管理」へのレコード登録実行。resultにはboolが、msgにはエラー時のメッセージが入る。
-    sub_value_auto_reg = SubValueAutoReg(wsDb, const, operation_id, movement_id, execution_no)
+    sub_value_auto_reg = SubValueAutoReg(wsDb, TFCLIConst, operation_id, movement_id, execution_no)
     result, msg = sub_value_auto_reg.set_assigned_value_from_parameter_sheet()
     if result is False:
         g.applogger.error(msg)
         return False, execute_data
 
     # 実行モードが「パラメータ確認」の場合は終了
-    if run_mode == const.RUN_MODE_PARAM:
+    if run_mode == TFCLIConst.RUN_MODE_PARAM:
         wsDb.db_transaction_start()
         update_data = {
             "EXECUTION_NO": execution_no,
-            "STATUS_ID": const.STATUS_COMPLETE,
+            "STATUS_ID": TFCLIConst.STATUS_COMPLETE,
             "TIME_END": get_timestamp(),
         }
-        result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+        result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
         if result is True:
             wsDb.db_commit()
             g.applogger.debug(g.appmsg.get_log_message("MSG-10731", [execution_no]))
 
         return True, execute_data
 
+    # 緊急停止のチェック
+    ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
+    if ret_emgy is False:
+        return True, execute_data
+
     # パスの生成
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
-    workspace_work_dir = base_dir + const.DIR_WORK + "/{}/work".format(tf_workspace_id)  # CLI実行場所
-    tmp_execution_dir = base_dir + const.DIR_TEMP + "/" + execution_no  # zipファイル（投入・結果）作成の作業場所
+    workspace_work_dir = base_dir + TFCLIConst.DIR_WORK + "/{}/work".format(tf_workspace_id)  # CLI実行場所
+    tmp_execution_dir = base_dir + TFCLIConst.DIR_TEMP + "/" + execution_no  # zipファイル（投入・結果）作成の作業場所
 
     exe_lock_file_path = workspace_work_dir + "/.tf_exec_lock"  # ロックファイル
     result_file_path = workspace_work_dir + "/result.txt"  # 実行内容を記録したファイル
 
     default_tfvars_file_path = workspace_work_dir + "/terraform.tfvars"  # terraform.tfvars
     secure_tfvars_file_path = workspace_work_dir + "/secure.tfvars"  # secure.tfvars
-    emergency_stop_file_path = workspace_work_dir + "/emergency_stop"  # 緊急停止ファイル
+    emergency_stop_file_path = workspace_work_dir + "/" + TFCLIConst.FILE_EMERGENCY_STOP  # 緊急停止ファイル
 
     if os.path.exists(workspace_work_dir) is False:
         return False, execute_data
@@ -170,17 +175,22 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     # destroy・・・・・結果ファイル・ロックファイルのみを削除（前回実行状態にする）
     rm_list = [exe_lock_file_path, result_file_path, emergency_stop_file_path]  # ロックファイル、結果ファイル、緊急停止ファイル
 
-    if run_mode != const.RUN_MODE_DESTROY:
-        cmd = '/bin/rm -fr *.tf *.tfvars {}'.format(" ".join(rm_list))
-        subprocess.run(cmd, cwd=workspace_work_dir, shell=True)
+    if run_mode != TFCLIConst.RUN_MODE_DESTROY:
+        cmd = ['/bin/rm', '-fr', '*.tf', '*.tfvars']
+        cmd.extend(rm_list)
+        subprocess.run(cmd, cwd=workspace_work_dir)
     else:
-        cmd = '/bin/rm -fr {}'.format(" ".join(rm_list))
-        subprocess.run(cmd, cwd=workspace_work_dir, shell=True)
+        cmd = ['/bin/rm', '-fr']
+        cmd.extend(rm_list)
+        subprocess.run(cmd, cwd=workspace_work_dir)
+
+    # 変数ファイルの準備
+    PrepareVarsFile(wsDb, execute_data)
 
     # 緊急停止のチェック
     ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
     if ret_emgy is False:
-        return True, execute_data
+        True, execute_data
 
     # 処理対象の作業インスタンス実行
     retBool, execute_data = instance_execution(wsDb, execute_data)
@@ -198,28 +208,16 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     global input_matter_arr
     global result_matter_arr
 
-    module_matter_id_str_arr = []  # モジュール素材IDを格納する配列
-    module_matter_arr = {}  # モジュール素材情報を格納する配列
-
-    vars_set_flag = False  # 変数追加処理を行うかの判定
-    vars_data_arr = []  # 対象の変数を格納する配列
-
-    variable_tfvars = []  # terraform.tfvarsに書き込むkey=value
-    secure_tfvars = []  # secure.tfvarsに書き込むkey=value
-    secure_tfvars_flg = False  # secure.tfvarsが存在している
-
     # 作業実行データ
     # tf_workspace_name_org = execute_data['I_WORKSPACE_NAME']
     run_mode = execute_data['RUN_MODE']
-    movement_id = execute_data['MOVEMENT_ID']
-    operation_id = execute_data['OPERATION_ID']
     conductor_instance_no = execute_data["CONDUCTOR_INSTANCE_NO"]
 
     # [処理]処理対象インスタンス 作業実行開始(作業No.:{})
     g.applogger.debug(g.appmsg.get_log_message("MSG-10763", [execution_no]))
 
     # logファイルを生成
-    log_dir = base_dir + const.DIR_EXECUTE + "/{}/out/".format(execution_no)
+    log_dir = base_dir + TFCLIConst.DIR_EXECUTE + "/{}/out/".format(execution_no)
 
     error_log = log_dir + "error.log"
     init_log = log_dir + "init.log"
@@ -229,97 +227,6 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     os.makedirs(log_dir, exist_ok=True)
     os.chmod(log_dir, 0o777)
 
-    # WORKSPACE_IDから対象Workspace(B_TERRAFORM_CLI_WORKSPACES)のレコードを取得して、workspace名をキャッシュ
-    # condition = """WHERE `DISUSE_FLAG`=0 AND WORKSPACE_ID = %s"""
-    # records = wsDb.table_select(const.T_WORKSPACE, condition, [tf_workspace_id])
-    # if len(records) == 0:
-    #     False, execute_data
-    # tf_workspace_name = records[0]['WORKSPACE_NAME']
-
-    if run_mode != const.RUN_MODE_DESTROY:
-        # 投入オペレーションの最終実施日を更新する
-        result = operation_LAST_EXECUTE_TIMESTAMP_update(wsDb, operation_id)
-        if result[0] is True:
-            g.applogger.debug(g.appmsg.get_log_message("BKY-10003", [execution_no]))
-
-        # MOVEMENT_IDからMovement詳細のレコードを取得
-        condition = "WHERE DISUSE_FLAG = '0' AND MOVEMENT_ID = %s"
-        records = wsDb.table_select(const.T_MOVEMENT_MODULE, condition, [movement_id])
-
-        for record in records:
-            module_matter_id_str_arr.append("'" + record['MODULE_MATTER_ID'] + "'")
-
-        # Moduleのファイル名を取得
-        module_matter_id_str_arr_concat = ','.join(module_matter_id_str_arr)
-        condition = "WHERE DISUSE_FLAG = '0' AND MODULE_MATTER_ID in ({}) ".format(module_matter_id_str_arr_concat)
-        records = wsDb.table_select(const.T_MODULE, condition, [])
-
-        if len(records) == 0:
-            # Movementに紐づくModuleが存在しません(MovementID:{})
-            return False, execute_data
-        for record in records:
-            module_matter_arr[record['MODULE_MATTER_ID']] = {
-                "matter_name": record['MODULE_MATTER_NAME'],
-                "matter_file_name": record['MODULE_MATTER_FILE']
-            }
-
-        # 作業実行ディレクトリに、対象のModuleファイルをコピー
-        for module_matter_id, val in module_matter_arr.items():
-            matter_file_path = "{}{}/{}/{}".format(base_dir, const.DIR_MODULE, module_matter_id, val["matter_file_name"])
-            command = '/bin/cp -rfp {} {}/.'.format(matter_file_path, workspace_work_dir)
-            cp = subprocess.run(command, shell=True)
-            if cp.returncode != 0 or cp.stderr:
-                # 対象のModuleファイルをコピーに失敗しました
-                g.applogger.debug(cp)
-                g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Copying ModuleFile", ""]))
-                return False, execute_data
-
-            # 投入ファイルのリストに追加
-            input_matter_arr.append(workspace_work_dir + "/" + val["matter_file_name"])
-
-        # operation_noとmovement_idから変数名と代入値を取得
-        vars_set_flag = False
-        # 処理
-        vars_set_flag = True
-
-        # Movementに紐づく代入値がある場合、代入値(Variables)登録処理を実行
-        if vars_set_flag is True:
-            # 処理
-            sensitiveFlag = False
-            ary_vars_data = {}
-            for vars_link_id, data in ary_vars_data.items():
-                # 処理
-
-                # 変数のkey&valueをキャッシュ
-                var_kv_str_row = makeKVStrRow(var_key, var_value, varsTypeID)
-                if sensitiveFlag is False:
-                    variable_tfvars.append(var_kv_str_row)
-                else:
-                    secure_tfvars.append(var_kv_str_row)
-
-            if len(variable_tfvars) > 0:
-                # 投入ファイルのリストに追加
-                input_matter_arr.append(default_tfvars_file_path)
-                # 変数のkey&valueをtfvarsファイルに書き込み
-                str_variable_tfvars = "\n".join(variable_tfvars)
-                with open(default_tfvars_file_path, mode='w', encoding='UTF-8') as f:
-                    f.write(str_variable_tfvars)
-            if len(secure_tfvars) > 0:
-                # 変数のkey&valueをtfvarsファイルに書き込み
-                str_secure_tfvars = "\n".join(secure_tfvars)
-                with open(secure_tfvars_file_path, mode='w', encoding='UTF-8') as f:
-                    f.write(str_secure_tfvars)
-                # secure.tfvarsが存在
-                secure_tfvars_flg = True
-    else:
-        # 投入ファイルのリストに追加
-        input_matter_arr.append(workspace_work_dir + "/*.tf")
-        input_matter_arr.append(default_tfvars_file_path)
-
-        # secure.tfvarsが存在
-        if os.path.exists(secure_tfvars_file_path) is True:
-            secure_tfvars_flg = True
-
     # 投入ZIPファイルを作成する(ITAダウンロード用)
     # エラーを無視する
     is_zip = MakeInputZipFile()
@@ -328,25 +235,20 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     wsDb.db_transaction_start()
     update_data = {
         "EXECUTION_NO": execution_no,
-        "STATUS_ID": const.STATUS_PROCESSING,
+        "STATUS_ID": TFCLIConst.STATUS_PROCESSING,
     }
     if is_zip is True:
         update_data["FILE_INPUT"] = input_zip_file_name
     # ログリストを保存
     logfilelist_json = ["init.log", "plan.log"]
-    if const.RUN_MODE_APPLY or const.RUN_MODE_DESTROY:
+    if TFCLIConst.RUN_MODE_APPLY or TFCLIConst.RUN_MODE_DESTROY:
         logfilelist_json.append("apply.log")
     update_data["LOGFILELIST_JSON"] = json.dumps(logfilelist_json)
     update_data["MULTIPLELOG_MODE"] = 1
-    result, execute_data = cm.update_execution_record(wsDb, const, update_data, tmp_execution_dir)
+    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10731", [execution_no]))
-
-    # 緊急停止のチェック
-    ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
-    if ret_emgy is False:
-        True, execute_data
 
     # 準備で異常がなければ、terraformコマンドの実行にうつる
     g.applogger.debug(g.appmsg.get_log_message("MSG-10761", [execution_no]))
@@ -358,19 +260,18 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         return False, execute_data
 
     # 更新するステータスの初期値
-    update_status = const.STATUS_COMPLETE
+    update_status = TFCLIConst.STATUS_COMPLETE
 
     # initコマンド
-    command_options = ["-no-color"]
-    command = "terraform init " + " ".join(command_options)
+    command = ["terraform", "init", "-no-color"]
     ret_status, execute_data = ExecCommand(wsDb, execute_data, command, init_log, error_log, True)
-    if ret_status != const.STATUS_COMPLETE:
+    if ret_status != TFCLIConst.STATUS_COMPLETE:
         update_status = ret_status
     result_matter_arr.append(error_log)
     result_matter_arr.append(workspace_work_dir + "/.terraform.lock.hcl")
     result_matter_arr.append(init_log)
 
-    if ret_status == const.STATUS_COMPLETE:
+    if ret_status == TFCLIConst.STATUS_COMPLETE:
         # 緊急停止のチェック
         ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
         if ret_emgy is False:
@@ -380,34 +281,38 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         command_options = ["-no-color", "-input=false"]
         if secure_tfvars_flg is True:
             command_options.append("-var-file secure.tfvars")
-        if run_mode != const.RUN_MODE_DESTROY:
-            command = "terraform plan " + " ".join(command_options)
+        if run_mode != TFCLIConst.RUN_MODE_DESTROY:
+            command = ["terraform", "plan"]
+            command.extend(command_options)
         else:
-            command = "terraform plan -destroy " + " ".join(command_options)
+            command = ["terraform", "plan", "-destroy"]
+            command.extend(command_options)
 
         ret_status, execute_data = ExecCommand(wsDb, execute_data, command, plan_log, error_log)
-        if ret_status != const.STATUS_COMPLETE:
+        if ret_status != TFCLIConst.STATUS_COMPLETE:
             update_status = ret_status
         result_matter_arr.append(plan_log)
 
-    if ret_status == const.STATUS_COMPLETE:
+    if ret_status == TFCLIConst.STATUS_COMPLETE:
         # 緊急停止のチェック
         ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
         if ret_emgy is False:
             True, execute_data
 
         # applyコマンド
-        command_options = ["-no-color"]
+        command_options = ["-no-color", "-auto-approve"]
         if secure_tfvars_flg is True:
             command_options.append("-var-file secure.tfvars")
-        if run_mode == const.RUN_MODE_APPLY:
-            command = "terraform apply -auto-approve " + " ".join(command_options)
+        if run_mode == TFCLIConst.RUN_MODE_APPLY:
+            command = ["terraform", "apply"]
+            command.extend(command_options)
         # destroyコマンド
-        elif run_mode == const.RUN_MODE_DESTROY:
-            command = "terraform destroy -auto-approve " + " ".join(command_options)
+        elif run_mode == TFCLIConst.RUN_MODE_DESTROY:
+            command = ["terraform", "destroy"]
+            command.extend(command_options)
 
         ret_status, execute_data = ExecCommand(wsDb, execute_data, command, apply_log, error_log)
-        if ret_status != const.STATUS_COMPLETE:
+        if ret_status != TFCLIConst.STATUS_COMPLETE:
             update_status = ret_status
         result_matter_arr.append(apply_log)
 
@@ -435,7 +340,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     if is_zip is True:
         update_data["FILE_RESULT"] = result_zip_file_name
 
-    result, execute_data = cm.update_execution_record(wsDb, const, update_data, tmp_execution_dir)
+    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10733", [execution_no]))
@@ -457,19 +362,19 @@ def update_status_error(wsDb: DBConnectWs, execute_data):
     wsDb.db_transaction_start()
     update_data = {
         "EXECUTION_NO": execution_no,
-        "STATUS_ID": const.STATUS_EXCEPTION,
+        "STATUS_ID": TFCLIConst.STATUS_EXCEPTION,
         "TIME_END": get_timestamp(),
     }
-    if len(input_matter_arr) > 0 and not execute_data["FILE_INPUT"]:
+    if len(input_matter_arr) > 0 and "FILE_INPUT" not in execute_data:
         is_zip = MakeResultZipFile()
         if is_zip is True:
             update_data["FILE_INPUT"] = input_zip_file_name
-    elif len(result_matter_arr) > 0 and not execute_data["FILE_RESULT"]:
+    elif len(result_matter_arr) > 0 and "FILE_RESULT" not in execute_data:
         is_zip = MakeInputZipFile()
         if is_zip is True:
             update_data["FILE_RESULT"] = result_zip_file_name
 
-    result, execute_data = cm.update_execution_record(wsDb, const, update_data, tmp_execution_dir)
+    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no, tf_workspace_id]))
@@ -482,10 +387,11 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
 
     # すでに結果ファイルが存在していた（重複処理が走らなければ、ありえない)
     if init_flg is True and os.path.exists(result_file_path):
-        return const.STATUS_EXCEPTION, execute_data
+        return TFCLIConst.STATUS_EXCEPTION, execute_data
 
     g.applogger.debug(command)
-    proc = subprocess.Popen("sudo " + command, cwd=workspace_work_dir, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    command.insert(0, "sudo")  # sudo権限
+    proc = subprocess.Popen(command, cwd=workspace_work_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # 結果ファイルにコマンドとPIDを書き込む
     str_body = command + " : PID=" + str(proc.pid) + "\n"
@@ -498,7 +404,7 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
 
     # ステータスが実行中(3)、かつ制限時間が設定されている場合のみ遅延判定する
     delay_flag = False
-    if current_status == const.STATUS_PROCESSING and time_limit:
+    if current_status == TFCLIConst.STATUS_PROCESSING and time_limit:
         check_interval = 3
         while True:
             time.sleep(check_interval)
@@ -522,9 +428,9 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
                 wsDb.db_transaction_start()
                 update_data = {
                     "EXECUTION_NO": execution_no,
-                    "STATUS_ID": const.STATUS_PROCESS_DELAYED,
+                    "STATUS_ID": TFCLIConst.STATUS_PROCESS_DELAYED,
                 }
-                result, execute_data = cm.update_execution_record(wsDb, const, update_data, tmp_execution_dir)
+                result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
                 if result is True:
                     wsDb.db_commit()
                     g.applogger.debug(g.appmsg.get_log_message("MSG-10732", [execution_no]))
@@ -547,11 +453,11 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
     exit_status = proc.returncode
     if exit_status == 0:
         # 正常終了した場合
-        update_status = const.STATUS_COMPLETE
+        update_status = TFCLIConst.STATUS_COMPLETE
         str_body = "COMPLETED(0)\n"
     else:
         # 異常終了した場合
-        update_status = const.STATUS_FAILURE
+        update_status = TFCLIConst.STATUS_FAILURE
         str_body = "PREVENTED({})\n".format(exit_status)
 
     # 結果を書き込む
@@ -562,7 +468,7 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
 
 
 # tfvarsファイルに書き込む行データを作成
-def makeKVStrRow(key, value, type_id):
+def MakeKVStrRow(key, value, type_id):
     str_row = ''
 
     if (type_id == '' or type_id == '1' or type_id == '18') or not value:
@@ -579,13 +485,12 @@ def MakeInputZipFile():
 
     # ファイル名の定義
     input_zip_file_name = 'InputData_' + execution_no + '.zip'
-    # 圧縮するファイル名のリスト
-    str_input_matter = " ".join(input_matter_arr)
 
     # ZIPファイルを作成
-    command = "zip -j {} {}".format(tmp_execution_dir + "/" + input_zip_file_name, str_input_matter)
+    command = ['zip', '-j', tmp_execution_dir + "/" + input_zip_file_name]
+    command.extend(input_matter_arr)
     # g.applogger.debug(command)
-    cp = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cp = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # g.applogger.debug(cp)
     if cp.returncode != 0:
         # zipファイルの作成に失敗しました
@@ -597,19 +502,17 @@ def MakeInputZipFile():
     return True
 
 
-# 結果zipファイルを作成
 def MakeResultZipFile():
     global result_zip_file_name
 
     # ファイル名の定義
     result_zip_file_name = 'ResultData_' + execution_no + '.zip'
-    # 圧縮するファイル名のリスト
-    str_result_matter = " ".join(result_matter_arr)
 
     # ZIPファイルを作成
-    command = "zip -j {} {}".format(tmp_execution_dir + "/" + result_zip_file_name, str_result_matter)
+    command = ['zip', '-j', tmp_execution_dir + "/" + result_zip_file_name]
+    command.extend(result_matter_arr)
     # g.applogger.debug(command)
-    cp = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cp = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # g.applogger.debug(cp)
     if cp.returncode != 0:
         # zipファイルの作成に失敗しました
@@ -687,7 +590,7 @@ def IsEmergencyStop(wsDb: DBConnectWs, execute_data):
     wsDb.db_transaction_start()
     update_data = {
         "EXECUTION_NO": execution_no,
-        "STATUS_ID": const.STATUS_SCRAM,
+        "STATUS_ID": TFCLIConst.STATUS_SCRAM,
         "TIME_END": get_timestamp()
     }
     if len(input_matter_arr) > 0 and not execute_data["FILE_INPUT"]:
@@ -699,9 +602,129 @@ def IsEmergencyStop(wsDb: DBConnectWs, execute_data):
         if is_zip is True:
             update_data["FILE_RESULT"] = result_zip_file_name
 
-    result, execute_data = cm.update_execution_record(wsDb, const, update_data, tmp_execution_dir)
+    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10736", [execution_no]))
 
     return False, execute_data
+
+
+def PrepareVarsFile(wsDb: DBConnectWs, execute_data):
+    global secure_tfvars_flg
+
+    module_matter_id_str_arr = []  # モジュール素材IDを格納する配列
+    module_matter_arr = {}  # モジュール素材情報を格納する配列
+
+    vars_set_flag = False  # 変数追加処理を行うかの判定
+    vars_data_arr = {}  # 対象の変数を格納する配列
+
+    variable_tfvars = []  # terraform.tfvarsに書き込むkey=value
+    secure_tfvars = []  # secure.tfvarsに書き込むkey=value
+
+    # 作業実行データ
+    run_mode = execute_data['RUN_MODE']
+    movement_id = execute_data['MOVEMENT_ID']
+    operation_id = execute_data['OPERATION_ID']
+
+    # WORKSPACE_IDから対象Workspace(B_TERRAFORM_CLI_WORKSPACES)のレコードを取得して、workspace名をキャッシュ
+    # condition = """WHERE `DISUSE_FLAG`=0 AND WORKSPACE_ID = %s"""
+    # records = wsDb.table_select(TFCLIConst.T_WORKSPACE, condition, [tf_workspace_id])
+    # if len(records) == 0:
+    #     False, execute_data
+    # tf_workspace_name = records[0]['WORKSPACE_NAME']
+
+    if run_mode != TFCLIConst.RUN_MODE_DESTROY:
+        # 投入オペレーションの最終実施日を更新する
+        result = operation_LAST_EXECUTE_TIMESTAMP_update(wsDb, operation_id)
+        if result[0] is True:
+            g.applogger.debug(g.appmsg.get_log_message("BKY-10003", [execution_no]))
+
+        # MOVEMENT_IDからMovement詳細のレコードを取得
+        condition = "WHERE DISUSE_FLAG = '0' AND MOVEMENT_ID = %s"
+        records = wsDb.table_select(TFCLIConst.T_MOVEMENT_MODULE, condition, [movement_id])
+
+        for record in records:
+            module_matter_id_str_arr.append("'" + record['MODULE_MATTER_ID'] + "'")
+
+        # Moduleのファイル名を取得
+        module_matter_id_str_arr_concat = ','.join(module_matter_id_str_arr)
+        condition = "WHERE DISUSE_FLAG = '0' AND MODULE_MATTER_ID in ({}) ".format(module_matter_id_str_arr_concat)
+        records = wsDb.table_select(TFCLIConst.T_MODULE, condition, [])
+
+        if len(records) == 0:
+            # Movementに紐づくModuleが存在しません(MovementID:{})
+            return False, execute_data
+        for record in records:
+            module_matter_arr[record['MODULE_MATTER_ID']] = {
+                "matter_name": record['MODULE_MATTER_NAME'],
+                "matter_file_name": record['MODULE_MATTER_FILE']
+            }
+
+        # 作業実行ディレクトリに、対象のModuleファイルをコピー
+        for module_matter_id, val in module_matter_arr.items():
+            matter_file_path = "{}{}/{}/{}".format(base_dir, TFCLIConst.DIR_MODULE, module_matter_id, val["matter_file_name"])
+            cp = subprocess.run(['/bin/cp', '-rfp', matter_file_path, workspace_work_dir + '/.'])
+            if cp.returncode != 0 or cp.stderr:
+                # 対象のModuleファイルをコピーに失敗しました
+                g.applogger.debug(cp)
+                g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Copying ModuleFile", ""]))
+                return False, execute_data
+
+            # 投入ファイルのリストに追加
+            input_matter_arr.append(workspace_work_dir + "/" + val["matter_file_name"])
+
+        # operation_noとmovement_idから変数名と代入値を取得
+        # sql = "SELECT \
+        #     {}.MODULE_VARS_LINK_ID, \
+        #     ".format()
+
+        # records = wsDb.sql_execute(sql, [movement_id])
+        # # 代入値（変数）の有無フラグ
+        # vars_set_flag = False if len(records) == 0 else True
+        # vars_list = []
+        # member_vars_link_id_list = []
+        # for record in records:
+        #     if "MEMBER_VARS" in record and record["MEMBER_VARS"] is not None:
+        #         # メンバー変数
+        #         member_vars_link_id_list.append(record)
+        #     else:
+        #         vars_list.append(record)
+
+
+        # Movementに紐づく代入値がある場合、代入値(Variables)登録処理を実行
+        if vars_set_flag is True:
+            # 処理
+            sensitiveFlag = False
+            for vars_link_id, data in vars_data_arr.items():
+                # 処理
+
+                # 変数のkey&valueをキャッシュ
+                var_kv_str_row = MakeKVStrRow(var_key, var_value, varsTypeID)
+                if sensitiveFlag is False:
+                    variable_tfvars.append(var_kv_str_row)
+                else:
+                    secure_tfvars.append(var_kv_str_row)
+
+            if len(variable_tfvars) > 0:
+                # 投入ファイルのリストに追加
+                input_matter_arr.append(default_tfvars_file_path)
+                # 変数のkey&valueをtfvarsファイルに書き込み
+                str_variable_tfvars = "\n".join(variable_tfvars)
+                with open(default_tfvars_file_path, mode='w', encoding='UTF-8') as f:
+                    f.write(str_variable_tfvars)
+            if len(secure_tfvars) > 0:
+                # 変数のkey&valueをtfvarsファイルに書き込み
+                str_secure_tfvars = "\n".join(secure_tfvars)
+                with open(secure_tfvars_file_path, mode='w', encoding='UTF-8') as f:
+                    f.write(str_secure_tfvars)
+                # secure.tfvarsが存在
+                secure_tfvars_flg = True
+    else:
+        # 投入ファイルのリストに追加
+        input_matter_arr.append(workspace_work_dir + "/*.tf")
+        input_matter_arr.append(default_tfvars_file_path)
+
+        # secure.tfvarsが存在
+        if os.path.exists(secure_tfvars_file_path) is True:
+            secure_tfvars_flg = True

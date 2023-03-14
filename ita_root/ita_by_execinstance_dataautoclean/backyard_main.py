@@ -178,9 +178,10 @@ class MainFunctions():
             # メニュー・テーブル紐付からメニュー情報取得
             sql = "SELECT * FROM T_COMN_MENU_TABLE_LINK WHERE MENU_ID = %s AND DISUSE_FLAG='0'"
             MenuTblLinkLists = self.ws_db.sql_execute(sql, [DelList["MENU_NAME"]])
+
             if len(MenuTblLinkLists) == 0:
                 # メニュー・テーブル紐付にメニューが未登録です。 (メニュー:{})
-                FREE_LOG = g.appmsg.get_api_message("MSG-100019")
+                FREE_LOG = g.appmsg.get_api_message("MSG-100019", [DelList["MENU_NAME"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
                 continue
@@ -188,13 +189,16 @@ class MainFunctions():
             MenuTblLinkList = MenuTblLinkLists[0]
             tbl_info['HISTORY_TABLE_FLAG'] = MenuTblLinkList['HISTORY_TABLE_FLAG']
             tbl_info['FILE_UPLOAD_COLUMNS'] = []
+            if DelList['DATA_STORAGE_PATH']:
+                tbl_info['FILE_UPLOAD_COLUMNS'].append(DelList['DATA_STORAGE_PATH'])
             RestNameConfig = {}
             # メニュー・カラム紐付からメニュー情報取得
             sql = "SELECT * FROM T_COMN_MENU_COLUMN_LINK WHERE MENU_ID = %s and DISUSE_FLAG = '0'"
             MenuColLinkLists = self.ws_db.sql_execute(sql, [DelList["MENU_NAME"]])
+
             if len(MenuColLinkLists) == 0:
                 # メニュー・カラム紐付にカラム情報が未登録です。(メニュー:{})
-                FREE_LOG = g.appmsg.get_api_message("MSG-100018")
+                FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
                 continue
@@ -204,9 +208,6 @@ class MainFunctions():
                 # ファイルアップロードカラム判定
                 if MenuColLinkList['COLUMN_CLASS'] in ('9', '20'):
                     # ファイルアップロード配置場所が設定されている場合の判定
-                    print("FILE_UPLOAD_PLACEFILE_UPLOAD_PLACEFILE_UPLOAD_PLACEFILE_UPLOAD_PLACE")
-                    print(MenuColLinkList['COLUMN_DEFINITION_ID'])
-                    print(MenuColLinkList['FILE_UPLOAD_PLACE'])
                     if MenuColLinkList['FILE_UPLOAD_PLACE']:
                         tbl_info['FILE_UPLOAD_COLUMNS'].append(MenuColLinkList['FILE_UPLOAD_PLACE'])
                     else:
@@ -214,14 +215,14 @@ class MainFunctions():
 
             # 主キー名確認
             if MenuTblLinkList['PK_COLUMN_NAME_REST'] not in RestNameConfig:
-                # メニュー・カラム紐付に主キーカラム未登録
-                # enomoto error
+                # メニュー・カラム紐付にカラム情報が未登録です。(メニュー:{})
+                FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
+                g.applogger.error(FREE_LOG)
                 self.warning_flag = True
                 continue
 
             # p1:廃止までの日数
             tbl_info['LG_DAYS'] = DelList['LG_DAYS']
-
             # 廃止までの日数の妥当性チェック
             if self.is_int(tbl_info['LG_DAYS']) is False:
                 # オペレーション削除管理の項番[{}]：論理削除日数[{}]が妥当ではありません。
@@ -291,8 +292,10 @@ class MainFunctions():
               FROM
                 T_COMN_OPERATION
               WHERE
-                DATE_FORMAT(OPERATION_DATE, '%%Y/%%m/%%d %%H:%%i') >= %s
+                DATE_FORMAT(OPERATION_DATE, '%%Y/%%m/%%d %%H:%%i') <= %s
               '''
+        # print(sql)
+        # print(TgtDelDate)
         rows = self.ws_db.sql_execute(sql, [TgtDelDate])
         TgtOpeList = ""
         for row in rows:
@@ -310,10 +313,6 @@ class MainFunctions():
           Returns:
             なし
         """
-        # [処理] テーブルから保管期限切れレコードの廃止(テーブル名:{})
-        FREE_LOG = g.appmsg.get_api_message("MSG-100007", [DelList["TABLE_NAME"]])
-        g.applogger.debug(FREE_LOG)
-
         # 削除対象のオペレーションがない場合
         if not TgtOpeList:
             return
@@ -334,8 +333,15 @@ class MainFunctions():
                    DISUSE_FLAG = '0' AND
                    {} in ({})
               '''.format(DelList['PKEY_NAME'], SelectObjName, self.operation_id_column_name, TgtOpeList)
-        print(sql)
+        # print(sql)
         rows = self.ws_db.sql_execute(sql)
+
+        if len(rows) == 0:
+            return
+
+        # [処理] テーブルから保管期限切れレコードの廃止(テーブル名:{})
+        FREE_LOG = g.appmsg.get_api_message("MSG-100007", [DelList["TABLE_NAME"]])
+        g.applogger.debug(FREE_LOG)
 
         for row in rows:
             # 論理削除対象のレコードを廃止する。
@@ -356,11 +362,6 @@ class MainFunctions():
           Returns:
             なし
         """
-
-        # MSG-100008	[処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
-        FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME"]])
-        g.applogger.debug(FREE_LOG)
-
         # 削除対象のオペレーションがない場合
         if not TgtOpeList:
             return
@@ -378,7 +379,7 @@ class MainFunctions():
                  WHERE
                    {} in ({})
               '''.format(DelList['PKEY_NAME'], SelectObjName, self.operation_id_column_name, TgtOpeList)
-        print(sql)
+        # print(sql)
         rows = self.ws_db.sql_execute(sql)
 
         PkeyList = []
@@ -404,7 +405,7 @@ class MainFunctions():
                     g.applogger.debug(FREE_LOG)
                     shutil.rmtree(DelPath)
 
-        # MSG-100008	[処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
+        #	[処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
         FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME"]])
         g.applogger.debug(FREE_LOG)
 
@@ -414,11 +415,11 @@ class MainFunctions():
                  WHERE
                    {} in ({})
               '''.format(DelList['TABLE_NAME'], DelList['PKEY_NAME'], PkeyString)
-        print(sql)
+        # print(sql)
         rows = self.ws_db.sql_execute(sql)
 
         if DelList['HISTORY_TABLE_FLAG'] == '1':
-            # MSG-100008	[処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
+            # [処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME_JNL"]])
             g.applogger.debug(FREE_LOG)
 
@@ -428,7 +429,7 @@ class MainFunctions():
                      WHERE
                        {} in ({})
                   '''.format(DelList['TABLE_NAME_JNL'], DelList['PKEY_NAME'], PkeyString)
-            print(sql)
+            # print(sql)
             rows = self.ws_db.sql_execute(sql)
 
     def getDataRelayStorageDir(self):
@@ -465,11 +466,11 @@ class MainFunctions():
         Arguments:
           AddDay: 加算日数
         Returns:
-          現在時刻に日数加算した日時
+          現在時刻に日数減算した日時
         """
         NowDate = datetime.datetime.now()
         AddDate = datetime.timedelta(days=AddDay)
-        return NowDate + AddDate
+        return NowDate - AddDate
 
 
 def backyard_main(organization_id, workspace_id):

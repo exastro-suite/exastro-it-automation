@@ -106,7 +106,7 @@ COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
 USER root
-RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
+RUN chmod a+x $APP_PATH/backyard/backyard_init.py
 USER $USERNAME
 
-ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]
+ENTRYPOINT ["python3", "./backyard/backyard_init.py"]

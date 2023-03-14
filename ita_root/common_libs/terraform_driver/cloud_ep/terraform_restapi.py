@@ -781,12 +781,6 @@ def policy_file_download(restApiCaller, download_path, direct_flag=False):
             response_array: RESTAPI返却値
 
     """
-    # api_uri = '/policies/%s/upload' % (tf_manage_policy_id)
-    # upload_url = None
-    # content = pathlib.Path(policy_file_data).read_bytes()
-    # header = None
-    # module_upload_flag = True
-    # response_array = restApiCaller.rest_call('PUT', api_uri, content, header, module_upload_flag, upload_url)
     responseContents = restApiCaller.get_log_data('GET', download_path, direct_flag)
 
     return responseContents

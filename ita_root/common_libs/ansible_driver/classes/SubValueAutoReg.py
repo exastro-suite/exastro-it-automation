@@ -998,7 +998,12 @@ class SubValueAutoReg():
                                             if row["INPUT_ORDER"] == parameter["input_order"]:
                                                 # 項目なしは対象外
                                                 if col_data['COL_GROUP_ID'] is None:
-                                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name, 'OPERATION_ID': operation_id, 'MOVEMENT_ID': col_data['MOVEMENT_ID'], 'SYSTEM_ID': host_id, 'STATUS': 'skip'}
+                                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
+                                                                            'OPERATION_ID': operation_id,
+                                                                            'MOVEMENT_ID': col_data['MOVEMENT_ID'],
+                                                                            'SYSTEM_ID': host_id,
+                                                                            'VARS_ENTRY': None,
+                                                                            'STATUS': 'skip'}
                                                     idx += 1
                                                     continue
                                                 else:
@@ -1039,7 +1044,12 @@ class SubValueAutoReg():
 
                                 # 項目なしは対象外
                                 if col_data['COL_GROUP_ID'] is None:
-                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name, 'OPERATION_ID': operation_id, 'MOVEMENT_ID': col_data['MOVEMENT_ID'], 'SYSTEM_ID': host_id, 'STATUS': 'skip'}
+                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
+                                                            'OPERATION_ID': operation_id,
+                                                            'MOVEMENT_ID': col_data['MOVEMENT_ID'],
+                                                            'SYSTEM_ID': host_id,
+                                                            'VARS_ENTRY': None,
+                                                            'STATUS': 'skip'}
                                     idx += 1
                                     continue
                                 else:

@@ -194,8 +194,7 @@ def file_upload(wsDb, const, update_data, execute_data, file_upload_column_name,
         uploadfiles = {rest_name_config[file_upload_column_name]: ZipDataData}
 
         # 一時的に作成したzipファイル削除
-        cmd = '/bin/rm -fr *'
-        subprocess.run(cmd, cwd=tmp_execution_dir, shell=True)
+        subprocess.run(['/bin/rm', '-fr', '*'], cwd=tmp_execution_dir)
 
     # 最終更新日時
     execute_table_paramater[rest_name_config["LAST_UPDATE_TIMESTAMP"]] = execute_data['LAST_UPDATE_TIMESTAMP'].strftime('%Y/%m/%d %H:%M:%S.%f')  # noqa:E501

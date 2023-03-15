@@ -24,7 +24,7 @@ from common_libs.common.exception import AppException
 from common_libs.common.util import arrange_stacktrace_format
 
 
-def wrapper_job(main_logic, organization_id=None, workspace_id=None):
+def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=500):
     '''
     backyard job wrapper
     '''
@@ -33,7 +33,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None):
 
     interval = int(os.environ.get("EXECUTE_INTERVAL"))
     count = 1
-    max = 500 if organization_id is None else 1
+    max = int(loop_count) if organization_id is None else 1
 
     while True:
         if count > max:

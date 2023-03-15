@@ -20,27 +20,27 @@ INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_
 以下、比較対象メニューとして利用できます。
 ・パラメータシート（ホスト/オペレーションあり）
 
-比較対象メニューの組み合わせで、「横型」 * 「縦型」のメニュー組み合わせの比較はできません。
-縦型メニュー同士の比較では、同一代入順序の値を対象に比較します。','You can perform maintenance (view/register/update/discard) comparison settings. Comparison is performed based on the information set here.
+比較対象メニューの組み合わせで、「パラメータシート」 * 「バンドル」の組み合わせの比較はできません。
+バンドル同士の比較では、同一代入順序の値を対象に比較します。','You can perform maintenance (view/register/update/discard) comparison settings. Comparison is performed based on the information set here.
 If the menus to be compared have the same configuration (item names and number of items match), comparison can be executed without detailed settings.
 Below, you can use it as a comparison target menu.
 ・Parameter Sheet(Host/Operation)
 
-It is not possible to compare "horizontal" * "vertical" menu combinations.
-When comparing vertical menus, values with the same assignment order are compared.','0','1','0','0','1','1','1','1','0',NULL,NULL,'compare_validate',NULL,NULL,'0',_____DATE_____,1);
+It is not possible to compare "Parameter Sheet" * "Bundle" combinations.
+When comparing Bundle, values with the same assignment order are compared.','0','1','0','0','1','1','1','1','0',NULL,NULL,'compare_validate',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(40101,_____DATE_____,'INSERT','40101','40101','T_COMPARE_CONFG_LIST',NULL,'compare_id','比較設定をメンテナンス(閲覧/登録/更新/廃止)できます。こちらで設定した情報を元に比較実行を行います。
 比較対象メニューが同一構成(項目名、項目数が一致する)場合、詳細設定不要で比較実行が可能です。
 以下、比較対象メニューとして利用できます。
 ・パラメータシート（ホスト/オペレーションあり）
 
-比較対象メニューの組み合わせで、「横型」 * 「縦型」のメニュー組み合わせの比較はできません。
-縦型メニュー同士の比較では、同一代入順序の値を対象に比較します。','You can perform maintenance (view/register/update/discard) comparison settings. Comparison is performed based on the information set here.
+比較対象メニューの組み合わせで、「パラメータシート」 * 「バンドル」の組み合わせの比較はできません。
+バンドル同士の比較では、同一代入順序の値を対象に比較します。','You can perform maintenance (view/register/update/discard) comparison settings. Comparison is performed based on the information set here.
 If the menus to be compared have the same configuration (item names and number of items match), comparison can be executed without detailed settings.
 Below, you can use it as a comparison target menu.
 ・Parameter Sheet(Host/Operation)
 
-It is not possible to compare "horizontal" * "vertical" menu combinations.
-When comparing vertical menus, values with the same assignment order are compared.','0','1','0','0','1','1','1','1','0',NULL,NULL,'compare_validate',NULL,NULL,'0',_____DATE_____,1);
+It is not possible to compare "Parameter Sheet" * "Bundle" combinations.
+When comparing Bundle, values with the same assignment order are compared.','0','1','0','0','1','1','1','1','0',NULL,NULL,'compare_validate',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('40102','40102','T_COMPARE_DETAIL_LIST',NULL,'compare_detail_id','比較詳細設定をメンテナンス(閲覧/登録/更新/廃止)できます。
 比較対象項目(表示項目名、対象項目の紐付、表示順序)の設定を行います。
 詳細設定の対象は、比較設定にて、比較詳細設定フラグをTrueを設定したものになります。','You can perform maintenance (view/register/update/discard) comparison settings details.
@@ -51,26 +51,26 @@ INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOUR
 詳細設定の対象は、比較設定にて、比較詳細設定フラグをTrueを設定したものになります。','You can perform maintenance (view/register/update/discard) comparison settings details.
 Set the comparison target items (display item name, target item link, display order).
 The target of detailed setting is the one for which the comparison detailed setting flag is set to True in the Detail flg. ','0','1','0','0','1','1','1','1','0',NULL,'[["compare","compare_col_title","target_column_1","target_column_2"],["compare","display_order"]]','compare_detail_validate',NULL,NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('40103','40103',NULL,NULL,NULL,'比較設定、比較詳細設定の設定を元に、対象パラメータシートの値の比較を実行します。
+INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('40103','40103',NULL,NULL,NULL,'比較設定、比較詳細設定の設定を元に、対象パラメータシート、バンドルの値の比較を実行します。
 比較実行のパラメータは以下です。
 ・比較設定
 ・基準日時1(比較対象メニュー1の基準日を指定)
 ・基準日時2(比較対象メニュー2の基準日を指定)
 ・対象ホスト
-※基準日を指定しない場合、一番最新の基準日のデータを対象とします。','Based on the comparison setting and comparison setting detail settings, the value of the target parameter sheet is compared.
+※基準日を指定しない場合、一番最新の基準日のデータを対象とします。','Based on the comparison setting and comparison setting detail settings, the value of the target parameter sheet or Bundle is compared.
 The parameters for the comparison run are:
 ・Comparison definition
 ・Base datetime 1 (Base datetime for comparison target menu 1)
 ・Base datetime 2 (Base datetime for comparison target menu 2)
 ・Target host
 *If the Base datetime is not specified, the latest Base datetime data will be used.','17','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(40103,_____DATE_____,'INSERT','40103','40103',NULL,NULL,NULL,'比較設定、比較詳細設定の設定を元に、対象パラメータシートの値の比較を実行します。
+INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(40103,_____DATE_____,'INSERT','40103','40103',NULL,NULL,NULL,'比較設定、比較詳細設定の設定を元に、対象パラメータシート、バンドルの値の比較を実行します。
 比較実行のパラメータは以下です。
 ・比較設定
 ・基準日時1(比較対象メニュー1の基準日を指定)
 ・基準日時2(比較対象メニュー2の基準日を指定)
 ・対象ホスト
-※基準日を指定しない場合、一番最新の基準日のデータを対象とします。','Based on the comparison setting and comparison setting detail settings, the value of the target parameter sheet is compared.
+※基準日を指定しない場合、一番最新の基準日のデータを対象とします。','Based on the comparison setting and comparison setting detail settings, the value of the target parameter sheet or Bundle is compared.
 The parameters for the comparison run are:
 ・Comparison definition
 ・Base datetime 1 (Base datetime for comparison target menu 1)

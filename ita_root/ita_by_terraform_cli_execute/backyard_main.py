@@ -320,7 +320,6 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
         return False, g.appmsg.get_log_message(result, [execution_no])
     execute_data = result
 
-    # 未実行状態で緊急停止出来るようにしているので
     # 未実行状態かを判定
     status_id = execute_data["STATUS_ID"]
     if status_id != const.STATUS_NOT_YET and status_id != const.STATUS_RESERVE:
@@ -331,12 +330,12 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     update_data = {
         "EXECUTION_NO": execution_no,
         "STATUS_ID": const.STATUS_PREPARE,
-        "TIME_END": get_timestamp()
+        "TIME_START": get_timestamp()
     }
     result, execute_data = cm.update_execution_record(wsDb, const, update_data)
     if result is True:
         wsDb.db_commit()
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10745", [execution_no, tf_workspace_id]))
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10730", [execution_no, tf_workspace_id]))
 
     # ワークスペース毎のディレクトリを準備
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))

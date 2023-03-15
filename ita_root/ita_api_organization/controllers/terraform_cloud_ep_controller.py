@@ -425,7 +425,7 @@ def get_terraform_organization_list(organization_id, workspace_id):  # noqa: E50
 
 
 @api_filter
-def get_terraform_policy_file(organization_id, workspace_id, tf_organization_name, policy_name):  # noqa: E501
+def get_terraform_policy_file(organization_id, workspace_id, tf_organization_name, policy_name, body=None):  # noqa: E501
     """get_terraform_policy_file
 
     連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする # noqa: E501
@@ -438,10 +438,34 @@ def get_terraform_policy_file(organization_id, workspace_id, tf_organization_nam
     :type tf_organization_name: str
     :param policy_name: Policy Name
     :type policy_name: str
+    :param body:
+    :type body: dict | bytes
 
     :rtype: InlineResponse2006
     """
-    return 'do some magic!'
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    menu = 'linked_terraform_management'
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['24']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    parameters = {"download_path": ""}
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        parameters = body
+
+    # Policyコードの取得
+    data = terraform_cloud_ep.get_policy_file(objdbca, tf_organization_name, policy_name, parameters)
+
+    return data,
 
 
 @api_filter

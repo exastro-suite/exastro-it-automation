@@ -88,7 +88,7 @@ def backyard_main(organization_id, workspace_id):
     mov_records = mov_table.get_stored_records()
     mov_matl_lnk_records = mov_material_link_table.get_stored_records()
 
-    mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_role_records, role_varmgr_dict)
+    mov_vars_dict = util.extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_role_records, role_varmgr_dict, ws_db)
 
     # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する、作業対象ホストのインベントリファイル追加オプション）
     device_varmng_dict = device_table.extract_variable()

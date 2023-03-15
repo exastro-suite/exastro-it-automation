@@ -46,8 +46,18 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_r
     key_convert_dict = {x['ROLE_ID']: (x['ROLE_NAME'], x['ROLE_PACKAGE_ID']) for x in registerd_role_records.values()}
 
     var_extractor = WrappedStringReplaceAdmin(ws_db)
+    disuse_movement = []
     for matl_lnk in mov_matl_lnk_records.values():
         movement_id = matl_lnk['MOVEMENT_ID']
+
+        # データ不整合（Movement-ロール紐づけ管理のレコードのMovement_idが存在しない(廃止されている)）
+        if movement_id in disuse_movement:
+            continue
+        if movement_id not in mov_vars_dict:
+            debug_msg = g.appmsg.get_log_message("MSG-10266", [movement_id])
+            g.applogger.debug(debug_msg)
+            disuse_movement.append(movement_id)
+            continue
         mov_vars_mgr = mov_vars_dict[movement_id]
 
         # ロール変数の追加

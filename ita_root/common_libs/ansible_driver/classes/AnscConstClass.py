@@ -144,7 +144,7 @@ class AnscConst:
     DF_VarName_pattenAry[DF_TEMP_VARS] = []
     DF_VarName_pattenAry[DF_README_VARS] = []
     # default変数定義ファイル変数定義用
-    DF_VarName_pattenAry[DF_DEF_VARS].append({'parent': False, 'type': DF_VAR_TYPE_GBL, 'pattern': GBL_parent_VarName})
+    DF_VarName_pattenAry[DF_DEF_VARS].append({'parent': True, 'type': DF_VAR_TYPE_GBL, 'pattern': GBL_parent_VarName})
     DF_VarName_pattenAry[DF_DEF_VARS].append({'parent': True, 'type': DF_VAR_TYPE_VAR, 'pattern': VAR_parent_VarName})
     # テンプレート管理変数定義用
     DF_VarName_pattenAry[DF_TEMP_VARS].append({'parent': False, 'type': DF_VAR_TYPE_TPF, 'pattern': TPF_parent_VarName})
@@ -152,7 +152,7 @@ class AnscConst:
     DF_VarName_pattenAry[DF_TEMP_VARS].append({'parent': True, 'type': DF_VAR_TYPE_GBL, 'pattern': GBL_parent_VarName})
     DF_VarName_pattenAry[DF_TEMP_VARS].append({'parent': True, 'type': DF_VAR_TYPE_VAR, 'pattern': VAR_parent_VarName})
     # ITA-Readme変数定義用
-    DF_VarName_pattenAry[DF_README_VARS].append({'parent': False, 'type': DF_VAR_TYPE_GBL, 'pattern': GBL_parent_VarName})
+    DF_VarName_pattenAry[DF_README_VARS].append({'parent': True, 'type': DF_VAR_TYPE_GBL, 'pattern': GBL_parent_VarName})
     DF_VarName_pattenAry[DF_README_VARS].append({'parent': True, 'type': DF_VAR_TYPE_VAR, 'pattern': VAR_parent_VarName})
 
     # Tower Project Path

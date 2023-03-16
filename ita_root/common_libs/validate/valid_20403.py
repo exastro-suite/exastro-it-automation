@@ -28,7 +28,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
         objdbca :DB接続クラスインスタンス
         objtabl :メニュー情報、カラム紐付、関連情報
         option :パラメータ、その他設定値
-        
+
     RETRUN:
         retBoo :True/ False
         msg :エラーメッセージ
@@ -58,6 +58,9 @@ def external_valid_menu_after(objDBCA, objtable, option):
         fd = open(zip_file_path, "wb")
         fd.write(base64.b64decode(zip_data))
         fd.close()
+    else:
+        errormsg = g.appmsg.get_api_message("MSG-10256")
+        return False, errormsg, option
 
     def_vars_list = {}
     def_varsval_list = {}
@@ -146,7 +149,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
                         return retBool, retStrBody, option
 
     if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
-            
+
         # 廃止の場合、関連レコードを廃止
         # 復活の場合、関連レコードを復活
         retAry = CommnVarsUsedListDisuseSet(objDBCA, option, PkeyID, FileID)

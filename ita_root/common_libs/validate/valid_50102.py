@@ -32,18 +32,18 @@ def menu_define_valid(objdbca, objtable, option):
         if menu_name_ja == disabled_menu_name or menu_name_en == disabled_menu_name:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20002", [])
-    
+
     # 更新時のみ。メニュー作成状態が2（作成済み）の場合、メニュー名(rest)が変更されていないことをチェック。
     menu_name_rest = entry_parameter.get('menu_name_rest')
     cmd_type = option.get("cmd_type")
     if cmd_type == "Update":
-        menu_create_done_status = entry_parameter.get("menu_create_done_status")
+        menu_create_done_status = current_parameter.get("menu_create_done_status")
         before_menu_name = current_parameter.get("menu_name_rest")
         if menu_create_done_status == "2":
             if before_menu_name != menu_name_rest:
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-20004", [])
-    
+
     # 「メニュー管理」テーブルで使用されているmenu_name_restは使用不可(currentと同じ名前の場合はチェック処理をスキップ)
     menu_name_rest = entry_parameter.get('menu_name_rest')
     current_menu_name_rest = current_parameter.get('menu_name_rest')
@@ -56,8 +56,8 @@ def menu_define_valid(objdbca, objtable, option):
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20005", [])
 
-        if not retBool:
-            return retBool, msg, option
+    if not retBool:
+        return retBool, msg, option
     # ---------メニュー名---------
 
     # ---------作成対象---------
@@ -69,7 +69,7 @@ def menu_define_valid(objdbca, objtable, option):
     menu_group_for_subst = entry_parameter.get("menu_group_for_subst")
     # 参照用メニューグループを取得
     menu_group_for_ref = entry_parameter.get("menu_group_for_ref")
-    
+
     # 作成対象で「データシート」を選択
     if sheet_type == "2":
         # 代入値自動登録用メニューグループ、参照用メニューグループが選択されている場合、エラー
@@ -117,7 +117,7 @@ def menu_define_valid(objdbca, objtable, option):
     if not retBool:
         return retBool, msg, option
     # ---------参照用メニューグループ---------
-    
+
     # ---------メニュー定義一覧---------
     # 新規なら未作成にする
     entry_parameter['menu_create_done_status'] = current_parameter.get('menu_create_done_status')

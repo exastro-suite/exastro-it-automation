@@ -51,8 +51,8 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
         if record:
             module_vars_link_id = record[0].get('MODULE_VARS_LINK_ID')
         else:
-            # ####メモ：Log出力メッセージ（英語）
-            msg = 'メンバー変数レコードの作成において、Module-変数紐付のレコード取得に失敗しました。'
+            # メンバー変数レコードの作成において、Module-変数紐付のレコード取得に失敗しました。
+            msg = g.appmsg.get_log_message("BKY-50108", [])
             raise Exception(msg)
 
         # データの整形(配列の作成ローカル番号)
@@ -73,8 +73,8 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                         # 未登録の場合、登録処理を実行
                         res = regist_max_col(objdbca, TFConst, module_vars_link_id, None, max_col_seq)
                         if not res:
-                            # ####メモ：Log出力メッセージ（英語）
-                            msg = '最大繰り返し数のレコード登録に失敗しました。'
+                            # 変数ネスト管理へのレコード登録に失敗
+                            msg = g.appmsg.get_log_message("BKY-50109", [])
                             raise Exception(msg)
                     else:
                         # 登録済みの場合、登録状況によって処理を分岐
@@ -82,16 +82,16 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                         if not (str(registered_max_col_data.get('max_col_seq')) == str(max_col_seq)) and registered_max_col_data.get('is_system') is True:  # noqa: E501
                             res = update_max_col(objdbca, TFConst, registered_max_col_data.get('MAX_COL_SEQ_ID'), max_col_seq)
                             if not res:
-                                # ####メモ：Log出力メッセージ（英語）
-                                msg = '最大繰り返し数のレコード更新に失敗しました。'
+                                # 変数ネスト管理のレコード更新に失敗
+                                msg = g.appmsg.get_log_message("BKY-50110", [])
                                 raise Exception(msg)
 
                         # 最終更新者がバックヤードユーザかつ廃止状態の場合、最大繰り返し数を更新するとともに活性化(復活)。
                         elif str(registered_max_col_data.get('DISUSE_FLAG')) == "1" and registered_max_col_data.get('is_system') is True:
                             res = update_max_col(objdbca, TFConst, registered_max_col_data.get('MAX_COL_SEQ_ID'), max_col_seq)
                             if not res:
-                                # ####メモ：Log出力メッセージ（英語）
-                                msg = '最大繰り返し数のレコード更新に失敗しました。'
+                                # 変数ネスト管理のレコード更新に失敗
+                                msg = g.appmsg.get_log_message("BKY-50110", [])
                                 raise Exception(msg)
 
                         # 最大更新者がバックヤードユーザ以外の場合、temp_member_data_listのデータを書き換える
@@ -105,8 +105,8 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                     if registered_max_col_data.get('is_regist') is True and str(registered_max_col_data.get('DISUSE_FLAG')) == "0":
                         res = discard_max_col(objdbca, TFConst, registered_max_col_data.get('MAX_COL_SEQ_ID'))
                         if not res:
-                            # ####メモ：Log出力メッセージ（英語）
-                            msg = '最大繰り返し数のレコード更新に失敗しました。'
+                            # 変数ネスト管理のレコード廃止に失敗
+                            msg = g.appmsg.get_log_message("BKY-50111", [])
                             raise Exception(msg)
 
         # 再度一時格納データの変数をセット
@@ -156,8 +156,8 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
             temp_r_member_data.pop('MAX_COL_SEQ')
             ret_data = objdbca.table_insert(TFConst.T_VAR_MEMBER, temp_r_member_data, primary_key_name)
             if not ret_data:
-                # ####メモ：Log出力メッセージ（英語）
-                msg = 'メンバー変数管理テーブルのレコード登録に失敗しました'
+                # メンバー変数管理へのレコード登録に失敗
+                msg = g.appmsg.get_log_message("BKY-50112", [])
                 raise Exception(msg)
 
             # typeが変数ネスト管理の対象である場合
@@ -171,32 +171,32 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 if registed_max_member_col_data.get('is_regist') is True and not str(registed_max_col_seq) == str(tf_max_col_seq) and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がバックヤードシステムの場合は、tf_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がユーザのの場合は、registed_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is False:  # noqa: E501
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), registed_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
 
                 # 未登録の場合、最大繰り返し数の登録
                 if registed_max_member_col_data.get('is_regist') is False:
                     res = regist_max_col(objdbca, TFConst, r_member_data.get('PARENT_VARS_ID'), r_member_data.get('CHILD_MEMBER_VARS_ID'), r_member_data.get('MAX_COL_SEQ'))  # noqa: E501
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード登録に失敗しました。'
+                        # 変数ネスト管理へのレコード登録に失敗
+                        msg = g.appmsg.get_log_message("BKY-50109", [])
                         raise Exception(msg)
 
         # 更新対象をループ
@@ -206,8 +206,8 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
             temp_r_member_data.pop('MAX_COL_SEQ')
             ret_data = objdbca.table_update(TFConst.T_VAR_MEMBER, temp_r_member_data, primary_key_name)
             if not ret_data:
-                # ####メモ：Log出力メッセージ（英語）
-                msg = 'メンバー変数管理テーブルのレコード登録に失敗しました'
+                # メンバー変数管理のレコード更新に失敗
+                msg = g.appmsg.get_log_message("BKY-50113", [])
                 raise Exception(msg)
 
             # typeが変数ネスト管理の対象である場合
@@ -222,8 +222,8 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 if registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "0" and not str(registed_max_col_seq) == str(tf_max_col_seq) and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
 
         # 復活対象をループ
@@ -233,8 +233,8 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
             temp_r_member_data.pop('MAX_COL_SEQ')
             ret_data = objdbca.table_update(TFConst.T_VAR_MEMBER, temp_r_member_data, primary_key_name)
             if not ret_data:
-                # ####メモ：Log出力メッセージ（英語）
-                msg = 'メンバー変数管理テーブルのレコード登録に失敗しました'
+                # メンバー変数管理のレコード更新に失敗
+                msg = g.appmsg.get_log_message("BKY-50113", [])
                 raise Exception(msg)
 
             # typeが変数ネスト管理の対象である場合
@@ -249,15 +249,15 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 if registed_max_member_col_data.get('is_regist') is True:
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
                 else:
                     # is_registがTrueでないなら登録を実行する
                     res = regist_max_col(objdbca, TFConst, r_member_data.get('PARENT_VARS_ID'), r_member_data.get('CHILD_MEMBER_VARS_ID'), r_member_data.get('MAX_COL_SEQ'))  # noqa: E501
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード登録に失敗しました。'
+                        # 変数ネスト管理へのレコード登録に失敗
+                        msg = g.appmsg.get_log_message("BKY-50109", [])
                         raise Exception(msg)
 
         # スキップ対象をループ。スキップは変数ネスト管理の更新のみ。
@@ -273,24 +273,24 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 if registed_max_member_col_data.get('is_regist') is True and not str(registed_max_col_seq) == str(tf_max_col_seq) and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がバックヤードシステムの場合は、tf_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がユーザのの場合は、registed_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is False:  # noqa: E501
                     res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), registed_max_col_seq)
                     if not res:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '最大繰り返し数のレコード更新に失敗しました。'
+                        # 変数ネスト管理のレコード更新に失敗
+                        msg = g.appmsg.get_log_message("BKY-50110", [])
                         raise Exception(msg)
 
     except Exception as e:
@@ -375,8 +375,8 @@ def set_movement_var_member_link(objdbca, TFConst):
                         primary_key_name = 'MVMT_VAR_MEMBER_LINK_ID'
                         ret_data = objdbca.table_update(TFConst.T_MOVEMENT_VAR_MEMBER, data_list, primary_key_name)
                         if not ret_data:
-                            # ####メモ：Log出力メッセージ（英語）
-                            msg = 'Movement-変数紐付テーブルのレコード更新に失敗しました'
+                            # Movement-メンバー変数紐付のレコード更新に失敗
+                            msg = g.appmsg.get_log_message("6", [])
                             raise Exception(msg)
 
                         # 対象を廃止しないためにactive_record_listに追加
@@ -397,8 +397,8 @@ def set_movement_var_member_link(objdbca, TFConst):
                     primary_key_name = 'MVMT_VAR_MEMBER_LINK_ID'
                     ret_data = objdbca.table_insert(TFConst.T_MOVEMENT_VAR_MEMBER, data_list, primary_key_name)
                     if not ret_data:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = 'Movement-メンバー変数紐付テーブルのレコード登録に失敗しました'
+                        # Movement-メンバー変数紐付へのレコード登録に失敗
+                        msg = g.appmsg.get_log_message("BKY-50115", [])
                         raise Exception(msg)
 
         # Module-変数紐付テーブルから不要レコードを廃止する)
@@ -415,8 +415,8 @@ def set_movement_var_member_link(objdbca, TFConst):
                 primary_key_name = 'MVMT_VAR_MEMBER_LINK_ID'
                 ret_data = objdbca.table_update(TFConst.T_MOVEMENT_VAR_MEMBER, data_list, primary_key_name)
                 if not ret_data:
-                    # ####メモ：Log出力メッセージ（英語）
-                    msg = 'Movement-メンバー変数紐付テーブルのレコード廃止に失敗しました'
+                    # Movement-メンバー変数紐付の不要レコード廃止に失敗
+                    msg = g.appmsg.get_log_message("BKY-50117", [])
                     raise Exception(msg)
 
         # トランザクション終了(正常)
@@ -471,8 +471,8 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                 primary_key_name = 'CHILD_MEMBER_VARS_ID'
                 ret_data = objdbca.table_update(TFConst.T_VAR_MEMBER, data_list, primary_key_name)
                 if not ret_data:
-                    # ####メモ：Log出力メッセージ（英語）
-                    msg = 'メンバー変数管理テーブルのレコード廃止に失敗しました'
+                    # メンバー変数管理の不要レコードの廃止に失敗
+                    msg = g.appmsg.get_log_message("BKY-50114", [])
                     raise Exception(msg)
 
             # 変数ネスト管理テーブルから廃止対象を検索し、廃止する。
@@ -488,8 +488,8 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                 primary_key_name = 'MAX_COL_SEQ_ID'
                 ret_data = objdbca.table_update(TFConst.T_NESTVARS_MEMBER_MAX, data_list, primary_key_name)
                 if not ret_data:
-                    # ####メモ：Log出力メッセージ（英語）
-                    msg = '変数ネスト管理テーブルのレコード廃止に失敗しました'
+                    # 変数ネスト管理の不要レコードの廃止に失敗
+                    msg = g.appmsg.get_log_message("BKY-50111", [])
                     raise Exception(msg)
 
         # 不要なメンバー変数レコード削除処理スタート
@@ -514,8 +514,8 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                 primary_key_name = 'CHILD_MEMBER_VARS_ID'
                 ret_data = objdbca.table_update(TFConst.T_VAR_MEMBER, data_list, primary_key_name)
                 if not ret_data:
-                    # ####メモ：Log出力メッセージ（英語）
-                    msg = 'Module-変数紐付テーブルのレコード廃止に失敗しました'
+                    # メンバー変数管理の不要レコードの廃止に失敗
+                    msg = g.appmsg.get_log_message("BKY-50114", [])
                     raise Exception(msg)
 
                 # 変数ネスト管理に廃止した対象のIDを持つレコードがあれば、こちらも廃止する
@@ -530,8 +530,8 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                     primary_key_name = 'MAX_COL_SEQ_ID'
                     ret_data = objdbca.table_update(TFConst.T_NESTVARS_MEMBER_MAX, data_list, primary_key_name)
                     if not ret_data:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = '変数ネスト管理テーブルのレコード廃止に失敗しました'
+                        # 変数ネスト管理の不要レコードの廃止に失敗
+                        msg = g.appmsg.get_log_message("BKY-50111", [])
                         raise Exception(msg)
 
     except Exception as e:
@@ -670,8 +670,10 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
                     pattern = r'^\$\{(.*?)\}$'
                     match = re.findall(pattern, type_nest_value)
                     if not match:
-                        # ####メモ：ここはtype_nest_valueが数字だった場合の処理だが、int()が失敗するケースもあるかも？？
-                        trg_default_key_list.append(int(type_nest_value))
+                        if type_nest_value.isdecimal():
+                            trg_default_key_list.append(int(type_nest_value))
+                        else:
+                            trg_default_key_list.append(str(type_nest_value))
                 child_member_vars_value = None
                 child_member_vars_value = search_child_member_vars_value_in_default(objdbca, TFConst, trg_default_key_list, default_data, child_vars_type_id)  # noqa: E501
 
@@ -698,7 +700,7 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
                     "trg_default_key": trg_default_key,  # デフォルト値のキー
                     "child_vars_type_id": child_vars_type_id,  # タイプId
                     "assign_seq": assign_seq,  # 代入順序
-                    "module_regist_flag": module_regist_flag,  # Module変数紐付に代入するかどうかのフラグ（####メモ：先に必要なものは登録しちゃってるからいらないかも？？）
+                    "module_regist_flag": module_regist_flag,  # Module変数紐付に代入するかどうかのフラグ
                     "type_nest_dict": set_type_nest_dict,  # 自身までキー/インデックス一覧
                     "max_col_seq": max_col_seq  # 最大繰り返し数
                 }
@@ -725,7 +727,6 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
         pattern = r'^\$\{(.*?)\}$'
         match = re.findall(pattern, type_data)
         if match:
-            # ####メモここの中身後でちゃんと調べたい
             # type情報を取得
             convert_type_name = match[0]
             child_vars_type_id = get_variable_type_id(objdbca, TFConst, convert_type_name)
@@ -762,7 +763,7 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
             "trg_default_key": trg_default_key,  # デフォルト値のキー
             "child_vars_type_id": child_vars_type_id,  # タイプId
             "assign_seq": assign_seq,  # 代入順序
-            "module_regist_flag": module_regist_flag,  # Module変数紐付に代入するかどうかのフラグ（####メモ：先に必要なものは登録しちゃってるからいらないかも？？）
+            "module_regist_flag": module_regist_flag,  # Module変数紐付に代入するかどうかのフラグ
             "type_nest_dict": set_type_nest_dict,  # 自身までキー/インデックス一覧
             "max_col_seq": max_col_seq  # 最大繰り返し数
         }
@@ -812,7 +813,6 @@ def create_member_data_for_regist(objdbca, TFConst, temp_member_data_list):  # n
     temp_member_data_list = temp_member_data_list_2.copy()
 
     # ローカルIDを仮のIDに割り振る
-    # ####メモ：1系ではここでシーケンスIDに割り振っている。
     for index, member_data in enumerate(temp_member_data_list):
         # 既存レコードの検索
         search_data = {
@@ -945,7 +945,6 @@ def part_member_data_for_regist(objdbca, TFConst, member_data_list):  # noqa: C9
     temp_member_data_list = sorted(temp_member_data_list, key=lambda x: (x['nest_level'], x['assign_seq']))
 
     # ローカルIDを仮のIDに割り振る
-    # ####メモ：1系ではここでシーケンスIDに割り振っている。
     for index, member_data in enumerate(temp_member_data_list):
         # 既存レコードの検索
         search_data = {
@@ -1033,6 +1032,11 @@ def part_member_data_for_regist(objdbca, TFConst, member_data_list):  # noqa: C9
                     member_data['parent_member_vars_id'] = None
 
             # type_nest_dataがあれば、各種処理に割り当て
+            # デフォルト値はdict/listの可能性があるため、json形式に変換する。
+            child_member_vars_value = member_data.get('child_member_vars_value')
+            if isinstance(child_member_vars_value, dict) or isinstance(child_member_vars_value, list):
+                child_member_vars_value = json.dumps(child_member_vars_value)
+
             if member_data.get('type_nest_dict'):
                 regist_data = {
                     "CHILD_MEMBER_VARS_ID": member_data.get('child_member_vars_id'),  # メンバー変数ID(仮)
@@ -1040,7 +1044,7 @@ def part_member_data_for_regist(objdbca, TFConst, member_data_list):  # noqa: C9
                     "PARENT_MEMBER_VARS_ID": member_data.get('parent_member_vars_id'),  # 親のメンバー変数ID
                     "CHILD_MEMBER_VARS_KEY": member_data.get('child_member_vars_key'),  # メンバー変数
                     "CHILD_MEMBER_VARS_NEST": member_data.get('child_member_vars_nest'),  # メンバー変数(フル)
-                    "CHILD_MEMBER_VARS_VALUE": member_data.get('child_member_vars_value'),  # デフォルト値
+                    "CHILD_MEMBER_VARS_VALUE": child_member_vars_value,  # デフォルト値
                     "ARRAY_NEST_LEVEL": member_data.get('nest_level'),  # 階層
                     "CHILD_VARS_TYPE_ID": member_data.get('child_vars_type_id'),  # タイプID
                     "ASSIGN_SEQ": member_data.get('assign_seq'),  # 代入順序
@@ -1079,12 +1083,13 @@ def search_child_member_vars_value_in_default(objdbca, TFConst, trg_default_key_
     temp_default_data = default_data.copy()
     temp_trg_default_key_list = trg_default_key_list.copy()
 
+    # デフォルト値を特定
     for default_key in temp_trg_default_key_list:
-        if 0 <= default_key < len(temp_default_data):
-            default = temp_default_data[default_key]
+        if isinstance(temp_default_data, dict):
+            default = temp_default_data.get(default_key)
         else:
             default = None
-        # temp_default_data = default # ####メモ：1系にこの記載があるが、要らない気がする。
+        temp_default_data = default
 
     # HCLにエンコードするフラグが立っていたらエンコード
     type_info = get_type_info(objdbca, TFConst, type_id)
@@ -1194,18 +1199,19 @@ def count_max_col_seq_by_module(objdbca, TFConst, trg_default_key_list, default_
                 default_data = dict_default_data.copy()
 
             # キーの一覧をループしてデフォルト値を確認
+            temp_default_data = default_data.copy()
             for default_key in trg_default_key_list:
-                if 0 <= default_key < len(trg_default_key_list):
-                    default = default_data[default_key]
+                if isinstance(temp_default_data, dict):
+                    default = temp_default_data.get(default_key)
                 else:
                     default = None
-                default_data = default
+                temp_default_data = default
 
-            # dict/listの場合は要素数をカウントする。それ以外は1とする。
-            if isinstance(default_data, dict) or isinstance(default_data, list):
-                max_col_seq = len(default_data)
-            else:
-                max_col_seq = 1
+                # dict/listの場合は要素数をカウントする。それ以外は1とする。
+                if isinstance(default, dict) or isinstance(default, list):
+                    max_col_seq = len(default)
+                else:
+                    max_col_seq = 1
 
     return max_col_seq
 
@@ -1508,7 +1514,6 @@ def generate_member_vars_type_data(objdbca, TFConst, member_vars_data, trg_max_c
         return_data[member_vars_key] = temp_list
 
     else:
-        # ####メモ：ここの動作確認ができていない。怪しい気がする。
         # マップデータがある場合
         # メンバー変数を設定・具体値を代入
         if str(type_info.get('ENCODE_FLAG')) == "1":

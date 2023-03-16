@@ -12,6 +12,68 @@
 # limitations under the License.
 #
 import pathlib
+from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
+
+
+def get_intarface_info_data(objdbca):
+    """
+        インターフェース情報からRESTAPIに利用する登録値を取得する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            boolean, return_data
+    """
+    table_name = "T_TERE_IF_INFO"
+    ret = objdbca.table_select(table_name, 'WHERE DISUSE_FLAG = %s', [0])
+    if not ret:
+        # インターフェース情報にレコードが無い場合はエラー
+        return False, None
+
+    protocol = ret[0].get('TERRAFORM_PROTOCOL')
+    hostname = ret[0].get('TERRAFORM_HOSTNAME')
+    port = ret[0].get('TERRAFORM_PORT')
+    user_token = ret[0].get('TERRAFORM_TOKEN')
+    proxy_address = ret[0].get('TERRAFORM_PROXY_ADDRESS')
+    proxy_port = ret[0].get('TERRAFORM_PROXY_PORT')
+
+    return_data = {
+        'protocol': protocol,
+        'hostname': hostname,
+        'port_no': port,
+        'user_token': user_token,
+        'proxy_address': proxy_address,
+        'proxy_port': proxy_port
+    }
+
+    return True, return_data
+
+
+def call_restapi_class(interface_info_data):
+    """
+        Terraform用RESTAPIクラスを呼び出す
+        ARGS:
+            interface_info_data: インターフェース情報
+        RETRUN:
+            boolean, return_data
+    """
+    protocol = interface_info_data.get('protocol')
+    hostname = interface_info_data.get('hostname')
+    port_no = interface_info_data.get('port_no')
+    encrypted_user_token = interface_info_data.get('user_token')
+    proxy_address = interface_info_data.get('proxy_address')
+    proxy_port = interface_info_data.get('proxy_port')
+    proxy_setting = {'address': proxy_address, "port": proxy_port}
+
+    # RESTAPI Call Class呼び出し
+    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
+
+    # トークンをセット
+    response_array = restApiCaller.authorize()
+    if not response_array['success']:
+        # システムエラー
+        return False, None
+
+    return True, restApiCaller
 
 
 def get_tf_organization_list(restApiCaller):
@@ -339,6 +401,39 @@ def create_run(restApiCaller, tf_manage_workspace_id, cv_id):
                     "data": {
                         "id": cv_id,
                         "type": "configuration-versions"
+                    }
+                }
+            }
+        }
+    }
+    response_array = restApiCaller.rest_call('POST', api_uri, request_contents)
+
+    return response_array
+
+
+def destroy_workspace(restApiCaller, tf_manage_workspace_id):
+    """
+        連携先TerraformのWorkspace対しDestroyを実行する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+            tf_manage_variable_id: Terraformで管理しているVarableのID
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/runs'
+    request_contents = {
+        "data": {
+            "type": "runs",
+            "attributes": {
+                "is-destroy": True,
+                "message": "Triggered Destroy"
+            },
+            "relationships": {
+                "workspace": {
+                    "data": {
+                        "id": tf_manage_workspace_id,
+                        "type": "workspace"
                     }
                 }
             }
@@ -784,3 +879,19 @@ def policy_file_download(restApiCaller, download_path, direct_flag=False):
     responseContents = restApiCaller.get_log_data('GET', download_path, direct_flag)
 
     return responseContents
+
+
+def get_outputs(restApiCaller, state_version_output_id):
+    """
+        連携先Terraformからoutputの結果を取得する
+        ARGS:
+            restApiCaller: RESTAPIコールクラス
+            tf_organization_name: 対象のOrganization名
+        RETRUN:
+            response_array: RESTAPI返却値
+
+    """
+    api_uri = '/state-version-outputs/%s' % (state_version_output_id)
+    response_array = restApiCaller.rest_call('GET', api_uri)
+
+    return response_array

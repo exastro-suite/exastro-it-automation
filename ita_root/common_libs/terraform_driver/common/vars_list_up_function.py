@@ -143,8 +143,8 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
                         primary_key_name = 'MODULE_VARS_LINK_ID'
                         ret_data = objdbca.table_update(TFConst.T_MODULE_VAR, data_list, primary_key_name)
                         if not ret_data:
-                            # ####メモ：Log出力メッセージ（英語）
-                            msg = 'Module-変数紐付テーブルのレコード更新に失敗しました'
+                            # Module-変数紐付テーブルのレコード更新に失敗
+                            msg = g.appmsg.get_log_message("BKY-50103", [])
                             raise Exception(msg)
 
                         # 対象を廃止しないためにactive_record_listに追加
@@ -160,8 +160,8 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
                             primary_key_name = 'MODULE_VARS_LINK_ID'
                             ret_data = objdbca.table_update(TFConst.T_MODULE_VAR, data_list, primary_key_name)
                             if not ret_data:
-                                # ####メモ：Log出力メッセージ（英語）
-                                msg = 'Module-変数紐付テーブルのレコード更新に失敗しました'
+                                # Module-変数紐付テーブルのレコード更新に失敗
+                                msg = g.appmsg.get_log_message("BKY-50103", [])
                                 raise Exception(msg)
 
                         # 一致するレコードがアクティブ状態なので対象を廃止しないためにactive_record_listに追加
@@ -180,8 +180,8 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
                     primary_key_name = 'MODULE_VARS_LINK_ID'
                     ret_data = objdbca.table_insert(TFConst.T_MODULE_VAR, data_list, primary_key_name)
                     if not ret_data:
-                        # ####メモ：Log出力メッセージ（英語）
-                        msg = 'Module-変数紐付テーブルのレコード更新に失敗しました'
+                        # Module-変数紐付テーブルへのレコード登録に失敗
+                        msg = g.appmsg.get_log_message("BKY-50102", [])
                         raise Exception(msg)
 
                 # メンバー変数テーブルに対する処理を実行
@@ -202,6 +202,10 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
                 }
                 primary_key_name = 'MODULE_VARS_LINK_ID'
                 ret_data = objdbca.table_update(TFConst.T_MODULE_VAR, data_list, primary_key_name)
+                if not ret_data:
+                    # Module-変数紐付テーブルの不要レコード廃止に失敗
+                    msg = g.appmsg.get_log_message("BKY-50104", [])
+                    raise Exception(msg)
 
         # メンバー変数管理/変数ネスト管理から不要なレコードを廃止する
         ret, msg = discard_member_vars(objdbca, TFConst, exist_member_vars_list)  # noqa: F405
@@ -211,14 +215,14 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
         # トランザクション終了(正常)
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
-        msg = e
+    except Exception as msg:
+        g.applogger.error(str(msg))
         result = False
 
         # トランザクション終了(異常)
         objdbca.db_transaction_end(False)
 
-    return result, msg
+    return result
 
 
 def set_movement_var_link(objdbca, TFConst):
@@ -280,8 +284,8 @@ def set_movement_var_link(objdbca, TFConst):
                             primary_key_name = 'MVMT_VAR_LINK_ID'
                             ret_data = objdbca.table_update(TFConst.T_MOVEMENT_VAR, data_list, primary_key_name)
                             if not ret_data:
-                                # ####メモ：Log出力メッセージ（英語）
-                                msg = 'Movement-変数紐付テーブルのレコード更新に失敗しました'
+                                # Movement-変数紐付テーブルのレコード更新に失敗
+                                msg = g.appmsg.get_log_message("BKY-50106", [])
                                 raise Exception(msg)
 
                             # 対象を廃止しないためにactive_record_listに追加
@@ -301,8 +305,8 @@ def set_movement_var_link(objdbca, TFConst):
                         primary_key_name = 'MVMT_VAR_LINK_ID'
                         ret_data = objdbca.table_insert(TFConst.T_MOVEMENT_VAR, data_list, primary_key_name)
                         if not ret_data:
-                            # ####メモ：Log出力メッセージ（英語）
-                            msg = 'Movement-変数紐付テーブルのレコード登録に失敗しました'
+                            # Movement-変数紐付テーブルへのレコード登録に失敗
+                            msg = g.appmsg.get_log_message("BKY-50105", [])
                             raise Exception(msg)
 
         # Module-変数紐付テーブルから不要レコードを廃止する)
@@ -318,15 +322,19 @@ def set_movement_var_link(objdbca, TFConst):
                 }
                 primary_key_name = 'MVMT_VAR_LINK_ID'
                 ret_data = objdbca.table_update(TFConst.T_MOVEMENT_VAR, data_list, primary_key_name)
+                if not ret_data:
+                    # Movement-変数紐付テーブルの不要レコード廃止に失敗
+                    msg = g.appmsg.get_log_message("BKY-50107", [])
+                    raise Exception(msg)
 
         # トランザクション終了(正常)
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
-        msg = e
+    except Exception as msg:
+        g.applogger.error(str(msg))
         result = False
 
         # トランザクション終了(異常)
         objdbca.db_transaction_end(False)
 
-    return result, msg
+    return result

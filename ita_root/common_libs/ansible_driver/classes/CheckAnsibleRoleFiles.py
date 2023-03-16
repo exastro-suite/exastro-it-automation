@@ -34,6 +34,7 @@ from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStr
 from common_libs.ansible_driver.classes.AnsibleMakeMessage import AnsibleMakeMessage
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath, getFileupLoadColumnPath
+from common_libs.ansible_driver.functions.util import get_AnsibleDriverHpTmpPath, AnsibleFilesClean
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 
 #################################################################################
@@ -4315,7 +4316,9 @@ class VarStructAnalysisFileAccess():
         roleObj = CheckAnsibleRoleFiles(self.lv_objMTS)
 
         # ロールパッケージファイル(ZIP)の解凍先
-        outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverTmpPath(), os.getpid())
+        # outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverTmpPath(), os.getpid())
+        # /storageは遅いので/tmpに変更
+        outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverHpTmpPath(), os.getpid())
 
         def_vars_list = {}
         err_vars_list = {}
@@ -4326,6 +4329,9 @@ class VarStructAnalysisFileAccess():
         User2ITA_var_list = {}
         comb_err_vars_list = {}
         role_name_list = {}
+
+        # 例外等が発生した場合でもディレクトリを削除するようにする為、ディレクトリ名を退避
+        g.AnsibleCreateFiles.append(outdir)
 
         # ロールパッケージファイル(ZIP)の解凍
         if roleObj.ZipextractTo(strTempFileFullname, outdir) == False:

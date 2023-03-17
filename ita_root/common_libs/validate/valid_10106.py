@@ -26,8 +26,8 @@ def external_valid_menu_before(objdbca, objtable, option):
             entry_parameter = option.get('entry_parameter')
             directories_to_delete = entry_parameter.get('parameter').get('directories_to_delete')
             chk_path = '{}/{}'.format(get_base_path(), directories_to_delete)
-            # 使用禁止: ..
-            pattern = re.compile(r"^(.*)\.{2}(.*)$", re.DOTALL)
+            # 使用禁止: .. スペース
+            pattern = re.compile(r"(^(.*)\.{2}(.*)$)|[ \s\t\n\r\f\v]", re.DOTALL)
             tmp_result = pattern.findall(chk_path)
             if len(tmp_result) != 0:
                 msg = g.appmsg.get_api_message('MSG-110001', [directories_to_delete])

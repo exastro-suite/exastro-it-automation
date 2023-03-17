@@ -110,10 +110,14 @@ def check_workspace(objdbca, tf_organization_name, tf_workspace_name):
         raise AppException("499-01108", [tf_organization_name], [tf_organization_name])  # noqa: F405
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # 連携先TerraformからWorkspaceの一覧を取得
     response_array = get_tf_workspace_list(restApiCaller, tf_organization_name)  # noqa: F405
@@ -162,10 +166,14 @@ def get_organization_list(objdbca):
     ita_organization_data = {}
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # ITAに登録されているOrganization一覧を取得
     where_str = 'WHERE DISUSE_FLAG = %s'
@@ -218,10 +226,14 @@ def get_workspace_list(objdbca):
     ita_workspace_data = {}
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # ITAに登録されているOrganization:Workspace一覧を取得
     where_str = 'WHERE DISUSE_FLAG = %s'
@@ -300,10 +312,14 @@ def create_organization(objdbca, parameters):
     return_data = {}
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # parameterを取得
     tf_organization_name = parameters.get('tf_organization_name')
@@ -352,10 +368,14 @@ def create_workspace(objdbca, tf_organization_name, parameters):
     return_data = {}
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # parameterを取得
     tf_workspace_name = parameters.get('tf_workspace_name')
@@ -404,10 +424,14 @@ def update_organization(objdbca, tf_organization_name, parameters):
     return_data = {}
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # parameterを取得
     email_address = parameters.get('email_address')
@@ -454,10 +478,14 @@ def update_workspace(objdbca, tf_organization_name, tf_workspace_name, parameter
     return_data = {}
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # parameterを取得
     terraform_version = parameters.get('terraform_version') or ''
@@ -511,10 +539,14 @@ def delete_organization(objdbca, tf_organization_name):
         raise AppException("499-01104", [tf_organization_name], [tf_organization_name])  # noqa: F405
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # RESTAPIコール
     response_array = delete_tf_organization(restApiCaller, tf_organization_name)  # noqa: F405
@@ -552,10 +584,14 @@ def delete_workspace(objdbca, tf_organization_name, tf_workspace_name):
         raise AppException("499-01105", [tf_organization_name, tf_workspace_name], [tf_organization_name, tf_workspace_name])  # noqa: F405
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # RESTAPIコール
     response_array = delete_tf_workspace(restApiCaller, tf_organization_name, tf_workspace_name)  # noqa: F405
@@ -595,10 +631,14 @@ def delete_policy(objdbca, tf_organization_name, policy_name):
         raise AppException("499-01106", [policy_name], [policy_name])  # noqa: F405
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # Policy一覧を取得し、対象のIDを特定
     response_array = get_tf_policy_list(restApiCaller, tf_organization_name)  # noqa: F405
@@ -651,10 +691,14 @@ def delete_policy_set(objdbca, tf_organization_name, policy_set_name):
         raise AppException("499-01107", [tf_organization_name], [tf_organization_name])  # noqa: F405
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # PolicySet一覧を取得し、対象のIDを特定
     response_array = get_tf_policy_set_list(restApiCaller, tf_organization_name)  # noqa: F405
@@ -699,10 +743,14 @@ def get_policy_list(objdbca):
     return_data = []
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # Organization一覧取得RESTAPIコール
     tf_organization_list = []
@@ -775,10 +823,14 @@ def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
     file = None
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # download
     download_path = parameters.get('download_path')
@@ -811,10 +863,14 @@ def get_policy_set_list(objdbca):  # noqa: C901
     return_data = []
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # Organization一覧取得RESTAPIコール
     tf_organization_list = []
@@ -967,10 +1023,14 @@ def policy_set_remove_policy(objdbca, tf_organization_name, policy_set_name, pol
     tf_manage_policy_id = None
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # PolicySet一覧を取得し、対象のPolicySetIDを特定する
     response_array = get_tf_policy_set_list(restApiCaller, tf_organization_name)  # noqa: F405
@@ -1046,10 +1106,14 @@ def policy_set_remove_workspace(objdbca, tf_organization_name, policy_set_name, 
     tf_manage_policy_set_id = None
 
     # インターフェース情報からRESTAPI実行に必要な値を取得
-    interface_info_data = get_intarface_info_data(objdbca)
+    ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
+    if not ret:
+        raise AppException("499-01103", [], [])  # noqa: F405
 
     # RESTAPIコールクラス
-    restApiCaller = call_restapi_class(interface_info_data)
+    ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
+    if not ret:
+        raise AppException("999-99999", [], [])  # noqa: F405
 
     # Workspace一覧を取得し、対象のWorkspaceIDを特定する
     response_array = get_tf_workspace_list(restApiCaller, tf_organization_name)  # noqa: F405
@@ -1111,62 +1175,62 @@ def policy_set_remove_workspace(objdbca, tf_organization_name, policy_set_name, 
     return return_data
 
 
-def get_intarface_info_data(objdbca):
-    """
-        インターフェース情報からRESTAPIに利用する登録値を取得する
-        ARGS:
-            objdbca:DB接クラス  DBConnectWs()
-        RETRUN:
-            return_data
-    """
-    table_name = "T_TERE_IF_INFO"
-    ret = objdbca.table_select(table_name, 'WHERE DISUSE_FLAG = %s', [0])
-    if not ret:
-        # インターフェース情報にレコードが無い場合はエラー
-        raise AppException("499-01103", [], [])  # noqa: F405
+# def get_intarface_info_data(objdbca):
+#     """
+#         インターフェース情報からRESTAPIに利用する登録値を取得する
+#         ARGS:
+#             objdbca:DB接クラス  DBConnectWs()
+#         RETRUN:
+#             return_data
+#     """
+#     table_name = "T_TERE_IF_INFO"
+#     ret = objdbca.table_select(table_name, 'WHERE DISUSE_FLAG = %s', [0])
+#     if not ret:
+#         # インターフェース情報にレコードが無い場合はエラー
+#         return False, None
 
-    protocol = ret[0].get('TERRAFORM_PROTOCOL')
-    hostname = ret[0].get('TERRAFORM_HOSTNAME')
-    port = ret[0].get('TERRAFORM_PORT')
-    user_token = ret[0].get('TERRAFORM_TOKEN')
-    proxy_address = ret[0].get('TERRAFORM_PROXY_ADDRESS')
-    proxy_port = ret[0].get('TERRAFORM_PROXY_PORT')
+#     protocol = ret[0].get('TERRAFORM_PROTOCOL')
+#     hostname = ret[0].get('TERRAFORM_HOSTNAME')
+#     port = ret[0].get('TERRAFORM_PORT')
+#     user_token = ret[0].get('TERRAFORM_TOKEN')
+#     proxy_address = ret[0].get('TERRAFORM_PROXY_ADDRESS')
+#     proxy_port = ret[0].get('TERRAFORM_PROXY_PORT')
 
-    return_data = {
-        'protocol': protocol,
-        'hostname': hostname,
-        'port_no': port,
-        'user_token': user_token,
-        'proxy_address': proxy_address,
-        'proxy_port': proxy_port
-    }
+#     return_data = {
+#         'protocol': protocol,
+#         'hostname': hostname,
+#         'port_no': port,
+#         'user_token': user_token,
+#         'proxy_address': proxy_address,
+#         'proxy_port': proxy_port
+#     }
 
-    return return_data
+#     return True, return_data
 
 
-def call_restapi_class(interface_info_data):
-    """
-        Terraform用RESTAPIクラスを呼び出す
-        ARGS:
-            interface_info_data: インターフェース情報
-        RETRUN:
-            return_data
-    """
-    protocol = interface_info_data.get('protocol')
-    hostname = interface_info_data.get('hostname')
-    port_no = interface_info_data.get('port_no')
-    encrypted_user_token = interface_info_data.get('user_token')
-    proxy_address = interface_info_data.get('proxy_address')
-    proxy_port = interface_info_data.get('proxy_port')
-    proxy_setting = {'address': proxy_address, "port": proxy_port}
+# def call_restapi_class(interface_info_data):
+#     """
+#         Terraform用RESTAPIクラスを呼び出す
+#         ARGS:
+#             interface_info_data: インターフェース情報
+#         RETRUN:
+#             return_data
+#     """
+#     protocol = interface_info_data.get('protocol')
+#     hostname = interface_info_data.get('hostname')
+#     port_no = interface_info_data.get('port_no')
+#     encrypted_user_token = interface_info_data.get('user_token')
+#     proxy_address = interface_info_data.get('proxy_address')
+#     proxy_port = interface_info_data.get('proxy_port')
+#     proxy_setting = {'address': proxy_address, "port": proxy_port}
 
-    # RESTAPI Call Class呼び出し
-    restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
+#     # RESTAPI Call Class呼び出し
+#     restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
 
-    # トークンをセット
-    response_array = restApiCaller.authorize()
-    if not response_array['success']:
-        # システムエラー
-        raise AppException("999-99999", [], [])  # noqa: F405
+#     # トークンをセット
+#     response_array = restApiCaller.authorize()
+#     if not response_array['success']:
+#         # システムエラー
+#         return False, None
 
-    return restApiCaller
+#     return True, restApiCaller

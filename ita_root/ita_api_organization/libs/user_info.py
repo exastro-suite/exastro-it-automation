@@ -337,11 +337,16 @@ def collect_widget_settings(objdbca):
         mg['icon'] = encoded
 
         mg['position'] = ''
-        if 'menu' in current_widget and mgid in current_widget['menu'] and 'position' in current_widget['menu'][mgid]:
-            mg['position'] = current_widget['menu'][mgid]['position']
+        if 'menu' in current_widget:
+            for cur_mg in current_widget['menu']:
+                if 'id' in cur_mg and mgid == cur_mg['id']:
+                    if 'position' in cur_mg:
+                        mg['position'] = cur_mg['position']
 
-        if 'menu' in current_widget and mgid in current_widget['menu'] and 'order' in current_widget['menu'][mgid]:
-            mg['disp_seq'] = current_widget['menu'][mgid]['order']
+                    if 'disp_seq' in cur_mg:
+                        mg['disp_seq'] = cur_mg['disp_seq']
+
+                    break
 
     # widget情報の取得
     widget_list = []

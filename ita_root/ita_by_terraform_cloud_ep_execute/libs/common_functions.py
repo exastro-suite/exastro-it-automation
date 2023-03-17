@@ -1,4 +1,4 @@
-# Copyright 2022 NEC Corporation#
+# Copyright 2023 NEC Corporation#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,77 +12,9 @@
 # limitations under the License.
 #
 from flask import g
-import subprocess
 import os
-
-# from common_libs.common.exception import AppException
 from common_libs.common.util import file_encode
 from common_libs.loadtable import load_table
-
-
-# def get_interface_info(wsDb, const):
-#     """
-#     インタフェース情報を取得
-
-#     Arguments:
-#         WsDb: db instance
-#     Returns:
-#         result: bool
-#         record or err_msg:
-#     """
-#     condition = 'WHERE `DISUSE_FLAG`=0'
-#     records = wsDb.table_select(const.T_IF_INFO, condition)
-#     record_num = len(records)
-
-#     if record_num == 0:
-#         return False, "MSG-10048"
-#     elif record_num != 1:
-#         return False, "MSG-10049"
-
-#     return True, records[0]
-
-
-def get_conductor_interface_info(wsDb):
-    """
-    Conductorインタフェース情報を取得
-
-    Arguments:
-        WsDb: db instance
-    Returns:
-        result: bool
-        record or err_msg:
-    """
-    condition = 'WHERE `DISUSE_FLAG`=0'
-    records = wsDb.table_select('T_COMN_CONDUCTOR_IF_INFO', condition)
-    record_num = len(records)
-
-    if record_num == 0:
-        return False, "MSG-10065"
-    elif record_num != 1:
-        return False, "MSG-10066"
-
-    return True, records[0]
-
-
-def get_execution_process_info(wsDb, const, execution_no):
-    """
-    作業実行の情報を取得
-
-    Arguments:
-        WsDb: db instance
-        const: 共通定数オブジェクト
-        execution_no: 作業番号
-    Returns:
-        result: bool
-        record or err_msg:
-    """
-    condition = "WHERE `DISUSE_FLAG`=0 AND `EXECUTION_NO`=%s"
-    records = wsDb.table_select(const.T_EXEC_STS_INST, condition, [execution_no])
-
-    if len(records) == 0:
-        return False, "MSG-10047"
-
-    return True, records[0]
 
 
 def update_execution_record(wsDb, const, update_data, tmp_execution_dir=""):
@@ -154,14 +86,18 @@ def file_upload(wsDb, const, update_data, execute_data, file_upload_column_name,
     execute_table_paramater = {}
     execute_table_paramater[rest_name_config["EXECUTION_NO"]] = execution_no
 
+    # Terraform RUN-ID
+    if update_data.get('TERRAFORM_RUN_ID'):
+        execute_table_paramater[rest_name_config["TERRAFORM_RUN_ID"]] = update_data['TERRAFORM_RUN_ID']
+
     # ステータス
     if g.LANGUAGE == 'ja':
-        sql = "SELECT EXEC_STATUS_NAME_JA AS NAME FROM T_ANSC_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
+        sql = "SELECT EXEC_STATUS_NAME_JA AS NAME FROM T_TERF_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
     else:
-        sql = "SELECT EXEC_STATUS_NAME_EN AS NAME FROM T_ANSC_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
+        sql = "SELECT EXEC_STATUS_NAME_EN AS NAME FROM T_TERF_EXEC_STATUS WHERE EXEC_STATUS_ID = %s AND DISUSE_FLAG = '0'"
     rows = wsDb.sql_execute(sql, [update_data["STATUS_ID"]])
-    execute_table_paramater[rest_name_config["STATUS_ID"]] = rows[0]["NAME"]
 
+    execute_table_paramater[rest_name_config["STATUS_ID"]] = rows[0]["NAME"]
     if "TIME_START" in update_data:
         execute_table_paramater[rest_name_config["TIME_START"]] = update_data['TIME_START'].strftime('%Y/%m/%d %H:%M:%S')
     if "TIME_END" in update_data:
@@ -193,8 +129,9 @@ def file_upload(wsDb, const, update_data, execute_data, file_upload_column_name,
             return False, msgstr
         uploadfiles = {rest_name_config[file_upload_column_name]: ZipDataData}
 
-        # 一時的に作成したzipファイル削除
-        subprocess.run(['/bin/rm', '-fr', '*'], cwd=tmp_execution_dir)
+        # # 一時的に作成したzipファイル削除
+        # cmd = '/bin/rm -fr *'
+        # subprocess.run(cmd, cwd=tmp_execution_dir, shell=True)
 
     # 最終更新日時
     execute_table_paramater[rest_name_config["LAST_UPDATE_TIMESTAMP"]] = execute_data['LAST_UPDATE_TIMESTAMP'].strftime('%Y/%m/%d %H:%M:%S.%f')  # noqa:E501
@@ -205,7 +142,7 @@ def file_upload(wsDb, const, update_data, execute_data, file_upload_column_name,
         "file": uploadfiles,
         "type": "Update"
     }
-    menu_name = "execution_list_terraform_cli"
+    menu_name = "execution_list_terraform_cloud_ep"
     objmenu = load_table.loadTable(wsDb, menu_name)
     retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)
     if retAry[0] is False:

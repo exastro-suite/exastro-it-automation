@@ -1003,6 +1003,7 @@ class SubValueAutoReg():
                                                                             'MOVEMENT_ID': col_data['MOVEMENT_ID'],
                                                                             'SYSTEM_ID': host_id,
                                                                             'VARS_ENTRY': None,
+                                                                            'MVMT_VAR_LINK_ID': None,
                                                                             'STATUS': 'skip'}
                                                     idx += 1
                                                     continue
@@ -1049,6 +1050,7 @@ class SubValueAutoReg():
                                                             'MOVEMENT_ID': col_data['MOVEMENT_ID'],
                                                             'SYSTEM_ID': host_id,
                                                             'VARS_ENTRY': None,
+                                                            'MVMT_VAR_LINK_ID': None,
                                                             'STATUS': 'skip'}
                                     idx += 1
                                     continue

@@ -30,6 +30,7 @@ import re
 import os
 import random
 import unicodedata
+import shutil
 
 import dictdiffer
 import difflib
@@ -2296,6 +2297,7 @@ def _create_outputfile(objdbca, compare_config, data, options):
         # set
         tbl_start_str = "A"
         tbl_end_str = "E"
+        work_dir_path = None
 
         # get data
         config = data.get("config")
@@ -2313,10 +2315,9 @@ def _create_outputfile(objdbca, compare_config, data, options):
             "file_name": None,
             "file_data": None,
         }
-        # path: tmp output xlsx
-        strage_path = os.environ.get('STORAGEPATH')  # noqa: F405
+
         # get path
-        file_path, template_file_path = get_workdir_path(strage_path, file_name)
+        work_dir_path, file_path, template_file_path = get_workdir_path(file_name)
 
         # create excel
         # set Workbook
@@ -2329,6 +2330,10 @@ def _create_outputfile(objdbca, compare_config, data, options):
         # comapre result :target_host sheet
         ws_target_host_create_table(wb, file_name, tmp_exec_time, config, compare_data, compare_diff_flg, tbl_start_str, tbl_end_str)
 
+        # create work dir
+        if os.path.isdir(work_dir_path) is False:
+            os.makedirs(work_dir_path, exist_ok=True)
+
         # save book
         wb.save(file_path)  # noqa: E303
 
@@ -2336,16 +2341,21 @@ def _create_outputfile(objdbca, compare_config, data, options):
         wbEncode = file_encode(file_path)  # noqa: F405 F841
 
         # clear tmp file
-        if os.path.isfile(file_path):
-            pass
-            os.remove(file_path)
+        if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
+            shutil.rmtree(work_dir_path)
 
         result["file_name"] = file_name
         result["file_data"] = wbEncode
 
     except AppException as _app_e:  # noqa: F405
+        # clear work_dir
+        if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
+            shutil.rmtree(work_dir_path)
         raise AppException(_app_e)  # noqa: F405
     except Exception as e:
+        # clear work_dir
+        if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
+            shutil.rmtree(work_dir_path)
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
         g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
@@ -2408,31 +2418,35 @@ def count_string(val):
 
 
 # 作業ディレクトリ取得
-def get_workdir_path(strage_path, file_name):
+def get_workdir_path(file_name):
     """
         get work path
         ARGS:
-            strage_path, file_name
+            file_name
         RETRUN:
-            file_path, template_file_path,
+            work_dir_path, file_path, template_file_path,
     """
+
+    tmp_work_dir = uuid.uuid4()
+
+    # path: tmp work dir
+    work_dir_path = "/tmp/{}".format(
+        tmp_work_dir,
+    ).replace('//', '/')
+
     # path: tmp work
-    file_path = "{}/{}/{}/tmp/{}".format(
-        strage_path,
-        g.get("ORGANIZATION_ID"),
-        g.get("WORKSPACE_ID"),
+    file_path = "/tmp/{}/{}".format(
+        tmp_work_dir,
         file_name
     ).replace('//', '/')
 
     # path: tmplate xlsx
     template_file_name = "compare_base_template.xlsx"
-    template_file_path = "{}/{}/{}/tmp/{}".format(
-        strage_path,
-        g.get("ORGANIZATION_ID"),
-        g.get("WORKSPACE_ID"),
+    template_file_path = "/tmp/{}/{}".format(
+        tmp_work_dir,
         template_file_name
     ).replace('//', '/')
-    return file_path, template_file_path,
+    return work_dir_path, file_path, template_file_path,
 
 
 # Excel:Cell幅調整

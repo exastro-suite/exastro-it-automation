@@ -22,7 +22,8 @@ import subprocess
 from flask import g
 
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
-from common_libs.common.util import get_upload_file_path
+from common_libs.common.util import get_upload_file_path, file_encode
+from common_libs.loadtable import *
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.CreateAnsibleExecFiles import CreateAnsibleExecFiles
@@ -309,8 +310,14 @@ def backyard_main(organization_id, workspace_id):
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 実行準備
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
+    php_array = lambda x: x.items() if isinstance(x, dict) else enumerate(x)
+    yml_array = lambda x: php_array(x) if type(x) in (list, dict) else enumerate([x])
+    bdl_array = lambda x: x.items() if 'parameter' not in x else enumerate([x])
+
     intErrorFlag = 0
     intWarningFlag = 0
+    menu_restcol_info = {}
+    upload_restcol_info = {}
 
     NOTICE_FLG = 1  # 1:収集済み
 
@@ -349,12 +356,6 @@ def backyard_main(organization_id, workspace_id):
         ################################
         g.applogger.debug("db connect.")
         dbAccess = DBConnectWs()
-
-        # トランザクション開始
-        #dbAccess.db_transaction_start()
-        boolInTransactionFlag = True
-        #dbAccess.db_transaction_end(True) # コミット
-        #dbAccess.db_transaction_end(False) # ロールバック
 
         condition = 'WHERE `DISUSE_FLAG`=0'
         ans_if_info = dbAccess.table_select('T_ANSC_IF_INFO', condition)
@@ -473,7 +474,7 @@ def backyard_main(organization_id, workspace_id):
                         # Operationの取得、確認
                         strTempForSql = "WHERE OPERATION_ID = %s AND DISUSE_FLAG IN ('0') ORDER BY OPERATION_ID ASC "
                         arySqlBind = [operation_id, ]
-                        aryOperation = getInfoFromTablename(dbAccess, "T_COMN_OPERATION", strTempForSql, arySqlBind)
+                        aryOperation = getInfoFromTablename(dbAccess, "V_COMN_OPERATION", strTempForSql, arySqlBind)
 
                         # Operationが廃止済み
                         if len(aryOperation) <= 0:
@@ -491,6 +492,8 @@ def backyard_main(organization_id, workspace_id):
 
                         # 対象のファイル有の場合
                         else:
+                            aryOperation = aryOperation[0]
+
                             resultprm = {}
                             arrTargetLists = {}
                             arrTargetUploadLists = {}
@@ -558,8 +561,7 @@ def backyard_main(organization_id, workspace_id):
                                 arySqlBind = [hostname, ]
                                 aryhostInfo = getInfoFromTablename(dbAccess, "T_ANSC_DEVICE", strTempForSql, arySqlBind)
 
-                                arrTableForMenuLists = {}
-                                arrTableForMenuType = {}
+                                arrTableForMenuInfo = {}
 
                                 # ホストが存在しない
                                 if len(aryhostInfo) <= 0:
@@ -574,77 +576,19 @@ def backyard_main(organization_id, workspace_id):
                                     hostid = aryhostInfo['SYSTEM_ID']
 
                                     arrSqlinsertParm = {}
-                                    arrSqlinsertParmDn = {}
                                     arrFileUploadList = {}
 
                                     # ソースファイルからパラメータ整形(ファイル名、メニューID、項目名、値)
                                     for filename, vardata in parmdata.items():
                                         for varname, varvalue in vardata.items():
-                                            # 配列、ハッシュ構造の場合(メンバー変数名あり)
-                                            if type(varvalue) in (list, dict):
-                                                for varmember, varmembermembervalue in varvalue.items():
-                                                    strTempForSql = (
-                                                        "SELECT "
-                                                        "  TAB_C.MENU_ID, "
-                                                        "  TAB_C.TABLE_NAME, "
-                                                        "  TAB_C.VERTICAL, "
-                                                        "  TAB_B.COLUMN_NAME_REST, "
-                                                        "  TAB_B.COLUMN_CLASS "
-                                                        "FROM "
-                                                        "  T_ANSC_CMDB_LINK TAB_A "
-                                                        "LEFT OUTER JOIN "
-                                                        "  T_COMN_MENU_COLUMN_LINK TAB_B "
-                                                        "ON "
-                                                        "  TAB_A.COLUMN_LIST_ID = TAB_B.COLUMN_DEFINITION_ID "
-                                                        "LEFT OUTER JOIN "
-                                                        "  T_COMN_MENU_TABLE_LINK TAB_C "
-                                                        "ON "
-                                                        "  TAB_B.MENU_ID = TAB_C.MENU_ID "
-                                                        "WHERE "
-                                                        "  TAB_A.PARSE_TYPE_ID = %s "
-                                                        "AND TAB_A.FILE_PREFIX = %s "
-                                                        "AND TAB_A.VARS_NAME = %s "
-                                                        "AND TAB_A.VRAS_MEMBER_NAME = %s "
-                                                        "AND TAB_A.DISUSE_FLAG IN ('0') "
-                                                        "ORDER BY TAB_A.ROW_ID ASC "
-                                                    )
-                                                    arySqlBind = [intParseTypeID, filename, varname, varmember]
-                                                    retResult = dbAccess.sql_execute(strTempForSql, arySqlBind)
-                                                    for tmpkey, tmpvalue in enumerate(retResult):
-                                                        writemenuid = tmpvalue['MENU_ID']
-                                                        col_name = tmpvalue['COLUMN_NAME_REST']
-                                                        if filename not in arrSqlinsertParm:
-                                                            arrSqlinsertParm[filename] = {}
-
-                                                        if writemenuid not in arrSqlinsertParm[filename]:
-                                                            arrSqlinsertParm[filename][writemenuid] = {}
-
-                                                        if col_name not in arrSqlinsertParm[filename][writemenuid]:
-                                                            arrSqlinsertParm[filename][writemenuid][col_name] = None
-
-                                                        arrSqlinsertParm[filename][writemenuid][col_name] = varmembermembervalue
-                                                        arrTableForMenuLists[writemenuid] = tmpvalue['TABLE_NAME']
-                                                        arrTableForMenuType[writemenuid] = tmpvalue['VERTICAL']
-
-                                                        if tmpvalue['COLUMN_CLASS'] in ["9", "20"]:  # 9 or 20:ファイルアップロード
-                                                            if filename not in arrFileUploadList:
-                                                                arrFileUploadList[filename] = {}
-
-                                                            if writemenuid not in arrFileUploadList[filename]:
-                                                                arrFileUploadList[filename][writemenuid] = {}
-
-                                                            if col_name not in arrFileUploadList[filename][writemenuid]:
-                                                                arrFileUploadList[filename][writemenuid][col_name] = None
-
-                                                            arrFileUploadList[filename][writemenuid][col_name] = tmpvalue['COLUMN_CLASS']
-
-                                            # メンバ変数無し
-                                            else:
+                                            for varmember, varmembermembervalue in yml_array(varvalue):
                                                 strTempForSql = (
                                                     "SELECT "
                                                     "  TAB_C.MENU_ID, "
+                                                    "  TAB_D.MENU_NAME_REST, "
                                                     "  TAB_C.TABLE_NAME, "
                                                     "  TAB_C.VERTICAL, "
+                                                    "  TAB_A.INPUT_ORDER, "
                                                     "  TAB_B.COLUMN_NAME_REST, "
                                                     "  TAB_B.COLUMN_CLASS "
                                                     "FROM "
@@ -657,56 +601,108 @@ def backyard_main(organization_id, workspace_id):
                                                     "  T_COMN_MENU_TABLE_LINK TAB_C "
                                                     "ON "
                                                     "  TAB_B.MENU_ID = TAB_C.MENU_ID "
+                                                    "LEFT OUTER JOIN "
+                                                    "  T_COMN_MENU TAB_D "
+                                                    "ON "
+                                                    "  TAB_B.MENU_ID = TAB_D.MENU_ID "
                                                     "WHERE "
                                                     "  TAB_A.PARSE_TYPE_ID = %s "
                                                     "AND TAB_A.FILE_PREFIX = %s "
                                                     "AND TAB_A.VARS_NAME = %s "
-                                                    "AND TAB_A.DISUSE_FLAG IN ('0') "
-                                                    "ORDER BY TAB_A.ROW_ID ASC "
                                                 )
                                                 arySqlBind = [intParseTypeID, filename, varname]
+
+                                                # 配列、ハッシュ構造の場合(メンバー変数名あり)
+                                                if type(varvalue) in (list, dict):
+                                                    strTempForSql += "AND TAB_A.VRAS_MEMBER_NAME = %s "
+                                                    arySqlBind.append(varmember)
+
+                                                strTempForSql += (
+                                                    "AND TAB_A.DISUSE_FLAG IN ('0') "
+                                                    "ORDER BY TAB_C.MENU_ID ASC, TAB_A.COLUMN_LIST_ID ASC "
+                                                )
+
                                                 retResult = dbAccess.sql_execute(strTempForSql, arySqlBind)
-                                                for tmpkey, tmpvalue in enumerate(retResult):
-                                                    writemenuid = tmpvalue['MENU_ID']
+                                                for tmpvalue in retResult:
+                                                    menu_id = tmpvalue['MENU_ID']
+                                                    menu_name = tmpvalue['MENU_NAME_REST']
                                                     col_name = tmpvalue['COLUMN_NAME_REST']
-                                                    if filename not in arrSqlinsertParm:
-                                                        arrSqlinsertParm[filename] = {}
+                                                    vertical_flag = True if tmpvalue['VERTICAL'] != '0' else False
+                                                    input_order = tmpvalue['INPUT_ORDER']
 
-                                                    if writemenuid not in arrSqlinsertParm[filename]:
-                                                        arrSqlinsertParm[filename][writemenuid] = {}
+                                                    # パラメーターシートへの登録要求フォーマットを作成
+                                                    if menu_name not in menu_restcol_info:
+                                                        menu_restcol_info[menu_name] = []
+                                                        upload_restcol_info[menu_name] = []
 
-                                                    if col_name not in arrSqlinsertParm[filename][writemenuid]:
-                                                        arrSqlinsertParm[filename][writemenuid][col_name] = None
+                                                        strTempForSql = (
+                                                            "SELECT "
+                                                            "  COLUMN_NAME_REST, "
+                                                            "  COLUMN_CLASS "
+                                                            "FROM "
+                                                            "  T_COMN_MENU_COLUMN_LINK "
+                                                            "WHERE "
+                                                            "  MENU_ID = %s "
+                                                            "ORDER BY "
+                                                            "  COLUMN_DISP_SEQ ASC "
+                                                        )
+                                                        arySqlBind = [menu_id, ]
+                                                        rset = dbAccess.sql_execute(strTempForSql, arySqlBind)
+                                                        for r in rset:
+                                                            menu_restcol_info[menu_name].append(r['COLUMN_NAME_REST'])
+                                                            if r['COLUMN_CLASS'] in ["9", "20"]:  # 9 or 20:ファイルアップロード
+                                                                upload_restcol_info[menu_name].append(r['COLUMN_NAME_REST'])
 
-                                                    arrSqlinsertParm[filename][writemenuid][col_name] = varvalue
-                                                    arrTableForMenuLists[writemenuid] = tmpvalue['TABLE_NAME']
-                                                    arrTableForMenuType[writemenuid] = tmpvalue['VERTICAL']
+                                                    if menu_name not in arrSqlinsertParm:
+                                                        arrSqlinsertParm[menu_name] = {}
 
+                                                    if vertical_flag and input_order not in arrSqlinsertParm[menu_name]:
+                                                        arrSqlinsertParm[menu_name][input_order] = {}
+
+                                                    tmp_param = {}
+                                                    if vertical_flag:
+                                                        tmp_param = arrSqlinsertParm[menu_name][input_order]
+
+                                                    else:
+                                                        tmp_param = arrSqlinsertParm[menu_name]
+
+                                                    if not tmp_param:
+                                                        tmp_param['type'] = ''
+                                                        tmp_param['file'] = {}
+                                                        tmp_param['parameter'] = {}
+                                                        tmp_param['input_file'] = []
+
+                                                        for restcol in menu_restcol_info[menu_name]:
+                                                            tmp_param['parameter'][restcol] = None
+
+                                                        if vertical_flag:
+                                                            tmp_param['parameter']['input_order'] = input_order
+
+                                                    if filename not in tmp_param['input_file']:
+                                                        tmp_param['input_file'].append(filename)
+
+                                                    # パラメーターシートへの登録要求情報をセット
+                                                    tmp_param['parameter'][col_name] = varmembermembervalue
                                                     if tmpvalue['COLUMN_CLASS'] in ["9", "20"]:  # 9 or 20:ファイルアップロード
-                                                        if filename not in arrFileUploadList:
-                                                            arrFileUploadList[filename] = {}
+                                                        if col_name not in tmp_param['file']:
+                                                            tmp_param['file'][col_name] = ''
 
-                                                        if writemenuid not in arrFileUploadList[filename]:
-                                                            arrFileUploadList[filename][writemenuid] = {}
+                                                        # ファイルアップロード対象リストのファイルデータをセット
+                                                        upload_filepath = None
+                                                        if hostname in arrTargetUploadLists and varmembermembervalue in arrTargetUploadLists[hostname]:
+                                                            upload_filepath = arrTargetUploadLists[hostname][varmembermembervalue]
 
-                                                        if col_name not in arrFileUploadList[filename][writemenuid]:
-                                                            arrFileUploadList[filename][writemenuid][col_name] = None
+                                                        elif hostname in arrTargetUploadListFullpath:
+                                                            for tmpfilekey, tmparrfilepath in arrTargetUploadListFullpath[hostname].items():
+                                                                if (tmpfilekey == varmembermembervalue) or (tmpfilekey.endswith(varmembermembervalue)):
+                                                                    upload_filepath = tmparrfilepath
+                                                                    break
 
-                                                        arrFileUploadList[filename][writemenuid][col_name] = tmpvalue['COLUMN_CLASS']
+                                                        if upload_filepath:
+                                                            filedata = file_encode(upload_filepath)
+                                                            if filedata is not False:
+                                                                tmp_param['file'][col_name] = filedata
 
-                                    # 代入順序1->X （項目,,,→項目[X],,,)
-                                    """
-                                    for tmpfn, arrrmenu in arrSqlinsertParmDn.items():
-                                        for tmpmid, tmparrprm in arrrmenu.imtes():
-                                            if tmpfn in arrSqlinsertParm and arrSqlinsertParm[tmpfn] and tmpmid in arrSqlinsertParm[tmpfn] and arrSqlinsertParm[tmpfn][tmpmid] is not None:
-                                                arrSqlinsertParm[tmpfn][tmpmid] = arrSqlinsertParm[tmpfn][tmpmid] + arrSqlinsertParmDn[tmpfn][tmpmid]
-
-                                            else:
-                                                arrSqlinsertParm[tmpfn][tmpmid] = arrSqlinsertParmDn[tmpfn][tmpmid]
-                                    """
-
-                                    tmpFilter = {}
-                                    insert_flag_list = []
                                     if len(arrSqlinsertParm) <= 0:
                                         # 収集項目値管理上の対象ファイル無しの場合
                                         FREE_LOG = g.appmsg.get_api_message("MSG-10856")
@@ -715,338 +711,96 @@ def backyard_main(organization_id, workspace_id):
                                         if RESTEXEC_FLG == 1:
                                             NOTICE_FLG = 2  # 収集済み(通知あり)
 
-                                    for filename, tmparr3 in arrSqlinsertParm.items():
-                                        FREE_LOG1 = g.appmsg.get_api_message("MSG-10849", [hostname, filename])
-                                        outputLog(strCollectlogPath, FREE_LOG1)
-                                        for menuid, tgtSource_row in tmparr3.items():
-                                            strMenuType = "" if arrTableForMenuType[menuid] == "0" else "Vertical"
-                                            idx_from = 7 if arrTableForMenuType[menuid] == "0" else 8
-                                            tablename = arrTableForMenuLists[menuid]
-                                            strTempForSql = "WHERE TABLE_NAME = %s AND DISUSE_FLAG IN ('0') ORDER BY MENU_TABLE_LINK_ID DESC "
-                                            arySqlBind = [tablename,]
-                                            tmpResult = getInfoFromTablename(dbAccess, "T_MENU_TABLE_LINK", strTempForSql, arySqlBind)
+                                    else:
+                                        for menu_name, tmparr in arrSqlinsertParm.items():
+                                            objmenu = load_table.loadTable(dbAccess, menu_name)
+                                            rec_cnt = 0
+                                            fail_cnt = 0
+                                            output_flag = True
+                                            for input_order, tmparr3 in bdl_array(tmparr):
+                                                filename = tmparr3.pop('input_file')
+                                                if output_flag is True:
+                                                    FREE_LOG1 = g.appmsg.get_api_message("MSG-10849", [hostname, filename])
+                                                    outputLog(strCollectlogPath, FREE_LOG1)
+                                                    output_flag = False
 
-                                            # tmpRestInfo = dbAccess.table_columns_get(tablename)
-                                            tmpRestInfo = []
-                                            strTempForSql = (
-                                                "SELECT "
-                                                "  COLUMN_NAME_REST "
-                                                "FROM "
-                                                "  T_COMN_MENU_COLUMN_LINK "
-                                                "WHERE "
-                                                "  MENU_ID = %s "
-                                                "ORDER BY "
-                                                "  COLUMN_DISP_SEQ ASC "
-                                            )
-                                            arySqlBind = [menuid, ]
-                                            rset = dbAccess.sql_execute(strTempForSql, arySqlBind)
-                                            rset = rset[idx_from:-4]
-                                            for r in rset:
-                                                tmpRestInfo.append(r['COLUMN_NAME_REST'])
+                                                vertical_flag = True if 'input_order' in tmparr3 else False
 
-                                            if len(tmpRestInfo) <= 0:
-                                                FREE_LOG = g.appmsg.get_api_message("MSG-10850")  # ToDo "Restに失敗した"という文言だがRestは使用していない
+                                                # 項目のないパラメーターシートは収集エラー
+                                                # 11 or 12: uuid, host, ope_name1, ope_name2, base_dt, ope_dt, last_exe, (order), note, discard, last_dt, last_user
+                                                least_item_count = 12 if vertical_flag else 11
+                                                req_param_item_count = len(tmparr3['parameter'])
+                                                if least_item_count >= req_param_item_count:
+                                                    FREE_LOG = g.appmsg.get_api_message("MSG-10850")
+                                                    g.applogger.debug(FREE_LOG)
+                                                    outputLog(strCollectlogPath, FREE_LOG)
+                                                    FREE_LOG = g.appmsg.get_api_message("MSG-10855", [hostname, menu_name, operation_id])
+                                                    g.applogger.debug(FREE_LOG)
+                                                    outputLog(strCollectlogPath, FREE_LOG)
+                                                    NOTICE_FLG = 2  # 2:収集エラー
+
+                                                else:
+                                                    now = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+
+                                                    # 既存のレコードを抽出
+                                                    filter_info = {}
+                                                    filter_info['discard'] = {'LIST': ['0']}
+                                                    filter_info['operation_name_select'] = {'LIST': [aryOperation['OPERATION_DATE_NAME']]}
+                                                    filter_info['host_name'] = {'LIST': [hostname]}
+                                                    if vertical_flag:
+                                                        filter_info['input_order'] = {'LIST': [input_order]}
+
+                                                    sts, params, msg = objmenu.rest_filter(filter_info, 'inner')
+
+                                                    # 既存レコードがなければ「登録」
+                                                    if len(params) <= 0 or 'parameter' not in params[0]:
+                                                        tmparr3['type'] = load_table.CMD_REGISTER
+                                                        tmparr3['parameter']['host_name'] = hostname
+                                                        tmparr3['parameter']['operation_name_select'] = aryOperation['OPERATION_DATE_NAME']
+                                                        tmparr3['parameter']['discard'] = '0'
+                                                        tmparr3['parameter']['last_update_date_time'] = now
+                                                        tmparr3['parameter']['last_updated_user'] = g.USER_ID
+
+                                                    # 既存レコードがあれば「更新」
+                                                    else:
+                                                        param = params[0]['parameter']
+
+                                                        tmparr3['type'] = load_table.CMD_UPDATE
+                                                        tmparr3['parameter']['uuid'] = param['uuid']
+                                                        tmparr3['parameter']['host_name'] = param['host_name']
+                                                        tmparr3['parameter']['operation_name_select'] = param['operation_name_select']
+                                                        tmparr3['parameter']['base_datetime'] = param['base_datetime']
+                                                        tmparr3['parameter']['operation_date'] = param['operation_date']
+                                                        tmparr3['parameter']['last_execute_timestamp'] = param['last_execute_timestamp']
+                                                        tmparr3['parameter']['discard'] = '0'
+                                                        tmparr3['parameter']['remarks'] = param['remarks']
+                                                        tmparr3['parameter']['last_update_date_time'] = now
+                                                        tmparr3['parameter']['last_updated_user'] = g.USER_ID
+
+                                                    # 登録、更新
+                                                    RESTEXEC_FLG = 1
+                                                    rec_cnt = rec_cnt + 1
+
+                                                    ret = objmenu.exec_maintenance(tmparr3, tmparr3['parameter']['uuid'], tmparr3['type'], pk_use_flg=False, auth_check=False)
+                                                    if ret[0] is True:
+                                                        dbAccess.db_commit()
+
+                                                    else:
+                                                        dbAccess.db_rollback()
+                                                        fail_cnt = fail_cnt + 1
+
+                                            if fail_cnt > 0:
+                                                FREE_LOG = g.appmsg.get_api_message("MSG-10851", ["%s/%s" % (fail_cnt, rec_cnt), ])
                                                 g.applogger.debug(FREE_LOG)
                                                 outputLog(strCollectlogPath, FREE_LOG)
-                                                FREE_LOG = g.appmsg.get_api_message("MSG-10855", [hostname, tablename, operation_id])  # ToDo 同上
-                                                g.applogger.debug(FREE_LOG)
-                                                outputLog(strCollectlogPath, FREE_LOG)
-                                                NOTICE_FLG = 2  # 2:収集エラー
+                                                NOTICE_FLG = 2
 
                                             else:
-                                                insert_flag = False
-                                                tmpFilter = {
-                                                    'ROW_ID' : None,
-                                                    'HOST_ID' : hostid,
-                                                    'OPERATION_ID' : operation_id,
-                                                    'DATA_JSON' : None,
-                                                    'LAST_UPDATE_USER' : g.USER_ID
-                                                }
-                                                insertData = {}
-                                                UpdateFileData = {}
-                                                updatefile_list = {}
-
-                                                strTempForSql = "WHERE HOST_ID = %s AND OPERATION_ID = %s AND DISUSE_FLAG IN ('0') ORDER BY ROW_ID ASC "
-                                                arySqlBind = [hostid, operation_id]
-                                                tmpResult = getInfoFromTablename(dbAccess, tablename, strTempForSql, arySqlBind)
-
-                                                # 横メニュー
-                                                if strMenuType == "":
-                                                    for parmNO, pramName in enumerate(tmpRestInfo):
-                                                        if pramName not in tgtSource_row:
-                                                            insertData[pramName] = None
-
-                                                        else:
-                                                            insertData[pramName] = tgtSource_row[pramName]
-
-                                                            if filename in arrFileUploadList \
-                                                            and menuid in arrFileUploadList[filename] \
-                                                            and pramName in arrFileUploadList[filename][menuid]:
-                                                                if hostname in arrTargetUploadLists \
-                                                                and tgtSource_row[pramName] in arrTargetUploadLists[hostname] \
-                                                                and arrTargetUploadLists[hostname][tgtSource_row[pramName]] is not None:
-                                                                    upload_filepath = arrTargetUploadLists[hostname][tgtSource_row[pramName]]
-                                                                    if os.path.isfile(upload_filepath):
-                                                                        filedata = b""
-                                                                        with open(upload_filepath, 'r') as fp:
-                                                                            filedata = fp.read()
-                                                                            filedata = base64.b64encode(filedata.encode('utf-8'))
-
-                                                                        UpdateFileData[pramName] = filedata
-
-                                                                else:
-                                                                    matchflg = ""
-                                                                    for tmpfilekey, tmparrfilepath in arrTargetUploadListFullpath[hostname].items():
-                                                                        # フルパス完全一致
-                                                                        if tmpfilekey == tgtSource_row[pramName]:
-                                                                            matchflg = "FULL"
-                                                                            upload_filepath = tmparrfilepath
-                                                                            if os.path.isfile(upload_filepath) and insertData[pramName] != "":
-                                                                                filedata = b""
-                                                                                with open(upload_filepath, 'r') as fp:
-                                                                                    filedata = fp.read()
-                                                                                    filedata = base64.b64encode(filedata.encode('utf-8'))
-
-                                                                                insertData[pramName] = os.path.splitext(os.path.basename(upload_filepath))[0]
-                                                                                UpdateFileData[pramName] = filedata
-
-                                                                        # 後方一致
-                                                                        elif tmpfilekey.endswith(tgtSource_row[pramName]):
-                                                                            matchflg = "AFTER"
-                                                                            upload_filepath = tmparrfilepath
-                                                                            if os.path.isfile(upload_filepath) and insertData[pramName] != "":
-                                                                                filedata = b""
-                                                                                with open(upload_filepath, 'r') as fp:
-                                                                                    filedata = fp.read()
-                                                                                    filedata = base64.b64encode(filedata.encode('utf-8'))
-
-                                                                                insertData[pramName] = os.path.splitext(os.path.basename(upload_filepath))[0]
-                                                                                UpdateFileData[pramName] = filedata
-
-                                                                        if matchflg != "":
-                                                                            break
-
-                                                                    if matchflg == "":
-                                                                        insertData[pramName] = ""
-                                                                        UpdateFileData[pramName] = ""
-
-                                                    if len(tmpResult) <= 0:
-                                                        insert_flag = True
-                                                        # insertData[0] = g.appmsg.get_api_message("MSG-30004")
-
-                                                    else:
-                                                        # insertData[0] = g.appmsg.get_api_message("MSG-30005")
-                                                        tmpFilter['ROW_ID'] = tmpResult[0]['ROW_ID']
-
-                                                    tmpFilter['DATA_JSON'] = json.dumps(insertData)
-                                                    insert_flag_list.append(insert_flag)
-
-                                                    if len(UpdateFileData) > 0:
-                                                        idx = len(insert_flag_list) - 1
-                                                        updatefile_list[idx] = {
-                                                            "colname" : pramName,
-                                                            "filename" : tgtSource_row[pramName],
-                                                            "filedata" : UpdateFileData[pramName],
-                                                        }
-
-                                                # 縦メニュー
-                                                else:
-                                                    insertData = {}
-                                                    UpdateFileData = {}
-                                                    updatefile_list = {}
-                                                    insert_flag = True
-                                                    insert_flag_list = []
-                                                    intColmun = 0
-                                                    input_order = None
-                                                    regData = tmpResult
-                                                    tmpFilter = []
-                                                    tmpFilter_data = {
-                                                        'ROW_ID' : None,
-                                                        'HOST_ID' : hostid,
-                                                        'OPERATION_ID' : operation_id,
-                                                        'INPUT_ORDER' : None,
-                                                        'DATA_JSON' : None,
-                                                        'LAST_UPDATE_USER' : g.USER_ID
-                                                    }
-
-                                                    for pramName in tmpRestInfo:
-                                                        insertData[pramName] = None
-
-                                                    for tgtSource_key, value in tgtSource_row.items():
-                                                        for parmNO, pramName in enumerate(tmpRestInfo):
-                                                            # 項目名：完全一致
-                                                            if pramName == tgtSource_key:
-                                                                insertData[pramName] = value
-                                                                if input_order is None:
-                                                                    input_order = 1
-
-                                                                # ファイルアップロードカラムの場合
-                                                                if filename in arrFileUploadList and menuid in arrFileUploadList[filename] and arrFileUploadList[filename][menuid] is not None \
-                                                                and (pramName == tgtSource_key or pramName in tgtSource_key):
-                                                                    if pramName in arrFileUploadList[filename][menuid]:
-                                                                        # ファイルアップロード対象リスト（key：ファイル名-valuse:パス）にある場合
-                                                                        if value in arrTargetUploadLists[hostname]:
-                                                                            upload_filepath = arrTargetUploadLists[hostname][value]
-                                                                            if os.path.isfile(upload_filepath) and insertData[pramName] != "":
-                                                                                filedata = b""
-                                                                                with open(upload_filepath, 'r') as fp:
-                                                                                    filedata = fp.read()
-                                                                                    filedata = base64.b64encode(filedata.encode('utf-8'))
-
-                                                                                insertData[pramName] = os.path.splitext(os.path.basename(upload_filepath))[0]
-                                                                                UpdateFileData[pramName] = filedata
-
-                                                                        # ファイルアップロード対象リスト（key：パス-valuse:パス）にある場合
-                                                                        else:
-                                                                            matchflg = ""
-                                                                            for tmpfilekey, tmparrfilepath in arrTargetUploadListFullpath[hostname].items():
-                                                                                matchflg = ""
-                                                                                upload_filepath = tmparrfilepath
-                                                                                upload_filename = os.path.splitext(os.path.basename(upload_filepath))[0]
-
-                                                                                # フルパス完全一致
-                                                                                if tmpfilekey == tgtSource_row[tgtSource_key]:
-                                                                                    matchflg = "FULL"
-
-                                                                                # 部分後方一致
-                                                                                elif tmpfilekey.endswith(tgtSource_row[tgtSource_key]):
-                                                                                    matchflg = "AFTER"
-
-                                                                                if matchflg != "":
-                                                                                    if os.path.isfile(upload_filepath) and insertData[pramName] != "":
-                                                                                        filedata = b""
-                                                                                        with open(upload_filepath, 'r') as fp:
-                                                                                            filedata = fp.read()
-                                                                                            filedata = base64.b64encode(filedata.encode('utf-8'))
-
-                                                                                        insertData[pramName] = upload_filename
-                                                                                        UpdateFileData[pramName] = filedata
-
-                                                                                    break
-
-                                                                            # 不要項目除外
-                                                                            if matchflg == "":
-                                                                                insertData[pramName] = ""
-                                                                                UpdateFileData[pramName] = None
-
-                                                                        if pramName != tgtSource_key \
-                                                                        and input_order != 1 and input_order is not None:
-                                                                            insertData[pramName] = ""
-
-                                                                    else:
-                                                                        # 値がNULLの項目を除外
-                                                                        if tgtSource_key in arrFileUploadList[filename][menuid]:
-                                                                            if tgtSource_key == pramName:
-                                                                                if hostname in arrTargetUploadLists and value in arrTargetUploadLists[hostname] and arrTargetUploadLists[hostname][value] is not None:
-                                                                                    upload_filepath = arrTargetUploadLists[hostname][value]
-                                                                                    if os.path.isfile(upload_filepath):
-                                                                                        filedata = b""
-                                                                                        with open(upload_filepath, 'r') as fp:
-                                                                                            filedata = fp.read()
-                                                                                            filedata = base64.b64encode(filedata.encode('utf-8'))
-
-                                                                                        UpdateFileData[pramName] = filedata
-
-                                                                                else:
-                                                                                    insertData[pramName] = ""
-                                                                                    UpdateFileData[pramName] = None
-
-                                                    if len(tmpRestInfo) == len(insertData):
-                                                        tmpFilter_data['DATA_JSON'] = json.dumps(insertData)
-                                                        for arrRegDate in regData:
-                                                            if arrRegDate['INPUT_ORDER'] == input_order:
-                                                                insert_flag = False
-                                                                tmpFilter_data['ROW_ID'] = arrRegDate['ROW_ID']
-                                                                tmpFilter_data['INPUT_ORDER'] = arrRegDate['INPUT_ORDER']
-                                                                tmpFilter_data['DISUSE_FLAG'] = arrRegDate['DISUSE_FLAG']
-                                                                break
-
-                                                        else:
-                                                            insert_flag = True
-                                                            tmpFilter_data['INPUT_ORDER'] = input_order
-                                                            tmpFilter_data['DISUSE_FLAG'] = '0'
-
-                                                        # 同一代入順序、パラメータ結合
-                                                        inputorderwflg = 0
-                                                        """
-                                                        for insertDataNO, tmpinsertData in enumerate(tmpFilter):
-                                                            if input_order_list[insertDataNO] is not None:
-                                                                if input_order_list[insertDataNO] == input_order:
-                                                                    for tmpinsertDatakey, tmpinsertDatavalue in tmpinsertData.items():
-                                                                        if tmpinsertDatavalue == "":
-                                                                            if tmpFilter[insertDataNO][tmpinsertDatakey] is None:
-                                                                                tmpFilter[insertDataNO][tmpinsertDatakey] = insertData[tmpinsertDatakey]
-
-                                                                            if tmpinsertDatakey in UpdateFileData and UpdateFileData[tmpinsertDatakey] is not None:
-                                                                                updatefile_list[insertDataNO][tmpinsertDatakey] = UpdateFileData[tmpinsertDatakey]
-
-                                                                            inputorderwflg = 1
-                                                        """
-
-                                                        if inputorderwflg == 0:
-                                                            # 種別、オペレーション、ホスト、代入順序
-                                                            if input_order is not None:
-                                                                tmpFilter.append(tmpFilter_data)
-                                                                insert_flag_list.append(insert_flag)
-                                                                if len(UpdateFileData) > 0:
-                                                                    for upfileskey, upfilesval in UpdateFileData.items():
-                                                                        if insertData[upfileskey] == "":
-                                                                            UpdateFileData[upfileskey] = None
-
-                                                                    idx = len(tmpFilter) - 1
-                                                                    updatefile_list[idx] = {
-                                                                        "colname" : pramName,
-                                                                        "filename" : tgtSource_row[pramName],
-                                                                        "filedata" : UpdateFileData[pramName],
-                                                                    }
-
-                                                        insertData = {}
-
-                                                # 登録、更新
-                                                RESTEXEC_FLG = 1
-                                                ret = False
-                                                if isinstance(tmpFilter, list) is False:
-                                                    tmpFilter = [tmpFilter,]
-
-                                                fail_cnt = 0
-                                                rec_cnt = len(tmpFilter)
-                                                for idx, tmpData in enumerate(tmpFilter):
-                                                    if insert_flag_list[idx]:
-                                                        ret = dbAccess.table_insert(tablename, tmpData, 'ROW_ID')
-
-                                                    else:
-                                                        ret = dbAccess.table_update(tablename, tmpData, 'ROW_ID')
-
-                                                    if ret is False:
-                                                        fail_cnt += 1
-
-                                                    elif idx in updatefile_list:
-                                                        uuid = ret[0]['ROW_ID']
-                                                        uuid_jnl = get_jnl_uuid(dbAccess, tablename, uuid)
-                                                        upfilepath_info = get_upload_file_path(workspace_id, menuid, uuid, updatefile_list[idx]['colname'], updatefile_list[idx]['filename'], uuid_jnl)
-                                                        old_file_path = os.path.dirname(upfilepath_info['old_file_path'])
-
-                                                        ansdrv.makeDir(old_file_path)
-                                                        with open(upfilepath_info['old_file_path'], 'w') as fp:
-                                                            fp.write(base64.b64decode(updatefile_list[idx]['filedata']).decode('utf-8'))
-
-                                                        subprocess.run(["ln", "-nfs", upfilepath_info['old_file_path'], upfilepath_info['file_path']], check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-                                                insert_flag_list = []
-                                                tmpFilter = []
-
-                                                if fail_cnt > 0:
-                                                    FREE_LOG = g.appmsg.get_api_message("MSG-10851", ["%s/%s" % (fail_cnt, rec_cnt), ])  # ToDo "Restに失敗した"という文言だがRestは使用していない
-                                                    g.applogger.debug(FREE_LOG)
-                                                    outputLog(strCollectlogPath, FREE_LOG)
+                                                FREE_LOG = g.appmsg.get_api_message("MSG-10855", [hostname, menu_name, operation_id])
+                                                g.applogger.debug(FREE_LOG)
+                                                outputLog(strCollectlogPath, FREE_LOG)
+                                                if NOTICE_FLG != 1:
                                                     NOTICE_FLG = 2
-
-                                                else:
-                                                    FREE_LOG = g.appmsg.get_api_message("MSG-10855", [hostname, tablename, operation_id])
-                                                    g.applogger.debug(FREE_LOG)
-                                                    outputLog(strCollectlogPath, FREE_LOG)
-                                                    if NOTICE_FLG != 1:
-                                                        NOTICE_FLG = 2
 
                                         FREE_LOG = g.appmsg.get_api_message("MSG-10853", [hostname, filename])
                                         outputLog(strCollectlogPath, FREE_LOG)
@@ -1068,13 +822,9 @@ def backyard_main(organization_id, workspace_id):
             except Exception as e:
                 dbAccess.db_rollback()
                 g.applogger.debug(e)
-                import traceback
-                print(traceback.format_exc())
 
     except Exception as e:
         g.applogger.debug(e)
-        import traceback
-        print(traceback.format_exc())
 
     ################################
     # 結果出力

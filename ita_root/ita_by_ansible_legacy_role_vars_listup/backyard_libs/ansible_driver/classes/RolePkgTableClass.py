@@ -82,13 +82,15 @@ class RolePkgTable(TableBase):
                         varmgr.add_variable(item)
 
                 # テンプレート変数が使われている場合の変数抽出
-                print(f"var_struct: {var_struct}")
                 for role_name, role_vars in var_struct['TPF_vars_list'].items():
                     for file_path, file_vars in role_vars.items():
                         for _, var_detail in file_vars.items():
                             for tpl_var_name, _ in var_detail.items():
                                 if tpl_var_name in tpl_varmng_dict:
                                     varmgr.merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
+                                else:
+                                    debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
+                                    g.applogger.debug(debug_msg)
 
             except Exception as e:
                 debug_msg = g.appmsg.get_log_message("BKY-30007", [role_pkg_id, role_pkg_name])

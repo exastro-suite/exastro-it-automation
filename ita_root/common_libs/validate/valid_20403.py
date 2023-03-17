@@ -52,8 +52,6 @@ def external_valid_menu_after(objDBCA, objtable, option):
         if option["entry_parameter"]["file"]["zip_format_role_package_file"] != \
            option["current_parameter"]["file"]["zip_format_role_package_file"]:
             zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
-        else:
-            zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
 
     try:
         # ロールパッケージの変更判定
@@ -68,10 +66,11 @@ def external_valid_menu_after(objDBCA, objtable, option):
             fd.write(base64.b64decode(zip_data))
             fd.close()
         else:
-            errormsg = g.appmsg.get_api_message("MSG-10256")
-            # 不要なファイル・ディレクトリを削除
-            AnsibleFilesClean(g.AnsibleCreateFiles)
-            return False, errormsg, option
+            if option["cmd_type"] in ("Register", "Update"):
+                errormsg = g.appmsg.get_api_message("MSG-10256")
+                # 不要なファイル・ディレクトリを削除
+                AnsibleFilesClean(g.AnsibleCreateFiles)
+                return False, errormsg, option
 
         def_vars_list = {}
         def_varsval_list = {}

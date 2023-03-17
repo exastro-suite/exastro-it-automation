@@ -68,8 +68,8 @@ class TemplateTable(TableBase):
                 # 多次元変数
                 var_attr = AnscConst.GC_VARS_ATTR_M_ARRAY
                 for var_name, var_detail in var_struct['Array_vars_list'].items():
-                    var_struct = var_detail
-                    item = Variable(var_name, var_attr, var_struct)
+                    array_var_struct = var_detail
+                    item = Variable(var_name, var_attr, array_var_struct)
                     result_dict[tpl_var_name].add_variable(item)
 
             except Exception as e:

@@ -50,9 +50,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
         role_package_name = option["entry_parameter"]["parameter"]["role_package_name"]
 
     if option["cmd_type"] == "Update":
-        if option["entry_parameter"]["file"]["zip_format_role_package_file"] != \
-           option["current_parameter"]["file"]["zip_format_role_package_file"]:
-            zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
+        zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
 
     try:
         # ロールパッケージの変更判定

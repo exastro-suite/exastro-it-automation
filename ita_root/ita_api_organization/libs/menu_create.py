@@ -275,9 +275,9 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 col_detail["link_maximum_bytes"] = record.get('LINK_MAX_LENGTH')  # リンク 最大バイト数
                 col_detail["link_default_value"] = record.get('LINK_DEFAULT_VALUE')  # リンク 初期値
 
-            # カラムクラス「パラメータシート参照」用のパラメータを追加 (未実装)
-            # if column_class_name == "LinkIDColumn":
-            #     col_detail["parameter_sheet_reference"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照
+            # カラムクラス「パラメータシート参照」用のパラメータを追加
+            if column_class_name == "ParameterSheetReference":
+                col_detail["parameter_sheet_reference"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照
 
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = col_detail
@@ -323,6 +323,7 @@ def _collect_common_menu_create_data(objdbca):
     v_menu_sheet_type = 'V_MENU_SHEET_TYPE'
     v_menu_target_menu_group = 'V_MENU_TARGET_MENU_GROUP'
     v_menu_other_link = 'V_MENU_OTHER_LINK'
+    v_menu_parameter_sheet_reference_item = 'V_MENU_PARAMETER_SHEET_REFERENCE_ITEM'
 
     # 変数定義
     lang = g.get('LANGUAGE')
@@ -332,9 +333,6 @@ def _collect_common_menu_create_data(objdbca):
     ret = objdbca.table_select(v_menu_column_class, 'ORDER BY DISP_SEQ ASC')
     for record in ret:
         column_class_id = record.get('COLUMN_CLASS_ID')
-        # 「11:パラメータシート参照」は未実装のため除外
-        if str(column_class_id) == "11":
-            continue
         column_class_name = record.get('COLUMN_CLASS_NAME')
         column_class_disp_name = record.get('COLUMN_CLASS_DISP_NAME_' + lang.upper())
         column_class_list.append({'column_class_id': column_class_id, 'column_class_name': column_class_name, 'column_class_disp_name': column_class_disp_name})  # noqa: E501
@@ -367,6 +365,14 @@ def _collect_common_menu_create_data(objdbca):
         link_pulldown = record.get('LINK_PULLDOWN_' + lang.upper())
         pulldown_item_list.append({'link_id': link_id, 'menu_id': menu_id, 'menu_name_rest': menu_name_rest, 'column_name_rest': column_name_rest, 'link_pulldown': link_pulldown})  # noqa: E501
 
+    # カラムクラス「パラメータシート参照」の選択項目一覧
+    parameter_sheet_reference_list = []
+    ret = objdbca.table_select(v_menu_parameter_sheet_reference_item, 'ORDER BY MENU_ID, COLUMN_DISP_SEQ')
+    for record in ret:
+        column_definition_id = record.get('COLUMN_DEFINITION_ID')
+        select_full_name = record.get('SELECT_FULL_NAME_' + lang.upper())
+        parameter_sheet_reference_list.append({'column_definition_id': column_definition_id, 'select_full_name': select_full_name})
+
     # ロールの選択肢一覧
     role_list = util.get_workspace_roles()  # noqa: F405
 
@@ -395,6 +401,7 @@ def _collect_common_menu_create_data(objdbca):
         "target_menu_group_list": target_menu_group_list,
         "sheet_type_list": sheet_type_list,
         "pulldown_item_list": pulldown_item_list,
+        "parameter_sheet_reference_list": parameter_sheet_reference_list,
         "role_list": role_list,
         "name_convert_list": name_convert_list
     }
@@ -1204,9 +1211,9 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                     parameter["link_maximum_bytes"] = link_maximum_bytes  # リンク 最大バイト数
                     parameter["link_default_value"] = column_data.get('link_default_value')  # リンク 初期値
 
-                # カラムクラス「パラメータシート参照」用のパラメータを追加 (未実装)
-                # if column_class == "LinkIDColumn":
-                #     parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                # カラムクラス「パラメータシート参照」用のパラメータを追加
+                if column_class == "ParameterSheetReference":
+                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
                 parameters = {
                     "parameter": parameter,
                     "type": "Register"
@@ -1241,6 +1248,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
     # テーブル/ビュー名
     v_menu_other_link = 'V_MENU_OTHER_LINK'
     v_menu_column_class = 'V_MENU_COLUMN_CLASS'
+    v_menu_parameter_sheet_reference_item = 'V_MENU_PARAMETER_SHEET_REFERENCE_ITEM'
 
     # 変数定義
     lang = g.get('LANGUAGE')
@@ -1261,6 +1269,16 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
             link_pulldown_ja = record.get('LINK_PULLDOWN_JA')
             link_pulldown_en = record.get('LINK_PULLDOWN_EN')
             format_other_menu_link_list[record.get('LINK_ID')] = {'link_pulldown_ja': link_pulldown_ja, 'link_pulldown_en': link_pulldown_en}
+
+        # 「パラメータシート参照」項目の対象一覧レコードを取得
+        parameter_sheet_reference_list = objdbca.table_select(v_menu_parameter_sheet_reference_item, 'WHERE DISUSE_FLAG = %s', [0])
+
+        # 「パラメータシート参照」項目の対象のレコードをCOLUMN_DEFINITION_IDをkeyとしたdict型に変換
+        format_parameter_sheet_reference_list = {}
+        for record in parameter_sheet_reference_list:
+            select_full_name_ja = record.get('SELECT_FULL_NAME_JA')
+            select_full_name_en = record.get('SELECT_FULL_NAME_EN')
+            format_parameter_sheet_reference_list[record.get('COLUMN_DEFINITION_ID')] = {'select_full_name_ja': select_full_name_ja, 'select_full_name_en': select_full_name_en}  # noqa: E501
 
         # loadTableの呼び出し
         objmenu = load_table.loadTable(objdbca, 'menu_item_creation_info')  # noqa: F405
@@ -1416,6 +1434,19 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         if current_link_maximum_bytes > update_link_maximum_bytes:
                             raise Exception("499-00707", [item_name, "link_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
+                    # カラムクラス「パラメータシート参照」の場合のバリデーションチェック
+                    if column_class == "ParameterSheetReference":
+                        update_parameter_sheet_reference = column_data.get('parameter_sheet_reference')
+
+                        # 現在設定されているIDのparameter_sheet_referenceを取得
+                        current_parameter_sheet_reference_id = target_record.get('PARAM_SHEET_LINK_ID')
+                        current_parameter_sheet_reference_data = format_parameter_sheet_reference_list.get(current_parameter_sheet_reference_id)
+                        current_parameter_sheet_reference = current_parameter_sheet_reference_data.get('select_full_name_' + lang.lower())
+
+                        # pulldown_selectionが変更されている場合エラー判定
+                        if not update_parameter_sheet_reference == current_parameter_sheet_reference:
+                            raise Exception("499-00706", [item_name, "parameter_sheet_reference"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+
                 # 更新用パラメータを作成
                 parameter = {
                     "menu_name": menu_name,  # メニュー名(「メニュー定義一覧」のメニュー名)
@@ -1525,9 +1556,9 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     parameter["link_maximum_bytes"] = column_data.get('link_maximum_bytes')  # リンク 最大バイト数
                     parameter["link_default_value"] = column_data.get('link_default_value')  # リンク 初期値
 
-                # カラムクラス「パラメータシート参照」用のパラメータを追加 (未実装)
-                # if column_class == "LinkIDColumn":
-                #     parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                # カラムクラス「パラメータシート参照」用のパラメータを追加
+                if column_class == "ParameterSheetReference":
+                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
 
                 parameters = {
                     "parameter": parameter,
@@ -1904,6 +1935,13 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
         if sheet_id == "2" and hostgroup == "True":
             raise Exception("499-00713", [])
+
+        # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」以外で「パラメータシート参照」項目を利用している場合
+        if not sheet_id == "1":
+            for column_data in column_data_list.values():
+                column_class = column_data.get('column_class')
+                if column_class == "ParameterSheetReference":
+                    raise Exception("499-00715", [])
 
         # ロールを取得
         role_list = menu_data.get('role_list')

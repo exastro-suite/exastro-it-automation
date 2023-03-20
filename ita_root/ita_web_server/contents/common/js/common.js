@@ -189,7 +189,7 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
    データ読み込み
 ##################################################
 */
-fetch: function( url, token, method = 'GET', json ) {
+fetch: function( url, token, method = 'GET', json, option = {} ) {
     
     if ( !token ) {
         token = CommonAuth.getToken();
@@ -230,8 +230,12 @@ fetch: function( url, token, method = 'GET', json ) {
                     
                     if( response.ok ) {
                         //200の場合
-                        response.json().then(function( result ){                            
-                            resolve( result.data );
+                        response.json().then(function( result ){
+                            if ( option.message ) {
+                                resolve( [ result.data, result.message ] );
+                            } else {
+                                resolve( result.data );
+                            }
                         });
                     } else {
                         errorCount++;
@@ -336,13 +340,16 @@ editFlag: function( menuInfo ) {
    0埋め
 ##################################################
 */
-zeroPadding: function( num, digit ){
+zeroPadding: function( num, digit, zeroSpan = false ){
     let zeroPaddingNumber = '0';
     for ( let i = 1; i < digit; i++ ) {
       zeroPaddingNumber += '0';
     }
-    zeroPaddingNumber += String( num );
-    return zeroPaddingNumber.slice( -digit );
+    zeroPaddingNumber = ( zeroPaddingNumber + String( num ) ).slice( -digit );
+    if ( zeroSpan ) {
+        zeroPaddingNumber = zeroPaddingNumber.replace(/^(0+)/, '<span>$1</span>');
+    }
+    return zeroPaddingNumber;
 },
 /*
 ##################################################
@@ -1301,13 +1308,13 @@ faderEvent: function( $item ) {
           $input = $item.find('.inputFader'),
           $knob = $item.find('.inputFaderRangeKnob'),
           $lower = $fader.find('.inputFaderRangeLower'),
-          $tooltip = $fader.find('.inputFaderRangeTooltip'),
-          min = Number( $input.attr('data-min') ),
-          max = Number( $input.attr('data-max') ),
-          inputRange = max - min;
+          $tooltip = $fader.find('.inputFaderRangeTooltip');
 
     let   width = $fader.width(),
           val = $input.val(),
+          min = Number( $input.attr('data-min') ),
+          max = Number( $input.attr('data-max') ),
+          inputRange = max - min,
           ratio, positionX;
 
     // 位置をセット
@@ -1407,6 +1414,13 @@ faderEvent: function( $item ) {
         } else {
           val = '';
         }
+    });
+    
+    // 最大値が変わった場合ノブの位置を更新する
+    $input.on('maxChange', function(){
+        max = Number( $input.attr('data-max') );
+        inputRange = max - min;
+        valPosition();
     });
     
     $input.on('input', function(){
@@ -2711,6 +2725,13 @@ setTheme( theme ) {
     const $theme = $('#thema'),
           src = `/_/ita/thema/${theme}.css`;
     $theme.attr('href', src );
+    
+    // ダークモード
+    if ( theme === 'darkmode') {
+        $('body').addClass('darkmode');
+    } else {
+        $('body').removeClass('darkmode');
+    }
 },
 
 setFilter( filterList ) {

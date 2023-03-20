@@ -395,11 +395,6 @@ setSideMenu() {
 
     // トピックパスをセット
     ui.topicPath();
-
-    // メインメニューの場合メニューグループ一覧を表示する
-    if ( !ui.params.menuNameRest ) {
-        ui.mainMenu();
-    }
 }
 /*
 ##################################################
@@ -804,6 +799,8 @@ setMenu() {
             mn.info = result[1];
             mn.title = fn.cv( mn.info.menu_info.menu_name, '', true );
             mn.sheetType();
+        } else {
+            mn.dashboard();
         }
     }).catch(function( error ){
         window.console.error( error );
@@ -887,11 +884,7 @@ sheetType() {
             case '23':
                 mn.exportImport('excelImport');
             break;
-            default:
-                // Dashboard
         }
-    } else {
-        // Dashboard
     }
 }
 
@@ -1189,36 +1182,6 @@ contentTabOpen( openTab ) {
 
     mn.$.content.find(`.contentMenuLink[href="${openTab}"]`).addClass('tabOpen').attr('tabindex', -1 );
     mn.$.content.find( openTab ).addClass('tabOpen');
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//   メインメニュー
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-mainMenu() {
-    const mn = this;
-
-    const list = [],
-          length = mn.menuGroupList.length;
-
-    for ( let i = 0; i < length; i++ ) {
-        const menuGroup = mn.menuGroupList[i];
-        if ( menuGroup.parent_id === null ) {
-            const title = fn.cv( menuGroup.menu_group_name, '', true ),
-                  id =  fn.cv( menuGroup.id, ''),
-                  panel = mn.getPanelImage( title, null, mn.rest.panel[ id ] );
-
-            list.push(`<li class="dashboardMenuGroupItem"><a class="dashboardMenuGroupLink" href="${mn.params.path}?menu=${menuGroup.main_menu_rest}"><span class="dashboardMenuGroupPanel">${panel}</span><span class="dashboardMenuGroupTitle">${title}</span></a></li>`);
-        }
-    }
-
-    const html = `<ul class="dashboardMenuGroupList">${list.join('')}</ul>`;
-
-    mn.$.content.html( mn.commonContainer( 'DashBoard', getMessage.FTE00077, html, false ) );
-
-    mn.onReady();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1648,6 +1611,29 @@ exportImport( type ) {
     fn.loadAssets( assets ).then(function(){
         const exportImport =  new ExportImport( mn.params.menuNameRest, type );
         exportImport.setup();
+
+        mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   ダッシュボード
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+dashboard() {
+    const mn = this;
+
+    const assets = [
+        { type: 'js', url: '/_/ita/js/dashboard.js'},
+        { type: 'js', url: '/_/ita/js/widget/widget_common.js'},
+        { type: 'css', url: '/_/ita/css/dashboard.css'},
+    ];
+
+    fn.loadAssets( assets ).then(function(){
+        const dashboard =  new Dashboard('#content');
+        dashboard.setup();
 
         mn.onReady();
     });

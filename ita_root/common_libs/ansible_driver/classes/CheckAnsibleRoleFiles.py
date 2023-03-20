@@ -2414,10 +2414,10 @@ class DefaultVarsFileAnalysis():
                 #                    [item1] =>
                 #                    [item2] => a2
                 #                )
-                if var >= 99999999:
-                    # 繰返構造の繰返数が99999999以上あった
+                if var > 1024:
+                    # 繰返構造の繰返数が1024以上あった
                     if array_f == "I":
-                        # MSG-10444 = "繰返構造の繰返数が99999999を超えてた定義です。{}"
+                        # MSG-10444 = "繰返構造の繰返数が1024を超えてた定義です。{}"
                         in_error_code = "MSG-10444"
                         in_line = inspect.currentframe().f_lineno
                         return False, ina_vars_list, ina_varval_list, ina_array_col_count_list, in_error_code, in_line, in_col_count, in_assign_count

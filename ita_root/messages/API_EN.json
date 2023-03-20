@@ -575,7 +575,7 @@
     "MSG-10441": "Register the specific value of nested variable for substitution value list has failed.",
     "MSG-10442": "Substitution order of variables registered in the substitution value list is not set. (substitution value list item No.:{} Variable:{})",
     "MSG-10443": "There are duplicate variables registered in the substitution value list. (substitution value list item No.:{}/{} Variable:{})",
-    "MSG-10444": "The variable repeating structure has exceeded 99999999. {}",
+    "MSG-10444": "The variable repeating structure has exceeded 1024. {}",
     "MSG-10445": "Variable list information could not be acquired. Skipping the variable specific value registration. (Role package list Item No.:{} role:{} Variable:{})",
     "MSG-10446": "Nested variable array combination list information could not be acquired. Skipping the variable specific value registration process. (Role package list Item No:{} role:{} Variable:{} Member variable:{} Substitution order:{})",
     "MSG-10447": "Variable name list was last updated in another process. Skipping the update of nested variable member list. (Variable:{})",

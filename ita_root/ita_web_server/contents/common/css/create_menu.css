@@ -430,7 +430,7 @@ flex-wrap: wrap;
 .menu-column-config-table[date-select-value="7"] tr.select-option,
 .menu-column-config-table[date-select-value="9"] tr.file,
 .menu-column-config-table[date-select-value="10"] tr.link,
-.menu-column-config-table[date-select-value="11"] tr.type3 {
+.menu-column-config-table[date-select-value="11"] tr.param-sheet-ref {
 display: flex;
 }
 .menu-column-config-table th,

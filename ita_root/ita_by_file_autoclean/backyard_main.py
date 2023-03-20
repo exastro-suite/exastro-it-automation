@@ -112,7 +112,7 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # 削除対象時刻
-            target_time = now_time - timedelta(days=-int(del_days))
+            target_time = now_time - timedelta(days=int(del_days))
 
             for target_path in target_df_list:
                 del_flg = False

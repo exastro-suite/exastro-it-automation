@@ -34,6 +34,7 @@ from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStr
 from common_libs.ansible_driver.classes.AnsibleMakeMessage import AnsibleMakeMessage
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath, getFileupLoadColumnPath
+from common_libs.ansible_driver.functions.util import get_AnsibleDriverHpTmpPath, AnsibleFilesClean
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 
 #################################################################################
@@ -481,6 +482,14 @@ class CheckAnsibleRoleFiles():
                 errmsg = "%s\n%s" % (
                     errmsg,
                     g.appmsg.get_api_message("MSG-10643", [self.lva_msg_role_pkg_name, in_rolename, tgt_file_name])
+                )
+                self.SetLastError(os.path.basename(inspect.currentframe().f_code.co_filename), inspect.currentframe().f_lineno, errmsg)
+                return False, ina_def_vars_list, ina_def_varsval_list, ina_def_array_vars_list, ina_copyvars_list, ina_tpfvars_list, ina_ITA2User_var_list, ina_User2ITA_var_list
+
+            if type(yaml_parse_array) is list:
+                # MSG-10935　"ITA readmeに変数名が定義されていません。(ロールパッケージ名:{} role:{} file:{})",
+                errmsg = "%s" % (
+                    g.appmsg.get_api_message("MSG-10935", [self.lva_msg_role_pkg_name, in_rolename, tgt_file_name])
                 )
                 self.SetLastError(os.path.basename(inspect.currentframe().f_code.co_filename), inspect.currentframe().f_lineno, errmsg)
                 return False, ina_def_vars_list, ina_def_varsval_list, ina_def_array_vars_list, ina_copyvars_list, ina_tpfvars_list, ina_ITA2User_var_list, ina_User2ITA_var_list
@@ -3678,6 +3687,10 @@ class YAMLFileAnalysis():
             error_code = "MSG-10644"
             error_ary = [tgt_role_pkg_name, tgt_role_name, tgt_file_name]
 
+            # MSG-10936 = "変数名が定義されていません。(ロールパッケージ名:{} role:{} file:{})",
+            list_error_code = 'MSG-10936'
+            list_error_ary = [tgt_role_pkg_name, tgt_role_name, tgt_file_name]
+
         elif in_mode == AnscConst.LC_RUN_MODE_VARFILE:
             # 変数定義の場所(テンプレート管理  変数定義)を設定
             chkObj.setVariableDefineLocation(AnscConst.DF_TEMP_VARS)
@@ -3686,10 +3699,19 @@ class YAMLFileAnalysis():
             error_code = "MSG-10645"
             error_ary = [in_role_pkg_name]
 
+            # MSG-10937 = "変数名が定義されていません。(テンプレート変数:{})",
+            list_error_code = 'MSG-10937'
+            list_error_ary = [in_role_pkg_name]
+
         obj = YamlParse()
         yaml_parse_array = obj.Parse(defvarfile)
         errmsg = obj.GetLastError()
         obj = None
+
+        if type(yaml_parse_array) is list:
+            errmsg = "%s\n%s" % (errmsg, g.appmsg.get_api_message(list_error_code, list_error_ary))
+            self.SetLastError(os.path.basename(inspect.currentframe().f_code.co_filename), inspect.currentframe().f_lineno, errmsg)
+            return False, in_parent_vars_list, ina_vars_list, ina_array_vars_list, ina_varval_list
 
         if yaml_parse_array is None:
             yaml_parse_array = {}
@@ -4315,7 +4337,9 @@ class VarStructAnalysisFileAccess():
         roleObj = CheckAnsibleRoleFiles(self.lv_objMTS)
 
         # ロールパッケージファイル(ZIP)の解凍先
-        outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverTmpPath(), os.getpid())
+        # outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverTmpPath(), os.getpid())
+        # /storageは遅いので/tmpに変更
+        outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverHpTmpPath(), os.getpid())
 
         def_vars_list = {}
         err_vars_list = {}
@@ -4326,6 +4350,9 @@ class VarStructAnalysisFileAccess():
         User2ITA_var_list = {}
         comb_err_vars_list = {}
         role_name_list = {}
+
+        # 例外等が発生した場合でもディレクトリを削除するようにする為、ディレクトリ名を退避
+        g.AnsibleCreateFiles.append(outdir)
 
         # ロールパッケージファイル(ZIP)の解凍
         if roleObj.ZipextractTo(strTempFileFullname, outdir) == False:

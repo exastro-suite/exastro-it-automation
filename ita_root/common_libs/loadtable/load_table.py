@@ -1804,8 +1804,8 @@ class loadTable():
                                 # 内部処理用
                                 if mode in ['input', 'export']:
                                     if jsonval is not None:
-                                        objcolumn = self.get_columnclass(jsonkey)
-                                        jsonval = util.ky_decrypt(jsonval)    # noqa: F405
+                                        result = objcolumn.get_values_by_key([jsonval])
+                                        jsonval = util.ky_decrypt(result.get(jsonval))# noqa: F405
                                 elif mode in ['inner']:
                                     if jsonval is not None:
                                         # base64した値をそのまま返却

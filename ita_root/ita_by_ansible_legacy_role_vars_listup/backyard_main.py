@@ -78,7 +78,8 @@ def backyard_main(organization_id, workspace_id):
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     g.applogger.debug("[Trace] Start extracting variables.")
     # RolePKG - Role 変数チェック
-    role_name_list, role_varmgr_dict = role_pkg_table.extract_variable()
+    tpl_varmng_dict = tpl_table.extract_variable()
+    role_name_list, role_varmgr_dict = role_pkg_table.extract_variable(tpl_varmng_dict)
 
     # Role名 登録・廃止
     role_name_table.register_and_discard(role_name_list)
@@ -92,7 +93,6 @@ def backyard_main(organization_id, workspace_id):
 
     # 作業実行時変数チェック（具体値を確認しTPFある場合は変数を追加する、作業対象ホストのインベントリファイル追加オプション）
     device_varmng_dict = device_table.extract_variable()
-    tpl_varmng_dict = tpl_table.extract_variable()
     mov_vars_dict = util.extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_dict, ws_db)
 
     # Movement変数 登録・廃止

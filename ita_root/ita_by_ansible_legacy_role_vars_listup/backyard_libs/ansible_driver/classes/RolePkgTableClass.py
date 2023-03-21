@@ -40,7 +40,7 @@ class RolePkgTable(TableBase):
         self.table_name = RolePkgTable.TABLE_NAME
         self.pkey = RolePkgTable.PKEY
 
-    def extract_variable(self):
+    def extract_variable(self, tpl_varmng_dict):
         """
         変数を抽出する（role_pkg）
 
@@ -77,14 +77,25 @@ class RolePkgTable(TableBase):
                 for role_name, role_vars in var_struct['Array_vars_list'].items():
                     varmgr = role_varmgr_dict[(role_name, role_pkg_id)]
                     for var_name, var_detail in role_vars.items():
-                        var_struct = var_detail
-                        item = Variable(var_name, var_attr, var_struct)
+                        array_var_struct = var_detail
+                        item = Variable(var_name, var_attr, array_var_struct)
                         varmgr.add_variable(item)
+
+                # テンプレート変数が使われている場合の変数抽出
+                for role_name, role_vars in var_struct['TPF_vars_list'].items():
+                    for file_path, file_vars in role_vars.items():
+                        for _, var_detail in file_vars.items():
+                            for tpl_var_name, _ in var_detail.items():
+                                if tpl_var_name in tpl_varmng_dict:
+                                    varmgr.merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
+                                else:
+                                    debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
+                                    g.applogger.debug(debug_msg)
 
             except Exception as e:
                 debug_msg = g.appmsg.get_log_message("BKY-30007", [role_pkg_id, role_pkg_name])
                 g.applogger.debug(debug_msg)
-                g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                g.applogger.debug(addline_msg('{} {}'.format(e, sys._getframe().f_code.co_name)))
                 type_, value, traceback_ = sys.exc_info()
                 msg = traceback.format_exception(type_, value, traceback_)
                 g.applogger.debug(msg)

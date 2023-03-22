@@ -65,7 +65,7 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
     if not hcl_setting:
         return retBool, msg, option,
 
-    # 「メニューグループ:メニュー:項目(menu_group_menu_item)」で選択したメニューが縦メニュー利用かどうかを判定
+    # 「メニューグループ:メニュー:項目(menu_group_menu_item)」で選択したメニューがバンドル利用かどうかを判定
     where_str = 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s'
     ret = objdbca.table_select(TFCLIConst.V_COLUMN_LIST, where_str, [menu_group_menu_item, 0])
     if not ret:
@@ -83,15 +83,15 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
     # 縦型フラグを取得
     vertical_flag = ret[0].get('VERTICAL')
 
-    # 縦メニュー利用である場合「代入順序(column_substitution_order)」の値があること、縦メニュー利用でない場合「代入順序(column_substitution_order)」の値がないことを判定
+    # バンドル利用である場合「代入順序(column_substitution_order)」の値があること、バンドル利用でない場合「代入順序(column_substitution_order)」の値がないことを判定
     if str(vertical_flag) == "0":
-        # 縦メニュー利用ではない(0)場合に、「代入順序(column_substitution_order)」に値があればバリデーションエラー
+        # バンドル利用ではない(0)場合に、「代入順序(column_substitution_order)」に値があればバリデーションエラー
         if column_substitution_order:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-80008")
             return retBool, msg, option,
     else:
-        # 縦メニュー利用(1)の場合に、「代入順序(column_substitution_order)」に値が無ければバリデーションエラー
+        # バンドル利用(1)の場合に、「代入順序(column_substitution_order)」に値が無ければバリデーションエラー
         if not column_substitution_order:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-80009")

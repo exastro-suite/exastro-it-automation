@@ -103,7 +103,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     last_updated_user_id = ret[0].get('LAST_UPDATE_USER')
     last_updated_user = users_list.get(last_updated_user_id)
 
-    # バンドル利用の有無を取得
+    # バンドルが有効かどうかを取得
     vertical = ret[0].get('VERTICAL')
 
     # ホストグループ利用の有無を取得
@@ -821,7 +821,7 @@ def _insert_t_menu_define(objdbca, menu_data):
         # loadTableの呼び出し
         objmenu = load_table.loadTable(objdbca, 'menu_definition_list')  # noqa: F405
 
-        # バンドル利用有無のkeyが無い場合はFalseを指定
+        # バンドルのkeyが無い場合はFalseを指定
         vertical = menu_data.get('vertical')
         if not vertical:
             vertical = "False"
@@ -842,7 +842,7 @@ def _insert_t_menu_define(objdbca, menu_data):
                 "description_ja": menu_data.get('description'),  # 説明(ja)
                 "description_en": menu_data.get('description'),  # 説明(en)
                 "remarks": menu_data.get('remarks'),  # 備考
-                "vertical": vertical,  # バンドル利用有無
+                "vertical": vertical,  # バンドル有無
                 "hostgroup": hostgroup,  # ホストグループ利用有無
                 "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                 "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
@@ -902,12 +902,12 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         menu_name_en = menu_data.get('menu_name')
         menu_name_rest = menu_data.get('menu_name_rest')
 
-        # 「シートタイプ」「バンドル利用」「ホストグループ利用」を取得
+        # 「シートタイプ」「バンドル」「ホストグループ」を取得
         sheet_type = str(menu_data.get('sheet_type'))
         vertical = menu_data.get('vertical')
         hostgroup = menu_data.get('hostgroup')
 
-        # バンドル利用有無のkeyが無い場合はFalseを指定
+        # バンドル有無のkeyが無い場合はFalseを指定
         if not vertical:
             vertical = "False"
 
@@ -964,7 +964,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
                     "description_ja": menu_data.get('description'),  # 説明(ja)
                     "description_en": menu_data.get('description'),  # 説明(en)
                     "remarks": menu_data.get('remarks'),  # 備考
-                    "vertical": vertical,  # バンドル利用有無
+                    "vertical": vertical,  # バンドル有無
                     "hostgroup": hostgroup,  # ホストグループ利用有無
                     "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                     "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
@@ -983,7 +983,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
                     "description_ja": menu_data.get('description'),  # 説明(ja)
                     "description_en": menu_data.get('description'),  # 説明(en)
                     "remarks": menu_data.get('remarks'),  # 備考
-                    "vertical": vertical,  # バンドル利用有無
+                    "vertical": vertical,  # バンドル有無
                     "hostgroup": hostgroup,  # ホストグループ利用有無
                     "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                     "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
@@ -1907,7 +1907,7 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         # シートタイプのIDを取得
         sheet_type_name = menu_data.get('sheet_type')
 
-        # バンドル利用を取得
+        # バンドル有無を取得
         vertical = menu_data.get('vertical')
 
         # ホストグループ利用を取得
@@ -1928,9 +1928,9 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         if sheet_id == "3" and not column_data_list:
             raise Exception("499-00714", [])  # シートタイプが「パラメータシート（オペレーションあり）」の場合、項目数が0件のメニューを作成できません。
 
-        # 「バンドル利用」かつ、登録する項目が無い場合エラー判定
+        # 「バンドル」有効かつ、登録する項目が無い場合エラー判定
         if vertical == "True" and not column_data_list:
-            raise Exception("499-00712", [])  # 「バンドル利用」の場合、項目数が0件のメニューを作成できません。
+            raise Exception("499-00712", [])  # 「バンドル」が有効の場合、項目数が0件のメニューを作成できません。
 
         # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
         if sheet_id == "2" and hostgroup == "True":

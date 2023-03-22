@@ -227,22 +227,18 @@ This variable name is written in a Playbook.
 　　　- unarchive src={{ CPF_sample }} dest=/usr/local/bin remote_src=yes','0','1','0','0','1','1','1','1','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('20106','20106','T_ANSC_TEMPLATE_FILE',NULL,'template_id','Playbookで使用するテンプレートファイルをメンテナンス(閲覧/登録/更新/廃止)できます。
 
-テンプレートファイル内の変数には接頭文字として「VAR_」を付与して下さい。
-接頭文字が「VAR_」の変数が、代入値管理メニューにて選択可能になります。
-(例) {{ VAR_TEST }}','You can perform maintenance (view/register/update/discard) the template file in the Playbook.
+テンプレートファイル内で変数を使用している場合、変数定義にyaml形式で変数を記述してください。
+変数の具体値は不要です。
+変数定義に定義した変数は、代入値自動登録メニューにて選択可能になります。','You can perform maintenance (view/register/update/discard) the template file in the Playbook.
 
-Assign “VAR_\" as a prefix string for the variable of template file.
-Variables with prefix string \"VAR_\" can be selected from substitution value list.
-(Example) {{ VAR_TEST }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
+If using variables within template files, make sure that the Variables are written in YAML format in the Variable definition.The Variables does not require specific values.The variables defined under the Variable definitions can be selected under the Substitute value auto registration menu.','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(20106,_____DATE_____,'INSERT','20106','20106','T_ANSC_TEMPLATE_FILE',NULL,'template_id','Playbookで使用するテンプレートファイルをメンテナンス(閲覧/登録/更新/廃止)できます。
 
-テンプレートファイル内の変数には接頭文字として「VAR_」を付与して下さい。
-接頭文字が「VAR_」の変数が、代入値管理メニューにて選択可能になります。
-(例) {{ VAR_TEST }}','You can perform maintenance (view/register/update/discard) the template file in the Playbook.
+テンプレートファイル内で変数を使用している場合、変数定義にyaml形式で変数を記述してください。
+変数の具体値は不要です。
+変数定義に定義した変数は、代入値自動登録メニューにて選択可能になります。','You can perform maintenance (view/register/update/discard) the template file in the Playbook.
 
-Assign “VAR_\" as a prefix string for the variable of template file.
-Variables with prefix string \"VAR_\" can be selected from substitution value list.
-(Example) {{ VAR_TEST }}','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
+If using variables within template files, make sure that the Variables are written in YAML format in the Variable definition.The Variables does not require specific values.The variables defined under the Variable definitions can be selected under the Substitute value auto registration menu.','0','1','0','0','1','1','1','1','0','["T_ANSC_COMVRAS_USLIST","T_COMN_PROC_LOADED_LIST"]',NULL,NULL,'external_valid_menu_after',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('20107','20107','T_ANSC_COMVRAS_USLIST',NULL,'no','テンプレート管理、ファイル管理、グローバル管理に登録されている変数をどの素材(ロール)で使用しているかを閲覧できます。','Users can see the what materials (Roles) are used by variables registered in the Template list, File list and Global list.','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(20107,_____DATE_____,'INSERT','20107','20107','T_ANSC_COMVRAS_USLIST',NULL,'no','テンプレート管理、ファイル管理、グローバル管理に登録されている変数をどの素材(ロール)で使用しているかを閲覧できます。','Users can see the what materials (Roles) are used by variables registered in the Template list, File list and Global list.','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('20108','20108','T_ANSC_UNMANAGED_VARLIST',NULL,'no','ロールパッケージ管理のデフォルト変数定義やテンプレート管理の変数定義で定義している変数で、代入値自動登録の変数一覧に表示したくない変数をメンテナンス(参照/更新/廃止/復活)できます。
@@ -1371,57 +1367,57 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010604','20106','変数定義','Variable definition','variable_definition',NULL,'2',40,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'VARS_LIST',NULL,'0','1','1','0','0','1','0',NULL,'{
 "min_length": 0,
 "max_length": 4000
-}',NULL,NULL,NULL,'テンプレート素材で使用している変数(VAR_)の構造をYAML形式で定義します。
+}',NULL,NULL,NULL,'テンプレート素材で使用している変数の構造をYAML形式で定義します。
 変数の構造は以下の３種類で定義可能です。
 ・変数名に対して具体値を１つ定義できる変数
     例
-  　　VAR_sample: 
+  　　sample: 
 ・変数名に対して具体値を複数定義できる変数
     例
-    　VAR_sample: []
+    　sample: []
 ・階層化された変数
     例
-      VAR_sample:
+      sample:
         name: 
-        value:','Define the structure of the variable (VAR_) used in Template file in YAML format.
+        value:','Define the structure of the variable used in Template file in YAML format.
 The structure of variables can be defined by the following three types.
 ・Variable that can define one specific value for variable name.
     exp)
-  　　VAR_sample:
+  　　sample:
 ・Variable that can define multiple concrete values for variable name.
     exp)
-    　VAR_sample: []
+      sample: []
 ・Nested variable.
     exp)
-      VAR_sample:
+      sample:
         name:
         value:',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2010604,_____DATE_____,'INSERT','2010604','20106','変数定義','Variable definition','variable_definition',NULL,'2',40,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'VARS_LIST',NULL,'0','1','1','0','0','1','0',NULL,'{
 "min_length": 0,
 "max_length": 4000
-}',NULL,NULL,NULL,'テンプレート素材で使用している変数(VAR_)の構造をYAML形式で定義します。
+}',NULL,NULL,NULL,'テンプレート素材で使用している変数の構造をYAML形式で定義します。
 変数の構造は以下の３種類で定義可能です。
 ・変数名に対して具体値を１つ定義できる変数
     例
-  　　VAR_sample: 
+  　　sample: 
 ・変数名に対して具体値を複数定義できる変数
     例
-    　VAR_sample: []
+    　sample: []
 ・階層化された変数
     例
-      VAR_sample:
+      sample:
         name: 
-        value:','Define the structure of the variable (VAR_) used in Template file in YAML format.
+        value:','Define the structure of the variable used in Template file in YAML format.
 The structure of variables can be defined by the following three types.
 ・Variable that can define one specific value for variable name.
     exp)
-  　　VAR_sample:
+  　　sample:
 ・Variable that can define multiple concrete values for variable name.
     exp)
-    　VAR_sample: []
+      sample: []
 ・Nested variable.
     exp)
-      VAR_sample:
+      sample:
         name:
         value:',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010605','20106','変数定義解析結果','Variable definition analysis result','variable_definition_analysis_result',NULL,'2',50,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'VAR_STRUCT_ANAL_JSON_STRING',NULL,'0','2','0','0','0','1','0',NULL,'{

@@ -150,14 +150,14 @@ def menu_define_valid(objdbca, objtable, option):
             msg = g.appmsg.get_api_message("MSG-20006", [])
             return retBool, msg, option
 
-        # ---------バンドル利用---------
-        # バンドル利用が設定されている場合、エラー
+        # ---------バンドル---------
+        # バンドルが有効の場合、エラー
         vertical = entry_parameter.get("vertical")
         if vertical == '1':
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20007", [])
             return retBool, msg, option
-        # ---------バンドル利用---------
+        # ---------バンドル---------
 
     # 作成対象で「パラメータシート(ホスト/オペレーションあり)」を選択
     elif sheet_type == "1":

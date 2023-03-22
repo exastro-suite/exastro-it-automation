@@ -201,7 +201,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         # シートタイプを取得
         sheet_type = str(record_t_menu_define.get('SHEET_TYPE'))
 
-        # バンドル利用の有無を取得
+        # バンドルの有無を取得
         vertical_flag = True if str(record_t_menu_define.get('VERTICAL')) == "1" else False
 
         # ホストグループ利用の有無を取得
@@ -228,10 +228,10 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             create_view_name_jnl = 'V_CMDB_' + str(menu_create_id) + '_JNL'
 
             if vertical_flag:
-                # パラメータシート(バンドル利用あり)用テーブル作成SQL
+                # パラメータシート(バンドルが有効)用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb_vertical.sql"
 
-                # 「バンドル利用あり」かつ「項目が0件」の場合はエラー判定
+                # 「バンドル」が有効かつ「項目が0件」の場合はエラー判定
                 if not record_t_menu_column:
                     msg = g.appmsg.get_log_message("BKY-20214", [])
                     raise Exception(msg)
@@ -276,7 +276,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             create_view_name_jnl = 'V_CMDB_' + str(menu_create_id) + '_JNL'
 
             if vertical_flag:
-                # パラメータシート(バンドル利用あり)用テーブル作成SQL
+                # パラメータシート(バンドルが有効)用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb_vertical.sql"
             else:
                 # パラメータシート用テーブル作成SQL
@@ -722,7 +722,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             sheet_type: シートタイプ
-            vertical_flag: バンドル利用の有無
+            vertical_flag: バンドル有無
             file_upload_only_flag: Trueの場合、シートタイプを「4: パラメータシート(ファイルアップロードあり)」とする
             create_table_name: 作成した対象のテーブル名
             create_view_name: 作成した対象のビュー名
@@ -767,7 +767,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             unique_constraint = str(record_t_menu_unique_constraint.get('UNIQUE_CONSTRAINT_ITEM'))
 
         # シートタイプが「1:パラメータシート（ホスト/オペレーションあり）」の場合は、「ホスト/オペレーション」の一意制約(複数項目)を追加(対象メニューグループが「入力用」の場合のみ)
-        # また、バンドル利用がある場合は「ホスト/オペレーション/代入順序」の一意制約(複数項目)を追加する。
+        # また、バンドルが有効場合は「ホスト/オペレーション/代入順序」の一意制約(複数項目)を追加する。
         if menu_group_col_name == "MENU_GROUP_ID_INPUT" and sheet_type == "1":
             if unique_constraint:
                 tmp_unique_constraint = json.loads(unique_constraint)
@@ -786,7 +786,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 else:
                     unique_constraint = '[["operation_name_select", "host_name"]]'
 
-        # シートタイプが「3: パラメータシート（オペレーションあり）」かつバンドル利用がある場合は「オペレーション/代入順序」の一意制約(複数項目)を追加する。
+        # シートタイプが「3: パラメータシート（オペレーションあり）」かつバンドルが有効の場合は「オペレーション/代入順序」の一意制約(複数項目)を追加する。
         if menu_group_col_name == "MENU_GROUP_ID_INPUT" and sheet_type == "3":
             if unique_constraint:
                 tmp_unique_constraint = json.loads(unique_constraint)
@@ -960,7 +960,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             sheet_type: シートタイプ
-            vertical_flag: バンドル利用の有無
+            vertical_flag: バンドル有無
             menu_uuid: パラメータシート作成の対象となる「メニュー管理」のレコードのID
             input_menu_uuid: パラメータシート作成の対象となる「メニュー管理」のレコードのID（「入力用」メニューグループに作成したもの）
             dict_t_comn_column_group: 「カラムグループ管理」のレコードのidをkeyにしたdict
@@ -1108,7 +1108,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             if not res_valid:
                 raise Exception(msg)
 
-            # シートタイプが「3: パラメータシート（オペレーションあり）」かつバンドル利用ではない場合のみ、一意制約をTrueにする。
+            # シートタイプが「3: パラメータシート（オペレーションあり）」かつバンドルが有効場合のみ、一意制約をTrueにする。
             if sheet_type == "3" and not vertical_flag:
                 unique_item = 1
             else:
@@ -1378,7 +1378,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
-            # バンドル利用ありの場合のみ「代入順序」用のレコードを作成
+            # バンドルが有効の場合のみ「代入順序」用のレコードを作成
             if vertical_flag:
                 res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "input_order")
                 if not res_valid:

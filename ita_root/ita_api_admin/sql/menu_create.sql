@@ -7,8 +7,8 @@ CREATE TABLE T_MENU_DEFINE
     MENU_NAME_REST                  VARCHAR(255),                               -- メニュー名_REST
     SHEET_TYPE                      VARCHAR(2) ,                                -- シートタイプ
     DISP_SEQ                        INT,                                        -- 表示順序
-    VERTICAL                        VARCHAR(2) ,                                -- バンドル利用
-    HOSTGROUP                       VARCHAR(2) ,                                -- ホストグループ利用
+    VERTICAL                        VARCHAR(2) ,                                -- バンドル
+    HOSTGROUP                       VARCHAR(2) ,                                -- ホストグループ
     MENU_GROUP_ID_INPUT             VARCHAR(40),                                -- 入力用メニューグループ
     MENU_GROUP_ID_SUBST             VARCHAR(40),                                -- 代入値自動登録用メニューグループ
     MENU_GROUP_ID_REF               VARCHAR(40),                                -- 参照用メニューグループ
@@ -33,8 +33,8 @@ CREATE TABLE T_MENU_DEFINE_JNL
     MENU_NAME_REST                  VARCHAR(255),                               -- メニュー名_REST
     SHEET_TYPE                      VARCHAR(2) ,                                -- シートタイプ
     DISP_SEQ                        INT,                                        -- 表示順序
-    VERTICAL                        VARCHAR(2) ,                                -- バンドル利用
-    HOSTGROUP                       VARCHAR(2) ,                                -- ホストグループ利用
+    VERTICAL                        VARCHAR(2) ,                                -- バンドル
+    HOSTGROUP                       VARCHAR(2) ,                                -- ホストグループ
     MENU_GROUP_ID_INPUT             VARCHAR(40),                                -- 入力用メニューグループ
     MENU_GROUP_ID_SUBST             VARCHAR(40),                                -- 代入値自動登録用メニューグループ
     MENU_GROUP_ID_REF               VARCHAR(40),                                -- 参照用メニューグループ

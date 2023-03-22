@@ -21,7 +21,7 @@ from common_libs.common import *  # noqa: F403
 
 def backyard_main(organization_id, workspace_id):
     """
-        メニュー作成機能backyardメイン処理
+        パラメータシート作成機能backyardメイン処理
         ARGS:
             organization_id: Organization ID
             workspace_id: Workspace ID
@@ -33,12 +33,12 @@ def backyard_main(organization_id, workspace_id):
     g.applogger.debug(debug_msg)
 
     # テーブル名
-    t_menu_create_history = 'T_MENU_CREATE_HISTORY'  # メニュー作成履歴
+    t_menu_create_history = 'T_MENU_CREATE_HISTORY'  # パラメータシート作成履歴
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # 「メニュー作成履歴」から「実行中(ID:2)」のレコードを取得
+    # 「パラメータシート作成履歴」から「実行中(ID:2)」のレコードを取得
     ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [2, 0])
 
     # ステータス「実行中」の対象がある場合、なんらかの原因で「実行中」のまま止まってしまった対象であるため、「4:完了(異常)」に更新する。
@@ -47,7 +47,7 @@ def backyard_main(organization_id, workspace_id):
         menu_create_id = str(record.get('MENU_CREATE_ID'))
         create_type = str(record.get('CREATE_TYPE'))
 
-        # 「メニュー作成履歴」ステータスを「4:完了(異常)」に更新
+        # 「パラメータシート作成履歴」ステータスを「4:完了(異常)」に更新
         objdbca.db_transaction_start()
         status_id = 4
         result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
@@ -57,7 +57,7 @@ def backyard_main(organization_id, workspace_id):
             continue
         objdbca.db_transaction_end(True)
 
-    # 「メニュー作成履歴」から「未実行(ID:1)」のレコードを取得
+    # 「パラメータシート作成履歴」から「未実行(ID:1)」のレコードを取得
     ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [1, 0])
 
     # 0件なら処理を終了
@@ -74,7 +74,7 @@ def backyard_main(organization_id, workspace_id):
         menu_create_id = str(record.get('MENU_CREATE_ID'))
         create_type = str(record.get('CREATE_TYPE'))
 
-        # 「メニュー作成履歴」ステータスを「2:実行中」に更新
+        # 「パラメータシート作成履歴」ステータスを「2:実行中」に更新
         objdbca.db_transaction_start()
         status_id = "2"
         result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
@@ -115,7 +115,7 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(debug_msg)
             objdbca.db_transaction_end(False)
 
-            # 「メニュー作成履歴」ステータスを「4:完了(異常)」に更新
+            # 「パラメータシート作成履歴」ステータスを「4:完了(異常)」に更新
             objdbca.db_transaction_start()
             status_id = 4
             result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
@@ -127,7 +127,7 @@ def backyard_main(organization_id, workspace_id):
 
             continue
 
-        # 「メニュー定義一覧」の対象レコードの「メニュー作成状態」を「2: 作成済み」に変更
+        # 「パラメータシート定義一覧」の対象レコードの「パラメータシート作成状態」を「2: 作成済み」に変更
         menu_create_done_status_id = "2"
         result, msg = _update_t_menu_define(objdbca, menu_create_id, menu_create_done_status_id)
         if not result:
@@ -145,7 +145,7 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.debug(debug_msg)
         objdbca.db_transaction_end(True)
 
-        # 「メニュー作成履歴」ステータスを「3:完了」に更新
+        # 「パラメータシート作成履歴」ステータスを「3:完了」に更新
         objdbca.db_transaction_start()
         status_id = 3
         result, msg = _update_t_menu_create_history(objdbca, history_id, status_id)
@@ -163,10 +163,10 @@ def backyard_main(organization_id, workspace_id):
 
 def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
     """
-        メニュー作成実行
+        パラメータシート作成実行
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            menu_create_id: メニュー作成の対象となる「メニュー定義一覧」のレコードのID
+            menu_create_id: パラメータシート作成の対象となる「パラメータシート定義一覧」のレコードのID
             create_type: 「新規作成(create_new」「初期化(initialize)」「編集(edit)」のいずれか
         RETRUN:
             boolean, msg
@@ -175,7 +175,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
     t_comn_column_group = 'T_COMN_COLUMN_GROUP'
 
     try:
-        # メニュー作成用の各テーブルからレコードを取得
+        # パラメータシート作成用の各テーブルからレコードを取得
         debug_msg = g.appmsg.get_log_message("BKY-20007", [])
         g.applogger.debug(debug_msg)
         result, \
@@ -201,7 +201,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         # シートタイプを取得
         sheet_type = str(record_t_menu_define.get('SHEET_TYPE'))
 
-        # 縦メニュー利用の有無を取得
+        # バンドル利用の有無を取得
         vertical_flag = True if str(record_t_menu_define.get('VERTICAL')) == "1" else False
 
         # ホストグループ利用の有無を取得
@@ -228,10 +228,10 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             create_view_name_jnl = 'V_CMDB_' + str(menu_create_id) + '_JNL'
 
             if vertical_flag:
-                # パラメータシート(縦メニュー利用あり)用テーブル作成SQL
+                # パラメータシート(バンドル利用あり)用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb_vertical.sql"
 
-                # 「縦メニュー利用あり」かつ「項目が0件」の場合はエラー判定
+                # 「バンドル利用あり」かつ「項目が0件」の場合はエラー判定
                 if not record_t_menu_column:
                     msg = g.appmsg.get_log_message("BKY-20214", [])
                     raise Exception(msg)
@@ -276,7 +276,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             create_view_name_jnl = 'V_CMDB_' + str(menu_create_id) + '_JNL'
 
             if vertical_flag:
-                # パラメータシート(縦メニュー利用あり)用テーブル作成SQL
+                # パラメータシート(バンドル利用あり)用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb_vertical.sql"
             else:
                 # パラメータシート用テーブル作成SQL
@@ -421,7 +421,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             if not result:
                 raise Exception(msg)
 
-            # 「メニュー定義-テーブル紐付管理」にレコードを登録
+            # 「パラメータシート定義-テーブル紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20016", [target_menu_group_type])
             g.applogger.debug(debug_msg)
             result, msg = _insert_t_menu_table_link(objdbca, menu_uuid, create_table_name, create_table_name_jnl)
@@ -463,34 +463,34 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
 
 def _collect_menu_create_data(objdbca, menu_create_id):
     """
-        メニュー作成対象の必要レコードををすべて取得する
+        パラメータシート作成対象の必要レコードををすべて取得する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            menu_create_id: メニュー作成の対象となる「メニュー定義一覧」のレコードのID
+            menu_create_id: パラメータシート作成の対象となる「パラメータシート定義一覧」のレコードのID
         RETRUN:
             result,
             msg,
-            record_t_menu_define, # 「メニュー定義一覧」から対象のレコード(1件)
+            record_t_menu_define, # 「パラメータシート定義一覧」から対象のレコード(1件)
             record_t_menu_column_group, # 「カラムグループ作成情報」のレコード(全件)
-            record_t_menu_column, # 「メニュー項目作成情報」から対象のレコード(複数)
+            record_t_menu_column, # 「パラメータシート項目作成情報」から対象のレコード(複数)
             record_t_menu_unique_constraint, #「一意制約(複数項目)作成情報」からレコード(1件)
-            record_t_menu_role, # 「メニューロール作成情報」から対象のレコード(複数)
+            record_t_menu_role, # 「パラメータシートロール作成情報」から対象のレコード(複数)
             record_t_menu_other_link # 「他メニュー連携」のレコード(全件)
             record_v_menu_reference_item # 「参照項目情報」のレコード(全件)
             record_v_parameter_sheet_reference #「パラメータシート参照」選択対象のレコード(全件)
     """
     # テーブル/ビュー名
-    t_menu_define = 'T_MENU_DEFINE'  # メニュー定義一覧
+    t_menu_define = 'T_MENU_DEFINE'  # パラメータシート定義一覧
     t_menu_column_group = 'T_MENU_COLUMN_GROUP'  # カラムグループ作成情報
-    t_menu_column = 'T_MENU_COLUMN'  # メニュー項目作成情報
+    t_menu_column = 'T_MENU_COLUMN'  # パラメータシート項目作成情報
     t_menu_unique_constraint = 'T_MENU_UNIQUE_CONSTRAINT'  # 一意制約(複数項目)作成情報
-    t_menu_role = 'T_MENU_ROLE'  # メニューロール作成情報
+    t_menu_role = 'T_MENU_ROLE'  # パラメータシートロール作成情報
     t_menu_other_link = 'T_MENU_OTHER_LINK'  # 他メニュー連携
     v_menu_reference_item = 'V_MENU_REFERENCE_ITEM'  # 参照項目情報(VIEW)
     v_parameter_sheet_reference = 'V_MENU_PARAMETER_SHEET_REFERENCE_ITEM'  # パラメータシート参照選択項目(VIEW)
 
     try:
-        # 「メニュー定義一覧」から対象のレコードを取得
+        # 「パラメータシート定義一覧」から対象のレコードを取得
         record_t_menu_define = objdbca.table_select(t_menu_define, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         if not record_t_menu_define:
             msg = g.appmsg.get_log_message("BKY-20203", [menu_create_id])
@@ -500,7 +500,7 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         # 「カラムグループ作成情報」から全てのレコードを取得
         record_t_menu_column_group = objdbca.table_select(t_menu_column_group, 'WHERE DISUSE_FLAG = %s', [0])
 
-        # 「メニュー項目作成情報」から対象のレコードを取得
+        # 「パラメータシート項目作成情報」から対象のレコードを取得
         record_t_menu_column = objdbca.table_select(t_menu_column, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [menu_create_id, 0])  # noqa: E501
 
         # 「一意制約(複数項目)作成情報」から対象のレコードを取得
@@ -508,7 +508,7 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         if record_t_menu_unique_constraint:
             record_t_menu_unique_constraint = record_t_menu_unique_constraint[0]
 
-        # 「メニューロール作成情報」から対象のレコードを取得
+        # 「パラメータシートロール作成情報」から対象のレコードを取得
         record_t_menu_role = objdbca.table_select(t_menu_role, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         if not record_t_menu_role:
             msg = g.appmsg.get_log_message("BKY-20204", [])
@@ -535,9 +535,9 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             sheet_type: シートタイプ
-            record_t_menu_define: 「メニュー定義一覧」の対象のレコード
+            record_t_menu_define: 「パラメータシート定義一覧」の対象のレコード
             menu_group_col_name: 対象メニューグループ名
-            record_t_menu_column: 「メニュー項目作成情報」の対象のレコード一覧
+            record_t_menu_column: 「パラメータシート項目作成情報」の対象のレコード一覧
         RETRUN:
             boolean, msg, ret_data
     """
@@ -608,9 +608,9 @@ def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, men
         「メニュー管理」の対象レコードを更新。対象が無ければレコードを新規登録する。
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            record_t_menu_define: 「メニュー定義一覧」の対象のレコード
+            record_t_menu_define: 「パラメータシート定義一覧」の対象のレコード
             menu_group_col_name: 対象メニューグループ名
-            record_t_menu_column: 「メニュー項目作成情報」の対象のレコード一覧
+            record_t_menu_column: 「パラメータシート項目作成情報」の対象のレコード一覧
         RETRUN:
             result, msg, ret_data
     """
@@ -722,12 +722,12 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             sheet_type: シートタイプ
-            vertical_flag: 縦メニュー利用の有無
+            vertical_flag: バンドル利用の有無
             file_upload_only_flag: Trueの場合、シートタイプを「4: パラメータシート(ファイルアップロードあり)」とする
             create_table_name: 作成した対象のテーブル名
             create_view_name: 作成した対象のビュー名
             menu_uuid: 対象のメニュー（「メニュー管理」のレコード）のUUID
-            record_t_menu_define: 「メニュー定義一覧」の対象のレコード
+            record_t_menu_define: 「パラメータシート定義一覧」の対象のレコード
             record_t_menu_unique_constraint: 「一意制約(複数項目)作成情報」の対象のレコード
             menu_group_col_name: 対象メニューグループ名
         RETRUN:
@@ -767,7 +767,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             unique_constraint = str(record_t_menu_unique_constraint.get('UNIQUE_CONSTRAINT_ITEM'))
 
         # シートタイプが「1:パラメータシート（ホスト/オペレーションあり）」の場合は、「ホスト/オペレーション」の一意制約(複数項目)を追加(対象メニューグループが「入力用」の場合のみ)
-        # また、縦メニュー利用がある場合は「ホスト/オペレーション/代入順序」の一意制約(複数項目)を追加する。
+        # また、バンドル利用がある場合は「ホスト/オペレーション/代入順序」の一意制約(複数項目)を追加する。
         if menu_group_col_name == "MENU_GROUP_ID_INPUT" and sheet_type == "1":
             if unique_constraint:
                 tmp_unique_constraint = json.loads(unique_constraint)
@@ -786,7 +786,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 else:
                     unique_constraint = '[["operation_name_select", "host_name"]]'
 
-        # シートタイプが「3: パラメータシート（オペレーションあり）」かつ縦メニュー利用がある場合は「オペレーション/代入順序」の一意制約(複数項目)を追加する。
+        # シートタイプが「3: パラメータシート（オペレーションあり）」かつバンドル利用がある場合は「オペレーション/代入順序」の一意制約(複数項目)を追加する。
         if menu_group_col_name == "MENU_GROUP_ID_INPUT" and sheet_type == "3":
             if unique_constraint:
                 tmp_unique_constraint = json.loads(unique_constraint)
@@ -960,12 +960,12 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             sheet_type: シートタイプ
-            vertical_flag: 縦メニュー利用の有無
-            menu_uuid: メニュー作成の対象となる「メニュー管理」のレコードのID
-            input_menu_uuid: メニュー作成の対象となる「メニュー管理」のレコードのID（「入力用」メニューグループに作成したもの）
+            vertical_flag: バンドル利用の有無
+            menu_uuid: パラメータシート作成の対象となる「メニュー管理」のレコードのID
+            input_menu_uuid: パラメータシート作成の対象となる「メニュー管理」のレコードのID（「入力用」メニューグループに作成したもの）
             dict_t_comn_column_group: 「カラムグループ管理」のレコードのidをkeyにしたdict
             dict_t_menu_column_group: 「カラムグループ作成情報」のレコードのidをkeyにしたdict
-            record_t_menu_column:「メニュー項目作成情報」の対象のレコード一覧
+            record_t_menu_column:「パラメータシート項目作成情報」の対象のレコード一覧
             dict_t_menu_other_link: 「他メニュー連携」のレコードのidをkeyにしたdict
             record_v_menu_reference_item: 「参照項目情報」のレコード一覧
             record_v_parameter_sheet_reference: 「パラメータシート参照」の選択項目のレコード一覧
@@ -1108,7 +1108,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             if not res_valid:
                 raise Exception(msg)
 
-            # シートタイプが「3: パラメータシート（オペレーションあり）」かつ縦メニュー利用ではない場合のみ、一意制約をTrueにする。
+            # シートタイプが「3: パラメータシート（オペレーションあり）」かつバンドル利用ではない場合のみ、一意制約をTrueにする。
             if sheet_type == "3" and not vertical_flag:
                 unique_item = 1
             else:
@@ -1378,7 +1378,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 表示順序を加算
             disp_seq_num = int(disp_seq_num) + 10
 
-            # 縦メニュー利用ありの場合のみ「代入順序」用のレコードを作成
+            # バンドル利用ありの場合のみ「代入順序」用のレコードを作成
             if vertical_flag:
                 res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "input_order")
                 if not res_valid:
@@ -1439,7 +1439,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             raise Exception(msg)
         param_col_group_id = ret[0].get('COL_GROUP_ID')
 
-        # 「メニュー作成機能で作成した項目」の対象の数だけループスタート
+        # 「パラメータシート作成機能で作成した項目」の対象の数だけループスタート
         for record in record_t_menu_column:
             column_name_rest = record.get('COLUMN_NAME_REST')
             column_class = str(record.get('COLUMN_CLASS'))
@@ -1558,7 +1558,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             else:
                 col_group_id = param_col_group_id
 
-            # 「メニュー作成機能で作成した項目」用のレコードを作成
+            # 「パラメータシート作成機能で作成した項目」用のレコードを作成
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, column_name_rest)
             if not res_valid:
                 raise Exception(msg)
@@ -1682,7 +1682,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                             # 表示順序を加算
                             disp_seq_num = int(disp_seq_num) + 10
 
-        # 「メニュー作成機能で作成した項目」が0件の場合、特殊な項目を作成
+        # 「パラメータシート作成機能で作成した項目」が0件の場合、特殊な項目を作成
         if not record_t_menu_column:
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "no_item")
             if not res_valid:
@@ -1944,10 +1944,10 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
 
 def _update_t_menu_define(objdbca, menu_create_id, menu_create_done_status_id):
     """
-        「メニュー定義一覧」メニューのレコードを更新する
+        「パラメータシート定義一覧」メニューのレコードを更新する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            menu_create_id: 対象の「メニュー定義一覧」のレコードのUUID
+            menu_create_id: 対象の「パラメータシート定義一覧」のレコードのUUID
             menu_create_done_status_id: 作成状態のID「1:未作成」,「2:作成済み」
         RETRUN:
             result, msg
@@ -1974,7 +1974,7 @@ def _update_t_menu_define(objdbca, menu_create_id, menu_create_done_status_id):
 
 def _insert_t_menu_table_link(objdbca, menu_uuid, create_table_name, create_table_name_jnl):
     """
-        「メニュー定義-テーブル紐付管理」メニューのテーブルにレコードを追加する
+        「パラメータシート定義-テーブル紐付管理」メニューのテーブルにレコードを追加する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             menu_uuid: 対象のメニュー（「メニュー管理」のレコード）のUUID
@@ -2012,7 +2012,7 @@ def _insert_t_menu_other_link(objdbca, menu_uuid, create_table_name, record_t_me
             objdbca: DB接クラス DBConnectWs()
             menu_uuid: 対象のメニュー（「メニュー管理」のレコード）のUUID
             create_table_name: 作成した対象のテーブル名
-            record_t_menu_column: 「メニュー項目作成情報」の対象のレコード一覧
+            record_t_menu_column: 「パラメータシート項目作成情報」の対象のレコード一覧
         RETRUN:
             result, msg
     """
@@ -2081,7 +2081,7 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
             objdbca: DB接クラス DBConnectWs()
             menu_uuid: 対象のメニュー（「メニュー管理」のレコード）のUUID
             create_table_name: 作成した対象のテーブル名
-            record_t_menu_column: 「メニュー項目作成情報」の対象のレコード一覧
+            record_t_menu_column: 「パラメータシート項目作成情報」の対象のレコード一覧
         RETRUN:
             result, msg
     """
@@ -2102,7 +2102,7 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
             disp_seq_num = 10
             for column_record in record_t_menu_column:
                 column_name_rest = column_record.get('COLUMN_NAME_REST')
-                # 「他メニュー連携」のカラム名(rest)と「メニュー項目作成情報」のカラム名(rest)が同一の場合はスキップ
+                # 「他メニュー連携」のカラム名(rest)と「パラメータシート項目作成情報」のカラム名(rest)が同一の場合はスキップ
                 if other_menu_link_column_name_rest == column_name_rest:
                     continue
 
@@ -2156,7 +2156,7 @@ def _update_t_menu_create_history(objdbca, history_id, status_id):
         「メニュー管理」の対象レコードを更新。対象が無ければレコードを新規登録する。
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            history_id: 「メニュー作成履歴」対象レコードのUUID
+            history_id: 「パラメータシート作成履歴」対象レコードのUUID
             status_id: ステータスID(1:未実施, 2:実行中, 3:完了, 4:完了(異常))
         RETRUN:
             result, msg, ret_data
@@ -2164,7 +2164,7 @@ def _update_t_menu_create_history(objdbca, history_id, status_id):
     # テーブル名
     t_menu_create_history = 'T_MENU_CREATE_HISTORY'
     try:
-        # 「メニュー作成履歴」の対象レコードのステータスを更新
+        # 「パラメータシート作成履歴」の対象レコードのステータスを更新
         data_list = {
             "HISTORY_ID": history_id,
             "STATUS_ID": status_id,
@@ -2182,7 +2182,7 @@ def _create_validate_option(record):
     """
         「メニュー-カラム紐付管理」メニューのテーブルにレコードを追加する際のvalidate_optionの値を生成する。
         ARGS:
-            record: 「メニュー項目作成情報」のレコード
+            record: 「パラメータシート項目作成情報」のレコード
         RETRUN:
             boolean, msg, validate_option, validate_regular_expression
     """
@@ -2258,7 +2258,7 @@ def _create_initial_value(record):
     """
         「メニュー-カラム紐付管理」メニューのテーブルにレコードを追加する際のinitial_valueの値を生成する。
         ARGS:
-            record: 「メニュー項目作成情報」のレコード
+            record: 「パラメータシート項目作成情報」のレコード
         RETRUN:
             boolean, msg, initial_value
     """
@@ -2304,7 +2304,7 @@ def _check_column_validation(objdbca, menu_uuid, column_name_rest):
 
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            menu_uuid: メニュー作成の対象となる「メニュー管理」のレコードのID
+            menu_uuid: パラメータシート作成の対象となる「メニュー管理」のレコードのID
             column_name_rest: カラム名(rest)
         RETRUN:
             boolean, msg, column_definition_id
@@ -2334,7 +2334,7 @@ def _format_column_group_data(record_t_menu_column_group, record_t_menu_column):
         カラムグループ登録の処理に必要な形式(idをkeyにしたdict型)にフォーマット
         ARGS:
             record_t_menu_column_group: 「カラムグループ作成情報」のレコード一覧
-            record_t_menu_column: 「メニュー項目作成情報」のレコード一覧
+            record_t_menu_column: 「パラメータシート項目作成情報」のレコード一覧
         RETRUN:
             boolesn,
             msg,
@@ -2354,7 +2354,7 @@ def _format_column_group_data(record_t_menu_column_group, record_t_menu_column):
                 "full_col_group_name_en": record.get('FULL_COL_GROUP_NAME_EN'),
             }
 
-        # 「メニュー項目作成情報」のレコードから、使用されているカラムグループのIDを抽出
+        # 「パラメータシート項目作成情報」のレコードから、使用されているカラムグループのIDを抽出
         tmp_target_column_group_list = []
         for record in record_t_menu_column:
             target_id = record.get('CREATE_COL_GROUP_ID')
@@ -2401,7 +2401,7 @@ def _format_other_link(record_t_menu_other_link):
         「他メニュー連携」を利用する処理に必要な形式(idをkeyにしたdict型)にフォーマット
         ARGS:
             record_t_menu_column_group: 「カラムグループ作成情報」のレコード一覧
-            record_t_menu_column: 「メニュー項目作成情報」のレコード一覧
+            record_t_menu_column: 「パラメータシート項目作成情報」のレコード一覧
         RETRUN:
             boolean,
             msg,
@@ -2425,7 +2425,7 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
         「初期化」「編集」実行時に、対象のメニューに関連するレコードを廃止する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            record_t_menu_define: 「メニュー定義一覧」の対象のレコード
+            record_t_menu_define: 「パラメータシート定義一覧」の対象のレコード
         RETRUN:
             result, msg
 
@@ -2441,7 +2441,7 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
     v_menu_reference_item = 'V_MENU_REFERENCE_ITEM'
 
     try:
-        # 対象の「メニュー定義一覧」のメニュー名(rest)を取得
+        # 対象の「パラメータシート定義一覧」のメニュー名(rest)を取得
         menu_name_rest = record_t_menu_define.get('MENU_NAME_REST')
         menu_name_rest_subst = menu_name_rest + '_subst'
         menu_name_rest_ref = menu_name_rest + '_ref'
@@ -2492,7 +2492,7 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
                     }
                     objdbca.table_update(t_comn_menu_column_link, data, "COLUMN_DEFINITION_ID")
 
-            # 「メニュー定義-テーブル紐付管理」にて対象のレコードを廃止
+            # 「パラメータシート定義-テーブル紐付管理」にて対象のレコードを廃止
             # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
             ret = objdbca.table_select(t_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
             if ret:
@@ -2539,7 +2539,7 @@ def _disuse_t_comn_menu(objdbca, record_t_menu_define, target_menu_group_list):
         利用していないメニューグループのメニューを廃止する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
-            record_t_menu_define: 「メニュー定義一覧」の対象のレコード
+            record_t_menu_define: 「パラメータシート定義一覧」の対象のレコード
             target_menu_group_list: 対象メニューグループのカラム名一覧
         RETRUN:
             result, msg
@@ -2555,7 +2555,7 @@ def _disuse_t_comn_menu(objdbca, record_t_menu_define, target_menu_group_list):
         menu_name_rest_ref = menu_name_rest + "_ref"
         target_menu_name_rest_list = [menu_name_rest, menu_name_rest_subst, menu_name_rest_ref]
 
-        # 「メニュー定義一覧」の対象メニューグループ
+        # 「パラメータシート定義一覧」の対象メニューグループ
         menu_group_id_input = record_t_menu_define.get('MENU_GROUP_ID_INPUT')
         menu_group_id_subst = record_t_menu_define.get('MENU_GROUP_ID_SUBST')
         menu_group_id_ref = record_t_menu_define.get('MENU_GROUP_ID_REF')
@@ -2588,7 +2588,7 @@ def _check_file_upload_column(record_t_menu_column):
     """
         作成する項目がファイルアップロードカラムのみの場合Trueを返却
         ARGS:
-            record_t_menu_column: 「メニュー項目作成情報」の対象のレコード一覧
+            record_t_menu_column: 「パラメータシート項目作成情報」の対象のレコード一覧
         RETRUN:
             boolean
 

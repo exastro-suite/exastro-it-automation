@@ -23,13 +23,13 @@ from libs import menu_create as menu_create_lib
 def define_and_execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
     """define_and_execute_menu_create
 
-    メニュー定義および作成の実行 # noqa: E501
+    パラメータシート定義および作成の実行 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
-    :param body: 
+    :param body:
     :type body: dict | bytes
 
     :rtype: InlineResponse20011
@@ -37,7 +37,7 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu = 'menu_definition_and_creation'
     check_menu_info(menu, objdbca)
@@ -51,12 +51,12 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
 
     # bodyのjson形式チェック
     check_request_body()
-    
+
     create_param = {}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
         create_param = body
-    
+
     result_data = menu_create_lib.menu_create_define(objdbca, create_param)
     return result_data,
 
@@ -65,20 +65,20 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
 def execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
     """execute_menu_create
 
-    メニュー作成実行 # noqa: E501
+    パラメータシート作成実行 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
-    :param body: 
+    :param body:
     :type body: dict | bytes
 
     :rtype: InlineResponse20011
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu = 'menu_creation_execution'
     check_menu_info(menu, objdbca)
@@ -92,12 +92,12 @@ def execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
 
     # bodyのjson形式チェック
     check_request_body()
-    
+
     exec_target = {"create_new": {}, "initialize": {}, "edit": {}}
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
         exec_target = body
-    
+
     result_data = menu_create_lib.menu_create_execute(objdbca, exec_target)
     return result_data,
 
@@ -106,20 +106,20 @@ def execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
 def get_exist_menu_create_data(organization_id, workspace_id, menu_create):  # noqa: E501
     """get_exist_menu_create_data
 
-    メニュー定義・作成(既存)用の情報取得 # noqa: E501
+    パラメータシート定義・作成(既存)用の情報取得 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
-    :param menu_create: 「メニュー定義一覧」の「メニュー名(REST)」
+    :param menu_create: 「パラメータシート定義一覧」の「メニュー名(REST)」
     :type menu_create: str
 
     :rtype: InlineResponse20011
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu = 'menu_definition_and_creation'
     check_menu_info(menu, objdbca)
@@ -142,9 +142,9 @@ def get_exist_menu_create_data(organization_id, workspace_id, menu_create):  # n
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
 
-    # メニュー定義・作成(既存)用の情報取得
+    # パラメータシート定義・作成(既存)用の情報取得
     data = menu_create_lib.collect_exist_menu_create_data(objdbca, menu_create)
-    
+
     return data,
 
 
@@ -152,7 +152,7 @@ def get_exist_menu_create_data(organization_id, workspace_id, menu_create):  # n
 def get_menu_create_data(organization_id, workspace_id):  # noqa: E501
     """get_menu_create_data
 
-    メニュー定義・作成(新規)用の情報取得 # noqa: E501
+    パラメータシート定義・作成(新規)用の情報取得 # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
@@ -163,7 +163,7 @@ def get_menu_create_data(organization_id, workspace_id):  # noqa: E501
     """
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu = 'menu_definition_and_creation'
     check_menu_info(menu, objdbca)
@@ -175,9 +175,9 @@ def get_menu_create_data(organization_id, workspace_id):  # noqa: E501
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
 
-    # メニュー定義・作成(新規)用の情報取得
+    # パラメータシート定義・作成(新規)用の情報取得
     data = menu_create_lib.collect_menu_create_data(objdbca)
-    
+
     return data,
 
 
@@ -198,10 +198,10 @@ def get_pulldown_initial(organization_id, workspace_id, menu, column):  # noqa: 
 
     :rtype: InlineResponse20011
     """
-    
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu_def_and_cre = 'menu_definition_and_creation'
     check_menu_info(menu_def_and_cre, objdbca)
@@ -236,7 +236,7 @@ def get_pulldown_initial(organization_id, workspace_id, menu, column):  # noqa: 
                 raise e
 
     data = menu_create_lib.collect_pulldown_initial_value(objdbca, menu, column)
-    
+
     return data,
 
 
@@ -260,7 +260,7 @@ def get_reference_item(organization_id, workspace_id, menu, column):  # noqa: E5
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     menu_def_and_cre = 'menu_definition_and_creation'
     check_menu_info(menu_def_and_cre, objdbca)
@@ -283,7 +283,7 @@ def get_reference_item(organization_id, workspace_id, menu, column):  # noqa: E5
         # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
         sheet_type_list = ['0', '1', '2', '3', '4']
         check_sheet_type(menu, sheet_type_list, objdbca)
-        
+
         # メニューに対するロール権限をチェック
         # 権限が無かったらdataを空で返す
         try:
@@ -295,5 +295,5 @@ def get_reference_item(organization_id, workspace_id, menu, column):  # noqa: E5
                 raise e
 
     data = menu_create_lib.collect_pulldown_reference_item(objdbca, menu, column)
-    
+
     return data,

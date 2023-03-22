@@ -522,7 +522,7 @@ class Column():
         exec_config = self.get_call_before_valid_info()
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu())
@@ -583,7 +583,7 @@ class Column():
         exec_config = self.get_call_after_valid_info()
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu())
@@ -651,7 +651,7 @@ class Column():
         column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
         if self.col_name not in primary_key_list:
             if self.col_name == "DATA_JSON":
-                # カラム名がDATA_JSON(メニュー作成機能により作られたメニューのカラム)の場合
+                # カラム名がDATA_JSON(パラメータシート作成機能により作られたメニューのカラム)の場合
                 where_str = " where DISUSE_FLAG = 0"
                 bind_value_list = []
                 if 'uuid' in option:

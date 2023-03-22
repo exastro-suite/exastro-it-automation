@@ -268,7 +268,7 @@ class SubValueAutoReg():
             # テーブル名を取得
             cmdb_table_name = t_comn_menu_table_link_record[0].get('TABLE_NAME')
 
-            # 縦メニュー対象かどうかを取得
+            # バンドル利用対象かどうかを取得
             vertical_flag = True if str(t_comn_menu_table_link_record[0].get('VERTICAL')) == '1' else False
 
             # 対象のテーブルからOPERATION_IDが一致しているレコードを取得

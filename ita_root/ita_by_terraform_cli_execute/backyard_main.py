@@ -24,7 +24,7 @@ from common_libs.common.util import get_timestamp
 from common_libs.ci.util import log_err
 
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
-from libs import common_functions as cm
+from libs import functions as func
 
 
 def backyard_main(organization_id, workspace_id):
@@ -118,7 +118,7 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
             log_err(g.appmsg.get_log_message("MSG-10056", [execution_no, tf_workspace_id]))
 
             # 情報を再取得して、想定外エラーにする
-            result = cm.get_execution_process_info(wsDb, TFCLIConst, execution_no)
+            result = func.get_execution_process_info(wsDb, TFCLIConst, execution_no)
             if result[0] is False:
                 log_err(g.appmsg.get_log_message(result[1], [execution_no]))
                 return False
@@ -136,7 +136,7 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
                     "TIME_START": time_stamp,
                     "TIME_END": time_stamp,
                 }
-                result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
+                result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data)
                 if result is True:
                     wsDb.db_commit()
                     g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
@@ -287,7 +287,7 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
                 "TIME_START": time_stamp,
                 "TIME_END": time_stamp,
             }
-            result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
+            result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data)
             if result is True:
                 wsDb.db_commit()
                 g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
@@ -311,7 +311,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     # tf_workspace_name = execute_data['I_WORKSPACE_NAME']
 
     # 処理対象の作業インスタンス情報取得(再取得)
-    retBool, result = cm.get_execution_process_info(wsDb, TFCLIConst, execution_no)
+    retBool, result = func.get_execution_process_info(wsDb, TFCLIConst, execution_no)
     if retBool is False:
         return False, g.appmsg.get_log_message(result, [execution_no])
     execute_data = result
@@ -328,7 +328,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
         "STATUS_ID": TFCLIConst.STATUS_PREPARE,
         "TIME_START": get_timestamp()
     }
-    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
+    result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10730", [execution_no, tf_workspace_id]))

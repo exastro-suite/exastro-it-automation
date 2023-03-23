@@ -39,12 +39,10 @@ def conductor_notice_valid(objdbca, objtable, option):  # noqa: C901
         check_notice_url = url_regex.fullmatch(notice_url)
         if check_notice_url is None:
             msg.append(g.appmsg.get_api_message("MSG-40042"))
-
         if proxy_url:
             check_proxy_url = url_regex.fullmatch(proxy_url)
             if check_proxy_url is None:
                 msg.append(g.appmsg.get_api_message("MSG-40043"))
-
         if fqdn:
             check_fqdn = url_regex.fullmatch(fqdn)
             if check_fqdn is None:

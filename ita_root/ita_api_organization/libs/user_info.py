@@ -315,7 +315,7 @@ def collect_widget_settings(objdbca):
     # Widget情報を取得
     current_widget = {}
     rset = objdbca.table_select('T_COMN_WEB_TABLE_SETTINGS', 'WHERE USER_ID = %s', g.USER_ID)
-    if len(rset) > 0 and type(rset[0]['WIDGET_SETTINGS']) is not None:
+    if len(rset) > 0 and 'WIDGET_SETTINGS' in rset[0] and rset[0]['WIDGET_SETTINGS'] is not None:
         current_widget = json.loads(rset[0]['WIDGET_SETTINGS'])
 
     # メニュー情報を取得

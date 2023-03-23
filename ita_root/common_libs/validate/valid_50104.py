@@ -1206,7 +1206,7 @@ def menu_column_valid(objdbca, objtable, option):
                     msg = g.appmsg.get_api_message("MSG-20255", [target_column_name])
                     return retBool, msg, option
 
-                # メニュー作成実行時に生成される参照項目用の「項目名(rest)」が他の項目名(rest)で使用されているかを確認
+                # パラメータシート作成実行時に生成される参照項目用の「項目名(rest)」が他の項目名(rest)で使用されているかを確認
                 check_bool_2 = False
                 for count, ref_column_name_rest in enumerate(reference_item_list, 1):
                     create_ref_column_name_rest = str(pulldown_target_column_name_rest) + "_ref_" + str(count)

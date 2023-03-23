@@ -47,6 +47,9 @@ border-bottom-color: #111;
 .contentTitle {
 color: #DDD;
 }
+.contentMenuInfo {
+color: #DDD;
+}
 .contentMenuInfoButton {
 background-color: rgba(0,0,0,.2);
 }
@@ -77,10 +80,13 @@ background-color: #222528;
 .th, .td,
 .tBodyTr > .tBodyTh:first-child,
 .tBodyTr:first-child .tBodyTh, .tBodyTr:first-child .tBodyTd {
-border-color: #111;
+border-color: #111!important;
 }
 .ci {
 color: #DDD;
+}
+.tBodyTrDiscard .ci {
+color: #666;
 }
 .tHeadFilter {
 background-color: #26292D;
@@ -113,13 +119,12 @@ color: #DDD;
 .radioTextText {
 color: var(--white100);
 }
-.input:disabled {
-background-color: var(--black85);
-border-color: var(--black100);
-opacity: .5;
-}
+.input:disabled,
+.tBodyTrDiscard .tableEditInputSelectValue,
 .tBodyTrDiscard .input[data-key="remarks"] {
-background-color: var(--black100);
+background-color: var(--black85)!important;
+border-color: var(--black100)!important;
+opacity: .5!important;
 }
 .inputColorBefore,
 .inputColorAfter,
@@ -278,7 +283,13 @@ color: #DDD;
 }
 .discardMark.false::after,
 .tHeadFilterNone .filterNone, .tBodyAutoInput {
-background-color: rgba( 255,255,255,.1 );
+background-color: rgba( 255,255,255,.1 )!important;
+}
+.discardMark.true::after {
+background-color: var(--black45);
+}
+.tableEditChange .discardMark::after {
+background-color: #60C60D!important;
 }
 .contentMessage, .commonMessage,
 .initFilterStandBy .tableMessage, .historyStandBy .tableMessage, .noData .tableMessage {
@@ -557,6 +568,14 @@ background-color: var(--rowColor)!important;
 .differenceTr > .tBodyTh,
 .differenceTr > .tBodyTd {
 background-color: #var(--rowDiscardColor)!important;
+}
+
+
+.tableShowChangeValue .tBodyAfterValue {
+background-color: #132803;
+}
+.tBodyBeforeValue {
+background-color: #2E1919;
 }
 
 /* button color */

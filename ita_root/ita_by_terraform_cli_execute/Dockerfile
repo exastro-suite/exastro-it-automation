@@ -46,6 +46,7 @@ RUN dnf install -y \
     chardet \
     pycryptodome \
     python-hcl2 \
+    zc.lockfile \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

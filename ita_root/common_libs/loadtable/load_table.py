@@ -1773,10 +1773,11 @@ class loadTable():
             RETRUN:
                 {}
         """
-        rest_parameter = {}
+        rest_parameter = self.get_json_cols_base()
         rest_file = {}
+        json_cols_base_key = list(rest_parameter.keys())
         for col_name, col_val in rows.items():
-            # メニュー作成パラメータDATA_JSON構造
+            # パラメータシート作成パラメータDATA_JSON構造
             if col_name == 'DATA_JSON':
                 try:
                     json_rows = json.loads(col_val)
@@ -1784,63 +1785,65 @@ class loadTable():
                     json_rows = col_val
                 if json_rows:
                     for jsonkey, jsonval in json_rows.items():
-                        objcolumn = self.get_columnclass(jsonkey)
-                        # ID → VALUE 変換処理不要ならVALUE変更無し
-                        if self.get_col_class_name(jsonkey) in ['PasswordColumn']:
-                            # 内部処理用
-                            if mode in ['input', 'export']:
-                                if jsonval is not None:
-                                    objcolumn = self.get_columnclass(jsonkey)
-                                    jsonval = util.ky_decrypt(jsonval)    # noqa: F405
-                            elif mode in ['inner']:
-                                if jsonval is not None:
-                                    # base64した値をそのまま返却
-                                    pass
-                            else:
-                                jsonval = None
-                        elif self.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:
-                            # 内部処理用
-                            if mode in ['input', 'export']:
-                                if jsonval is not None:
-                                    objcolumn = self.get_columnclass(jsonkey)
-                                    jsonval = util.ky_decrypt(jsonval)    # noqa: F405
-                            elif mode in ['inner']:
-                                if jsonval is not None:
-                                    # base64した値をそのまま返却
-                                    result = objcolumn.get_values_by_key([jsonval])
-                                    jsonval = result.get(jsonval)
-                            else:
-                                jsonval = None
-                        elif self.get_col_class_name(jsonkey) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
-                            objcol = self.get_objcol(jsonkey)
-                            sensitive_col_name = objcol.get(COLNAME_SENSITIVE_COL_NAME)
-                            sensitive_settings = rows.get(self.get_col_name(sensitive_col_name))
-                            # SENSITIVEがONの場合
-                            if sensitive_settings == '1':
+                        if jsonkey in json_cols_base_key:
+                            objcolumn = self.get_columnclass(jsonkey)
+                            # ID → VALUE 変換処理不要ならVALUE変更無し
+                            if self.get_col_class_name(jsonkey) in ['PasswordColumn']:
                                 # 内部処理用
-                                if mode in ['input']:
-                                    if col_val is not None:
+                                if mode in ['input', 'export']:
+                                    if jsonval is not None:
                                         objcolumn = self.get_columnclass(jsonkey)
-                                        col_val = util.ky_decrypt(col_val)    # noqa: F405
-                                elif mode in ['inner', 'export']:
+                                        jsonval = util.ky_decrypt(jsonval)    # noqa: F405
+                                elif mode in ['inner']:
                                     if jsonval is not None:
                                         # base64した値をそのまま返却
                                         pass
                                 else:
-                                    col_val = None
-                        else:
-                            if mode not in ['input']:
-                                tmp_exec = objcolumn.convert_value_output(jsonval)
-                                if tmp_exec[0] is True:
-                                    jsonval = tmp_exec[2]
+                                    jsonval = None
+                            elif self.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:
+                                # 内部処理用
+                                if mode in ['input', 'export']:
+                                    if jsonval is not None:
+                                        result = objcolumn.get_values_by_key([jsonval])
+                                        jsonval = util.ky_decrypt(result.get(jsonval))# noqa: F405
+                                elif mode in ['inner']:
+                                    if jsonval is not None:
+                                        # base64した値をそのまま返却
+                                        result = objcolumn.get_values_by_key([jsonval])
+                                        jsonval = result.get(jsonval)
+                                else:
+                                    jsonval = None
+                            elif self.get_col_class_name(jsonkey) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
+                                objcol = self.get_objcol(jsonkey)
+                                sensitive_col_name = objcol.get(COLNAME_SENSITIVE_COL_NAME)
+                                sensitive_settings = rows.get(self.get_col_name(sensitive_col_name))
+                                # SENSITIVEがONの場合
+                                if sensitive_settings == '1':
+                                    # 内部処理用
+                                    if mode in ['input']:
+                                        if col_val is not None:
+                                            objcolumn = self.get_columnclass(jsonkey)
+                                            col_val = util.ky_decrypt(col_val)    # noqa: F405
+                                    elif mode in ['inner', 'export']:
+                                        if jsonval is not None:
+                                            # base64した値をそのまま返却
+                                            pass
+                                    else:
+                                        col_val = None
+                            else:
+                                if mode not in ['input']:
+                                    tmp_exec = objcolumn.convert_value_output(jsonval)
+                                    if tmp_exec[0] is True:
+                                        jsonval = tmp_exec[2]
 
-                        rest_parameter.setdefault(jsonkey, jsonval)
-                        if mode not in ['excel', 'excel_jnl']:
-                            if self.get_col_class_name(jsonkey) == 'FileUploadColumn':
-                                objcolumn = self.get_columnclass(jsonkey)
-                                # ファイル取得＋64変換
-                                file_data = objcolumn.get_file_data(jsonval, target_uuid, target_uuid_jnl)
-                                rest_file.setdefault(jsonkey, file_data)
+                            rest_parameter[jsonkey] = jsonval
+
+                            if mode not in ['excel', 'excel_jnl']:
+                                if self.get_col_class_name(jsonkey) == 'FileUploadColumn':
+                                    objcolumn = self.get_columnclass(jsonkey)
+                                    # ファイル取得＋64変換
+                                    file_data = objcolumn.get_file_data(jsonval, target_uuid, target_uuid_jnl)
+                                    rest_file.setdefault(jsonkey, file_data)
             else:
                 rest_key = self.get_rest_key(col_name)
                 if len(rest_key) > 0:
@@ -2045,7 +2048,7 @@ class loadTable():
         # file = target_option.get('file')
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu_id())
@@ -2077,7 +2080,7 @@ class loadTable():
         # file = target_option.get('file')
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu_id())

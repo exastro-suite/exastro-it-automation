@@ -76,7 +76,9 @@ class SubValueAutoReg():
                 ret = self.ws_db.table_insert(self.TFConst.T_VALUE, insert_data, primary_key_name)
                 if not ret:
                     # 代入値管理テーブルへのレコード登録に失敗
-                    msg = "代入値管理テーブルへのレコード登録に失敗しました。"
+                    log_msg = g.appmsg.get_log_message("MSG-81002", [])
+                    g.applogger.error(log_msg)
+                    msg = g.appmsg.get_api_message("MSG-81002", [])
                     result = False
                     break
 
@@ -84,7 +86,7 @@ class SubValueAutoReg():
             self.ws_db.db_transaction_end(True)
 
         except Exception as e:
-            # ####メモ：eをログに出力する
+            g.applogger.error(str(e))
             result = False
             msg = e
 
@@ -206,12 +208,13 @@ class SubValueAutoReg():
 
             # 「インターフェース情報」レコードが1つではない場合エラー
             if not len(t_if_info_records) == 1:
-                # ####メモ：メッセージ未作成
+                log_msg = g.appmsg.get_log_message("MSG-81001", [])
+                g.applogger.error(log_msg)
+                msg = g.appmsg.get_api_message("MSG-81001", [])
                 result = False
-                msg = "インターフェース情報のレコードが不正"
-
-            # 「インターフェース情報」のレコードをセット
-            self.if_null_data_handling_flg = t_if_info_records[0].get('NULL_DATA_HANDLING_FLG')
+            else:
+                # 「インターフェース情報」のレコードをセット
+                self.if_null_data_handling_flg = t_if_info_records[0].get('NULL_DATA_HANDLING_FLG')
 
         except Exception as e:
             result = False
@@ -238,8 +241,7 @@ class SubValueAutoReg():
                 column_data = v_terf_column_list_record[0]
 
         except Exception as e:
-            # ####メモ：eをバックヤードログに出力する
-            print(e)
+            g.applogger.error(str(e))
             result = False
 
         return result, column_data
@@ -252,11 +254,6 @@ class SubValueAutoReg():
         result = True
         vars_entry = None
         register_flag = False
-
-        # ####メモ：ここでNULL連携がかかわってくる気がするので注意。
-        # そもそもNULL連携ってどういう動きになる？
-        # パラメータシートの具体値が空の場合に、空を登録するかどうかの判定。
-
         try:
             menu_id = column_data.get('MENU_ID')
             column_name_rest = column_data.get('COLUMN_NAME_REST')
@@ -271,7 +268,7 @@ class SubValueAutoReg():
             # テーブル名を取得
             cmdb_table_name = t_comn_menu_table_link_record[0].get('TABLE_NAME')
 
-            # 縦メニュー対象かどうかを取得
+            # バンドルが有効かどうかを取得
             vertical_flag = True if str(t_comn_menu_table_link_record[0].get('VERTICAL')) == '1' else False
 
             # 対象のテーブルからOPERATION_IDが一致しているレコードを取得
@@ -312,8 +309,7 @@ class SubValueAutoReg():
                 register_flag = False
 
         except Exception as e:
-            # ####メモ：eをバックヤードログに出力する
-            print(e)
+            g.applogger.error(str(e))
             result = False
             vars_entry = None
             register_flag = False
@@ -328,9 +324,6 @@ class SubValueAutoReg():
         result = True
         vars_entry = None
         register_flag = True
-
-        # ####メモ：ここでNULL連携がかかわってくる気がするので注意。
-
         try:
             if g.LANGUAGE == 'ja':
                 col_name = column_data['COLUMN_NAME_JA']
@@ -358,8 +351,7 @@ class SubValueAutoReg():
                 register_flag = False
 
         except Exception as e:
-            # ####メモ：eをバックヤードログに出力する
-            print(e)
+            g.applogger.error(str(e))
             result = False
             vars_entry = None
             register_flag = False

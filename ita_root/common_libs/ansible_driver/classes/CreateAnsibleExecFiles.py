@@ -4929,6 +4929,8 @@ class CreateAnsibleExecFiles():
             mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
 
             if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
+                if host_name not in mt_pioneer_template_host_vars:
+                    mt_pioneer_template_host_vars[host_name] = {}
                 mt_pioneer_template_host_vars[host_name][self.AnscObj.ITA_SP_VAR_OPERATION_VAR_NAME] = operationStr
         return True, mt_host_vars, mt_pioneer_template_host_vars
 

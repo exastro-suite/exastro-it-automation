@@ -23,12 +23,8 @@ from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.util import get_timestamp
 from common_libs.ci.util import log_err
 
-# from common_libs.terraform_driver.common.Const import Const
-from common_libs.terraform_driver.cli.Const import Const
+from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from libs import common_functions as cm
-
-# 定数をロード
-const = Const()
 
 
 def backyard_main(organization_id, workspace_id):
@@ -122,25 +118,25 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
             log_err(g.appmsg.get_log_message("MSG-10056", [execution_no, tf_workspace_id]))
 
             # 情報を再取得して、想定外エラーにする
-            result = cm.get_execution_process_info(wsDb, const, execution_no)
+            result = cm.get_execution_process_info(wsDb, TFCLIConst, execution_no)
             if result[0] is False:
                 log_err(g.appmsg.get_log_message(result[1], [execution_no]))
                 return False
             execute_data = result[1]
 
             # 実行中か再確認
-            status_id_list = [const.STATUS_PREPARE, const.STATUS_PROCESSING, const.STATUS_PROCESS_DELAYED]
+            status_id_list = [TFCLIConst.STATUS_PREPARE, TFCLIConst.STATUS_PROCESSING, TFCLIConst.STATUS_PROCESS_DELAYED]
             if execute_data["STATUS_ID"] in status_id_list:
                 # 想定外エラーに更新
                 wsDb.db_transaction_start()
                 time_stamp = get_timestamp()
                 update_data = {
                     "EXECUTION_NO": execution_no,
-                    "STATUS_ID": const.STATUS_EXCEPTION,
+                    "STATUS_ID": TFCLIConst.STATUS_EXCEPTION,
                     "TIME_START": time_stamp,
                     "TIME_END": time_stamp,
                 }
-                result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+                result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
                 if result is True:
                     wsDb.db_commit()
                     g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
@@ -198,11 +194,11 @@ def get_running_process(wsDb):
     Returns:
         records
     """
-    status_id_list = [const.STATUS_PREPARE, const.STATUS_PROCESSING, const.STATUS_PROCESS_DELAYED]
+    status_id_list = [TFCLIConst.STATUS_PREPARE, TFCLIConst.STATUS_PROCESSING, TFCLIConst.STATUS_PROCESS_DELAYED]
     prepared_list = list(map(lambda a: "%s", status_id_list))
 
     condition = 'WHERE `DISUSE_FLAG`=0 AND `STATUS_ID` in ({})'.format(','.join(prepared_list))
-    records = wsDb.table_select(const.T_EXEC_STS_INST, condition, status_id_list)
+    records = wsDb.table_select(TFCLIConst.T_EXEC_STS_INST, condition, status_id_list)
 
     return records
 
@@ -227,7 +223,7 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
         ( `TIME_BOOK` IS NULL AND `STATUS_ID` = %s ) OR
         ( `TIME_BOOK` <= %s AND `STATUS_ID` = %s )
     ) ORDER BY TIME_REGISTER ASC"""
-    records = wsDb.table_select(const.T_EXEC_STS_INST, condition, [const.STATUS_NOT_YET, get_now_datetime(), const.STATUS_RESERVE])
+    records = wsDb.table_select(TFCLIConst.T_EXEC_STS_INST, condition, [TFCLIConst.STATUS_NOT_YET, get_now_datetime(), TFCLIConst.STATUS_RESERVE])
 
     # 処理対象レコードが0件の場合は処理終了
     if len(records) == 0:
@@ -287,11 +283,11 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
             time_stamp = get_timestamp()
             update_data = {
                 "EXECUTION_NO": execution_no,
-                "STATUS_ID": const.STATUS_EXCEPTION,
+                "STATUS_ID": TFCLIConst.STATUS_EXCEPTION,
                 "TIME_START": time_stamp,
                 "TIME_END": time_stamp,
             }
-            result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+            result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
             if result is True:
                 wsDb.db_commit()
                 g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
@@ -315,38 +311,37 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     # tf_workspace_name = execute_data['I_WORKSPACE_NAME']
 
     # 処理対象の作業インスタンス情報取得(再取得)
-    retBool, result = cm.get_execution_process_info(wsDb, const, execution_no)
+    retBool, result = cm.get_execution_process_info(wsDb, TFCLIConst, execution_no)
     if retBool is False:
         return False, g.appmsg.get_log_message(result, [execution_no])
     execute_data = result
 
-    # 未実行状態で緊急停止出来るようにしているので
     # 未実行状態かを判定
     status_id = execute_data["STATUS_ID"]
-    if status_id != const.STATUS_NOT_YET and status_id != const.STATUS_RESERVE:
+    if status_id != TFCLIConst.STATUS_NOT_YET and status_id != TFCLIConst.STATUS_RESERVE:
         return False, g.appmsg.get_log_message("BKY-10002", [execution_no])
 
     # 処理対象の作業インスタンスのステータスを準備中に設定
     wsDb.db_transaction_start()
     update_data = {
         "EXECUTION_NO": execution_no,
-        "STATUS_ID": const.STATUS_PREPARE,
-        "TIME_END": get_timestamp()
+        "STATUS_ID": TFCLIConst.STATUS_PREPARE,
+        "TIME_START": get_timestamp()
     }
-    result, execute_data = cm.update_execution_record(wsDb, const, update_data)
+    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
     if result is True:
         wsDb.db_commit()
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10745", [execution_no, tf_workspace_id]))
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10730", [execution_no, tf_workspace_id]))
 
     # ワークスペース毎のディレクトリを準備
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
-    workspace_work_dir = base_dir + const.DIR_WORK + "/{}/work".format(tf_workspace_id)
+    workspace_work_dir = base_dir + TFCLIConst.DIR_WORK + "/{}/work".format(tf_workspace_id)
     os.makedirs(workspace_work_dir, exist_ok=True)
     os.chmod(workspace_work_dir, 0o777)
 
     # （前回実行した）ファイルを削除しておく
     # ・緊急停止ファイル
-    emergency_stop_file_path = "{}/emergency_stop".format(workspace_work_dir)
+    emergency_stop_file_path = "{}/{}".format(workspace_work_dir, TFCLIConst.FILE_EMERGENCY_STOP)
     rm_file_list = [emergency_stop_file_path]
     for rm_file in rm_file_list:
         if os.path.isfile(rm_file):

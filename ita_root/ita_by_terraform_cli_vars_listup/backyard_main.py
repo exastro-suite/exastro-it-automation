@@ -36,27 +36,21 @@ def backyard_main(organization_id, workspace_id):
         return
 
     # Module素材集に登録されているレコードから、Module-変数紐付テーブルを更新する
-    result, msg = set_module_vars_link(objdbca, TFCLIConst)  # noqa: F405
+    result = set_module_vars_link(objdbca, TFCLIConst)  # noqa: F405
     if not result:
-        # ####メモ：Module-変数紐付テーブルの更新に失敗。ログに出力
-        g.applogger.error("Module-変数紐付テーブルの更新に失敗")
-        g.applogger.error(msg)
+        # 後続の処理が成立しないためreturnする
         return
 
     # Movement-Module紐付に登録されているレコードから、Movement-Module変数紐付テーブルを更新する
-    result, msg = set_movement_var_link(objdbca, TFCLIConst)  # noqa: F405
+    result = set_movement_var_link(objdbca, TFCLIConst)  # noqa: F405
     if not result:
-        # ####メモ：Module-変数紐付テーブルの更新に失敗。ログに出力
-        g.applogger.error("Movement-Module変数紐付テーブルの更新に失敗")
-        g.applogger.error(msg)
+        # 後続の処理が成立しないためreturnする
         return
 
     # Movement-Module変数紐付に登録されているレコードから、Movement-メンバーModule変数紐付テーブルを更新する
-    result, msg = set_movement_var_member_link(objdbca, TFCLIConst)  # noqa: F405
+    result = set_movement_var_member_link(objdbca, TFCLIConst)  # noqa: F405
     if not result:
-        # ####メモ：Module-変数紐付テーブルの更新に失敗。ログに出力
-        g.applogger.error("Movement-メンバーModule変数紐付テーブルの更新に失敗")
-        g.applogger.error(msg)
+        # returnする
         return
 
     # バックヤード処理実行フラグを更新

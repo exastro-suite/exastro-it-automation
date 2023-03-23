@@ -19,14 +19,15 @@ from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
 
-from common_libs.conductor.classes.util import ConductorCommonLibs  # noqa: F401
+from common_libs.conductor.classes.util import ConductorCommonLibs
 
-from common_libs.ansible_driver.functions.rest_libs import insert_execution_list as anscmn_insert_execution_list  # noqa: F403
-from common_libs.ansible_driver.functions.rest_libs import execution_scram as anscmn_execution_scram  # noqa: F403
+from common_libs.ansible_driver.functions.rest_libs import insert_execution_list as anscmn_insert_execution_list
+from common_libs.ansible_driver.functions.rest_libs import execution_scram as anscmn_execution_scram
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 
-# from common_libs.terraform_driver.common.Execute import insert_execution_list as tfccmn_insert_execution_list  # noqa: F403
-# from common_libs.terraform_driver.common.Execute import execution_scram as tfccmn_execution_scram  # noqa: F403
+from common_libs.terraform_driver.common.Execute import insert_execution_list as tfccmn_insert_execution_list
+from common_libs.terraform_driver.cloud_ep.Execute import execution_scram as t_cloud_ep_execution_scram
+from common_libs.terraform_driver.cli.Execute import execution_scram as t_cli_execution_scram
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 
 import json
@@ -2354,10 +2355,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             # 一時作業ディレクトリ指定
             tmp_work_dir = uuid.uuid4()
             strage_path = os.environ.get('STORAGEPATH')  # noqa: F405
-            tmp_work_dir_path = "{}/{}/{}/tmp/{}".format(
-                strage_path,
-                self.organization_id,
-                self.workspace_id,
+            tmp_work_dir_path = "/tmp/{}".format(
                 tmp_work_dir
             ).replace('//', '/')
 
@@ -3063,7 +3061,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     tmp_execute = anscmn_insert_execution_list(self.objdbca, 1, driver_id, operation_row, movement_row, None, conductor_id, conductor_name)  # noqa: F405 E501
                 elif tmp_orchestra_id in ["4", "5"]:
                     pass
-                    # tmp_execute = tfccmn_insert_execution_list(self.objdbca, 1, driver_id, operation_row, movement_row, None, conductor_id, conductor_name)  # noqa: F405 E501
+                    tmp_execute = tfccmn_insert_execution_list(self.objdbca, 1, driver_id, operation_row, movement_row, None, conductor_id, conductor_name)  # noqa: F405 E501
                 tmp_result = tmp_execute.get('execution_no')
 
             elif action_type == 'abort':
@@ -3074,10 +3072,14 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                         tmp_result = anscmn_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
                     except Exception:
                         pass
-                elif tmp_orchestra_id in ["4", "5"]:
+                elif tmp_orchestra_id in ["4"]:
                     try:
+                        tmp_result = t_cloud_ep_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
+                    except Exception:
                         pass
-                        # tmp_result = tfccmn_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
+                elif tmp_orchestra_id in ["5"]:
+                    try:
+                        tmp_result = t_cli_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
                     except Exception:
                         pass
             elif action_type == 'status':

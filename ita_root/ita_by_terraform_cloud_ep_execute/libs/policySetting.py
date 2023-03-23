@@ -51,22 +51,20 @@ class policySetting():
         """
         # 変数定義
         base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
-
-        # 返却値定義
         result = True
         msg = ''
+        log_msg = ''
         policy_data_dict = {}
 
         try:
             # [RESTAPI]連携先TerraformからPolicySetの一覧を取得する
-            response_array = get_policy_set_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
+            response_array = get_tf_policy_set_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             # ステータスコードが200以外の場合はエラー判定
             if not response_status_code == 200:
-                # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                msg = "[API Error]Organization一覧取得に失敗しました。"
-                g.applogger.error(msg)
+                log_msg = g.appmsg.get_log_message("MSG-82018", [])
+                g.applogger.error(log_msg)
+                msg = g.appmsg.get_api_message("MSG-82018", [])
                 return False, msg, policy_data_dict
 
             # PolicySet一覧を格納
@@ -88,10 +86,9 @@ class policySetting():
                         response_status_code = response_array.get('statusCode')
                         # ステータスコードが204以外の場合はエラー判定
                         if not response_status_code == 204:
-                            # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                            # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                            msg = "[API Error]PolicySetからWorkspaceの切り離しに失敗しました。"
-                            g.applogger.error(msg)
+                            log_msg = g.appmsg.get_log_message("MSG-82019", [])
+                            g.applogger.error(log_msg)
+                            msg = g.appmsg.get_api_message("MSG-82019", [])
                             return False, msg, policy_data_dict
 
             # tf_workspace_idからPolicySet-Workspace紐付管理テーブルに登録されているレコードを取得
@@ -152,14 +149,13 @@ class policySetting():
                 policy_data_dict[policy_id] = {"policy_id": policy_id, "policy_name": ret[0].get('POLICY_NAME'), "policy_file": ret[0].get('POLICY_MATTER_FILE'), "policy_note": ret[0].get('NOTE')}  # noqa: E501
 
             # [RESTAPI]連携先TerraformからPolicyの一覧を取得する
-            response_array = get_policy_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
+            response_array = get_tf_policy_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             # ステータスコードが200以外の場合はエラー判定
             if not response_status_code == 200:
-                # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                msg = "[API Error]Organization一覧取得に失敗しました。"
-                g.applogger.error(msg)
+                log_msg = g.appmsg.get_log_message("MSG-82020", [])
+                g.applogger.error(log_msg)
+                msg = g.appmsg.get_api_message("MSG-82020", [])
                 return False, msg, policy_data_dict
 
             # Policy一覧を格納
@@ -175,7 +171,6 @@ class policySetting():
             for policy_id, policy_data in policy_data_dict.items():
                 exist_flag = False
                 tf_manage_policy_id = None
-                # ####メモ：この時点で、あとでInputData.zipに入れるポリシーファイルの対象を変数に格納しておくこと。
                 policy_name = policy_data.get('policy_name')
                 policy_file = policy_data.get('policy_file')
                 policy_note = policy_data.get('policy_note')
@@ -196,10 +191,9 @@ class policySetting():
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが200以外の場合はエラー判定
                     if not response_status_code == 200:
-                        # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                        # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                        msg = "[API Error]Policyの更新に失敗しました"
-                        g.applogger.error(msg)
+                        log_msg = g.appmsg.get_log_message("MSG-82021", [])
+                        g.applogger.error(log_msg)
+                        msg = g.appmsg.get_api_message("MSG-82021", [])
                         return False, msg, policy_data_dict
 
                     # IDの結び付け用dictに格納
@@ -211,10 +205,9 @@ class policySetting():
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが201以外の場合はエラー判定
                     if not response_status_code == 201:
-                        # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                        # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                        msg = "[API Error]Policyの作成に失敗しました"
-                        g.applogger.error(msg)
+                        log_msg = g.appmsg.get_log_message("MSG-82022", [])
+                        g.applogger.error(log_msg)
+                        msg = g.appmsg.get_api_message("MSG-82022", [])
                         return False, msg, policy_data_dict
 
                     # API返却値からTerraformのpolicyIDを取得
@@ -233,10 +226,9 @@ class policySetting():
                 response_status_code = response_array.get('statusCode')
                 # ステータスコードが200以外の場合はエラー判定
                 if not response_status_code == 200:
-                    # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                    # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                    msg = "[API Error]Policyファイルの登録に失敗しました"
-                    g.applogger.error(msg)
+                    log_msg = g.appmsg.get_log_message("MSG-82023", [])
+                    g.applogger.error(log_msg)
+                    msg = g.appmsg.get_api_message("MSG-82023", [])
                     return False, msg, policy_data_dict
 
             # ITA側とTerraform側でPolicySetの登録状態を照らし合わせ、登録/更新を実行する
@@ -262,10 +254,9 @@ class policySetting():
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが200以外の場合はエラー判定
                     if not response_status_code == 200:
-                        # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                        # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                        msg = "[API Error]PolicySetの更新に失敗しました"
-                        g.applogger.error(msg)
+                        log_msg = g.appmsg.get_log_message("MSG-82024", [])
+                        g.applogger.error(log_msg)
+                        msg = g.appmsg.get_api_message("MSG-82024", [])
                         return False, msg, policy_data_dict
 
                     # 紐づいているpolicyをすべて切り離す
@@ -274,14 +265,13 @@ class policySetting():
                     respons_contents_data = respons_contents.get('data')
                     relationships = respons_contents_data.get('relationships')
                     registered_policy_set_policy = relationships.get('policies')
-                    response_array = delete_relationships_policy(self.restApiCaller, tf_manage_policy_set_id, registered_policy_set_policy)  # noqa: F405
+                    response_array = delete_relationships_policy(self.restApiCaller, tf_manage_policy_set_id, registered_policy_set_policy)  # noqa: F405, E501
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが204以外の場合はエラー判定
                     if not response_status_code == 204:
-                        # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                        # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                        msg = "[API Error]PolicySetからPolicyの切り離しに失敗しました"
-                        g.applogger.error(msg)
+                        log_msg = g.appmsg.get_log_message("MSG-82025", [])
+                        g.applogger.error(log_msg)
+                        msg = g.appmsg.get_api_message("MSG-82025", [])
                         return False, msg, policy_data_dict
 
                 else:
@@ -290,10 +280,9 @@ class policySetting():
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが201以外の場合はエラー判定
                     if not response_status_code == 201:
-                        # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                        # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                        msg = "[API Error]PolicySetの作成に失敗しました"
-                        g.applogger.error(msg)
+                        log_msg = g.appmsg.get_log_message("MSG-82026", [])
+                        g.applogger.error(log_msg)
+                        msg = g.appmsg.get_api_message("MSG-82026", [])
                         return False, msg, policy_data_dict
 
                 # policySetとWorkspaceの紐付け処理を実行
@@ -301,10 +290,9 @@ class policySetting():
                 response_status_code = response_array.get('statusCode')
                 # ステータスコードが204以外の場合はエラー判定
                 if not response_status_code == 204:
-                    # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                    # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                    msg = "[API Error]PolicySetとWorkspaceの紐付に失敗しました"
-                    g.applogger.error(msg)
+                    log_msg = g.appmsg.get_log_message("MSG-82027", [])
+                    g.applogger.error(log_msg)
+                    msg = g.appmsg.get_api_message("MSG-82027", [])
                     return False, msg, policy_data_dict
 
                 # policySetとpolicyの紐付け処理を実行
@@ -319,10 +307,9 @@ class policySetting():
                 response_status_code = response_array.get('statusCode')
                 # ステータスコードが204以外の場合はエラー判定
                 if not response_status_code == 204:
-                    # ####メモ：ログに出すメッセージ（英語）と、返却するメッセージで分けたい。
-                    # ####メモ：また、「疎通失敗」と「一覧取得失敗」で１系は分けているが、それいるか？
-                    msg = "[API Error]PolicySetとPolicyの紐付に失敗しました"
-                    g.applogger.error(msg)
+                    log_msg = g.appmsg.get_log_message("MSG-82028", [])
+                    g.applogger.error(log_msg)
+                    msg = g.appmsg.get_api_message("MSG-82028", [])
                     return False, msg, policy_data_dict
 
         except Exception as e:

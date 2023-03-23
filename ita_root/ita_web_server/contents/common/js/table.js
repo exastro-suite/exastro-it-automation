@@ -1020,7 +1020,11 @@ filterHtml( filterHeaderFlag = true ) {
                           return initSetFilter[ rest ].NORMAL;
                       break;
                       default:
-                          return { start: initSetFilter[ rest ].START, end: initSetFilter[ rest ].END };
+                          if ( initSetFilter[ rest ].RANGE ) {
+                              return { start: initSetFilter[ rest ].RANGE.START, end: initSetFilter[ rest ].RANGE.END };
+                          } else {
+                              return { start: initSetFilter[ rest ].START, end: initSetFilter[ rest ].END};
+                          }
                   }
               } else {
                   switch ( filterType ) {
@@ -2836,12 +2840,22 @@ discardMark( value ) {
 */
 discardCheck( id ) {
     const tb = this;
+    
+    // 編集データがある場合
     if ( tb.edit.input[ id ] && tb.edit.input[ id ].after.parameter.discard ) {
         return tb.edit.input[ id ].after.parameter.discard;
-    } else if ( tb.data[ id ] && tb.data[ id ].parameter.discard ) {
-        return tb.data[ id ].parameter.discard;
-    } else {
-        return '0';
+    }
+    
+    if ( tb.data.body ) {
+        const target = tb.data.body.find(function( item ){
+            return id === item.parameter[ tb.idNameRest ];
+        });
+        
+        if ( target !== undefined && target.parameter.discard ) {
+            return target.parameter.discard;
+        } else {
+            return '0';
+        }
     }
 }
 /*
@@ -4717,8 +4731,9 @@ restApi( buttonText, method, endpoint, body ) {
         }, '400px').then( function( flag ){
             if ( flag ) {
                 let process = fn.processingModal( getMessage.FTE00120 );
-                fn.fetch( endpoint, null, method, body ).then(function( result ){
-                    fn.alert( getMessage.FTE00121, result );                 
+                fn.fetch( endpoint, null, method, body, { message: true } ).then(function( result ){
+                    const message = ( fn.typeof( result ) === 'array')? result[1]: result;
+                    fn.alert( getMessage.FTE00121, message );                    
                 }).catch(function( error ){
                     const errorMessage = ( error.message )? error.message: 'Error!';
                     fn.alert( getMessage.FTE00121, errorMessage );

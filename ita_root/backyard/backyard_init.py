@@ -14,11 +14,12 @@
 from flask import Flask, g
 from dotenv import load_dotenv  # python-dotenv
 import os
+import sys
 
-from common_libs.common.exception import AppException
+# from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
-from common_libs.ci.util import wrapper_job, app_exception, exception
+from common_libs.ci.util import wrapper_job
 from backyard_main import backyard_main as main_logic
 
 
@@ -29,20 +30,15 @@ def main():
     flask_app = Flask(__name__)
 
     with flask_app.app_context():
-        try:
-            g.USER_ID = os.environ.get("USER_ID")
-            g.LANGUAGE = os.environ.get("LANGUAGE")
-            # create app log instance and message class instance
-            g.applogger = AppLog()
-            g.appmsg = MessageTemplate(g.LANGUAGE)
+        g.USER_ID = os.environ.get("USER_ID")
+        g.LANGUAGE = os.environ.get("LANGUAGE")
+        # create app log instance and message class instance
+        g.applogger = AppLog()
+        g.appmsg = MessageTemplate(g.LANGUAGE)
 
-            wrapper_job(main_logic)
-        except AppException as e:
-            # catch - raise AppException("xxx-xxxxx", log_format)
-            app_exception(e)
-        except Exception as e:
-            # catch - other all error
-            exception(e)
+        args = sys.argv
+        loop_count = 500 if len(args) == 1 else args[1]
+        wrapper_job(main_logic, None, None, loop_count)
 
 
 if __name__ == '__main__':

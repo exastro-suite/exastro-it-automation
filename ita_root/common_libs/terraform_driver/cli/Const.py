@@ -82,3 +82,6 @@ class Const(CommonConst):
     DIR_EXECUTE = '/driver/terraform_cli/execute'  # 作業状態確認
     DIR_WORK = '/driver/terraform_cli/workspace'  # Terraform CLIコマンド実行用
     DIR_TEMP = '/tmp/driver/terraform_cli'  # Temporary
+
+    # ファイル名
+    FILE_EMERGENCY_STOP = 'emergency_stop'  # 緊急停止の検知用ファイル

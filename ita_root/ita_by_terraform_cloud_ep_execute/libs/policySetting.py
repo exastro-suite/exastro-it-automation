@@ -21,7 +21,7 @@ class policySetting():
     """
     Policyに関するレコードを見て、Terraform Cloud/Enterprise側にPolicyおよびPolicySetの登録処理を行う。
     """
-    def __init__(self, ws_db=None, TFConst=None, restApiCaller=None, tf_organization_name=None, tf_workspace_name=None, tf_workspace_id=None, tf_manage_workspace_id=None):  # noqa: E501
+    def __init__(self, ws_db=None, TFConst=None, restApiCaller=None, tf_organization_name=None, tf_workspace_name=None, tf_workspace_id=None, tf_manage_workspace_id=None, execution_no=None):  # noqa: E501
 
         """
         処理内容
@@ -44,6 +44,7 @@ class policySetting():
         self.tf_workspace_name = tf_workspace_name
         self.tf_workspace_id = tf_workspace_id
         self.tf_manage_workspace_id = tf_manage_workspace_id
+        self.execution_no = execution_no
 
     def policy_setting_main(self):  # noqa: C901
         """
@@ -58,6 +59,7 @@ class policySetting():
 
         try:
             # [RESTAPI]連携先TerraformからPolicySetの一覧を取得する
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51013", [self.execution_no]))
             response_array = get_tf_policy_set_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             # ステータスコードが200以外の場合はエラー判定
@@ -82,6 +84,7 @@ class policySetting():
                 for workspace_data in relationships_workspace_data:
                     if workspace_data.get('id') == self.tf_manage_workspace_id:
                         # [RESTAPI]一致するWorkspaceIDについて、切り離しを実行
+                        g.applogger.debug(g.appmsg.get_log_message("BKY-51015", [self.execution_no]))
                         response_array = delete_relationships_workspace(self.restApiCaller, tf_manage_policy_set_id, self.tf_manage_workspace_id)  # noqa: F405, E501
                         response_status_code = response_array.get('statusCode')
                         # ステータスコードが204以外の場合はエラー判定
@@ -149,6 +152,7 @@ class policySetting():
                 policy_data_dict[policy_id] = {"policy_id": policy_id, "policy_name": ret[0].get('POLICY_NAME'), "policy_file": ret[0].get('POLICY_MATTER_FILE'), "policy_note": ret[0].get('NOTE')}  # noqa: E501
 
             # [RESTAPI]連携先TerraformからPolicyの一覧を取得する
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51014", [self.execution_no]))
             response_array = get_tf_policy_list(self.restApiCaller, self.tf_organization_name)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             # ステータスコードが200以外の場合はエラー判定
@@ -186,7 +190,8 @@ class policySetting():
                         break
 
                 if exist_flag:
-                    # policyが既にTerraform側に登録されている場合、更新APIを実行する
+                    # [RESTAPI]policyが既にTerraform側に登録されている場合、更新APIを実行する
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51018", [self.execution_no, policy_name]))
                     response_array = update_policy(self.restApiCaller, tf_manage_policy_id, policy_name, policy_file, policy_note)  # noqa: F405
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが200以外の場合はエラー判定
@@ -200,7 +205,8 @@ class policySetting():
                     ita_tf_policy_link[policy_id] = tf_manage_policy_id
 
                 else:
-                    # plicyが登録されていない場合、登録APIを実行する
+                    # [RESTAPI]plicyが登録されていない場合、登録APIを実行する
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51017", [self.execution_no, policy_name]))
                     response_array = create_policy(self.restApiCaller, self.tf_organization_name, policy_name, policy_file, policy_note)  # noqa: F405
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが201以外の場合はエラー判定
@@ -219,7 +225,8 @@ class policySetting():
                     # IDの結び付け用dictに格納
                     ita_tf_policy_link[policy_id] = tf_manage_policy_id
 
-                # 登録/更新したPolicyにファイルを適用する
+                # [RESTAPI]登録/更新したPolicyにファイルを適用する
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51019", [self.execution_no]))
                 policy_file_dir = base_dir + self.TFConst.DIR_POLICY
                 policy_file_path = policy_file_dir + '/' + policy_id + '/' + policy_file
                 response_array = policy_file_upload(self.restApiCaller, tf_manage_policy_id, policy_file_path)  # noqa: F405
@@ -249,7 +256,8 @@ class policySetting():
                         break
 
                 if exist_flag:
-                    # policySetが既にTerraform側に登録されている場合、更新APIを実行する
+                    # [RESTAPI]policySetが既にTerraform側に登録されている場合、更新APIを実行する
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51021", [self.execution_no, policy_set_name]))
                     response_array = update_policy_set(self.restApiCaller, tf_manage_policy_set_id, policy_set_name, policy_set_note)  # noqa: F405
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが200以外の場合はエラー判定
@@ -259,7 +267,8 @@ class policySetting():
                         msg = g.appmsg.get_api_message("MSG-82024", [])
                         return False, msg, policy_data_dict
 
-                    # 紐づいているpolicyをすべて切り離す
+                    # [RESTAPI]紐づいているpolicyをすべて切り離す
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51016", [self.execution_no]))
                     respons_contents_json = response_array.get('responseContents')
                     respons_contents = json.loads(respons_contents_json)
                     respons_contents_data = respons_contents.get('data')
@@ -275,7 +284,8 @@ class policySetting():
                         return False, msg, policy_data_dict
 
                 else:
-                    # plicySetが登録されていない場合、登録APIを実行する
+                    # [RESTAPI]plicySetが登録されていない場合、登録APIを実行する
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51020", [self.execution_no, policy_set_name]))
                     response_array = create_policy_set(self.restApiCaller, self.tf_organization_name, policy_set_name, policy_set_note)  # noqa: F405
                     response_status_code = response_array.get('statusCode')
                     # ステータスコードが201以外の場合はエラー判定
@@ -285,7 +295,8 @@ class policySetting():
                         msg = g.appmsg.get_api_message("MSG-82026", [])
                         return False, msg, policy_data_dict
 
-                # policySetとWorkspaceの紐付け処理を実行
+                # [RESTAPI]policySetとWorkspaceの紐付け処理を実行
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51022", [self.execution_no, policy_set_name, self.tf_workspace_name]))
                 response_array = relationships_workspace(self.restApiCaller, tf_manage_policy_set_id, self.tf_manage_workspace_id)  # noqa: F405
                 response_status_code = response_array.get('statusCode')
                 # ステータスコードが204以外の場合はエラー判定
@@ -295,7 +306,8 @@ class policySetting():
                     msg = g.appmsg.get_api_message("MSG-82027", [])
                     return False, msg, policy_data_dict
 
-                # policySetとpolicyの紐付け処理を実行
+                # [RESTAPI]policySetとpolicyの紐付け処理を実行
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51023", [self.execution_no, policy_set_name, policy_name]))
                 registered_policy_set_policy = {"data": []}
                 target_policy_id_list = policy_set_policy_data_dict.get(policy_set_id)
                 for policy_id in target_policy_id_list:

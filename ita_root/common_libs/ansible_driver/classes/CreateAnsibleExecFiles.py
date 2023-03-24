@@ -1212,7 +1212,6 @@ class CreateAnsibleExecFiles():
                 return False
 
         elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-            print("test==================== " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
             # Pionner 暗号化が必要な変数のホスト変数ファイル作成
             if self.CreateVaultHostvarsfiles(ina_vault_host_vars_file_list, ina_host_vars, ina_hostinfolist) is False:
                 return False
@@ -7117,7 +7116,6 @@ class CreateAnsibleExecFiles():
                                 # 変数を置換える具体値を設定
                                 tpfvarSetTo.append({tpf_var_name: tpf_list[tpf_var_name]})
 
-                    print("now " + inspect.currentframe().f_code.co_name + ":" + str(inspect.currentframe().f_lineno))
                     # 変数具体値がTPF/CPF変数の場合の具体値置換えでない場合
                     if in_SpecialVarValReplace is False:
                         # ITA独自変数のリスト作成 pioneerなので全ITA独自変数を対象にする

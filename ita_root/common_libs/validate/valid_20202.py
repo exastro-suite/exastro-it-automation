@@ -70,56 +70,64 @@ def external_valid_menu_after(objDBCA, objtable, option):
             msg_tmp = g.appmsg.get_api_message("MSG-10905", [error_detail])
             msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
-        # 文字コードをチェック
-        encode = detect(playbook_data_binary)
-        encode = encode['encoding'].upper()
-        # BOM有をチェック
-        if encode in ["UTF-8-SIG"]:
-            retBool = False
-            msg_tmp = g.appmsg.get_api_message("MSG-10640")
-            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+        if retBool is True:
+            # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
+            encode = detect(playbook_data_binary)
+            if encode['encoding'] is None:
+                retBool = False
+                msg_tmp = g.appmsg.get_api_message("MSG-10638")
+                msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
-        elif encode not in ["ASCII", "UTF-8"]:
-            retBool = False
-            msg_tmp = g.appmsg.get_api_message("MSG-10638")
-            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+        if retBool is True:
+            # 文字コードを取得
+            encode = encode['encoding'].upper()
+            # BOM有をチェック
+            if encode in ["UTF-8-SIG"]:
+                retBool = False
+                msg_tmp = g.appmsg.get_api_message("MSG-10640")
+                msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
+            elif encode not in ["ASCII", "UTF-8"]:
+                retBool = False
+                msg_tmp = g.appmsg.get_api_message("MSG-10638")
+                msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
-        # 変数抜出
-        VarsAry = {}
-        VarsAry['1'] = {}  # GBL_
-        VarsAry['2'] = {}  # CPF_
-        VarsAry['3'] = {}  # TPF_
+            # 変数抜出
+            VarsAry = {}
+            VarsAry['1'] = {}  # GBL_
+            VarsAry['2'] = {}  # CPF_
+            VarsAry['3'] = {}  # TPF_
 
-        vars_line_array = []
-        local_vars = []
+            vars_line_array = []
+            local_vars = []
 
-        wsra = WrappedStringReplaceAdmin()
-        vars_array = []
-        _, vars_line_array = wsra.SimpleFillterVerSearch("GBL_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
-        for v in vars_array:
-            VarsAry['1'][v] = 0
+            wsra = WrappedStringReplaceAdmin()
+            vars_array = []
+            _, vars_line_array = wsra.SimpleFillterVerSearch("GBL_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
+            for v in vars_array:
+                VarsAry['1'][v] = 0
 
-        vars_array = []
-        _, vars_line_array = wsra.SimpleFillterVerSearch("CPF_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
-        for v in vars_array:
-            VarsAry['2'][v] = 0
+            vars_array = []
+            _, vars_line_array = wsra.SimpleFillterVerSearch("CPF_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
+            for v in vars_array:
+                VarsAry['2'][v] = 0
 
-        vars_array = []
-        _, vars_line_array = wsra.SimpleFillterVerSearch("TPF_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
-        for v in vars_array:
-            VarsAry['3'][v] = 0
+            vars_array = []
+            _, vars_line_array = wsra.SimpleFillterVerSearch("TPF_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
+            for v in vars_array:
+                VarsAry['3'][v] = 0
 
-        # 変数登録
-        ret, msg_tmp = CommnVarsUsedListUpdate(objDBCA, option, pkey, '1', VarsAry)
-        if ret is False:
-            retBool = False
-            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+            # 変数登録
+            ret, msg_tmp = CommnVarsUsedListUpdate(objDBCA, option, pkey, '1', VarsAry)
+            if ret is False:
+                retBool = False
+                msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
-    # バックヤード起動フラグ設定
-    table_name = "T_COMN_PROC_LOADED_LIST"
-    data_list = {"LOADED_FLG": "0", "ROW_ID": "202"}
-    primary_key_name = "ROW_ID"
-    objDBCA.table_update(table_name, data_list, primary_key_name, False)
+    if retBool is True:
+        # バックヤード起動フラグ設定
+        table_name = "T_COMN_PROC_LOADED_LIST"
+        data_list = {"LOADED_FLG": "0", "ROW_ID": "202"}
+        primary_key_name = "ROW_ID"
+        objDBCA.table_update(table_name, data_list, primary_key_name, False)
 
     return retBool, msg, option

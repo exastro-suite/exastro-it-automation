@@ -135,3 +135,6 @@ dmypy.json
 .talismanrc
 __pycache__/
 *.session.sql
+
+# snyc
+.dccache

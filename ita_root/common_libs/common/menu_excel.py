@@ -2254,7 +2254,9 @@ def execute_excel_maintenance(
     # 登録更新時に除外する項目リスト
     register_list = []
     update_list = []
+    # ファイルアップロード項目リスト
     column_class_file = ['9', '20']
+    file_param = {}
     for recode in ret:
         column_name_rest = str(recode.get('COLUMN_NAME_REST'))
         column_class_id = str(recode.get('COLUMN_CLASS'))
@@ -2270,6 +2272,7 @@ def execute_excel_maintenance(
         if column_class_id in column_class_file:
             register_list.append(column_name_rest)
             update_list.append(column_name_rest)
+            file_param[column_name_rest] = None
 
         # Excelには表示しない項目
         if input_item == '2' and view_item == '0':
@@ -2316,7 +2319,6 @@ def execute_excel_maintenance(
 
     parameter = []
     dict_param = {}
-    file_param = {}
 
     # i:対象行の分だけループ
     if excel_data:

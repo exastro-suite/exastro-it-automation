@@ -37,9 +37,10 @@ def external_valid_menu_before(objdbca, objtable, option):
         pattern = r'\.tf$'
         match = re.findall(pattern, file_name)
         if match:
-            # 一時利用ディレクトリ
-            base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
-            temp_dir = base_dir + TFCLIEPConst.DIR_TEMP
+            # 一時利用ディレクトリ(/tmpを使用する)
+            # base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
+            # temp_dir = base_dir + TFCLIEPConst.DIR_TEMP
+            temp_dir = '/tmp'
 
             # ファイルを一時ディレクトリに格納
             tf_data = option.get('entry_parameter', {}).get('file', {}).get('module_file', '')

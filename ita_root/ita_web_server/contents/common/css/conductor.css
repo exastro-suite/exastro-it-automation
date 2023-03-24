@@ -1173,9 +1173,13 @@ transform: translate(-50%,-50%) rotate(-45deg);
 .add-node.dsc,
 .node-dsc .node-circle .node-gem { background-color: #F5600A; }
 
-.node-terraform .node-type  { background-color: #5c4ee5; }
-.add-node.terraform,
-.node-terraform .node-circle .node-gem { background-color: #5c4ee5; }
+.node-terraform-cli .node-type  { background-color: #844fba; }
+.add-node.terraform-cli,
+.node-terraform-cli .node-circle .node-gem { background-color: #844fba; font-size: 20px; }
+
+.node-terraform-cloud-ep .node-type  { background-color: #5c4ee5; }
+.add-node.terraform-cloud-ep,
+.node-terraform-cloud-ep .node-circle .node-gem { background-color: #5c4ee5; font-size: 20px; }
 
 /* Running */
 .editor[data-editor-mode="confirmation"] .node {

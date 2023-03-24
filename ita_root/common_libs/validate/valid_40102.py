@@ -39,6 +39,8 @@ def compare_detail_validate(objdbca, objtable, option):
 
             # check compare target menus discard
             compare_id = entry_parameter.get("compare")
+            target_column_1 = entry_parameter.get("target_column_1")
+            target_column_2 = entry_parameter.get("target_column_2")
             sql_str = textwrap.dedent("""
                 SELECT
                     `TAB_A`.*
@@ -71,6 +73,7 @@ def compare_detail_validate(objdbca, objtable, option):
                     msg_args = []
                     msg = g.appmsg.get_api_message(status_code, msg_args)
                 else:
+                    # check: target menu id
                     sql_str = textwrap.dedent("""
                         SELECT
                             *
@@ -88,6 +91,34 @@ def compare_detail_validate(objdbca, objtable, option):
                         status_code = "MSG-60004"
                         msg_args = []
                         msg = g.appmsg.get_api_message(status_code, msg_args)
+
+                    # check: target column id
+                    target_list = {target_menu_1: target_column_1, target_menu_2: target_column_2}
+                    count_n = 1
+                    for mid, cid in target_list.items():
+                        sql_str = textwrap.dedent("""
+                            SELECT
+                                *
+                            FROM
+                                `T_COMN_MENU_COLUMN_LINK` `TAB_A`
+                            WHERE `TAB_A`.`MENU_ID` = %s
+                            AND `TAB_A`.`COLUMN_DEFINITION_ID` = %s
+                            AND `TAB_A`.`DISUSE_FLAG` <> 1
+                        """).format().strip()
+
+                        bind_list = [mid, cid]
+                        rows = objdbca.sql_execute(sql_str, bind_list)
+                        if len(rows) != 1:
+                            retBool = False
+                            # target column_1 / column_2 error: menu-column
+                            status_code = "MSG-60027"
+                            if count_n == 1:
+                                msg_args = [g.appmsg.get_api_message("MSG-60025")]
+                            elif count_n == 2:
+                                msg_args = [g.appmsg.get_api_message("MSG-60026")]
+                            msg = g.appmsg.get_api_message(status_code, msg_args)
+                            continue
+                        count_n = count_n + 1
             else:
                 retBool = False
                 # target compare error

@@ -694,7 +694,7 @@ class CreateAnsibleExecFiles():
                 dest_file = c_dirwk + "/" + os.path.basename(src_file)
                 # 対話ファイル実行に必要な資材をコピーする。
                 shutil.copyfile(src_file, dest_file)
-                os.chmod(src_file, 0o777)
+                os.chmod(dest_file, 0o777)
 
         # グローバル変数管理からグローバル変数の情報を取得
         self.lva_global_vars_list = {}

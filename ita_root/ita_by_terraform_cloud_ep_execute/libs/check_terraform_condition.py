@@ -89,7 +89,8 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
         tf_organization_name = ret[0].get('ORGANIZATION_NAME')
         tf_workspace_name = ret[0].get('WORKSPACE_NAME')
 
-        # [API]RUN-IDの対象からステータスを取得
+        # [RESTAPI]RUN-IDの対象からステータスを取得
+        g.applogger.debug(g.appmsg.get_log_message("BKY-51024", [execution_no, tf_run_id]))
         response_array = get_run_data(restApiCaller, tf_run_id)  # noqa: F405
         response_status_code = response_array.get('statusCode')
         if not response_status_code == 200:
@@ -110,7 +111,8 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
         is_confirmable = attributes['actions']['is-confirmable']  # Apply実行可能フラグ
         is_discardable = attributes['actions']['is-discardable']  # 実行中止可能フラグ
 
-        # [API]Planの詳細データを取得
+        # [RESTAPI]Planの詳細データを取得
+        g.applogger.debug(g.appmsg.get_log_message("BKY-51025", [execution_no]))
         response_array = get_plan_data(restApiCaller, tf_plan_id)  # noqa: F405
         response_status_code = response_array.get('statusCode')
         if not response_status_code == 200:
@@ -133,6 +135,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 pass
 
         # [API]Planログを取得し、plan.logに書き込み(上書き)
+        g.applogger.debug(g.appmsg.get_log_message("BKY-51026", [execution_no]))
         content_log = get_run_log(restApiCaller, tf_plan_log_url, True)  # noqa: F405
         with open(plan_log, 'w') as f:
             f.write(content_log)
@@ -162,6 +165,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
         # PolicyCheck開始判定
         if plan_complete_flag or policy_check_start_flag:
             # [RESTAPI]Policy-checkの詳細データを取得
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51027", [execution_no]))
             response_array = get_policy_check_data(restApiCaller, tf_run_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 200:
@@ -182,6 +186,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 policy_output_url = respons_contents_data[0].get('links', {}).get('output', {})
                 if policy_output_url:
                     # [API]PolicyCheckログを取得し、policy_check_logに書き込み(上書き)
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51028", [execution_no]))
                     content_log = get_run_log(restApiCaller, policy_output_url, False)  # noqa: F405
                     with open(policy_check_log, 'w') as f:
                         f.write(content_log)
@@ -212,6 +217,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 # Applyを実行していない場合
                 if run_mode == TFCloudEPConst.RUN_MODE_PLAN:
                     # [API]「Plan確認」の場合はRUN-IDに対してApplyを中止する
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51029", [execution_no, tf_run_id]))
                     response_array = apply_discard(restApiCaller, tf_run_id)  # noqa: F405
                     response_status_code = response_array.get('statusCode')
                     if not response_status_code == 202:
@@ -227,6 +233,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
                 else:
                     # [API]「Plan確認」以外（通常、リソース削除）の場合はRUN-IDに対してApplyを実行する(成功時は何もせずに処理を進める。)
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51030", [execution_no, tf_run_id]))
                     response_array = apply_execution(restApiCaller, tf_run_id)  # noqa: F405
                     response_status_code = response_array.get('statusCode')
                     if not response_status_code == 202:
@@ -238,6 +245,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             else:
                 # Applyを実行している場合
                 # [API]Applyの詳細データを取得
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51031", [execution_no]))
                 response_array = get_apply_data(restApiCaller, tf_apply_id)  # noqa: F405
                 response_status_code = response_array.get('statusCode')
                 if not response_status_code == 200:
@@ -259,7 +267,8 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                     with open(apply_log, 'w'):
                         pass
 
-                # [API]Planログを取得し、plan.logに書き込み(上書き)
+                # [API]Applyログを取得し、apply.logに書き込み(上書き)
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51032", [execution_no]))
                 content_log = get_run_log(restApiCaller, tf_apply_log_url, True)  # noqa: F405
                 with open(apply_log, 'w') as f:
                     f.write(content_log)
@@ -295,6 +304,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
         # stateファイル取得処理
         if get_state_file_flag:
             # [API]stateの一覧取得APIを実行(最新の10件)
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51033", [execution_no]))
             response_array = get_workspace_state_version(restApiCaller, tf_organization_name, tf_workspace_name)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 200:
@@ -318,6 +328,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                     break
 
             # [API]stateファイルを取得し、ky_encryptをかけたものを生成する。
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51034", [execution_no]))
             if tf_state_url and tf_state_id:
                 tf_state_org = get_run_log(restApiCaller, tf_state_url, True)  # noqa: F405
                 if tf_state_org:
@@ -349,6 +360,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 for output in outputs:
                     state_version_output_id = output.get('id')
                     # [API]outputを取得
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51035", [execution_no]))
                     response_array = get_outputs(restApiCaller, state_version_output_id)  # noqa: F405
                     response_status_code = response_array.get('statusCode')
                     if not response_status_code == 200:
@@ -381,7 +393,10 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
         # 遅延タイマーチェックフラグがTrueの場合かつ、ステータス更新フラグがFalseの場合、遅延タイマーチェック処理を実行する
         if time_limit_check_flag and status_update_flag is False:
-            time_limit = int(instance_data.get('I_TIME_LIMIT'))
+            if instance_data.get('I_TIME_LIMIT'):
+                time_limit = int(instance_data.get('I_TIME_LIMIT'))
+            else:
+                time_limit = None
             current_status = instance_data.get('STATUS_ID')
             # ステータスが「実行中」かつ遅延タイマーが設定されている場合、遅延チェック処理を実行
             if current_status == TFCloudEPConst.STATUS_PROCESSING and time_limit:
@@ -394,10 +409,9 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 # 制限時刻と現在時刻を比較
                 if limit_unixtime < now_unixtime:
                     # 遅延が検出された場合、ステータスを「実行中(遅延)」に変更する。
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51036", [execution_no]))
                     status_update_flag = True
                     set_status_id = TFCloudEPConst.STATUS_PROCESS_DELAYED
-                    # デバッグメッセージ（遅延検出）
-                    # g.applogger.debug(g.appmsg.get_log_message("MSG-10707", [execution_no]))
 
         # zipファイル作成フラグがTrueの場合、結果データ用のZIPファイルを作成する
         if make_zip_flag:
@@ -438,6 +452,12 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             ret, execute_data = update_execution_record(objdbca, TFCloudEPConst, update_data, result_data_rename_dir_path)
             if ret:
                 objdbca.db_commit()
+                if set_status_id == TFCloudEPConst.STATUS_COMPLETE:
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51004", [execution_no]))
+                elif set_status_id == TFCloudEPConst.STATUS_FAILURE:
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51005", [execution_no]))
+                elif set_status_id == TFCloudEPConst.STATUS_PROCESS_DELAYED:
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51003", [execution_no]))
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
                 g.applogger.error(log_msg)

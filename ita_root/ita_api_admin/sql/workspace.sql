@@ -130,6 +130,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK
     HISTORY_TABLE_FLAG              VARCHAR(2),                                 -- 履歴テーブル有無
     INHERIT                         VARCHAR(2),                                 -- 継承フラグ
     VERTICAL                        VARCHAR(2),                                 -- 縦型フラグ
+    HOSTGROUP                       VARCHAR(2),                                 -- ホストグループフラグ
     ROW_INSERT_FLAG                 VARCHAR(2),                                 -- 登録許可フラグ
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ
@@ -162,6 +163,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK_JNL
     HISTORY_TABLE_FLAG              VARCHAR(2),                                 -- 履歴テーブル有無
     INHERIT                         VARCHAR(2),                                 -- 継承フラグ
     VERTICAL                        VARCHAR(2),                                 -- 縦型フラグ
+    HOSTGROUP                       VARCHAR(2),                                 -- ホストグループフラグ
     ROW_INSERT_FLAG                 VARCHAR(2),                                 -- 登録許可フラグ
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ

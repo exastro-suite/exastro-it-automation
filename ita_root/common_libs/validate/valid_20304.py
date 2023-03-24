@@ -81,9 +81,6 @@ def external_valid_menu_after(objDBCA, objtable, option):
         if retBool is True:
             # 文字コードを取得
             encode = encode['encoding'].upper()
-            print("-------------------")
-            print(encode)
-            print("-------------------")
             # BOM有をチェック
             if encode in ["UTF-8-SIG"]:
                 retBool = False

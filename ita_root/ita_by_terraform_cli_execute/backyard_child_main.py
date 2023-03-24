@@ -16,7 +16,7 @@ import sys
 import os
 import subprocess
 import time
-import json
+
 from shlex import quote
 from zc import lockfile
 from zc.lockfile import LockError
@@ -27,8 +27,8 @@ from common_libs.common.util import get_timestamp, ky_encrypt
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
-
-from libs import common_functions as cm
+from common_libs.terraform_driver.common.by_execute import get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl
+from libs import functions as func
 
 
 # 基本情報
@@ -117,7 +117,7 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     global tmp_execution_dir
 
     # 処理対象の作業インスタンス情報取得
-    retBool, execute_data = cm.get_execution_process_info(wsDb, TFCLIConst, execution_no)
+    retBool, execute_data = func.get_execution_process_info(wsDb, TFCLIConst, execution_no)
     if retBool is False:
         err_log = g.appmsg.get_log_message(execute_data, [execution_no])
         raise Exception(err_log)
@@ -141,7 +141,7 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
             "STATUS_ID": TFCLIConst.STATUS_COMPLETE,
             "TIME_END": get_timestamp(),
         }
-        result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data)
+        result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data)
         if result is True:
             wsDb.db_commit()
             g.applogger.debug(g.appmsg.get_log_message("MSG-10731", [execution_no]))
@@ -149,7 +149,7 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
         return True, execute_data
 
     # 緊急停止のチェック
-    ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
+    ret_emgy, execute_data = is_emergency_stop(wsDb, execute_data)
     if ret_emgy is False:
         return True, execute_data
 
@@ -188,10 +188,10 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
         subprocess.run(cmd, shell=True, cwd=workspace_work_dir)
 
     # 変数ファイルの準備
-    PrepareVarsFile(wsDb, execute_data)
+    prepare_vars_file(wsDb, execute_data)
 
     # 緊急停止のチェック
-    ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
+    ret_emgy, execute_data = is_emergency_stop(wsDb, execute_data)
     if ret_emgy is False:
         True, execute_data
 
@@ -232,7 +232,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
 
     # 投入ZIPファイルを作成する(ITAダウンロード用)
     # エラーを無視する
-    is_zip = MakeInputZipFile()
+    is_zip = make_input_zip_file()
 
     # ステータスを実行中に更新
     wsDb.db_transaction_start()
@@ -248,7 +248,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         logfilelist_json.append("apply.log")
     update_data["LOGFILELIST_JSON"] = json.dumps(logfilelist_json)
     update_data["MULTIPLELOG_MODE"] = 1
-    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
+    result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10731", [execution_no]))
@@ -267,7 +267,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
 
     # initコマンド
     command = ["terraform", "init", "-no-color"]
-    ret_status, execute_data = ExecCommand(wsDb, execute_data, command, init_log, error_log, True)
+    ret_status, execute_data = exec_command(wsDb, execute_data, command, init_log, error_log, True)
     if ret_status != TFCLIConst.STATUS_COMPLETE:
         update_status = ret_status
     result_matter_arr.append(error_log)
@@ -276,7 +276,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
 
     if ret_status == TFCLIConst.STATUS_COMPLETE:
         # 緊急停止のチェック
-        ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
+        ret_emgy, execute_data = is_emergency_stop(wsDb, execute_data)
         if ret_emgy is False:
             True, execute_data
 
@@ -291,14 +291,14 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
             command = ["terraform", "plan", "-destroy"]
             command.extend(command_options)
 
-        ret_status, execute_data = ExecCommand(wsDb, execute_data, command, plan_log, error_log)
+        ret_status, execute_data = exec_command(wsDb, execute_data, command, plan_log, error_log)
         if ret_status != TFCLIConst.STATUS_COMPLETE:
             update_status = ret_status
         result_matter_arr.append(plan_log)
 
     if ret_status == TFCLIConst.STATUS_COMPLETE:
         # 緊急停止のチェック
-        ret_emgy, execute_data = IsEmergencyStop(wsDb, execute_data)
+        ret_emgy, execute_data = is_emergency_stop(wsDb, execute_data)
         if ret_emgy is False:
             True, execute_data
 
@@ -314,21 +314,21 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
             command = ["terraform", "destroy"]
             command.extend(command_options)
 
-        ret_status, execute_data = ExecCommand(wsDb, execute_data, command, apply_log, error_log)
+        ret_status, execute_data = exec_command(wsDb, execute_data, command, apply_log, error_log)
         if ret_status != TFCLIConst.STATUS_COMPLETE:
             update_status = ret_status
         result_matter_arr.append(apply_log)
 
         # stateファイルの暗号化
         # エラーを無視する
-        SaveEncryptStateFile(execute_data)
+        save_encrypt_statefile(execute_data)
 
     lock.close()
 
     # 結果ZIPファイルを作成する(ITAダウンロード用)
     # エラーを無視する
     result_matter_arr.append(result_file_path)
-    is_zip = MakeResultZipFile()
+    is_zip = make_result_zip_file()
 
     # Conductorからの実行時、output出力結果を格納する
 
@@ -343,7 +343,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     if is_zip is True:
         update_data["FILE_RESULT"] = result_zip_file_name
 
-    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
+    result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10733", [execution_no]))
@@ -369,22 +369,22 @@ def update_status_error(wsDb: DBConnectWs, execute_data):
         "TIME_END": get_timestamp(),
     }
     if len(input_matter_arr) > 0 and "FILE_INPUT" not in execute_data:
-        is_zip = MakeResultZipFile()
+        is_zip = make_result_zip_file()
         if is_zip is True:
             update_data["FILE_INPUT"] = input_zip_file_name
     elif len(result_matter_arr) > 0 and "FILE_RESULT" not in execute_data:
-        is_zip = MakeInputZipFile()
+        is_zip = make_input_zip_file()
         if is_zip is True:
             update_data["FILE_RESULT"] = result_zip_file_name
 
-    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
+    result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10735", [execution_no, tf_workspace_id]))
 
 
 # コマンド実行
-def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False):
+def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False):
     time_limit = execute_data['I_TIME_LIMIT']  # 遅延タイマ
     current_status = execute_data['STATUS_ID']
 
@@ -435,7 +435,7 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
                     "EXECUTION_NO": execution_no,
                     "STATUS_ID": TFCLIConst.STATUS_PROCESS_DELAYED,
                 }
-                result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
+                result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
                 if result is True:
                     wsDb.db_commit()
                     g.applogger.debug(g.appmsg.get_log_message("MSG-10732", [execution_no]))
@@ -473,7 +473,7 @@ def ExecCommand(wsDb, execute_data, command, cmd_log, error_log, init_flg=False)
 
 
 # tfvarsファイルに書き込む行データを作成
-def MakeKVStrRow(key, value, type_id):
+def make_kvs_str_row(key, value, type_id):
     str_row = ''
 
     if (type_id == '' or type_id == '1' or type_id == '18') or not value:
@@ -485,7 +485,7 @@ def MakeKVStrRow(key, value, type_id):
 
 
 # 投入zipファイルを作成
-def MakeInputZipFile():
+def make_input_zip_file():
     global input_zip_file_name
 
     # ファイル名の定義
@@ -507,7 +507,7 @@ def MakeInputZipFile():
     return True
 
 
-def MakeResultZipFile():
+def make_result_zip_file():
     global result_zip_file_name
 
     # ファイル名の定義
@@ -530,7 +530,7 @@ def MakeResultZipFile():
 
 
 # terraformのstateファイルを暗号化
-def SaveEncryptStateFile(execute_data):
+def save_encrypt_statefile(execute_data):
     global result_matter_arr
 
     try:
@@ -579,7 +579,7 @@ def SaveEncryptStateFile(execute_data):
 
 
 # 緊急停止の処理
-def IsEmergencyStop(wsDb: DBConnectWs, execute_data):
+def is_emergency_stop(wsDb: DBConnectWs, execute_data):
     # 緊急停止ファイルの存在有無
     if os.path.exists(emergency_stop_file_path) is False:
         return True, execute_data
@@ -589,7 +589,7 @@ def IsEmergencyStop(wsDb: DBConnectWs, execute_data):
 
     # 結果ファイルがあれば作る
     if len(result_matter_arr) > 0:
-        MakeResultZipFile()
+        make_result_zip_file()
 
     # ステータスを緊急停止に更新
     wsDb.db_transaction_start()
@@ -599,15 +599,15 @@ def IsEmergencyStop(wsDb: DBConnectWs, execute_data):
         "TIME_END": get_timestamp()
     }
     if len(input_matter_arr) > 0 and not execute_data["FILE_INPUT"]:
-        is_zip = MakeResultZipFile()
+        is_zip = make_result_zip_file()
         if is_zip is True:
             update_data["FILE_INPUT"] = input_zip_file_name
     elif len(result_matter_arr) > 0 and not execute_data["FILE_RESULT"]:
-        is_zip = MakeInputZipFile()
+        is_zip = make_input_zip_file()
         if is_zip is True:
             update_data["FILE_RESULT"] = result_zip_file_name
 
-    result, execute_data = cm.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
+    result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
         g.applogger.debug(g.appmsg.get_log_message("MSG-10736", [execution_no]))
@@ -615,7 +615,7 @@ def IsEmergencyStop(wsDb: DBConnectWs, execute_data):
     return False, execute_data
 
 
-def PrepareVarsFile(wsDb: DBConnectWs, execute_data):
+def prepare_vars_file(wsDb: DBConnectWs, execute_data):
     global secure_tfvars_flg
 
     module_matter_id_str_arr = []  # モジュール素材IDを格納する配列
@@ -702,10 +702,49 @@ def PrepareVarsFile(wsDb: DBConnectWs, execute_data):
             # 処理
             sensitiveFlag = False
             for vars_link_id, data in vars_data_arr.items():
-                # 処理
+                var_key = data['VARS_NAME']
+                var_value = data['VARS_ENTRY']
+                assign_seq = data['ASSIGN_SEQ']
+                vars_list = data['VARS_LIST'] if 'VARS_LIST' in data else []
+                member_vars_list = data['MEMBER_VARS_LIST'] if 'MEMBER_VARS_LIST' in data else []
+                hclFlag = data['HCL_FLAG']
+                sensitiveFlag = data['SENSITIVE_FLAG']
+                vars_type_id = data['VARS_TYPE_ID']
+                vars_type_info = get_type_info(wsDb, vars_type_id)
+
+                # HCL組み立て
+                #########################################
+                # 1.Module変数紐付けのタイプが配列型でない場合
+                # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
+                # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
+                #########################################
+
+                # 1.Module変数紐付けのタイプが配列型でない場合
+                if hclFlag is True and vars_type_info["MEMBER_VARS_FLAG"] == 0 and vars_type_info["ASSIGN_SEQ_FLAG"] == 0 and vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
+                    pass
+                # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
+                elif vars_type_info["MEMBER_VARS_FLAG"] == 0 and vars_type_info["ASSIGN_SEQ_FLAG"] == 1 and vars_type_info["ENCODE_FLAG"] == 1:
+                    # HCL組み立て（メンバー変数）
+                    if len(vars_list) > 0:
+                        # HCLに変換
+                        vars_list.sort()
+                        var_value = encode_hcl(vars_list)
+                    hclFlag = True
+                # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
+                else:
+                    # HCL組み立て(メンバー変数)
+                    if len(member_vars_list) > 0 and hclFlag is False:
+                        temp_member_vars_list = []
+                        # １．対象変数のメンバー変数を全て取得（引数：Module変数紐付け/MODULE_VARS_LINK_ID）
+                        trgMemberVarsRecords = get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, vars_link_id)
+                        # 重複を削除
+                        member_ids_array = []
+                        for record in member_vars_list:
+                            member_ids_array.append(record.get("MEMBER_VARS"))
+                        member_ids_array = list(set(member_ids_array))
 
                 # 変数のkey&valueをキャッシュ
-                var_kv_str_row = MakeKVStrRow(var_key, var_value, varsTypeID)
+                var_kv_str_row = make_kvs_str_row(var_key, var_value, vars_type_id)
                 if sensitiveFlag is False:
                     variable_tfvars.append(var_kv_str_row)
                 else:
@@ -733,3 +772,5 @@ def PrepareVarsFile(wsDb: DBConnectWs, execute_data):
         # secure.tfvarsが存在
         if os.path.exists(secure_tfvars_file_path) is True:
             secure_tfvars_flg = True
+
+

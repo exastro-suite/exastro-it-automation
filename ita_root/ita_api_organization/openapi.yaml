@@ -45,7 +45,7 @@ tags:
   - name: System Info
     description: ITAの情報取得
   - name: Menu Create
-    description: メニュー作成機能
+    description: パラメータシート作成機能
   - name: Conductor Controll
     description: Conductorの情報取得・操作
   - name: Driver Controll
@@ -1488,7 +1488,7 @@ paths:
     post:
       tags:
         - Menu Create
-      description: メニュー作成実行
+      description: パラメータシート作成実行
       operationId: executeMenuCreate
       x-openapi-router-controller: controllers.menu_create_controller
       parameters:
@@ -1508,7 +1508,7 @@ paths:
         content:
           application/json:
             schema:
-              description: 作成対象のメニュー定義一覧IDを指定(複数指定可)
+              description: 作成対象のパラメータシート定義一覧IDを指定(複数指定可)
       responses:
         '200':
           description: Success
@@ -1541,7 +1541,7 @@ paths:
     post:
       tags:
         - Menu Create
-      description: メニュー定義および作成の実行
+      description: パラメータシート定義および作成の実行
       operationId: defineAndExecuteMenuCreate
       x-openapi-router-controller: controllers.menu_create_controller
       parameters:
@@ -1561,7 +1561,7 @@ paths:
         content:
           application/json:
             schema:
-              description: メニュー定義用パラメータ
+              description: パラメータシート定義用パラメータ
       responses:
         '200':
           description: Success
@@ -1594,7 +1594,7 @@ paths:
     get:
       tags:
         - Menu Create
-      description: メニュー定義・作成(新規)用の情報取得
+      description: パラメータシート定義・作成(新規)用の情報取得
       operationId: getMenuCreateData
       x-openapi-router-controller: controllers.menu_create_controller
       parameters:
@@ -1642,7 +1642,7 @@ paths:
     get:
       tags:
         - Menu Create
-      description: メニュー定義・作成(既存)用の情報取得
+      description: パラメータシート定義・作成(既存)用の情報取得
       operationId: getExistMenuCreateData
       x-openapi-router-controller: controllers.menu_create_controller
       parameters:
@@ -1660,7 +1660,7 @@ paths:
             type: string
         - name: menu_create
           in: path
-          description: 「メニュー定義一覧」の「メニュー名(REST)」
+          description: 「パラメータシート定義一覧」の「メニュー名(REST)」
           required: true
           schema:
             type: string

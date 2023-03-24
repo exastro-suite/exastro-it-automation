@@ -109,4 +109,4 @@ USER root
 RUN chmod a+x $APP_PATH/backyard/backyard_init.py
 USER $USERNAME
 
-ENTRYPOINT ["python3", "./backyard/backyard_init.py"]
+ENTRYPOINT ["python3", "./backyard/backyard_init.py", "1"]

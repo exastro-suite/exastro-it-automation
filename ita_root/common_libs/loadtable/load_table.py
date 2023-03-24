@@ -1777,7 +1777,7 @@ class loadTable():
         rest_file = {}
         json_cols_base_key = list(rest_parameter.keys())
         for col_name, col_val in rows.items():
-            # メニュー作成パラメータDATA_JSON構造
+            # パラメータシート作成パラメータDATA_JSON構造
             if col_name == 'DATA_JSON':
                 try:
                     json_rows = json.loads(col_val)
@@ -1804,8 +1804,8 @@ class loadTable():
                                 # 内部処理用
                                 if mode in ['input', 'export']:
                                     if jsonval is not None:
-                                        objcolumn = self.get_columnclass(jsonkey)
-                                        jsonval = util.ky_decrypt(jsonval)    # noqa: F405
+                                        result = objcolumn.get_values_by_key([jsonval])
+                                        jsonval = util.ky_decrypt(result.get(jsonval))# noqa: F405
                                 elif mode in ['inner']:
                                     if jsonval is not None:
                                         # base64した値をそのまま返却
@@ -2048,7 +2048,7 @@ class loadTable():
         # file = target_option.get('file')
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu_id())
@@ -2080,7 +2080,7 @@ class loadTable():
         # file = target_option.get('file')
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu_id())

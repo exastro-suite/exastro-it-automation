@@ -2,9 +2,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,14 +49,14 @@ class FileUploadEncryptColumn(FileUploadColumn):
                 col_name = objcol.get('COL_NAME')
 
         self.col_name = col_name
-        
+
         # rest用項目名
         self.rest_key_name = rest_key_name
 
         self.db_qm = "'"
 
         self.objdbca = objdbca
-        
+
         self.cmd_type = cmd_type
 
     def after_iud_common_action(self, val="", option={}):
@@ -92,15 +92,22 @@ class FileUploadEncryptColumn(FileUploadColumn):
                     path = get_upload_file_path_specify(workspace_id, ret, uuid, val, uuid_jnl)   # noqa:F405
                 dir_path = path["file_path"]
                 old_dir_path = path["old_file_path"]
-                        
+
                 # old配下にファイルアップロード
                 if len(old_dir_path) > 0:
-                    encrypt_upload_file(old_dir_path, decode_option)  # noqa: F405
+                    try:
+                        result = encrypt_upload_file(old_dir_path, decode_option)  # noqa: F405
+                        if result is False:
+                            raise Exception()
+                    except Exception:
+                        retBool = False
+                        msg = g.appmsg.get_api_message('MSG-00033', [val])
+                        return retBool, msg
                 else:
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00013', [])
                     return retBool, msg
-                
+
                 # 更新、復活の場合シンボリックリンクを削除
                 if cmd_type == "Update" or cmd_type == "Restore":
                     # 更新前のファイルパス取得
@@ -113,7 +120,7 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
                     if len(filelist) != 0:
                         old_file_path = filepath + "/" + filelist[0]
-                    
+
                         try:
                             os.unlink(old_file_path)
                         except Exception:
@@ -128,5 +135,5 @@ class FileUploadEncryptColumn(FileUploadColumn):
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00015', [old_dir_path, dir_path])
                     return retBool, msg
-                
+
         return retBool,

@@ -36,7 +36,6 @@ from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath, getFileupLoadColumnPath
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverHpTmpPath, AnsibleFilesClean
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
-
 #################################################################################
 # rolesディレクトリ解析
 #################################################################################
@@ -477,6 +476,9 @@ class CheckAnsibleRoleFiles():
             yaml_parse_array = obj.Parse(user_vars_file)
             errmsg = obj.GetLastError()
             obj = None
+            if yaml_parse_array is None:
+                yaml_parse_array = {}
+
             if yaml_parse_array is False:
                 # ITA readmeのYAML解析で想定外のエラーが発生しました。(ロールパッケージ名:{} role:{} file:{})
                 errmsg = "%s\n%s" % (
@@ -498,6 +500,7 @@ class CheckAnsibleRoleFiles():
             errmsg = ""
             f_line = ""
             f_name = ""
+
             ret, parent_vars_list, errmsg, f_name, f_line = chkObj.FirstAnalysis(
                 yaml_parse_array, tgt_role_pkg_name, tgt_role_name, tgt_file_name,
                 ina_ITA2User_var_list[in_rolename], ina_User2ITA_var_list[in_rolename],
@@ -1916,7 +1919,6 @@ class DefaultVarsFileAnalysis():
         ina_user_vars_list, ina_user_vars_val_list,
         ina_array_vars_list, ina_user_array_vars_list
     ):
-
         """
         処理内容
           デフォルト定義変数ファイルとユーザー義変数ファイルに定義されている変数
@@ -1946,24 +1948,23 @@ class DefaultVarsFileAnalysis():
 
         del_user_vars_keys = []
 
-        if  ina_user_vars_list is not None \
-        and (type(ina_user_vars_list) not in (list, dict) or len(ina_user_vars_list) > 0):
-            # ユーザー変数定義ファイルに登録されている変数をキーにループ
+        if len(ina_user_vars_list) > 0:
+            # ユーザー変数定義ファイルに登録されている変数(通常変数・複数具体値変数)をキーにループ
             for var_name, vars_list in self.php_array(ina_user_vars_list):
-                # default変数定義ファイルに変数が登録されているか判定
-                if  var_name in ina_vars_list \
-                and ina_vars_list[var_name] is not None \
-                and (type(ina_vars_list[var_name]) not in (list, dict) or len(ina_vars_list[var_name]) > 0):
+                # default変数定義ファイルに変数(通常変数・複数具体値変数)が登録されているか判定
+                if  var_name in ina_vars_list:
                     # ユーザー変数定義ファイルとdefault変数定義ファイルの両方にある変数のルート
                     # default変数定義ファイルに変数が登録されている
 
                     # 変数の型を判定する
                     if ina_vars_list[var_name] != ina_user_vars_list[var_name]:
                         # 変数の型が一致しない場合はdefault変数定義ファイルの変数具体値情報から該当変数の情報を削除する
-                        del ina_vars_val_list[var_name]
+                        if var_name in ina_vars_val_list:
+                            del ina_vars_val_list[var_name]
 
                     # default変数定義ファイルの変数情報から該当変数の情報を削除する
-                    del ina_vars_list[var_name]
+                    if var_name in ina_vars_list:
+                        del ina_vars_list[var_name]
 
                     # default変数定義ファイルの変数情報にユーザー変数定義ファイルに
                     # 登録されている変数情報を追加
@@ -1975,10 +1976,8 @@ class DefaultVarsFileAnalysis():
                     del_user_vars_keys.append(var_name)
 
                 else:
-                    # default変数定義ファイルに変数が登録されていない
-
                     # default変数定義ファイルに多次元変数として登録されているか判定
-                    if var_name in ina_array_vars_list and len(ina_array_vars_list[var_name]) > 0:
+                    if var_name in ina_array_vars_list:
                         # ユーザー変数定義ファイルとdefault多次元変数定義ファイルの両方にある変数のルート
                         # default変数定義ファイルの多次元変数の情報を削除
                         del ina_array_vars_list[var_name]
@@ -2002,14 +2001,11 @@ class DefaultVarsFileAnalysis():
 
         del_user_vars_keys = []
 
-        if  ina_user_array_vars_list is not None \
-        and (type(ina_user_array_vars_list) not in (list, dict) or len(ina_user_array_vars_list) > 0):
+        if  len(ina_user_array_vars_list) > 0:
             # ユーザー変数定義ファイルに登録されている多次元変数をキーにループ
             for var_name, vars_list in self.php_array(ina_user_array_vars_list):
                 # default変数定義ファイルに多次元変数が登録されているか判定
-                if  var_name in ina_array_vars_list \
-                and ina_array_vars_list[var_name] is not None \
-                and (type(ina_array_vars_list[var_name]) not in (list, dict) or len(ina_array_vars_list[var_name]) > 0):
+                if  var_name in ina_array_vars_list:
                     # default変数定義ファイルに多次元変数が登録されている
 
                     # 変数構造が同じか判定する
@@ -2024,11 +2020,11 @@ class DefaultVarsFileAnalysis():
                     if not ret:
                         # 変数構造が一致しない
                         # ユーザー変数定義ファイルの情報をdefault変数定義ファイルに設定
-                        del ina_array_vars_list[var_name]
+                        # del ina_array_vars_list[var_name]
                         ina_array_vars_list[var_name] = ina_user_array_vars_list[var_name]
 
                         # 具体値はなしにする
-                        del ina_array_vars_list[var_name]['VAR_VALUE']
+                        # del ina_array_vars_list[var_name]['VAR_VALUE']
                         ina_array_vars_list[var_name]['VAR_VALUE'] = []
                         # ユーザー多次元変数定義ファイルとdefault多次元変数定義ファイルの両方にあり型が一致しない変数のルート
 
@@ -2044,7 +2040,7 @@ class DefaultVarsFileAnalysis():
                     # default変数定義ファイルに多次元変数が登録されていない
 
                     # default変数定義ファイルに変数が登録されているか判定
-                    if var_name in ina_vars_list and len(ina_vars_list[var_name]) > 0:
+                    if var_name in ina_vars_list:
                         # ユーザー多次元変数定義ファイルとdefault変数定義ファイルの両方にある変数のルート
                         # default変数定義ファイルに変数が登録されている
 
@@ -2052,14 +2048,15 @@ class DefaultVarsFileAnalysis():
                         del ina_vars_list[var_name]
 
                         # default変数定義ファイルの変数具体値情報から該当変数の情報を削除する
-                        del ina_vars_val_list[var_name]
+                        if var_name in ina_vars_val_list:
+                            del ina_vars_val_list[var_name]
 
                         # default変数定義ファイルの変数情報にユーザー変数定義ファイルに
                         # 登録されている多次元変数情報を追加
                         ina_array_vars_list[var_name] = ina_user_array_vars_list[var_name]
 
                         # ユーザー変数定義ファイルの変数具体値情報は使わない
-                        del ina_array_vars_list[var_name]['VAR_VALUE']
+                        # del ina_array_vars_list[var_name]['VAR_VALUE']
                         ina_array_vars_list[var_name]['VAR_VALUE'] = []
 
                         # ユーザー変数定義ファイルの変数情報から削除
@@ -2417,10 +2414,10 @@ class DefaultVarsFileAnalysis():
                 #                    [item1] =>
                 #                    [item2] => a2
                 #                )
-                if var >= 99999999:
-                    # 繰返構造の繰返数が99999999以上あった
+                if var > 1024:
+                    # 繰返構造の繰返数が1024以上あった
                     if array_f == "I":
-                        # MSG-10444 = "繰返構造の繰返数が99999999を超えてた定義です。{}"
+                        # MSG-10444 = "繰返構造の繰返数が1024を超えてた定義です。{}"
                         in_error_code = "MSG-10444"
                         in_line = inspect.currentframe().f_lineno
                         return False, ina_vars_list, ina_varval_list, ina_array_col_count_list, in_error_code, in_line, in_col_count, in_assign_count

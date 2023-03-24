@@ -185,6 +185,7 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
                         raise Exception(msg)
 
                 # メンバー変数テーブルに対する処理を実行
+                g.applogger.debug(g.appmsg.get_log_message("BKY-50005"))
                 ret, msg, exist_member_vars_list = set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_member_vars_list)  # noqa: F405
                 if not ret:
                     raise Exception(msg)

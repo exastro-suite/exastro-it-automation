@@ -6,7 +6,7 @@ CREATE TABLE T_COMN_MENU_GROUP
     MENU_GROUP_NAME_JA              VARCHAR(255),                               -- メニューグループ名(ja)
     MENU_GROUP_NAME_EN              VARCHAR(255),                               -- メニューグループ名(en)
     MENU_GROUP_ICON                 VARCHAR(255),                               -- パネル用画像
-    MENU_CREATE_TARGET_FLAG         VARCHAR(2),                                 -- メニュー作成利用フラグ
+    MENU_CREATE_TARGET_FLAG         VARCHAR(2),                                 -- パラメータシート作成利用フラグ
     DISP_SEQ                        INT,                                        -- 表示順序
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -25,7 +25,7 @@ CREATE TABLE T_COMN_MENU_GROUP_JNL
     MENU_GROUP_NAME_JA              VARCHAR(255),                               -- メニューグループ名(ja)
     MENU_GROUP_NAME_EN              VARCHAR(255),                               -- メニューグループ名(en)
     MENU_GROUP_ICON                 VARCHAR(255),                               -- パネル用画像
-    MENU_CREATE_TARGET_FLAG         VARCHAR(2),                                 -- メニュー作成利用フラグ
+    MENU_CREATE_TARGET_FLAG         VARCHAR(2),                                 -- パラメータシート作成利用フラグ
     DISP_SEQ                        INT,                                        -- 表示順序
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -130,6 +130,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK
     HISTORY_TABLE_FLAG              VARCHAR(2),                                 -- 履歴テーブル有無
     INHERIT                         VARCHAR(2),                                 -- 継承フラグ
     VERTICAL                        VARCHAR(2),                                 -- 縦型フラグ
+    HOSTGROUP                       VARCHAR(2),                                 -- ホストグループフラグ
     ROW_INSERT_FLAG                 VARCHAR(2),                                 -- 登録許可フラグ
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ
@@ -162,6 +163,7 @@ CREATE TABLE T_COMN_MENU_TABLE_LINK_JNL
     HISTORY_TABLE_FLAG              VARCHAR(2),                                 -- 履歴テーブル有無
     INHERIT                         VARCHAR(2),                                 -- 継承フラグ
     VERTICAL                        VARCHAR(2),                                 -- 縦型フラグ
+    HOSTGROUP                       VARCHAR(2),                                 -- ホストグループフラグ
     ROW_INSERT_FLAG                 VARCHAR(2),                                 -- 登録許可フラグ
     ROW_UPDATE_FLAG                 VARCHAR(2),                                 -- 更新許可フラグ
     ROW_DISUSE_FLAG                 VARCHAR(2),                                 -- 廃止許可フラグ
@@ -446,7 +448,7 @@ CREATE TABLE T_COMN_COLUMN_CLASS
     COLUMN_CLASS_NAME               VARCHAR(255),                               -- カラムクラス名
     COLUMN_CLASS_DISP_NAME_JA       VARCHAR(255),                               -- カラムクラス表示名(ja)
     COLUMN_CLASS_DISP_NAME_EN       VARCHAR(255),                               -- カラムクラス表示名(en)
-    MENU_CREATE_TARGET_FLAG         VARCHAR(1),                                 -- メニュー作成対象フラグ
+    MENU_CREATE_TARGET_FLAG         VARCHAR(1),                                 -- パラメータシート作成対象フラグ
     DISP_SEQ                        INT,                                        -- 表示順序
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
@@ -464,7 +466,7 @@ CREATE TABLE T_COMN_SHEET_TYPE
     SHEET_TYPE_NAME_ID              VARCHAR(2),                                 -- 主キー
     SHEET_TYPE_NAME_JA              VARCHAR(255),                               -- シートタイプ名(ja)
     SHEET_TYPE_NAME_EN              VARCHAR(255),                               -- シートタイプ名(en)
-    MENU_CREATE_TARGET_FLAG         VARCHAR(1),                                 -- メニュー作成利用フラグ
+    MENU_CREATE_TARGET_FLAG         VARCHAR(1),                                 -- パラメータシート作成利用フラグ
     DISP_SEQ                        INT,                                        -- 表示順序
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

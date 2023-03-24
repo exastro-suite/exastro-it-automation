@@ -30,6 +30,7 @@
 // 比較実行　　        06001～07000
 // エクスポート/イン   07001～08000
 // DashBoard           08001～09000
+// Terraform          09001～10000
 // UI共通              10001～11000
 
 
@@ -203,6 +204,7 @@ getMessage = ( function() {
         'FTE00164' : "期間",
         'FTE00165' : "秒",
         'FTE00166' : "フィルタ バリデーションエラー",
+        'FTE00167' : "Plan確認",
         
         // パラメータシート定義・作成
         'FTE01001' : "項目",
@@ -572,6 +574,7 @@ getMessage = ( function() {
         'FTE05035' : "Ansible Automation Controller利用情報",
         'FTE05036' : "実行環境",
         'FTE05037' : "予約を取り消してよろしいですか？",
+        'FTE05038' : "Terraform利用情報",
         
         // 比較実行
         'FTE06001' : "比較設定選択",
@@ -735,6 +738,33 @@ getMessage = ( function() {
         'FTE08085' : "別ウインドウ",
         'FTE08086' : "モーダル",
         
+        // Terraform
+        'FTE09001' : "Organization登録管理",
+        'FTE09002' : "Workspace登録管理",
+        'FTE09003' : "Policy登録管理",
+        'FTE09004' : "PolicySet登録管理",
+        'FTE09005' : "Organization登録一覧を取得",
+        'FTE09006' : "Workspace登録一覧を取得",
+        'FTE09007' : "Policy登録一覧を取得",
+        'FTE09008' : "PolicySet登録一覧取得",
+        'FTE09009' : "登録済み",
+        'FTE09010' : "未登録",
+        'FTE09011' : "紐付解除",
+        'FTE09012' : "ITAの登録状態",
+        'FTE09013' : "削除",
+        'FTE09014' : "リソース削除",
+        'FTE09015' : "ダウンロード",
+        'FTE09016' : "紐付Workspace",
+        'FTE09017' : "紐付Policy",
+        'FTE09018' : function( text ){ return `${text}ボタンを押下してください。`;},
+        'FTE09019' : "Organization Name",
+        'FTE09020' : "Email address",
+        'FTE09021' : "Workspace Name",
+        'FTE09022' : "Terraform Version",
+        'FTE09023' : "Policy Name",
+        'FTE09024' : "Policy code",
+        'FTE09025' : "Policy Set Name",
+
         // UI共通
         'FTE10001': 'メインメニュー',
         'FTE10002': 'メニューグループ',

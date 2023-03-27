@@ -1923,7 +1923,7 @@ display: none;
 .filterStandBy .tableLoading {
 display: flex;
 }
-.historyStandBy .tableBody,
+.historyStandBy .tableWrap,
 .historyStandBy .tableFooter,
 .tableStandBy .tableErrorMessage,
 .filterStandBy .tableErrorMessage,

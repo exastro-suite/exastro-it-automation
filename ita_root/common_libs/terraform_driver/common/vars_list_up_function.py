@@ -111,7 +111,7 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
                 variable_type_id = get_variable_type_id(objdbca, TFConst, variable_type)  # noqa: F405
                 default = variable_data.get('default')
                 if isinstance(default, dict) or isinstance(default, list):
-                    default = json.dumps(default)
+                    default = encode_hcl(default)  # noqa: F405
 
                 # Module変数紐付テーブルのレコードから、登録値が一致する対象があるか確認
                 exist_flag = False

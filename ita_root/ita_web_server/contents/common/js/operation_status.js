@@ -136,6 +136,17 @@ setup() {
 
     op.setRestApiUrls();
 
+    // ドライバータイプ
+    if ( op.menu.match('_ansible_') ) {
+        op.driver = 'ansible';
+    } else if ( op.menu.match('_terraform_cli') ) {
+        op.driver = 'terraform_cli';
+    } else if ( op.menu.match('_terraform_cloud_ep') ) {
+        op.driver = 'terraform_cloud_ep';
+    } else {
+        op.driver = null;
+    }
+
     if ( op.rest.info ) {
         history.replaceState( null, null, `?menu=${op.menu}&execution_no=${op.id}`);
         fn.fetch( op.rest.info ).then(function( info ){
@@ -315,194 +326,287 @@ operationMessage() {
 }
 /*
 ##################################################
+   Operation status HTML table
+##################################################
+*/
+operationStatusTable( rows ) {    
+    return ``
+    + `<div class="commonBody">`
+        + `<table class="commonTable">`
+            + `<tbody class="commonTbody">`
+                + this.operationStatusRow( rows )
+            + `</tbody>`
+        + `</table>`
+    + `</div>`;
+}
+/*
+##################################################
+   Operation status HTML row
+##################################################
+*/
+operationStatusRow( rows ) {
+    const html = [];
+    for ( const row of rows ) {
+        html.push(``
+        + `<tr class="commonTr">`
+            + `<th class="commonTh">${row.title}</th>`
+            + `<td class="commonTd"><span class="operationStatusData" data-type="${row.type}"></span></td>`
+        + `</tr>`);
+    }
+    return html.join('');
+}
+/*
+##################################################
+   Operation status HTML button list
+##################################################
+*/
+operationStatusButtonList( buttons ) {
+    return ``
+    + `<div class="commonBody">`
+        + `<ul class="commonMenuList">`
+            + this.operationStatusButton( buttons )
+        + `</ul>`
+    + `</div>`;
+}
+/*
+##################################################
+   Operation status HTML button
+##################################################
+*/
+operationStatusButton( buttons ) {
+    const html = [];
+    for ( const button of buttons ) {
+        const option = { type: button.type, action: 'default', style: 'width:100%'}
+        if ( button.disabled ) option.disabled = button.disabled;
+        console.log(option)
+        html.push(``
+        + `<li class="commonMenuItem">`
+            + fn.html.iconButton('detail', button.title, button.type + 'Button commonButton itaButton', option )
+        + `</li>`);
+    }
+    return html.join('');
+}
+/*
+##################################################
    Operation status
 ##################################################
 */
 operationStatus() {
     const op = this;
 
-    const html = `
-    <div class="commonSection">
-        <div class="commonBlock">
-            <div class="commonTitle">` + getMessage.FTE05009 + `</div>
-            <div class="commonBody">
-                <table class="commonTable">
-                    <tbody class="commonTbody">
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05001 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="execution_no"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05010 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="execution_type"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05011 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="status"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05012 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="execution_engine"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05013 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="caller_conductor"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05014 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="execution_user"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05015 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="populated_data"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05016 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="result_data"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="commonSubTitle">` + getMessage.FTE05017 + `</div>
-            <div class="commonBody">
-                <table class="commonTable">
-                    <tbody class="commonTbody">
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05018 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="scheduled_date_time"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05019 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="start_date_time"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05020 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="end_date_time"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="commonTitle">` + getMessage.FTE05021 + `</div>
-            <div class="commonBody">
-                <table class="commonTable">
-                    <tbody class="commonTbody">
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05022 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="operation_id"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05023 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="operation_name"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="commonBody">
-                <ul class="commonMenuList">
-                    <li class="commonMenuItem">
-                        ${fn.html.iconButton('detail', getMessage.FTE05024, 'hostButton commonButton itaButton', { type: 'host', action: 'default', style: 'width:100%', disabled: 'disabled'})}
-                    </li>
-                    <li class="commonMenuItem">
-                        ${fn.html.iconButton('detail', getMessage.FTE05025, 'valueButton commonButton itaButton', { type: 'value', action: 'default', style: 'width:100%', disabled: 'disabled'})}
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <div class="commonBlock">
-            <div class="commonTitle">` + getMessage.FTE05026 + `</div>
-            <div class="movementArea" data-mode="">
-                <div class="movementAreaInner">
-                    <div class="node ${Status.string[op.menu].movementClassName}">
-                        <div class="node-main">
-                            <div class="node-terminal node-in connected">
-                                <span class="connect-mark"></span>
-                                <span class="hole">
-                                    <span class="hole-inner"></span>
-                                </span>
-                            </div>
-                            <div class="node-body">
-                                <div class="node-circle">
-                                    <span class="node-gem">
-                                        <span class="node-gem-inner">${Status.string[op.menu].movementGem}</span>
-                                    </span>
-                                    <span class="node-running"></span>
-                                    <span class="node-result"></span>
-                                </div>
-                                <div class="node-type">
-                                    <span>${Status.string[op.menu].movementType}</span>
-                                </div>
-                                <div class="node-name">
-                                    <span class="operationStatusData" data-type="movement_name"></span>
-                                </div>
-                            </div>
-                            <div class="node-terminal node-out connected">
-                                <span class="connect-mark"></span>
-                                <span class="hole">
-                                    <span class="hole-inner"></span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="commonBody">
-                <table class="commonTable">
-                    <tbody class="commonTbody">
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05022 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="movement_id"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05023 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="movement_name"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05027 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="delay_timer"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="commonBody">
-                <ul class="commonMenuList">
-                    <li class="commonMenuItem">
-                        ${fn.html.iconButton('detail', getMessage.FTE05028, 'commonButton itaButton', { type: 'movement', action: 'default', style: 'width:100%'})}
-                    </li>
-                </ul>
-            </div>
-            <div class="commonSubTitle">` + getMessage.FTE05029 + `</div>
-            <div class="commonBody">
-                <table class="commonTable">
-                    <tbody class="commonTbody">
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05030 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="host_specific_format"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05031 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="winrm_connection"></span></td>
-                        </tr>
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05032 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="ansible_cfg"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="commonSubTitle">` + getMessage.FTE05035 + `</div>
-            <div class="commonBody">
-                <table class="commonTable">
-                    <tbody class="commonTbody">
-                        <tr class="commonTr">
-                            <th class="commonTh">` + getMessage.FTE05036 + `</th>
-                            <td class="commonTd"><span class="operationStatusData" data-type="execution_environment"></span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>`;
+    let html = `<div class="commonSection"><div class="commonBlock">`;
 
+    // 作業ステータス
+    const workStatus = [
+        {
+            title: getMessage.FTE05001,
+            type: 'execution_no'
+        },
+        {
+            title: getMessage.FTE05010,
+            type: 'execution_type'
+        },
+        {
+            title: getMessage.FTE05011,
+            type: 'status'
+        }
+    ];
+    if ( op.driver === 'ansible') {
+        workStatus.push({
+            title: getMessage.FTE05012,
+            type: 'execution_engine'
+        });
+    }
+    workStatus.push(
+        {
+            title: getMessage.FTE05013,
+            type: 'caller_conductor'
+        },
+        {
+            title: getMessage.FTE05014,
+            type: 'execution_user'
+        },
+        {
+            title: getMessage.FTE05015,
+            type: 'populated_data'
+        },
+        {
+            title: getMessage.FTE05016,
+            type: 'result_data'
+        }
+    );
+    html += `<div class="commonTitle">${getMessage.FTE05009}</div>`
+    + op.operationStatusTable( workStatus );
+
+    // 作業状況
+    const subStatus = [
+        {
+            title: getMessage.FTE05018,
+            type: 'scheduled_date_time'
+        },
+        {
+            title: getMessage.FTE05019,
+            type: 'start_date_time'
+        },
+        {
+            title: getMessage.FTE05020,
+            type: 'end_date_time'
+        }
+    ];
+    html += `<div class="commonSubTitle">${getMessage.FTE05017}</div>`
+    + op.operationStatusTable( subStatus );
+
+    // オペレーション
+    const operation = [
+        {
+            title: getMessage.FTE05022,
+            type: 'operation_id'
+        },
+        {
+            title: getMessage.FTE05023,
+            type: 'operation_name'
+        }
+    ];
+    html += `<div class="commonTitle">${getMessage.FTE05021}</div>`
+    + op.operationStatusTable( operation );
+
+    // オペレーションボタン
+    const operationButton = [];
+    if ( op.driver === 'ansible') {
+        operationButton.push({
+            title: getMessage.FTE05024,
+            type: 'host',
+            disabled: 'disabled'
+        });
+    }
+    operationButton.push({
+        title: getMessage.FTE05025,
+        type: 'value',
+        disabled: 'disabled'
+    });
+    html += op.operationStatusButtonList( operationButton );
+
+    html += `</div><div class="commonBlock">`;
+
+    // Movememt
+    html += `<div class="commonTitle">${getMessage.FTE05026}</div>`;
+
+    html+= ``
+    + `<div class="movementArea" data-mode="">`
+        + `<div class="movementAreaInner">`
+            + `<div class="node ${Status.string[op.menu].movementClassName}">`
+                + `<div class="node-main">`
+                    + `<div class="node-terminal node-in connected">`
+                        + `<span class="connect-mark"></span>`
+                        + `<span class="hole">`
+                            + `<span class="hole-inner"></span>`
+                        + `</span>`
+                    + `</div>`
+                    + `<div class="node-body">`
+                        + `<div class="node-circle">`
+                            + `<span class="node-gem">`
+                                + `<span class="node-gem-inner">${Status.string[op.menu].movementGem}</span>`
+                            + `</span>`
+                            + `<span class="node-running"></span>`
+                            + `<span class="node-result"></span>`
+                        + `</div>`
+                        + `<div class="node-type">`
+                            + `<span>${Status.string[op.menu].movementType}</span>`
+                        + `</div>`
+                        + `<div class="node-name">`
+                            + `<span class="operationStatusData" data-type="movement_name"></span>`
+                        + `</div>`
+                    + `</div>`
+                    + `<div class="node-terminal node-out connected">`
+                        + `<span class="connect-mark"></span>`
+                        + `<span class="hole">`
+                            + `<span class="hole-inner"></span>`
+                        + `</span>`
+                    + `</div>`
+                + `</div>`
+            + `</div>`
+        + `</div>`
+    + `</div>`;
+
+    const movement = [
+        {
+            title: getMessage.FTE05022,
+            type: 'movement_id'
+        },
+        {
+            title: getMessage.FTE05023,
+            type: 'movement_name'
+        },
+        {
+            title: getMessage.FTE05027,
+            type: 'delay_timer'
+        }
+    ];
+    html += op.operationStatusTable( movement );
+
+    // Movementボタン
+    const movementButton = [
+        {
+            title: getMessage.FTE05028,
+            type: 'movement'
+        }
+    ];
+    html += op.operationStatusButtonList( movementButton );
+
+    if ( op.driver === 'ansible') {
+        // Ansible利用情報
+        const ansibleInfo = [
+            {
+                title: getMessage.FTE05030,
+                type: 'host_specific_format'
+            },
+            {
+                title: getMessage.FTE05031,
+                type: 'winrm_connection'
+            },
+            {
+                title: getMessage.FTE05032,
+                type: 'ansible_cfg'
+            }
+        ];
+        html += `<div class="commonSubTitle">` + getMessage.FTE05029 + `</div>`
+        + op.operationStatusTable( ansibleInfo );
+
+        // Ansible Automation Controller利用情報
+        const ansibleControllerInfo = [
+            {
+                title: getMessage.FTE05036,
+                type: 'execution_environment'
+            }
+        ];
+        html += `<div class="commonSubTitle">` + getMessage.FTE05035 + `</div>`
+        + op.operationStatusTable( ansibleControllerInfo );
+    } else if ( op.driver === 'terraform_cloud_ep') {
+        // Terraform利用情報
+        const terraformInfo = [
+            {
+                title: `Organization:Workspace`,
+                type: `organization_workspace`
+            },
+            {
+                title: `RUN-ID`,
+                type: `run_id`
+            }
+        ];
+        html += `<div class="commonSubTitle">` + getMessage.FTE05038 + `</div>`
+        + op.operationStatusTable( terraformInfo );
+    } else if ( op.driver === 'terraform_cli') {
+        // Terraform利用情報
+        const terraformInfo = [
+            {
+                title: `Workspace`,
+                type: `tf_workspace_name`
+            }
+        ];
+        html += `<div class="commonSubTitle">` + getMessage.FTE05038 + `</div>`
+        + op.operationStatusTable( terraformInfo );
+    }
+    html += `</div></div>`;
     op.$.operationContainer.html( html );
 
     op.$.movementArea = op.$.operationContainer.find('.movementArea');

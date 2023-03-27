@@ -803,8 +803,17 @@ def _execute_compare_data(objdbca, compare_config, options):
                             other_options.setdefault("file_compare_info", tmp_file_compare_info)
 
             if compare_mode == "normal":
+                negative_key = [
+                    g.appmsg.get_api_message('MSG-60028'),  # 'メニュー名', 'menu',
+                    g.appmsg.get_api_message('MSG-60029'),  # '項番', 'uuid',
+                    g.appmsg.get_api_message('MSG-60030'),  # 'オペレーション名', 'operation_name_disp',
+                    g.appmsg.get_api_message('MSG-60031'),  # '基準日時', 'base_datetime',
+                ]
+                # target only
+                tmp_target_data_1 = {k: v for k, v in target_data_1.items() if k not in negative_key}
+                tmp_target_data_2 = {k: v for k, v in target_data_2.items() if k not in negative_key}
                 # diff 全体
-                result_dictdiffer = list(dictdiffer.diff(target_data_1, target_data_2))
+                result_dictdiffer = list(dictdiffer.diff(tmp_target_data_1, tmp_target_data_2))
 
                 tmp_compare_result = False
                 if len(result_dictdiffer) != 0:
@@ -1529,7 +1538,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             row = {
                 'COMPARE_DETAIL_ID': 'menu',
                 'COMPARE_ID': 'menu',
-                'COMPARE_COL_TITLE': 'メニュー名',
+                'COMPARE_COL_TITLE': g.appmsg.get_api_message('MSG-60028'),  # 'メニュー名',
                 'TARGET_COLUMN_ID_1': 'menu',
                 'TARGET_INPUT_ORDER_1': None,
                 'TARGET_COLUMN_ID_2': 'menu',
@@ -1554,7 +1563,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             row = {
                 'COMPARE_DETAIL_ID': 'uuid',
                 'COMPARE_ID': 'uuid',
-                'COMPARE_COL_TITLE': '項番',
+                'COMPARE_COL_TITLE': g.appmsg.get_api_message('MSG-60029'),  # '項番',
                 'TARGET_COLUMN_ID_1': 'uuid',
                 'TARGET_INPUT_ORDER_1': None,
                 'TARGET_COLUMN_ID_2': 'uuid',
@@ -1579,7 +1588,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             row = {
                 'COMPARE_DETAIL_ID': 'operation_name_disp',
                 'COMPARE_ID': 'operation_name_disp',
-                'COMPARE_COL_TITLE': 'オペレーション名',
+                'COMPARE_COL_TITLE': g.appmsg.get_api_message('MSG-60030'),  # 'オペレーション名',
                 'TARGET_COLUMN_ID_1': 'operation_name_disp',
                 'TARGET_INPUT_ORDER_1': None,
                 'TARGET_COLUMN_ID_2': 'operation_name_disp',
@@ -1604,7 +1613,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             row = {
                 'COMPARE_DETAIL_ID': 'base_datetime',
                 'COMPARE_ID': 'base_datetime',
-                'COMPARE_COL_TITLE': '基準日時',
+                'COMPARE_COL_TITLE': g.appmsg.get_api_message('MSG-60031'),  # '基準日時',
                 'TARGET_COLUMN_ID_1': 'base_datetime',
                 'TARGET_INPUT_ORDER_1': None,
                 'TARGET_COLUMN_ID_2': 'base_datetime',
@@ -2843,6 +2852,7 @@ def no_mimetype_is_binary_chk(target_file_path, file_mimetype, encoding):
                         ret = True
                         break
     return ret, file_mimetype, encode,
+
 
 # add filename lineno
 def addline_msg(msg=''):

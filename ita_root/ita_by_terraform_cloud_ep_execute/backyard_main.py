@@ -12,25 +12,14 @@
 # limitations under the License.
 #
 from flask import g
-# from datetime import datetime
 from common_libs.common.dbconnect import *  # noqa: F403
-# from common_libs.loadtable import load_table
 from common_libs.common.util import get_timestamp
-# from common_libs.terraform_driver.common.Const import Const as TFCommonConst
-# from common_libs.terraform_driver.common.Hcl2Json import HCL2JSONParse
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
-# from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
 from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
-# from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
-# from libs.policySetting import policySetting
 from libs.common_functions import update_execution_record
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
 from libs.execute_terraform_run import execute_terraform_run
 from libs.check_terraform_condition import check_terraform_condition
-# import time
-# import json
-# import os
-# import shutil
 
 
 def backyard_main(organization_id, workspace_id):
@@ -43,22 +32,34 @@ def backyard_main(organization_id, workspace_id):
 
     """
     # メイン処理開始
-    debug_msg = g.appmsg.get_log_message("BKY-20001", [])
-    g.applogger.debug(debug_msg)
+    g.applogger.debug(g.appmsg.get_log_message("BKY-00001"))
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
+    error_flag = False
+
     # 「未実行」「未実行(予約)」の作業インスタンスを取得し、ステータスを「準備中」に変更する
-    instance_prepare(objdbca)
+    retBool = instance_prepare(objdbca)
+    if retBool is False:
+        error_flag = True
 
     # 「準備中」の作業インスタンスを取得し、TerraformのRUNまでの作業を行う。最後にステータスを「実行中」に変更する。
-    instance_execute(objdbca)
+    retBool = instance_execute(objdbca)
+    if retBool is False:
+        error_flag = True
 
     # 「実行中」「実行中(遅延)」の作業インスタンスを取得し、TerraformのRUN状態を監視する。最後にステータスを「完了」に変更する。
-    instance_check(objdbca)
+    retBool = instance_check(objdbca)
+    if retBool is False:
+        error_flag = True
 
-    return True
+    if error_flag is False:
+        # 正常終了
+        g.applogger.debug(g.appmsg.get_log_message("BKY-00002"))
+    else:
+        # エラーが一つでもある
+        g.applogger.debug(g.appmsg.get_log_message("BKY-00003"))
 
 
 def instance_prepare(objdbca):
@@ -69,6 +70,8 @@ def instance_prepare(objdbca):
         RETRUN:
 
     """
+    error_flg = False
+
     # 作業管理テーブルをロック
     objdbca.table_lock([TFCloudEPConst.T_EXEC_STS_INST])
 
@@ -83,8 +86,9 @@ def instance_prepare(objdbca):
             objdbca.db_transaction_start()
 
             # ステータス更新用データを作成
+            execution_no = record.get('EXECUTION_NO')
             update_data = {
-                "EXECUTION_NO": record.get('EXECUTION_NO'),
+                "EXECUTION_NO": execution_no,
                 "STATUS_ID": TFCloudEPConst.STATUS_PREPARE,
                 "TIME_START": get_timestamp(),
                 "DISUSE_FLAG": "0",
@@ -93,6 +97,7 @@ def instance_prepare(objdbca):
             ret, execute_data = update_execution_record(objdbca, TFCloudEPConst, update_data)
             if ret:
                 objdbca.db_commit()
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51001", [execution_no]))
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
                 g.applogger.error(log_msg)
@@ -105,7 +110,13 @@ def instance_prepare(objdbca):
             # トランザクション終了
             objdbca.db_transaction_end(False)
 
-    return True
+            # エラーフラグ
+            error_flg = True
+
+    if error_flg:
+        return False
+    else:
+        return True
 
 
 def instance_execute(objdbca):
@@ -116,6 +127,8 @@ def instance_execute(objdbca):
         RETRUN:
 
     """
+    error_flg = False
+
     # 作業管理テーブルをロック
     objdbca.table_lock([TFCloudEPConst.T_EXEC_STS_INST])
 
@@ -137,6 +150,7 @@ def instance_execute(objdbca):
 
             # 実行種別が「作業実行」「Plan確認」「パラメータ確認」なら代入値自動登録設定から代入値管理へレコードを登録
             if run_mode == TFCloudEPConst.RUN_MODE_PARAM or run_mode == TFCloudEPConst.RUN_MODE_APPLY or run_mode == TFCloudEPConst.RUN_MODE_PLAN:
+                g.applogger.debug("[Process] Start register records in substituted value management. (Execution No.:{})".format(execution_no))
                 sub_value_auto_reg = SubValueAutoReg(objdbca, TFCloudEPConst, operation_id, movement_id, execution_no)
                 result, msg = sub_value_auto_reg.set_assigned_value_from_parameter_sheet()
                 if not result:
@@ -155,10 +169,12 @@ def instance_execute(objdbca):
                 ret, execute_data = update_execution_record(objdbca, TFCloudEPConst, update_data)
                 if ret:
                     objdbca.db_commit()
+                    g.applogger.debug(g.appmsg.get_log_message("BKY-51004", [execution_no]))
                 continue
 
             if run_mode == TFCloudEPConst.RUN_MODE_APPLY or run_mode == TFCloudEPConst.RUN_MODE_PLAN:
                 # 実行種別が「作業実行」「Plan確認」なら連携先Terraformに対しRUNを実行
+                g.applogger.debug("[Process] Start execute terraform run. (Execution No.:{})".format(execution_no))
                 result = execute_terraform_run(objdbca, record, False)
                 if not result:
                     # 作業実行に失敗
@@ -166,6 +182,7 @@ def instance_execute(objdbca):
 
             elif run_mode == TFCloudEPConst.RUN_MODE_DESTROY:
                 # 実行種別が「リソース削除」なら連携先Terraformに対しDestroyを実行
+                g.applogger.debug("[Process] Start execute terraform run(Destroy). (Execution No.:{})".format(execution_no))
                 result = execute_terraform_run(objdbca, record, True)
                 if not result:
                     # リソース削除に失敗
@@ -197,8 +214,15 @@ def instance_execute(objdbca):
                 g.applogger.error(log_msg)
             else:
                 objdbca.db_commit()
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51006", [execution_no]))
 
-    return True
+            # エラーフラグ
+            error_flg = True
+
+    if error_flg:
+        return False
+    else:
+        return True
 
 
 def instance_check(objdbca):
@@ -209,6 +233,8 @@ def instance_check(objdbca):
         RETRUN:
 
     """
+    error_flg = False
+
     # 作業管理テーブルをロック
     objdbca.table_lock([TFCloudEPConst.T_EXEC_STS_INST])
 
@@ -226,6 +252,7 @@ def instance_check(objdbca):
             execution_no = record.get('EXECUTION_NO')
 
             # メイン処理2（連携先TerraformのRUNの状態を監視する）
+            g.applogger.debug("[Process] Start check condition. (Execution No.:{})".format(execution_no))
             result = check_terraform_condition(objdbca, record)
             if not result:
                 # RUNの状態確認に失敗
@@ -252,5 +279,12 @@ def instance_check(objdbca):
                 g.applogger.error(log_msg)
             else:
                 objdbca.db_commit()
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51006", [execution_no]))
 
-    return True
+            # エラーフラグ
+            error_flg = True
+
+    if error_flg:
+        return False
+    else:
+        return True

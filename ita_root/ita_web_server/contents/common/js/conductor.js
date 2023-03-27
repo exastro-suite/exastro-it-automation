@@ -1874,7 +1874,8 @@ initNode() {
         '1': 'AL', // Ansible Legacy
         '2': 'AP', // Ansible Pioneer
         '3': 'ALR', // Ansible Legacy Role
-        '4': 'Tf',  // Terraform
+        '4': 'TERE',  // Terraform Cloud/EP
+        '5': 'TERC'   // Terraform CLI
     };
         
     // --------------------------------------------------
@@ -2759,7 +2760,7 @@ createNode( nodeID ) {
         if ( !nodeName ) nodeName = 'Unknown';
         if ( !nodeType ) nodeType = 'unknown';
         if ( !nodeCircle ) nodeCircle = 'Mv';
-        nodeClass.push('node-' + nodeType.toLocaleLowerCase().replace(/\s/g, '-') );
+        nodeClass.push('node-' + nodeType.toLocaleLowerCase().replace(/\s|\//g, '-') );
     } else {
         nodeCircle = nodeText[ nodeData.type ][0];
         nodeType = nodeText[ nodeData.type ][1];
@@ -2796,7 +2797,7 @@ createNode( nodeID ) {
         const callConductorId = nodeData['call_conductor_id'];
         if ( callConductorId !== undefined && callConductorId !== null ) {
             nodeClass.push('call-select');
-            nodeName = cd.getConductorName(  callConductorId);
+            nodeName = cd.getConductorName( callConductorId );
         }
         nodeHTML += ``
         + `<div class="node-name">`
@@ -5014,7 +5015,7 @@ movementList() {
         
         const movementSortLost = [];
         for ( const movement of movementList ) {
-            const orchestraName = movement.orchestra_name.toLocaleLowerCase().replace(/\s/g, '-');
+            const orchestraName = movement.orchestra_name.toLocaleLowerCase().replace(/\s|\//g, '-');
             movementSortLost.push(``
             + `<tr class="orche${movement.orchestra_id}">`
                 + `<th class="movement-list-orchestrator" title="${orchestraName}">`

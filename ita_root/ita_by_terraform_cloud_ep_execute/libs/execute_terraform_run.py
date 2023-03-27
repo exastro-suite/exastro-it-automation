@@ -121,6 +121,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         tf_workspace_name = ret[0].get('WORKSPACE_NAME')
 
         # [RESTAPI]連携先TerraformからOrganization一覧を取得
+        g.applogger.debug(g.appmsg.get_log_message("BKY-51007", [execution_no]))
         response_array = get_tf_organization_list(restApiCaller)  # noqa: F405
         response_status_code = response_array.get('statusCode')
         # ステータスコードが200以外の場合はエラー判定
@@ -148,6 +149,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             raise Exception(msg)
 
         # [RESTAPI]連携先TerraformからWorkspace一覧を取得
+        g.applogger.debug(g.appmsg.get_log_message("BKY-51008", [execution_no]))
         response_array = get_tf_workspace_list(restApiCaller, tf_organization_name)  # noqa: F405
         response_status_code = response_array.get('statusCode')
         if not response_status_code == 200:
@@ -189,9 +191,10 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             result = operation_LAST_EXECUTE_TIMESTAMP_update(objdbca, operation_id)
             if result[0] is True:
                 objdbca.db_commit()
-                # g.applogger.debug(g.appmsg.get_log_message("BKY-10003", [execution_no]))
+                g.applogger.debug(g.appmsg.get_log_message("BKY-10003", [execution_no]))
 
             # [RESTAPI]連携先Terraformに登録されているVariableの一覧を取得(削除対象を特定するため)
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51009", [execution_no]))
             response_array = get_tf_workspace_var_list(restApiCaller, tf_manage_workspace_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 200:
@@ -201,6 +204,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 raise Exception(msg)
 
             # [RESTAPI]取得したVariable一覧について、削除するRESTAPIを実行する
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51010", [execution_no]))
             respons_contents_json = response_array.get('responseContents')
             respons_contents = json.loads(respons_contents_json)
             respons_contents_data = respons_contents.get('data')
@@ -214,7 +218,8 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                     msg = g.appmsg.get_api_message("MSG-82015", [])
                     raise Exception(msg)
 
-            # 連携先Terraformに文字化け防止用の環境変数を設定する
+            # [RESTAPI]連携先Terraformに文字化け防止用の環境変数を設定する
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51011", [execution_no]))
             key = 'TF_CLI_ARGS'
             value = '-no-color'
             response_array = create_tf_workspace_var(restApiCaller, tf_manage_workspace_id, key, value, hcl=False, sensitive=False, category="env")  # noqa: F405, E501
@@ -228,11 +233,12 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             # --------------未実装--------------
             # 連携先Terraformに代入値管理に登録されている値があれば、Variableを設定する
             # ####メモ：代入値関連の処理が完成してから実装する。
+            # g.applogger.debug(g.appmsg.get_log_message("BKY-51012", [execution_no]))
             # --------------未実装--------------
         # -----[END]実行種別が「作業実行」「Plan確認」の場合のみ実施-----
 
         # Policy関連の処理スタート
-        policy_setting = policySetting(objdbca, TFCloudEPConst, restApiCaller, tf_organization_name, tf_workspace_name, tf_workspace_id, tf_manage_workspace_id)  # noqa: F405, E501
+        policy_setting = policySetting(objdbca, TFCloudEPConst, restApiCaller, tf_organization_name, tf_workspace_name, tf_workspace_id, tf_manage_workspace_id, execution_no)  # noqa: F405, E501
         result, msg, policy_data_dict = policy_setting.policy_setting_main()
         if not result:
             raise Exception(msg)
@@ -291,7 +297,8 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 msg = g.appmsg.get_api_message("MSG-82007", [])
                 raise Exception(msg)
 
-            # 作成したtar.gzファイルをアップロードするためのURLを取得する
+            # [RESTAPI]作成したtar.gzファイルをアップロードするためのURLを取得する
+            g.applogger.debug("[Process] Start RESTAPI get module upload URL. (Execution No.:{})".format(execution_no))
             response_array = get_upload_url(restApiCaller, tf_manage_workspace_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 201:
@@ -306,7 +313,8 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             upload_url = attributes.get('upload-url')
             cv_id = respons_contents_data.get('id')
 
-            # 作成したtar.gzファイルを連携先Terraformにアップロードする。
+            # [RESTAPI]作成したtar.gzファイルを連携先Terraformにアップロードする。
+            g.applogger.debug("[Process] Start RESTAPI upload module files. (Execution No.:{})".format(execution_no))
             response_array = module_upload(restApiCaller, gztar_path, upload_url)  # noqa: F405
             if not response_status_code == 201:
                 log_msg = g.appmsg.get_log_message("MSG-82030", [])
@@ -315,6 +323,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 raise Exception(msg)
 
             # [RESTAPI]連携先Terraformに登録されているVariableの一覧を取得(設定値を保存するため)
+            g.applogger.debug("[Process] Start RESTAPI get terraform workspace var list. (Execution No.:{})".format(execution_no))
             response_array = get_tf_workspace_var_list(restApiCaller, tf_manage_workspace_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 200:
@@ -347,7 +356,8 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             with open(variables_json_file, 'w') as f:
                 json.dump(variables_list, f, indent=4)
 
-            # TerraformのRUNを実行する
+            # [RESTAPI]TerraformのRUNを実行する
+            g.applogger.debug("[Process] Start RESTAPI create terraform run. (Execution No.:{})".format(execution_no))
             response_array = create_run(restApiCaller, tf_manage_workspace_id, cv_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 201:
@@ -397,6 +407,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             ret, execute_data = update_execution_record(objdbca, TFCloudEPConst, update_data, populated_data_rename_dir_path)
             if ret:
                 objdbca.db_commit()
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51002", [execution_no]))
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
                 g.applogger.error(log_msg)
@@ -411,7 +422,8 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         # -----[END]実行種別が「作業実行」「Plan確認」の場合のみ実施-----
         # -----[START]実行種別が「リソース削除」の場合のみ実施-----
         else:
-            # TerraformのDestroyを実行する
+            # [RESTAPI]TerraformのDestroyを実行する
+            g.applogger.debug("[Process] Start RESTAPI destroy workspace. (Execution No.:{})".format(execution_no))
             response_array = destroy_workspace(restApiCaller, tf_manage_workspace_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 201:
@@ -434,6 +446,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             ret, execute_data = update_execution_record(objdbca, TFCloudEPConst, update_data)
             if ret:
                 objdbca.db_commit()
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51002", [execution_no]))
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
                 g.applogger.error(log_msg)

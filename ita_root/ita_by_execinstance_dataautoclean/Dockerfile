@@ -25,6 +25,7 @@ ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=1
+ENV SERVICE_NAME=ita-by-execinstance-dataautoclean
 
 RUN dnf install -y \
     gcc \

@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import *  # noqa: F403
 from libs import system_info
 from common_libs.api import api_filter
 
@@ -31,9 +32,9 @@ def get_ita_version(organization_id, workspace_id):  # noqa: E501
     :rtype: InlineResponse20011
     """
     # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+    common_db = DBConnectCommon()  # noqa: F405
+
     # バージョン情報を取得
-    data = system_info.collect_ita_version(objdbca)
-    
+    data = system_info.collect_ita_version(common_db)
+
     return data,

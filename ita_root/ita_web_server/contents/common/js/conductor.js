@@ -4618,7 +4618,7 @@ panelCallHtml( nodeId ) {
           note = fn.cv( node.note, '', true ),
           conductor = fn.cv( cd.getConductorName( node.call_conductor_id ), ''),
           operation = fn.cv( cd.getOperationName( node.operation_id ), ''),
-          skip = ( node.skip_flag === '1')? ' checked': '',
+          skip = ( node.skip_flag === '1')? { checked: 'checked'}: {},
           skipId = `${cd.id}_movementSkip`;
           
     return cd.panelCommon('Condcutor call', `

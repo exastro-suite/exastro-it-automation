@@ -24,6 +24,7 @@ ENV USER_ID="10106"
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV SERVICE_NAME=ita-by-file-autoclean
 
 RUN dnf install -y \
     gcc \

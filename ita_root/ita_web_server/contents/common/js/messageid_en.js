@@ -735,6 +735,7 @@ getMessage = ( function() {
         'FTE08084' : "Another tab",
         'FTE08085' : "Another window",
         'FTE08086' : "Modal",
+        'FTE08087' : function( day ){ return `There is no reservation work within ${day} days.`},
 
         // Terraform
         'FTE09001' : "Organization registration list",

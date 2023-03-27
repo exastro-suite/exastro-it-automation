@@ -498,8 +498,6 @@ resize: vertical;
 .menu-column-config-table .half-cell {
 width: 50%;
 }
-.menu-column-config-table th.half-cell {
-}
 .menu-column-config-table td.half-cell {
 border-left: none;
 }

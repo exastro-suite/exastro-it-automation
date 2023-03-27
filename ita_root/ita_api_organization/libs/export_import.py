@@ -148,8 +148,8 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         menu_id_list.append(record.get('MENU_ID'))
 
     # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-    # 自分のロールが「メンテナンス可」または「閲覧のみ」
-    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1, 2], 0])
+    # 自分のロールが「メンテナンス可」
+    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1], 0])
 
     # ロールまで絞った対象メニューIDを再リスト化
     menu_id_list = []
@@ -160,14 +160,20 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     # メニュー名を取得
     ret_menu = objdbca.table_select(t_common_menu, 'WHERE MENU_ID IN %s AND DISUSE_FLAG = %s', [menu_id_list, 0])
 
-    # MENU_ID:MENU_NAMEのdict
-    dict_menu_id_name = {}
     menu_group_id_list = []
-    result_id = {}
+    menus = {}
     for record in ret_menu:
-        menu_group_id_list.append(record.get('MENU_GROUP_ID'))
-        dict_menu_id_name[record.get('MENU_ID')] = record.get('MENU_NAME_' + lang.upper())
-        result_id.setdefault(record.get('MENU_GROUP_ID'), []).append(record.get('MENU_ID'))
+        menu_group_id = record.get('MENU_GROUP_ID')
+        menu_group_id_list.append(menu_group_id)
+        if menu_group_id not in menus:
+            menus[menu_group_id] = []
+
+        add_menu = {}
+        add_menu['id'] = record.get('MENU_ID')
+        add_menu['menu_name'] = record.get('MENU_NAME_' + lang.upper())
+        add_menu['menu_name_rest'] = record.get('MENU_NAME_REST')
+        add_menu['disp_seq'] = record.get('DISP_SEQ')
+        menus[record.get('MENU_GROUP_ID')].append(add_menu)
 
     # 『メニューグループ管理』テーブルから対象のデータを取得
     # メニューグループ名を取得
@@ -177,21 +183,27 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     dict_menu_group_id_name = {}
     # MENU_GROUP_ID:DISP_SEQのdict
     dict_menu_group_id_seq = {}
+    # メニューグループの一覧を作成し、メニュー一覧も格納する
+    menu_group_list = []
     for record in ret_menu_group:
+        menu_group_id = record.get('MENU_GROUP_ID')
         dict_menu_group_id_name[record.get('MENU_GROUP_ID')] = record.get('MENU_GROUP_NAME_' + lang.upper())
         dict_menu_group_id_seq[record.get('MENU_GROUP_ID')] = record.get('DISP_SEQ')
 
-    # DISP_SEQ:{MENU_GROUP_NAME:[MENU_NAME]}の形に整理する
-    result = {}
-    for menu_group_id, menu_list in result_id.items():
-        result_name = {}
-        menu_group_name = dict_menu_group_id_name[menu_group_id]
-        for menu_id in menu_list:
-            menu_name = dict_menu_id_name[menu_id]
-            result_name.setdefault(menu_group_name, []).append(menu_name)
-        result[dict_menu_group_id_seq[menu_group_id]] = result_name
+        add_menu_group = {}
+        add_menu_group['parent_id'] = record.get('PARENT_MENU_GROUP_ID')
+        add_menu_group['id'] = menu_group_id
+        add_menu_group['menu_group_name'] = record.get('MENU_GROUP_NAME_' + lang.upper())
+        add_menu_group['disp_seq'] = record.get('DISP_SEQ')
+        add_menu_group['menus'] = menus.get(menu_group_id)
 
-    return result
+        menu_group_list.append(add_menu_group)
+
+    menus_data = {
+        "menu_groups": menu_group_list,
+    }
+
+    return menus_data
 
 def execute_menu_bulk_export(objdbca, menu, body):
     """

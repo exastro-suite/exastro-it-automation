@@ -100,6 +100,7 @@
     "499-01303": "The setting value of MENU_LIST.txt are incorrect.",
     "499-01304": "Failed to import excel.",
     "499-01305": "There are no importable menus.",
+    "499-01401": "Service name and log level are invalid. ({}:{})",
     "999-00001": "System Error",
     "999-00002": "System Error",
     "999-00003": "System Error",

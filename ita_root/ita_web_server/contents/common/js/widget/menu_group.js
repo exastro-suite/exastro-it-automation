@@ -46,7 +46,7 @@ body() {
                     
                     const html = ``
                     + `<li class="db-menu-group-item" style="width:calc(100%/${wg.data.menu_number})" data-menu-id="${menuGroupId}">`
-                        + wg.linkHtml('db-menu-group-link', `?menu=${menuNameRest}`, link, wg.data.page_move, { html: true });
+                        + wg.linkHtml('db-menu-group-link', `?menu=${menuNameRest}`, link, wg.data.page_move );
                     + `</li>`;
                     list.push( html );
                 }

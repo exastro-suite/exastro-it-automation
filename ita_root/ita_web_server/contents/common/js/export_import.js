@@ -332,7 +332,8 @@ export() {
     fn.contentLoadingStart();
     
     // エクスポートリスト取得
-    fn.fetch('/menu/export/info/').then(function( result ){
+    const rest = ( ex.type === 'menuExport')? '/menu/export/info/': '/excel/bulk/export/info/';
+    fn.fetch( rest ).then(function( result ){
         if ( result.menu_groups ) {
             ex.$.content.html( ex.exportHtml( ex.createMenuGroupList( result.menu_groups ) ) );
             ex.commonEvents();

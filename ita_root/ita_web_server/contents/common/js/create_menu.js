@@ -213,20 +213,32 @@ panelContainerHtml( editorMode ) {
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr>
-                        <th class="panel-th">` + getMessage.FTE01012 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01012 + `</th>
+                    </tr>
+                    <tr>
                         <td class="panel-td"><span id="create-menu-name" class="panel-span"></span></td>
                     </tr>
                     <tr>
-                        <th class="panel-th">` + getMessage.FTE01013 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01013 + `</th>
+                    </tr>
+                    <tr>
                         <td class="panel-td"><span id="create-menu-name-rest" class="panel-span"></span></td>
                     </tr>
                     <tr>
-                        <th class="panel-th">` + getMessage.FTE01014 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01014 + `</th>
+                    </tr>
+                    <tr>
                         <td class="panel-td"><span id="create-menu-type" class="panel-span"></span></td>
                     </tr>
+                </tbody>
+            </table>
+            <hr class="panel-hr">
+            <table class="panel-table">
+                <tbody>
                     <tr>
                         <th class="panel-th">` + getMessage.FTE01015 + `</th>
                         <td class="panel-td"><span id="create-menu-order" class="panel-span"></span></td>
@@ -314,28 +326,32 @@ panelContainerHtml( editorMode ) {
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01029 + `">
-                        <th class="panel-th">${getMessage.FTE01012 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01012 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01029 + `">
                         <td class="panel-td"><input id="create-menu-name" class="panel-text" type="text"></td>
                     </tr>
                     <tr title="` + getMessage.FTE01030 + `">
-                        <th class="panel-th">${getMessage.FTE01013 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01013 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01030 + `">
                         <td class="panel-td"><input id="create-menu-name-rest" class="panel-text" type="text"></td>
                     </tr>
-                </tbody>
-            </table>
-            <table class="panel-table">
-                <tbody>
                     <tr title="` + getMessage.FTE01031 + `">
-                        <th class="panel-th">` + getMessage.FTE01014 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01014 + `</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01031 + `">
                         <td class="panel-td">
                             <select id="create-menu-type" class="panel-select" disabled></select>
                         </td>
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01032 + `">
@@ -446,28 +462,32 @@ panelContainerHtml( editorMode ) {
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01029 + `">
-                        <th class="panel-th">${getMessage.FTE01012 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01012 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01029 + `">
                         <td class="panel-td" colspan="3"><input id="create-menu-name" class="panel-text" type="text"></td>
                     </tr>
                     <tr title="` + getMessage.FTE01030 + `">
-                        <th class="panel-th">${getMessage.FTE01013 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01013 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01030 + `">
                         <td class="panel-td" colspan="3"><input id="create-menu-name-rest" class="panel-text" type="text"></td>
                     </tr>
-                </tbody>
-            </table>
-            <table class="panel-table">
-                <tbody>
                     <tr title="` + getMessage.FTE01031 + `">
-                        <th class="panel-th">` + getMessage.FTE01014 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01014 + `</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01031 + `">
                         <td class="panel-td" colspan="3">
                             <select id="create-menu-type" class="panel-select"></select>
                         </td>
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01032 + `">

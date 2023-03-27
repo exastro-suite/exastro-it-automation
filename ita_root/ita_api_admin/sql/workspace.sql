@@ -308,23 +308,6 @@ CREATE TABLE T_COMN_COLUMN_GROUP_JNL
 
 
 
--- バージョン確認
-CREATE TABLE T_COMN_VERSION
-(
-    SERVICE_ID                      VARCHAR(40),                                -- UUID
-    VERSION                         VARCHAR(32),                                -- バージョン
-    INSTALLED_DRIVER_JA             TEXT,                                       -- インストール済ドライバ(ja)
-    INSTALLED_DRIVER_EN             TEXT,                                       -- インストール済ドライバ(en)
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(SERVICE_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
-
 -- システム設定
 CREATE TABLE T_COMN_SYSTEM_CONFIG
 (

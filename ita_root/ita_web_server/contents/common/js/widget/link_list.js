@@ -25,7 +25,12 @@ body() {
     const html = [];
     if ( fn.typeof( wg.data.link_list ) === 'array' && wg.data.link_list.length) {
         for ( const item of wg.data.link_list ) {
-            html.push(`<li class="db-linklist-item" style="width:calc(100%/${fn.cv( wg.data.menu_number, 1 )});">${wg.linkHtml('db-linklist-link', item.url, item.name, wg.data.page_move )}</li>`);
+            const url = encodeURI( item.url ),
+                text = fn.cv( item.name, '', true );
+            html.push(``
+            + `<li class="db-linklist-item" style="width:calc(100%/${fn.cv( wg.data.menu_number, 1 )});">`
+                + wg.linkHtml('db-linklist-link', url, text, wg.data.page_move )
+            + `</li>`);
         }
     }
     

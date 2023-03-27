@@ -737,6 +737,7 @@ getMessage = ( function() {
         'FTE08084' : "別タブ",
         'FTE08085' : "別ウインドウ",
         'FTE08086' : "モーダル",
+        'FTE08087' : function( day ){ return `${day}日以内の予約作業はありません。`},
         
         // Terraform
         'FTE09001' : "Organization登録管理",

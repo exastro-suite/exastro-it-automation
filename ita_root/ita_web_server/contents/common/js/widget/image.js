@@ -24,7 +24,8 @@ body() {
           imageHtml = `<img class="db-image" src="${fn.cv( wg.data.image_url, '', true )}">`;
     
     if ( wg.data.link_url !== '') {
-        return `<a class="db-image-link" href="${fn.cv( wg.data.link_url, '', true )}">${imageHtml}</a>`;
+        const url = encodeURI( wg.data.link_url );
+        return wg.linkHtml('db-image-link', url, imageHtml, wg.data.page_move );
     } else {
         return imageHtml;
     }

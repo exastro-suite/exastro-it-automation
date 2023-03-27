@@ -925,7 +925,8 @@ def _get_line_values(target_key, origin_data, target_host, input_order, col_name
     try:
         menu_data = origin_data[target_host][input_order].get(target_key)
         target_uuid = menu_data.get("uuid")
-        col_val_menu = menu_data.get(col_name_menu)
+        # col_val_menu->str()[:is not None]
+        col_val_menu = str(menu_data.get(col_name_menu)) if menu_data.get(col_name_menu) is not None else menu_data.get(col_name_menu)
         base_datetime = menu_data.get("base_datetime")
         operation_name_disp = menu_data.get("operation_name_disp")
     except Exception:

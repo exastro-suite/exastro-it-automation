@@ -24,6 +24,7 @@ ENV USER_ID=80102
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV SERVICE_NAME=ita-by-terraform-cloud-ep-vars-listup
 
 RUN dnf install -y \
     gcc \

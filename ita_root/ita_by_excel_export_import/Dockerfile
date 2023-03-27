@@ -24,6 +24,7 @@ ENV USER_ID=50101
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV SERVICE_NAME=ita-by-excel-export-import
 
 RUN dnf install -y \
     gcc \

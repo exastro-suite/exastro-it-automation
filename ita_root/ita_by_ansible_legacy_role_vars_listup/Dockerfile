@@ -24,6 +24,7 @@ ENV USER_ID=20401
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV SERVICE_NAME=ita-by-ansible-legacy-role-vars-listup
 
 RUN dnf install -y \
     gcc \

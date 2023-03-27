@@ -36,7 +36,7 @@ def get_api_timestamp():
 def make_response(data=None, msg="", result_code="000-00000", status_code=200, ts=None):
     """
     make http response
-    
+
     Argument:
         data: data
         msg: message
@@ -66,7 +66,7 @@ def make_response(data=None, msg="", result_code="000-00000", status_code=200, t
 def app_exception_response(e):
     '''
     make response when AppException occured
-    
+
     Argument:
         e: AppException
     Returns:
@@ -86,20 +86,20 @@ def app_exception_response(e):
     result_code, log_msg_args, api_msg_args = args
     log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
     api_msg = g.appmsg.get_api_message(result_code, api_msg_args)
-    
+
     # get http status code
     status_code = int(result_code[0:3])
     if 500 <= status_code:
         status_code = 500
 
-    g.applogger.error("[ts={}][error] {}".format(api_timestamp, log_msg))
+    g.applogger.info("[ts={}][error] {}".format(api_timestamp, log_msg))
     return make_response(None, api_msg, result_code, status_code)
 
 
 def exception_response(e):
     '''
     make response when Exception occured
-    
+
     Argument:
         e: Exception
     Returns:
@@ -127,7 +127,7 @@ def exception_response(e):
 def api_filter(func):
     '''
     wrap api controller
-    
+
     Argument:
         func: controller(def)
     Returns:
@@ -137,7 +137,7 @@ def api_filter(func):
     def wrapper(*args, **kwargs):
         '''
         controller wrapper
-        
+
         Argument:
             *args, **kwargs: controller args
         Returns:
@@ -174,7 +174,7 @@ def check_request_body():
 def check_request_body_key(body, key):
     '''
     check request_body's key for required
-    
+
     Argument:
         body: (dict) controller arg body
         key:  key for check

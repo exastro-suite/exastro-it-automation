@@ -35,6 +35,9 @@ tags:
     description: Workspace作成(Exastro Platform連携用) ※利用不可
   - name: Initial Settings Ansible
     description: 初期データ設定(Ansible)
+  - name: LogLevel Settings
+    description: ログレベル設定
+
 paths:
   /api/organizations/{organization_id}/ita/:
     post:
@@ -543,6 +546,93 @@ paths:
                             proxy_port:
                               type: string
                               nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/ita/loglevel-settings/:
+    get:
+      tags:
+        - LogLevel Settings
+      description: すべてのServiceのログレベルを取得する
+      operationId: getAllLoglevelSettings
+      x-openapi-router-controller: controllers.loglevel_settings_controller
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    properties:
+                      service_name_1:
+                        type: string
+                        example: "INFO/DEBUG"
+                      service_name_2:
+                        type: string
+                        example: "INFO/DEBUG"
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+    patch:
+      tags:
+        - LogLevel Settings
+      description: 複数のServiceのログレベルを更新する
+      operationId: postAllSettingLoglevel
+      x-openapi-router-controller: controllers.loglevel_settings_controller
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_name_1:
+                  type: string
+                  example: "INFO/DEBUG"
+                service_name_2:
+                  type: string
+                  example: "INFO/DEBUG"
       responses:
         '200':
           description: Success

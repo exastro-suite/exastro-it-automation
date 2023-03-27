@@ -28,6 +28,7 @@ ENV APACHE_PID_DIR          /var/run_$USERNAME/httpd/pid
 ENV APACHE_SOCKET_DIR       /var/run_$USERNAME/httpd/socket
 ENV APACHE_USERNAME         $USERNAME
 ENV APACHE_GROUPNAME        $GROUPNAME
+ENV SERVICE_NAME=ita-api-admin
 
 RUN dnf install -y \
     gcc \

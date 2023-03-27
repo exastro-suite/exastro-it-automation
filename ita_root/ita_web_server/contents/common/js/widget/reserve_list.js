@@ -101,6 +101,8 @@ body() {
                 + `</tr>`;
             }
             tableHTML += `</tbody></table>`;
+        } else {
+            tableHTML += `<div class="db-reserve-message">${getMessage.FTE08087( wg.data.period )}</div>`;
         }
         
         tableHTML += `</div>`;

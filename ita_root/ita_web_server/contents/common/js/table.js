@@ -1669,9 +1669,46 @@ setTableEvents() {
                         }
                     } break;
                     case 'redirect_filter': {
+                        const itemId = $button.attr('data-item'),
+                            columnKey = $button.attr('data-columnkey');
                         
-                        
+                        const itemData = tb.data.body.find(function( item ){
+                            return item.parameter[ tb.idNameRest ] === itemId;
+                        });
 
+                        if ( itemData ) {
+                            let buttonAction;
+                            try {
+                                buttonAction = JSON.parse( tb.info.column_info[ columnKey ].button_action );
+                            } catch( e ) {
+                                buttonAction = [];
+                            }
+
+                            const redirectUrl = buttonAction[0][1],
+                                filter = {};
+
+                            for ( const f of buttonAction[0][2] ) {
+                                const parameterKey = f[0],
+                                    filterSetKey = f[1],
+                                    filterType = f[2];
+                                
+                                let value;
+                                if ( filterType === 'LIST') {
+                                    value = [ itemData.parameter[ parameterKey ] ];
+                                } else if ( filterType === 'RANGE') {
+                                    //
+                                } else {
+                                    value = itemData.parameter[ parameterKey ];
+                                }
+                                filter[ filterSetKey ] = {};
+                                filter[ filterSetKey ][ filterType ] = value;
+                            }
+                            if ( redirectUrl ) {
+                                window.location.href = `?${redirectUrl}&filter=${fn.filterEncode( filter )}`;
+                            }
+                        } else {
+                            alert('Button action error.');
+                        }
                     } break;
                     case 'download': {
                         $button.prop('disabled', true );
@@ -3070,6 +3107,7 @@ buttonAction( columnInfo, item, columnKey ) {
             break;
             case 'redirect_filter':
                 buttonAttrs.item = item.parameter[ tb.idNameRest ];
+                buttonAttrs.columnkey = columnKey;
                 buttonAttrs.action = 'positive';
             break;
             // ファイルダウンロード

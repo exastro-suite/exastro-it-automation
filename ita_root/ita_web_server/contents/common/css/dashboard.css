@@ -57,6 +57,20 @@ padding: 16px;
 background-color: rgba(0,0,0,.05);
 border: 1px solid rgba( 0,0,0,.1);
 }
+.db-reserve-message {
+margin: 8px;
+padding: 16px;
+border: 1px solid #CCC;
+background-color: #F2F2F2;
+border-radius: 4px;
+color: #AAA;
+text-align: center;
+}
+.darkmode .db-reserve-message {
+border-color: #333;
+background-color: #222;
+color: #CCC;
+}
 /*
 ##################################################
    Widget

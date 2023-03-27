@@ -47,7 +47,8 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])  # noqa: E501
 
         for organization_info in organization_info_list:
-            g.applogger.set_level(os.environ.get("LOG_LEVEL"))
+            # set applogger.set_level: default:INFO / Use ITA_DB config value
+            set_service_loglevel(common_db)
 
             organization_id = organization_info['ORGANIZATION_ID']
 
@@ -104,7 +105,8 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         workspace_info_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `WORKSPACE_ID`=%s", [workspace_id])  # noqa: E501
 
     for workspace_info in workspace_info_list:
-        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
+        # set applogger.set_level: default:INFO / Use ITA_DB config value
+        set_service_loglevel()
 
         workspace_id = workspace_info['WORKSPACE_ID']
 
@@ -309,3 +311,79 @@ def validation_exception_driver_log(e, logfile=None):
 
 def log_err(msg=""):
     g.applogger.error("[error]{}".format(msg))
+
+
+def is_service_loglevel_table(common_db):
+    """
+        is_service_loglevel_table:
+            SHOW TABLES LIKE `T_COMN_LOGLEVEL`
+        ARGS:
+            common_db, service_loglevel_flg=None
+        RETURN:
+            bool
+    """
+
+    if g.get("SERVICE_LOGLEVEL_FLG") is not None:
+        # use g[SERVICE_LOGLEVEL_FLG]
+        return g.get("SERVICE_LOGLEVEL_FLG")
+    else:
+        # first time check `T_COMN_LOGLEVEL` and SET g[SERVICE_LOGLEVEL_FLG]
+        service_loglevel_flg = False
+        rows_table_list = common_db.sql_execute(
+            "SHOW TABLES LIKE %s;",
+            ["T_COMN_LOGLEVEL"]
+        )
+        if len(rows_table_list) == 1:
+            service_loglevel_flg = True
+        g.setdefault("SERVICE_LOGLEVEL_FLG", service_loglevel_flg)
+        return service_loglevel_flg
+
+
+def set_service_loglevel(common_db=None):
+    """
+        set_service_loglevel:
+            use common_db / new connect common_db and db_disconnect
+            default:
+                g.applogger.set_level("INFO")
+            is service_loglevel table:
+                g.applogger.set_level(loglevel)
+        ARGS:
+            common_db=None
+    """
+    loglevel = "INFO"
+    try:
+        # service_name
+        service_name = os.environ.get("SERVICE_NAME")
+
+        # use common_db or new connect common_db
+        if common_db is None:
+            tmp_common_db = DBConnectCommon()  # noqa: F405
+        else:
+            tmp_common_db = common_db
+
+        # check service_loglevel table
+        service_loglevel_flg = is_service_loglevel_table(tmp_common_db)
+
+        # is service_loglevel table: T_COMN_LOGLEVEL
+        if service_loglevel_flg is True and service_name is not None:
+            # get service_loglevel for SERVICE_NAME
+            service_loglevel_list = tmp_common_db.table_select(
+                "T_COMN_LOGLEVEL",
+                "WHERE `DISUSE_FLAG`=0 AND `SERVICE_NAME`=%s ",
+                [service_name]
+            )
+            # match service_name->loglevel
+            if len(service_loglevel_list) == 1:
+                loglevel = service_loglevel_list[0].get('LOG_LEVEL')
+                # is loglevel
+                if loglevel is None:
+                    raise Exception()
+    except Exception:
+        loglevel = "INFO"
+    finally:
+        # applogger.set_level
+        g.applogger.set_level(loglevel)
+
+        # connect inside function
+        if common_db is None:
+            tmp_common_db.db_disconnect()

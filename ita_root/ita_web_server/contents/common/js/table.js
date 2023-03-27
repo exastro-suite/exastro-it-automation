@@ -1668,6 +1668,11 @@ setTableEvents() {
                             window.location.href = redirect;
                         }
                     } break;
+                    case 'redirect_filter': {
+                        
+                        
+
+                    } break;
                     case 'download': {
                         $button.prop('disabled', true );
                         const url = $button.attr('data-url'),
@@ -3063,6 +3068,10 @@ buttonAction( columnInfo, item, columnKey ) {
                 buttonAttrs.action = 'positive';
                 buttonAttrs.redirect += action[1] + item.parameter[ action[2] ];
             break;
+            case 'redirect_filter':
+                buttonAttrs.item = item.parameter[ tb.idNameRest ];
+                buttonAttrs.action = 'positive';
+            break;
             // ファイルダウンロード
             case 'download': {
                 const endPoint = action[2].replace('{menu}', tb.params.menuNameRest ),
@@ -3157,7 +3166,8 @@ editCellHtml( item, columnKey ) {
           inputClassName = [],
           inputRequired = fn.cv( columnInfo.required_item, '0'),
           autoInput = '<span class="tBodyAutoInput"></span>',
-          inputItem = columnInfo.input_item;
+          inputItem = columnInfo.input_item,
+          name = '';
 
     let value = fn.cv( parameter[ columnName ], '', true );
 

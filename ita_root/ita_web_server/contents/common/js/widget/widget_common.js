@@ -331,7 +331,7 @@ settingModalRow( settingData ) {
 */
 settingModalInput( settingData ) {
     const key = settingData.name,
-          value = this.data[ key ];
+          value = fn.cv( this.data[ key ], '', true );
     switch ( settingData.type ) {
         case 'text':  return fn.html.inputText('db-modal-text', value, key );
         case 'number': {
@@ -419,6 +419,11 @@ settingModalList( settingData ) {
     
     return html;
 }
+/*
+##################################################
+   リストHTML
+##################################################
+*/
 createListRowHtml( key, item, disabledFlag = false ) {
     const wg = this;
     
@@ -433,7 +438,11 @@ createListRowHtml( key, item, disabledFlag = false ) {
     row.push(`<td class="db-modal-list-td"><div class="db-modal-list-delete${disabled}">${fn.html.icon('cross')}</div></td></tr>`);
     return row.join('');
 }
-
+/*
+##################################################
+   項目が１つの場合は移動と削除を無効化する
+##################################################
+*/
 checkListDisabled() {
     const wg = this;
     
@@ -446,7 +455,11 @@ checkListDisabled() {
     }
     
 }
-
+/*
+##################################################
+   リストイベント
+##################################################
+*/
 setListEvent() {
     const wg = this;
 
@@ -554,7 +567,11 @@ setListEvent() {
     });
     
 }
-
+/*
+##################################################
+   リストデータ取得
+##################################################
+*/
 getListData( $list ) {
     const data = [];
     $list.find('.db-modal-list-tr').each(function(){
@@ -575,12 +592,14 @@ getListData( $list ) {
     });
     return data;
 }
-
+/*
+##################################################
+   リンクHTML
+##################################################
+*/
 linkHtml( className, href, text, type = 'same', option = {}) {
-    href = encodeURI( fn.cv( href, '' ) );
-    
-    if ( option.html !== true ) {
-        text = fn.cv( text, '', true );        
+    if ( option.encode === true ) {
+        href = encodeURI( fn.cv( href, '' ) );
     }
     
     const attr = [`class="${className} db-link" href="${href}" data-type="${type}"`];

@@ -451,6 +451,7 @@ background-color: #272B38;
 border-color: #4F80FF;
 outline: none;
 }
+.panel-select:disabled,
 input[type="text"].panel-text:disabled,
 input[type="number"].panel-number:disabled {
 background-color: #444;

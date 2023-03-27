@@ -574,6 +574,8 @@ setup() {
 init() {
     const db = this;
     
+    db.$.body.addClass('body-overflow-hidden');
+    
     // DashBoad HTML
     const html = `
     <div class="dashboard" data-mode="view">
@@ -780,12 +782,7 @@ newWidget( setId ) {
             db.widgetPosition,
             { col: db.maxColumn, row: db.maxColumn },
             db.info[ db.widgetInfo[ setId ].info_data_name ]
-        );
-        
-        console.log( db.widgetInfo[ setId ] )
-        console.log( db.info[ db.widgetInfo[ setId ].info_data_name ] )
-        console.log(db.widgetInfo[ setId ].info_data_name)
-        
+        );        
         
         const widgetId = db.widgetInfo[ setId ].widget_id;
         if ( db.widgetNumber[ widgetId ] === undefined ) db.widgetNumber[ widgetId ] = 0;

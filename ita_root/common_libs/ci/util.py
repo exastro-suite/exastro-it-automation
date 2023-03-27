@@ -31,13 +31,17 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
     common_db = DBConnectCommon()  # noqa: F405
     g.applogger.debug("ITA_DB is connected")
 
+    # 子プロセスで使われているか否か
+    is_child_ps = False if organization_id is None else True
+
+    # pythonでのループ
     interval = int(os.environ.get("EXECUTE_INTERVAL"))
     count = 1
-    max = int(loop_count) if organization_id is None else 1
+    max = int(loop_count) if is_child_ps is False else 1
 
     while True:
         # get organization_info_list
-        if organization_id is None:
+        if is_child_ps is False:
             organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
         else:
             organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])  # noqa: E501

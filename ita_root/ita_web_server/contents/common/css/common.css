@@ -1527,8 +1527,6 @@ background-color: var(--black40);
 .open > .menuSecondaryToggleIcon::after {
 display: none;
 }
-.menuSecondaryToggleIcon.open {
-}
 .menuSecondary {
 position: relative;
 background-color: var(--black90);
@@ -1953,6 +1951,9 @@ line-height: 1.5;
 font-size: 20px;
 font-weight: bold;
 color: var(--black60);
+}
+.noFilter .tableMessage {
+margin-top: 0;
 }
 .commonMessage {
 margin-top: 0;
@@ -2724,8 +2725,6 @@ font-size: 12px;
 .filterMenuButton > .inner {
 padding: 0 16px;
 }
-.filterInputFromToNumber {
-}
 .filterInputFromNumberWrap,
 .filterInputFromDateWrap {
 position: relative;
@@ -2790,15 +2789,12 @@ margin-bottom: 8px;
 background-color: rgba(0,0,0,.05);
 border: 1px solid rgba( 0,0,0,.1);
 }
-.referenceFilterTable {
-}
 .referenceFilterTable .filterTr {
 display: table-row;
 }
 .referenceFilterTable .tHeadFilterMenu > .ci {
 display: flex;
 flex-direction: column;
-
 }
 .referenceFilterTable .filterMenuList {
 height: 40px;
@@ -2830,7 +2826,6 @@ margin-bottom: 8px;
 .tableFilterOut.filterShow .tableFilter {
 display: block;
 }
-
 /* Input date */
 .inputDateContainer {
 display: flex;
@@ -3043,7 +3038,6 @@ letter-spacing: .5px;
 font-family: "Osaka-mono", "MS Gothic", "monospace";
 font-size: 16px;
 }
-
 .tBodyRowMenu  {
 cursor: pointer;
 }
@@ -3138,8 +3132,6 @@ box-shadow: none;
 .tableItemMenuShow .tableRowMenu::after {
 display: none;
 }
-
-
 .tBodyInputTd > .ci {
 padding: 4px;
 }
@@ -3274,7 +3266,6 @@ color: var(--black90);
 .fileSelectTable {
 width: 100%;
 }
-
 .operationBlock {
 display: flex;
 padding: 8px 0;
@@ -3307,7 +3298,34 @@ letter-spacing: .75px;
 line-height: 1.75;
 font-size: 14px;
 }
-
+.td .registered .icon {
+color: #60C60D;
+}
+.td .unregistered {
+opacity: .3;
+}
+/* multipleTable */
+.multipleTable .tBodyTd {
+border-bottom-width: 3px;
+background-color: var(--rowColor)!important;
+}
+.multipleTable .multipleEven .tBodyTd {
+background-color: var(--rowEvenColor)!important;
+}
+.multipleTable .tr:hover .tBodyTd,
+.multipleTable .tr:hover .multipleEven .tBodyTd {
+background-color: var(--rowHoverColor)!important;
+}
+.multipleTable .multipleRow .tBodyTd[rowspan="1"] {
+border-bottom-width: 1px;
+border-bottom-style: dashed;
+}
+.multipleTable .lastRow .tBodyTd {
+border-right-style: dashed;
+}
+.multipleTable .tBodyAutoInput {
+opacity: .5;
+}
 
 /*
 ##################################################
@@ -4546,7 +4564,6 @@ letter-spacing: .75px;
 line-height: 1.1;
 font-weight: bold;
 font-size: 11px;
-color: border-left: 4px solid var(--mainColor80);
 }
 .commonStatusValue {
 border-left: 4px solid var(--mainColor80);
@@ -4850,7 +4867,7 @@ left: -23px;
 height: calc( 100% + 6px );
 }
 /* tableHorizontal */
-.tableHorizontal .tableWrap .table{
+.tableHorizontal .tableWrap .table {
 writing-mode: vertical-lr;
 }
 .tableHorizontal .tableWrap th,
@@ -4900,7 +4917,8 @@ margin: 0 0 0 auto;
 margin: 0 auto;
 }
 .initFilterStandBy .tableHorizontal .tableWrap,
-.noData .tableHorizontal .tableWrap {
+.noData .tableHorizontal .tableWrap,
+.noData.noFilter .tableWrap  {
 display: none!important;
 }
 
@@ -5012,7 +5030,6 @@ box-shadow: 0 0 8px rgba( 0,0,0,.3 );
 .icon {
   /* use !important to prevent issues with browser extensions that change fonts */
   font-family: 'exastro-ui-icons' !important;
-  speak: never;
   font-style: normal;
   font-weight: normal;
   font-variant: normal;

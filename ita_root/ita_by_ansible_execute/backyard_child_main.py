@@ -21,7 +21,7 @@ import yaml
 import glob
 import inspect
 import copy
-# import traceback
+import shlex
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException, ValidationException
@@ -1204,8 +1204,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
         zip_temp_save_dir = get_AnsibleDriverTmpPath()
 
         # OSコマンドでzip圧縮する
-        tmp_str_command = "cd " + zip_data_source_dir + "; zip -r " + zip_temp_save_dir + "/" + zip_file_name + " . -x ssh_key_files/* -x winrm_ca_files/*"  # noqa: E501
-
+        tmp_str_command = "cd " + shlex.quote(zip_data_source_dir) + "; zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
         os.system(tmp_str_command)
 
         # zipファイルの存在を確認

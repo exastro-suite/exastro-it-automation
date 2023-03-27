@@ -20,8 +20,7 @@ from common_libs.terraform_driver.common.member_vars_function import *  # noqa: 
 
 def backyard_main(organization_id, workspace_id):
     # メイン処理開始
-    debug_msg = g.appmsg.get_log_message("BKY-20001", [])
-    g.applogger.debug(debug_msg)
+    g.applogger.debug(g.appmsg.get_log_message("BKY-00001"))
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -32,22 +31,25 @@ def backyard_main(organization_id, workspace_id):
     # 関連データベースが更新されバックヤード処理が必要か判定
     ret = has_changes_related_tables(objdbca, proc_load_id)  # noqa: F405
     if not ret:
-        g.applogger.debug("No changes, skip workflow.")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50001"))
         return
 
     # Module素材集に登録されているレコードから、Module-変数紐付テーブルを更新する
+    g.applogger.debug(g.appmsg.get_log_message("BKY-50002"))
     result = set_module_vars_link(objdbca, TFCLIConst)  # noqa: F405
     if not result:
         # 後続の処理が成立しないためreturnする
         return
 
     # Movement-Module紐付に登録されているレコードから、Movement-Module変数紐付テーブルを更新する
+    g.applogger.debug(g.appmsg.get_log_message("BKY-50003"))
     result = set_movement_var_link(objdbca, TFCLIConst)  # noqa: F405
     if not result:
         # 後続の処理が成立しないためreturnする
         return
 
-    # Movement-Module変数紐付に登録されているレコードから、Movement-メンバーModule変数紐付テーブルを更新する
+    # Movement-Module変数紐付に登録されているレコードから、Movement-メンバー変数紐付テーブルを更新する
+    g.applogger.debug(g.appmsg.get_log_message("BKY-50004"))
     result = set_movement_var_member_link(objdbca, TFCLIConst)  # noqa: F405
     if not result:
         # returnする
@@ -61,7 +63,7 @@ def backyard_main(organization_id, workspace_id):
     primary_key_name = "ROW_ID"
     ret = objdbca.table_update(table_name, data_list, primary_key_name, False)
     if not ret:
-        g.applogger.error("バックヤード処理実行フラグの更新に失敗しました。")
+        g.applogger.error(g.appmsg.get_log_message("BKY-50118", []))
         # トランザクション終了(異常)
         objdbca.db_transaction_end(False)
     else:

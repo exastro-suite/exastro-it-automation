@@ -26,6 +26,7 @@ ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV CONTAINER_BASE=docker
 ENV DEFAULT_LOCAL_TMP=/tmp
+ENV SERVICE_NAME=ita-by-ansible-execute
 
 RUN dnf install -y \
     gcc \

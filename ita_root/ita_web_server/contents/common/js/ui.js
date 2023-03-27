@@ -880,9 +880,14 @@ sheetType() {
             case '22':
                 mn.exportImport('excelExport');
             break;
-            // 23 : Excel一括エクスポート
+            // 23 : Excel一括インポート
             case '23':
                 mn.exportImport('excelImport');
+            break;
+            // 24 : 連携先Terraform管理
+            case '24':
+                mn.$.content.addClass('tabContent');
+                mn.terraformManagement();
             break;
         }
     }
@@ -1634,6 +1639,40 @@ dashboard() {
     fn.loadAssets( assets ).then(function(){
         const dashboard =  new Dashboard('#content');
         dashboard.setup();
+
+        mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   連携先Terraform管理
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+terraformManagement() {
+    const mn = this;
+
+    const contentTab = [
+        { name: 'terraformOrganization', title: getMessage.FTE09001, type: 'blank' },
+        { name: 'terraformWorkspace', title: getMessage.FTE09002, type: 'blank'},
+        { name: 'terraformPolicy', title: getMessage.FTE09003, type: 'blank'},
+        { name: 'terraformPolicyset', title: getMessage.FTE09004, type: 'blank'}
+    ];
+
+    const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
+
+    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentTab( contentTab ) ) );
+    mn.setCommonEvents();
+    mn.contentTabEvent('#terraformOrganization');
+
+    const assets = [
+        { type: 'js', url: '/_/ita/js/terraformManagement.js'}
+    ];
+
+    fn.loadAssets( assets ).then(function(){
+        const terraform =  new TerraformManagement( mn.params.menuNameRest );
+        terraform.setup();
 
         mn.onReady();
     });

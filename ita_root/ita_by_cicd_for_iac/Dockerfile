@@ -25,6 +25,7 @@ ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=1
+ENV SERVICE_NAME=ita-by-cicd-for-iac
 
 RUN dnf install -y \
     gcc \
@@ -33,6 +34,7 @@ RUN dnf install -y \
     python39-mod_wsgi \
     langpacks-en \
     wget \
+    git \
     zip \
     unzip \
 &&  pip3.9 install --upgrade pip setuptools \
@@ -64,7 +66,6 @@ ARG APP_PATH
 
 RUN dnf install -y \
     sudo \
-    git \
     vim \
     diffutils \
     bind-utils \

@@ -28,6 +28,7 @@
 // 作業実行            04001～05000
 // 作業状態確認        05001～06000
 // DashBoard           08001～09000
+// Terraform          09001～10000
 // Ui common           10001～11000
 
 
@@ -201,6 +202,7 @@ getMessage = ( function() {
         'FTE00164' : "Period",
         'FTE00165' : "Seconds",
         'FTE00166' : "Filter validation error",
+        'FTE00167' : "Plan confirmation",
         
         // Create parameter sheet
         'FTE01001' : "Item",
@@ -570,6 +572,7 @@ getMessage = ( function() {
         'FTE05035' : "Ansible Automation Controller dedicated information",
         'FTE05036' : "Execution environment",
         'FTE05037' : "Cancel a reservation?",
+        'FTE05038' : "Terraform dedicated information",
 
         // Compare
         'FTE06001' : "Compare setting selection",
@@ -732,6 +735,33 @@ getMessage = ( function() {
         'FTE08084' : "Another tab",
         'FTE08085' : "Another window",
         'FTE08086' : "Modal",
+
+        // Terraform
+        'FTE09001' : "Organization registration list",
+        'FTE09002' : "Workspace registration list",
+        'FTE09003' : "Policy registration list",
+        'FTE09004' : "PolicySet registration list",
+        'FTE09005' : "Get organization registration list",
+        'FTE09006' : "Get workspace registration list",
+        'FTE09007' : "Get policy registration list",
+        'FTE09008' : "Get policySet registration list",
+        'FTE09009' : "Registered",
+        'FTE09010' : "No registration",
+        'FTE09011' : "Unlink",
+        'FTE09012' : "ITA Registration status",
+        'FTE09013' : "Delete",
+        'FTE09014' : "Delete resource",
+        'FTE09015' : "DDownload",
+        'FTE09016' : "Linked Workspace",
+        'FTE09017' : "Linked Policy",
+        'FTE09018' : function( text ){ return `Please press the "${text}" button.`;},
+        'FTE09019' : "Organization Name",
+        'FTE09020' : "Email address",
+        'FTE09021' : "Workspace Name",
+        'FTE09022' : "Terraform Version",
+        'FTE09023' : "Policy Name",
+        'FTE09024' : "Policy code",
+        'FTE09025' : "Policy Set Name",
         
         // UI common
         'FTE10001': 'Main menu',

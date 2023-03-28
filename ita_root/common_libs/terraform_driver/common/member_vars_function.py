@@ -57,7 +57,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
 
         # データの整形(配列の作成ローカル番号)
         type_nest_dict = {}
-        temp_member_data_list, child_vars_id, parent_vars_id, org_type_nest_dict = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, temp_member_data_list, type_data, default_data, type_nest_dict)  # noqa: E501
+        temp_member_data_list, child_vars_id, parent_vars_id = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, temp_member_data_list, type_data, default_data, type_nest_dict)  # noqa: E501
 
         # 整形したメンバー変数データをループ
         for index, temp_member_data in enumerate(temp_member_data_list):
@@ -119,8 +119,11 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
         parent_vars_id = 0
         nest_level = 0
 
+        # # 変数ネスト管理に合わせたタイプの整形
+        # type_data = adjust_type_data_by_max_col_seq(objdbca, TFConst, type_data, temp_member_data_list)
+
         # データの整形
-        temp_member_data_list_2, child_vars_id, parent_vars_id, org_type_nest_dict = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, temp_member_data_list_2, type_data, default_data, type_nest_dict, nest_level)  # noqa: E501
+        temp_member_data_list_2, child_vars_id, parent_vars_id = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, temp_member_data_list_2, type_data, default_data, type_nest_dict, nest_level)  # noqa: E501
 
         # ローカルID→項番に差し替え、親番号の取得、変数ネスト管理テーブルから最大繰り返し数の取得
         temp_member_data_list_3 = create_member_data_for_regist(objdbca, TFConst, temp_member_data_list_2)
@@ -133,7 +136,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
         child_vars_id = 0
         parent_vars_id = 0
         nest_level = 0
-        member_data_list, child_vars_id, parent_vars_id, org_type_nest_dict = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, member_data_list, type_data, default_data, type_nest_dict, nest_level)  # noqa: E501
+        member_data_list, child_vars_id, parent_vars_id = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, member_data_list, type_data, default_data, type_nest_dict, nest_level)  # noqa: E501
 
         # ローカルID→項番に差し替え、親番号の取得、変数ネスト管理テーブルから最大繰り返し数の取得
         member_data_list = create_member_data_for_regist(objdbca, TFConst, member_data_list)
@@ -606,7 +609,7 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
     if isinstance(type_data, dict):
         for type_key, type_value in type_data.items():
             # メンバー変数(key)を特定
-            type_nest_dict[nest_level] = type_key
+            org_type_nest_dict[nest_level] = type_key
             if isinstance(type_value, dict) or isinstance(type_value, list):
                 # type_idを取得
                 type_id = get_variable_type_id(objdbca, TFConst, type_key)
@@ -615,10 +618,7 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
                 nest_level += 1
 
                 # 階層の分だけ本処理をループする
-                temp_member_data_list, child_vars_id, parent_vars_id, org_type_nest_dict = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, temp_member_data_list, type_value, default_data, type_nest_dict, nest_level)  # noqa: E501
-
-                # ループ実行前のtype_nest_dictに戻す
-                type_nest_dict = org_type_nest_dict.copy()
+                temp_member_data_list, child_vars_id, parent_vars_id = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, temp_member_data_list, type_value, default_data, org_type_nest_dict, nest_level)  # noqa: E501
 
                 # 階層の管理
                 nest_level -= 1
@@ -634,30 +634,31 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
 
             # type_idをchild_vars_type_idに代入
             child_vars_type_id = type_id
-            if (not type_key == "" or type_key == 0) and not child_vars_type_id == "":
+
+            if (type_key or type_key == 0) and child_vars_type_id:
                 parent_vars_id = child_vars_id
-                for type_nest_value in type_nest_dict.values():
-                    # タイプ名はメンバー変数に含まないため、type_nest_valueに${}がある場合は除外
+                for type_nest_key in org_type_nest_dict.values():
+                    # タイプ名はメンバー変数に含まないため、type_nest_keyに${}がある場合は除外
                     pattern = r'^\$\{(.*?)\}$'
-                    match = re.findall(pattern, type_nest_value)
+                    match = re.findall(pattern, type_nest_key)
                     if not match:
                         # type_nest_keyが数字の文字列なら[]で囲む
-                        if type_nest_value.isdecimal():
+                        if type_nest_key.isdecimal():
                             if not child_member_vars_nest:
-                                child_member_vars_nest = child_member_vars_nest + "[{}]".format(str(type_nest_value))
+                                child_member_vars_nest = "[{}]".format(str(type_nest_key))
                             else:
-                                child_member_vars_nest = child_member_vars_nest + ".[{}]".format(str(type_nest_value))
-                            child_member_vars_key = "[{}]".format(str(type_nest_value))
+                                child_member_vars_nest = child_member_vars_nest + ".[{}]".format(str(type_nest_key))
+                            child_member_vars_key = "[{}]".format(str(type_nest_key))
                         # int以外(文字列)の場合
                         else:
                             if not child_member_vars_nest:
-                                child_member_vars_nest = child_member_vars_nest + "{}".format(str(type_nest_value))
+                                child_member_vars_nest = str(type_nest_key)
                             else:
-                                child_member_vars_nest = child_member_vars_nest + ".{}".format(str(type_nest_value))
-                            child_member_vars_key = "{}".format(str(type_nest_value))
+                                child_member_vars_nest = child_member_vars_nest + ".{}".format(str(type_nest_key))
+                            child_member_vars_key = "{}".format(str(type_nest_key))
 
                         # デフォルト値を特定するためのキーをセット
-                        trg_default_key = type_nest_value
+                        trg_default_key = type_nest_key
 
                 # Module変数紐付に登録するレコードかどうかを判定
                 if nest_level > 0:
@@ -665,15 +666,15 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
 
                 # デフォルト値を特定
                 trg_default_key_list = []
-                for type_nest_value in type_nest_dict.values():
-                    # type_nest_valueに${}がある場合は除外
+                for type_nest in org_type_nest_dict.values():
+                    # type_nestに${}がある場合は除外
                     pattern = r'^\$\{(.*?)\}$'
-                    match = re.findall(pattern, type_nest_value)
+                    match = re.findall(pattern, type_nest)
                     if not match:
-                        if type_nest_value.isdecimal():
-                            trg_default_key_list.append(int(type_nest_value))
+                        if type_nest.isdecimal():
+                            trg_default_key_list.append(int(type_nest))
                         else:
-                            trg_default_key_list.append(str(type_nest_value))
+                            trg_default_key_list.append(str(type_nest))
                 child_member_vars_value = None
                 child_member_vars_value = search_child_member_vars_value_in_default(objdbca, TFConst, trg_default_key_list, default_data, child_vars_type_id)  # noqa: E501
 
@@ -688,7 +689,7 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
                     child_member_vars_value = 'True' if child_member_vars_value else 'False'
 
                 # 格納用データを作成
-                set_type_nest_dict = type_nest_dict.copy()
+                set_type_nest_dict = org_type_nest_dict.copy()
                 ret_data = {
                     "module_vars_link_id": module_vars_link_id,  # Module-変数紐付のID
                     "child_member_vars_id": child_vars_id,  # 自身のローカルID
@@ -716,6 +717,9 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
                 temp_member_data_list[trg_index]["nest_level"] = nest_level
                 temp_member_data_list[trg_index]["assign_seq"] = assign_seq
 
+                # 代入順序をカウントアップ
+                assign_seq += 1
+
             # メンバー変数(フル)をリセット
             child_member_vars_nest = ''
 
@@ -733,7 +737,7 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
             type_info = get_type_info(objdbca, TFConst, child_vars_type_id)
             encode_flag = type_info.get('ENCODE_FLAG')
             member_vars_flag = type_info.get('MEMBER_VARS_FLAG')
-            # t取得したtype情報からデフォルト値を設定
+            # 取得したtype情報からデフォルト値を設定
             if str(encode_flag) == '1':
                 child_member_vars_value = encode_hcl(default_data)
             elif str(member_vars_flag) == '1':
@@ -751,7 +755,7 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
         max_col_seq = count_max_col_seq_by_module(objdbca, TFConst, trg_default_key_list, default_data, child_vars_type_id, module_regist_flag)
 
         # 格納用データを作成
-        set_type_nest_dict = type_nest_dict.copy()
+        set_type_nest_dict = org_type_nest_dict.copy()
         ret_data = {
             "module_vars_link_id": module_vars_link_id,  # Module-変数紐付のID
             "child_member_vars_id": child_vars_id,  # 自身のローカルID
@@ -771,7 +775,8 @@ def create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, par
         # 返却値に格納
         temp_member_data_list.append(ret_data)
 
-    return temp_member_data_list, child_vars_id, parent_vars_id, org_type_nest_dict
+    # return temp_member_data_list, child_vars_id, parent_vars_id, org_type_nest_dict
+    return temp_member_data_list, child_vars_id, parent_vars_id
 
 
 def create_member_data_for_regist(objdbca, TFConst, temp_member_data_list):  # noqa: C901
@@ -862,7 +867,7 @@ def create_member_data_for_regist(objdbca, TFConst, temp_member_data_list):  # n
 
             # メンバー変数は2つ前までキーを削除する
             type_info = get_type_info(objdbca, TFConst, member_data.get('child_vars_type_id'))
-            if member_data.get('child_vars_type_id') and str(type_info.get('MENBER_GARS_FLAG')) == "1":
+            if member_data.get('child_vars_type_id') and str(type_info.get('MEMBER_VARS_FLAG')) == "1":
                 if len(parent_member_data) > 0:
                     # 削除対象のキーを特定して削除
                     parent_member_key_list = []
@@ -875,26 +880,23 @@ def create_member_data_for_regist(objdbca, TFConst, temp_member_data_list):  # n
             if member_data.get('nest_level'):
                 if not str(member_data.get('nest_level')) == "1":
                     parent_dict_index = [x['type_nest_dict'] for x in temp_member_data_list]
-                    # parent_member_dataと構造が一致している対象のkeyを取得
                     parent_member_data_json = json.dumps(parent_member_data)
                     target_key = None
-                    for type_nest_data in parent_dict_index:
+                    for parent_index, type_nest_data in enumerate(parent_dict_index):
                         type_nest_data_json = json.dumps(type_nest_data)
                         if parent_member_data_json == type_nest_data_json:
-                            for key in type_nest_data.keys():
-                                target_key = key
-                                break
+                            target_key = parent_index
                         if target_key:
                             break
 
-                    if target_key:
-                        temp_member_data_list[index]['parent_member_vars_id'] = temp_member_data_list[index]['child_member_vars_id']
+                    if target_key is None:
+                        member_data['parent_member_vars_id'] = None
                     else:
-                        temp_member_data_list[index]['parent_member_vars_id'] = None
+                        member_data['parent_member_vars_id'] = temp_member_data_list[target_key]['child_member_vars_id']
 
                 else:
                     # ネストが1であれば親がいないので探さない
-                    temp_member_data_list[index]['parent_member_vars_id'] = None
+                    member_data['parent_member_vars_id'] = None
 
             # 変数ネスト管理が存在するか検索
             registered_max_col_data = get_regist_max_module_col_data(objdbca, TFConst, member_data.get('child_member_vars_id'))
@@ -997,7 +999,7 @@ def part_member_data_for_regist(objdbca, TFConst, member_data_list):  # noqa: C9
 
             # メンバー変数は2つ前までキーを削除する
             type_info = get_type_info(objdbca, TFConst, member_data.get('child_vars_type_id'))
-            if member_data.get('child_vars_type_id') and str(type_info.get('MENBER_GARS_FLAG')) == "1":
+            if member_data.get('child_vars_type_id') and str(type_info.get('MEMBER_VARS_FLAG')) == "1":
                 if len(parent_member_data) > 0:
                     # 削除対象のキーを特定して削除
                     parent_member_key_list = []
@@ -1013,19 +1015,17 @@ def part_member_data_for_regist(objdbca, TFConst, member_data_list):  # noqa: C9
                     # parent_member_dataと構造が一致している対象のkeyを取得
                     parent_member_data_json = json.dumps(parent_member_data)
                     target_key = None
-                    for type_nest_data in parent_dict_index:
+                    for parent_index, type_nest_data in enumerate(parent_dict_index):
                         type_nest_data_json = json.dumps(type_nest_data)
                         if parent_member_data_json == type_nest_data_json:
-                            for key in type_nest_data.keys():
-                                target_key = key
-                                break
+                            target_key = parent_index
                         if target_key:
                             break
 
-                    if target_key:
-                        member_data['parent_member_vars_id'] = temp_member_data_list[index]['child_member_vars_id']
-                    else:
+                    if target_key is None:
                         member_data['parent_member_vars_id'] = None
+                    else:
+                        member_data['parent_member_vars_id'] = temp_member_data_list[target_key]['child_member_vars_id']
 
                 else:
                     # ネストが1であれば親がいないので探さない
@@ -1039,7 +1039,7 @@ def part_member_data_for_regist(objdbca, TFConst, member_data_list):  # noqa: C9
 
             if member_data.get('type_nest_dict'):
                 regist_data = {
-                    "CHILD_MEMBER_VARS_ID": member_data.get('child_member_vars_id'),  # メンバー変数ID(仮)
+                    "CHILD_MEMBER_VARS_ID": member_data.get('child_member_vars_id'),  # メンバー変数ID
                     "PARENT_VARS_ID": member_data.get('module_vars_link_id'),  # Module-変数紐付ID
                     "PARENT_MEMBER_VARS_ID": member_data.get('parent_member_vars_id'),  # 親のメンバー変数ID
                     "CHILD_MEMBER_VARS_KEY": member_data.get('child_member_vars_key'),  # メンバー変数
@@ -1135,7 +1135,7 @@ def encode_hcl(data):
     if isinstance(data, dict) or isinstance(data, list):
         res_json = json.dumps(data)
         pattern = r'\"(.*?)\"\:(.*?)'
-        replacement = r'"\1" = \2'
+        replacement = r'"\1" =\2'
         res = re.sub(pattern, replacement, res_json)
 
     return res

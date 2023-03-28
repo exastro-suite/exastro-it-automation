@@ -69,15 +69,6 @@ def getInfoFromTablename(dbAccess, TableName, strTempForSql="", where_list=[]):
     return rset
 
 
-def get_jnl_uuid(dbAccess, TableName, uuid):
-
-    TableName = '%s_JNL' % (TableName)
-    sql = "SELECT JOURNAL_SEQ_NO FROM `%s` WHERE ROW_ID = %%s ;" % (TableName)
-    rset = dbAccess.sql_execute(sql, [uuid,])
-
-    return rset[0]['JOURNAL_SEQ_NO']
-
-
 def getTargetPath(TargetPath, file_paths):
 
     if os.path.isdir(TargetPath) is False:
@@ -93,16 +84,6 @@ def getTargetPath(TargetPath, file_paths):
             file_paths.append(filepath)
 
     return file_paths
-
-
-def outputLog(logPath, subject="", messages=""):
-
-    now = datetime.datetime.now()
-    with open(logPath, 'a') as fp:
-        msg = '%s %s\n' % (now.strftime('%Y-%m-%d %H:%M:%S'), subject)
-        fp.write(msg)
-        if messages:
-            fp.write(messages)
 
 
 def is_num(s):
@@ -337,9 +318,9 @@ def backyard_main(organization_id, workspace_id):
     }
 
     arrCollectOrcList = {
-        '1' : 'T_ANSL_EXEC_STS_INST',
-        '2' : 'T_ANSP_EXEC_STS_INST',
-        '3' : 'T_ANSR_EXEC_STS_INST',
+        '1': {'table_name': 'T_ANSL_EXEC_STS_INST', 'rest_name': 'execution_list_ansible_legacy'},
+        '2': {'table_name': 'T_ANSP_EXEC_STS_INST', 'rest_name': 'execution_list_ansible_pioneer'},
+        '3': {'table_name': 'T_ANSR_EXEC_STS_INST', 'rest_name': 'execution_list_ansible_role'},
     }
 
     # 環境情報設定
@@ -390,9 +371,42 @@ def backyard_main(organization_id, workspace_id):
         del aryOrcListRow
 
         ################################
+        # 収取ステータスマスターを抽出
+        ################################
+        collect_sts_info = {}
+
+        sql = (
+            "SELECT "
+            "  COLLECT_STATUS_ID, "
+            "  COLLECT_STATUS_NAME_JA, "
+            "  COLLECT_STATUS_NAME_EN "
+            "FROM "
+            "  T_ANSC_COLLECT_STATUS "
+            "WHERE "
+            "  DISUSE_FLAG = '0' "
+            "ORDER BY "
+            "  DISP_SEQ "
+        )
+
+        rset = dbAccess.sql_execute(sql)
+        for r in rset:
+            sts_id = r['COLLECT_STATUS_ID']
+            sts_key = 'COLLECT_STATUS_NAME_%s' % (g.LANGUAGE.upper())
+
+            if sts_id not in collect_sts_info:
+                collect_sts_info[sts_id] = ''
+
+            if sts_key in r:
+                collect_sts_info[sts_id] = r[sts_key]
+
+        ################################
         # オーケストレータ順に実施
         ################################
-        for intCollectOrcNo, strCollectOrcTablename in sorted(arrCollectOrcList.items(), key=lambda x:int(x[0])):
+        for intCollectOrcNo, dicCollectOrc in sorted(arrCollectOrcList.items(), key=lambda x:int(x[0])):
+            strCollectOrcTablename = dicCollectOrc['table_name']
+            strCollectOrcRestname = dicCollectOrc['rest_name']
+            objmenu_orch = load_table.loadTable(dbAccess, strCollectOrcRestname)
+
             # 収集対象のMovement一覧を取得
             strTempForSql = (
                 "SELECT "
@@ -413,7 +427,7 @@ def backyard_main(organization_id, workspace_id):
                 # Movement毎に実施
                 for exec_no in exec_no_list:
                     dbAccess.db_transaction_start()
-                    strTempForSql = "WHERE EXECUTION_NO = %s FOR UPDATE "
+                    strTempForSql = "WHERE EXECUTION_NO = %s "
                     arySqlBind = [exec_no['EXECUTION_NO'], ]
                     aryMovements = getInfoFromTablename(dbAccess, strCollectOrcTablename, strTempForSql, arySqlBind)
                     aryMovement = aryMovements[0]
@@ -421,6 +435,7 @@ def backyard_main(organization_id, workspace_id):
                     NOTICE_FLG = 1  # 1:収集済み
                     RESTEXEC_FLG = 0
                     FREE_LOG = ""
+                    collection_log = ""
 
                     driver_id = ansible_driver_id_info[intCollectOrcNo]['id']
                     execNo = aryMovement['EXECUTION_NO']
@@ -440,17 +455,21 @@ def backyard_main(organization_id, workspace_id):
                     tmpCollectlogfile = 'CollectData_%s.log' % (execNo)
                     strCollectlogPath = '%s/%s' % (tmpCollectlogdir, tmpCollectlogfile)
 
-                    ansdrv.makeDir(tmpCollectlogdir)
-
                     # 完了以外の場合
                     if aryMovement['STATUS_ID'] != AnscConst.COMPLETE:
-                        tmpMovement = aryMovement
-                        tmpMovement['COLLECT_LOG'] = ''
-                        tmpMovement['COLLECT_STATUS'] = "3"  # 3:対象外
-                        tmpMovement['LAST_UPDATE_USER'] = g.USER_ID
+                        request_param = {}
+                        request_param['type'] = load_table.CMD_UPDATE
+                        request_param['file'] = {}
+                        request_param['parameter'] = {}
+                        request_param['parameter']['execution_no'] = execNo
+                        request_param['parameter']['collection_status'] = collect_sts_info['3'] if '3' in collect_sts_info else ''  # 3:対象外
+                        request_param['parameter']['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+                        if len(collection_log) > 0:
+                            request_param['file']['collection_log'] = base64.b64encode(collection_log.encode()).decode()
+                            request_param['parameter']['collection_log'] = tmpCollectlogfile
 
-                        ret = dbAccess.table_update(strCollectOrcTablename, tmpMovement, 'EXECUTION_NO')
-                        if ret is False:
+                        ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False)
+                        if ret[0] is False:
                             dbAccess.db_rollback()
                         else:
                             dbAccess.db_commit()
@@ -480,14 +499,14 @@ def backyard_main(organization_id, workspace_id):
                         if len(aryOperation) <= 0:
                             FREE_LOG = g.appmsg.get_api_message("MSG-10854", [operation_id,])
                             g.applogger.debug(FREE_LOG)
-                            outputLog(strCollectlogPath, FREE_LOG)
+                            collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                             NOTICE_FLG = 4  # 4:収集エラー
 
                         # 対象のファイル無しの場合
                         elif isinstance(arrTargetfiles, list) is False or len(arrTargetfiles) <= 0:
                             FREE_LOG = g.appmsg.get_api_message("MSG-10857")
                             g.applogger.debug(FREE_LOG)
-                            outputLog(strCollectlogPath, FREE_LOG)
+                            collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                             NOTICE_FLG = 3  # 3:対象外
 
                         # 対象のファイル有の場合
@@ -528,7 +547,7 @@ def backyard_main(organization_id, workspace_id):
                                     else:
                                         FREE_LOG = g.appmsg.get_api_message("MSG-10858", [strTargetHost, targetFileName])
                                         g.applogger.debug(FREE_LOG)
-                                        outputLog(strCollectlogPath, FREE_LOG)
+                                        collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                                         NOTICE_FLG = 3  # 3:対象外
 
                             # 対象ホスト、ファイルのリスト作成
@@ -566,7 +585,7 @@ def backyard_main(organization_id, workspace_id):
                                 # ホストが存在しない
                                 if len(aryhostInfo) <= 0:
                                     FREE_LOG = g.appmsg.get_api_message("MSG-10852", [hostname,])
-                                    outputLog(strCollectlogPath, FREE_LOG)
+                                    collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                                     NOTICE_FLG = 4  # 4:収集エラー
                                     if RESTEXEC_FLG == 1:
                                         NOTICE_FLG = 2  # 収集済み(通知あり)
@@ -606,7 +625,8 @@ def backyard_main(organization_id, workspace_id):
                                                     "ON "
                                                     "  TAB_B.MENU_ID = TAB_D.MENU_ID "
                                                     "WHERE "
-                                                    "  TAB_A.PARSE_TYPE_ID = %s "
+                                                    "  TAB_C.HOSTGROUP = '0' "
+                                                    "AND TAB_A.PARSE_TYPE_ID = %s "
                                                     "AND TAB_A.FILE_PREFIX = %s "
                                                     "AND TAB_A.VARS_NAME = %s "
                                                 )
@@ -706,7 +726,7 @@ def backyard_main(organization_id, workspace_id):
                                     if len(arrSqlinsertParm) <= 0:
                                         # 収集項目値管理上の対象ファイル無しの場合
                                         FREE_LOG = g.appmsg.get_api_message("MSG-10856")
-                                        outputLog(strCollectlogPath, FREE_LOG)
+                                        collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                                         NOTICE_FLG = 3  # 3:対象外
                                         if RESTEXEC_FLG == 1:
                                             NOTICE_FLG = 2  # 収集済み(通知あり)
@@ -721,7 +741,7 @@ def backyard_main(organization_id, workspace_id):
                                                 filename = tmparr3.pop('input_file')
                                                 if output_flag is True:
                                                     FREE_LOG1 = g.appmsg.get_api_message("MSG-10849", [hostname, filename])
-                                                    outputLog(strCollectlogPath, FREE_LOG1)
+                                                    collection_log = '%s\n%s' % (collection_log, FREE_LOG1) if collection_log else FREE_LOG1
                                                     output_flag = False
 
                                                 vertical_flag = True if 'input_order' in tmparr3 else False
@@ -733,10 +753,11 @@ def backyard_main(organization_id, workspace_id):
                                                 if least_item_count >= req_param_item_count:
                                                     FREE_LOG = g.appmsg.get_api_message("MSG-10850")
                                                     g.applogger.debug(FREE_LOG)
-                                                    outputLog(strCollectlogPath, FREE_LOG)
+                                                    collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
+
                                                     FREE_LOG = g.appmsg.get_api_message("MSG-10855", [hostname, menu_name, operation_id])
                                                     g.applogger.debug(FREE_LOG)
-                                                    outputLog(strCollectlogPath, FREE_LOG)
+                                                    collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                                                     NOTICE_FLG = 2  # 2:収集エラー
 
                                                 else:
@@ -792,29 +813,34 @@ def backyard_main(organization_id, workspace_id):
                                             if fail_cnt > 0:
                                                 FREE_LOG = g.appmsg.get_api_message("MSG-10851", ["%s/%s" % (fail_cnt, rec_cnt), ])
                                                 g.applogger.debug(FREE_LOG)
-                                                outputLog(strCollectlogPath, FREE_LOG)
+                                                collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                                                 NOTICE_FLG = 2
 
                                             else:
                                                 FREE_LOG = g.appmsg.get_api_message("MSG-10855", [hostname, menu_name, operation_id])
                                                 g.applogger.debug(FREE_LOG)
-                                                outputLog(strCollectlogPath, FREE_LOG)
+                                                collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
                                                 if NOTICE_FLG != 1:
                                                     NOTICE_FLG = 2
 
                                         FREE_LOG = g.appmsg.get_api_message("MSG-10853", [hostname, filename])
-                                        outputLog(strCollectlogPath, FREE_LOG)
+                                        collection_log = '%s\n%s' % (collection_log, FREE_LOG) if collection_log else FREE_LOG
 
-                        tmpMovement = aryMovement
-                        if os.path.isfile(strCollectlogPath) is False:
-                            NOTICE_FLG = 3
-                            tmpMovement['COLLECT_LOG'] = ''
+                        NOTICE_FLG = str(NOTICE_FLG)
 
-                        tmpMovement['COLLECT_STATUS'] = str(NOTICE_FLG)
-                        tmpMovement['LAST_UPDATE_USER'] = g.USER_ID
+                        request_param = {}
+                        request_param['type'] = load_table.CMD_UPDATE
+                        request_param['file'] = {}
+                        request_param['parameter'] = {}
+                        request_param['parameter']['execution_no'] = execNo
+                        request_param['parameter']['collection_status'] = collect_sts_info[NOTICE_FLG] if NOTICE_FLG in collect_sts_info else ''
+                        request_param['parameter']['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+                        if len(collection_log) > 0:
+                            request_param['file']['collection_log'] = base64.b64encode(collection_log.encode()).decode()
+                            request_param['parameter']['collection_log'] = tmpCollectlogfile
 
-                        ret = dbAccess.table_update(strCollectOrcTablename, tmpMovement, 'EXECUTION_NO')
-                        if ret is False:
+                        ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False)
+                        if ret[0] is False:
                             dbAccess.db_rollback()
                         else:
                             dbAccess.db_commit()

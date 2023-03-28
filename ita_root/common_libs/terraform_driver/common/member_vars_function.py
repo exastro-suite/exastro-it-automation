@@ -1083,13 +1083,28 @@ def search_child_member_vars_value_in_default(objdbca, TFConst, trg_default_key_
     temp_default_data = default_data.copy()
     temp_trg_default_key_list = trg_default_key_list.copy()
 
+    # temp_default_dataがlist型の場合、インデックスをkeyにしたdict型に変換する
+    if isinstance(temp_default_data, list):
+        dict_temp_default_data = {}
+        for key, value in enumerate(temp_default_data):
+            dict_temp_default_data[str(key)] = value
+        temp_default_data = dict_temp_default_data.copy()
+
     # デフォルト値を特定
     for default_key in temp_trg_default_key_list:
         if isinstance(temp_default_data, dict):
-            default = temp_default_data.get(default_key)
+            default = temp_default_data.get(str(default_key))
         else:
             default = None
-        temp_default_data = default
+
+        # defaultがlist型の場合、インデックスをkeyにしたdict型に変換したものをtemp_default_dataにセットする。
+        if isinstance(default, list):
+            dict_default = {}
+            for key, value in enumerate(default):
+                dict_default[str(key)] = value
+            temp_default_data = dict_default.copy()
+        else:
+            temp_default_data = default
 
     # HCLにエンコードするフラグが立っていたらエンコード
     type_info = get_type_info(objdbca, TFConst, type_id)
@@ -1133,7 +1148,7 @@ def encode_hcl(data):
     """
     res = None
     if isinstance(data, dict) or isinstance(data, list):
-        res_json = json.dumps(data)
+        res_json = json.dumps(data, ensure_ascii=False)
         pattern = r'\"(.*?)\"\:(.*?)'
         replacement = r'"\1" =\2'
         res = re.sub(pattern, replacement, res_json)

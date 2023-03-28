@@ -261,6 +261,11 @@ def collect_widget_settings(objdbca):
 
     def get_conductor_info(objdbca, status_list, lang, days=None):
 
+        if isinstance(lang, str) is False:
+            lang = 'EN'
+
+        lang = lang.upper()
+
         sql = (
             "SELECT TAB_A.CONDUCTOR_INSTANCE_ID, "
             "       IFNULL(TAB_A.TIME_END, TAB_A.LAST_UPDATE_TIMESTAMP) TIME_END, "
@@ -431,12 +436,11 @@ def collect_widget_settings(objdbca):
     if '30105' in menus:  # 30105:Conductor作業一覧
         days = 0
         if 'widget' in current_widget:
-            for cw in current_widget['widget']:
-                if 'name' in cw and cw['name'] == 'work_reserve' and 'data' in cw and 'days' in cw['data']:
-                    days = cw['data']['days']
+            for k, v in current_widget['widget'].items():
+                if k == 'w5' and 'period' in v:
                     try:
-                        days = int(days)
-                        days = days if days >= 0 or days <= 365 else 0
+                        days = int(v['period'])
+                        days = days if days >= 0 and days <= 365 else 0
                     except Exception:
                         days = 0
 

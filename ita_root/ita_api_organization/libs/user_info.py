@@ -187,13 +187,15 @@ def collect_menus(objdbca, extra_flag=False):
                     child_target_menus = menus.get(child_menu_group_id)
                     if child_target_menus:
                         exclusion_flag = False
-                        target_menus = child_target_menus
                         break
                 else:
                     continue
         # exclusion_flagがTrueの場合は除外対象とする
         if exclusion_flag:
             continue
+
+        if target_menus is None:
+            target_menus = []
 
         add_menu_group = {}
         add_menu_group['parent_id'] = recode.get('PARENT_MENU_GROUP_ID')

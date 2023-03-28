@@ -211,7 +211,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                         policy_check_failed_flag = False
 
         # Apply開始判定
-        if plan_complete_flag or policy_check_failed_flag is False:
+        if plan_complete_flag and policy_check_failed_flag is False:
             # Applyを実行しているかどうかの判定
             if is_confirmable and is_discardable:
                 # Applyを実行していない場合

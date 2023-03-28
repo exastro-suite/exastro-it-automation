@@ -134,7 +134,7 @@ class ConductorCommonLibs():
         err_code = 'xxx-xxxxxx'
         err_code = '499-00201'
         tmp_c_all_data = copy.deepcopy(c_all_data)
-        
+
         try:
             # check first block
             res_chk = self.chk_format(c_all_data)
@@ -712,7 +712,7 @@ class ConductorCommonLibs():
 
                 is_conditon_invalid = True
                 for condition in terminalinfo['condition']:
-                    if condition is None or len(condition) == 0 or len(condition) > 255:
+                    if condition not in self._node_status_list:
                         is_conditon_invalid = False
                         # err_msg_args.append('terminal.{}.condition'.format(terminalname))
                         tmp_msg = g.appmsg.get_api_message('MSG-40022')
@@ -759,7 +759,7 @@ class ConductorCommonLibs():
 
                 is_conditon_invalid = True
                 for condition in terminalinfo['condition']:
-                    if condition not in self._node_status_list:
+                    if condition is None or len(condition) == 0 or len(condition) > 255:
                         is_conditon_invalid = False
                         # err_msg_args.append('terminal.{}.condition'.format(terminalname))
                         tmp_msg = g.appmsg.get_api_message('MSG-40024', [condition])
@@ -797,7 +797,7 @@ class ConductorCommonLibs():
         check whether contain 'conditional-branch' or 'status-file-branch' in way from parallel-branch to parallel-merge
 
         Arguments:
-            
+
         Returns:
             (tuple)
             - retBool (bool)
@@ -1012,7 +1012,7 @@ class ConductorCommonLibs():
                         block_1['operation_id'] = data_list[0]['OPERATION_ID']
                     else:
                         block_1['operation_id'] = None
-                        
+
                 elif node_type == 'call':
                     # call_conductor_name
                     if block_1.get('call_conductor_id'):
@@ -1049,7 +1049,7 @@ class ConductorCommonLibs():
         }
         res.update(self.node_datas)
         res.update(self.edge_datas)
-        
+
         chk_num_2 = len(res)
         if chk_num_1 != chk_num_2:
             msg = g.appmsg.get_api_message('MSG-40013')
@@ -1259,7 +1259,7 @@ class ConductorCommonLibs():
             else:
                 tmpNodeLists = {"SETTING": json.dumps(c_data)}
             arrCallLists = {}
-            
+
             # 重複排除
             conductor_data = tmpNodeLists.get('SETTING')
             if isinstance(conductor_data, str):

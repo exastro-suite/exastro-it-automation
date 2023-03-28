@@ -148,8 +148,8 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         menu_id_list.append(record.get('MENU_ID'))
 
     # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-    # 自分のロールが「メンテナンス可」
-    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1], 0])
+    # 自分のロールが「メンテナンス可」,「閲覧のみ」
+    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1, 2], 0])
 
     # ロールまで絞った対象メニューIDを再リスト化
     menu_id_list = []

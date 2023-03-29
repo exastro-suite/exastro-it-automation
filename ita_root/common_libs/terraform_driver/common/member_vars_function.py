@@ -554,6 +554,10 @@ def get_variable_type_id(objdbca, TFConst, str_type):
         RETRUN:
             variable_type_id
     """
+    # タイプの指定がない場合はNoneを返却
+    if not str_type:
+        return None
+
     # str_typeついている${}を除外
     pattern = r'^\$\{(.*?)\}$'
     match = re.findall(pattern, str_type)

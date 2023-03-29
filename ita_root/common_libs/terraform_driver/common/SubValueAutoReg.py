@@ -144,7 +144,7 @@ class SubValueAutoReg():
                     continue
 
                 # メンバー変数名(MVMT_VAR_MEMBER_LINK_ID)がMovement-メンバー変数紐付メニューに存在しているかのチェック
-                mvmt_var_member_link_id = value_autoreg_record.get('MVMT_VAR_MEMBER_LINK_ID')
+                mvmt_var_member_link_id = value_autoreg_record.get('MEMBER_VARS_ID')
                 if mvmt_var_member_link_id:
                     if not dict_movement_var_member_records.get(mvmt_var_member_link_id):
                         # Movement-変数紐付に対象のレコードがない(廃止されている)ためスキップ

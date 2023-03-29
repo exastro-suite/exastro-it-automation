@@ -13,6 +13,7 @@
 #
 import json
 import re
+from dictknife import deepmerge
 
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 
@@ -158,8 +159,14 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
         ref = tmp_array
 
         # 多次元配列作成
+        index = 0
         for key in map:
-            ref = ref[key]
+            if not index:
+                ref = {key: None}
+            elif map[index - 1] in ref:
+                ref[map[index - 1]] = {key: None}
+
+            index = index + 1
 
         # メンバー変数を設定・具体値を代入
         if type_info["ENCODE_FLAG"] == '1':
@@ -169,6 +176,6 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
             ref[member_vars_key] = member_vars_value
 
         # 仮配列と返却用配列をマージ
-        res = array_replace_recursive(member_vars_array, tmp_array)
+        res = deepmerge(member_vars_array, tmp_array)
 
     return res

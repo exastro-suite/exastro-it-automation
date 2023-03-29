@@ -603,7 +603,7 @@ class CreateAnsibleExecFiles():
                 self.setTowerProjectsScpPath(self.AnscObj.DF_SCP_CONDUCTOR_ITA_PATH, ita_conductor_instance_Dir)
 
                 # Gitリポジトリ作業用 ディレクトリバス
-                path = "{}/{}/{}/{}".format(self.lv_GitRepo_temporary_DirAry["DIR_NAME"], self.LC_ITA_TMP_DIR, self.LC_ITA_CONDUCTOR_DIR, ins_Path)
+                path = "{}/{}/{}".format(self.lv_GitRepo_temporary_DirAry["DIR_NAME"], self.LC_ITA_TMP_DIR, self.LC_ITA_CONDUCTOR_DIR)
                 self.setTowerProjectsScpPath(self.AnscObj.DF_GITREPO_CONDUCTOR_PATH, path)
         else:
             self.lv_conductor_instance_Dir = self.lv_user_out_Dir

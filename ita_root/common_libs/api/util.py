@@ -19,6 +19,7 @@ import traceback
 
 from common_libs.common.exception import AppException
 from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.dbconnect import *
 
 api_timestamp = None
 
@@ -58,17 +59,25 @@ def make_response(data=None, msg="", result_code="000-00000", status_code=200, t
         res_body["data"] = data
 
     log_status = "success" if result_code == "000-00000" else "error"
-    g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
-    g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
+
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if is_db_disuse() is False:
+        g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
+        g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
+
     return res_body, status_code
 
 
-def app_exception_response(e):
+def app_exception_response(e, exception_log_need=False):
     '''
     make response when AppException occured
 
     Argument:
         e: AppException
+        exception_log_need: True: Exception log output
+                                  organization_delete/workspace_delete only
+                            False: Exception log not output
+                                   default
     Returns:
         (flask)response
     '''
@@ -92,16 +101,23 @@ def app_exception_response(e):
     if 500 <= status_code:
         status_code = 500
 
-    g.applogger.info("[ts={}][error] {}".format(api_timestamp, log_msg))
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if is_db_disuse() is False or exception_log_need is True:
+        g.applogger.info("[ts={}][error] {}".format(api_timestamp, log_msg))
+
     return make_response(None, api_msg, result_code, status_code)
 
 
-def exception_response(e):
+def exception_response(e, exception_log_need=False):
     '''
     make response when Exception occured
 
     Argument:
         e: Exception
+        exception_log_need: True: Exception log output
+                                  organization_delete/workspace_delete only
+                            False: Exception log not output
+                                   default
     Returns:
         (flask)response
     '''
@@ -115,10 +131,12 @@ def exception_response(e):
         else:
             is_arg = True
 
-    # catch - other all error
-    t = traceback.format_exc()
-    # g.applogger.exception("[error][ts={}]".format(api_timestamp))
-    g.applogger.error("[ts={}][error] {}".format(api_timestamp, arrange_stacktrace_format(t)))
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if is_db_disuse() is False or exception_log_need is True:
+        # catch - other all error
+        t = traceback.format_exc()
+        # g.applogger.exception("[error][ts={}]".format(api_timestamp))
+        g.applogger.error("[ts={}][error] {}".format(api_timestamp, arrange_stacktrace_format(t)))
 
     api_msg = g.appmsg.get_api_message("999-99999")
     return make_response(None, api_msg, "999-99999", 500)

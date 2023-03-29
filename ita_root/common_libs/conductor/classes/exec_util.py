@@ -36,7 +36,9 @@ import copy
 import textwrap
 import sys
 import traceback
-import requests
+import urllib
+import ssl
+import re
 
 from pprint import pprint  # noqa: F401
 import shutil
@@ -3246,30 +3248,24 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 fields = json.loads(def_item["fields"])
                 proxy_url = def_item["proxy_url"]
                 proxy_port = def_item["port_url"]
-                proxy = {}
-
+                proxy = None
                 if bool(proxy_url) and bool(proxy_port):
-                    proxy = {
-                        "http": f"{proxy_url}:{proxy_port}",
-                        "https": f"{proxy_url}:{proxy_port}"
-                    }
+                    check_proxy_url = re.sub('https?://', '', f"{proxy_url}:{proxy_port}")
+                    proxy = f"{check_proxy_url}"
 
                 # 通知送信
                 response_dict = {}
                 if bool(suppress_flag) is False:
                     for target in target_status:
                         if target == current_status_id:
-                            response = requests.post(
-                                url=notice_url,
-                                data=json.dumps(fields),
-                                headers=header,
-                                verify=False,
-                                proxies=proxy if bool(proxy) is True else None
-                            )
-                            response_dict["headers"] = dict(response.headers)
-                            response_dict["text"] = response.text
-                            response_dict["status_code"] = response.status_code
 
+                            response_dict = self.notice_request_call(
+                                method='POST',
+                                url=notice_url,
+                                content=fields,
+                                header=header,
+                                proxySetting=proxy,
+                            )
                             self.write_notice_log(conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict)
 
         except Exception as e:
@@ -3296,6 +3292,11 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 "response.headers": response_dict["headers"],
                 "response.text": response_dict["text"]
             }
+            # add message
+            err_type = response_dict.get("err_type")
+            if err_type is not None:
+                result_dict["err_type"] = response_dict.get("err_type")
+
             msg_json['result'].append(result_dict)
 
             # file path 生成
@@ -4720,6 +4721,107 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
         result = node_options
         return retBool, result,
+
+    def notice_request_call(self, method, url, content=None, header=None, proxySetting=None):
+        """
+            notice request call: urllib.request.urlopen
+            ARGS:
+                method, api_uri, content=None, header=None, proxySetting=None
+            RETRUN:
+                response_dict : headers, text, status_code, err_type
+        """
+
+        httpContext = {}
+        httpContext['http'] = {}
+        headers = {}
+        ssl_context = None
+        response_dict = {}
+
+        http_response_header = None
+        data = None
+
+        status_code = None
+        http_response_header = None
+        responseContents = None
+        err_type = None
+
+        # set parameter : Exception->return
+        try:
+            # headers
+            for k, v in header.items():
+                headers[k] = v
+
+            # httpContext
+            httpContext['http']['content'] = json.dumps(content).encode('utf-8')
+            httpContext['http']['method'] = method
+            httpContext['http']['ignore_errors'] = True
+
+            # proxy
+            if proxySetting:
+                httpContext['http']['proxy'] = proxySetting
+                httpContext['http']['request_fulluri'] = True
+
+            # ssl
+            ssl_context = ssl._create_unverified_context()
+            httpContext['ssl'] = {}
+            httpContext['ssl']['verify_peer'] = False
+            httpContext['ssl']['verify_peer_name'] = False
+
+        except Exception as e:
+            err_type = "ParameterError"
+            g.applogger.info(addline_msg('{}{}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            response_dict = {}
+            response_dict["headers"] = None
+            response_dict["text"] = None
+            response_dict["status_code"] = None
+            response_dict["err_type"] = err_type
+
+            return response_dict
+
+        # request
+        try:
+            if 'content' in httpContext['http']:
+                data = httpContext['http']['content']
+            req = urllib.request.Request(url, data=data, headers=headers, method=method)
+            # set proxy
+            if proxySetting:
+                req.set_proxy(proxySetting, 'http')
+                req.set_proxy(proxySetting, 'https')
+            # request urlopen
+            with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
+                status_code = resp.getcode()
+                http_response_header = resp.getheaders()
+                responseContents = resp.read().decode('utf-8')
+
+        except urllib.error.HTTPError as e:
+            # HTTPError
+            status_code = e.getcode()
+            http_response_header = e.getheaders()
+            responseContents = e.read().decode('utf-8')
+            err_type = "HTTPError"
+            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        except urllib.error.URLError as e:
+            # URLError
+            responseContents = e.reason
+            err_type = "URLError"
+            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        except Exception as e:
+            # OtherError
+            err_type = "OtherError"
+            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        finally:
+            response_dict = {}
+            response_dict["headers"] = dict(http_response_header) if http_response_header is not None else http_response_header
+            response_dict["text"] = responseContents
+            response_dict["status_code"] = status_code
+            response_dict["err_type"] = err_type
+            g.applogger.debug(addline_msg('{}{}'.format(response_dict, sys._getframe().f_code.co_name)))
+
+        return response_dict
 
 
 # 共通Lib

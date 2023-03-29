@@ -16,6 +16,7 @@ import sys
 import os
 import subprocess
 import time
+import json
 
 from shlex import quote
 from zc import lockfile
@@ -23,11 +24,12 @@ from zc.lockfile import LockError
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException
-from common_libs.common.util import get_timestamp, ky_encrypt
+from common_libs.common.util import get_timestamp, ky_encrypt, ky_decrypt
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
-from common_libs.terraform_driver.common.by_execute import get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl
+from common_libs.terraform_driver.common.by_execute import \
+    get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl, generate_member_vars_array_for_hcl
 from libs import functions as func
 
 
@@ -331,7 +333,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     is_zip = make_result_zip_file()
 
     # Conductorからの実行時、output出力結果を格納する
-
+    output_conducor(conductor_instance_no)
 
     # 最終ステータスを更新
     wsDb.db_transaction_start()
@@ -346,7 +348,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10733", [execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-10004", [update_status, execution_no]))
 
     return True, execute_data
 
@@ -390,12 +392,14 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
 
     # すでに結果ファイルが存在していた（重複処理が走らなければ、ありえない)
     if init_flg is True and os.path.exists(result_file_path):
-        g.applogger.debug("result.txt still exists")
+        g.applogger.error("result.txt still exists")
         return TFCLIConst.STATUS_EXCEPTION, execute_data
 
     str_command = " ".join(command)
-    g.applogger.debug(str_command)
     command.insert(0, "sudo")  # sudo権限
+
+    # terraformコマンドを発行
+    g.applogger.debug(str_command)
     proc = subprocess.Popen(command, cwd=workspace_work_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # 結果ファイルにコマンドとPIDを書き込む
@@ -585,7 +589,7 @@ def is_emergency_stop(wsDb: DBConnectWs, execute_data):
         return True, execute_data
 
     # 緊急停止を検知しました
-    g.applogger.debug(g.appmsg.get_log_message("MSG-10763", [execution_no]))
+    g.applogger.debug("[Process] Emergency stop was detected. (Execution No.:{})".format(execution_no))
 
     # 結果ファイルがあれば作る
     if len(result_matter_arr) > 0:
@@ -615,7 +619,34 @@ def is_emergency_stop(wsDb: DBConnectWs, execute_data):
     return False, execute_data
 
 
-def prepare_vars_file(wsDb: DBConnectWs, execute_data):
+# Conductorからの実行時、output出力結果を格納する
+def output_conducor(conductor_instance_no):
+    if not conductor_instance_no:
+        return
+
+    output_dir = base_dir + "/driver/conductor/{}".format(conductor_instance_no)
+    os.makedirs(output_dir, exist_ok=True)
+    output_file_name = 'terraform_output_' + execution_no + '.json'
+    output_file_path = output_dir + "/" + output_file_name
+
+    command = ["sudo", "terraform", "output", "-json"]
+    cp = subprocess.run(command, cwd=workspace_work_dir, capture_output=True, text=True)
+
+    if cp.returncode == 0:
+        # 正常終了した場合
+        with open(output_file_path, mode='w', encoding='UTF-8') as f:
+            f.write(cp.stdout)
+
+        return True
+    else:
+        # 異常終了した場合
+        cp.check_returncode()
+        # g.applogger.error(cp.stderr)
+
+        return False
+
+
+def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
     global secure_tfvars_flg
 
     module_matter_id_str_arr = []  # モジュール素材IDを格納する配列
@@ -679,33 +710,156 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):
             # 投入ファイルのリストに追加
             input_matter_arr.append(workspace_work_dir + "/" + val["matter_file_name"])
 
-        # operation_noとmovement_idから変数名と代入値を取得
-        # sql = "SELECT \
-        #     {}.MODULE_VARS_LINK_ID, \
-        #     ".format()
+        # operation_idとmovement_idから変数名と代入値を取得
+        sql = "SELECT \
+                D_TERRAFORM_CLI_VARS_DATA.MODULE_VARS_LINK_ID, \
+                D_TERRAFORM_CLI_VARS_DATA.VARS_NAME, \
+                D_TERRAFORM_CLI_VARS_DATA.HCL_FLAG, \
+                D_TERRAFORM_CLI_VARS_DATA.SENSITIVE_FLAG, \
+                D_TERRAFORM_CLI_VARS_DATA.VARS_ENTRY, \
+                D_TERRAFORM_CLI_VARS_DATA.MEMBER_VARS_ID, \
+                D_TERRAFORM_CLI_VARS_DATA.ASSIGN_SEQ, \
+                T_TERC_MOD_VAR_LINK.TYPE_ID, \
+                V_TERC_VAR_MEMBER.VARS_ASSIGN_FLAG, \
+                D_TERRAFORM_CLI_VARS_DATA.LAST_UPDATE_TIMESTAMP \
+            FROM ( \
+                SELECT \
+                    `TAB_A`.`ASSIGN_ID` AS `ASSIGN_ID`, \
+                    `TAB_A`.`OPERATION_ID` AS `OPERATION_ID`, \
+                    `TAB_A`.`MOVEMENT_ID` AS `MOVEMENT_ID`, \
+                    `TAB_B`.`MODULE_VARS_LINK_ID` AS `MODULE_VARS_LINK_ID`, \
+                    `TAB_B`.`VARS_NAME` AS `VARS_NAME`, \
+                    `TAB_A`.`VARS_ENTRY` AS `VARS_ENTRY`, \
+                    `TAB_A`.`MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
+                    `TAB_A`.`ASSIGN_SEQ` AS `ASSIGN_SEQ`, \
+                    `TAB_A`.`HCL_FLAG` AS `HCL_FLAG`, \
+                    `TAB_A`.`SENSITIVE_FLAG` AS `SENSITIVE_FLAG`, \
+                    `TAB_A`.`DISUSE_FLAG` AS `DISUSE_FLAG`, \
+                    `TAB_A`.`LAST_UPDATE_TIMESTAMP` AS `LAST_UPDATE_TIMESTAMP` \
+                FROM (`T_TERC_VALUE` `TAB_A`  \
+                    LEFT JOIN `V_TERC_MVMT_VAR_LINK` `TAB_B`  \
+                        ON( \
+                            `TAB_B`.`MOVEMENT_ID` = `TAB_A`.`MOVEMENT_ID` AND  \
+                            `TAB_B`.`MVMT_VAR_LINK_ID` = `TAB_A`.`MVMT_VAR_LINK_ID` \
+                    )) \
+                ) AS D_TERRAFORM_CLI_VARS_DATA \
+                LEFT OUTER JOIN T_TERC_MOD_VAR_LINK \
+                    ON D_TERRAFORM_CLI_VARS_DATA.MODULE_VARS_LINK_ID = T_TERC_MOD_VAR_LINK.MODULE_VARS_LINK_ID \
+                LEFT OUTER JOIN V_TERC_VAR_MEMBER \
+                    ON D_TERRAFORM_CLI_VARS_DATA.MEMBER_VARS_ID = V_TERC_VAR_MEMBER.CHILD_MEMBER_VARS_ID \
+            WHERE  D_TERRAFORM_CLI_VARS_DATA.DISUSE_FLAG = '0' \
+                AND    T_TERC_MOD_VAR_LINK.DISUSE_FLAG = '0' \
+                AND    D_TERRAFORM_CLI_VARS_DATA.OPERATION_ID = %s \
+                AND    D_TERRAFORM_CLI_VARS_DATA.MOVEMENT_ID = %s"
 
-        # records = wsDb.sql_execute(sql, [movement_id])
-        # # 代入値（変数）の有無フラグ
-        # vars_set_flag = False if len(records) == 0 else True
-        # vars_list = []
-        # member_vars_link_id_list = []
-        # for record in records:
-        #     if "MEMBER_VARS" in record and record["MEMBER_VARS"] is not None:
-        #         # メンバー変数
-        #         member_vars_link_id_list.append(record)
-        #     else:
-        #         vars_list.append(record)
+        records = wsDb.sql_execute(sql, [operation_id, movement_id])
 
+        # 代入値（変数）の有無フラグ
+        vars_set_flag = False if len(records) == 0 else True
+        # メンバー変数
+        vars_list = []
+        # メンバー変数以外の代入値
+        member_vars_link_id_list = []
+
+        for record in records:
+            if "MEMBER_VARS_ID" in record and record["MEMBER_VARS_ID"] is not None:
+                member_vars_link_id_list.append(record)
+            else:
+                vars_list.append(record)
+
+        for vars in vars_list:
+            vars_link_id = vars['MODULE_VARS_LINK_ID']
+            vars_name = vars['VARS_NAME']
+            vars_entry = vars['VARS_ENTRY']
+            vars_assign_seq = vars['ASSIGN_SEQ']
+            vars_type_id = vars['TYPE_ID']
+            last_update_timestamp = vars['LAST_UPDATE_TIMESTAMP']
+            vars_list = []
+
+            # HCL設定を判定
+            hcl_flag = False
+            if vars['HCL_FLAG'] == 1:
+                hcl_flag = False  # 1(OFF)ならfalse
+            elif vars['HCL_FLAG'] == 2:
+                hcl_flag = True  # 2(ON)ならtrue
+
+            # Sensitive設定を判定
+            sensitive_flag = False
+            if vars['SENSITIVE_FLAG'] == '0':
+                sensitive_flag = False  # 0(OFF)ならfalse
+            elif vars['SENSITIVE_FLAG'] == '1':
+                sensitive_flag = True  # 1(ON)ならtrue
+                vars_entry = ky_decrypt(vars_entry)  # 具体値をデコード
+
+            if vars_link_id not in vars_data_arr:
+                vars_data_arr[vars_link_id] = {
+                    'VARS_NAME': vars_name,
+                    'VARS_ENTRY': vars_entry,
+                    'ASSIGN_SEQ': vars_assign_seq,
+                    'MEMBER_VARS_ID': [],
+                    'HCL_FLAG': hcl_flag,
+                    'SENSITIVE_FLAG': sensitive_flag,
+                    'VARS_TYPE_ID': vars_type_id,
+                    'VARS_LIST': {}
+                }
+            # 代入値順序のためにキーを生成
+            vars_list_len = str(len(vars_data_arr[vars_link_id]['VARS_LIST']))
+            if not vars_assign_seq:
+                # 代入値順序の値がないものは、ソート時に後ろにいけるようにしておく
+                key_name = vars_list_len + "_1_" + str(last_update_timestamp)
+            else:
+                key_name = vars_assign_seq + "_0_" + str(last_update_timestamp)
+            vars_data_arr[vars_link_id]['VARS_LIST'][key_name] = vars_entry
+
+        for vars in member_vars_link_id_list:
+            vars_link_id = vars['MODULE_VARS_LINK_ID']
+            vars_name = vars['VARS_NAME']
+            vars_entry = vars['VARS_ENTRY']
+            vars_assign_seq = vars['ASSIGN_SEQ']
+            vars_type_id = vars['TYPE_ID']
+            # vars_type_info = get_type_info(vars_type_id)
+            vars_member_vars = vars['MEMBER_VARS_ID']
+            vars_assign_flag = vars["VARS_ASSIGN_FLAG"]  # 代入値系管理フラグ
+
+            # HCL設定を判定
+            hcl_flag = False
+
+            # Sensitive設定を判定
+            sensitive_flag = False
+            if vars['SENSITIVE_FLAG'] == '0':
+                sensitive_flag = False  # 0(OFF)ならFalse
+            elif vars['SENSITIVE_FLAG'] == '1':
+                sensitive_flag = True  # 1(ON)ならTrue
+                vars_entry = ky_decrypt(vars_entry)  # 具体値をデコード
+
+            if vars_link_id not in vars_data_arr:
+                vars_data_arr[vars_link_id] = {
+                    'VARS_NAME': vars_name,
+                    'VARS_ENTRY': vars_entry,
+                    'ASSIGN_SEQ': vars_assign_seq,
+                    'MEMBER_VARS_ID': vars_member_vars,
+                    'HCL_FLAG': hcl_flag,
+                    'SENSITIVE_FLAG': sensitive_flag,
+                    'VARS_TYPE_ID': vars_type_id,
+                    'MEMBER_VARS_LIST': []
+                }
+            vars_data_arr[vars_link_id]['MEMBER_VARS_LIST'].append({
+                'VARS_ENTRY': vars_entry,
+                'ASSIGN_SEQ': vars_assign_seq,
+                'MEMBER_VARS_ID': vars_member_vars,
+                'SENSITIVE_FLAG': sensitive_flag,
+                "VARS_ASSIGN_FLAG": vars_assign_flag
+            })
+
+        g.applogger.debug(vars_data_arr)
 
         # Movementに紐づく代入値がある場合、代入値(Variables)登録処理を実行
         if vars_set_flag is True:
-            # 処理
-            sensitiveFlag = False
             for vars_link_id, data in vars_data_arr.items():
                 var_key = data['VARS_NAME']
                 var_value = data['VARS_ENTRY']
-                assign_seq = data['ASSIGN_SEQ']
-                vars_list = data['VARS_LIST'] if 'VARS_LIST' in data else []
+                # assign_seq = data['ASSIGN_SEQ']
+                vars_list = data['VARS_LIST'] if 'VARS_LIST' in data else {}
                 member_vars_list = data['MEMBER_VARS_LIST'] if 'MEMBER_VARS_LIST' in data else []
                 hclFlag = data['HCL_FLAG']
                 sensitiveFlag = data['SENSITIVE_FLAG']
@@ -720,28 +874,91 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):
                 #########################################
 
                 # 1.Module変数紐付けのタイプが配列型でない場合
-                if hclFlag is True and vars_type_info["MEMBER_VARS_FLAG"] == 0 and vars_type_info["ASSIGN_SEQ_FLAG"] == 0 and vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
+                if hclFlag is True or vars_type_info["MEMBER_VARS_FLAG"] == '0' or vars_type_info["ASSIGN_SEQ_FLAG"] == '0' or vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
                     pass
                 # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
-                elif vars_type_info["MEMBER_VARS_FLAG"] == 0 and vars_type_info["ASSIGN_SEQ_FLAG"] == 1 and vars_type_info["ENCODE_FLAG"] == 1:
-                    # HCL組み立て（メンバー変数）
+                elif vars_type_info["MEMBER_VARS_FLAG"] == '0' and vars_type_info["ASSIGN_SEQ_FLAG"] == '1' and vars_type_info["ENCODE_FLAG"] == '1':
                     if len(vars_list) > 0:
+                        # 代入値順序のために並び替え
+                        vars_list2 = dict(sorted(vars_list.items()))
                         # HCLに変換
-                        vars_list.sort()
-                        var_value = encode_hcl(vars_list)
+                        var_value = encode_hcl(list(vars_list2.values()))
                     hclFlag = True
                 # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
                 else:
                     # HCL組み立て(メンバー変数)
                     if len(member_vars_list) > 0 and hclFlag is False:
-                        temp_member_vars_list = []
+                        tmp_member_vars_list = []
                         # １．対象変数のメンバー変数を全て取得（引数：Module変数紐付け/MODULE_VARS_LINK_ID）
-                        trgMemberVarsRecords = get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, vars_link_id)
-                        # 重複を削除
-                        member_ids_array = []
-                        for record in member_vars_list:
-                            member_ids_array.append(record.get("MEMBER_VARS"))
-                        member_ids_array = list(set(member_ids_array))
+                        trg_member_vars_records = get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, vars_link_id)
+                        # MEMBER_VARS_IDのリスト（重複の削除）
+                        member_vars_ids_array = list(set([m.get('MEMBER_VARS_ID') for m in member_vars_list]))
+                        # ２．配列型の変数を配列にする
+                        for member_vars_id in member_vars_ids_array:
+                            # メンバー変数IDからタイプ情報を取得する
+                            key = [m.get('CHILD_MEMBER_VARS_ID') for m in trg_member_vars_records].index(member_vars_id)
+                            type_info = get_type_info(trg_member_vars_records[key]["CHILD_VARS_TYPE_ID"])
+                            # メンバー変数対象でない配列型のみ配列型に形成する
+                            if type_info["MEMBER_VARS_FLAG"] == '0' and type_info["ASSIGN_SEQ_FLAG"] == '1' and type_info["ENCODE_FLAG"] == '1':
+                                tmp_list = {}
+                                # 代入順序をキーインデックスにして具体値をtemp_aryに収める
+                                for member_vars_data in member_vars_list:
+                                    if member_vars_id == member_vars_data["MEMBER_VARS_ID"]:
+                                        tmp_list[member_vars_data["ASSIGN_SEQ"]] = member_vars_data["VARS_ENTRY"]
+                                # 並べ替え
+                                tmp_list2 = dict(sorted(tmp_list.items()))
+                                tmp_arr = list(tmp_list2.values())
+                                sensitive_flag = False
+                                if "SENSITIVE_FLAG" in trg_member_vars_records[key]:
+                                    sensitive_flag = trg_member_vars_records[key]["SENSITIVE_FLAG"]
+                                tmp_member_vars_list.append({
+                                    "MEMBER_VARS": member_vars_id,
+                                    "SENSITIVE_FLAG": sensitive_flag,
+                                    "VARS_ENTRY": tmp_arr,
+                                    "VARS_ASSIGN_FLAG": member_vars_list[key]["VARS_ASSIGN_FLAG"]
+                                })
+                            else:
+                                key = [m.get('MEMBER_VARS_ID') for m in member_vars_list].index(member_vars_id)
+                                tmp_member_vars_list.append({
+                                    "MEMBER_VARS": member_vars_id,
+                                    "SENSITIVE_FLAG": member_vars_list[key]["SENSITIVE_FLAG"],
+                                    "VARS_ENTRY": member_vars_list[key]["VARS_ENTRY"],
+                                    "VARS_ASSIGN_FLAG": member_vars_list[key]["VARS_ASSIGN_FLAG"]
+                                })
+
+                        # MEMBER_VARS_LISTの中身を入れ替える
+                        member_vars_list = tmp_member_vars_list
+
+                        # ３．代入値管理で取得した値を置き換え
+                        for member_vars_data in member_vars_list:
+                            for trg_member_vars_record in trg_member_vars_records:
+                                if member_vars_data["MEMBER_VARS"] == trg_member_vars_record["CHILD_MEMBER_VARS_ID"]:
+                                    trg_member_vars_record["CHILD_MEMBER_VARS_VALUE"] = member_vars_data["VARS_ENTRY"]
+                                    trg_member_vars_record["VARS_ENTRY_FLAG"] = '1'
+                                    trg_member_vars_record["VARS_ASSIGN_FLAG"] = member_vars_data["VARS_ASSIGN_FLAG"]
+
+                            # sensitive設定をチェック
+                            # 対象代入値に一つでもsensitive設定があればseneitiveはON
+                            if sensitiveFlag is False and member_vars_data["SENSITIVE_FLAG"] == '1':
+                                sensitiveFlag = True
+
+                        # ４．置換する値がなかった場合、エラーとする
+                        err_id_list = []
+                        for trg_member_vars_record in trg_member_vars_records:
+                            if trg_member_vars_record["VARS_ENTRY_FLAG"] == '0' and trg_member_vars_record["VARS_ASSIGN_FLAG"] == '1':
+                                err_id_list.append(trg_member_vars_record["CHILD_MEMBER_VARS_ID"])
+
+                        if len(err_id_list) > 0:
+                            ids_string = json.dumps(err_id_list)
+                            # error_logにメッセージを追記
+                            # メンバー変数の取得に失敗しました。ID:[]
+                            g.applogger.error(ids_string)
+
+                        # ５．取得したデータから配列を形成
+                        trg_member_vars_arr = generate_member_vars_array_for_hcl(trg_member_vars_records)
+                        # ６．HCLに変換
+                        var_value = encode_hcl(trg_member_vars_arr)
+                        hclFlag = True
 
                 # 変数のkey&valueをキャッシュ
                 var_kv_str_row = make_kvs_str_row(var_key, var_value, vars_type_id)
@@ -757,6 +974,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):
                 str_variable_tfvars = "\n".join(variable_tfvars)
                 with open(default_tfvars_file_path, mode='w', encoding='UTF-8') as f:
                     f.write(str_variable_tfvars)
+
             if len(secure_tfvars) > 0:
                 # 変数のkey&valueをtfvarsファイルに書き込み
                 str_secure_tfvars = "\n".join(secure_tfvars)

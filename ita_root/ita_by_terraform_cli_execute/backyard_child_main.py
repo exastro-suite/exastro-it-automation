@@ -724,23 +724,24 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                 D_TERRAFORM_CLI_VARS_DATA.LAST_UPDATE_TIMESTAMP \
             FROM ( \
                 SELECT \
-                    `TAB_A`.`ASSIGN_ID` AS `ASSIGN_ID`, \
-                    `TAB_A`.`OPERATION_ID` AS `OPERATION_ID`, \
-                    `TAB_A`.`MOVEMENT_ID` AS `MOVEMENT_ID`, \
-                    `TAB_B`.`MODULE_VARS_LINK_ID` AS `MODULE_VARS_LINK_ID`, \
-                    `TAB_B`.`VARS_NAME` AS `VARS_NAME`, \
-                    `TAB_A`.`VARS_ENTRY` AS `VARS_ENTRY`, \
-                    `TAB_A`.`MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
-                    `TAB_A`.`ASSIGN_SEQ` AS `ASSIGN_SEQ`, \
-                    `TAB_A`.`HCL_FLAG` AS `HCL_FLAG`, \
-                    `TAB_A`.`SENSITIVE_FLAG` AS `SENSITIVE_FLAG`, \
-                    `TAB_A`.`DISUSE_FLAG` AS `DISUSE_FLAG`, \
-                    `TAB_A`.`LAST_UPDATE_TIMESTAMP` AS `LAST_UPDATE_TIMESTAMP` \
-                FROM (`T_TERC_VALUE` `TAB_A`  \
-                    LEFT JOIN `V_TERC_MVMT_VAR_LINK` `TAB_B`  \
+                    `T_TERC_VALUE`.`ASSIGN_ID` AS `ASSIGN_ID`, \
+                    `T_TERC_VALUE`.`EXECUTION_NO` AS `EXECUTION_NO`, \
+                    `T_TERC_VALUE`.`OPERATION_ID` AS `OPERATION_ID`, \
+                    `T_TERC_VALUE`.`MOVEMENT_ID` AS `MOVEMENT_ID`, \
+                    `V_TERC_MVMT_VAR_LINK`.`MODULE_VARS_LINK_ID` AS `MODULE_VARS_LINK_ID`, \
+                    `V_TERC_MVMT_VAR_LINK`.`VARS_NAME` AS `VARS_NAME`, \
+                    `T_TERC_VALUE`.`VARS_ENTRY` AS `VARS_ENTRY`, \
+                    `T_TERC_VALUE`.`MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
+                    `T_TERC_VALUE`.`ASSIGN_SEQ` AS `ASSIGN_SEQ`, \
+                    `T_TERC_VALUE`.`HCL_FLAG` AS `HCL_FLAG`, \
+                    `T_TERC_VALUE`.`SENSITIVE_FLAG` AS `SENSITIVE_FLAG`, \
+                    `T_TERC_VALUE`.`DISUSE_FLAG` AS `DISUSE_FLAG`, \
+                    `T_TERC_VALUE`.`LAST_UPDATE_TIMESTAMP` AS `LAST_UPDATE_TIMESTAMP` \
+                FROM (`T_TERC_VALUE`  \
+                    LEFT JOIN `V_TERC_MVMT_VAR_LINK`  \
                         ON( \
-                            `TAB_B`.`MOVEMENT_ID` = `TAB_A`.`MOVEMENT_ID` AND  \
-                            `TAB_B`.`MVMT_VAR_LINK_ID` = `TAB_A`.`MVMT_VAR_LINK_ID` \
+                            `V_TERC_MVMT_VAR_LINK`.`MOVEMENT_ID` = `T_TERC_VALUE`.`MOVEMENT_ID` AND  \
+                            `V_TERC_MVMT_VAR_LINK`.`MVMT_VAR_LINK_ID` = `T_TERC_VALUE`.`MVMT_VAR_LINK_ID` \
                     )) \
                 ) AS D_TERRAFORM_CLI_VARS_DATA \
                 LEFT OUTER JOIN T_TERC_MOD_VAR_LINK \
@@ -749,10 +750,11 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                     ON D_TERRAFORM_CLI_VARS_DATA.MEMBER_VARS_ID = V_TERC_VAR_MEMBER.CHILD_MEMBER_VARS_ID \
             WHERE  D_TERRAFORM_CLI_VARS_DATA.DISUSE_FLAG = '0' \
                 AND    T_TERC_MOD_VAR_LINK.DISUSE_FLAG = '0' \
+                AND    D_TERRAFORM_CLI_VARS_DATA.EXECUTION_NO = %s \
                 AND    D_TERRAFORM_CLI_VARS_DATA.OPERATION_ID = %s \
                 AND    D_TERRAFORM_CLI_VARS_DATA.MOVEMENT_ID = %s"
 
-        records = wsDb.sql_execute(sql, [operation_id, movement_id])
+        records = wsDb.sql_execute(sql, [execution_no, operation_id, movement_id])
 
         # 代入値（変数）の有無フラグ
         vars_set_flag = False if len(records) == 0 else True

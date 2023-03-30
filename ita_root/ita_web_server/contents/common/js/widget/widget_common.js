@@ -36,10 +36,10 @@ widgetHtml( titleNote = '' ) {
     }
     
     // Widget固有設定（attrがあるもの）
-    if ( data.unique_setting ) {
-        for ( const setting in data.unique_setting ) {
-            if ( data.unique_setting[ setting ].attr ) {
-                attrs[ setting ] = data.unique_setting[ setting ].attr;
+    if ( data.unique_setting.length ) {
+        for ( const setting of data.unique_setting ) {
+            if ( setting.attr ) {
+                attrs[ setting.name ] = setting.attr;
             }
         }
     }
@@ -48,7 +48,7 @@ widgetHtml( titleNote = '' ) {
         const val = data[ k ];
         if ( val !== undefined ) attr.push(`${attrs[ k ]}="${val}"`);
     }
-    
+
     // 編集ボタン
     const editButton = [`<li class="widget-edit-menu-item"><button class="widget-edit-button widget-edit" title="${getMessage.FTE08057}" data-type="edit">${fn.html.icon('edit')}</button></li>`];
     if ( data.widget_id !== 0 ) editButton.push(`<li class="widget-edit-menu-item"><button class="widget-edit-button widget-delete" title="${getMessage.FTE08058}" data-type="delete">${fn.html.icon('cross')}</button></li>`);

@@ -13,11 +13,14 @@
 #
 from flask import g
 from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.util import ky_decrypt
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from libs.policySetting import policySetting
 from libs.common_functions import update_execution_record
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
+from common_libs.terraform_driver.common.by_execute import \
+    get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl, generate_member_vars_array_for_hcl
 import json
 import os
 import shutil
@@ -111,8 +114,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         where_str = 'WHERE WORKSPACE_ID = %s AND DISUSE_FLAG = %s'
         ret = objdbca.table_select(TFCloudEPConst.V_ORGANIZATION_WORKSPACE, where_str, [tf_workspace_id, 0])
         if not ret:
-            log_msg = g.appmsg.get_log_message("MSG-82003", [tf_workspace_name])
-            g.applogger.error(log_msg)
+            g.applogger.debug(g.appmsg.get_log_message("MSG-82003", [tf_workspace_name]))  # 想定内エラーのためdebug
             msg = g.appmsg.get_api_message("MSG-82003", [tf_workspace_name])
             raise Exception(msg)
 
@@ -143,8 +145,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 break
         # OrganizationがTerraformに登録されていない場合はエラー
         if not org_exist_flag:
-            log_msg = g.appmsg.get_log_message("MSG-82011", [])
-            g.applogger.error(log_msg)
+            g.applogger.debug(g.appmsg.get_log_message("MSG-82011", []))  # 想定内エラーのためdebug
             msg = g.appmsg.get_api_message("MSG-82011", [])
             raise Exception(msg)
 
@@ -172,16 +173,14 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 break
         # WorkspaceがTerraformに登録されていない場合はエラー
         if not work_exist_flag:
-            log_msg = g.appmsg.get_log_message("MSG-82013", [])
-            g.applogger.error(log_msg)
+            g.applogger.debug(g.appmsg.get_log_message("MSG-82013", []))  # 想定内エラーのためdebug
             msg = g.appmsg.get_api_message("MSG-82013", [])
             raise Exception(msg)
 
         # WorkspaceのApplyMethodの設定がAuto Applyになっていないことをチェック。
         if run_mode == TFCloudEPConst.RUN_MODE_PLAN:
             if terraform_auto_apply is True:
-                log_msg = g.appmsg.get_log_message("MSG-82004", [])
-                g.applogger.error(log_msg)
+                g.applogger.debug(g.appmsg.get_log_message("MSG-82004", []))  # 想定内エラーのためdebug
                 msg = g.appmsg.get_api_message("MSG-82004", [])
                 raise Exception(msg)
 
@@ -230,11 +229,11 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 msg = g.appmsg.get_api_message("MSG-82016", [])
                 raise Exception(msg)
 
-            # --------------未実装--------------
             # 連携先Terraformに代入値管理に登録されている値があれば、Variableを設定する
-            # ####メモ：代入値関連の処理が完成してから実装する。
-            # g.applogger.debug(g.appmsg.get_log_message("BKY-51012", [execution_no]))
-            # --------------未実装--------------
+            ret = prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace_id)
+            if not ret:
+                msg = g.appmsg.get_api_message("MSG-82017", [])
+                raise Exception(msg)
         # -----[END]実行種別が「作業実行」「Plan確認」の場合のみ実施-----
 
         # Policy関連の処理スタート
@@ -249,8 +248,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             where_str = 'WHERE MOVEMENT_ID = %s AND DISUSE_FLAG = %s'
             ret = objdbca.table_select(TFCloudEPConst.T_MOVEMENT_MODULE, where_str, [movement_id, 0])
             if not ret:
-                log_msg = g.appmsg.get_log_message("MSG-82005", [])
-                g.applogger.error(log_msg)
+                g.applogger.debug(g.appmsg.get_log_message("MSG-82005", []))  # 想定内エラーのためdebug
                 msg = g.appmsg.get_api_message("MSG-82005", [])
                 raise Exception(msg)
             movement_module_list = ret
@@ -298,7 +296,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 raise Exception(msg)
 
             # [RESTAPI]作成したtar.gzファイルをアップロードするためのURLを取得する
-            g.applogger.debug("[Process] Start RESTAPI get module upload URL. (Execution No.:{})".format(execution_no))
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51037", [execution_no]))
             response_array = get_upload_url(restApiCaller, tf_manage_workspace_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 201:
@@ -314,7 +312,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             cv_id = respons_contents_data.get('id')
 
             # [RESTAPI]作成したtar.gzファイルを連携先Terraformにアップロードする。
-            g.applogger.debug("[Process] Start RESTAPI upload module files. (Execution No.:{})".format(execution_no))
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51038", [execution_no]))
             response_array = module_upload(restApiCaller, gztar_path, upload_url)  # noqa: F405
             if not response_status_code == 201:
                 log_msg = g.appmsg.get_log_message("MSG-82030", [])
@@ -323,7 +321,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 raise Exception(msg)
 
             # [RESTAPI]連携先Terraformに登録されているVariableの一覧を取得(設定値を保存するため)
-            g.applogger.debug("[Process] Start RESTAPI get terraform workspace var list. (Execution No.:{})".format(execution_no))
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51009", [execution_no]))
             response_array = get_tf_workspace_var_list(restApiCaller, tf_manage_workspace_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 200:
@@ -357,7 +355,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 json.dump(variables_list, f, indent=4)
 
             # [RESTAPI]TerraformのRUNを実行する
-            g.applogger.debug("[Process] Start RESTAPI create terraform run. (Execution No.:{})".format(execution_no))
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51039", [execution_no]))
             response_array = create_run(restApiCaller, tf_manage_workspace_id, cv_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 201:
@@ -423,7 +421,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         # -----[START]実行種別が「リソース削除」の場合のみ実施-----
         else:
             # [RESTAPI]TerraformのDestroyを実行する
-            g.applogger.debug("[Process] Start RESTAPI destroy workspace. (Execution No.:{})".format(execution_no))
+            g.applogger.debug(g.appmsg.get_log_message("BKY-51040", [execution_no]))
             response_array = destroy_workspace(restApiCaller, tf_manage_workspace_id)  # noqa: F405
             response_status_code = response_array.get('statusCode')
             if not response_status_code == 201:
@@ -472,3 +470,289 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 os.remove(populated_data_rename_path)
 
         return False
+
+
+def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace_id):  # noqa: C901
+    """
+        代入値管理に登録された変数を、連携先TerraformのWorkspaceのVariablesに登録する。
+        ARGS:
+            objdbca: DB接クラス DBConnectWs()
+            instancce_data: 作業実行データ
+            restApiCaller: RESTAPIコールクラス
+            tf_manage_workspace_id: Terraformで管理するWorkspaceのID
+        RETRUN:
+            boolean
+
+    """
+    vars_set_flag = False  # 変数追加処理を行うかの判定
+    vars_data_arr = {}  # 対象の変数を格納する配列
+
+    try:
+
+        # 作業実行データ
+        execution_no = instance_data['EXECUTION_NO']
+        movement_id = instance_data['MOVEMENT_ID']
+        operation_id = instance_data['OPERATION_ID']
+
+        # operation_idとmovement_idから変数名と代入値を取得
+        sql = "SELECT \
+                D_TERRAFORM_VARS_DATA.MODULE_VARS_LINK_ID, \
+                D_TERRAFORM_VARS_DATA.VARS_NAME, \
+                D_TERRAFORM_VARS_DATA.HCL_FLAG, \
+                D_TERRAFORM_VARS_DATA.SENSITIVE_FLAG, \
+                D_TERRAFORM_VARS_DATA.VARS_ENTRY, \
+                D_TERRAFORM_VARS_DATA.MEMBER_VARS_ID, \
+                D_TERRAFORM_VARS_DATA.ASSIGN_SEQ, \
+                T_TERE_MOD_VAR_LINK.TYPE_ID, \
+                V_TERE_VAR_MEMBER.VARS_ASSIGN_FLAG, \
+                D_TERRAFORM_VARS_DATA.LAST_UPDATE_TIMESTAMP \
+            FROM ( \
+                SELECT \
+                    `T_TERE_VALUE`.`ASSIGN_ID` AS `ASSIGN_ID`, \
+                    `T_TERE_VALUE`.`EXECUTION_NO` AS `EXECUTION_NO`, \
+                    `T_TERE_VALUE`.`OPERATION_ID` AS `OPERATION_ID`, \
+                    `T_TERE_VALUE`.`MOVEMENT_ID` AS `MOVEMENT_ID`, \
+                    `V_TERE_MVMT_VAR_LINK`.`MODULE_VARS_LINK_ID` AS `MODULE_VARS_LINK_ID`, \
+                    `V_TERE_MVMT_VAR_LINK`.`VARS_NAME` AS `VARS_NAME`, \
+                    `T_TERE_VALUE`.`VARS_ENTRY` AS `VARS_ENTRY`, \
+                    `T_TERE_VALUE`.`MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
+                    `T_TERE_VALUE`.`ASSIGN_SEQ` AS `ASSIGN_SEQ`, \
+                    `T_TERE_VALUE`.`HCL_FLAG` AS `HCL_FLAG`, \
+                    `T_TERE_VALUE`.`SENSITIVE_FLAG` AS `SENSITIVE_FLAG`, \
+                    `T_TERE_VALUE`.`DISUSE_FLAG` AS `DISUSE_FLAG`, \
+                    `T_TERE_VALUE`.`LAST_UPDATE_TIMESTAMP` AS `LAST_UPDATE_TIMESTAMP` \
+                FROM (`T_TERE_VALUE`  \
+                    LEFT JOIN `V_TERE_MVMT_VAR_LINK`  \
+                        ON( \
+                            `V_TERE_MVMT_VAR_LINK`.`MOVEMENT_ID` = `T_TERE_VALUE`.`MOVEMENT_ID` AND  \
+                            `V_TERE_MVMT_VAR_LINK`.`MVMT_VAR_LINK_ID` = `T_TERE_VALUE`.`MVMT_VAR_LINK_ID` \
+                    )) \
+                ) AS D_TERRAFORM_VARS_DATA \
+                LEFT OUTER JOIN T_TERE_MOD_VAR_LINK \
+                    ON D_TERRAFORM_VARS_DATA.MODULE_VARS_LINK_ID = T_TERE_MOD_VAR_LINK.MODULE_VARS_LINK_ID \
+                LEFT OUTER JOIN V_TERE_VAR_MEMBER \
+                    ON D_TERRAFORM_VARS_DATA.MEMBER_VARS_ID = V_TERE_VAR_MEMBER.CHILD_MEMBER_VARS_ID \
+            WHERE  D_TERRAFORM_VARS_DATA.DISUSE_FLAG = '0' \
+                AND    T_TERE_MOD_VAR_LINK.DISUSE_FLAG = '0' \
+                AND    D_TERRAFORM_VARS_DATA.EXECUTION_NO = %s \
+                AND    D_TERRAFORM_VARS_DATA.OPERATION_ID = %s \
+                AND    D_TERRAFORM_VARS_DATA.MOVEMENT_ID = %s"
+
+        records = objdbca.sql_execute(sql, [execution_no, operation_id, movement_id])
+
+        # 代入値（変数）の有無フラグ
+        vars_set_flag = False if len(records) == 0 else True
+        # メンバー変数
+        vars_list = []
+        # メンバー変数以外の代入値
+        member_vars_link_id_list = []
+
+        for record in records:
+            if "MEMBER_VARS_ID" in record and record["MEMBER_VARS_ID"] is not None:
+                member_vars_link_id_list.append(record)
+            else:
+                vars_list.append(record)
+
+        for vars in vars_list:
+            vars_link_id = vars['MODULE_VARS_LINK_ID']
+            vars_name = vars['VARS_NAME']
+            vars_entry = vars['VARS_ENTRY']
+            vars_assign_seq = vars['ASSIGN_SEQ']
+            vars_type_id = vars['TYPE_ID']
+            last_update_timestamp = vars['LAST_UPDATE_TIMESTAMP']
+            vars_list = []
+
+            # HCL設定を判定
+            hcl_flag = False
+            if vars['HCL_FLAG'] == '0':
+                hcl_flag = False  # 0(OFF)ならfalse
+            elif vars['HCL_FLAG'] == '1':
+                hcl_flag = True  # 1(ON)ならtrue
+
+            # Sensitive設定を判定
+            sensitive_flag = False
+            if vars['SENSITIVE_FLAG'] == '0':
+                sensitive_flag = False  # 0(OFF)ならfalse
+            elif vars['SENSITIVE_FLAG'] == '1':
+                sensitive_flag = True  # 1(ON)ならtrue
+                vars_entry = ky_decrypt(vars_entry)  # 具体値をデコード
+
+            if vars_link_id not in vars_data_arr:
+                vars_data_arr[vars_link_id] = {
+                    'VARS_NAME': vars_name,
+                    'VARS_ENTRY': vars_entry,
+                    'ASSIGN_SEQ': vars_assign_seq,
+                    'MEMBER_VARS_ID': [],
+                    'HCL_FLAG': hcl_flag,
+                    'SENSITIVE_FLAG': sensitive_flag,
+                    'VARS_TYPE_ID': vars_type_id,
+                    'VARS_LIST': {}
+                }
+            # 代入値順序のためにキーを生成
+            vars_list_len = str(len(vars_data_arr[vars_link_id]['VARS_LIST']))
+            if not vars_assign_seq:
+                # 代入値順序の値がないものは、ソート時に後ろにいけるようにしておく
+                key_name = vars_list_len + "_1_" + str(last_update_timestamp)
+            else:
+                key_name = vars_assign_seq + "_0_" + str(last_update_timestamp)
+            vars_data_arr[vars_link_id]['VARS_LIST'][key_name] = vars_entry
+
+        for vars in member_vars_link_id_list:
+            vars_link_id = vars['MODULE_VARS_LINK_ID']
+            vars_name = vars['VARS_NAME']
+            vars_entry = vars['VARS_ENTRY']
+            vars_assign_seq = vars['ASSIGN_SEQ']
+            vars_type_id = vars['TYPE_ID']
+            # vars_type_info = get_type_info(vars_type_id)
+            vars_member_vars = vars['MEMBER_VARS_ID']
+            vars_assign_flag = vars["VARS_ASSIGN_FLAG"]  # 代入値系管理フラグ
+
+            # HCL設定を判定
+            hcl_flag = False
+
+            # Sensitive設定を判定
+            sensitive_flag = False
+            if vars['SENSITIVE_FLAG'] == '0':
+                sensitive_flag = False  # 0(OFF)ならFalse
+            elif vars['SENSITIVE_FLAG'] == '1':
+                sensitive_flag = True  # 1(ON)ならTrue
+                vars_entry = ky_decrypt(vars_entry)  # 具体値をデコード
+
+            if vars_link_id not in vars_data_arr:
+                vars_data_arr[vars_link_id] = {
+                    'VARS_NAME': vars_name,
+                    'VARS_ENTRY': vars_entry,
+                    'ASSIGN_SEQ': vars_assign_seq,
+                    'MEMBER_VARS_ID': vars_member_vars,
+                    'HCL_FLAG': hcl_flag,
+                    'SENSITIVE_FLAG': sensitive_flag,
+                    'VARS_TYPE_ID': vars_type_id,
+                    'MEMBER_VARS_LIST': []
+                }
+            vars_data_arr[vars_link_id]['MEMBER_VARS_LIST'].append({
+                'VARS_ENTRY': vars_entry,
+                'ASSIGN_SEQ': vars_assign_seq,
+                'MEMBER_VARS_ID': vars_member_vars,
+                'SENSITIVE_FLAG': sensitive_flag,
+                "VARS_ASSIGN_FLAG": vars_assign_flag
+            })
+
+        # Movementに紐づく代入値がある場合、代入値(Variables)登録処理を実行
+        if vars_set_flag is True:
+            for vars_link_id, data in vars_data_arr.items():
+                var_key = data['VARS_NAME']
+                var_value = data['VARS_ENTRY']
+                # assign_seq = data['ASSIGN_SEQ']
+                vars_list = data['VARS_LIST'] if 'VARS_LIST' in data else {}
+                member_vars_list = data['MEMBER_VARS_LIST'] if 'MEMBER_VARS_LIST' in data else []
+                hclFlag = data['HCL_FLAG']
+                sensitiveFlag = data['SENSITIVE_FLAG']
+                vars_type_id = data['VARS_TYPE_ID']
+                vars_type_info = get_type_info(objdbca, TFCloudEPConst, vars_type_id)
+
+                # HCL組み立て
+                #########################################
+                # 1.Module変数紐付けのタイプが配列型でない場合
+                # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
+                # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
+                #########################################
+
+                # 1.Module変数紐付けのタイプが配列型でない場合
+                if hclFlag is True or vars_type_info["MEMBER_VARS_FLAG"] == '0' or vars_type_info["ASSIGN_SEQ_FLAG"] == '0' or vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
+                    pass
+                # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
+                elif vars_type_info["MEMBER_VARS_FLAG"] == '0' and vars_type_info["ASSIGN_SEQ_FLAG"] == '1' and vars_type_info["ENCODE_FLAG"] == '1':
+                    if len(vars_list) > 0:
+                        # 代入値順序のために並び替え
+                        vars_list2 = dict(sorted(vars_list.items()))
+                        # HCLに変換
+                        var_value = encode_hcl(list(vars_list2.values()))
+                    hclFlag = True
+                # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
+                else:
+                    # HCL組み立て(メンバー変数)
+                    if len(member_vars_list) > 0 and hclFlag is False:
+                        tmp_member_vars_list = []
+                        # １．対象変数のメンバー変数を全て取得（引数：Module変数紐付け/MODULE_VARS_LINK_ID）
+                        trg_member_vars_records = get_member_vars_ModuleVarsLinkID_for_hcl(objdbca, TFCloudEPConst, vars_link_id)
+                        # MEMBER_VARS_IDのリスト（重複の削除）
+                        member_vars_ids_array = list(set([m.get('MEMBER_VARS_ID') for m in member_vars_list]))
+                        # ２．配列型の変数を配列にする
+                        for member_vars_id in member_vars_ids_array:
+                            # メンバー変数IDからタイプ情報を取得する
+                            key = [m.get('CHILD_MEMBER_VARS_ID') for m in trg_member_vars_records].index(member_vars_id)
+                            type_info = get_type_info(objdbca, TFCloudEPConst, trg_member_vars_records[key]["CHILD_VARS_TYPE_ID"])
+                            # メンバー変数対象でない配列型のみ配列型に形成する
+                            if type_info["MEMBER_VARS_FLAG"] == '0' and type_info["ASSIGN_SEQ_FLAG"] == '1' and type_info["ENCODE_FLAG"] == '1':
+                                tmp_list = {}
+                                # 代入順序をキーインデックスにして具体値をtemp_aryに収める
+                                for member_vars_data in member_vars_list:
+                                    if member_vars_id == member_vars_data["MEMBER_VARS_ID"]:
+                                        tmp_list[member_vars_data["ASSIGN_SEQ"]] = member_vars_data["VARS_ENTRY"]
+                                # 並べ替え
+                                tmp_list2 = dict(sorted(tmp_list.items()))
+                                tmp_arr = list(tmp_list2.values())
+                                sensitive_flag = False
+                                if "SENSITIVE_FLAG" in trg_member_vars_records[key]:
+                                    sensitive_flag = trg_member_vars_records[key]["SENSITIVE_FLAG"]
+                                tmp_member_vars_list.append({
+                                    "MEMBER_VARS": member_vars_id,
+                                    "SENSITIVE_FLAG": sensitive_flag,
+                                    "VARS_ENTRY": tmp_arr,
+                                    "VARS_ASSIGN_FLAG": member_vars_list[key]["VARS_ASSIGN_FLAG"]
+                                })
+                            else:
+                                key = [m.get('MEMBER_VARS_ID') for m in member_vars_list].index(member_vars_id)
+                                tmp_member_vars_list.append({
+                                    "MEMBER_VARS": member_vars_id,
+                                    "SENSITIVE_FLAG": member_vars_list[key]["SENSITIVE_FLAG"],
+                                    "VARS_ENTRY": member_vars_list[key]["VARS_ENTRY"],
+                                    "VARS_ASSIGN_FLAG": member_vars_list[key]["VARS_ASSIGN_FLAG"]
+                                })
+
+                        # MEMBER_VARS_LISTの中身を入れ替える
+                        member_vars_list = tmp_member_vars_list
+
+                        # ３．代入値管理で取得した値を置き換え
+                        for member_vars_data in member_vars_list:
+                            for trg_member_vars_record in trg_member_vars_records:
+                                if member_vars_data["MEMBER_VARS"] == trg_member_vars_record["CHILD_MEMBER_VARS_ID"]:
+                                    trg_member_vars_record["CHILD_MEMBER_VARS_VALUE"] = member_vars_data["VARS_ENTRY"]
+                                    trg_member_vars_record["VARS_ENTRY_FLAG"] = '1'
+                                    trg_member_vars_record["VARS_ASSIGN_FLAG"] = member_vars_data["VARS_ASSIGN_FLAG"]
+
+                            # sensitive設定をチェック
+                            # 対象代入値に一つでもsensitive設定があればseneitiveはON
+                            if sensitiveFlag is False and member_vars_data["SENSITIVE_FLAG"] == '1':
+                                sensitiveFlag = True
+
+                        # ４．置換する値がなかった場合、エラーとする
+                        err_id_list = []
+                        for trg_member_vars_record in trg_member_vars_records:
+                            if trg_member_vars_record["VARS_ENTRY_FLAG"] == '0' and trg_member_vars_record["VARS_ASSIGN_FLAG"] == '1':
+                                err_id_list.append(trg_member_vars_record["CHILD_MEMBER_VARS_ID"])
+
+                        if len(err_id_list) > 0:
+                            ids_string = json.dumps(err_id_list)
+                            # error_logにメッセージを追記
+                            # メンバー変数の取得に失敗しました。ID:[]
+                            g.applogger.error(ids_string)
+
+                        # ５．取得したデータから配列を形成
+                        trg_member_vars_arr = generate_member_vars_array_for_hcl(objdbca, TFCloudEPConst, trg_member_vars_records)
+                        # ６．HCLに変換
+                        var_value = encode_hcl(trg_member_vars_arr)
+                        hclFlag = True
+
+                # [RESTAPI]連携先Terraformにvariablesを設定する
+                g.applogger.debug(g.appmsg.get_log_message("BKY-51012", [execution_no, var_key]))
+                response_array = create_tf_workspace_var(restApiCaller, tf_manage_workspace_id, var_key, var_value, hclFlag, sensitiveFlag, category="terraform")  # noqa: F405, E501
+                response_status_code = response_array.get('statusCode')
+                if not response_status_code == 201:
+                    return False
+
+    except Exception as msg:
+        g.applogger.error(msg)
+        return False
+
+    return True

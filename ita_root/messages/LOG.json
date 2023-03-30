@@ -1245,5 +1245,9 @@
     "BKY-51033": "[Process] Start RESTAPI get state list. (Execution No.:{})",
     "BKY-51034": "[Process] Start RESTAPI get state file. (Execution No.:{})",
     "BKY-51035": "[Process] Start RESTAPI get outputs. (Execution No.:{})",
-    "BKY-51036": "[Process] Delay was detected. (Execution No.:{})"
+    "BKY-51036": "[Process] Delay was detected. (Execution No.:{})",
+    "BKY-51037": "[Process] Start RESTAPI get module upload URL. (Execution No.:{})",
+    "BKY-51038": "[Process] Start RESTAPI upload module files. (Execution No.:{})",
+    "BKY-51039": "[Process] Start RESTAPI create terraform run. (Execution No.:{})",
+    "BKY-51040": "[Process] Start RESTAPI destroy workspace. (Execution No.:{})"
 }

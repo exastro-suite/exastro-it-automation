@@ -827,27 +827,25 @@ def _execute_compare_data(objdbca, compare_config, options):
                 target_data_key.extend(list(target_data_2.keys()))
                 diff_key = [i1 for i0, i1, i2 in result_dictdiffer]
 
+                # get file target list
+                file_list_colneme = [tmp_info.get('col_name') for tmp_info in column_info if tmp_info.get("file_flg") is True]
+
                 # set diff flg[value]
                 for tmp_key in target_data_key:
                     diff_flg = False
-                    # target_column_flg = _chk_target_column_flg(copmare_target_column, tmp_key)
                     if tmp_key in diff_key and tmp_key not in no_compare_target:
                         diff_flg = True
                     if vertical_compare_flg is True and tmp_key in no_view_target_list[target_host]:
                         diff_flg = None
+
+                    if tmp_key in file_list_colneme:
+                        file_diff_flg = diff_flg_file.get(tmp_key)
+                        if diff_flg is False and file_diff_flg is True:
+                            # override file_diff_flg->result_compare_host
+                            compare_config["result_compare_host"][target_host] = True
+
                     diff_flg_data.setdefault(tmp_key, diff_flg)
 
-                # set result_ptn1
-                # {
-                #   host_name:{
-                #    "target_data_1":{},
-                #    "target_data_2":{},
-                #    "compare_diff_flg":{},
-                #    "_data_diff_flg":{},
-                #    "_file_compare_execute_flg":{},
-                #    "_file_compare_execute_info":{}
-                #    }
-                # }
                 result_ptn1.setdefault(target_host, {})
                 result_ptn1[target_host].setdefault("target_data_1", target_data_1)
                 result_ptn1[target_host].setdefault("target_data_2", target_data_2)
@@ -943,6 +941,9 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
         RETRUN:
             str_diff
     """
+    filename_1 = "" if filename_1 is None or len(filename_1) == 0 else filename_1
+    filename_2 = "" if filename_2 is None or len(filename_2) == 0 else filename_2
+
     str_rdiff = ""
     if mimetype_1 in accept_compare_file_list and mimetype_2 in accept_compare_file_list:
         try:
@@ -1032,6 +1033,10 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
             target_uuid_1,
             column_class_name_1)
         file_mimetypes[tmp_col_name]["target_data_1"].setdefault(col_val_menu_1, tmp_file_mimetype_1)
+    else:
+        col_val_menu_1 = "no file"
+        tmp_file_data_1 = ""
+        tmp_file_mimetype_1 = "text/plain"
     if col_val_menu_2 is not None:
         tmp_file_data_2, tmp_file_mimetype_2 = _get_file_data_columnclass(
             objdbca,
@@ -1041,7 +1046,10 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
             target_uuid_2,
             column_class_name_2)
         file_mimetypes[tmp_col_name]["target_data_2"].setdefault(col_val_menu_2, tmp_file_mimetype_2)
-
+    else:
+        col_val_menu_2 = "no file"
+        tmp_file_data_2 = ""
+        tmp_file_mimetype_2 = "text/plain"
     # compare result[file]
     if tmp_file_data_1 != tmp_file_data_2:
         value_compare_flg = True
@@ -1164,7 +1172,7 @@ def _get_target_datas(objdbca, compare_config, options):
 
             # set filter parameter
             rest_mode = "excel"
-            filter_parameter = {}
+            filter_parameter = {"discard": {"NORMAL": "0"}}
             operation_date = None
             # set base_date
             if target_key == "menu_1":
@@ -2252,8 +2260,8 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
         RETRUN:
             file_data, file_mimetype
     """
-    file_data = None
-    file_mimetype = None
+    file_data = ""
+    file_mimetype = "text/plain"
     try:
         eval_class_str = "{}(objdbca,objtable,rest_key,'')".format(col_class_name)
         objcolumn = eval(eval_class_str)

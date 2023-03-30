@@ -780,9 +780,9 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
 
             # HCL設定を判定
             hcl_flag = False
-            if vars['HCL_FLAG'] == 1:
+            if vars['HCL_FLAG'] == '0':
                 hcl_flag = False  # 1(OFF)ならfalse
-            elif vars['HCL_FLAG'] == 2:
+            elif vars['HCL_FLAG'] == '1':
                 hcl_flag = True  # 2(ON)ならtrue
 
             # Sensitive設定を判定
@@ -866,7 +866,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                 hclFlag = data['HCL_FLAG']
                 sensitiveFlag = data['SENSITIVE_FLAG']
                 vars_type_id = data['VARS_TYPE_ID']
-                vars_type_info = get_type_info(wsDb, vars_type_id)
+                vars_type_info = get_type_info(wsDb, TFCLIConst, vars_type_id)
 
                 # HCL組み立て
                 #########################################
@@ -892,14 +892,14 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                     if len(member_vars_list) > 0 and hclFlag is False:
                         tmp_member_vars_list = []
                         # １．対象変数のメンバー変数を全て取得（引数：Module変数紐付け/MODULE_VARS_LINK_ID）
-                        trg_member_vars_records = get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, vars_link_id)
+                        trg_member_vars_records = get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFCLIConst, vars_link_id)
                         # MEMBER_VARS_IDのリスト（重複の削除）
                         member_vars_ids_array = list(set([m.get('MEMBER_VARS_ID') for m in member_vars_list]))
                         # ２．配列型の変数を配列にする
                         for member_vars_id in member_vars_ids_array:
                             # メンバー変数IDからタイプ情報を取得する
                             key = [m.get('CHILD_MEMBER_VARS_ID') for m in trg_member_vars_records].index(member_vars_id)
-                            type_info = get_type_info(trg_member_vars_records[key]["CHILD_VARS_TYPE_ID"])
+                            type_info = get_type_info(wsDb, TFCLIConst, trg_member_vars_records[key]["CHILD_VARS_TYPE_ID"])
                             # メンバー変数対象でない配列型のみ配列型に形成する
                             if type_info["MEMBER_VARS_FLAG"] == '0' and type_info["ASSIGN_SEQ_FLAG"] == '1' and type_info["ENCODE_FLAG"] == '1':
                                 tmp_list = {}

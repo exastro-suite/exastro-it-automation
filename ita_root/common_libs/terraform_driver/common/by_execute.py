@@ -15,16 +15,14 @@ import json
 import re
 from dictknife import deepmerge
 
-from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
-
 
 # Typeの情報を取得する
-def get_type_info(wsDb, type_id):
+def get_type_info(wsDb, TFConst, type_id):
     type_id = type_id if type_id is not None else "1"
     type_info = {}
 
     condition = "WHERE DISUSE_FLAG = '0' AND TYPE_ID = %s"
-    rows = wsDb.table_select(TFCLIConst.T_TYPE_MASTER, condition, [type_id])
+    rows = wsDb.table_select(TFConst.T_TYPE_MASTER, condition, [type_id])
     if len(rows) > 0:
         type_info = rows[0]
     else:
@@ -51,9 +49,9 @@ def decode_hcl(hcl_data):
 
 
 # HCL作成のためにメンバー変数一覧を取得
-def get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, module_vars_link_id):
+def get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFConst, module_vars_link_id):
     condition = "WHERE DISUSE_FLAG = '0' AND PARENT_VARS_ID = %s ORDER BY ARRAY_NEST_LEVEL, ASSIGN_SEQ ASC"
-    records = wsDb.table_select(TFCLIConst.V_TERC_VAR_MEMBER, condition, [module_vars_link_id])
+    records = wsDb.table_select(TFConst.V_VAR_MEMVER, condition, [module_vars_link_id])
 
     res = []
     for record in records:

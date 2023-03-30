@@ -857,6 +857,7 @@ getMessage = ( function() {
         'FTE10091': 's',
         'FTE10092': 'Update failed',
         'FTE10093': 'Update failed. Please try again after reloading.',
+        'FTE10094': 'Filter reset',
     };
 
     return message;

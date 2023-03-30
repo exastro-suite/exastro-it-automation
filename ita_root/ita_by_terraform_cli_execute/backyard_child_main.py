@@ -875,8 +875,10 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                 # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
                 #########################################
 
+                g.applogger.debug(vars_type_info)
+                g.applogger.debug(member_vars_list)
                 # 1.Module変数紐付けのタイプが配列型でない場合
-                if hclFlag is True or vars_type_info["MEMBER_VARS_FLAG"] == '0' or vars_type_info["ASSIGN_SEQ_FLAG"] == '0' or vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
+                if hclFlag is True or vars_type_info["MEMBER_VARS_FLAG"] == '0' and vars_type_info["ASSIGN_SEQ_FLAG"] == '0' and vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
                     pass
                 # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
                 elif vars_type_info["MEMBER_VARS_FLAG"] == '0' and vars_type_info["ASSIGN_SEQ_FLAG"] == '1' and vars_type_info["ENCODE_FLAG"] == '1':
@@ -893,8 +895,14 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                         tmp_member_vars_list = []
                         # １．対象変数のメンバー変数を全て取得（引数：Module変数紐付け/MODULE_VARS_LINK_ID）
                         trg_member_vars_records = get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFCLIConst, vars_link_id)
+
+                        # g.applogger.debug("1:trg_member_vars_records")
+                        # g.applogger.debug(trg_member_vars_records)
+
                         # MEMBER_VARS_IDのリスト（重複の削除）
                         member_vars_ids_array = list(set([m.get('MEMBER_VARS_ID') for m in member_vars_list]))
+                        g.applogger.debug(member_vars_ids_array)
+
                         # ２．配列型の変数を配列にする
                         for member_vars_id in member_vars_ids_array:
                             # メンバー変数IDからタイプ情報を取得する

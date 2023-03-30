@@ -6910,7 +6910,7 @@ noticeModalOpen() {
     
     // 通知先があるかチェック
     const notice = cd.info.list.notice_info,
-          noticeLength = notice.length;console.log(noticeLength)
+          noticeLength = notice.length;
     
     if ( noticeLength === 0 ) {
         fn.iconConfirm('circle_info', getMessage.FTE02165, getMessage.FTE02164, getMessage.FTE02166, getMessage.FTE02167 ).then(function( flag ){
@@ -6964,7 +6964,6 @@ noticeModalOpen() {
                         cd.data.conductor.notice_info[ key ].push( val );
                         cd.panelChange();                    
                     });
-                    console.log( cd.data );
                     cd.notice.modal.hide();
                 },
                 cancel: function() {

@@ -786,7 +786,7 @@ class Column():
             RETRUN:
                 base64 string
         """
-        result = '{} base64 string :{}_{}'.format(file_name, target_uuid, target_uuid_jnl)
+        result = ""
         return result
 
     # [load_table][filter] ID変換用のリスト取得

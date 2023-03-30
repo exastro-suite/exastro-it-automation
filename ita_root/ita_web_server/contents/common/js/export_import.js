@@ -320,6 +320,20 @@ exportDiscardText( discard ) {
         return getMessage.FTE07018;
     }
 }
+/*
+##################################################
+   エクスポート Excel設定　廃止情報
+##################################################
+*/
+exportExcelDiscardText( discard ) {
+    if ( discard === '1') {
+        return getMessage.FTE07019;
+    } else if ( discard === '2') {
+        return getMessage.FTE07018;
+    } else {
+        return getMessage.FTE07020;
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -395,7 +409,7 @@ exportEvents() {
                             + `${( exportData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd">${fn.escape( exportData.specified_timestamp )}</td></tr>`: ``}`: ``}`
                         + '<tr class="commonTr">'
                             + `<th class="commonTh">${getMessage.FTE07009}</th>`
-                            + `<td class="commonTd">${ex.exportDiscardText( exportData.abolished_type )}</td>`
+                            + `<td class="commonTd">${( ex.type === 'menuExport')? ex.exportDiscardText( exportData.abolished_type ): ex.exportExcelDiscardText( exportData.abolished_type )}</td>`
                         + '</tr>'
                     + '</tbody>'
                 + '</table>'

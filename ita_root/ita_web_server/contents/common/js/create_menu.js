@@ -1576,7 +1576,7 @@ const getpulldownDefaultValueList = function($item, defaultValue = ""){
       }
       */
       let selectPulldownDefaultListHTML = '<option value=""></option>'; //一つ目に空を追加
-      let defaultCheckFlg = false;console.log(defaultValue)
+      let defaultCheckFlg = false;
       for ( let key in selectDefaultValueList ) {
         if(defaultValue == key){
           selectPulldownDefaultListHTML += '<option value="' + key + '" selected>' + selectDefaultValueList[key] + '</option>';

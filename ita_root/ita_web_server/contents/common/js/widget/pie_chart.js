@@ -164,7 +164,6 @@ body() {
     
     // Table
     let tableHTML = '';
-    console.log( Object.keys( pieChartData ).length)
     if ( Object.keys( pieChartData ).length ) {
         tableHTML += ''
         + '<div class="db-table-wrap">'

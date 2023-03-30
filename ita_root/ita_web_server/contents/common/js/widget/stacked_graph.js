@@ -209,7 +209,6 @@ ready() {
 */
 setDetaileEvent() {
     const wg = this;
-console.log(  wg.stackedGraphData);
     wg.$.widget.find('.stacked-graph-item-inner').on({
         'mouseenter.detaile': function() {
             const $bar = $( this ),

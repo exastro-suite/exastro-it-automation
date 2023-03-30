@@ -62,7 +62,7 @@ def get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFConst, module_vars_link_id)
 
 
 # HCL作成のためにメンバー変数一覧を配列に形成
-def generate_member_vars_array_for_hcl(member_vars_records):
+def generate_member_vars_array_for_hcl(wsDb, TFConst, member_vars_records):
     member_vars_res = []
 
     # 親リストの取得
@@ -84,7 +84,7 @@ def generate_member_vars_array_for_hcl(member_vars_records):
             key = match[0]
 
         # タイプ情報の取得
-        type_info = get_type_info(member_vars_record["CHILD_VARS_TYPE_ID"])
+        type_info = get_type_info(wsDb, TFConst, member_vars_record["CHILD_VARS_TYPE_ID"])
         # 配列組み立て
         trg_parent_id_map_id = [m.get('child_member_vars_id') for m in parent_id_map].index(member_vars_record["CHILD_MEMBER_VARS_ID"])
         trg_parent_id_map = parent_id_map[trg_parent_id_map_id]

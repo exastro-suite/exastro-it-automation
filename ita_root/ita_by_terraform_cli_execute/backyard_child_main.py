@@ -957,7 +957,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                             g.applogger.error(ids_string)
 
                         # ５．取得したデータから配列を形成
-                        trg_member_vars_arr = generate_member_vars_array_for_hcl(trg_member_vars_records)
+                        trg_member_vars_arr = generate_member_vars_array_for_hcl(wsDb, TFCLIConst, trg_member_vars_records)
                         # ６．HCLに変換
                         var_value = encode_hcl(trg_member_vars_arr)
                         hclFlag = True

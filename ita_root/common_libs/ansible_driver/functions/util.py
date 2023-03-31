@@ -288,7 +288,7 @@ def getSpecialColumnVaule(column_rest_name, option):
       Returns:
         Ansible Gitリポジトリ用 tmpバス
     """
-    str_token = option["current_parameter"]["parameter"][column_rest_name]
+    str_token = option.get("current_parameter").get("parameter").get(column_rest_name)
     if column_rest_name in option["entry_parameter"]["parameter"]:
         str_token = option["entry_parameter"]["parameter"][column_rest_name]
     return str_token

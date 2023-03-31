@@ -131,7 +131,8 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
 
         # job for workspace
         try:
-            main_logic(organization_id, workspace_id)
+            if allow_proc(organization_id, workspace_id) is True:
+                main_logic(organization_id, workspace_id)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
             app_exception(e)
@@ -146,6 +147,30 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WSDB_USER")
         g.db_connect_info.pop("WSDB_PASSWORD")
         g.db_connect_info.pop("WSDB_DATABASE")
+
+
+def allow_proc(organization_id, workspace_id):
+    """
+        check the process is allowed to run.
+
+    Argument:
+        organization_id
+        workspace_id
+    Return:
+        bool
+    """
+
+    allowed = True
+    base_path = os.environ.get('STORAGEPATH') + "{}/{}".format(organization_id, workspace_id)
+    file_list = ["tmp/driver/import_menu/skip_all_service"]
+
+    for f in file_list:
+        file_path = "{}/{}".format(base_path, f)
+        if os.path.isfile(file_path) is True:
+            g.applogger.debug("Skip proc. org:{}, ws:{}, file:{}".format(organization_id, workspace_id, f))
+            allowed = False
+
+    return allowed
 
 
 def app_exception(e):

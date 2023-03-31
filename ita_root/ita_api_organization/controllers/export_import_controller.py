@@ -142,7 +142,7 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
         body_mode = check_request_body_key(body, 'mode')
         body_abolished_type = check_request_body_key(body, 'abolished_type')
         if body_mode == "2":
-            body_specified_time = check_request_body_key(body, 'specified_time')
+            body_specified_time = check_request_body_key(body, 'specified_timestamp')
 
     result_data = export_import.execute_menu_bulk_export(objdbca, menu, body)
 

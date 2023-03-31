@@ -217,7 +217,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
 
             status_code = "499-00803"
             log_msg_args = []
@@ -667,7 +667,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             if parameter.get('conductor_class_name') is None:
                 conductor_class_id = parameter.get('conductor_class_name')
                 operation_id = parameter.get('operation_name')
@@ -740,7 +740,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             raise e
 
         return conductor_data
@@ -773,7 +773,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             tmp_result = False,
         return tmp_result
 
@@ -801,7 +801,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             tmp_result = False,
         return tmp_result
 
@@ -837,7 +837,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             tmp_result = False,
 
         return tmp_result
@@ -879,7 +879,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             result = False,
         return result
 
@@ -1066,7 +1066,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             status_code = "499-00803"
             log_msg_args = []
             api_msg_args = []
@@ -1188,7 +1188,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             status_code = "499-00803"
             log_msg_args = []
             api_msg_args = []
@@ -1212,7 +1212,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool
 
@@ -1242,7 +1242,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1270,7 +1270,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1308,7 +1308,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1488,7 +1488,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         return retBool, status_code, msg_args,
@@ -1511,7 +1511,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1593,7 +1593,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1649,7 +1649,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1721,7 +1721,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         return retBool, result
@@ -1820,7 +1820,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         return retBool, result
@@ -1871,7 +1871,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         return retBool, result
@@ -2073,7 +2073,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             self.objmenus = False
 
     def get_objmenus(self):
@@ -2167,7 +2167,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2191,7 +2191,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2233,7 +2233,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2264,7 +2264,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool
 
@@ -2304,7 +2304,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2327,7 +2327,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool
 
@@ -2446,7 +2446,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool,
 
@@ -2539,7 +2539,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2588,7 +2588,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2627,7 +2627,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, parameter,
 
@@ -2678,7 +2678,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2770,7 +2770,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         finally:
@@ -2814,7 +2814,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2875,7 +2875,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2900,7 +2900,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2936,7 +2936,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2972,7 +2972,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2998,7 +2998,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             node_skip = 'False'
         return node_skip
 
@@ -3025,7 +3025,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             result = False
 
         return result
@@ -3066,7 +3066,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3128,7 +3128,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3160,7 +3160,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3216,7 +3216,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3296,7 +3296,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3357,7 +3357,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3449,7 +3449,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3580,7 +3580,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3722,9 +3722,9 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
-            g.applogger.error(addline_msg(e))
+            g.applogger.debug(addline_msg(e))
         return retBool, result,
 
     def next_node_exec(self, node_options):
@@ -3771,7 +3771,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -3848,7 +3848,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -3912,7 +3912,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4022,7 +4022,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                         g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
                         type_, value, traceback_ = sys.exc_info()
                         msg = traceback.format_exception(type_, value, traceback_)
-                        g.applogger.error(msg)
+                        g.applogger.debug(msg)
                         msg_code = 'MSG-40026'
                         msg_args = [movement_id, operation_id]
                         err_msg = g.appmsg.get_api_message(msg_code, msg_args)
@@ -4142,7 +4142,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4370,7 +4370,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4448,7 +4448,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         result = node_options
         return retBool, result,
@@ -4549,7 +4549,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4646,7 +4646,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4740,7 +4740,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4842,7 +4842,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options

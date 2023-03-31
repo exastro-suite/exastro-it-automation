@@ -1557,7 +1557,7 @@ setEditBlankEvent() {
                   $blankBar.css({
                       'display': 'block',
                       'width': 'calc( 100% - 32px)',
-                      'left': '16px',
+                      'left': ( scrollLeft + 16 ) + 'px',
                       'top': topBottomPositionTop
                   }).attr({
                       'data-row': row + topBottomAdd
@@ -1843,8 +1843,10 @@ updateMenuInfo() {
     
     const list = db.info.menu;
     for ( const group of list ) {
-        group.disp_seq = idList[ group.id ].disp_seq;
-        group.position = idList[ group.id ].position;
+        if ( group.parent_id === null ) {
+            group.disp_seq = idList[ group.id ].disp_seq;
+            group.position = idList[ group.id ].position;
+        }
     }
 }
 /*

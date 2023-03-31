@@ -451,7 +451,7 @@ createMenuGroupList() {
         for ( const menu of parent.menus ) {
             if ( menu.menu_name_rest && parent.main_menu_rest === null ) {
                 parent.main_menu_rest = menu.menu_name_rest;
-            } else if ( menu.menus && menu.menus.length && menu.menus[0].menu_name_rest ) {
+            } else if ( menu.menus && menu.menus.length && menu.menus[0].menu_name_rest && subRest === null ) {
                 subRest = menu.menus[0].menu_name_rest;
             }
             if ( ui.currentMenuGroupList === null && ui.params.menuNameRest === menu.menu_name_rest ) {

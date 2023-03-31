@@ -19,8 +19,8 @@ import os
 import time
 import traceback
 
-from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.exception import AppException
+from common_libs.common.dbconnect import *
+from common_libs.common.exception import AppException, ValidationException
 from common_libs.common.util import arrange_stacktrace_format
 
 
@@ -126,6 +126,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
 
         # set log-level for user setting
         # g.applogger.set_user_setting(ws_db)
+
         ws_db.db_disconnect()
 
         # job for workspace
@@ -154,6 +155,9 @@ def app_exception(e):
     Argument:
         e: AppException
     '''
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    ret_db_disuse = is_db_disuse()
+
     args = e.args
     is_arg = False
     while is_arg is False:
@@ -164,14 +168,16 @@ def app_exception(e):
         else:
             is_arg = True
 
-    # catch - other all error
-    t = traceback.format_exc()
-    log_err(arrange_stacktrace_format(t))
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if ret_db_disuse is False:
+        # catch - other all error
+        t = traceback.format_exc()
+        log_err(arrange_stacktrace_format(t))
 
-    # catch - raise AppException("xxx-xxxxx", log_format), and get message
-    result_code, log_msg_args, api_msg_args = args
-    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-    log_err(log_msg)
+        # catch - raise AppException("xxx-xxxxx", log_format), and get message
+        result_code, log_msg_args, api_msg_args = args
+        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+        log_err(log_msg)
 
 
 def exception(e):
@@ -181,6 +187,9 @@ def exception(e):
     Argument:
         e: Exception
     '''
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    ret_db_disuse = is_db_disuse()
+
     args = e.args
     is_arg = False
     while is_arg is False:
@@ -191,9 +200,11 @@ def exception(e):
         else:
             is_arg = True
 
-    # catch - other all error
-    t = traceback.format_exc()
-    log_err(arrange_stacktrace_format(t))
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if ret_db_disuse is False:
+        # catch - other all error
+        t = traceback.format_exc()
+        log_err(arrange_stacktrace_format(t))
 
 
 def validation_exception(e):
@@ -203,24 +214,31 @@ def validation_exception(e):
     Argument:
         e: AppException
     '''
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    ret_db_disuse = is_db_disuse()
+
     args = e.args
     is_arg = False
     while is_arg is False:
-        if isinstance(args[0], AppException):
+        if isinstance(args[0], ValidationException):
+            args = args[0].args
+        elif isinstance(args[0], AppException):
             args = args[0].args
         elif isinstance(args[0], Exception):
             return exception(args[0])
         else:
             is_arg = True
 
-    # catch - other all error
-    t = traceback.format_exc()
-    log_err(arrange_stacktrace_format(t))
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if ret_db_disuse is False:
+        # catch - other all error
+        t = traceback.format_exc()
+        log_err(arrange_stacktrace_format(t))
 
-    # catch - raise AppException("xxx-xxxxx", log_format), and get message
-    result_code, log_msg_args, api_msg_args = args
-    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-    log_err(log_msg)
+        # catch - raise AppException("xxx-xxxxx", log_format), and get message
+        result_code, log_msg_args, api_msg_args = args
+        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+        log_err(log_msg)
 
 
 def app_exception_driver_log(e, logfile=None):
@@ -231,6 +249,9 @@ def app_exception_driver_log(e, logfile=None):
         e: AppException
         logfile: If you want exception file output
     '''
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    ret_db_disuse = is_db_disuse()
+
     args = e.args
     is_arg = False
     while is_arg is False:
@@ -241,16 +262,19 @@ def app_exception_driver_log(e, logfile=None):
         else:
             is_arg = True
 
-    # catch - raise AppException("xxx-xxxxx", log_format), and get message
-    result_code, log_msg_args, api_msg_args = args
-    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if ret_db_disuse is False:
+        # catch - raise AppException("xxx-xxxxx", log_format), and get message
+        result_code, log_msg_args, api_msg_args = args
+        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
 
-    if logfile:
-        f = open(logfile, "a")
-        t = traceback.format_exc()
-        f.write(arrange_stacktrace_format(t) + "\n\n")
-        f.write(log_msg + "\n")
-        f.close()
+        if logfile:
+            # 作業実行のエラーログ出力
+            f = open(logfile, "a")
+            t = traceback.format_exc()
+            f.write(arrange_stacktrace_format(t) + "\n\n")
+            f.write(log_msg + "\n")
+            f.close()
 
 
 def exception_driver_log(e, logfile=None):
@@ -261,6 +285,9 @@ def exception_driver_log(e, logfile=None):
         e: Exception
         logfile: If you want exception file output
     '''
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    ret_db_disuse = is_db_disuse()
+
     args = e.args
     is_arg = False
     while is_arg is False:
@@ -271,11 +298,14 @@ def exception_driver_log(e, logfile=None):
         else:
             is_arg = True
 
-    if logfile:
-        f = open(logfile, "a")
-        t = traceback.format_exc()
-        f.write(arrange_stacktrace_format(t) + "\n\n")
-        f.close()
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if ret_db_disuse is False:
+        if logfile:
+            # 作業実行のエラーログ出力
+            f = open(logfile, "a")
+            t = traceback.format_exc()
+            f.write(arrange_stacktrace_format(t) + "\n\n")
+            f.close()
 
 
 def validation_exception_driver_log(e, logfile=None):
@@ -286,10 +316,15 @@ def validation_exception_driver_log(e, logfile=None):
         e: AppException
         logfile: If you want exception file output
     '''
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    ret_db_disuse = is_db_disuse()
+
     args = e.args
     is_arg = False
     while is_arg is False:
-        if isinstance(args[0], AppException):
+        if isinstance(args[0], ValidationException):
+            args = args[0].args
+        elif isinstance(args[0], AppException):
             args = args[0].args
         elif isinstance(args[0], Exception):
             return exception(args[0])
@@ -301,12 +336,15 @@ def validation_exception_driver_log(e, logfile=None):
     log_msg = g.appmsg.get_log_message(result_code, log_msg_args) + "\n\n"
     log_msg += g.appmsg.get_api_message("MSG-10903", [])
 
-    if logfile:
-        f = open(logfile, "a")
-        t = traceback.format_exc()
-        f.write(arrange_stacktrace_format(t) + "\n\n")
-        f.write(log_msg + "\n")
-        f.close()
+    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+    if ret_db_disuse is False:
+        if logfile:
+            # 作業実行のエラーログ出力
+            f = open(logfile, "a")
+            t = traceback.format_exc()
+            f.write(arrange_stacktrace_format(t) + "\n\n")
+            f.write(log_msg + "\n")
+            f.close()
 
 
 def log_err(msg=""):

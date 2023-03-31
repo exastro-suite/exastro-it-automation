@@ -26,6 +26,8 @@ from common_libs.api import api_filter, check_request_body_key
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import ky_encrypt, get_timestamp
 from libs.admin_common import initial_settings_ansible
+from common_libs.common.exception import AppException
+from common_libs.api import app_exception_response, exception_response
 
 
 @api_filter
@@ -224,6 +226,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
 
     :rtype: InlineResponse200
     """
+    exception_flg = False
     # get organization_id
     g.ORGANIZATION_ID = organization_id
     # set log environ format
@@ -234,21 +237,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     if connect_info is False:
         return '', "ALREADY DELETED", "499-00002", 499
 
-    # drop ws-db and ws-db-user
-    org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
-    org_root_db.database_drop(connect_info['DB_DATABASE'])
-    org_root_db.user_drop(connect_info['DB_USER'])
-    org_root_db.db_disconnect()
-
-    # delete storage directory for workspace
-    strage_path = os.environ.get('STORAGEPATH')
-    workspace_dir = strage_path + "/".join([organization_id, workspace_id]) + "/"
-    if os.path.isdir(workspace_dir):
-        shutil.rmtree(workspace_dir)
-    else:
-        return '', "ALREADY DELETED", "499-00002", 499
-
-    # disuse ws-db connect infomation
+    # OrganizationとWorkspaceが削除されている場合のエラーログ抑止する為、廃止してからデータベース削除
     data = {
         'PRIMARY_KEY': connect_info['PRIMARY_KEY'],
         'DISUSE_FLAG': 1
@@ -256,5 +245,43 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     org_db.db_transaction_start()
     org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
     org_db.db_commit()
+
+    try:
+        # delete storage directory for workspace
+        strage_path = os.environ.get('STORAGEPATH')
+        workspace_dir = strage_path + "/".join([organization_id, workspace_id]) + "/"
+        if os.path.isdir(workspace_dir):
+            shutil.rmtree(workspace_dir)
+
+        # drop ws-db and ws-db-user
+        org_root_db = DBConnectOrgRoot(organization_id)
+        org_root_db.database_drop(connect_info['DB_DATABASE'])
+        org_root_db.user_drop(connect_info['DB_USER'])
+        org_root_db.db_disconnect()
+
+    except AppException as e:
+        # 廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
+        exception_flg = True
+        exception_log_need = True
+        result_list = app_exception_response(e, exception_log_need)
+
+    except Exception as e:
+        # 廃止されているとexceptionはログを抑止するので、ここでログだけ出力
+        exception_flg = True
+        exception_log_need = True
+        result_list = exception_response(e, exception_log_need)
+
+    finally:
+        if exception_flg is True:
+            # 廃止を復活
+            data = {
+                'PRIMARY_KEY': connect_info['PRIMARY_KEY'],
+                'DISUSE_FLAG': 0
+            }
+            org_db.db_transaction_start()
+            org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
+            org_db.db_commit()
+
+            return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
 
     return '',

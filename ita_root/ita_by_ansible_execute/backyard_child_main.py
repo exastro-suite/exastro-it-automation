@@ -23,7 +23,7 @@ import inspect
 import copy
 import shlex
 
-from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
 from common_libs.common.util import get_timestamp, file_encode, ky_encrypt
 from common_libs.loadtable import load_table
@@ -102,29 +102,37 @@ def backyard_child_main(organization_id, workspace_id):
                 log_err("main_logic:" + str(result[1]))
             g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
     except AppException as e:
-        # 例外ログ生成
-        app_exception_driver_log(e, driver_error_log_file)
+        # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+        if is_db_disuse() is False:
+            # 例外ログ生成
+            app_exception_driver_log(e, driver_error_log_file)
+            update_status_error(wsDb, ansc_const, execution_no)
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
-        update_status_error(wsDb, ansc_const, execution_no)
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
         raise AppException(e)
 
     except ValidationException as e:
-        # 例外ログ生成
-        validation_exception(e)
+        # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+        if is_db_disuse() is False:
+            # 例外ログ生成
+            validation_exception(e)
 
-        validation_exception_driver_log(e, driver_error_log_file)
+            validation_exception_driver_log(e, driver_error_log_file)
 
-        update_status_error(wsDb, ansc_const, execution_no)
+            update_status_error(wsDb, ansc_const, execution_no)
 
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
     except Exception as e:
-        # 例外ログ生成
-        exception_driver_log(e, driver_error_log_file)
+        # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
+        if is_db_disuse() is False:
+            # 例外ログ生成
+            exception_driver_log(e, driver_error_log_file)
 
-        update_status_error(wsDb, ansc_const, execution_no)
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+            update_status_error(wsDb, ansc_const, execution_no)
+
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+
         raise Exception(e)
 
 

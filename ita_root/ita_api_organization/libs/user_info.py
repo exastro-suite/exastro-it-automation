@@ -38,10 +38,13 @@ def collect_menu_group_panels(objdbca):
     column_name_rest = 'menu_group_icon'  # カラム名
 
     # 『メニュー管理』テーブルからメニューの一覧を取得
-    ret = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
+    menu_list = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
+
+    # 『メニューグループ管理』テーブルからメニューグループの一覧を取得
+    menu_group_list = objdbca.table_select(t_common_menu_group, 'WHERE DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [0])
 
     menu_rest_names = []
-    for recode in ret:
+    for recode in menu_list:
         menu_rest_names.append(recode.get('MENU_NAME_REST'))
 
     auth_menu_list = get_auth_menus(menu_rest_names, objdbca)
@@ -52,14 +55,18 @@ def collect_menu_group_panels(objdbca):
         menu_group_id = menu_item.get('MENU_GROUP_ID')
         menu_groups.append(menu_group_id)
 
+        # 親メニューグループも格納
+        for recode in menu_group_list:
+            if menu_group_id == recode.get('MENU_GROUP_ID'):
+                if recode.get('PARENT_MENU_GROUP_ID') is not None and len(recode.get('PARENT_MENU_GROUP_ID')) != 0:
+                    menu_groups.append(recode.get('PARENT_MENU_GROUP_ID'))
+                break
+
     # 重複を除外
     menu_groups = list(set(menu_groups))
 
-    # 『メニューグループ管理』テーブルからメニューグループの一覧を取得
-    ret = objdbca.table_select(t_common_menu_group, 'WHERE DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [0])
-
     panels_data = {}
-    for recode in ret:
+    for recode in menu_group_list:
         # メニューグループに権限のあるメニューが1つもない場合は除外
         menu_group_id = recode.get('MENU_GROUP_ID')
         if menu_group_id not in menu_groups:

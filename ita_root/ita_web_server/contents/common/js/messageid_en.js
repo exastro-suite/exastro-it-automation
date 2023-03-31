@@ -203,7 +203,7 @@ getMessage = ( function() {
         'FTE00165' : "Seconds",
         'FTE00166' : "Filter validation error",
         'FTE00167' : "Plan confirmation",
-        
+
         // Create parameter sheet
         'FTE01001' : "Item",
         'FTE01002' : "Group",
@@ -235,7 +235,7 @@ getMessage = ( function() {
         'FTE01028' : "Remarks",
         'FTE01029' : "Enter the parameter sheet name of the parameter sheet to be created.\nThe maximum size is 255 bytes.\nThe parameter sheet name &quot;Main menu&quot; cannot be used.\n &quot;&#92;&#47;&#58;&#42;&#63;&#34;&#60;&#62;&#124;&#91;&#93;：￥／＊［］&quot; characters cannot be used.",
         'FTE01030' : "Enter the name for the REST API of the parameter sheet to be created.\nThe maximum size is 240 bytes.\nOnly single-byte alphanumeric characters and the symbol &quot;-_&quot; can be used.",
-        'FTE01031' : "Select &quot;Parameter Sheet (Host / Operation)&quot; or\n&quot;Data Sheet (master available)&quot; from the pull-down menu.",
+        'FTE01031' : "Select &quot;Parameter Sheet (Host / Operation)&quot; or &quot;Parameter Sheet (Operation)&quot; or\n&quot;Data Sheet (master available)&quot; from the pull-down menu.",
         'FTE01032' : "Enter the display order in the menu group. They are displayed in ascending order.\nInteger value from 0 to 2147483647 can be entered.",
         'FTE01033' : "If the &quot;use&quot; checkbox is checked, a parameter sheet corresponding to the vertical parameter sheet will be created.",
         'FTE01034' : "Yes",
@@ -359,7 +359,7 @@ getMessage = ( function() {
         'FTE01152' : "There are no items available for reference.",
         'FTE01153' : "Create as hostgroup",
         'FTE01154' : "If the &quot;use&quot; checkbox is checked, a &quot;Host name/Host Group name&quot; parameter sheet will be created in the &quot;Input&quot; Menu group.\nIf the &quot;use &quot; checkbox is unchecked, a &quot;host name&quot; parameter sheet will be created.",
-        
+
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
         'FTE02002' : "Enter the Conductor instance ID and click the Work Confirm button, or",
@@ -533,7 +533,7 @@ getMessage = ( function() {
         'FTE02170' : "Cancel",
         'FTE02171' : "Notice Name",
         'FTE02172' : "Notice",
-        
+
         // Execution
         'FTE05001' : "Execution No.",
         'FTE05002' : "Check execution status",
@@ -609,7 +609,7 @@ getMessage = ( function() {
         'FTE06032' : "Donwload compare result(Excel)",
         'FTE06033' : "Download failed.",
         'FTE06034' : "File comparison result print",
-        
+
         // Export - Import
         'FTE07001' : "All menu",
         'FTE07002' : "Detail",
@@ -647,7 +647,7 @@ getMessage = ( function() {
         'FTE07034' : "Unknown menu group",
         'FTE07035' : "Contains menus that cannot be imported.",
         'FTE07036' : "Loading import file",
-        
+
         // DashBoard
         'FTE08001' : "Menu group",
         'FTE08002' : "Items per line",
@@ -763,7 +763,7 @@ getMessage = ( function() {
         'FTE09023' : "Policy Name",
         'FTE09024' : "Policy code",
         'FTE09025' : "Policy Set Name",
-        
+
         // UI common
         'FTE10001': 'Main menu',
         'FTE10002': 'Menu group',
@@ -857,6 +857,7 @@ getMessage = ( function() {
         'FTE10091': 's',
         'FTE10092': 'Update failed',
         'FTE10093': 'Update failed. Please try again after reloading.',
+        'FTE10094': 'Filter reset',
     };
 
     return message;

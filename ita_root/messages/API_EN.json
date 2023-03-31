@@ -1438,6 +1438,7 @@
     "MSG-60029": "uuid",
     "MSG-60030": "operation_name_disp",
     "MSG-60031": "base_datetime",
+    "MSG-60032": "The items on the target parameter sheets do not match. Set the detail flag to True or check the parameter sheet.",
     "MSG-70001": "The parent-child relationship of the selected host group is looping.",
     "MSG-80001": "The target Organization is not been registered. Target: {}",
     "MSG-80002": "The target Organization is already registered. Target: {}",
@@ -1768,5 +1769,9 @@
     "BKY-51033": "-",
     "BKY-51034": "-",
     "BKY-51035": "-",
-    "BKY-51036": "-"
+    "BKY-51036": "-",
+    "BKY-51037": "-",
+    "BKY-51038": "-",
+    "BKY-51039": "-",
+    "BKY-51040": "-"
 }

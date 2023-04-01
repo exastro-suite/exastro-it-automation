@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# from flask import g
 import json
 import re
 from dictknife import deepmerge
@@ -63,7 +64,7 @@ def get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFConst, module_vars_link_id)
 
 # HCL作成のためにメンバー変数一覧を配列に形成
 def generate_member_vars_array_for_hcl(wsDb, TFConst, member_vars_records):
-    member_vars_res = []
+    member_vars_res = {}
 
     # 親リストの取得
     parent_id_map = make_parent_id_map(member_vars_records)
@@ -124,7 +125,7 @@ def make_parent_id_map(member_vars_records):
                 if member_vars_record["PARENT_MEMBER_VARS_ID"] is not None:
                     parent_index = [m.get('child_member_vars_id') for m in res].index(member_vars_record["PARENT_MEMBER_VARS_ID"])
 
-                    parent_member_keys_list = res[parent_index]["parent_member_keys_list"]
+                    parent_member_keys_list = res[parent_index]["parent_member_keys_list"].copy()
                     parent_key = res[parent_index]["child_member_vars_key"]
 
                     # indexが数値の場合は[]を外す
@@ -145,8 +146,12 @@ def make_parent_id_map(member_vars_records):
 
 # HCL作成のためにメンバー変数一覧を多次元配列に整形
 def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_value, type_info, map):
-    res = []
+    res = {}
 
+    # g.applogger.debug("member_vars_array" + str(member_vars_array))
+    # g.applogger.debug("member_vars_key" + str(member_vars_key))
+    # g.applogger.debug("member_vars_value" + str(member_vars_value))
+    # g.applogger.debug("map" + str(map))
     if len(map) == 0:
         # 仮配列と返却用配列をマージ
         member_vars_array[member_vars_key] = member_vars_value
@@ -173,7 +178,10 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
             ref[member_vars_key] = []
             ref[member_vars_key] = member_vars_value
 
+        # g.applogger.debug(ref)
+        # g.applogger.debug(tmp_array)
+        # g.applogger.debug(member_vars_array)
         # 仮配列と返却用配列をマージ
         res = deepmerge(member_vars_array, tmp_array)
-
+        # g.applogger.debug(res)
     return res

@@ -120,11 +120,93 @@ INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOUR
 本メニューは必ず1レコードである必要があります。','You can maintain (view / update) the interface information of Conductor.
 This menu must always be one record. ','0','1','0','0','0','0','1','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('30102','30102','T_COMN_CONDUCTOR_NOTICE',NULL,'conductor_notice_id','Conductorで作業時に実行される通知に関する定義を設定し
-ます。通知はWebhookを利用して行います。','You can set definition for notification performed in Conductor.
-Notification is sent using Webhook.','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
+ます。通知はWebhookを利用して行います。
+以下はメッセージ内で利用できる変数となります。
+Conductor作業一覧の情報を指定することができます。
+    __CONDUCTOR_INSTANCE_ID__:  ConductorインスタンスID
+    __CONDUCTOR_NAME__:  Conductor名称
+    __STATUS_ID__:  ステータスID
+    __OPERATION_ID__:  オペレーションID
+    __OPERATION_NAME__:  実行時のオペレーション名
+    __EXECUTION_USER__:  作業実行ユーザー
+    __PARENT_CONDUCTOR_INSTANCE_ID__:  親ConductorインスタンスID
+    __PARENT_CONDUCTOR_NAME__:  親Conductor名称
+    __TOP_CONDUCTOR_INSTANCE_ID__:  最上位ConductorインスタンスID
+    __TOP_CONDUCTOR_NAME__:  最上位Conductor名称
+    __ABORT_EXECUTE_FLAG__:  緊急停止フラグ
+    __REGISTER_TIME__:  登録日時
+    __TIME_BOOK__:  予約日時
+    __TIME_START__:  開始日時
+    __TIME_END__:  終了日時
+    __NOTICE_NAME__:  通知ログ
+    __NOTE__:  備考
+    __JUMP_URL__:  Conductor作業確認画面のURL(作業確認URLを使用)
+','You can set definition for notification performed in Conductor.
+Notification is sent using Webhook.
+Below are the variables that can be used in the message.
+You can specify information for the Conductor list.
+    __CONDUCTOR_INSTANCE_ID__: Conductor instance ID
+    __CONDUCTOR_NAME__: Conductor name
+    __STATUS_ID__: Status ID
+    __OPERATION_ID__: Operation ID
+    __OPERATION_NAME__: Operation name
+    __EXECUTION_USER__: Execution user
+    __PARENT_CONDUCTOR_INSTANCE_ID__: Parent Conductor instance ID
+    __PARENT_CONDUCTOR_NAME__: Parent Conductor name
+    __TOP_CONDUCTOR_INSTANCE_ID__: Top Conductor instance ID
+    __TOP_CONDUCTOR_NAME__: Top Conductor Name
+    __ABORT_EXECUTE_FLAG__: Abort execute flag
+    __REGISTER_TIME__: Time Register
+    __TIME_BOOK__: Time book
+    __TIME_START__: Time start
+    __TIME_END__: Time end
+    __NOTICE_NAME__: Notification log
+    __NOTE__: Remarks
+    __JUMP_URL__: URL of the Conductor confirmation (use Confirmation URL)','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(30102,_____DATE_____,'INSERT','30102','30102','T_COMN_CONDUCTOR_NOTICE',NULL,'conductor_notice_id','Conductorで作業時に実行される通知に関する定義を設定し
-ます。通知はWebhookを利用して行います。','You can set definition for notification performed in Conductor.
-Notification is sent using Webhook.','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
+ます。通知はWebhookを利用して行います。
+以下はメッセージ内で利用できる変数となります。
+Conductor作業一覧の情報を指定することができます。
+    __CONDUCTOR_INSTANCE_ID__:  ConductorインスタンスID
+    __CONDUCTOR_NAME__:  Conductor名称
+    __STATUS_ID__:  ステータスID
+    __OPERATION_ID__:  オペレーションID
+    __OPERATION_NAME__:  実行時のオペレーション名
+    __EXECUTION_USER__:  作業実行ユーザー
+    __PARENT_CONDUCTOR_INSTANCE_ID__:  親ConductorインスタンスID
+    __PARENT_CONDUCTOR_NAME__:  親Conductor名称
+    __TOP_CONDUCTOR_INSTANCE_ID__:  最上位ConductorインスタンスID
+    __TOP_CONDUCTOR_NAME__:  最上位Conductor名称
+    __ABORT_EXECUTE_FLAG__:  緊急停止フラグ
+    __REGISTER_TIME__:  登録日時
+    __TIME_BOOK__:  予約日時
+    __TIME_START__:  開始日時
+    __TIME_END__:  終了日時
+    __NOTICE_NAME__:  通知ログ
+    __NOTE__:  備考
+    __JUMP_URL__:  Conductor作業確認画面のURL(作業確認URLを使用)
+','You can set definition for notification performed in Conductor.
+Notification is sent using Webhook.
+Below are the variables that can be used in the message.
+You can specify information for the Conductor list.
+    __CONDUCTOR_INSTANCE_ID__: Conductor instance ID
+    __CONDUCTOR_NAME__: Conductor name
+    __STATUS_ID__: Status ID
+    __OPERATION_ID__: Operation ID
+    __OPERATION_NAME__: Operation name
+    __EXECUTION_USER__: Execution user
+    __PARENT_CONDUCTOR_INSTANCE_ID__: Parent Conductor instance ID
+    __PARENT_CONDUCTOR_NAME__: Parent Conductor name
+    __TOP_CONDUCTOR_INSTANCE_ID__: Top Conductor instance ID
+    __TOP_CONDUCTOR_NAME__: Top Conductor Name
+    __ABORT_EXECUTE_FLAG__: Abort execute flag
+    __REGISTER_TIME__: Time Register
+    __TIME_BOOK__: Time book
+    __TIME_START__: Time start
+    __TIME_END__: Time end
+    __NOTICE_NAME__: Notification log
+    __NOTE__: Remarks
+    __JUMP_URL__: URL of the Conductor confirmation (use Confirmation URL)','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('30103','30103','T_COMN_CONDUCTOR_CLASS',NULL,'conductor_class_id','Conductorクラスを閲覧できます。
 「詳細」を押下するとConductorクラス編集メニューに遷移します。','You can browse the Conductor class.
 Click Details to move to the Conductor class edit menu.','0','1','0','0','0','0','1','1','1','0',NULL,NULL,NULL,'conductor_class_data_sync',NULL,'0',_____DATE_____,1);

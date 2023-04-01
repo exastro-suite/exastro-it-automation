@@ -35,6 +35,7 @@ import uuid
 import copy
 import textwrap
 import sys
+import os
 import traceback
 import urllib
 import ssl
@@ -216,7 +217,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
 
             status_code = "499-00803"
             log_msg_args = []
@@ -666,7 +667,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             if parameter.get('conductor_class_name') is None:
                 conductor_class_id = parameter.get('conductor_class_name')
                 operation_id = parameter.get('operation_name')
@@ -739,7 +740,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             raise e
 
         return conductor_data
@@ -772,7 +773,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             tmp_result = False,
         return tmp_result
 
@@ -800,7 +801,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             tmp_result = False,
         return tmp_result
 
@@ -836,7 +837,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             tmp_result = False,
 
         return tmp_result
@@ -878,7 +879,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             result = False,
         return result
 
@@ -1065,7 +1066,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             status_code = "499-00803"
             log_msg_args = []
             api_msg_args = []
@@ -1187,7 +1188,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             status_code = "499-00803"
             log_msg_args = []
             api_msg_args = []
@@ -1211,7 +1212,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool
 
@@ -1241,7 +1242,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1269,7 +1270,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1307,7 +1308,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1335,6 +1336,7 @@ class ConductorExecuteLibs():
             objconductor = self.objmenus.get('objconductor')
             objnode = self.objmenus.get('objnode')
             tmp_parameter = {}
+            tmp_file = {}
 
             if conductor_instance_id != '':
                 filter_parameter = {
@@ -1344,6 +1346,7 @@ class ConductorExecuteLibs():
                 if result_ci_filter[0] == '000-00000':
                     if len(result_ci_filter[1]) == 1:
                         ci_p = result_ci_filter[1][0].get('parameter')
+                        ci_f = result_ci_filter[1][0].get('file')
                         ci_last_update_date_time = ci_p.get('last_update_date_time')
                         ci_status_id = ci_p.get('status_id')
                         ci_abort_execute_flag = ci_p.get('abort_execute_flag')
@@ -1378,11 +1381,30 @@ class ConductorExecuteLibs():
                 cancel_accept_status = instance_info_data.get('dict').get('conductor_status').get('2')
                 # 未実行(予約)の時のみ
                 if ci_status_id == cancel_accept_status:
+                    # 通知関連設定取得
+                    notice_info = ci_p.get('notice_info')
+                    # 通知ログ取得
+                    n_log_name = ci_p.get('notification_log')
+                    n_log_base64 = ci_f.get('notification_log')
+                    # 通知設定がある場合、ログファイル名をDBに刻む初回のみ
+                    if notice_info is not None:
+                        if len(notice_info) != 0:
+                            if n_log_name is None and n_log_base64 is None:
+                                # ファイル名のDB登録、dummyデータ通知ログ:初期データ埋め込み []
+                                n_log_name = "Notice_log_{}.log".format(conductor_instance_id)
+                                n_log_base64 = base64.b64encode(json.dumps([]).encode()).decode()  # noqa: F405
+                                tmp_parameter.setdefault('notification_log', n_log_name)
+                                tmp_file.setdefault('notification_log', n_log_base64)
+                            else:
+                                if 'notification_log' in tmp_parameter:
+                                    del tmp_parameter['notification_log']
+                                if 'notification_log' in tmp_file:
+                                    del tmp_file['notification_log']
                     tmp_parameter.setdefault('conductor_instance_id', conductor_instance_id)
                     tmp_parameter.setdefault('last_update_date_time', ci_last_update_date_time)
                     tmp_parameter.setdefault('status_id', status_id)
                     conductor_parameter = {
-                        "file": {},
+                        "file": tmp_file,
                         "parameter": tmp_parameter
                     }
                     tmp_result = objconductor.exec_maintenance(conductor_parameter, conductor_instance_id, 'Update', False, False)
@@ -1391,6 +1413,9 @@ class ConductorExecuteLibs():
                         status_code = "499-00807"
                         msg_args = [mode, conductor_instance_id, ci_status_id]
                         raise Exception()  # noqa: F405
+
+                    # 通知実行
+                    self.execute_notice(conductor_instance_id, n_log_name)
                 else:
                     status_code = "499-00808"
                     msg_args = [conductor_instance_id, ci_status_id]
@@ -1463,7 +1488,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         return retBool, status_code, msg_args,
@@ -1486,7 +1511,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1568,7 +1593,7 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1624,9 +1649,333 @@ class ConductorExecuteLibs():
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
+
+    def get_notice_info(self, conductor_instance_id):
+        retBool = True
+        result = {}
+
+        try:
+            # conductorインスタンスの情報をとる
+            table_name = 'T_COMN_CONDUCTOR_INSTANCE'
+            where_str = "where `CONDUCTOR_INSTANCE_ID`=%s"
+            tmp_result = self.objdbca.table_select(table_name, where_str, conductor_instance_id)
+            instance_info = tmp_result[0]
+            notice_info = json.loads(instance_info['NOTICE_INFO'])
+            notice_definition = []
+            for item in json.loads(instance_info['NOTICE_DEFINITION']):
+                notice_definition.append(item["parameter"])
+
+            # 予約変数
+            defined_vars = {
+                "__CONDUCTOR_INSTANCE_ID__": "",
+                "__CONDUCTOR_NAME__": "",
+                "__OPERATION_ID__": "",
+                "__OPERATION_NAME__": "",
+                "__STATUS_ID__": "",
+                # "__STATUS_NAME__": "",  #不要
+                "__EXECUTION_USER__": "",
+                "__PARENT_CONDUCTOR_INSTANCE_ID__": "",
+                "__PARENT_CONDUCTOR_NAME__": "",
+                "__TOP_CONDUCTOR_INSTANCE_ID__": "",
+                "__TOP_CONDUCTOR_NAME__": "",
+                "__ABORT_EXECUTE_FLAG__": "",
+                "__REGISTER_TIME__": "",
+                "__TIME_BOOK__": "",
+                "__TIME_START__": "",
+                "__TIME_END__": "",
+                "__NOTE__": "",
+                # "__LAST_UPDATE_DATE_TIME__": "",  #不要
+                # "__LAST_UPDATED_USER__": "",  #不要
+                "__NOTICE_NAME__": "",
+                "__JUMP_URL__": ""
+            }
+
+            # 予約変数設定 時間はstr()で文字列化
+            defined_vars['__CONDUCTOR_INSTANCE_ID__'] = instance_info["CONDUCTOR_INSTANCE_ID"] if bool(instance_info["CONDUCTOR_INSTANCE_ID"]) else ""
+            defined_vars['__CONDUCTOR_NAME__'] = instance_info["CONDUCTOR_INSTANCE_NAME"] if bool(instance_info["CONDUCTOR_INSTANCE_NAME"]) else ""
+            defined_vars['__OPERATION_ID__'] = instance_info["OPERATION_ID"] if bool(instance_info["OPERATION_ID"]) else ""
+            defined_vars['__OPERATION_NAME__'] = instance_info["I_OPERATION_NAME"] if bool(instance_info["I_OPERATION_NAME"]) else ""
+            defined_vars['__STATUS_ID__'] = instance_info["STATUS_ID"] if bool(instance_info["STATUS_ID"]) else ""
+            defined_vars['__EXECUTION_USER__'] = instance_info["EXECUTION_USER"] if bool(instance_info["EXECUTION_USER"]) else ""
+            defined_vars['__PARENT_CONDUCTOR_INSTANCE_ID__'] = instance_info["PARENT_CONDUCTOR_INSTANCE_ID"] if bool(instance_info["PARENT_CONDUCTOR_INSTANCE_ID"]) else ""  # noqa: E501
+            defined_vars['__PARENT_CONDUCTOR_NAME__'] = instance_info["PARENT_CONDUCTOR_INSTANCE_NAME"] if bool(instance_info["PARENT_CONDUCTOR_INSTANCE_NAME"]) else ""  # noqa: E501
+            defined_vars['__TOP_CONDUCTOR_INSTANCE_ID__'] = instance_info["TOP_CONDUCTOR_INSTANCE_ID"] if bool(instance_info["TOP_CONDUCTOR_INSTANCE_ID"]) else ""  # noqa: E501
+            defined_vars['__TOP_CONDUCTOR_NAME__'] = instance_info["TOP_CONDUCTOR_INSTANCE_NAME"] if bool(instance_info["TOP_CONDUCTOR_INSTANCE_NAME"]) else ""  # noqa: E501
+            defined_vars['__ABORT_EXECUTE_FLAG__'] = instance_info["ABORT_EXECUTE_FLAG"] if bool(instance_info["ABORT_EXECUTE_FLAG"]) else ""
+            defined_vars['__REGISTER_TIME__'] = str(instance_info["TIME_REGISTER"]) if bool(instance_info["TIME_REGISTER"]) else ""
+            defined_vars['__TIME_BOOK__'] = str(instance_info["TIME_BOOK"]) if bool(instance_info["TIME_BOOK"]) else ""
+            defined_vars['__TIME_START__'] = str(instance_info["TIME_START"]) if bool(instance_info["TIME_START"]) else ""
+            defined_vars['__TIME_END__'] = str(instance_info["TIME_END"]) if bool(instance_info["TIME_END"]) else ""
+            defined_vars['__NOTE__'] = instance_info["NOTE"] if bool(instance_info["NOTE"]) else ""
+            # defined_vars['__LAST_UPDATE_DATE_TIME__'] = str(instance_info["LAST_UPDATE_TIMESTAMP"]) if bool(instance_info["LAST_UPDATE_TIMESTAMP"]) else ""  #不要    # noqa: E501
+            # defined_vars['__LAST_UPDATED_USER__'] = instance_info["LAST_UPDATE_USER"] if bool(instance_info["LAST_UPDATE_USER"]) else ""  #不要
+
+            result["notice_info"] = notice_info
+            result["notice_definition"] = notice_definition
+            result["defined_vars"] = defined_vars
+
+        except Exception as e:
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            type_, value, traceback_ = sys.exc_info()
+            msg = traceback.format_exception(type_, value, traceback_)
+            g.applogger.debug(msg)
+            retBool = False
+
+        return retBool, result
+
+    # 通知実行
+    def execute_notice(self, conductor_instance_id, n_log_name):
+        retBool = True
+        result = {}
+
+        try:
+            tmp_result = self.get_notice_info(conductor_instance_id)
+            if tmp_result[0] is not True:
+                raise Exception()
+            notice_info = tmp_result[1]["notice_info"]
+            notice_definition = tmp_result[1]["notice_definition"]
+            defined_vars = tmp_result[1]["defined_vars"]
+            target_status = []
+            # 通知実行
+            for def_item in notice_definition:
+                # 抑止用変数
+                suppress_flag = False
+                suppress_start_date = ""
+                suppress_end_date = ""
+
+                # notice_nameの定義
+                notice_name = def_item["notice_name"]
+
+                # jump_urlの設定
+                jump_url = ""
+                org_id = g.ORGANIZATION_ID
+                ws_id = g.WORKSPACE_ID
+                path_str = f"/{org_id}/workspaces/{ws_id}/ita/?menu=conductor_confirmation&conductor_instance_id={conductor_instance_id}"
+                if bool(def_item["fqdn"]):
+                    fqdn = def_item["fqdn"]
+                    if fqdn[-1] == "/":
+                        fqdn = fqdn[:-1]
+                    jump_url = fqdn + path_str
+
+                # ステータスの取得
+                target_status = notice_info[notice_name]
+
+                # 通知名・作業確認url・ステータス名を予約変数dictに追加
+                defined_vars["__NOTICE_NAME__"] = notice_name
+                defined_vars["__JUMP_URL__"] = jump_url
+
+                table_name = 'T_COMN_CONDUCTOR_STATUS'
+                where_str = "where `STATUS_ID`=%s"
+                current_status_id = defined_vars["__STATUS_ID__"]
+                tmp_result = self.objdbca.table_select(table_name, where_str, current_status_id)
+                # defined_vars['__STATUS_NAME__'] = tmp_result[0]["STATUS_NAME_JA"]  # 不要
+
+                # 抑止の設定
+                if bool(def_item["suppress_start"]):
+                    suppress_start_date = datetime.strptime(str(def_item["suppress_start"]), "%Y/%m/%d %H:%M:%S")
+                if bool(def_item["suppress_end"]):
+                    suppress_end_date = datetime.strptime(str(def_item["suppress_end"]), "%Y/%m/%d %H:%M:%S")
+                today = datetime.now()
+
+                if bool(suppress_start_date) and bool(suppress_end_date):
+                    if suppress_start_date < today and today < suppress_end_date:
+                        suppress_flag = True
+                elif bool(suppress_start_date) is False and bool(suppress_end_date) and today < suppress_end_date:
+                    suppress_flag = True
+                elif bool(suppress_start_date) and bool(suppress_end_date) is False and today > suppress_start_date:
+                    suppress_flag = True
+
+                # メッセージの予約変数置き換え
+                for key, value in defined_vars.items():
+                    def_item["fields"] = def_item["fields"].replace(key, value)
+
+                notice_url = def_item["notice_url"]
+                header = json.loads(def_item["header"])
+                fields = json.loads(def_item["fields"])
+                proxy_url = def_item["proxy_url"]
+                proxy_port = def_item["port_url"]
+                proxy = None
+                if bool(proxy_url) and bool(proxy_port):
+                    check_proxy_url = re.sub('https?://', '', f"{proxy_url}:{proxy_port}")
+                    proxy = f"{check_proxy_url}"
+
+                # 通知送信
+                response_dict = {}
+                if bool(suppress_flag) is False:
+                    for target in target_status:
+                        if target == current_status_id:
+                            response_dict = self.notice_request_call(
+                                method='POST',
+                                url=notice_url,
+                                content=fields,
+                                header=header,
+                                proxySetting=proxy,
+                            )
+                            self.write_notice_log(conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict)
+
+        except Exception as e:
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            type_, value, traceback_ = sys.exc_info()
+            msg = traceback.format_exception(type_, value, traceback_)
+            g.applogger.debug(msg)
+            retBool = False
+
+        return retBool, result
+
+    # 通知ログ書き込み
+    def write_notice_log(self, conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict):
+
+        retBool = True
+        result = ""
+
+        try:
+            msg_json = {"conductor_status_id": current_status_id, "exec_time": get_now_datetime(), "result": []}
+            result_dict = {
+                "notice_name": notice_name,
+                "notice_info": notice_info[notice_name],
+                "status_code": response_dict["status_code"],
+                "response.headers": response_dict["headers"],
+                "response.text": response_dict["text"]
+            }
+            # add message
+            err_type = response_dict.get("err_type")
+            if err_type is not None:
+                result_dict["err_type"] = response_dict.get("err_type")
+
+            msg_json['result'].append(result_dict)
+
+            # file path 生成
+            workspace_id = g.get('WORKSPACE_ID')
+            menu_id = 30108
+            place = "/uploadfiles/{}/{}".format(menu_id, "notification_log")
+            tmp_file_path = get_upload_file_path_specify(workspace_id, place, conductor_instance_id, n_log_name, None)
+            file_path = tmp_file_path.get("file_path")
+            # ログ書き出し
+            if os.path.isfile(file_path) is True:
+                try:
+                    # ファイル読込み+LIST化
+                    with open(file_path) as f:
+                        file_data = json.load(f)
+                    # 追加
+                    file_data.append(msg_json)
+                    # ファイル書き込み
+                    with open(file_path, 'w') as f:
+                        json.dump(file_data, f, ensure_ascii=False, indent=4)
+                except Exception:
+                    raise Exception
+
+        except Exception as e:
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            type_, value, traceback_ = sys.exc_info()
+            msg = traceback.format_exception(type_, value, traceback_)
+            g.applogger.debug(msg)
+            retBool = False
+
+        return retBool, result
+
+    def notice_request_call(self, method, url, content=None, header=None, proxySetting=None):
+        """
+            notice request call: urllib.request.urlopen
+            ARGS:
+                method, api_uri, content=None, header=None, proxySetting=None
+            RETRUN:
+                response_dict : headers, text, status_code, err_type
+        """
+
+        httpContext = {}
+        httpContext['http'] = {}
+        headers = {}
+        ssl_context = None
+        response_dict = {}
+
+        http_response_header = None
+        data = None
+
+        status_code = None
+        http_response_header = None
+        responseContents = None
+        err_type = None
+
+        # set parameter : Exception->return
+        try:
+            # headers
+            for k, v in header.items():
+                headers[k] = v
+
+            # httpContext
+            httpContext['http']['content'] = json.dumps(content).encode('utf-8')
+            httpContext['http']['method'] = method
+            httpContext['http']['ignore_errors'] = True
+
+            # proxy
+            if proxySetting:
+                httpContext['http']['proxy'] = proxySetting
+                httpContext['http']['request_fulluri'] = True
+
+            # ssl
+            ssl_context = ssl._create_unverified_context()
+            httpContext['ssl'] = {}
+            httpContext['ssl']['verify_peer'] = False
+            httpContext['ssl']['verify_peer_name'] = False
+
+        except Exception as e:
+            err_type = "ParameterError"
+            g.applogger.debug(addline_msg('{}{}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            response_dict = {}
+            response_dict["headers"] = None
+            response_dict["text"] = None
+            response_dict["status_code"] = None
+            response_dict["err_type"] = err_type
+
+            return response_dict
+
+        # request
+        try:
+            if 'content' in httpContext['http']:
+                data = httpContext['http']['content']
+            req = urllib.request.Request(url, data=data, headers=headers, method=method)
+            # set proxy
+            if proxySetting:
+                req.set_proxy(proxySetting, 'http')
+                req.set_proxy(proxySetting, 'https')
+            # request urlopen
+            with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
+                status_code = resp.getcode()
+                http_response_header = resp.getheaders()
+                responseContents = resp.read().decode('utf-8')
+
+        except urllib.error.HTTPError as e:
+            # HTTPError
+            status_code = e.getcode()
+            http_response_header = e.getheaders()
+            responseContents = e.read().decode('utf-8')
+            err_type = "HTTPError"
+            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        except urllib.error.URLError as e:
+            # URLError
+            responseContents = e.reason
+            err_type = "URLError"
+            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        except Exception as e:
+            # OtherError
+            err_type = "OtherError"
+            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        finally:
+            response_dict = {}
+            response_dict["headers"] = dict(http_response_header) if http_response_header is not None else http_response_header
+            response_dict["text"] = responseContents
+            response_dict["status_code"] = status_code
+            response_dict["err_type"] = err_type
+            g.applogger.debug(addline_msg('{}{}'.format(response_dict, sys._getframe().f_code.co_name)))
+
+        return response_dict
 
 
 class ConductorExecuteBkyLibs(ConductorExecuteLibs):
@@ -1724,7 +2073,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             self.objmenus = False
 
     def get_objmenus(self):
@@ -1818,7 +2167,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1842,7 +2191,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1884,7 +2233,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1915,7 +2264,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool
 
@@ -1955,7 +2304,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -1978,7 +2327,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool
 
@@ -2097,7 +2446,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool,
 
@@ -2190,7 +2539,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2239,7 +2588,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2278,7 +2627,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, parameter,
 
@@ -2329,7 +2678,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2421,7 +2770,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         finally:
@@ -2465,7 +2814,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2526,7 +2875,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2551,7 +2900,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2587,7 +2936,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2623,7 +2972,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2649,7 +2998,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             node_skip = 'False'
         return node_skip
 
@@ -2676,7 +3025,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             result = False
 
         return result
@@ -2717,7 +3066,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2779,7 +3128,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2811,7 +3160,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2867,7 +3216,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -2947,7 +3296,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3008,7 +3357,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3100,233 +3449,10 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
-    def get_notice_info(self, conductor_instance_id):
-        retBool = True
-        result = {}
-
-        try:
-            # conductorインスタンスの情報をとる
-            table_name = 'T_COMN_CONDUCTOR_INSTANCE'
-            where_str = "where `CONDUCTOR_INSTANCE_ID`=%s"
-            tmp_result = self.objdbca.table_select(table_name, where_str, conductor_instance_id)
-            instance_info = tmp_result[0]
-            notice_info = json.loads(instance_info['NOTICE_INFO'])
-            notice_definition = []
-            for item in json.loads(instance_info['NOTICE_DEFINITION']):
-                notice_definition.append(item["parameter"])
-
-            # 予約変数
-            defined_vars = {
-                "__CONDUCTOR_INSTANCE_ID__": "",
-                "__CONDUCTOR_NAME__": "",
-                "__OPERATION_ID__": "",
-                "__OPERATION_NAME__": "",
-                "__STATUS_ID__": "",
-                # "__STATUS_NAME__": "",  #不要
-                "__EXECUTION_USER__": "",
-                "__PARENT_CONDUCTOR_INSTANCE_ID__": "",
-                "__PARENT_CONDUCTOR_NAME__": "",
-                "__TOP_CONDUCTOR_INSTANCE_ID__": "",
-                "__TOP_CONDUCTOR_NAME__": "",
-                "__ABORT_EXECUTE_FLAG__": "",
-                "__REGISTER_TIME__": "",
-                "__TIME_BOOK__": "",
-                "__TIME_START__": "",
-                "__TIME_END__": "",
-                "__NOTE__": "",
-                # "__LAST_UPDATE_DATE_TIME__": "",  #不要
-                # "__LAST_UPDATED_USER__": "",  #不要
-                "__NOTICE_NAME__": "",
-                "__JUMP_URL__": ""
-            }
-
-            # 予約変数設定 時間はstr()で文字列化
-            defined_vars['__CONDUCTOR_INSTANCE_ID__'] = instance_info["CONDUCTOR_INSTANCE_ID"] if bool(instance_info["CONDUCTOR_INSTANCE_ID"]) else ""
-            defined_vars['__CONDUCTOR_NAME__'] = instance_info["CONDUCTOR_INSTANCE_NAME"] if bool(instance_info["CONDUCTOR_INSTANCE_NAME"]) else ""
-            defined_vars['__OPERATION_ID__'] = instance_info["OPERATION_ID"] if bool(instance_info["OPERATION_ID"]) else ""
-            defined_vars['__OPERATION_NAME__'] = instance_info["I_OPERATION_NAME"] if bool(instance_info["I_OPERATION_NAME"]) else ""
-            defined_vars['__STATUS_ID__'] = instance_info["STATUS_ID"] if bool(instance_info["STATUS_ID"]) else ""
-            defined_vars['__EXECUTION_USER__'] = instance_info["EXECUTION_USER"] if bool(instance_info["EXECUTION_USER"]) else ""
-            defined_vars['__PARENT_CONDUCTOR_INSTANCE_ID__'] = instance_info["PARENT_CONDUCTOR_INSTANCE_ID"] if bool(instance_info["PARENT_CONDUCTOR_INSTANCE_ID"]) else ""  # noqa: E501
-            defined_vars['__PARENT_CONDUCTOR_NAME__'] = instance_info["PARENT_CONDUCTOR_INSTANCE_NAME"] if bool(instance_info["PARENT_CONDUCTOR_INSTANCE_NAME"]) else ""  # noqa: E501
-            defined_vars['__TOP_CONDUCTOR_INSTANCE_ID__'] = instance_info["TOP_CONDUCTOR_INSTANCE_ID"] if bool(instance_info["TOP_CONDUCTOR_INSTANCE_ID"]) else ""  # noqa: E501
-            defined_vars['__TOP_CONDUCTOR_NAME__'] = instance_info["TOP_CONDUCTOR_INSTANCE_NAME"] if bool(instance_info["TOP_CONDUCTOR_INSTANCE_NAME"]) else ""  # noqa: E501
-            defined_vars['__ABORT_EXECUTE_FLAG__'] = instance_info["ABORT_EXECUTE_FLAG"] if bool(instance_info["ABORT_EXECUTE_FLAG"]) else ""
-            defined_vars['__REGISTER_TIME__'] = str(instance_info["TIME_REGISTER"]) if bool(instance_info["TIME_REGISTER"]) else ""
-            defined_vars['__TIME_BOOK__'] = str(instance_info["TIME_BOOK"]) if bool(instance_info["TIME_BOOK"]) else ""
-            defined_vars['__TIME_START__'] = str(instance_info["TIME_START"]) if bool(instance_info["TIME_START"]) else ""
-            defined_vars['__TIME_END__'] = str(instance_info["TIME_END"]) if bool(instance_info["TIME_END"]) else ""
-            defined_vars['__NOTE__'] = instance_info["NOTE"] if bool(instance_info["NOTE"]) else ""
-            # defined_vars['__LAST_UPDATE_DATE_TIME__'] = str(instance_info["LAST_UPDATE_TIMESTAMP"]) if bool(instance_info["LAST_UPDATE_TIMESTAMP"]) else ""  #不要    # noqa: E501
-            # defined_vars['__LAST_UPDATED_USER__'] = instance_info["LAST_UPDATE_USER"] if bool(instance_info["LAST_UPDATE_USER"]) else ""  #不要
-
-            result["notice_info"] = notice_info
-            result["notice_definition"] = notice_definition
-            result["defined_vars"] = defined_vars
-
-        except Exception as e:
-            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
-            type_, value, traceback_ = sys.exc_info()
-            msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
-            retBool = False
-
-        return retBool, result
-
-    # 通知実行
-    def execute_notice(self, conductor_instance_id, n_log_name):
-        retBool = True
-        result = {}
-
-        try:
-            tmp_result = self.get_notice_info(conductor_instance_id)
-            if tmp_result[0] is not True:
-                raise Exception()
-            notice_info = tmp_result[1]["notice_info"]
-            notice_definition = tmp_result[1]["notice_definition"]
-            defined_vars = tmp_result[1]["defined_vars"]
-            target_status = []
-            # 通知実行
-            for def_item in notice_definition:
-                # 抑止用変数
-                suppress_flag = False
-                suppress_start_date = ""
-                suppress_end_date = ""
-
-                # notice_nameの定義
-                notice_name = def_item["notice_name"]
-
-                # jump_urlの設定
-                jump_url = ""
-                org_id = g.ORGANIZATION_ID
-                ws_id = g.WORKSPACE_ID
-                path_str = f"/{org_id}/workspaces/{ws_id}/ita/?menu=conductor_confirmation&conductor_instance_id={conductor_instance_id}"
-                if bool(def_item["fqdn"]):
-                    fqdn = def_item["fqdn"]
-                    if fqdn[-1] == "/":
-                        fqdn = fqdn[:-1]
-                    jump_url = fqdn + path_str
-
-                # ステータスの取得
-                target_status = notice_info[notice_name]
-
-                # 通知名・作業確認url・ステータス名を予約変数dictに追加
-                defined_vars["__NOTICE_NAME__"] = notice_name
-                defined_vars["__JUMP_URL__"] = jump_url
-
-                table_name = 'T_COMN_CONDUCTOR_STATUS'
-                where_str = "where `STATUS_ID`=%s"
-                current_status_id = defined_vars["__STATUS_ID__"]
-                tmp_result = self.objdbca.table_select(table_name, where_str, current_status_id)
-                # defined_vars['__STATUS_NAME__'] = tmp_result[0]["STATUS_NAME_JA"]  # 不要
-
-                # 抑止の設定
-                if bool(def_item["suppress_start"]):
-                    suppress_start_date = datetime.strptime(str(def_item["suppress_start"]), "%Y/%m/%d %H:%M:%S")
-                if bool(def_item["suppress_end"]):
-                    suppress_end_date = datetime.strptime(str(def_item["suppress_end"]), "%Y/%m/%d %H:%M:%S")
-                today = datetime.now()
-
-                if bool(suppress_start_date) and bool(suppress_end_date):
-                    if suppress_start_date < today and today < suppress_end_date:
-                        suppress_flag = True
-                elif bool(suppress_start_date) is False and bool(suppress_end_date) and today < suppress_end_date:
-                    suppress_flag = True
-                elif bool(suppress_start_date) and bool(suppress_end_date) is False and today > suppress_start_date:
-                    suppress_flag = True
-
-                # メッセージの予約変数置き換え
-                for key, value in defined_vars.items():
-                    def_item["fields"] = def_item["fields"].replace(key, value)
-
-                notice_url = def_item["notice_url"]
-                header = json.loads(def_item["header"])
-                fields = json.loads(def_item["fields"])
-                proxy_url = def_item["proxy_url"]
-                proxy_port = def_item["port_url"]
-                proxy = None
-                if bool(proxy_url) and bool(proxy_port):
-                    check_proxy_url = re.sub('https?://', '', f"{proxy_url}:{proxy_port}")
-                    proxy = f"{check_proxy_url}"
-
-                # 通知送信
-                response_dict = {}
-                if bool(suppress_flag) is False:
-                    for target in target_status:
-                        if target == current_status_id:
-
-                            response_dict = self.notice_request_call(
-                                method='POST',
-                                url=notice_url,
-                                content=fields,
-                                header=header,
-                                proxySetting=proxy,
-                            )
-                            self.write_notice_log(conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict)
-
-        except Exception as e:
-            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
-            type_, value, traceback_ = sys.exc_info()
-            msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
-            retBool = False
-
-        return retBool, result
-
-    # 通知ログ書き込み
-    def write_notice_log(self, conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict):
-
-        retBool = True
-        result = ""
-
-        try:
-            msg_json = {"conductor_status_id": current_status_id, "exec_time": get_now_datetime(), "result": []}
-            result_dict = {
-                "notice_name": notice_name,
-                "notice_info": notice_info[notice_name],
-                "status_code": response_dict["status_code"],
-                "response.headers": response_dict["headers"],
-                "response.text": response_dict["text"]
-            }
-            # add message
-            err_type = response_dict.get("err_type")
-            if err_type is not None:
-                result_dict["err_type"] = response_dict.get("err_type")
-
-            msg_json['result'].append(result_dict)
-
-            # file path 生成
-            workspace_id = g.get('WORKSPACE_ID')
-            menu_id = 30108
-            place = "/uploadfiles/{}/{}".format(menu_id, "notification_log")
-            tmp_file_path = get_upload_file_path_specify(workspace_id, place, conductor_instance_id, n_log_name, None)
-            file_path = tmp_file_path.get("file_path")
-            # ログ書き出し
-            if os.path.isfile(file_path) is True:
-                try:
-                    # ファイル読込み+LIST化
-                    with open(file_path) as f:
-                        file_data = json.load(f)
-                    # 追加
-                    file_data.append(msg_json)
-                    # ファイル書き込み
-                    with open(file_path, 'w') as f:
-                        json.dump(file_data, f, ensure_ascii=False, indent=4)
-                except Exception:
-                    raise Exception
-
-        except Exception as e:
-            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
-            type_, value, traceback_ = sys.exc_info()
-            msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
-            retBool = False
-
-        return retBool, result
 
     # conductor instanceの更新
     def conductor_status_update(self, conductor_instance_id):
@@ -3429,8 +3555,8 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                                 # tmp_msg = g.appmsg.get_log_message(status_code, [msg_args])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))
                                 raise Exception()
-                        # 通知実行
-                        self.execute_notice(conductor_instance_id, n_log_name)
+                            # 通知実行
+                            self.execute_notice(conductor_instance_id, n_log_name)
             else:
                 # """
                 # 終了ステータス(正常終了,異常終了,警告終了,緊急停止,定外エラー)Node待ちあり
@@ -3454,7 +3580,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         return retBool, result,
 
@@ -3596,9 +3722,9 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
-            g.applogger.error(addline_msg(e))
+            g.applogger.debug(addline_msg(e))
         return retBool, result,
 
     def next_node_exec(self, node_options):
@@ -3645,7 +3771,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -3722,7 +3848,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -3786,7 +3912,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -3896,7 +4022,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                         g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
                         type_, value, traceback_ = sys.exc_info()
                         msg = traceback.format_exception(type_, value, traceback_)
-                        g.applogger.error(msg)
+                        g.applogger.debug(msg)
                         msg_code = 'MSG-40026'
                         msg_args = [movement_id, operation_id]
                         err_msg = g.appmsg.get_api_message(msg_code, msg_args)
@@ -4016,7 +4142,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4244,7 +4370,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4322,7 +4448,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
         result = node_options
         return retBool, result,
@@ -4423,7 +4549,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4520,7 +4646,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4614,7 +4740,7 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
@@ -4716,112 +4842,11 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            g.applogger.debug(msg)
             retBool = False
 
         result = node_options
         return retBool, result,
-
-    def notice_request_call(self, method, url, content=None, header=None, proxySetting=None):
-        """
-            notice request call: urllib.request.urlopen
-            ARGS:
-                method, api_uri, content=None, header=None, proxySetting=None
-            RETRUN:
-                response_dict : headers, text, status_code, err_type
-        """
-
-        httpContext = {}
-        httpContext['http'] = {}
-        headers = {}
-        ssl_context = None
-        response_dict = {}
-
-        http_response_header = None
-        data = None
-
-        status_code = None
-        http_response_header = None
-        responseContents = None
-        err_type = None
-
-        # set parameter : Exception->return
-        try:
-            # headers
-            for k, v in header.items():
-                headers[k] = v
-
-            # httpContext
-            httpContext['http']['content'] = json.dumps(content).encode('utf-8')
-            httpContext['http']['method'] = method
-            httpContext['http']['ignore_errors'] = True
-
-            # proxy
-            if proxySetting:
-                httpContext['http']['proxy'] = proxySetting
-                httpContext['http']['request_fulluri'] = True
-
-            # ssl
-            ssl_context = ssl._create_unverified_context()
-            httpContext['ssl'] = {}
-            httpContext['ssl']['verify_peer'] = False
-            httpContext['ssl']['verify_peer_name'] = False
-
-        except Exception as e:
-            err_type = "ParameterError"
-            g.applogger.info(addline_msg('{}{}'.format(err_type, sys._getframe().f_code.co_name)))
-            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
-            response_dict = {}
-            response_dict["headers"] = None
-            response_dict["text"] = None
-            response_dict["status_code"] = None
-            response_dict["err_type"] = err_type
-
-            return response_dict
-
-        # request
-        try:
-            if 'content' in httpContext['http']:
-                data = httpContext['http']['content']
-            req = urllib.request.Request(url, data=data, headers=headers, method=method)
-            # set proxy
-            if proxySetting:
-                req.set_proxy(proxySetting, 'http')
-                req.set_proxy(proxySetting, 'https')
-            # request urlopen
-            with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
-                status_code = resp.getcode()
-                http_response_header = resp.getheaders()
-                responseContents = resp.read().decode('utf-8')
-
-        except urllib.error.HTTPError as e:
-            # HTTPError
-            status_code = e.getcode()
-            http_response_header = e.getheaders()
-            responseContents = e.read().decode('utf-8')
-            err_type = "HTTPError"
-            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
-            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
-        except urllib.error.URLError as e:
-            # URLError
-            responseContents = e.reason
-            err_type = "URLError"
-            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
-            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
-        except Exception as e:
-            # OtherError
-            err_type = "OtherError"
-            g.applogger.debug(addline_msg('{} {}'.format(err_type, sys._getframe().f_code.co_name)))
-            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
-        finally:
-            response_dict = {}
-            response_dict["headers"] = dict(http_response_header) if http_response_header is not None else http_response_header
-            response_dict["text"] = responseContents
-            response_dict["status_code"] = status_code
-            response_dict["err_type"] = err_type
-            g.applogger.debug(addline_msg('{}{}'.format(response_dict, sys._getframe().f_code.co_name)))
-
-        return response_dict
 
 
 # 共通Lib

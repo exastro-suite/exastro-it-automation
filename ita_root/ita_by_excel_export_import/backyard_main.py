@@ -47,11 +47,6 @@ def backyard_main(organization_id, workspace_id):
     debug_msg = g.appmsg.get_log_message("BKY-20001", [])
     g.applogger.debug(debug_msg)
 
-    print("★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆★☆")
-
-    # # テーブル名
-    # t_menu_create_history = 'T_MENU_CREATE_HISTORY'  # メニュー作成履歴
-
     try:
         # DB接続
         objdbca = DBConnectWs(workspace_id)  # noqa: F405

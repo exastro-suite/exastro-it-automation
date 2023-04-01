@@ -2502,7 +2502,7 @@ gotoErrPage: function( message ) {
         } else {
             window.alert('Unknown error.');
         }
-        //window.location.href = './system_error/';
+        window.location.href = './system_error/';
     } else {
         if ( message ) {
             console.error( message );
@@ -2834,14 +2834,15 @@ uiSetting() {
             const restUser = cmn.storage.get('restUser', 'session'),
                   uiSettingData = ( restUser && restUser.web_table_settings )? restUser.web_table_settings: {},
                   theme = ( uiSettingData && uiSettingData.ui )? uiSettingData.ui.theme: '';
-            console.log(uiSettingData)
+
             const select = [];
             for ( const key in themeList ) {
                 const selected = ( theme === key )? ' selected': '';
                 select.push(`<option value="${key}"${selected}>${themeList[key]}</option>`);
             }
             
-            const filterList = function() {
+            const filterList = function( type = 'html') {
+                // [ 名称, className, min, max, 単位, 初期値 ]
                 const list = {
                     grayscale: [ getMessage.FTE10082, 'displaySettingGrayScale', 0, 100, '%', 0 ],
                     sepia: [ getMessage.FTE10083, 'displaySettingSepia', 0, 100, '%', 0 ],
@@ -2851,16 +2852,22 @@ uiSetting() {
                     huerotate: [ getMessage.FTE10087, 'displaySettingHueRotate', 0, 360, 'Deg', 0 ],
                     invert: [ getMessage.FTE10088, 'displaySettingInvert', 0, 100, '%', 0 ],
                 };
-                let html = '';
-                for ( const key in list ) {
-                    const value = ( uiSettingData && uiSettingData.ui && uiSettingData.ui.filter )? uiSettingData.ui.filter[ key ]: list[key][5];
-                    html += ``
-                    + `<tr class="commonInputTr">`
-                        + `<th class="commonInputTh"><div class="commonInputTitle">${list[key][0]}</div></th>`
-                        + `<td class="commonInputTd">${fn.html.inputFader('displaySettingColor', value, list[key][1], { min: list[key][2], max: list[key][3], type: key }, { after: list[key][4] })}</td>`
-                    + `</tr>`;
+                if ( type !== 'reset') {
+                    let html = '';
+                    for ( const key in list ) {
+                        const value = ( uiSettingData && uiSettingData.ui && uiSettingData.ui.filter )? uiSettingData.ui.filter[ key ]: list[key][5];
+                        html += ``
+                        + `<tr class="commonInputTr">`
+                            + `<th class="commonInputTh"><div class="commonInputTitle">${list[key][0]}</div></th>`
+                            + `<td class="commonInputTd">${fn.html.inputFader('displaySettingColor', value, list[key][1], { min: list[key][2], max: list[key][3], type: key }, { after: list[key][4] })}</td>`
+                        + `</tr>`;
+                    }
+                    return html;
+                } else {
+                    for ( const key in list ) {
+                        $(`#${list[key][1]}`).val( list[key][5] ).trigger('input');
+                    }
                 }
-                return html;
             };
             
             const html = ``
@@ -2884,6 +2891,11 @@ uiSetting() {
                         + `</tbody>`
                     + `</table></div>`
                 + `</div>`
+                + `<div class="commonBody"><ul class="commonMenuList">`
+                    + `<li class="commonMenuItem">`
+                        + fn.html.button(`${fn.html.icon('return')} ${getMessage.FTE10094}`, ['itaButton', 'commonButton displaySettingReset'], { action: 'normal', style: `width:100%`})
+                    + `</li>`
+                + `</ul></div>`
             + `</div>`;
 
             const config = {
@@ -2920,9 +2932,24 @@ uiSetting() {
             });
             
             // フィルター
-            $body.find('.displaySettingColor').on('change', function(){
+            const setFilterevent = function() {
+                $body.find('.displaySettingColor').on('change.filter', function(){
+                    cmn.setFilter( getFilterValue() );
+                });
+            };
+            const removeFitlerEvent = function() {
+                $body.find('.displaySettingColor').off('change.filter');
+            }
+            setFilterevent();
+
+            // フィルターリセット
+            $body.find('.displaySettingReset').on('click', function(){
+                removeFitlerEvent();
+                filterList('reset');
                 cmn.setFilter( getFilterValue() );
-            });
+                setFilterevent();
+                uiSettingInstance.buttonPositiveDisabled( false );
+            })
             
         } else {
             uiSettingInstance.btnFn = funcs;

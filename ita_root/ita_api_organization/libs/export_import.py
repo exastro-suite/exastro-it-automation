@@ -148,8 +148,8 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         menu_id_list.append(record.get('MENU_ID'))
 
     # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
-    # 自分のロールが「メンテナンス可」
-    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1], 0])
+    # 自分のロールが「メンテナンス可」,「閲覧のみ」
+    ret_role_menu_link = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID IN %s AND ROLE_ID IN %s AND PRIVILEGE IN %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menu_id_list, role_id_list, [1, 2], 0])
 
     # ロールまで絞った対象メニューIDを再リスト化
     menu_id_list = []
@@ -240,7 +240,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
         body_mode = body.get('mode')
         body_abolished_type = body.get('abolished_type')
         if body_mode == '2':
-            body_specified_time = body.get('specified_time')
+            body_specified_time = body.get('specified_timestamp')
 
         # 『ステータスマスタ』テーブルから対象のデータを取得
         # 形式名を取得
@@ -1101,12 +1101,14 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
     # パスの設定
     strage_path = os.environ.get('STORAGEPATH')
     import_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu"
-    dir_name = import_menu_dir + '/' + 'upload'
-    upload_id_path = dir_name + '/' + upload_id
+    upload_dir_name = import_menu_dir + '/' + 'upload'
+    import_dir_name = import_menu_dir + '/' + 'import'
+    upload_id_path = upload_dir_name + '/' + upload_id
+    import_id_path = import_dir_name + '/' + upload_id
     file_name = upload_id + '_ita_data.tar.gz'
-    file_path = dir_name + '/' + file_name
-    if not os.path.isdir(dir_name):
-        os.makedirs(dir_name)
+    file_path = upload_dir_name + '/' + file_name
+    if not os.path.isdir(upload_dir_name):
+        os.makedirs(upload_dir_name)
         g.applogger.debug("made import_dir")
 
     # アップロードファイルbase64変換処理
@@ -1117,23 +1119,21 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         tar.extractall(path=upload_id_path)
 
     # zipファイルの中身を確認する
-    _check_zip_file(upload_id_path)
+    _check_zip_file(upload_id, organization_id, workspace_id)
 
-    if os.path.isfile(upload_id_path + '/MENU_NAME_REST_LIST') is False:
+    # MENU_GROUPSファイル読み込み
+    if os.path.isfile(import_id_path + '/MENU_GROUPS') is False:
         # 対象ファイルなし
         raise AppException("499-00905", [], [])
+    with open(import_id_path + '/MENU_GROUPS') as f:
+        menu_group_info = json.load(f)
 
-    # MENU_NAME_REST_LISTファイル読み込み
-    menu_name_rest_list = Path(upload_id_path + '/MENU_NAME_REST_LIST').read_text(encoding='utf-8').split(',')
-    # import_listの作成
-    import_list = _create_import_list(objdbca, menu_name_rest_list)
-
-    if os.path.isfile(upload_id_path + '/DP_INFO') is False:
+    if os.path.isfile(import_id_path + '/DP_INFO') is False:
         # 対象ファイルなし
         raise AppException("499-00905", [], [])
 
     # DP_INFOファイル読み込み
-    with open(upload_id_path + '/DP_INFO') as f:
+    with open(import_id_path + '/DP_INFO') as f:
         dp_info_file = json.load(f)
     dp_mode = dp_info_file['DP_MODE']
     abolished_type = dp_info_file['ABOLISHED_TYPE']
@@ -1145,7 +1145,7 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         'mode': dp_mode,
         'abolished_type': abolished_type,
         'specified_time': specified_time,
-        'import_list': import_list
+        'import_list': menu_group_info
     }
 
     return result_data
@@ -1163,7 +1163,7 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
     # パスの設定
     strage_path = os.environ.get('STORAGEPATH')
     import_menu_dir = strage_path + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu"
-    dir_name = import_menu_dir + '/' + 'upload'
+    dir_name = import_menu_dir + '/import'
 
     menu_name_rest_list = body['menu']
     upload_id = body['upload_id']
@@ -1171,6 +1171,8 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
 
     upload_dir_name = upload_id.replace('A_', '')
     import_path = dir_name + '/' + upload_dir_name
+
+    import_list = ",".join(menu_name_rest_list)
 
     if os.path.isfile(import_path + '/DP_INFO') is False:
         # 対象ファイルなし
@@ -1182,11 +1184,11 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
 
     dp_info = _check_dp_info(objdbca, menu, dp_info_file)
 
-    result_data = _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name)
+    result_data = _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name, import_list)
 
     return result_data
 
-def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name):
+def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_name, import_list):
     # メニューインポート登録処理
     # データインポート管理テーブル更新処理
     # 変数定義
@@ -1245,7 +1247,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
                 "specified_time": specified_time,
                 "file_name": file_name,
                 "execution_user": user_id,
-                "json_storage_item": None,
+                "json_storage_item": import_list,
                 "discard": "0"
             },
             "type": "Register"
@@ -1378,24 +1380,146 @@ def _create_import_list(objdbca, menu_name_rest_list):
 
     return menus_data
 
-def _check_zip_file(file_path):
-    ret_scanDir = os.listdir(file_path)
-    if len(ret_scanDir) == 0:
-        return False
+def _check_zip_file(upload_id, organization_id, workspace_id):
+    """
+        zipファイルの中身を確認する
 
-    needleAry = ['MENU_NAME_REST_LIST', 'DP_INFO']
+        args:
+            upload_id: アップロードID
+    """
+    fileName = upload_id + '_ita_data.tar.gz'
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
+    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
+
+    lst = os.listdir(uploadPath + upload_id)
+
+    fileAry = []
+    for value in lst:
+        if not value == '.' and not value == '..':
+            path = os.path.join(uploadPath + upload_id, value)
+            if os.path.isdir(path):
+                dir_name = value
+                sublst = os.listdir(path)
+                for subvalue in sublst:
+                    if not subvalue == '.' and not subvalue == '..':
+                        fileAry.append(dir_name + "/" + subvalue)
+            else:
+                fileAry.append(value)
+
+    if len(fileAry) == 0:
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+
+        msgstr = g.appmsg.get_api_message("MSG-30030")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    # 必須ファイルの確認
     errCnt = 0
-    for value in needleAry:
-        ret = value in ret_scanDir
-        if ret == False:
-            errCnt += 1
+    errFlg = True
+    needleAry = ['MENU_NAME_REST_LIST', 'DP_INFO']
+    for value in fileAry:
+        if value in needleAry:
+            errFlg = False
+
+    if errFlg:
+        errCnt += 1
+        msgstr = g.appmsg.get_api_message("MSG-30031")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
 
     if errCnt > 0:
-        shutil.rmtree(file_path)
-        # 対象ファイルなし
-        raise AppException("499-00905", [], [])
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
 
-    return
+        shutil.rmtree(uploadPath + upload_id)
+
+        msgstr = g.appmsg.get_api_message("MSG-30030")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    # ファイル移動
+    if not os.path.exists(importPath):
+        os.makedirs(importPath)
+        os.chmod(importPath, 0o777)
+
+    shutil.copy(uploadPath + fileName, importPath + fileName)
+    os.makedirs(importPath + upload_id)
+    os.chmod(importPath + upload_id, 0o777)
+    from_path = uploadPath + upload_id
+    to_path = importPath + '.'
+    cmd = "cp -frp " + from_path + ' ' + to_path
+    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+
+    errCnt = 0
+    declare_check_list = []
+    for value in fileAry:
+        file = importPath + upload_id + '/' + value
+        if not os.path.exists(file):
+            errCnt += 1
+            break
+
+        if not file == "":
+            tmpFileAry = file.split("/")
+            fileName = tmpFileAry[len(tmpFileAry) - 1]
+            declare_check_list.append(fileName)
+
+    declare_list = collections.Counter(declare_check_list)
+    for value in fileAry:
+        file = importPath + upload_id + '/' + value
+        if value.endswith(".xlsx"):
+            continue
+
+        if not os.path.exists(file):
+            errCnt += 1
+            break
+
+        if not file:
+            cmd = "rm -rf " + importPath + upload_id
+            ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+            if ret.returncode != 0:
+                return False
+
+    if errCnt > 0:
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+
+        if os.path.exists(importPath + fileName):
+            os.remove(importPath + fileName)
+
+        cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        if ret.returncode != 0:
+            msgstr = g.appmsg.get_api_message("MSG-30029")
+            log_msg_args = [msgstr]
+            api_msg_args = [msgstr]
+            raise AppException("499-00005", log_msg_args, api_msg_args)
+
+        cmd = "rm -rf " + importPath + upload_id + " 2>&1"
+        ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        if ret.returncode != 0:
+            msgstr = g.appmsg.get_api_message("MSG-30029")
+            log_msg_args = [msgstr]
+            api_msg_args = [msgstr]
+            raise AppException("499-00005", log_msg_args, api_msg_args)
+
+        msgstr = g.appmsg.get_api_message("MSG-30030")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
+    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+    if ret.returncode != 0:
+        msgstr = g.appmsg.get_api_message("MSG-30029")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00005", log_msg_args, api_msg_args)
+
+    return declare_list
 
 def _decode_zip_file(file_path, base64Data):
     # アップロードファイルbase64変換処理

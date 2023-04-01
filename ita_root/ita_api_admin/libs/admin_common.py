@@ -17,12 +17,15 @@ admin common function module
 from flask import request, g
 import os
 import base64
+import re
 
+from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.api import set_api_timestamp, get_api_timestamp, app_exception_response, exception_response, check_request_body
 from common_libs.loadtable import *     # noqa: F403
+from common_libs.ci.util import set_service_loglevel
 
 
 def before_request_handler():
@@ -32,7 +35,9 @@ def before_request_handler():
         g.LANGUAGE = os.environ.get("DEFAULT_LANGUAGE")
         # create app log instance and message class instance
         g.applogger = AppLog()
-        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
+        # set applogger.set_level: default:INFO / Use ITA_DB config value
+        set_service_loglevel()
+
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         check_request_body()
@@ -62,7 +67,7 @@ def before_request_handler():
         if language:
             g.LANGUAGE = language
             g.appmsg.set_lang(language)
-            g.applogger.info("LANGUAGE({}) is set".format(language))
+            g.applogger.debug("LANGUAGE({}) is set".format(language))
     except AppException as e:
         # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
         return app_exception_response(e)
@@ -306,3 +311,113 @@ def initial_settings_ansible(ws_db, body):
                     raise AppException(result[1], [result[2]], [result[2]])
 
     return ''
+
+
+def loglevel_settings_container(common_db, parameter):
+    """
+        loglevel_settings_container
+    Args:
+        common_db : DBConnectCommon()
+        parameter : { service_name, log_level }
+    Returns:
+        True
+    """
+    result_data = True
+    # set user_id
+    user_id = request.headers.get("User-Id")
+    # set table info
+    table_name = "T_COMN_LOGLEVEL"
+    primary_key_name = "PRIMARY_KEY"
+    table_columns_info = common_db.table_columns_get(table_name)
+    columns_info = table_columns_info[0]
+    primary_key_name = table_columns_info[1][0]
+
+    # set base_data_list
+    base_data_list = {}
+    for column_name in columns_info:
+        base_data_list[column_name] = None
+    base_data_list['DISUSE_FLAG'] = 0
+
+    # accept_log_level
+    accept_log_level = [
+        # "CRITICAL",
+        # "ERROR",
+        # "WARNING",
+        "INFO",
+        "DEBUG",
+    ]
+
+    # get all data
+    where_str = "WHERE `DISUSE_FLAG`='0'"
+    loglevel_service_list = common_db.table_select(table_name, where_str)
+
+    # check parameter
+    for service_name, log_level in parameter.items():
+        # check accept_log_level
+        chk_log_level = log_level in accept_log_level
+        # check service_name
+        pattern = re.compile(r"([^A-Za-z0-9\-]+)")
+        chk_service_name = True if service_name is not None and len(service_name) <= 255 else False
+        re_result = pattern.findall(service_name)
+        chk_service_name = True if chk_service_name is True and len(re_result) == 0 else False
+        if chk_log_level is False or chk_service_name is False:
+            msg_args = [service_name, log_level]
+            raise AppException("499-01401", msg_args, msg_args)
+
+    # service_list
+    service_list = {}
+    for loglevel_service in loglevel_service_list:
+        log_level = loglevel_service.get('LOG_LEVEL')
+        if (log_level is not None) and (len(log_level) > 0):
+            service_list[loglevel_service['SERVICE_NAME']] = loglevel_service
+        else:
+            service_list[loglevel_service['SERVICE_NAME']] = None
+
+    try:
+        service_name = None
+        log_level = None
+        # transaction start
+        common_db.db_transaction_start()
+
+        for service_name, log_level in parameter.items():
+
+            query_exec_mode = None
+            if service_name in service_list:
+                # set data_list: update
+                data_list = base_data_list.copy()
+                data_list.update(service_list.get(service_name))
+                if log_level == data_list.get('LOG_LEVEL'):
+                    continue
+                data_list['LOG_LEVEL'] = log_level
+                data_list['LAST_UPDATE_USER'] = user_id
+                query_exec_mode = "UPDATE"
+            else:
+                continue
+                # set data_list: insert
+                data_list = base_data_list.copy()
+                data_list['SERVICE_NAME'] = service_name
+                data_list['LOG_LEVEL'] = log_level
+                data_list['LAST_UPDATE_USER'] = user_id
+                query_exec_mode = "INSERT"
+
+            # common_db.table_xxx
+            if query_exec_mode == "INSERT":
+                common_db.table_insert(table_name, data_list, primary_key_name, is_register_history=False)
+            elif query_exec_mode == "UPDATE":
+                common_db.table_update(table_name, data_list, primary_key_name, is_register_history=False)
+
+    except AppException as _app_e:  # noqa: F405
+        # transaction end:rollback
+        common_db.db_transaction_end(False)
+        raise AppException(_app_e)  # noqa: F405
+    except Exception:
+        # transaction end:rollback
+        common_db.db_transaction_end(False)
+        msg_args = [service_name, log_level]
+        raise AppException("499-01401", msg_args, msg_args)
+
+    # transaction end:commit
+    common_db.db_transaction_end(True)
+    common_db.db_disconnect()
+
+    return result_data,

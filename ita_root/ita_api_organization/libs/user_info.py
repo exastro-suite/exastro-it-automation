@@ -38,10 +38,13 @@ def collect_menu_group_panels(objdbca):
     column_name_rest = 'menu_group_icon'  # カラム名
 
     # 『メニュー管理』テーブルからメニューの一覧を取得
-    ret = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
+    menu_list = objdbca.table_select(t_common_menu, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC, DISP_SEQ ASC', [0])
+
+    # 『メニューグループ管理』テーブルからメニューグループの一覧を取得
+    menu_group_list = objdbca.table_select(t_common_menu_group, 'WHERE DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [0])
 
     menu_rest_names = []
-    for recode in ret:
+    for recode in menu_list:
         menu_rest_names.append(recode.get('MENU_NAME_REST'))
 
     auth_menu_list = get_auth_menus(menu_rest_names, objdbca)
@@ -52,14 +55,18 @@ def collect_menu_group_panels(objdbca):
         menu_group_id = menu_item.get('MENU_GROUP_ID')
         menu_groups.append(menu_group_id)
 
+        # 親メニューグループも格納
+        for recode in menu_group_list:
+            if menu_group_id == recode.get('MENU_GROUP_ID'):
+                if recode.get('PARENT_MENU_GROUP_ID') is not None and len(recode.get('PARENT_MENU_GROUP_ID')) != 0:
+                    menu_groups.append(recode.get('PARENT_MENU_GROUP_ID'))
+                break
+
     # 重複を除外
     menu_groups = list(set(menu_groups))
 
-    # 『メニューグループ管理』テーブルからメニューグループの一覧を取得
-    ret = objdbca.table_select(t_common_menu_group, 'WHERE DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [0])
-
     panels_data = {}
-    for recode in ret:
+    for recode in menu_group_list:
         # メニューグループに権限のあるメニューが1つもない場合は除外
         menu_group_id = recode.get('MENU_GROUP_ID')
         if menu_group_id not in menu_groups:
@@ -187,13 +194,15 @@ def collect_menus(objdbca, extra_flag=False):
                     child_target_menus = menus.get(child_menu_group_id)
                     if child_target_menus:
                         exclusion_flag = False
-                        target_menus = child_target_menus
                         break
                 else:
                     continue
         # exclusion_flagがTrueの場合は除外対象とする
         if exclusion_flag:
             continue
+
+        if target_menus is None:
+            target_menus = []
 
         add_menu_group = {}
         add_menu_group['parent_id'] = recode.get('PARENT_MENU_GROUP_ID')
@@ -260,6 +269,11 @@ def collect_widget_settings(objdbca):
     """
 
     def get_conductor_info(objdbca, status_list, lang, days=None):
+
+        if isinstance(lang, str) is False:
+            lang = 'EN'
+
+        lang = lang.upper()
 
         sql = (
             "SELECT TAB_A.CONDUCTOR_INSTANCE_ID, "
@@ -431,12 +445,11 @@ def collect_widget_settings(objdbca):
     if '30105' in menus:  # 30105:Conductor作業一覧
         days = 0
         if 'widget' in current_widget:
-            for cw in current_widget['widget']:
-                if 'name' in cw and cw['name'] == 'work_reserve' and 'data' in cw and 'days' in cw['data']:
-                    days = cw['data']['days']
+            for k, v in current_widget['widget'].items():
+                if k == 'w5' and 'period' in v:
                     try:
-                        days = int(days)
-                        days = days if days >= 0 or days <= 365 else 0
+                        days = int(v['period'])
+                        days = days if days >= 0 and days <= 365 else 0
                     except Exception:
                         days = 0
 

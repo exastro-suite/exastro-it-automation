@@ -82,10 +82,12 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
     except ValueError:
         interval_time = "3"
 
-    where_str2 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s) AND (NEXT_EXECUTION_DATE<NOW()+INTERVAL%sMINUTE)"
-    inOps_list = objdbca.table_select(table_name, where_str2, [status_ids_list["STATUS_IN_OPERATION"], status_ids_list["STATUS_LINKING_ERROR"], interval_time])  # noqa: E501
+    where_str2 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s) AND (NEXT_EXECUTION_DATE<NOW()+INTERVAL %s MINUTE)"
+    inOps_list = objdbca.table_select(table_name, where_str2, [status_ids_list["STATUS_IN_OPERATION"], status_ids_list["STATUS_LINKING_ERROR"], int(interval_time)])  # noqa: E501
+    platform_users = get_exastro_platform_users()
+
     active_user_list = []
-    for user_id in get_exastro_platform_users().keys():
+    for user_id in platform_users.keys():
         active_user_list.append(user_id)
 
     c_menu = 'conductor_instance_list'
@@ -156,6 +158,14 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                         # conductorインスタンス, nodeインスタンス登録
                         debug_msg = g.appmsg.get_log_message("BKY-40007", [])
                         g.applogger.debug(debug_msg)
+
+                        # パラメータのexecution_userを、レコードを登録したユーザに差し替え
+                        for key, value in platform_users.items():
+                            if key == item["EXECUTION_USER_ID"]:
+                                conductor_parameter["parameter"]["execution_user"] = value
+                            else:
+                                raise Exception
+
                         instance_ret = objCexec.conductor_instance_exec_maintenance(conductor_parameter)  # noqa: F841
                         debug_msg = g.appmsg.get_log_message("BKY-40008", [])
                         g.applogger.debug(debug_msg)
@@ -172,22 +182,28 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                         objdbca.db_transaction_end(False)
                         status_id = status_ids_list["STATUS_LINKING_ERROR"]
             else:
-                status_id = status_ids_list["STATUS_IN_PREPARATION"]
-                next_execution_date = None
+                if status_id == status_ids_list["STATUS_LINKING_ERROR"]:
+                    pass
+                else:
+                    status_id = status_ids_list["STATUS_IN_PREPARATION"]
+                    next_execution_date = None
 
             if status_id == status_ids_list["STATUS_COMPLETED"]:
                 next_execution_date = None
 
             try:
-                data_list = {
-                    "REGULARLY_ID": item["REGULARLY_ID"],
-                    "STATUS_ID": status_id,
-                    "NEXT_EXECUTION_DATE": next_execution_date,
-                    "LAST_UPDATE_USER": g.get('USER_ID')
-                }
-                objdbca.db_transaction_start()
-                ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")
-                objdbca.db_transaction_end(True)
+                if item["STATUS_ID"] == status_ids_list["STATUS_LINKING_ERROR"] and status_id == status_ids_list["STATUS_LINKING_ERROR"]:
+                    pass
+                else:
+                    data_list = {
+                        "REGULARLY_ID": item["REGULARLY_ID"],
+                        "STATUS_ID": status_id,
+                        "NEXT_EXECUTION_DATE": next_execution_date,
+                        "LAST_UPDATE_USER": g.get('USER_ID')
+                    }
+                    objdbca.db_transaction_start()
+                    ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")
+                    objdbca.db_transaction_end(True)
             except Exception as e:
                 g.applogger.error(e)
     else:

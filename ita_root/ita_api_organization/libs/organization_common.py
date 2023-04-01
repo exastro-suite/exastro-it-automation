@@ -24,6 +24,7 @@ from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.api import set_api_timestamp, get_api_timestamp, app_exception_response, exception_response, check_request_body
+from common_libs.ci.util import set_service_loglevel
 
 
 def before_request_handler():
@@ -36,7 +37,8 @@ def before_request_handler():
         g.LANGUAGE = os.environ.get("DEFAULT_LANGUAGE")
         # create app log instance and message class instance
         g.applogger = AppLog()
-        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
+        # set applogger.set_level: default:INFO / Use ITA_DB config value
+        set_service_loglevel()
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         check_request_body()
@@ -73,11 +75,11 @@ def before_request_handler():
         if language:
             g.LANGUAGE = language
             g.appmsg.set_lang(language)
-            g.applogger.info("LANGUAGE({}) is set".format(language))
+            g.applogger.debug("LANGUAGE({}) is set".format(language))
 
         # initialize setting organization-db connect_info and connect check
         common_db = DBConnectCommon()  # noqa: F405
-        g.applogger.info("ITA_DB is connected")
+        g.applogger.debug("ITA_DB is connected")
 
         orgdb_connect_info = common_db.get_orgdb_connect_info(organization_id)
         common_db.db_disconnect()
@@ -100,7 +102,7 @@ def before_request_handler():
 
         # initialize setting workspcae-db connect_info and connect check
         org_db = DBConnectOrg()  # noqa: F405
-        g.applogger.info("ORG_DB:{} can be connected".format(organization_id))
+        g.applogger.debug("ORG_DB:{} can be connected".format(organization_id))
 
         wsdb_connect_info = org_db.get_wsdb_connect_info(workspace_id)
         org_db.db_disconnect()
@@ -114,7 +116,7 @@ def before_request_handler():
         g.db_connect_info["WSDB_DATABASE"] = wsdb_connect_info["DB_DATABASE"]
 
         ws_db = DBConnectWs(workspace_id)  # noqa: F405
-        g.applogger.info("WS_DB:{} can be connected".format(workspace_id))
+        g.applogger.debug("WS_DB:{} can be connected".format(workspace_id))
 
         # set log-level for user setting
         # g.applogger.set_user_setting(ws_db)

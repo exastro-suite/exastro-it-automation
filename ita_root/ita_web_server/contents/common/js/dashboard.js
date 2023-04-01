@@ -536,6 +536,8 @@ setup() {
     db.$.body = $('body');
     db.$.target = $( db.target );
     
+    db.$.target.addClass('dashboard-loading');
+    
     // DashBoardデータの読み込み
     fn.fetch('/user/dashboard/').then(function( result ){
         db.info = result;        
@@ -575,6 +577,7 @@ init() {
     const db = this;
     
     db.$.body.addClass('body-overflow-hidden');
+    db.$.target.removeClass('dashboard-loading');
     
     // DashBoad HTML
     const html = `
@@ -1206,6 +1209,7 @@ deleteWidget( $widget, id ) {
     db.updatePosition();
     
     $widget.remove();
+    delete db.widgetInfo[ id ];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1340,7 +1344,7 @@ setWidgetMoveEvent(){
               widgetData = db.widgetInfo[ id ],
               initialId = 'b' + db.widgetBlankCount,
               outerWidth = $widget.outerWidth(),
-              height = $widget.height,
+              height = $widget.height(),
               outerHeight = $widget.outerHeight(),
               positionTop = $widget.offset().top - db.$.window.scrollTop(),
               positionLeft = $widget.offset().left - db.$.window.scrollLeft();
@@ -1364,7 +1368,7 @@ setWidgetMoveEvent(){
         // Rowspanが1の場合は置き換わるブランクの高さを調整する
         const $initialBlank = $('#' + initialId ).find('.widget-blank');
         if ( Number( widgetData['rowspan'] ) === 1 ) {
-            $initialBlank.css('height', height + 'px');
+            $initialBlank.css('height', height+'px');
         }
 
         db.$.dashboard.find('.movable-blank').on({
@@ -1553,7 +1557,7 @@ setEditBlankEvent() {
                   $blankBar.css({
                       'display': 'block',
                       'width': 'calc( 100% - 32px)',
-                      'left': '16px',
+                      'left': ( scrollLeft + 16 ) + 'px',
                       'top': topBottomPositionTop
                   }).attr({
                       'data-row': row + topBottomAdd
@@ -1839,8 +1843,10 @@ updateMenuInfo() {
     
     const list = db.info.menu;
     for ( const group of list ) {
-        group.disp_seq = idList[ group.id ].disp_seq;
-        group.position = idList[ group.id ].position;
+        if ( group.parent_id === null ) {
+            group.disp_seq = idList[ group.id ].disp_seq;
+            group.position = idList[ group.id ].position;
+        }
     }
 }
 /*

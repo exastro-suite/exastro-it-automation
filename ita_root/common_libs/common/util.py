@@ -388,7 +388,7 @@ def get_exastro_platform_workspaces():
     }
 
     # 2回目以降の検索はgの値を使用する
-    if 'PLATFORM_WORKSPACES' in g:
+    if organization_id == g.get("PLATFORM_WORKSPACES_ORG") and workspace_id == g.get("PLATFORM_WORKSPACES_WS") and user_id == g.get("PLATFORM_WORKSPACES_USER"):  # noqa: E501
         workspaces = g.get('PLATFORM_WORKSPACES')
         environments = g.get('PLATFORM_ENVIRONMENTS')
 
@@ -415,6 +415,10 @@ def get_exastro_platform_workspaces():
         # gに値を設定しておく
         g.PLATFORM_WORKSPACES = workspaces
         g.PLATFORM_ENVIRONMENTS = environments
+
+        g.PLATFORM_WORKSPACES_ORG = organization_id
+        g.PLATFORM_WORKSPACES_WS = workspace_id
+        g.PLATFORM_WORKSPACES_USER = user_id
 
     return workspaces, environments
 
@@ -444,7 +448,7 @@ def get_workspace_roles():
     }
 
     # 2回目以降の検索はgの値を使用する
-    if 'WORKSPACE_ROLES' in g:
+    if organization_id == g.get("WORKSPACE_ROLES_ORG") and workspace_id == g.get("WORKSPACE_ROLES_WS"):
         roles = g.get('WORKSPACE_ROLES')
 
     else:
@@ -463,6 +467,9 @@ def get_workspace_roles():
 
         # gに値を設定しておく
         g.WORKSPACE_ROLES = roles
+
+        g.WORKSPACE_ROLES_ORG = organization_id
+        g.WORKSPACE_ROLES_WS = workspace_id
 
     return roles
 
@@ -497,7 +504,7 @@ def get_exastro_platform_users():
     }
 
     # 2回目以降の検索はgの値を使用する
-    if 'PLATFORM_USERS' in g:
+    if organization_id == g.get("PLATFORM_USERS_ORG") and workspace_id == g.get("PLATFORM_USERS_WS"):
         users = g.get('PLATFORM_USERS')
 
     else:
@@ -516,6 +523,8 @@ def get_exastro_platform_users():
 
         # gに値を設定しておく
         g.PLATFORM_USERS = users
+        g.PLATFORM_USERS_ORG = organization_id
+        g.PLATFORM_USERS_WS = workspace_id
 
     return users
 

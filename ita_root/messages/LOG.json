@@ -89,6 +89,7 @@
     "499-01109": "The target Workspace is not registered in the linked Terraform. (Terraform Workspace: {})",
     "499-01110": "The target Policy is not registered in the linked Terraform. (Terraform Policy: {})",
     "499-01111": "The target Policy set is not registered in the linked Terraform. (Terraform Policy set: {})",
+    "499-01401": "Service name and log level are invalid. ({}:{})",
     "999-00001": "[Database Error] Database({}) connect infomation is not found",
     "999-00002": "[Database Error] Database({}) : {}",
     "999-00003": "[Database Error] Database({}) SQL:{}, {}",
@@ -1244,5 +1245,9 @@
     "BKY-51033": "[Process] Start RESTAPI get state list. (Execution No.:{})",
     "BKY-51034": "[Process] Start RESTAPI get state file. (Execution No.:{})",
     "BKY-51035": "[Process] Start RESTAPI get outputs. (Execution No.:{})",
-    "BKY-51036": "[Process] Delay was detected. (Execution No.:{})"
+    "BKY-51036": "[Process] Delay was detected. (Execution No.:{})",
+    "BKY-51037": "[Process] Start RESTAPI get module upload URL. (Execution No.:{})",
+    "BKY-51038": "[Process] Start RESTAPI upload module files. (Execution No.:{})",
+    "BKY-51039": "[Process] Start RESTAPI create terraform run. (Execution No.:{})",
+    "BKY-51040": "[Process] Start RESTAPI destroy workspace. (Execution No.:{})"
 }

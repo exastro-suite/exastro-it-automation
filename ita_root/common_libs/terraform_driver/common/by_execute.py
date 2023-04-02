@@ -117,7 +117,7 @@ def make_parent_id_map(member_vars_records):
             # indexが数値の場合は[]を外す
             match = re.findall(pattern, key)
             if len(match) != 0:
-                key = match[0]
+                key = int(match[0])
 
             if member_vars_record["ARRAY_NEST_LEVEL"] == array_nest_level:
                 # 親のネストリストを取得
@@ -166,19 +166,24 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
             member_vars_value = decode_hcl(member_vars_value)
 
         if type(member_vars_key) is int:
-            ref = []
-            ref.append(member_vars_value)
+            ref = [member_vars_value]
         else:
             ref = {}
             ref[member_vars_key] = member_vars_value
 
         # 階層構造をつくる
+        def make_val(_key, _val):
+            if type(_key) is int:
+                return [_val]
+            return {_key: _val}
+
         index = 0
+        tmp_array = {}
         for key in reversed(map):
             if index == 0:
-                tmp_array = {key: ref}
+                tmp_array = make_val(key, ref)
             else:
-                tmp_array = {key: tmp_array}
+                tmp_array = make_val(key, tmp_array)
 
             index = index + 1
 

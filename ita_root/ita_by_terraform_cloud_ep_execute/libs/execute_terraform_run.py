@@ -495,6 +495,11 @@ def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace
         operation_id = instance_data['OPERATION_ID']
 
         # operation_idとmovement_idから変数名と代入値を取得
+        # 下記のSQLについて
+        # `T_TERE_VALUE`.`MEMBER_VARS_ID` は、movementメンバー変数紐づけのID（`V_TERE_MVMT_VAR_MEMBER_LINK`.`MVMT_VAR_MEMBER_LINK_ID`）
+        # なので　AS `MVMT_VAR_MEMBER_LINK_ID` と名づけ
+        # `V_TERE_MVMT_VAR_MEMBER_LINK`.`CHILD_MEMBER_VARS_ID`
+        # を　AS `MEMBER_VARS_ID` と名づける（メンバー変数テーブルのIDとして分かるように）
         sql = "SELECT \
                 D_TERRAFORM_VARS_DATA.MODULE_VARS_LINK_ID, \
                 D_TERRAFORM_VARS_DATA.VARS_NAME, \
@@ -515,29 +520,35 @@ def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace
                     `V_TERE_MVMT_VAR_LINK`.`MODULE_VARS_LINK_ID` AS `MODULE_VARS_LINK_ID`, \
                     `V_TERE_MVMT_VAR_LINK`.`VARS_NAME` AS `VARS_NAME`, \
                     `T_TERE_VALUE`.`VARS_ENTRY` AS `VARS_ENTRY`, \
-                    `T_TERE_VALUE`.`MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
+                    `T_TERE_VALUE`.`MEMBER_VARS_ID` AS `MVMT_VAR_MEMBER_LINK_ID`, \
+                    `V_TERE_MVMT_VAR_MEMBER_LINK`.`CHILD_MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
                     `T_TERE_VALUE`.`ASSIGN_SEQ` AS `ASSIGN_SEQ`, \
                     `T_TERE_VALUE`.`HCL_FLAG` AS `HCL_FLAG`, \
                     `T_TERE_VALUE`.`SENSITIVE_FLAG` AS `SENSITIVE_FLAG`, \
                     `T_TERE_VALUE`.`DISUSE_FLAG` AS `DISUSE_FLAG`, \
                     `T_TERE_VALUE`.`LAST_UPDATE_TIMESTAMP` AS `LAST_UPDATE_TIMESTAMP` \
-                FROM (`T_TERE_VALUE`  \
+                FROM `T_TERE_VALUE`  \
                     LEFT JOIN `V_TERE_MVMT_VAR_LINK`  \
                         ON( \
                             `V_TERE_MVMT_VAR_LINK`.`MOVEMENT_ID` = `T_TERE_VALUE`.`MOVEMENT_ID` AND  \
                             `V_TERE_MVMT_VAR_LINK`.`MVMT_VAR_LINK_ID` = `T_TERE_VALUE`.`MVMT_VAR_LINK_ID` \
-                    )) \
+                        ) \
+                    LEFT JOIN `V_TERE_MVMT_VAR_MEMBER_LINK`  \
+                        ON( \
+                            `V_TERE_MVMT_VAR_MEMBER_LINK`.`MOVEMENT_ID` = `T_TERE_VALUE`.`MOVEMENT_ID` AND  \
+                            `V_TERE_MVMT_VAR_MEMBER_LINK`.`MVMT_VAR_MEMBER_LINK_ID` = `T_TERE_VALUE`.`MEMBER_VARS_ID` \
+                        ) \
+                WHERE \
+                    T_TERE_VALUE.EXECUTION_NO = %s \
+                    AND T_TERE_VALUE.OPERATION_ID = %s \
+                    AND T_TERE_VALUE.MOVEMENT_ID = %s  \
                 ) AS D_TERRAFORM_VARS_DATA \
                 LEFT OUTER JOIN T_TERE_MOD_VAR_LINK \
                     ON D_TERRAFORM_VARS_DATA.MODULE_VARS_LINK_ID = T_TERE_MOD_VAR_LINK.MODULE_VARS_LINK_ID \
                 LEFT OUTER JOIN V_TERE_VAR_MEMBER \
                     ON D_TERRAFORM_VARS_DATA.MEMBER_VARS_ID = V_TERE_VAR_MEMBER.CHILD_MEMBER_VARS_ID \
-            WHERE  D_TERRAFORM_VARS_DATA.DISUSE_FLAG = '0' \
-                AND    T_TERE_MOD_VAR_LINK.DISUSE_FLAG = '0' \
-                AND    D_TERRAFORM_VARS_DATA.EXECUTION_NO = %s \
-                AND    D_TERRAFORM_VARS_DATA.OPERATION_ID = %s \
-                AND    D_TERRAFORM_VARS_DATA.MOVEMENT_ID = %s"
-
+            WHERE \
+                T_TERE_MOD_VAR_LINK.DISUSE_FLAG = '0' "
         records = objdbca.sql_execute(sql, [execution_no, operation_id, movement_id])
 
         # 代入値（変数）の有無フラグ
@@ -656,9 +667,8 @@ def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace
                 # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
                 # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
                 #########################################
-
                 # 1.Module変数紐付けのタイプが配列型でない場合
-                if hclFlag is True or vars_type_info["MEMBER_VARS_FLAG"] == '0' or vars_type_info["ASSIGN_SEQ_FLAG"] == '0' or vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
+                if hclFlag is True or vars_type_info["MEMBER_VARS_FLAG"] == '0' and vars_type_info["ASSIGN_SEQ_FLAG"] == '0' and vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
                     pass
                 # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
                 elif vars_type_info["MEMBER_VARS_FLAG"] == '0' and vars_type_info["ASSIGN_SEQ_FLAG"] == '1' and vars_type_info["ENCODE_FLAG"] == '1':
@@ -677,6 +687,7 @@ def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace
                         trg_member_vars_records = get_member_vars_ModuleVarsLinkID_for_hcl(objdbca, TFCloudEPConst, vars_link_id)
                         # MEMBER_VARS_IDのリスト（重複の削除）
                         member_vars_ids_array = list(set([m.get('MEMBER_VARS_ID') for m in member_vars_list]))
+
                         # ２．配列型の変数を配列にする
                         for member_vars_id in member_vars_ids_array:
                             # メンバー変数IDからタイプ情報を取得する

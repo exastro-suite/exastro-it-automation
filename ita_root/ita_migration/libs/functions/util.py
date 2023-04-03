@@ -1,0 +1,161 @@
+# Copyright 2023 NEC Corporation#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+import datetime
+import os
+from flask import g
+from common_libs.common.exception import AppException
+from common_libs.common.dbconnect import *  # noqa: F403
+"""
+ライブラリ
+"""
+
+
+def read_version_list(file_path):
+    """
+    version.listを読み込む
+
+    Returns:
+        list
+    """
+
+    with open(file_path) as f:
+        lines = f.readlines()
+
+    version_list = []
+    for line in lines:
+        # 先頭'#' はコメントとして除外
+        if line.startswith('#'):
+            continue
+
+        line = line.rstrip()  # 末尾の改行除去
+
+        # 空行は除外
+        if len(line) == 0:
+            continue
+
+        version_list.append(line)
+
+    return version_list
+
+
+def get_migration_target_versions():
+    """
+    get versions list
+
+    Returns:
+        list: versions
+    """
+
+    # version.listファイル読み込み
+    version_list_path = os.path.join(g.APPPATH, "version.list")
+    version_list = read_version_list(version_list_path)
+
+    # INFORMATION_SCHEMA から取得し判定
+    common_db = DBConnectCommon()  # noqa: F405
+    sql = "SELECT * FROM `INFORMATION_SCHEMA`.`TABLES` WHERE `TABLE_NAME` = %s"
+
+    # 1. T_COMN_ORGANIZATION_DB_INFO が存在するか
+    table_list = common_db.sql_execute(sql, ['T_COMN_ORGANIZATION_DB_INFO'])
+    if len(table_list) != 1:
+        # T_COMN_ORGANIZATION_DB_INFO テーブルが用意されていない環境＝初期インストールとして全バージョン分対応する
+        return version_list
+
+    # 2. T_COMN_VERSION から現在のバージョン取得
+    table_list = common_db.sql_execute(sql, ['T_COMN_VERSION'])
+    if len(table_list) != 1:
+        # T_COMN_VERSION テーブルが用意されていない環境＝初期バージョン2.0.5として以降の全バージョン分対応する
+        return version_list[1:]
+
+    data_list = common_db.table_select("T_COMN_VERSION", "WHERE `SERVICE_ID` = 1")
+    if len(data_list) != 1:
+        raise AppException("499-00701", ["Failed to get current version."])  # TODO: Message番号を新規で作ること
+
+    current_version = data_list[0]['VERSION']
+
+    # current_version が含まれていたら、それ以降のversion_listを返す
+    if current_version in version_list:
+        index = version_list.index(current_version)
+        del version_list[:(index + 1)]
+    else:
+        raise AppException("499-00701", ["No such version."], [current_version])  # TODO: Message番号を新規で作ること
+
+    return version_list
+
+
+def set_version(version):
+    """
+    set version
+    """
+    common_db = DBConnectCommon()  # noqa: F405
+    data = {
+        'SERVICE_ID': 1,
+        'VERSION': version
+    }
+    common_db.table_update("T_COMN_VERSION", data, "SERVICE_ID")
+
+
+BACKYARD_STOP_FLAG_FILE_NAME = "stop_file"  # TODO: ファイル名を決める
+
+
+def stop_all_backyards():
+    """
+    全backyardを停止させる
+    """
+
+    flag_file_path = os.path.join(g.APPPATH, BACKYARD_STOP_FLAG_FILE_NAME)
+    with open(flag_file_path, "a") as f:
+        current_datetime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+        f.write(current_datetime)
+
+
+def restart_all_backyards():
+    """
+    全backyardを再開させる
+    """
+
+    flag_file_path = os.path.join(g.APPPATH, BACKYARD_STOP_FLAG_FILE_NAME)
+    if os.path.isfile(flag_file_path):
+        os.remove(flag_file_path)
+
+
+def get_organization_ids():
+    """
+    get organization ids
+
+    Returns:
+        list: organization ids
+    """
+
+    common_db = DBConnectCommon()  # noqa: F405
+    organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
+
+    return_dict = [x['ORGANIZATION_ID'] for x in organization_info_list]
+
+    return return_dict
+
+
+def get_workspace_ids(organization_id):
+    """
+    get organization ids
+
+    Returns:
+        list: organization ids
+    """
+
+    org_db = DBConnectOrg(organization_id)  # noqa: F405
+    workspace_info_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
+
+    return_dict = [x['WORKSPACE_ID'] for x in workspace_info_list]
+
+    return return_dict

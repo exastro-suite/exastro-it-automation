@@ -488,7 +488,7 @@ setTable( mode ) {
                         menuList.Main.push({ button: { icon: 'edit', text: getMessage.FTE00009, type: 'tableEdit', action: 'positive', minWidth: '200px', 'disabled': true }});
                     }
                     if ( menuList.Main.length === 0 ) {
-                         menuList.Main.push({ message: { text: getMessage.FTE00010 }});
+                        menuList.Main.push({ message: { text: getMessage.FTE00010 }});
                     }
                 }
                 tb.$.header.html( fn.html.operationMenu( menuList ) );
@@ -1027,13 +1027,13 @@ filterHtml( filterHeaderFlag = true ) {
               if ( initSetFilter && initSetFilter[ rest ] ) {
                   switch ( filterType ) {
                       case 'discard': case 'text':
-                          return initSetFilter[ rest ].NORMAL;
+                          return fn.escape( initSetFilter[ rest ].NORMAL );
                       break;
                       default:
                           if ( initSetFilter[ rest ].RANGE ) {
-                              return { start: initSetFilter[ rest ].RANGE.START, end: initSetFilter[ rest ].RANGE.END };
+                              return { start: fn.escape( initSetFilter[ rest ].RANGE.START ), end: fn.escape( initSetFilter[ rest ].RANGE.END )};
                           } else {
-                              return { start: initSetFilter[ rest ].START, end: initSetFilter[ rest ].END};
+                              return { start: fn.escape( initSetFilter[ rest ].START ), end: fn.escape( initSetFilter[ rest ].END )};
                           }
                   }
               } else {
@@ -1671,7 +1671,7 @@ setTableEvents() {
                     case 'redirect_filter': {
                         const itemId = $button.attr('data-item'),
                             columnKey = $button.attr('data-columnkey');
-                        
+
                         const itemData = tb.data.body.find(function( item ){
                             return item.parameter[ tb.idNameRest ] === itemId;
                         });
@@ -1691,7 +1691,7 @@ setTableEvents() {
                                 const parameterKey = f[0],
                                     filterSetKey = f[1],
                                     filterType = f[2];
-                                
+
                                 let value;
                                 if ( filterType === 'LIST') {
                                     value = [ itemData.parameter[ parameterKey ] ];
@@ -2280,6 +2280,12 @@ filterSelectParamsOpen( filterParams ) {
                     const $select = $selectArea.find('select');
 
                     $select.val( filterList[ filterKeys[i] ]);
+
+                    // 対象が存在しない場合は文字列フィルターに入れる
+                    if ( $select.val().length === 0 ) {
+                        const $input = tb.$.thead.find(`.filterInputText[data-rest="${filterKeys[i]}"]`);
+                        $input.val( filterList[ filterKeys[i] ][0] );
+                    }
 
                     $select.select2({
                         placeholder: "Pulldown select",

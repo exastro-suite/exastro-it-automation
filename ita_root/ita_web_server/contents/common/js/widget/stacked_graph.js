@@ -232,7 +232,7 @@ setDetaileEvent() {
                     }
                 };
                 // 計は全て
-                if ( !sumFlag ) {
+                if ( sumFlag ) {
                     const itemList = [];
                     for ( const u of usage ) {
                         if ( u[0] !== 'sum') itemList.push( u[1] );

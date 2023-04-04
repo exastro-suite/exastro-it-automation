@@ -109,24 +109,23 @@ class RestApiCaller():
         print_HttpContext = 'http context\n%s' % (httpContext)
         print_url = "URL: %s\n" % (url)
 
-        ################################
-        # RestCall
-        ################################
-        http_response_header = None
-        data = None
-        if module_upload_flag is True:
-            data = content
-        else:
-            if 'content' in httpContext['http']:
-                data = httpContext['http']['content']
-
-        req = urllib.request.Request(url, data=data, headers=headers, method=method)
-        if proxy_address:
-            req.set_proxy(proxy_address, 'http')
-            req.set_proxy(proxy_address, 'https')
-
         # RESTAPI失敗時は３回までリトライ
         for t in range(3):
+            ################################
+            # RestCall
+            ################################
+            http_response_header = None
+            data = None
+            if module_upload_flag is True:
+                data = content
+            else:
+                if 'content' in httpContext['http']:
+                    data = httpContext['http']['content']
+
+            req = urllib.request.Request(url, data=data, headers=headers, method=method)
+            if proxy_address:
+                req.set_proxy(proxy_address, 'http')
+                req.set_proxy(proxy_address, 'https')
             try:
                 with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
                     status_code = resp.getcode()

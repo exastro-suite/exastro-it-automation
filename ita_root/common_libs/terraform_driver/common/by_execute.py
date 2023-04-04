@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# from flask import g
 import json
 import re
 from dictknife import deepmerge
@@ -35,14 +36,14 @@ def get_type_info(wsDb, TFConst, type_id):
 # 配列からHCLへencodeする
 def encode_hcl(arr):
     json_data = json.dumps(arr, ensure_ascii=False)
-    res = re.sub(r'\"(.*?)\"\:(.*?)', r'"\1" = \2', json_data)
+    res = re.sub(r'\"(.*?)\"\:(.*?)', r'"\1"=\2', json_data)
 
     return str(res)
 
 
 # HCL形式から配列にデコードする
 def decode_hcl(hcl_data):
-    res = re.sub(r'\"(.*?)\"\ = \"(.*?)\"', r'"\1": "\2"', hcl_data)
+    res = re.sub(r'\"(.*?)\"(\s|)=(\s|)\"(.*?)\"', r'"\1":"\4"', hcl_data)
     res = json.loads(res)
 
     return res
@@ -63,7 +64,7 @@ def get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFConst, module_vars_link_id)
 
 # HCL作成のためにメンバー変数一覧を配列に形成
 def generate_member_vars_array_for_hcl(wsDb, TFConst, member_vars_records):
-    member_vars_res = []
+    member_vars_res = {}
 
     # 親リストの取得
     parent_id_map = make_parent_id_map(member_vars_records)
@@ -81,7 +82,7 @@ def generate_member_vars_array_for_hcl(wsDb, TFConst, member_vars_records):
         # indexが数値の場合は[]を外す
         match = re.findall(pattern, key)
         if len(match) != 0:
-            key = match[0]
+            key = int(match[0])
 
         # タイプ情報の取得
         type_info = get_type_info(wsDb, TFConst, member_vars_record["CHILD_VARS_TYPE_ID"])
@@ -116,7 +117,7 @@ def make_parent_id_map(member_vars_records):
             # indexが数値の場合は[]を外す
             match = re.findall(pattern, key)
             if len(match) != 0:
-                key = match[0]
+                key = int(match[0])
 
             if member_vars_record["ARRAY_NEST_LEVEL"] == array_nest_level:
                 # 親のネストリストを取得
@@ -124,7 +125,7 @@ def make_parent_id_map(member_vars_records):
                 if member_vars_record["PARENT_MEMBER_VARS_ID"] is not None:
                     parent_index = [m.get('child_member_vars_id') for m in res].index(member_vars_record["PARENT_MEMBER_VARS_ID"])
 
-                    parent_member_keys_list = res[parent_index]["parent_member_keys_list"]
+                    parent_member_keys_list = res[parent_index]["parent_member_keys_list"].copy()
                     parent_key = res[parent_index]["child_member_vars_key"]
 
                     # indexが数値の場合は[]を外す
@@ -145,35 +146,50 @@ def make_parent_id_map(member_vars_records):
 
 # HCL作成のためにメンバー変数一覧を多次元配列に整形
 def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_value, type_info, map):
-    res = []
+    res = {}
 
+    # g.applogger.debug("member_vars_array=" + str(member_vars_array))
+    # g.applogger.debug("member_vars_key=" + str(member_vars_key))
+    # g.applogger.debug("member_vars_value=" + str(member_vars_value))
+    # g.applogger.debug("type_info=" + str(type_info))
+    # g.applogger.debug("map=" + str(map))
     if len(map) == 0:
         # 仮配列と返却用配列をマージ
         member_vars_array[member_vars_key] = member_vars_value
         res = member_vars_array
     else:
         # 仮配列
-        tmp_array = {}
-        ref = tmp_array
-
-        # 多次元配列作成
-        index = 0
-        for key in map:
-            if not index:
-                ref = {key: None}
-            elif map[index - 1] in ref:
-                ref[map[index - 1]] = {key: None}
-
-            index = index + 1
+        ref = {}
 
         # メンバー変数を設定・具体値を代入
         if type_info["ENCODE_FLAG"] == '1':
             member_vars_value = decode_hcl(member_vars_value)
-        if type_info["MEMBER_VARS_FLAG"] == '1' and type_info["MEMBER_VARS_FLAG"] != '1':
-            ref[member_vars_key] = []
+
+        if type(member_vars_key) is int:
+            ref = [member_vars_value]
+        else:
+            ref = {}
             ref[member_vars_key] = member_vars_value
 
+        # 階層構造をつくる
+        def make_val(_key, _val):
+            if type(_key) is int:
+                return [_val]
+            return {_key: _val}
+
+        index = 0
+        tmp_array = {}
+        for key in reversed(map):
+            if index == 0:
+                tmp_array = make_val(key, ref)
+            else:
+                tmp_array = make_val(key, tmp_array)
+
+            index = index + 1
+
+        # g.applogger.debug("ref=" + str(ref))
+        # g.applogger.debug("tmp_array=" + str(tmp_array))
         # 仮配列と返却用配列をマージ
         res = deepmerge(member_vars_array, tmp_array)
-
+        # g.applogger.debug("res=" + str(res))
     return res

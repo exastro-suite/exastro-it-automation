@@ -75,7 +75,7 @@ def before_request_handler():
         if language:
             g.LANGUAGE = language
             g.appmsg.set_lang(language)
-            g.applogger.info("LANGUAGE({}) is set".format(language))
+            g.applogger.debug("LANGUAGE({}) is set".format(language))
 
         # initialize setting organization-db connect_info and connect check
         common_db = DBConnectCommon()  # noqa: F405

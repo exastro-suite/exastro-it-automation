@@ -1923,8 +1923,8 @@ class ConductorExecuteLibs():
 
         except Exception as e:
             err_type = "ParameterError"
-            g.applogger.info(addline_msg('{}{}'.format(err_type, sys._getframe().f_code.co_name)))
-            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(err_type, sys._getframe().f_code.co_name)))
+            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             response_dict = {}
             response_dict["headers"] = None
             response_dict["text"] = None

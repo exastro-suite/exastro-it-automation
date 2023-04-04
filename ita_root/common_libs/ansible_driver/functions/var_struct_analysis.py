@@ -33,7 +33,7 @@ def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, va
     ITA2User_var_list = []
     User2ITA_var_list = []
     parent_vars_list = []
-    
+
     # 変数定義を解析
     ret = chkObj.VarsFileAnalysis(AnscConst.LC_RUN_MODE_VARFILE, tmp_file_name, parent_vars_list, vars_list, array_vars_list, var_val_list, role_pkg_name, rolename, display_file_name, ITA2User_var_list, User2ITA_var_list)
     parent_vars_list = ret[1]
@@ -76,14 +76,18 @@ def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, va
                     # 変数名がastrollで扱えない場合
                     msg = g.appmsg.get_api_message("MSG-'10569", [var_name])
                     retBool = False
-    
+
     # 一時ファイル削除
     os.remove(tmp_file_name)
     if retBool is True:
         retBool, msg = chkTemplateVarNameLength(vars_list, array_vars_list)
         if retBool is True:
             obj = VarStructAnalJsonConv()
+            # 変数定義にグローバル変数は登録出来るが、刈取対象ではないので
+            # 変数定義から刈取った変数の情報(Vars_list)からグローバル変数の情報を除外する。
+            vars_list = ExcludeGlobalVariables(vars_list)
             jsonStr = obj.TemplateVarStructAnalJsonDumps(vars_list, array_vars_list, LCA_vars_use, array_vars_use, ITA2User_var_list, GBL_vars_info, var_val_list)
+
     return retBool, msg, jsonStr, vars_list, array_vars_list, LCA_vars_use, array_vars_use, ITA2User_var_list, GBL_vars_info, var_val_list
 
 
@@ -131,6 +135,26 @@ def chkTemplateVarNameLength(vars_list, array_vars_list):
     if result_code is False:
         error_msg = g.appmsg.get_api_message("MSG-10901", [error_msg])
     return result_code, error_msg
+
+
+def ExcludeGlobalVariables(vars_list):
+    """
+    テンプレート管理の変数定義にグローバル変数は登録出来るが、刈取対象ではないので
+    変数定義から刈取った変数の情報(Vars_list)からグローバル変数の情報を除外する。
+    Arguments:
+      vars_list: 多段変数以外の変数情報
+    Returns:
+      True
+    """
+    result_vars_list = {}
+    # 変数定義にグローバル変数が含まれているか判定
+    for var_name, dummy in vars_list.items():
+        ret = re.search(AnscConst.GBL_parent_VarName, var_name)
+        if ret is None:
+            # グローバル変数を除外
+            result_vars_list[var_name] = dummy
+    return result_vars_list
+
 
 def chkRolePackageVarNameLength(vars_list, array_vars_list):
     """

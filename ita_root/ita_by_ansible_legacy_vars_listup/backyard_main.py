@@ -18,8 +18,7 @@ from backyard_libs.ansible_driver.functions import util
 
 
 def backyard_main(organization_id, workspace_id):
-    print("backyard_main ita_by_ansible_legacy_vars_listup called")
-
+    g.applogger.debug("backyard_main ita_by_ansible_legacy_vars_listup called")
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 実行準備
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
@@ -91,7 +90,7 @@ def backyard_main(organization_id, workspace_id):
     # DB切断
     ws_db.db_disconnect()
 
-    print("backyard_main ita_by_ansible_legacy_vars_listup end")
+    g.applogger.debug("backyard_main ita_by_ansible_legacy_vars_listup end")
 
 
 def has_changes_related_tables(ws_db, proc_loaded_row_id):

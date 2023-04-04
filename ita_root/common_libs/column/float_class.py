@@ -171,7 +171,6 @@ class FloatColumn(Column):
                     val = '{}{}{}.0'.format(sign, digits, zero_padding)
                 else:
                     val = '{}0.{}{}'.format(sign, zero_padding, digits)
-                print(val)
             else:
                 val = tmp_val
 

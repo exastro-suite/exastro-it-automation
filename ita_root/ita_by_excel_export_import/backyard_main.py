@@ -64,8 +64,6 @@ def backyard_main(organization_id, workspace_id):
             return
 
         for task in ret:
-            # 実行フラグ
-            execFlg = True
 
             # 言語情報
             lang = task['LANGUAGE']
@@ -76,7 +74,7 @@ def backyard_main(organization_id, workspace_id):
             # 実行ユーザー
             g.USER_ID = '60102'
 
-            result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_RUNNING, objdbca, False)
+            result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_RUNNING, objdbca, True)
             if result is False:
                 # エラーログ出力
                 frame = inspect.currentframe().f_back
@@ -144,11 +142,10 @@ def backyard_main(organization_id, workspace_id):
                         filter_parameter = {"discard": {"NORMAL": "1"}}
 
                     # ダミー情報設定
+                    g.USER_ID = task["EXECUTION_USER"]
                     g.ROLES = "dummy"
-                    g.WORKSPACE_ROLES = "dummy"
-                    g.PLATFORM_WORKSPACES = "dummy"
-                    g.PLATFORM_ENVIRONMENTS = "dummy"
                     filePath = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menuNameRest, menu_record, menu_table_link_record, filter_parameter, True, lang)
+                    g.USER_ID = '60102'
 
                     # メニューグループごとにまとめる
                     folder_name = menuGroupId + "_" + menuGroupName
@@ -178,7 +175,6 @@ def backyard_main(organization_id, workspace_id):
 
                 # ファイル一覧をJSONに変換
                 tmpExportPath = EXPORT_PATH + "/" + taskId + "/tmp_zip"
-                fileputflg = pathlib.Path(tmpExportPath + "/MENU_LIST.txt").write_text(fileNameList, encoding="utf-8")
 
                 # パスの有無を確認
                 if not os.path.exists(DST_PATH):
@@ -187,7 +183,7 @@ def backyard_main(organization_id, workspace_id):
                 else:
                     os.chmod(DST_PATH, 0o777)
 
-                # ZIPを固める
+                # ZIPを固めて、ステータスを完了にする
                 t_delta = datetime.timedelta(hours=9)
                 JST = datetime.timezone(t_delta, 'JST')
                 now = datetime.datetime.now(JST)
@@ -195,7 +191,7 @@ def backyard_main(organization_id, workspace_id):
                 now_time = now.time().strftime('%X')
                 now_time = now_time.replace(":", "")
                 dstFileName = "ITA_FILES_" + now_date + now_time + ".zip"
-                res = util.zip(task['EXECUTION_NO'], EXPORT_PATH + "/" + taskId, DST_PATH, dstFileName, objdbca)
+                res = util.zip(task['EXECUTION_NO'], EXPORT_PATH + "/" + taskId, STATUS_PROCESSED, dstFileName, objdbca)
                 if res == 0:
                     frame = inspect.currentframe().f_back
                     msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
@@ -205,9 +201,6 @@ def backyard_main(organization_id, workspace_id):
                     # 一時ディレクトリ削除
                     shutil.rmtree(EXPORT_PATH + "/" + taskId)
                     continue
-
-                # ステータスを完了にする
-                res = util.setStatus(task['EXECUTION_NO'], STATUS_PROCESSED, objdbca)
 
                 # 一時ディレクトリ削除
                 shutil.rmtree(EXPORT_PATH + "/" + taskId)
@@ -287,7 +280,7 @@ def backyard_main(organization_id, workspace_id):
 
                     util.dumpResultMsg(msg, taskId, RESULT_PATH)
 
-                    # ファイルの登録
+                    # 結果ファイルの登録
                     res = util.registerResultFile(taskId, objdbca)
 
                     if res == 0:

@@ -342,8 +342,7 @@ class FileUploadColumn(Column):
                     except Exception:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00016', [old_dir_path])
-                        print(msg)
-                        # return retBool, msg
+
                     try:
                         # ファイルの更新があった最終更新時点のファイルでシンボリックリンク生成
                         for jnlid in option.get('target_jnls'):
@@ -364,6 +363,5 @@ class FileUploadColumn(Column):
                     except Exception:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00017', [old_dir_path])
-                        print(msg)
-                        # return retBool, msg
+
         return retBool, msg

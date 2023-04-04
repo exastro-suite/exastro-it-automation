@@ -2569,7 +2569,7 @@ def getTargetRepoListRow(DBobj):
 
 def backyard_main(organization_id, workspace_id):
 
-    print("backyard_main called")
+    g.applogger.debug("backyard_main called")
 
     error_flag = 0
     if getattr(g, 'LANGUAGE', None) is None:
@@ -2619,5 +2619,5 @@ def backyard_main(organization_id, workspace_id):
 
     g.applogger.debug(FREE_LOG)
 
-    print("backyard_main end")
+    g.applogger.debug("backyard_main end")
 

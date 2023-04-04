@@ -25,7 +25,7 @@ backyard_name = 'ita_by_hostgroup_split'
 
 
 def backyard_main(organization_id, workspace_id):
-    print("backyard_main ita_by_hostgroup_split called")
+    g.applogger.debug("backyard_main ita_by_hostgroup_split called")
 
     """
         ホストグループ分割機能（backyard）

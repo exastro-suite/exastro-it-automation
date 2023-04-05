@@ -462,11 +462,12 @@ setTable( mode ) {
     switch ( tb.mode ) {
         case 'view': case 'select': case 'execute': {
             if ( tb.option.sheetType !== 'reference') {
+                const filterInit = ( tb.$.body.is('.filterShow') )? `on`: `off`;
                 const menuList = {
                     Main: [],
                     Sub: [
                         { button: { icon: 'filter', text: getMessage.FTE00001, type: 'filterToggle', action: 'default',
-                        toggle: { init: 'off', on:getMessage.FTE00002, off:getMessage.FTE00003}}},
+                        toggle: { init: filterInit, on:getMessage.FTE00002, off:getMessage.FTE00003}}},
                         { button: { icon: 'gear', text: getMessage.FTE00086, type: 'tableSetting', action: 'default'}}
                     ]
                 };
@@ -2701,7 +2702,7 @@ stickyWidth() {
 
         if ( !filterHeaderFlag ) leftStickyFilterMenuWidth += 1;
 
-        if ( tb.option.sheetType !== 'reference') {
+        if ( tb.option.sheetType !== 'reference' && tb.getTableSettingValue('filter') !== 'out') {
             style.push(`#${tb.id} .filterMenuList{left:${leftStickyFilterMenuWidth}px;}`);
         }
         style.push(`#${tb.id} .tHeadGroup>.ci{left:${leftStickyWidth}px;}`);
@@ -3337,7 +3338,7 @@ editCellHtml( item, columnKey ) {
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn':
             return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
-            + `<div class="tableEditInputSelectValue">${value}</div>`
+            + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${value}</span></div>`
             + fn.html.select( fn.cv( tb.data.editSelect[columnName], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
             + `</div>`;
 

@@ -17,6 +17,7 @@ import os
 import pathlib
 import textwrap
 import shutil
+import datetime
 from common_libs.common import *  # noqa: F403
 from common_libs.common.exception import AppException
 
@@ -132,7 +133,7 @@ def dumpResultMsg(msg, taskId, uploadDir):
 
     return True
 
-def zip(execution_no, dirPath, dstPath, zipFileName, objdbca):
+def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
     """
 
     ディレクトリ配下をzipに固める
@@ -140,7 +141,7 @@ def zip(execution_no, dirPath, dstPath, zipFileName, objdbca):
     Arguments:
         execution_no: 作業番号
         dirPath: zipにするディレクトリのある個所
-        dstPath: zipを保管する場所+ファイル名
+        status: ステータス
         zipFileName: ファイル名
     Returns:
         実行結果
@@ -152,11 +153,19 @@ def zip(execution_no, dirPath, dstPath, zipFileName, objdbca):
     objdbca.db_transaction_start()
 
     try:
-        # 対象レコードの最終更新日時を取得
+        # 対象レコードの更新前の情報を取得
         export_import_sql = " SELECT * FROM T_BULK_EXCEL_EXPORT_IMPORT WHERE DISUSE_FLAG <> 1 AND EXECUTION_NO = %s "
         data_list = objdbca.sql_execute(export_import_sql, [execution_no])
         for data in data_list:
             last_update_taimestamp = data['LAST_UPDATE_TIMESTAMP']
+
+        # ステータス取得
+        status_data = objdbca.table_select("T_DP_STATUS_MASTER", 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [status_id, 0])
+        for data in status_data:
+            if g.LANGUAGE == "ja":
+                status = data["TASK_STATUS_NAME_JA"]
+            else:
+                status = data["TASK_STATUS_NAME_EN"]
 
         # ファイル更新用パラメータを作成
         parameters = {
@@ -165,6 +174,7 @@ def zip(execution_no, dirPath, dstPath, zipFileName, objdbca):
             },
             "parameter": {
                 "file_name": zipFileName,
+                "status": status,
                 "last_updated_user": g.USER_ID,
                 "last_update_date_time": last_update_taimestamp.strftime('%Y/%m/%d %H:%M:%S.%f'),
             },
@@ -184,34 +194,6 @@ def zip(execution_no, dirPath, dstPath, zipFileName, objdbca):
         return False
 
     return result
-
-def updateExcelZipFileName(taskId, fileNam, objdbca):
-    """
-
-    zipのファイルパスを登録
-
-    Arguments:
-        taskId: タスクID
-        fileNam: ファイル名
-    Returns:
-        実行結果
-    """
-
-    objdbca.db_transaction_start()
-    try:
-        # 通常テーブルで更新
-        target = {
-            "FILE_NAME": fileNam,
-            "EXECUTION_NO": taskId,
-            "LAST_UPDATE_USER": g.USER_ID
-        }
-        objdbca.table_update("T_BULK_EXCEL_EXPORT_IMPORT", target, "EXECUTION_NO", False)
-
-    except Exception:
-        objdbca.db_transaction_end(False)
-        return False
-
-    return True
 
 def registerResultFile(taskId, objdbca):
     """

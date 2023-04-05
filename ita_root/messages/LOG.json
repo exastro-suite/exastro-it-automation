@@ -1187,6 +1187,8 @@
     "BKY-40007": "Start registration of conductor instance.",
     "BKY-40008": "Start registration of node instance.",
     "BKY-40009": "Status set as \"In operation\". (Regularly id: \"{}\")",
+    "BKY-40010": "Failded to get Exastro Platform User(s).",
+    "BKY-40011": "Failed to identify the execution user.",
     "BKY-50001": "[Process]No changes, skip workflow.",
     "BKY-50002": "[Process] Start update module-variable link table.",
     "BKY-50003": "[Process] Start update movement-module link table.",

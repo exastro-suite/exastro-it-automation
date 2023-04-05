@@ -1058,7 +1058,6 @@ class ConductorCommonLibs():
 
         except Exception as e:
             g.applogger.error(e)
-            print(e)
             msg = g.appmsg.get_api_message('MSG-40013')
             return False, msg
             # return False, retCode

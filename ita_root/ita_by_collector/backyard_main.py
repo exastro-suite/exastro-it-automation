@@ -286,7 +286,7 @@ def chkMultiValueVariableSub(in_var_array):
 
 def backyard_main(organization_id, workspace_id):
 
-    print("backyard_main ita_by_collector called")
+    g.applogger.debug("backyard_main ita_by_collector called")
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 実行準備
@@ -867,4 +867,4 @@ def backyard_main(organization_id, workspace_id):
         FREE_LOG = g.appmsg.get_api_message("MSG-10776")
         g.applogger.debug(FREE_LOG)
 
-    print("backyard_main ita_by_collector end")
+    g.applogger.debug("backyard_main ita_by_collector end")

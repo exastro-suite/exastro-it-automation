@@ -102,11 +102,7 @@ def post_compare_execute(organization_id, workspace_id, menu, body=None):  # noq
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
         parameter = body
-        # print((connexion.request.headers))
-        print(connexion.request.headers.get("Host"))
-        """
 
-        """
     options = {}
     options.setdefault("compare_mode", "normal")
     result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
@@ -195,11 +191,7 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  
     if connexion.request.is_json:
         body = dict(connexion.request.get_json())
         parameter = body
-        # print((connexion.request.headers))
-        print(connexion.request.headers.get("Host"))
-        """
 
-        """
     options = {}
     options.setdefault("compare_mode", "file")
     result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)

@@ -1182,14 +1182,15 @@ class ExecuteDirector():
         return True, inventoryForEachCredentials
 
     def create_project(self, param):
-
         response_array = AnsibleTowerRestApiProjects.post(self.restApiCaller, param)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("Faild to post project.")
             return -1
 
         if "id" not in response_array['responseContents']:
-            g.applogger.debug("No project id.")
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("No project id.")
             return -1
 
         project_id = response_array['responseContents']['id']
@@ -1223,11 +1224,13 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiCredentials.git_post(self.restApiCaller, param)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("Faild to post git credential.")
             return -1
 
         if "id" not in response_array['responseContents']:
-            g.applogger.debug("No credential id.")
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("No git credential id.")
             return -1
 
         credentialId = response_array['responseContents']['id']
@@ -1258,11 +1261,13 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiCredentials.post(self.restApiCaller, param)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("Faild to post credential.")
             return -1
 
         if "id" not in response_array['responseContents']:
-            g.applogger.debug("No credential id.")
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("No credential id.")
             return -1
 
         credentialId = response_array['responseContents']['id']
@@ -1278,11 +1283,13 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiCredentials.vault_post(self.restApiCaller, param)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("Faild to post vault credential.")
             return -1
 
         if "id" not in response_array['responseContents']:
-            g.applogger.debug("No vault credential id.")
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("No vault credential id.")
             return -1
 
         vault_credentialId = response_array['responseContents']['id']
@@ -1292,7 +1299,8 @@ class ExecuteDirector():
         OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
 
         if "hosts" not in inventory or not inventory['hosts']:
-            g.applogger.debug("%s no hosts." % (inspect.currentframe().f_code.co_name))
+            # 作業実行のエラーログは上位で出力
+            self.errorlog("no hosts.")
             return -1
 
         # inventory
@@ -1306,11 +1314,13 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiInventories.post(self.restApiCaller, param)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("Faild to post inventory.")
             return -1
 
         if "id" not in response_array['responseContents']:
-            g.applogger.debug("No inventory id.")
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("No inventory id.")
             return -1
 
         inventoryId = response_array['responseContents']['id']
@@ -1351,7 +1361,8 @@ class ExecuteDirector():
 
             response_array = AnsibleTowerRestApiInventoryHosts.post(self.restApiCaller, param)
             if not response_array['success']:
-                g.applogger.debug(response_array['responseContents']['errorMessage'])
+                # 作業実行のエラーログは上位で出力
+                g.applogger.error("Faild to post inventory host.")
                 return -1
 
         return inventoryId
@@ -1383,11 +1394,13 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiJobTemplates.post(self.restApiCaller, param, addparam)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("Faild to post job templates.")
             return -1
 
         if "id" not in response_array['responseContents']:
-            g.applogger.debug("No job-template id.")
+            # 作業実行のエラーログは上位で出力
+            g.applogger.error("No job-template id.")
             return -1
 
         jobTemplateId = response_array['responseContents']['id']
@@ -1442,12 +1455,14 @@ class ExecuteDirector():
         self.workflowJobAry = {}
         ret = self.getworkflowJobs(execution_no)
         if not ret:
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
             g.applogger.error("Faild to get workflow jobs.")
             return False
 
         for wfJobId, workflowJobData in self.workflowJobAry.items():
             response_array = AnsibleTowerRestApiWorkflowJobs.delete(self.restApiCaller, wfJobId)
             if not response_array['success']:
+                # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
                 g.applogger.error("Faild to delete workflow job node.")
                 g.applogger.error(response_array)
                 return False
@@ -1458,7 +1473,9 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiProjects.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete project.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1467,7 +1484,9 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiCredentials.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete credential.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1476,7 +1495,9 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiCredentials.deleteVault(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete vault credential.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1485,7 +1506,9 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiCredentials.deleteGit(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete git credential.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1494,12 +1517,16 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiInventoryHosts.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete inventory host.")
+            g.applogger.error(response_array)
             return False
 
         response_array = AnsibleTowerRestApiInventories.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete inventory.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1508,7 +1535,9 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiJobTemplates.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete job template.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1517,12 +1546,16 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiWorkflowJobTemplateNodes.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete Workflow job template node.")
+            g.applogger.error(response_array)
             return False
 
         response_array = AnsibleTowerRestApiWorkflowJobTemplates.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete Workflow job template.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1531,7 +1564,9 @@ class ExecuteDirector():
 
         response_array = AnsibleTowerRestApiJobs.deleteRelatedCurrnetExecution(self.restApiCaller, execution_no)
         if not response_array['success']:
-            g.applogger.debug(response_array['responseContents']['errorMessage'])
+            # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+            g.applogger.error("Faild to delete job.")
+            g.applogger.error(response_array)
             return False
 
         return True
@@ -1799,7 +1834,9 @@ class ExecuteDirector():
                 JobData = JobDetail['JobData']
                 JobId = JobData['id']
                 if "id" not in JobData or "status" not in JobData or "failed" not in JobData:
-                    g.applogger.debug("Not expected data.")
+                    # 作業実行のエラーログは出力しない
+                    g.applogger.error("Not expected data.")
+                    g.applogger.error(JobDetail)
                     return AnscConst.EXCEPTION
 
                 if JobData['status'] != "successful":

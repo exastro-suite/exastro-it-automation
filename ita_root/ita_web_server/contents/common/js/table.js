@@ -2702,7 +2702,7 @@ stickyWidth() {
 
         if ( !filterHeaderFlag ) leftStickyFilterMenuWidth += 1;
 
-        if ( tb.option.sheetType !== 'reference') {
+        if ( tb.option.sheetType !== 'reference' && tb.getTableSettingValue('filter') !== 'out') {
             style.push(`#${tb.id} .filterMenuList{left:${leftStickyFilterMenuWidth}px;}`);
         }
         style.push(`#${tb.id} .tHeadGroup>.ci{left:${leftStickyWidth}px;}`);

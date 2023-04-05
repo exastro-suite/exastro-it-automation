@@ -3421,7 +3421,7 @@ class DefaultVarsFileAnalysis():
                 # ITAで扱う変数
                 var_type = self.LC_VAR_TYPE_ITA
 
-            #elif pattern['type'] == "USER":  # ToDo DF_VAR_TYPE_USER
+            #elif pattern['type'] == "USER":
             #    # 読替表にある変数はITA変数として扱う
             #    if len(ina_User2ITA_var_list[ParentVarName]) > 0:
             #        # 読替変数
@@ -4330,7 +4330,6 @@ class VarStructAnalysisFileAccess():
         arysystemvars = []
 
         # ロールパッケージファイル(ZIP)を解析するクラス生成
-        # ToDo fileuploadカラムのパスが変更になっている
         roleObj = CheckAnsibleRoleFiles(self.lv_objMTS)
 
         # ロールパッケージファイル(ZIP)の解凍先
@@ -4476,7 +4475,6 @@ class VarStructAnalysisFileAccess():
                     strVarsList = row['VARS_LIST']
 
                     # 変数定義の解析結果を取得
-                    # ToDo 別処理に置き換え(TemplateVarsStructAnalFileAccess)
                     """
                     fileObj = TemplateVarsStructAnalFileAccess(self.lv_objMTS, self.lv_objDBCA)
 

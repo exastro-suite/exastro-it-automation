@@ -395,10 +395,8 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
         g.applogger.error("result.txt still exists")
         return TFCLIConst.STATUS_EXCEPTION, execute_data
 
-    str_command = " ".join(command)
-    command.insert(0, "sudo")  # sudo権限
-
     # terraformコマンドを発行
+    str_command = " ".join(command)
     g.applogger.debug(str_command)
     proc = subprocess.Popen(command, cwd=workspace_work_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -629,7 +627,7 @@ def output_conducor(conductor_instance_no):
     output_file_name = 'terraform_output_' + execution_no + '.json'
     output_file_path = output_dir + "/" + output_file_name
 
-    command = ["sudo", "terraform", "output", "-json"]
+    command = ["terraform", "output", "-json"]
     cp = subprocess.run(command, cwd=workspace_work_dir, capture_output=True, text=True)
 
     if cp.returncode == 0:

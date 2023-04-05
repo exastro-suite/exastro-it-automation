@@ -797,6 +797,9 @@ def backyard_main(organization_id, workspace_id):
                                                         tmparr3['parameter']['remarks'] = param['remarks']
                                                         tmparr3['parameter']['last_update_date_time'] = now
                                                         tmparr3['parameter']['last_updated_user'] = g.USER_ID
+                                                        for k, v in param.items():
+                                                            if k not in tmparr3['parameter'] or tmparr3['parameter'][k] is None:
+                                                                tmparr3['parameter'][k] = v
 
                                                     # 登録、更新
                                                     RESTEXEC_FLG = 1

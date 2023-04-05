@@ -4057,7 +4057,6 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     self.set_conductor_update_status(conductor_instance_id, c_status_id)
                     action_type = 'abort'
                     tmp_result = self.orchestra_action(action_type, orchestrator_id, action_options)
-                    print("緊急停止発令", tmp_result)
                 # ステータス問い合わせ
                 action_type = 'status'
                 action_options["execution_id"] = execution_id

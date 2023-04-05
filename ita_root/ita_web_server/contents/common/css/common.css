@@ -2543,6 +2543,11 @@ letter-spacing: .75px;
 font-size: 14px;
 outline: none;
 }
+.tableEditInputSelectValueInner {
+display: block;
+overflow: hidden;
+text-overflow: ellipsis;
+}
 .noSelect {
 position: relative;
 display: flex;

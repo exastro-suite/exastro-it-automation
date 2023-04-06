@@ -1944,7 +1944,6 @@ class SubValueAutoReg():
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']] = {}
             if data['COL_NAME'] not in inout_tabColNameToValAssRowList[data['TABLE_NAME']]:
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']][data['COL_NAME']] = {}
-                idx = 0
 
             inout_tabColNameToValAssRowList[data['TABLE_NAME']][data['COL_NAME']][idx] = {
                                                                             'COLUMN_ID': data['COLUMN_ID'],

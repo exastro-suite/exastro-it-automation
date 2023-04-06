@@ -249,7 +249,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                             if os.path.isfile(view_data_path):
                                 objdbca.sqlfile_execute(view_data_path)
 
-            _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
+            _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
 
         # 正常系リターン
         return True, msg

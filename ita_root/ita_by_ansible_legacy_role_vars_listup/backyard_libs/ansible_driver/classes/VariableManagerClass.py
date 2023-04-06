@@ -40,7 +40,8 @@ class VariableManager:
                 # 同名があり型が一致しない場合は、既存のリストからも使用不可に変更する
                 # オプションによる変数では無い場合。（オプション変数のときは同名があった場合、既存側を優先する）
                 if not stored_item.is_same_struct(inserted_item) and not is_option_var:
-                    g.applogger.debug(f"Different structures defined for one variable name. \"{stored_item.var_name}\"")
+                    debug_msg = g.appmsg.get_log_message("BKY-30008", [stored_item.var_name])
+                    g.applogger.debug(debug_msg)
                     stored_item.set_not_use()
                     return False
 

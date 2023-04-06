@@ -16,6 +16,7 @@ common_libs api common function module
 """
 from flask import g
 import os
+import time
 import traceback
 
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -23,52 +24,67 @@ from common_libs.common.exception import AppException
 from common_libs.common.util import arrange_stacktrace_format
 
 
-def wrapper_job(main_logic, organization_id=None, workspace_id=None):
+def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=500):
     '''
     backyard job wrapper
     '''
     common_db = DBConnectCommon()  # noqa: F405
     g.applogger.debug("ITA_DB is connected")
 
-    # get organization_info_list
-    if organization_id is None:
-        organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
-    else:
-        organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])  # noqa: E501
+    # 子プロセスで使われているか否か
+    is_child_ps = False if organization_id is None else True
 
-    for organization_info in organization_info_list:
-        g.applogger.set_level(os.environ.get("LOG_LEVEL"))
+    # pythonでのループ
+    interval = int(os.environ.get("EXECUTE_INTERVAL"))
+    count = 1
+    max = int(loop_count) if is_child_ps is False else 1
 
-        organization_id = organization_info['ORGANIZATION_ID']
+    while True:
+        # get organization_info_list
+        if is_child_ps is False:
+            organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
+        else:
+            organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])  # noqa: E501
 
-        g.ORGANIZATION_ID = organization_id
-        # set log environ format
-        g.applogger.set_env_message()
+        for organization_info in organization_info_list:
+            g.applogger.set_level(os.environ.get("LOG_LEVEL"))
 
-        # database connect info
-        g.db_connect_info = {}
-        g.db_connect_info['ORGDB_HOST'] = organization_info.get('DB_HOST')
-        g.db_connect_info['ORGDB_PORT'] = str(organization_info.get('DB_PORT'))
-        g.db_connect_info['ORGDB_USER'] = organization_info.get('DB_USER')
-        g.db_connect_info['ORGDB_PASSWORD'] = organization_info.get('DB_PASSWORD')
-        g.db_connect_info['ORGDB_ADMIN_USER'] = organization_info.get('DB_ADMIN_USER')
-        g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
-        g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
-        g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = organization_info.get('INITIAL_DATA_ANSIBLE_IF')
-        # gitlab connect info
-        g.gitlab_connect_info = {}
-        g.gitlab_connect_info['GITLAB_USER'] = organization_info['GITLAB_USER']
-        g.gitlab_connect_info['GITLAB_TOKEN'] = organization_info['GITLAB_TOKEN']
+            organization_id = organization_info['ORGANIZATION_ID']
 
-        # job for organization
-        try:
-            organization_job(main_logic, organization_id, workspace_id)
-        except AppException as e:
-            # catch - raise AppException("xxx-xxxxx", log_format)
-            app_exception(e)
-        except Exception as e:
-            # catch - other all error
-            exception(e)
+            g.ORGANIZATION_ID = organization_id
+            # set log environ format
+            g.applogger.set_env_message()
+
+            # database connect info
+            g.db_connect_info = {}
+            g.db_connect_info['ORGDB_HOST'] = organization_info.get('DB_HOST')
+            g.db_connect_info['ORGDB_PORT'] = str(organization_info.get('DB_PORT'))
+            g.db_connect_info['ORGDB_USER'] = organization_info.get('DB_USER')
+            g.db_connect_info['ORGDB_PASSWORD'] = organization_info.get('DB_PASSWORD')
+            g.db_connect_info['ORGDB_ADMIN_USER'] = organization_info.get('DB_ADMIN_USER')
+            g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
+            g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
+            g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = organization_info.get('INITIAL_DATA_ANSIBLE_IF')
+            # gitlab connect info
+            g.gitlab_connect_info = {}
+            g.gitlab_connect_info['GITLAB_USER'] = organization_info['GITLAB_USER']
+            g.gitlab_connect_info['GITLAB_TOKEN'] = organization_info['GITLAB_TOKEN']
+
+            # job for organization
+            try:
+                organization_job(main_logic, organization_id, workspace_id)
+            except AppException as e:
+                # catch - raise AppException("xxx-xxxxx", log_format)
+                app_exception(e)
+            except Exception as e:
+                # catch - other all error
+                exception(e)
+
+        if count >= max:
+            break
+        else:
+            count = count + 1
+            time.sleep(interval)
 
 
 def organization_job(main_logic, organization_id=None, workspace_id=None):

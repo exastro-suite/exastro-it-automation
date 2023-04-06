@@ -965,6 +965,9 @@
     "MSG-10910": "Failed to get the organization to which the user belongs.",
     "MSG-10911": "User does not belong to an organization.",
     "MSG-10912": "Faild to get instance groups.",
+    "MSG-10935": "The variable name is not defined in the ITA readme. (role package:{} role:{} file:{})",
+    "MSG-10936": "The variable name is not defined. (role package:{} role:{} file:{})",
+    "MSG-10937": "The variable name is not defined. (template variable:{})",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",
@@ -1041,5 +1044,10 @@
     "BKY-30002": "pkey is None,",
     "BKY-30003": "Insert record to `{}` was failed.,",
     "BKY-30004": "Update(restore) record to `{}` was failed.,",
-    "BKY-30005": "Update(discard) record to `{}` was failed."
+    "BKY-30005": "Update(discard) record to `{}` was failed.",
+    "BKY-30006": "Failed to parse template variables json string.(template id: {}, template name: {})",
+    "BKY-30007": "Failed to parse role package variables json string.(template id: {}, template name: {})",
+    "BKY-30008": "It does not match another variable definition.(variable name: {})",
+    "BKY-30009": "The role name set for material link is missing in the role name list. (Material link ID: {}, Role name: {}, RolePKG ID: {})",
+    "BKY-30010": "The role registered in material link is not registered in the role name list. (Material link ID: {})"
 }

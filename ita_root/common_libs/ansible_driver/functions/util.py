@@ -13,6 +13,7 @@
 #
 from flask import g
 import os
+import shutil
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 """
@@ -156,6 +157,29 @@ def get_AnsibleDriverTmpPath():
     """
     return getDataRelayStorageDir() + "/tmp/driver/ansible"
 
+def get_AnsibleDriverHpTmpPath():
+    """
+      /tmpバスを取得する。
+      Arguments:
+        なし
+      Returns:
+        Ansible用tmpバス
+    """
+    return "/tmp"
+
+def AnsibleFilesClean(FilesList):
+    """
+      指定されたファイル・ディレクトリを削除
+      Arguments:
+        FilesList: ファイル・ディレクトリのリスト
+      Returns:
+        なし
+    """
+    for path in FilesList:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.isfile(path):
+            os.remove(path)
 
 def getFileupLoadColumnPath(menuid, Column):
     """

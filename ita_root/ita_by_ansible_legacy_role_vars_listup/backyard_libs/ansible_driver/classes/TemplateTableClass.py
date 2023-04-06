@@ -11,11 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from flask import g
 import json
+import sys
+import traceback
+
+from flask import g
 
 from backyard_libs.ansible_driver.classes.VariableClass import Variable
 from backyard_libs.ansible_driver.classes.VariableManagerClass import VariableManager
+from common_libs.conductor.classes.exec_util import addline_msg
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from .TableBaseClass import TableBase
 
@@ -47,23 +51,33 @@ class TemplateTable(TableBase):
 
         result_dict = {}
         for row in self._stored_records.values():
-            tpl_var_name = row['ANS_TEMPLATE_VARS_NAME']
-            var_struct = json.loads(row['VAR_STRUCT_ANAL_JSON_STRING'])
+            try:
+                tpl_var_id = row[self.pkey]
+                tpl_var_name = row['ANS_TEMPLATE_VARS_NAME']
+                var_struct = json.loads(row['VAR_STRUCT_ANAL_JSON_STRING'])
 
-            if tpl_var_name not in result_dict:
-                result_dict[tpl_var_name] = VariableManager()
+                if tpl_var_name not in result_dict:
+                    result_dict[tpl_var_name] = VariableManager()
 
-            # 一般変数、複数具体値変数
-            for var_name, attr_flag in var_struct['Vars_list'].items():
-                var_attr = AnscConst.GC_VARS_ATTR_STD if attr_flag == 0 else AnscConst.GC_VARS_ATTR_LIST
-                item = Variable(var_name, var_attr)
-                result_dict[tpl_var_name].add_variable(item)
+                # 一般変数、複数具体値変数
+                for var_name, attr_flag in var_struct['Vars_list'].items():
+                    var_attr = AnscConst.GC_VARS_ATTR_STD if attr_flag == 0 else AnscConst.GC_VARS_ATTR_LIST
+                    item = Variable(var_name, var_attr)
+                    result_dict[tpl_var_name].add_variable(item)
 
-            # 多次元変数
-            var_attr = AnscConst.GC_VARS_ATTR_M_ARRAY
-            for var_name, var_detail in var_struct['Array_vars_list'].items():
-                var_struct = var_detail
-                item = Variable(var_name, var_attr, var_struct)
-                result_dict[tpl_var_name].add_variable(item)
+                # 多次元変数
+                var_attr = AnscConst.GC_VARS_ATTR_M_ARRAY
+                for var_name, var_detail in var_struct['Array_vars_list'].items():
+                    array_var_struct = var_detail
+                    item = Variable(var_name, var_attr, array_var_struct)
+                    result_dict[tpl_var_name].add_variable(item)
+
+            except Exception as e:
+                debug_msg = g.appmsg.get_log_message("BKY-30006", [tpl_var_id, tpl_var_name])
+                g.applogger.debug(debug_msg)
+                g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                type_, value, traceback_ = sys.exc_info()
+                msg = traceback.format_exception(type_, value, traceback_)
+                g.applogger.debug(msg)
 
         return result_dict

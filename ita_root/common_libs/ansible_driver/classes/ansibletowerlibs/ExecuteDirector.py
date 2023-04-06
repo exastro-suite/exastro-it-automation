@@ -806,7 +806,7 @@ class ExecuteDirector():
             # src   path: /var/lib/exastro/ita_legacy_role_executions_作業番号/__ita_out_dir__
             # dest  path: /storage/org1/workspace-1/driver/ansible/legacy_role/作業番号/out
             ########################################################################################################
-            src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH]
+            src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH] + "/*"
             dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_ITA_PATH]
             info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],

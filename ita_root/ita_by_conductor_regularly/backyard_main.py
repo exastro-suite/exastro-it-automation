@@ -84,7 +84,13 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
 
     where_str2 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s) AND (NEXT_EXECUTION_DATE<NOW()+INTERVAL %s MINUTE)"
     inOps_list = objdbca.table_select(table_name, where_str2, [status_ids_list["STATUS_IN_OPERATION"], status_ids_list["STATUS_LINKING_ERROR"], int(interval_time)])  # noqa: E501
-    platform_users = get_exastro_platform_users()
+
+    platform_users = {}
+    try:
+        platform_users = get_exastro_platform_users()
+    except Exception:
+        debug_msg = g.appmsg.get_log_message("BKY-40010", [])
+        g.applogger.debug(debug_msg)
 
     active_user_list = []
     for user_id in platform_users.keys():
@@ -117,6 +123,10 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
             status_id = item["STATUS_ID"]
             next_execution_date = item["NEXT_EXECUTION_DATE"]
             current_datetime = datetime.datetime.now()
+
+            # レコードのステータスIDが紐付けエラーの場合、一度「準備中」に設定
+            if status_id == status_ids_list["STATUS_LINKING_ERROR"]:
+                status_id = status_ids_list["STATUS_IN_PREPARATION"]
 
             # 実行ユーザの廃止チェック
             if item["EXECUTION_USER_ID"] not in active_user_list:
@@ -160,11 +170,18 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                         g.applogger.debug(debug_msg)
 
                         # パラメータのexecution_userを、レコードを登録したユーザに差し替え
+                        user_setting_flag = False
                         for key, value in platform_users.items():
                             if key == item["EXECUTION_USER_ID"]:
+                                user_setting_flag = True
                                 conductor_parameter["parameter"]["execution_user"] = value
-                            else:
-                                raise Exception
+                                break
+
+                        # 差し替えに失敗した場合
+                        if user_setting_flag is False:
+                            debug_msg = g.appmsg.get_log_message("BKY-40011", [])
+                            g.applogger.debug(debug_msg)
+                            raise Exception
 
                         instance_ret = objCexec.conductor_instance_exec_maintenance(conductor_parameter)  # noqa: F841
                         debug_msg = g.appmsg.get_log_message("BKY-40008", [])
@@ -214,7 +231,6 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
     # ################ ConductorとOpertionの復活チェック
     where_str3 = "WHERE DISUSE_FLAG=0 AND (STATUS_ID=%s OR STATUS_ID=%s)"
     restore_check_list = objdbca.table_select(table_name, where_str3, [status_ids_list["STATUS_CONDUCTOR_DISCARD"], status_ids_list["STATUS_OPERATION_DISCARD"]])    # noqa: E501
-    # print(restore_check_list)
     if restore_check_list != 0:
         for item in restore_check_list:
             status_id = item["STATUS_ID"]

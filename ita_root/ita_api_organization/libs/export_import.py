@@ -25,6 +25,7 @@ import tarfile
 import mimetypes
 import secrets
 import pathlib
+import time
 from collections import Counter
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
@@ -464,7 +465,10 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
         os.makedirs(uploadPath + upload_id)
         os.chmod(uploadPath + upload_id, 0o777)
 
-    unzip_file(fileName, uploadPath, upload_id)
+    ret = unzip_file(fileName, uploadPath, upload_id)
+
+    if ret is False:
+        unzip_file_cmd(fileName, uploadPath, upload_id)
 
     # zipファイルの中身確認
     declare_list = checkZipFile(upload_id, organization_id, workspace_id)
@@ -699,8 +703,25 @@ def unzip_file(fileName, uploadPath, upload_id):
                 z.extract(info, path=uploadPath + upload_id)
 
     except Exception as e:
-        cmd = "unzip -d " + uploadPath + upload_id + " " + uploadPath + fileName
-        subprocess.run(cmd, capture_output=True, text=True, shell=True)
+        return False
+
+    return True
+
+def unzip_file_cmd(fileName, uploadPath, upload_id):
+    """
+        zipファイルを解凍する(コマンド)
+
+        args:
+            fileName: ファイル名
+            uploadPath: 解凍先パス
+            upload_id: アップロードID
+    """
+    to_path = uploadPath + upload_id
+    from_path = uploadPath + fileName
+    cmd = ["unzip", "-d", to_path, from_path]
+    cp = subprocess.run(cmd, capture_output=True, text=True)
+
+    return
 
 def checkZipFile(upload_id, organization_id, workspace_id):
     """
@@ -887,7 +908,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
                     menuGroupName = menuInfo["MENU_GROUP_NAME_EN"]
                     menuName = menuInfo["MENU_NAME_EN"]
 
-                menuGroupFolderName = menuGroupId + "_" + menuGroupName
+                menuGroupFolderName = menuGroupId + "_" + menuGroupName.replace("/", "_")
             else:
                 menuId = ""
                 menuGroupId = ""

@@ -528,10 +528,6 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
                 menu_list.append('role_menu_link_list')
 
         menu_group_list = []
-        # MENU_GROUP_ID:MENU_GROUP_NAMEのdict
-        # dict_menu_group_id_name = {}
-        # MENU_GROUP_ID:DISP_SEQのdict
-        # dict_menu_group_id_seq = {}
         for menu in menu_list:
             # メニューの存在確認
             menu_info_record = _check_menu_info(menu, objdbca)
@@ -556,29 +552,6 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
             add_menu['menu_name_rest'] = menu_info_record.get('MENU_NAME_REST')
             add_menu['disp_seq'] = menu_info_record.get('DISP_SEQ')
             add_menu_group['menus'].append(add_menu)
-
-
-
-            # add_menu = {}
-            # add_menu['id'] = record.get('MENU_ID')
-            # add_menu['menu_name'] = record.get('MENU_NAME_' + g.lang.upper())
-            # add_menu['menu_name_rest'] = record.get('MENU_NAME_REST')
-            # add_menu['disp_seq'] = record.get('DISP_SEQ')
-            # menus[record.get('MENU_GROUP_ID')].append(add_menu)
-
-            # # メニューグループの一覧を作成し、メニュー一覧も格納する
-            # menu_group_id = menu_info_record.get('MENU_GROUP_ID')
-            # dict_menu_group_id_name[menu_info_record.get('MENU_GROUP_ID')] = menu_info_record.get('MENU_GROUP_NAME_' + g.lang.upper())
-            # dict_menu_group_id_seq[menu_info_record.get('MENU_GROUP_ID')] = menu_info_record.get('GROUP_DISP_SEQ')
-
-            # add_menu_group = {}
-            # # add_menu_group['parent_id'] = record.get('PARENT_MENU_GROUP_ID')
-            # add_menu_group['id'] = menu_group_id
-            # add_menu_group['menu_group_name'] = record.get('MENU_GROUP_NAME_' + g.lang.upper())
-            # add_menu_group['disp_seq'] = record.get('DISP_SEQ')
-            # add_menu_group['menus'] = menus.get(menu_group_id)
-
-            # menu_group_list.append(add_menu_group)
 
         menus_data = {
             "menu_groups": menu_group_list,
@@ -653,7 +626,6 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
             if table_name.startswith('T_CMDB'):
                 view_name = record.get('VIEW_NAME')
                 if view_name is not None:
-                    # table_name_list.append(view_name)
                     show_create_sql = 'SHOW CREATE VIEW `%s` ' %(view_name)
                     rec = objdbca.sql_execute(show_create_sql, [])
                     create_view_str = rec[0]['Create View']
@@ -795,19 +767,15 @@ def _check_menu_info(menu, wsdb_istc=None):
     sql = (
         "SELECT TAB_B.MENU_GROUP_ID, TAB_B.MENU_GROUP_NAME_JA, TAB_B.MENU_GROUP_NAME_EN, TAB_B.PARENT_MENU_GROUP_ID, "
         "TAB_A.MENU_ID, TAB_A.MENU_NAME_JA, TAB_A.MENU_NAME_EN, TAB_A.MENU_NAME_REST, "
-        # "TAB_C.MENU_GROUP_ID PA_MENU_GROUP_ID, TAB_C.MENU_GROUP_NAME_JA PA_MENU_GROUP_NAME_JA, TAB_C.MENU_GROUP_NAME_EN PA_MENU_GROUP_NAME_EN "
         "TAB_A.DISP_SEQ, TAB_B.DISP_SEQ GROUP_DISP_SEQ "
         "FROM `T_COMN_MENU` TAB_A "
         "INNER JOIN T_COMN_MENU_GROUP TAB_B "
         "ON TAB_A.MENU_GROUP_ID=TAB_B.MENU_GROUP_ID "
-        # "LEFT OUTER JOIN T_COMN_MENU_GROUP TAB_C "
-        # "ON TAB_B.PARENT_MENU_GROUP_ID=TAB_C.MENU_GROUP_ID "
         "WHERE TAB_A.MENU_NAME_REST=%s "
         "AND TAB_A.DISUSE_FLAG=%s "
     )
 
     menu_record = wsdb_istc.sql_execute(sql, [menu, 0])
-    # menu_record = wsdb_istc.sql_execute('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [menu, 0])
     if not menu_record:
         log_msg_args = [menu]
         api_msg_args = [menu]

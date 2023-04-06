@@ -28,7 +28,7 @@ backyard_name = 'ita_by_file_autoclean'
 
 
 def backyard_main(organization_id, workspace_id):
-    print("backyard_main ita_by_file_autoclean called")
+    g.applogger.debug("backyard_main ita_by_file_autoclean called")
 
     """
         ファイル削除機能（backyard）

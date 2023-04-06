@@ -285,7 +285,8 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         # planコマンド
         command_options = ["-no-color", "-input=false"]
         if secure_tfvars_flg is True:
-            command_options.append("-var-file secure.tfvars")
+            command_options.append("-var-file")
+            command_options.append("secure.tfvars")
         if run_mode != TFCLIConst.RUN_MODE_DESTROY:
             command = ["terraform", "plan"]
             command.extend(command_options)
@@ -307,7 +308,8 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         # applyコマンド
         command_options = ["-no-color", "-auto-approve"]
         if secure_tfvars_flg is True:
-            command_options.append("-var-file secure.tfvars")
+            command_options.append("-var-file")
+            command_options.append("secure.tfvars")
         if run_mode == TFCLIConst.RUN_MODE_APPLY:
             command = ["terraform", "apply"]
             command.extend(command_options)

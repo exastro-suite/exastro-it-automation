@@ -148,7 +148,8 @@ def backyard_main(organization_id, workspace_id):
                     g.USER_ID = '60102'
 
                     # メニューグループごとにまとめる
-                    folder_name = menuGroupId + "_" + menuGroupName
+                    # スペース、バックスラッシュがあるとzip解凍に失敗するので「_」に変換
+                    folder_name = menuGroupId + "_" + menuGroupName.replace("/", "_")
                     if not os.path.exists(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name):
                         os.makedirs(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name)
                         os.chmod(EXPORT_PATH + "/" + taskId + "/tmp_zip/" + folder_name, 0o777)
@@ -175,6 +176,8 @@ def backyard_main(organization_id, workspace_id):
 
                 # ファイル一覧をJSONに変換
                 tmpExportPath = EXPORT_PATH + "/" + taskId + "/tmp_zip"
+                fileputflg = pathlib.Path(tmpExportPath + "/MENU_LIST.txt").write_text(fileNameList, encoding="utf-8")
+
 
                 # パスの有無を確認
                 if not os.path.exists(DST_PATH):
@@ -231,8 +234,8 @@ def backyard_main(organization_id, workspace_id):
                 for menuNameRest, fileName in retImportAry.items():
                     menuInfo = util.getMenuInfoByMenuId(menuNameRest, objdbca)
                     menuId = menuInfo["MENU_ID"]
-                    chk_path1 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_JA"] + "/" + fileName
-                    chk_path2 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_EN"] + "/" + fileName
+                    chk_path1 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_JA"].replace("/", "_") + "/" + fileName
+                    chk_path2 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_EN"].replace("/", "_") + "/" + fileName
                     if not os.path.exists(chk_path1) and not os.path.exists(chk_path2) or fileName == "":
                         # ファイルがないエラー
                         resFilePath = RESULT_PATH + "/ResultData_" + taskId + ".log"

@@ -2378,11 +2378,11 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
                         <tbody class="commonTbody">
                             <tr class="commonTr">
                                 <th class="commonTh">ID</th>
-                                <td class="commonTd selectId">${executeConfig.selectId}</td>
+                                <td class="commonTd selectId"></td>
                             </tr>
                             <tr class="commonTr">
                                 <th class="commonTh">${getMessage.FTE10055}</th>
-                                <td class="commonTd selectName">${executeConfig.selectName}</td>
+                                <td class="commonTd selectName"></td>
                             </tr>
                         </tbody>
                     </table>
@@ -2434,6 +2434,10 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
             
             modalInstance[ modalId ].open( html );
             cmn.setDatePickerEvent( modalInstance[ modalId ].$.dbody.find('.executeSchedule'), getMessage.FTE10052 );
+
+            // 選択しているItemをセット
+            modalInstance[ modalId ].$.dbody.find('.selectId').text( executeConfig.selectId );
+            modalInstance[ modalId ].$.dbody.find('.selectName').text( executeConfig.selectName );
             
             // オペレーション選択
             modalInstance[ modalId ].$.dbody.find('.executeOperetionSelectButton').on('click', function(){

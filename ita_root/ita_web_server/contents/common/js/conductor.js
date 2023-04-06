@@ -2791,7 +2791,7 @@ createNode( nodeID ) {
     // Node name
     typeCheck = ['start', 'end', 'movement'];
     if ( typeCheck.indexOf( nodeData.type ) !== -1 ) {
-        nodeHTML += '<div class="node-name"><span>' + nodeName + '</span></div>';
+        nodeHTML += '<div class="node-name"><span>' + fn.cv( nodeName, '', true ) + '</span></div>';
     }
     if ( nodeData.type === 'call' ) {
         const callConductorId = nodeData['call_conductor_id'];
@@ -2802,7 +2802,7 @@ createNode( nodeID ) {
         nodeHTML += ``
         + `<div class="node-name">`
             + `<span class="select-conductor-name">`
-                + `<span class="select-conductor-name-inner">${nodeName}</span>`
+                + `<span class="select-conductor-name-inner">${fn.cv( nodeName, '', true )}</span>`
             + `</span>`
         + `</div>`;
     }
@@ -2928,7 +2928,7 @@ createNode( nodeID ) {
       + '<div class="node-operation">'
         + '<dl class="node-operation-body">'
           + '<dt class="node-operation-name">OP</dt>'
-          + '<dd class="node-operation-data">' + nodeOperationData + '</dd>'
+          + '<dd class="node-operation-data">' + fn.cv( nodeOperationData, '', true ) + '</dd>'
         + '</dl>'
         + '<div class="node-operation-border"></div>'
       + '</div>'
@@ -4616,8 +4616,8 @@ panelCallHtml( nodeId ) {
     
     const node = cd.data[ nodeId ],
           note = fn.cv( node.note, '', true ),
-          conductor = fn.cv( cd.getConductorName( node.call_conductor_id ), ''),
-          operation = fn.cv( cd.getOperationName( node.operation_id ), ''),
+          conductor = fn.cv( cd.getConductorName( node.call_conductor_id ), '', true ),
+          operation = fn.cv( cd.getOperationName( node.operation_id ), '', true ),
           skip = ( node.skip_flag === '1')? { checked: 'checked'}: {},
           skipId = `${cd.id}_movementSkip`;
           
@@ -4980,7 +4980,7 @@ movementList() {
       + `<li>`
           + `<label class="property-label">`
               + `<input type="checkbox" class="orchestra${orchestra.id}" name="${cd.createId('filter-orchestra', false )}" checked>`
-              + orchestra.name
+              + fn.cv( orchestra.name, '', true )
           + `</label>`
       + `</li>`);
       
@@ -5021,7 +5021,7 @@ movementList() {
                 + `<th class="movement-list-orchestrator" title="${orchestraName}">`
                     + `<span class="add-node ${orchestraName}" data-id="${movement.id}"></span>`
                 + `</th> `
-                + `<td class="movement-list-name"><div>${movement.name}</div></td>`
+                + `<td class="movement-list-name"><div>${fn.cv( movement.name, '', true )}</div></td>`
             + `</tr>`);
         }
         $movementListRows.html( movementSortLost.join('') );

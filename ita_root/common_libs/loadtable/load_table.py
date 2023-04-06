@@ -2466,12 +2466,6 @@ class loadTable():
             if mode in ['inner', 'export', 'nomal', 'excel', 'count']:
                 view_name = self.get_view_name()
                 table_name = self.get_table_name()
-                # # VIEWが設定されている場合はVIEWを対象とする
-                # view_name = self.get_view_name()
-                # if view_name:
-                #     table_name = view_name
-                # else:
-                #     table_name = self.get_table_name()
 
                 # シートタイプが「参照用(5, 6)」の場合、専用の検索条件生成処理
                 if str(self.get_sheet_type()) in ["5", "6"] and table_name is None:
@@ -2552,12 +2546,8 @@ class loadTable():
                 # 履歴テーブル
                 where_str = ''
                 bind_value_list = []
-                # VIEWが設定されている場合はVIEWを対象とする
                 view_name = self.get_view_name_jnl()
-                if view_name:
-                    table_name = view_name
-                else:
-                    table_name = self.get_table_name_jnl()
+                table_name = self.get_table_name_jnl()
 
                 if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all']:
                     tmp_jnl_conf = parameter.get('JNL')

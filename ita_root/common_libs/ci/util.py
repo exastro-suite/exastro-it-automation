@@ -45,6 +45,9 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
         else:
             organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `ORGANIZATION_ID`=%s", [organization_id])  # noqa: E501
+        # autocommit=falseの場合に、ループ中にorganizationが更新されても、最新データが取得できないバグへの対策
+        common_db.db_transaction_start()
+        common_db.db_commit()
 
         for organization_info in organization_info_list:
             g.applogger.set_level(os.environ.get("LOG_LEVEL"))

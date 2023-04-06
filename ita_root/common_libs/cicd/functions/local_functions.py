@@ -119,7 +119,7 @@ def MatlLinkColumnValidator2(MatlTypeId, MatlFileTypeId, RepoId, MatlLinkId, ret
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
             # 紐付先資材タイプがAnsible-LegacyRoleコンソール/パッケージ管理以外の場合、資材パスはファイルパスを選択して下さい。(リモートリポジトリ 項番:{} 資材紐付 項番:{})
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90036", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90036", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     elif MatlTypeId == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE:
@@ -127,7 +127,7 @@ def MatlLinkColumnValidator2(MatlTypeId, MatlFileTypeId, RepoId, MatlLinkId, ret
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
 
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90035", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90035", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     return True, retStrBody
@@ -143,7 +143,7 @@ def MatlLinkColumnValidator3(row, retStrBody):
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
 
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90028", [row['MATL_LINK_ROW_ID'], row['REPO_ROW_ID']]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90028", [row['MATL_LINK_ROW_ID'], row['REPO_ROW_ID']]))
             retBool = False
 
     # 資材一覧が廃止レコードか判定
@@ -152,7 +152,7 @@ def MatlLinkColumnValidator3(row, retStrBody):
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
 
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90029", [row['MATL_LINK_ROW_ID'], row['MATL_ROW_ID']]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90029", [row['MATL_LINK_ROW_ID'], row['MATL_ROW_ID']]))
             retBool = False
 
     # オペレーションIDとMovemnetIDが両方設定されている場合に オペレーションIDとMovemnetIDが廃止レコードか判定
@@ -161,14 +161,14 @@ def MatlLinkColumnValidator3(row, retStrBody):
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
 
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90033", [row['MATL_LINK_ROW_ID'], row['DEL_OPE_ID']]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90033", [row['MATL_LINK_ROW_ID'], row['DEL_OPE_ID']]))
             retBool = False
 
         if row['PTN_DISUSE_FLAG'] is None or row['PTN_DISUSE_FLAG'] == '1':
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
 
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90034", [row['MATL_LINK_ROW_ID'], row['DEL_MOVE_ID']]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90034", [row['MATL_LINK_ROW_ID'], row['DEL_MOVE_ID']]))
             retBool = False
 
     # 紐付先資材タイプが対話ファイル素材集の場合 対話種別とOS種別の廃止レコードか判定
@@ -177,14 +177,14 @@ def MatlLinkColumnValidator3(row, retStrBody):
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
 
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90037", [row['MATL_LINK_ROW_ID'], row['M_DIALOG_TYPE_ID']]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90037", [row['MATL_LINK_ROW_ID'], row['M_DIALOG_TYPE_ID']]))
             retBool = False
 
         if row['OS_DISUSE_FLAG'] is None or row['OS_DISUSE_FLAG'] == '1':
             if len(retStrBody) > 0:
                 retStrBody = "%s\n" % (retStrBody)
 
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90038", [row['MATL_LINK_ROW_ID'], row['M_OS_TYPE_ID']]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90038", [row['MATL_LINK_ROW_ID'], row['M_OS_TYPE_ID']]))
             retBool = False
 
     return retBool, retStrBody
@@ -198,40 +198,40 @@ def MatlLinkColumnValidator5(RepoId, MatlLinkId, ExtStnId, MatlTypeId, retStrBod
     # Playbook素材集
     if MatlTypeId == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_LEGACY:
         if ExtStnId != TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_LEGACY:
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     # 対話ファイル素材集
     elif MatlTypeId == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_PIONEER:
         if ExtStnId != TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_PIONEER:
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     # ロールパッケージ管理
     elif MatlTypeId == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_ROLE:
         if ExtStnId != TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_ROLE:
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     # ファイル管理、または、テンプレート管理
     elif MatlTypeId in [TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_CONTENT, TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_TEMPLATE]:
         if ExtStnId not in [TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_LEGACY, TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_PIONEER, TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_ROLE]:
             # 選択されている紐付先資材タイプとMovementの組み合わせが不正です。(リモートリポジトリ 項番:{} 資材紐付 項番:{})
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     # Module素材、または、Policy管理
     elif MatlTypeId in [TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE, TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_POLICY]:
         if ExtStnId != TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_TERRAFORM:
             # 選択されている紐付先資材タイプとMovementの組み合わせが不正です。(リモートリポジトリ 項番:{} 資材紐付 項番:{})
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     # CLI Module素材
     elif MatlTypeId == TD_B_CICD_MATERIAL_TYPE_NAME.C_MATL_TYPE_ROW_ID_MODULE_CLI:
         if ExtStnId != TD_C_PATTERN_PER_ORCH.C_EXT_STM_ID_TERRAFORM_CLI:
             # 選択されている紐付先資材タイプとMovementの組み合わせが不正です。(リモートリポジトリ 項番:{} 資材紐付 項番:{})
-            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))  # ToDo
+            retStrBody = "%s%s" % (retStrBody, g.appmsg.get_api_message("MSG-90039", [RepoId, MatlLinkId]))
             return False, retStrBody
 
     return True, retStrBody

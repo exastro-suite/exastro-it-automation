@@ -87,12 +87,15 @@ background-color: rgba(0,0,0,.05);
 border: 1px solid rgba( 0,0,0,.1);
 }
 .db-reserve-message {
-margin: 8px;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100%;
 padding: 16px;
 border: 1px solid #CCC;
 background-color: #F2F2F2;
 border-radius: 4px;
-color: #AAA;
+color: #888;
 text-align: center;
 }
 .darkmode .db-reserve-message {
@@ -1271,8 +1274,11 @@ opacity: .3;
 ##################################################
 */
 .db-reserve {
-height: 100%;
 padding: 8px;
+}
+.db-reserve-inner {
+overflow: auto;
+height: 100%; max-height: 480px;
 }
 .db-reserve .db-cell .db-cell-i {
 padding: 4px 8px;
@@ -1354,7 +1360,25 @@ color: #EEE;
 .db-reserve-cd > span {
 opacity: .2;
 }
-
+.db-reserve,
+.db-reserve-inner,
+.db-reserve-table,
+.db-reserve-tbody,
+.db-reserve-tr,
+.db-reserve-td,
+.db-reserve-td > .db-cell-i {
+height: 100%;
+}
+.db-reserve-td > .db-cell-i {
+display: flex;
+justify-content: center;
+align-items: center;
+}
+.db-reserve-thead {
+position: sticky;
+top: 0;
+z-index: 10;
+}
 
 /*
 ##################################################

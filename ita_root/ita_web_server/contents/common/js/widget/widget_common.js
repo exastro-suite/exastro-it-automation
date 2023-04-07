@@ -520,7 +520,10 @@ setListEvent() {
                       $list = $line.closest('.db-modal-list-tbody'),
                       height = $line.outerHeight(),
                       defaultY = $line.position().top,
-                      $dummy = $('<tr class="db-modal-list-dummy"></tr>');
+                      maxY = $list.outerHeight() - height,
+                      $dummy = $('<tr class="db-modal-list-dummy"></tr>'),
+                      $body = $move.closest('.dialogBody'),
+                      defaultScroll = $body.scrollTop();
                 
                 // 幅を固定
                 $line.find('.db-modal-list-td').each(function(){
@@ -533,14 +536,23 @@ setListEvent() {
                 $dummy.css('height', height );
                 
                 fn.deselection();
+
+                let positionY = defaultY;
+                const listPosition = function(){
+                    let setPostion = positionY - ( defaultScroll - $body.scrollTop() );
+                    if ( setPostion < 0 ) setPostion = 0;
+                    if ( setPostion > maxY ) setPostion = maxY;
+                    $line.css('top', setPostion );
+                };
+
+                $body.on('scroll.freeMove', function(){
+                    listPosition();
+                });
                 
                 $window.on({
                     'mousemove.freeMove': function( mme ){
-                        const maxY = $list.outerHeight() - height;
-                        let positionY = defaultY + mme.pageY - mde.pageY;
-                        if ( positionY < 0 ) positionY = 0;
-                        if ( positionY > maxY ) positionY = maxY;
-                        $line.css('top', positionY );
+                        positionY = defaultY + mme.pageY - mde.pageY;
+                        listPosition();
                         if ( $( mme.target ).closest('.db-modal-list-tr').length ) {
                             const $target = $( mme.target ).closest('.db-modal-list-tr'),
                                   targetNo = $target.index(),
@@ -553,6 +565,7 @@ setListEvent() {
                         }
                     },
                     'mouseup.freeUp': function(){
+                        $body.off('scroll.freeMove');
                         $window.off('mousemove.freeMove mouseup.freeUp');
                         $list.removeClass('active');
                         $line.removeClass('move');

@@ -771,6 +771,14 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
         raise AppException("499-01302", [], [])
 
+    if not os.path.exists(uploadPath + upload_id + '/MENU_LIST.txt'):
+        errCnt += 1
+        if os.path.exists(uploadPath + fileName):
+            os.remove(uploadPath + fileName)
+        shutil.rmtree(uploadPath + upload_id)
+
+        raise AppException("499-01302", [], [])
+
     tmp_menu_list = Path(uploadPath + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
     if tmp_menu_list == "":
         if os.path.exists(uploadPath + fileName):

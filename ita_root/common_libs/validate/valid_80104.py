@@ -10,6 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from flask import g
+import json
 
 
 def external_valid_menu_before(objdbca, objtable, option):
@@ -25,9 +27,36 @@ def external_valid_menu_before(objdbca, objtable, option):
     objdbca.table_update(table_name, data_list, primary_key_name, False)
 
     # 入力値取得
-    # entry_parameter = option.get('entry_parameter').get('parameter')
+    entry_parameter = option.get('entry_parameter').get('parameter')
     # current_parameter = option.get('current_parameter').get('parameter')
     cmd_type = option.get("cmd_type")
+    movement_name = entry_parameter.get('movement_name')
+    movement_id = entry_parameter.get('movement_id')
+
+    # Movement一覧にMovement名とオーケストレータに同一のレコードがないかを確認(廃止時はスキップ)
+    if not cmd_type == "Discard":
+        if cmd_type == "Register":
+            where_str = 'WHERE MOVEMENT_NAME = %s AND ITA_EXT_STM_ID = %s AND DISUSE_FLAG = %s'
+            ret = objdbca.table_select('T_COMN_MOVEMENT', where_str, [movement_name, orchestra_id, 0])
+        elif cmd_type == "Update" or cmd_type == "Restore":
+            # 「更新」「復活」の場合は自分自身のレコードを除外
+            where_str = 'WHERE MOVEMENT_NAME = %s AND ITA_EXT_STM_ID = %s AND MOVEMENT_ID <> %s AND DISUSE_FLAG = %s'
+            ret = objdbca.table_select('T_COMN_MOVEMENT', where_str, [movement_name, orchestra_id, movement_id, 0])
+
+        # レコードがある場合は重複エラー
+        if ret:
+            # オーケストラ名を取得
+            orchestra_nama = None
+            orchestra_record = objdbca.table_select('T_COMN_ORCHESTRA', 'WHERE ORCHESTRA_ID = %s', [orchestra_id])
+            if orchestra_record:
+                orchestra_nama = orchestra_record[0].get('ORCHESTRA_NAME')
+            # メッセージを作成
+            dict_bind_kv = {'movement_name': movement_name, 'orchestrator': orchestra_nama}
+            json_dict_bind_kv = json.dumps(dict_bind_kv)
+            list_uuids = ret[0].get('MOVEMENT_ID')
+            msg_args = [str(json_dict_bind_kv), str(list_uuids)]
+            msg = g.appmsg.get_api_message('MSG-00006', msg_args)
+            retBool = False
 
     # オーケストレータIDを設定
     if cmd_type == "Register":

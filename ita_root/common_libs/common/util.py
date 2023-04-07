@@ -327,6 +327,8 @@ def upload_file(file_path, text):
     except Exception:
         return False
 
+    f.close
+
     return True
 
 
@@ -548,6 +550,76 @@ def get_user_name(user_id):
         user_name = g.appmsg.get_api_message(status_code, [user_id])
 
     return user_name
+
+
+def get_all_execution_limit(limit_key):
+    """
+    システム全体の同時実行数最大値取得
+
+    Returns:
+        limit値
+    """
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+    }
+
+    # API呼出
+    api_url = "http://{}:{}/internal-api/platform/settings/common".format(host_name, port)
+    request_response = requests.get(api_url, headers=header_para)
+
+    response_data = json.loads(request_response.text)
+
+    if request_response.status_code != 200:
+        raise AppException('999-00005', [api_url, response_data])
+
+    # システム全体の同時実行数最大値取得
+    limit = 0
+    for record in response_data['data']:
+        if record["key"] == limit_key:
+            limit = record["value"]
+
+    return limit
+
+
+def get_org_execution_limit(limit_key):
+    """
+    Organization毎の同時実行数最大値取得
+
+    Returns:
+        limit値
+    """
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+        "Roles": "dummy",
+        "Language": g.get('LANGUAGE')
+    }
+
+    # API呼出
+    api_url = "http://{}:{}/internal-api/platform/limits".format(host_name, port)
+    request_response = requests.get(api_url, headers=header_para)
+
+    response_data = json.loads(request_response.text)
+
+    if request_response.status_code != 200:
+        raise AppException('999-00005', [api_url, response_data])
+
+    # システム全体の同時実行数最大値取得
+    limit_list = {}
+    for record in response_data['data']:
+        if limit_key in record["limits"]:
+            limit_list[record["organization_id"]] = record["limits"][limit_key]
+        else:
+            limit_list[record["organization_id"]] = 0
+
+    return limit_list
 
 
 if __name__ == '__main__':

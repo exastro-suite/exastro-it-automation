@@ -285,7 +285,8 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         # planコマンド
         command_options = ["-no-color", "-input=false"]
         if secure_tfvars_flg is True:
-            command_options.append("-var-file secure.tfvars")
+            command_options.append("-var-file")
+            command_options.append("secure.tfvars")
         if run_mode != TFCLIConst.RUN_MODE_DESTROY:
             command = ["terraform", "plan"]
             command.extend(command_options)
@@ -307,7 +308,8 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
         # applyコマンド
         command_options = ["-no-color", "-auto-approve"]
         if secure_tfvars_flg is True:
-            command_options.append("-var-file secure.tfvars")
+            command_options.append("-var-file")
+            command_options.append("secure.tfvars")
         if run_mode == TFCLIConst.RUN_MODE_APPLY:
             command = ["terraform", "apply"]
             command.extend(command_options)
@@ -395,10 +397,8 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
         g.applogger.error("result.txt still exists")
         return TFCLIConst.STATUS_EXCEPTION, execute_data
 
-    str_command = " ".join(command)
-    command.insert(0, "sudo")  # sudo権限
-
     # terraformコマンドを発行
+    str_command = " ".join(command)
     g.applogger.debug(str_command)
     proc = subprocess.Popen(command, cwd=workspace_work_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -629,7 +629,7 @@ def output_conducor(conductor_instance_no):
     output_file_name = 'terraform_output_' + execution_no + '.json'
     output_file_path = output_dir + "/" + output_file_name
 
-    command = ["sudo", "terraform", "output", "-json"]
+    command = ["terraform", "output", "-json"]
     cp = subprocess.run(command, cwd=workspace_work_dir, capture_output=True, text=True)
 
     if cp.returncode == 0:
@@ -703,7 +703,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
             cp = subprocess.run(['/bin/cp', '-rfp', matter_file_path, workspace_work_dir + '/.'])
             if cp.returncode != 0 or cp.stderr:
                 # 対象のModuleファイルをコピーに失敗しました
-                g.applogger.debug(cp)
+                # g.applogger.debug(cp)
                 g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Copying ModuleFile", ""]))
                 return False, execute_data
 
@@ -711,6 +711,11 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
             input_matter_arr.append(workspace_work_dir + "/" + val["matter_file_name"])
 
         # operation_idとmovement_idから変数名と代入値を取得
+        # 下記のSQLについて
+        # `T_TERC_VALUE`.`MEMBER_VARS_ID` は、movementメンバー変数紐づけのID（`V_TERC_MVMT_VAR_MEMBER_LINK`.`MVMT_VAR_MEMBER_LINK_ID`）
+        # なので　AS `MVMT_VAR_MEMBER_LINK_ID` と名づけ
+        # `V_TERC_MVMT_VAR_MEMBER_LINK`.`CHILD_MEMBER_VARS_ID`
+        # を　AS `MEMBER_VARS_ID` と名づける（メンバー変数テーブルのIDとして分かるように）
         sql = "SELECT \
                 D_TERRAFORM_CLI_VARS_DATA.MODULE_VARS_LINK_ID, \
                 D_TERRAFORM_CLI_VARS_DATA.VARS_NAME, \
@@ -731,29 +736,35 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                     `V_TERC_MVMT_VAR_LINK`.`MODULE_VARS_LINK_ID` AS `MODULE_VARS_LINK_ID`, \
                     `V_TERC_MVMT_VAR_LINK`.`VARS_NAME` AS `VARS_NAME`, \
                     `T_TERC_VALUE`.`VARS_ENTRY` AS `VARS_ENTRY`, \
-                    `T_TERC_VALUE`.`MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
+                    `T_TERC_VALUE`.`MEMBER_VARS_ID` AS `MVMT_VAR_MEMBER_LINK_ID`, \
+                    `V_TERC_MVMT_VAR_MEMBER_LINK`.`CHILD_MEMBER_VARS_ID` AS `MEMBER_VARS_ID`, \
                     `T_TERC_VALUE`.`ASSIGN_SEQ` AS `ASSIGN_SEQ`, \
                     `T_TERC_VALUE`.`HCL_FLAG` AS `HCL_FLAG`, \
                     `T_TERC_VALUE`.`SENSITIVE_FLAG` AS `SENSITIVE_FLAG`, \
                     `T_TERC_VALUE`.`DISUSE_FLAG` AS `DISUSE_FLAG`, \
                     `T_TERC_VALUE`.`LAST_UPDATE_TIMESTAMP` AS `LAST_UPDATE_TIMESTAMP` \
-                FROM (`T_TERC_VALUE`  \
+                FROM `T_TERC_VALUE`  \
                     LEFT JOIN `V_TERC_MVMT_VAR_LINK`  \
                         ON( \
                             `V_TERC_MVMT_VAR_LINK`.`MOVEMENT_ID` = `T_TERC_VALUE`.`MOVEMENT_ID` AND  \
                             `V_TERC_MVMT_VAR_LINK`.`MVMT_VAR_LINK_ID` = `T_TERC_VALUE`.`MVMT_VAR_LINK_ID` \
-                    )) \
+                        ) \
+                    LEFT JOIN `V_TERC_MVMT_VAR_MEMBER_LINK`  \
+                        ON( \
+                            `V_TERC_MVMT_VAR_MEMBER_LINK`.`MOVEMENT_ID` = `T_TERC_VALUE`.`MOVEMENT_ID` AND  \
+                            `V_TERC_MVMT_VAR_MEMBER_LINK`.`MVMT_VAR_MEMBER_LINK_ID` = `T_TERC_VALUE`.`MEMBER_VARS_ID` \
+                        ) \
+                WHERE \
+                    T_TERC_VALUE.EXECUTION_NO = %s \
+                    AND T_TERC_VALUE.OPERATION_ID = %s \
+                    AND T_TERC_VALUE.MOVEMENT_ID = %s  \
                 ) AS D_TERRAFORM_CLI_VARS_DATA \
                 LEFT OUTER JOIN T_TERC_MOD_VAR_LINK \
                     ON D_TERRAFORM_CLI_VARS_DATA.MODULE_VARS_LINK_ID = T_TERC_MOD_VAR_LINK.MODULE_VARS_LINK_ID \
                 LEFT OUTER JOIN V_TERC_VAR_MEMBER \
                     ON D_TERRAFORM_CLI_VARS_DATA.MEMBER_VARS_ID = V_TERC_VAR_MEMBER.CHILD_MEMBER_VARS_ID \
-            WHERE  D_TERRAFORM_CLI_VARS_DATA.DISUSE_FLAG = '0' \
-                AND    T_TERC_MOD_VAR_LINK.DISUSE_FLAG = '0' \
-                AND    D_TERRAFORM_CLI_VARS_DATA.EXECUTION_NO = %s \
-                AND    D_TERRAFORM_CLI_VARS_DATA.OPERATION_ID = %s \
-                AND    D_TERRAFORM_CLI_VARS_DATA.MOVEMENT_ID = %s"
-
+            WHERE \
+                T_TERC_MOD_VAR_LINK.DISUSE_FLAG = '0' "
         records = wsDb.sql_execute(sql, [execution_no, operation_id, movement_id])
 
         # 代入値（変数）の有無フラグ
@@ -853,7 +864,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                 "VARS_ASSIGN_FLAG": vars_assign_flag
             })
 
-        g.applogger.debug(vars_data_arr)
+        # g.applogger.debug(vars_data_arr)
 
         # Movementに紐づく代入値がある場合、代入値(Variables)登録処理を実行
         if vars_set_flag is True:
@@ -874,9 +885,6 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                 # 2.Module変数紐付けのタイプが配列型且つメンバー変数がない場合
                 # 3.Module変数紐付けのタイプが配列型且つメンバー変数である場合
                 #########################################
-
-                g.applogger.debug(vars_type_info)
-                g.applogger.debug(member_vars_list)
                 # 1.Module変数紐付けのタイプが配列型でない場合
                 if hclFlag is True or vars_type_info["MEMBER_VARS_FLAG"] == '0' and vars_type_info["ASSIGN_SEQ_FLAG"] == '0' and vars_type_info["ENCODE_FLAG"] == 0:  # noqa:E501
                     pass
@@ -895,13 +903,8 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                         tmp_member_vars_list = []
                         # １．対象変数のメンバー変数を全て取得（引数：Module変数紐付け/MODULE_VARS_LINK_ID）
                         trg_member_vars_records = get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFCLIConst, vars_link_id)
-
-                        # g.applogger.debug("1:trg_member_vars_records")
-                        # g.applogger.debug(trg_member_vars_records)
-
                         # MEMBER_VARS_IDのリスト（重複の削除）
                         member_vars_ids_array = list(set([m.get('MEMBER_VARS_ID') for m in member_vars_list]))
-                        g.applogger.debug(member_vars_ids_array)
 
                         # ２．配列型の変数を配列にする
                         for member_vars_id in member_vars_ids_array:

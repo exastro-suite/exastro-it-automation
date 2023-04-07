@@ -260,7 +260,7 @@ duplicatSelectData() {
                     parameters[ key ] = String( tw.data.addId-- );
                 } else if ( exclusion.indexOf( key ) === -1 ) {
                     // 入力済みのデータがあるか
-                    if ( tw.data.input && tw.data.input[id] && tw.data.input[id].after.parameter[ key ] ) {
+                    if ( tw.data.input && tw.data.input[id] && key in tw.data.input[id].after.parameter ) {
                         parameters[ key ] = tw.data.input[id].after.parameter[ key ];
                     } else {
                         parameters[ key ] = val.parameter[ key ];
@@ -269,12 +269,18 @@ duplicatSelectData() {
                     parameters[ key ] = null;
                 }
             }
+            // ファイル
             for ( const key in val.file ) {
-                // 入力済みのデータがあるか
-                if ( tw.data.input && tw.data.input[id] && tw.data.input[id].after.file[ key ] ) {
-                    files[ key ] = tw.data.input[id].after.file[ key ];
-                } else {
-                    files[ key ] = val.file[ key ];
+                files[ key ] = val.file[ key ];
+            }
+            // 入力済みのファイルがあれば上書き
+            if ( tw.data.input && tw.data.input[id] ) {
+                for ( const key in tw.data.input[id].after.file ) {
+                    if ( tw.data.input[id].after.file[ key ] !== undefined ) {
+                        files[ key ] = tw.data.input[id].after.file[ key ];
+                    } else if ( tw.data.input[id].after.file[ key ] === undefined && key in files ) {
+                        delete files[ key ];
+                    }
                 }
             }
             newData.unshift({

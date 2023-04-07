@@ -295,6 +295,12 @@ class policySetting():
                         msg = g.appmsg.get_api_message("MSG-82026", [])
                         return False, msg, policy_data_dict
 
+                    # policySetのIDを格納
+                    respons_contents_json = response_array.get('responseContents')
+                    respons_contents = json.loads(respons_contents_json)
+                    respons_contents_data = respons_contents.get('data')
+                    tf_manage_policy_set_id = respons_contents_data.get('id')
+
                 # [RESTAPI]policySetとWorkspaceの紐付け処理を実行
                 g.applogger.debug(g.appmsg.get_log_message("BKY-51022", [self.execution_no, policy_set_name, self.tf_workspace_name]))
                 response_array = relationships_workspace(self.restApiCaller, tf_manage_policy_set_id, self.tf_manage_workspace_id)  # noqa: F405

@@ -914,7 +914,6 @@ class loadTable():
                 mode
                     inner:内部処理用（IDColumn等は変換後の値、PasswordColumn等は暗号化された状態で返却）
                     input:内部処理用(DBにはいっている値をそのまま返却、PasswordColumn等は復号化された状態で返却)
-                    export:内部処理用(IDColumn等は変換後の値、PasswordColumn等は復号化された状態で返却)
                     nomal:本体 / jnl:履歴 / jnl_all:履歴 /
                     excel:本体Excel用 / excel_jnl:履歴Excel用 / excel_jnl_all:全履歴Excel用 /
                     count:件数 / count_jnl:履歴件数 / count_jnl_all:全履歴件数
@@ -937,10 +936,10 @@ class loadTable():
             column_list = self.get_column_list()
             primary_key = self.get_primary_key()
             # テーブル本体
-            if mode in ['inner', 'export', 'nomal', 'excel', 'count']:
+            if mode in ['inner', 'nomal', 'excel', 'count']:
                 # VIEWが設定されている場合はVIEWを対象とする
                 view_name = self.get_view_name()
-                if view_name and mode != 'export':
+                if view_name:
                     table_name = view_name
                 else:
                     table_name = self.get_table_name()
@@ -1117,7 +1116,7 @@ class loadTable():
                     str_orderby = ''
                     where_str = where_str + str_orderby
 
-            if mode in ['inner', 'export', 'nomal', 'excel', 'jnl', 'excel_jnl', 'jnl_all', 'excel_jnl_all']:
+            if mode in ['inner', 'nomal', 'excel', 'jnl', 'excel_jnl', 'jnl_all', 'excel_jnl_all']:
                 # データ取得
                 tmp_result = self.objdbca.table_select(table_name, where_str, bind_value_list)
 
@@ -1374,8 +1373,8 @@ class loadTable():
             # 不要パラメータの除外
             if inner_mode is False:
                 entry_parameter = self.exclusion_parameter(cmd_type, entry_parameter)
-            # 必須項目チェック
-            self.chk_required(cmd_type, entry_parameter)
+                # 必須項目チェック
+                self.chk_required(cmd_type, entry_parameter)
 
             # 登録時、primary_key指定時の重複チェック
             exec_chk_primay_val = self.chk_primay_val(entry_parameter, target_uuid_key, target_uuid, cmd_type)
@@ -2547,12 +2546,8 @@ class loadTable():
                 # 履歴テーブル
                 where_str = ''
                 bind_value_list = []
-                # VIEWが設定されている場合はVIEWを対象とする
                 view_name = self.get_view_name_jnl()
-                if view_name:
-                    table_name = view_name
-                else:
-                    table_name = self.get_table_name_jnl()
+                table_name = self.get_table_name_jnl()
 
                 if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all']:
                     tmp_jnl_conf = parameter.get('JNL')

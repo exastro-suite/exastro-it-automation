@@ -3421,17 +3421,35 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 if tmp_orchestra_id in ["1", "2", "3"]:
                     try:
                         tmp_result = anscmn_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
-                    except Exception:
+                    except AppException:  # noqa: F405
+                        pass
+                    except Exception as e:
+                        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                        type_, value, traceback_ = sys.exc_info()
+                        msg = traceback.format_exception(type_, value, traceback_)
+                        g.applogger.debug(msg)
                         pass
                 elif tmp_orchestra_id in ["4"]:
                     try:
-                        tmp_result = t_cloud_ep_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
-                    except Exception:
+                        tmp_result = t_cloud_ep_execution_scram(self.objdbca, execution_id)  # noqa: F405
+                    except AppException:  # noqa: F405
+                        pass
+                    except Exception as e:
+                        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                        type_, value, traceback_ = sys.exc_info()
+                        msg = traceback.format_exception(type_, value, traceback_)
+                        g.applogger.debug(msg)
                         pass
                 elif tmp_orchestra_id in ["5"]:
                     try:
-                        tmp_result = t_cli_execution_scram(self.objdbca, driver_id, execution_id)  # noqa: F405
-                    except Exception:
+                        tmp_result = t_cli_execution_scram(self.objdbca, execution_id)  # noqa: F405
+                    except AppException:  # noqa: F405
+                        pass
+                    except Exception as e:
+                        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                        type_, value, traceback_ = sys.exc_info()
+                        msg = traceback.format_exception(type_, value, traceback_)
+                        g.applogger.debug(msg)
                         pass
             elif action_type == 'status':
                 # ステータス取得
@@ -4039,7 +4057,6 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                     self.set_conductor_update_status(conductor_instance_id, c_status_id)
                     action_type = 'abort'
                     tmp_result = self.orchestra_action(action_type, orchestrator_id, action_options)
-
                 # ステータス問い合わせ
                 action_type = 'status'
                 action_options["execution_id"] = execution_id

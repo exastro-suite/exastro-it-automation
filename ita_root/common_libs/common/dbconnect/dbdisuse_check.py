@@ -36,7 +36,7 @@ def is_db_disuse():
         if org_rows is None:
             org_rows = []
         if len(org_rows) == 0:
-            print(org_rows)
+            g.applogger.debug(org_rows)
             return True
         ita_db.db_disconnect
 
@@ -45,7 +45,7 @@ def is_db_disuse():
         if wk_rows is None:
             wk_rows = []
         if len(wk_rows) == 0:
-            print(wk_rows)
+            g.applogger.debug(wk_rows)
             return True
         org_db.db_disconnect
 

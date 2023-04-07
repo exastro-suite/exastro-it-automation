@@ -25,11 +25,11 @@ backyard_name = 'ita_by_conductor_synchronize'
 
 
 def backyard_main(organization_id, workspace_id):
-    print("backyard_main ita_by_conductor_synchronize called")
+    g.applogger.debug("backyard_main ita_by_conductor_synchronize called")
 
     """
         Conductor作業実行処理（backyard）
-        
+
         DB接続
         環境設定(言語,Lib読込,etc...)
         対象Conductor取得
@@ -80,7 +80,7 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False,
     target_conductor_list = tmp_result[1]
-    
+
     # 作業対象無しで終了
     if len(target_conductor_list) == 0:
         tmp_msg = 'No Execute Conductor'
@@ -104,11 +104,11 @@ def backyard_main(organization_id, workspace_id):
         tmp_result = objdbca.table_lock(locktable_list)
         tmp_msg = 'table_lock'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        
+
         # update_flg = ON
         ci_update_flg = 1
         ni_update_flg = 1
-        
+
         # Conductor instance処理_1
         tmp_msg = 'conductor instance first run process start'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -121,7 +121,7 @@ def backyard_main(organization_id, workspace_id):
                 tmp_msg = 'Create storage path Error'
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
-            
+
             # 未実行,未実行(予約)時、ステータス更新＋開始時刻
             if ci_status in ['1', '2']:
                 # Conductor instanceステータス更新
@@ -139,10 +139,10 @@ def backyard_main(organization_id, workspace_id):
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
             g.applogger.error(msg)
-            
+
         tmp_msg = 'conductor instance first run process end'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        
+
         # Node instance処理
         tmp_msg = 'node instance process start'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -159,7 +159,7 @@ def backyard_main(organization_id, workspace_id):
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
             all_node_filter = tmp_result[1]
-            
+
             # 全 Nodeのステータス取得
             tmp_result = objcbkl.get_execute_all_node_list(conductor_instance_id)
             if tmp_result[0] is not True:
@@ -210,7 +210,7 @@ def backyard_main(organization_id, workspace_id):
 
         tmp_msg = 'node instance process end'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        
+
         # Conductor instance処理_2
         tmp_msg = 'conductor instance process start'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -225,7 +225,7 @@ def backyard_main(organization_id, workspace_id):
                 tmp_msg = 'pdate Conductor instance Error'
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
-            
+
         except Exception as e:
             ci_update_flg = 0
             tmp_msg = 'conductor instance process error'
@@ -271,5 +271,5 @@ def backyard_main(organization_id, workspace_id):
 
     tmp_msg = 'Process End'
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    
+
     return retBool, result,

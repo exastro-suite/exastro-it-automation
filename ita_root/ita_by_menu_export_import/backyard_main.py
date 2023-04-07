@@ -91,9 +91,9 @@ def backyard_main(organization_id, workspace_id):
 
         # execution_typeに応じたエクスポート/インポート処理を実行(メイン処理)
         if execution_type == "1":  # 1: エクスポート
-            main_func_result, msg = menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir)
+            main_func_result, msg = menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles_dir)
         elif execution_type == "2":  # 2: インポート
-            main_func_result, msg = menu_import_exec(objdbca, record, workspace_path, uploadfiles_dir, uploadfiles_60103_dir)
+            main_func_result, msg = menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_dir, uploadfiles_60103_dir)
 
         # メイン処理がFalseの場合、異常系処理
         if not main_func_result:
@@ -141,7 +141,7 @@ def backyard_main(organization_id, workspace_id):
     g.applogger.debug(debug_msg)
     return
 
-def menu_import_exec(objdbca, record, workspace_path, uploadfiles_dir, uploadfiles_60103_dir):
+def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_dir, uploadfiles_60103_dir):
     msg = None
 
     try:
@@ -167,129 +167,89 @@ def menu_import_exec(objdbca, record, workspace_path, uploadfiles_dir, uploadfil
         with tarfile.open(file_path, 'r:gz') as tar:
             tar.extractall(path=execution_no_path)
 
-        if os.path.isfile(execution_no_path + '/MENU_NAME_REST_LIST') is False:
+        if os.path.isfile(execution_no_path + '/T_COMN_MENU_TABLE_LINK_DATA') is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
 
+        if os.path.isfile(execution_no_path + '/T_COMN_MENU_DATA') is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
+
+        if os.path.isfile(execution_no_path + '/MENU_NAME_REST_LIST') is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
         # インポート対象メニュー取得
         menu_name_rest_list = json_storage_item.split(',')
-
-        # 環境移行モードの場合はDELETE→INSERTするので特定のテーブルは事前に退避しておく
+        # 環境移行モードの場合はDELETE→INSERTするので特定のメニューは事前に退避しておく
         if dp_mode == '1':
-            _dp_preparation(objdbca, menu_name_rest_list, execution_no_path)
+            _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path)
 
         tmp_table_list = []
-        for menu_name_rest in menu_name_rest_list:
-            # テーブルが存在するか確認する
-            menu_id_sql = " SELECT MENU_ID, MENU_NAME_REST  FROM `T_COMN_MENU` WHERE `DISUSE_FLAG` <> 1 AND `MENU_NAME_REST` = %s "
-            t_comn_menu_record = objdbca.sql_execute(menu_id_sql, [menu_name_rest])
+        # インポート対象メニュー取得
+        # T_COMN_MENU_TABLE_LINK_DATAファイル読み込み
+        t_comn_menu_table_link_data = Path(execution_no_path + '/T_COMN_MENU_TABLE_LINK_DATA').read_text(encoding='utf-8')
+        t_comn_menu_table_link_data_json = json.loads(t_comn_menu_table_link_data)
+        # T_COMN_MENU_DATAファイル読み込み
+        t_comn_menu_data = Path(execution_no_path + '/T_COMN_MENU_DATA').read_text(encoding='utf-8')
+        t_comn_menu_data_json = json.loads(t_comn_menu_data)
+        for record in t_comn_menu_table_link_data_json:
+            param = record['parameter']
+            # menu_id = param.get('uuid')
+            menu_id = param.get('menu_name')
+            table_name = param.get('table_name')
+            view_name = param.get('view_name')
 
-            # テーブルが存在しない場合は作成する
-            if len(t_comn_menu_record) == 0:
-                # T_COMN_MENU_DATAからデータを取得して登録する
-                objmenu = load_table.loadTable(objdbca, 'menu_list', dp_mode=True)   # noqa: F405
-                # T_COMN_MENU_DATAファイル読み込み
-                t_comn_menu_data = Path(execution_no_path + '/T_COMN_MENU_DATA').read_text(encoding='utf-8')
-                t_comn_menu_data_json = json.loads(t_comn_menu_data)
+            menu_name_rest = ''
+            for menu_data_record in t_comn_menu_data_json:
+                param = menu_data_record['parameter']
+                tmp_menu_id = param.get('menu_id')
+                if tmp_menu_id == menu_id:
+                    menu_name_rest = param.get('menu_name_rest')
+                    break
 
-                menu_id_list = []
-                for record in t_comn_menu_data_json:
-                    param = record['parameter']
-                    tmp_menu_name_rest = param.get('menu_name_rest')
-                    if tmp_menu_name_rest == menu_name_rest:
-                        # 該当レコードをT_COMN_MENUに登録
-                        menu_id = param.get('menu_id')
-                        menu_id_list.append(menu_id)
-                        # 登録用パラメータを作成
-                        file_param = record['file']
-                        # 登録用パラメータを作成
-                        parameters = {
-                            "file": {
-                                "file_name": file_param
-                            },
-                            "parameter": param,
-                            "type": "Register"
-                        }
+            if menu_name_rest not in menu_name_rest_list:
+                # _dp_preparation()で既に処理していた場合はスキップする
+                continue
 
-                        # 登録を実行
-                        exec_result = objmenu.exec_maintenance(parameters, menu_id, "", True, False, True, False, True)  # noqa: E999
-                        if not exec_result[0]:
-                            result_msg = _format_loadtable_msg(exec_result[2])
-                            result_msg = json.dumps(result_msg, ensure_ascii=False)
-                            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            # 環境移行モードの場合既存のデータは全て削除してからデータをインポートする
+            if dp_mode == '1':
+                chk_table_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
+                chk_table_rtn = objdbca.sql_execute(chk_table_sql, [table_name])
+                if len(chk_table_rtn) != 0:
+                    # uploadfiles配下のデータを削除する
+                    if os.path.isdir(uploadfiles_dir + '/' + menu_id):
+                        shutil.rmtree(uploadfiles_dir + '/' + menu_id)
+                    # テーブルを削除する
+                    delete_table_sql = "DELETE FROM  `{}`".format(table_name)
+                    objdbca.sql_execute(delete_table_sql, [])
 
-                # 該当レコードをT_COMN_MENU_TABLE_LINKに登録
-                # MENU_ID_TABLE_LISTファイル読み込み
-                menu_id_table_list = Path(execution_no_path + '/MENU_ID_TABLE_LIST').read_text(encoding='utf-8')
-                menu_id_table_list_json = json.loads(menu_id_table_list)
-                for record in menu_id_table_list_json:
-                    param = record['parameter']
-                    menu_id = param.get('uuid')
-                    if menu_id in menu_id_list:
-                        table_name = param.get('table_name')
+                # DBデータファイル読み込み
+                db_data_path = execution_no_path + '/' + table_name + '.sql'
+                jnl_db_data_path = execution_no_path + '/' + table_name + '_JNL.sql'
+                # テーブルを作成
+                objdbca.sqlfile_execute(db_data_path)
+                if os.path.isfile(jnl_db_data_path):
+                    # 履歴テーブルを作成
+                    objdbca.sqlfile_execute(jnl_db_data_path)
 
-                        # DBデータファイル読み込み
-                        db_data_path = execution_no_path + '/' + table_name + '.sql'
+                if view_name:
+                    if table_name.startswith('T_CMDB'):
+                        # 一度作成したview名は記憶する
+                        if view_name not in tmp_table_list:
+                            tmp_table_list.append(view_name)
 
-                        # テーブルを作成
-                        objdbca.sqlfile_execute(db_data_path)
+                            chk_view_sql = " SELECT TABLE_NAME FROM information_schema.views WHERE `TABLE_NAME` = %s "
+                            chk_view_rtn = objdbca.sql_execute(chk_view_sql, [view_name])
+                            if len(chk_view_rtn) != 0:
+                                drop_view_sql = "DROP VIEW IF EXISTS `{}`".format(view_name)
+                                objdbca.sql_execute(drop_view_sql, [])
 
-                        history_flg = param.get('history_table_flag')
-                        if history_flg == '1':
-                            table_name_jnl = table_name + '_JNL'
                             # DBデータファイル読み込み
-                            db_data_path = execution_no_path + '/' + table_name_jnl + '.sql'
-                            # テーブルを作成
-                            objdbca.sqlfile_execute(db_data_path)
+                            view_data_path = execution_no_path + '/' + view_name
+                            if os.path.isfile(view_data_path):
+                                objdbca.sqlfile_execute(view_data_path)
 
-                        # 該当レコードを作成したテーブルに登録
-                        _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
-            else:
-                menu_id = t_comn_menu_record[0].get('MENU_ID')
-                table_name_sql = " SELECT TABLE_NAME, VIEW_NAME FROM `T_COMN_MENU_TABLE_LINK` WHERE `DISUSE_FLAG` <> 1 AND `MENU_ID` = %s "
-                t_comn_menu_table_link_record = objdbca.sql_execute(table_name_sql, [menu_id])
-                table_name = t_comn_menu_table_link_record[0].get('TABLE_NAME')
-                view_name = t_comn_menu_table_link_record[0].get('VIEW_NAME')
-
-                # 環境移行モードの場合既存のデータは全て削除してからデータをインポートする
-                if dp_mode == '1':
-                    chk_table_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
-                    chk_table_rtn = objdbca.sql_execute(chk_table_sql, [table_name])
-                    if len(chk_table_rtn) != 0:
-                        # uploadfiles配下のデータを削除する
-                        if os.path.isdir(uploadfiles_dir + '/' + menu_id) == True:
-                            shutil.rmtree(uploadfiles_dir + '/' + menu_id)
-                        # テーブルを削除する
-                        delete_table_sql = "DELETE FROM  `{}`".format(table_name)
-                        objdbca.sql_execute(delete_table_sql, [])
-
-                    # DBデータファイル読み込み
-                    db_data_path = execution_no_path + '/' + table_name + '.sql'
-                    jnl_db_data_path = execution_no_path + '/' + table_name + '_JNL.sql'
-                    # テーブルを作成
-                    objdbca.sqlfile_execute(db_data_path)
-                    if os.path.isfile(jnl_db_data_path):
-                        # 履歴テーブルを作成
-                        objdbca.sqlfile_execute(jnl_db_data_path)
-
-                    if view_name:
-                        if table_name.startswith('T_CMDB'):
-                            # 一度作成したview名は記憶する
-                            if view_name not in tmp_table_list:
-                                tmp_table_list.append(view_name)
-
-                                chk_view_sql = " SELECT TABLE_NAME FROM information_schema.views WHERE `TABLE_NAME` = %s "
-                                chk_view_rtn = objdbca.sql_execute(chk_view_sql, [view_name])
-                                if len(chk_view_rtn) != 0:
-                                    drop_view_sql = "DROP VIEW IF EXISTS `{}`".format(view_name)
-                                    objdbca.sql_execute(drop_view_sql, [])
-
-                                # DBデータファイル読み込み
-                                view_data_path = execution_no_path + '/' + view_name
-                                if os.path.isfile(view_data_path):
-                                    objdbca.sqlfile_execute(view_data_path)
-
-                _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
+            _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
 
         # 正常系リターン
         return True, msg
@@ -302,6 +262,39 @@ def menu_import_exec(objdbca, record, workspace_path, uploadfiles_dir, uploadfil
 
         # 異常系リターン
         return False, msg
+
+def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path):
+    if 'menu_list' in menu_name_rest_list:
+        objmenu_1 = _create_objmenu(objdbca, menu_name_rest_list, 'menu_list')
+        menu_id1, table_name1 = _menu_data_file_read('menu_list', 'menu_id', execution_no_path)
+        delete_sql = "DELETE FROM {}".format(table_name1)
+        objdbca.sql_execute(delete_sql, [])
+        _register_basic_data(objdbca, workspace_id, execution_no_path, 'menu_list', table_name1, objmenu=objmenu_1)
+        menu_name_rest_list.remove('menu_list')
+
+    if 'menu_table_link_list' in menu_name_rest_list:
+        objmenu_2 = _create_objmenu(objdbca, menu_name_rest_list, 'menu_table_link_list')
+        menu_id2, table_name2 = _menu_data_file_read('menu_table_link_list', 'menu_id', execution_no_path)
+        delete_sql = "DELETE FROM {}".format(table_name2)
+        objdbca.sql_execute(delete_sql, [])
+        _register_basic_data(objdbca, workspace_id, execution_no_path, 'menu_table_link_list', table_name2, objmenu=objmenu_2)
+        menu_name_rest_list.remove('menu_table_link_list')
+
+    if 'menu_column_link_list' in menu_name_rest_list:
+        objmenu_3 = _create_objmenu(objdbca, menu_name_rest_list, 'menu_column_link_list')
+        menu_id3, table_name3 = _menu_data_file_read('menu_column_link_list', 'menu_id', execution_no_path)
+        delete_sql = "DELETE FROM {}".format(table_name3)
+        objdbca.sql_execute(delete_sql, [])
+        _register_basic_data(objdbca, workspace_id, execution_no_path, 'menu_column_link_list', table_name3, objmenu=objmenu_3)
+        menu_name_rest_list.remove('menu_column_link_list')
+
+    if 'role_menu_link_list' in menu_name_rest_list:
+        objmenu_3 = _create_objmenu(objdbca, menu_name_rest_list, 'role_menu_link_list')
+        menu_id3, table_name3 = _menu_data_file_read('role_menu_link_list', 'menu_id', execution_no_path)
+        delete_sql = "DELETE FROM {}".format(table_name3)
+        objdbca.sql_execute(delete_sql, [])
+        _register_basic_data(objdbca, workspace_id, execution_no_path, 'role_menu_link_list', table_name3, objmenu=objmenu_3)
+        menu_name_rest_list.remove('role_menu_link_list')
 
 def _update_t_menu_export_import(objdbca, execution_no, status):
     """
@@ -346,37 +339,7 @@ def _format_loadtable_msg(loadtable_msg):
 
     return result_msg
 
-def _dp_preparation(objdbca, menu_name_rest_list, execution_no_path):
-    objmenu_1 = _create_objmenu(objdbca, menu_name_rest_list, 'menu_list')
-    objmenu_2 = _create_objmenu(objdbca, menu_name_rest_list, 'menu_table_link_list')
-    objmenu_3 = _create_objmenu(objdbca, menu_name_rest_list, 'menu_column_link_list')
-    objmenu_4 = _create_objmenu(objdbca, menu_name_rest_list, 'role_menu_link_list')
-
-    menu_id1, table_name1 = _menu_data_file_read('menu_list', 'menu_id', execution_no_path)
-    menu_id2, table_name2 = _menu_data_file_read('menu_table_link_list', 'menu_id', execution_no_path)
-    menu_id3, table_name3 = _menu_data_file_read('menu_column_link_list', 'menu_id', execution_no_path)
-    menu_id4, table_name4 = _menu_data_file_read('role_menu_link_list', 'menu_id', execution_no_path)
-
-    delete_sql = "DELETE FROM {}".format(table_name1)
-    objdbca.sql_execute(delete_sql, [])
-    delete_sql = "DELETE FROM {}".format(table_name2)
-    objdbca.sql_execute(delete_sql, [])
-    delete_sql = "DELETE FROM {}".format(table_name3)
-    objdbca.sql_execute(delete_sql, [])
-    delete_sql = "DELETE FROM {}".format(table_name4)
-    objdbca.sql_execute(delete_sql, [])
-
-    _register_basic_data(objdbca, execution_no_path, 'menu_list', menu_id1, table_name1, objmenu=objmenu_1)
-    _register_basic_data(objdbca, execution_no_path, 'menu_table_link_list', menu_id2, table_name2, objmenu=objmenu_2)
-    _register_basic_data(objdbca, execution_no_path, 'menu_column_link_list', menu_id3, table_name3, objmenu=objmenu_3)
-    _register_basic_data(objdbca, execution_no_path, 'role_menu_link_list', menu_id4, table_name4, objmenu=objmenu_4)
-
-    menu_name_rest_list.remove('menu_list')
-    menu_name_rest_list.remove('menu_table_link_list')
-    menu_name_rest_list.remove('menu_column_link_list')
-    menu_name_rest_list.remove('role_menu_link_list')
-
-def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name, objmenu=None):
+def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name):
     t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
 
     # DATAファイル確認
@@ -389,8 +352,7 @@ def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_na
     json_sql_data = json.loads(sql_data)
 
     # データを登録する
-    if objmenu is None:
-        objmenu = load_table.loadTable(objdbca, menu_name_rest, dp_mode=True)   # noqa: F405
+    objmenu = load_table.loadTable(objdbca, menu_name_rest, dp_mode=True)   # noqa: F405
     pk = objmenu.get_primary_key()
 
     pass_column = ["8", "25", "26"]
@@ -445,7 +407,6 @@ def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_na
                 result_msg = _format_loadtable_msg(exec_result[2])
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
                 raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
-
         elif param_type == 'Update':
             # import_mode=Trueで登録を実行
             exec_result = objmenu.exec_maintenance(parameters, pk_value, "", True, False, True, False, True)  # noqa: E999
@@ -454,10 +415,16 @@ def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_na
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
                 raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-def _register_basic_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name, objmenu=None):
+def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_rest, table_name, objmenu=None):
     # DATAファイル読み込み
     sql_data = Path(execution_no_path + '/' + menu_name_rest).read_text(encoding='utf-8')
     json_sql_data = json.loads(sql_data)
+
+    # WORKSPACE_IDファイル確認
+    export_workspace_id = ''
+    if os.path.isfile(execution_no_path + '/WORKSPACE_ID'):
+        # エクスポートした環境のワークスペース名を取得
+        export_workspace_id = Path(execution_no_path + '/WORKSPACE_ID').read_text(encoding='utf-8')
 
     # データを登録する
     if objmenu is None:
@@ -465,32 +432,19 @@ def _register_basic_data(objdbca, execution_no_path, menu_name_rest, menu_id, ta
     pk = objmenu.get_primary_key()
 
     for json_record in json_sql_data:
-        file_param = json_record['file']
         param = json_record['parameter']
-        menu_id = ''
-        if menu_name_rest == 'menu_list':
-            menu_id = param['menu_id']
-
-        # 登録用パラメータを作成
-        parameters = {
-            "file": {
-                "file_name": file_param
-            },
-            "parameter": param,
-            "type": 'Register'
-        }
+        # ロール-メニュー紐付管理個別処理
+        if menu_name_rest == 'role_menu_link_list':
+            # 「_エクスポート元ワークスペース名-admin」ロールを
+            # 「_インポート先ワークスペース名-admin」に置換する
+            search_str = '_' + export_workspace_id + '-admin'
+            if param['role_name'] == search_str:
+                param['role_name'] = '_' + workspace_id + '-admin'
 
         colname_parameter = objmenu.convert_restkey_colname(param, [])
         result = objdbca.table_insert(table_name, colname_parameter, pk)
-        if result is False:
-            dict_msg = {
-                'status_code': '',
-                'msg_args': '',
-                'msg': result,
-            }
-            # self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
 
-def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa: C901
+def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles_dir):  # noqa: C901
     """
         メニューエクスポート実行
         ARGS:
@@ -517,15 +471,6 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
 
         # 対象のDBの存在チェック
         menu_list = json_storage_item["menu"]
-        if mode == '1':
-            if 'menu_list' not in menu_list:
-                menu_list.append('menu_list')
-            if 'menu_table_link_list' not in menu_list:
-                menu_list.append('menu_table_link_list')
-            if 'menu_column_link_list' not in menu_list:
-                menu_list.append('menu_column_link_list')
-            if 'role_menu_link_list' not in menu_list:
-                menu_list.append('role_menu_link_list')
 
         menu_group_list = []
         for menu in menu_list:
@@ -556,7 +501,7 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
         menus_data = {
             "menu_groups": menu_group_list,
         }
-        menus_data_path = dir_path + '/' + 'MENU_GROUPS'
+        menus_data_path = dir_path + '/MENU_GROUPS'
         with open(menus_data_path, "w") as f:
             json.dump(menus_data, f)
 
@@ -620,13 +565,15 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
         table_name_sql = " SELECT * FROM `T_COMN_MENU_TABLE_LINK` WHERE `DISUSE_FLAG` <> 1 AND `MENU_ID` IN %s "
         t_comn_menu_table_link_record = objdbca.sql_execute(table_name_sql, [menu_id_list])
         table_name_list = []
+        table_definition_id_list = []
         for record in t_comn_menu_table_link_record:
+            table_definition_id_list.append(record.get('TABLE_DEFINITION_ID'))
             table_name = record.get('TABLE_NAME')
             table_name_list.append(table_name)
             if table_name.startswith('T_CMDB'):
                 view_name = record.get('VIEW_NAME')
                 if view_name is not None:
-                    show_create_sql = 'SHOW CREATE VIEW `%s` ' %(view_name)
+                    show_create_sql = 'SHOW CREATE VIEW `%s` ' % (view_name)
                     rec = objdbca.sql_execute(show_create_sql, [])
                     create_view_str = rec[0]['Create View']
                     # Create文から余計な文言を切り取る
@@ -674,21 +621,21 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
 
         # インポート時に利用するMENU_NAME_REST_LISTを作成する
         menu_name_rest_list = ",".join(menu_list)
-        menu_name_rest_path = dir_path + '/' + 'MENU_NAME_REST_LIST'
+        menu_name_rest_path = dir_path + '/MENU_NAME_REST_LIST'
         with open(menu_name_rest_path, "w") as f:
             f.write(menu_name_rest_list)
 
-        # インポート時に利用するMENU_ID_TABLE_LISTを作成する
-        menu_id_table_list_path = dir_path + '/MENU_ID_TABLE_LIST'
+        # インポート時に利用するT_COMN_MENU_TABLE_LINK_DATAを作成する
+        t_comn_menu_table_link_data_path = dir_path + '/T_COMN_MENU_TABLE_LINK_DATA'
         objmenu = load_table.loadTable(objdbca, 'menu_table_link_list')   # noqa: F405
-        filter_parameter = {"discard": {"LIST": ["0"]}, "uuid": {"LIST": menu_id_list}}
+        filter_parameter = {"discard": {"LIST": ["0"]}, "uuid": {"LIST": table_definition_id_list}}
         filter_mode = 'export'
         status_code, result, msg = objmenu.rest_export_filter(filter_parameter, filter_mode)
         if status_code != '000-00000':
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException(status_code, log_msg_args, api_msg_args)
-        with open(menu_id_table_list_path, 'w') as f:
+        with open(t_comn_menu_table_link_data_path, 'w') as f:
             json.dump(result, f, ensure_ascii=False)
 
         # アップロード時に利用するDP_INFOファイルを作成する
@@ -697,9 +644,14 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
             "ABOLISHED_TYPE": abolished_type,
             "SPECIFIED_TIMESTAMP": specified_time
         }
-        dp_info_path = dir_path + '/' + 'DP_INFO'
+        dp_info_path = dir_path + '/DP_INFO'
         with open(dp_info_path, "w") as f:
             json.dump(dp_info, f)
+
+        # ロール-メニュー紐付管理のロール置換用にWORKSPACE_IDを確保しておく
+        workspace_id_path = dir_path + '/WORKSPACE_ID'
+        with open(workspace_id_path, "w") as f:
+            f.write(workspace_id)
 
         # データをtar.gzにまとめる
         gztar_path = shutil.make_archive(base_name=dir_path, format="gztar", root_dir=dir_path)
@@ -751,6 +703,41 @@ def menu_export_exec(objdbca, record, export_menu_dir, uploadfiles_dir):  # noqa
         # 異常系リターン
         return False, msg
 
+def _create_objmenu(objdbca, menu_name_rest_list, target_table):
+    # menu_name_rest_listの中にあるtarget_tableのobjmenuを作成して返す
+    objmenu = None
+    for menu_name_rest in menu_name_rest_list:
+        if menu_name_rest == target_table:
+            objmenu = load_table.loadTable(objdbca, target_table, dp_mode=True)
+            break
+    return objmenu
+
+def _menu_data_file_read(menu_name_rest, pk, execution_no_path):
+    # T_COMN_MENU_DATA、MENU_ID_TABLE_LISTファイルを読み取り
+    # menu_idとtable_nameを返す
+    t_comn_menu_data = Path(execution_no_path + '/T_COMN_MENU_DATA').read_text(encoding='utf-8')
+    t_comn_menu_data_json = json.loads(t_comn_menu_data)
+
+    menu_id = ''
+    for record in t_comn_menu_data_json:
+        param = record['parameter']
+        tmp_menu_name_rest = param.get('menu_name_rest')
+        if tmp_menu_name_rest == menu_name_rest:
+            menu_id = param.get(pk)
+            break
+
+    table_name = ''
+    t_comn_menu_table_link_data = Path(execution_no_path + '/T_COMN_MENU_TABLE_LINK_DATA').read_text(encoding='utf-8')
+    t_comn_menu_table_link_data_json = json.loads(t_comn_menu_table_link_data)
+    for record in t_comn_menu_table_link_data_json:
+        param = record['parameter']
+        menu_id_tmp = param.get('uuid')
+        if menu_id == menu_id_tmp:
+            table_name = param.get('table_name')
+            break
+
+    return menu_id, table_name
+
 def _check_menu_info(menu, wsdb_istc=None):
     """
     check_menu_info
@@ -782,38 +769,3 @@ def _check_menu_info(menu, wsdb_istc=None):
         raise AppException("499-00002", log_msg_args, api_msg_args)  # noqa: F405
 
     return menu_record[0]
-
-def _create_objmenu(objdbca, menu_name_rest_list, target_table):
-    # menu_name_rest_listの中にあるtarget_tableのobjmenuを作成して返す
-    objmenu = None
-    for menu_name_rest in menu_name_rest_list:
-        if menu_name_rest == target_table:
-            objmenu = load_table.loadTable(objdbca, target_table, dp_mode=True)
-            break
-    return objmenu
-
-def _menu_data_file_read(menu_name_rest, pk, execution_no_path):
-    # T_COMN_MENU_DATA、MENU_ID_TABLE_LISTファイルを読み取り
-    # menu_idとtable_nameを返す
-    t_comn_menu_data = Path(execution_no_path + '/T_COMN_MENU_DATA').read_text(encoding='utf-8')
-    t_comn_menu_data_json = json.loads(t_comn_menu_data)
-
-    menu_id = ''
-    for record in t_comn_menu_data_json:
-        param = record['parameter']
-        tmp_menu_name_rest = param.get('menu_name_rest')
-        if tmp_menu_name_rest == menu_name_rest:
-            menu_id = param.get(pk)
-            break
-
-    table_name = ''
-    menu_id_table_list = Path(execution_no_path + '/MENU_ID_TABLE_LIST').read_text(encoding='utf-8')
-    menu_id_table_list_json = json.loads(menu_id_table_list)
-    for record in menu_id_table_list_json:
-        param = record['parameter']
-        menu_id_tmp = param.get('uuid')
-        if menu_id == menu_id_tmp:
-            table_name = param.get('table_name')
-            break
-
-    return menu_id, table_name

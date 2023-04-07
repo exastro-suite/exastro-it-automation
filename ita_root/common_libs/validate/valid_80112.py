@@ -156,6 +156,10 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
     t_movement_module_record = ret[0]
     var_type_id = t_movement_module_record.get('TYPE_ID')
 
+    # var_type_idの指定がない(None)の場合はStringタイプとして扱う。
+    if not var_type_id:
+        var_type_id = '1'  # 1(String)
+
     # タイプマスターテーブルから、タイプIDのMEMBER_VARS_FLAGとASSIGN_SEQ_FLAGを取得する
     where_str = 'WHERE TYPE_ID = %s AND DISUSE_FLAG = %s'
     ret = objdbca.table_select(TFCloudEPConst.T_TYPE_MASTER, where_str, [var_type_id, 0])

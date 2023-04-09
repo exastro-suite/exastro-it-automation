@@ -605,7 +605,7 @@ def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace
                 # 代入値順序の値がないものは、ソート時に後ろにいけるようにしておく
                 key_name = vars_list_len + "_1_" + str(last_update_timestamp)
             else:
-                key_name = vars_assign_seq + "_0_" + str(last_update_timestamp)
+                key_name = str(vars_assign_seq) + "_0_" + str(last_update_timestamp)
             vars_data_arr[vars_link_id]['VARS_LIST'][key_name] = vars_entry
 
         for vars in member_vars_link_id_list:

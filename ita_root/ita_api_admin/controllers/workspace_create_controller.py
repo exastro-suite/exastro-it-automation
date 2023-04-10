@@ -194,6 +194,35 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             initial_settings_ansible(ws_db, json.loads(inistial_data_ansible_if))
             ws_db.db_commit()
 
+        # 同時実行数制御用のVIEW作成
+        view_sql = "CREATE VIEW V_ANSL_EXEC_STS_INST2 AS "
+        view_sql += "SELECT %s as ORGANIZATION_ID, %s as WORKSPACE_ID, %s as WORKSPACE_DB, 'V_ANSL_EXEC_STS_INST2' AS VIEW_NAME, EXECUTE_HOST_NAME, "
+        view_sql += "'Legacy' as DRIVER_NAME, 'L' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER "
+        view_sql += "FROM T_ANSL_EXEC_STS_INST "
+        view_sql += "WHERE DISUSE_FLAG = %s "
+        ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
+        view_sql = "CREATE VIEW V_ANSP_EXEC_STS_INST2 AS "
+        view_sql += "SELECT %s as ORGANIZATION_ID, %s as WORKSPACE_ID, %s as WORKSPACE_DB, 'V_ANSP_EXEC_STS_INST2' AS VIEW_NAME, EXECUTE_HOST_NAME, "
+        view_sql += "'Pioneer' as DRIVER_NAME, 'P' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER "
+        view_sql += "FROM T_ANSP_EXEC_STS_INST "
+        view_sql += "WHERE DISUSE_FLAG = %s "
+        ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
+        view_sql = "CREATE VIEW V_ANSR_EXEC_STS_INST2 AS "
+        view_sql += "SELECT %s as ORGANIZATION_ID, %s as WORKSPACE_ID, %s as WORKSPACE_DB, 'V_ANSR_EXEC_STS_INST2' AS VIEW_NAME, EXECUTE_HOST_NAME, "
+        view_sql += "'Legacy-Role' as DRIVER_NAME, 'R' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER "
+        view_sql += "FROM T_ANSR_EXEC_STS_INST "
+        view_sql += "WHERE DISUSE_FLAG = %s "
+        ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
+
+        # 権限付与
+        view_sql = "grant SELECT ,UPDATE ON TABLE V_ANSL_EXEC_STS_INST2 TO ITA_USER"
+        ws_db.sql_execute(view_sql, [])
+        view_sql = "grant SELECT ,UPDATE ON TABLE V_ANSP_EXEC_STS_INST2 TO ITA_USER"
+        ws_db.sql_execute(view_sql, [])
+        view_sql = "grant SELECT ,UPDATE ON TABLE V_ANSR_EXEC_STS_INST2 TO ITA_USER"
+        ws_db.sql_execute(view_sql, [])
+        ws_db.db_commit()
+
         # register workspace-db connect infomation
         org_db.db_transaction_start()
         org_db.table_insert("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")

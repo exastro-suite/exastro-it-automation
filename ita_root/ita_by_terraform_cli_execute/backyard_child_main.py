@@ -821,7 +821,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                 # 代入値順序の値がないものは、ソート時に後ろにいけるようにしておく
                 key_name = vars_list_len + "_1_" + str(last_update_timestamp)
             else:
-                key_name = vars_assign_seq + "_0_" + str(last_update_timestamp)
+                key_name = str(vars_assign_seq) + "_0_" + str(last_update_timestamp)
             vars_data_arr[vars_link_id]['VARS_LIST'][key_name] = vars_entry
 
         for vars in member_vars_link_id_list:

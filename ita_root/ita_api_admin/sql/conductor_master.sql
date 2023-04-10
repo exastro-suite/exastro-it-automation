@@ -119,8 +119,23 @@ This menu must always be one record. ','0','1','0','0','0','0','1','0','0','0',N
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(30101,_____DATE_____,'INSERT','30101','30101','T_COMN_CONDUCTOR_IF_INFO',NULL,'conductor_interface_id','Conductorのインターフェース情報をメンテナンス(閲覧/更新)できます。
 本メニューは必ず1レコードである必要があります。','You can maintain (view / update) the interface information of Conductor.
 This menu must always be one record. ','0','1','0','0','0','0','1','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('30102','30102','T_COMN_CONDUCTOR_NOTICE',NULL,'conductor_notice_id','Conductorで作業時に実行される通知に関する定義を設定し
-ます。通知はWebhookを利用して行います。
+INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('30102','30102','T_COMN_CONDUCTOR_NOTICE',NULL,'conductor_notice_id','Conductorで作業時に実行される通知に関する定義を設定します。
+通知はWebhookを利用して行います。
+
+各種設定項目について：
+   - 通知先URL：通知先のURLを入力してください。
+   - ヘッダー：httpヘッダーフィールドをJson形式で入力してください。
+   - メッセージ：通知先サービスの仕様に従い、通知内容を入力してください。
+   - PROXY URL：PROXYの設定が必要な場合、URLを入力してください。
+   - PROXY PORT：PROXYの設定が必要な場合、PORTを入力してください。
+   - 作業確認URL：作業確認用URLの予約変数で使用する,FQDNを入力してください。
+
+Microsoft Teams/Slackでの設定例：
+   - 通知先URL：各サービスのWebhook URLを入力します。
+   - ヘッダー：{ "Content-Type": "application/json" }
+   - メッセージ：{"text": "通知名：__NOTICE_NAME__, <br>Conductor名称: __CONDUCTOR_NAME__, <br> ConductorインスタンスID:__CONDUCTOR_INSTANCE_ID__,<br> ステータス: __STATUS_ID__, <br> 作業URL: __JUMP_URL__, <br> "}
+   ※メッセージの入力形式、改行の表記方法については、各サービスのWebhookによるメッセージの送信についてご参照ください。
+
 以下はメッセージ内で利用できる変数となります。
 Conductor作業一覧の情報を指定することができます。
     __CONDUCTOR_INSTANCE_ID__:  ConductorインスタンスID
@@ -141,9 +156,34 @@ Conductor作業一覧の情報を指定することができます。
     __NOTICE_NAME__:  通知ログ
     __NOTE__:  備考
     __JUMP_URL__:  Conductor作業確認画面のURL(作業確認URLを使用)
-','You can set definition for notification performed in Conductor.
+
+ステータスIDに対応するステータス名は以下となります。
+   - 3：実行中
+   - 4：実行中（遅延）
+   - 5：一時停止
+   - 6：正常終了
+   - 7：異常終了
+   - 8：警告終了
+   - 9：緊急停止
+   - 10：予約取消
+   - 11：想定外エラー','You can set definition for notification performed in Conductor.
 Notification is sent using Webhook.
-Below are the variables that can be used in the message.
+
+About setting items:
+   - Notice URL: Enter the URL of the notification destination.
+   - Header: Enter the http header field in Json format.
+   - Message: Enter the content of the notification according to the specifications of the service to be notified.
+   - PROXY URL: If PROXY settings are required, enter the URL.
+   - PROXY PORT：If PROXY settings are required, enter the PORT.
+   - Confirmation URL: Enter the FQDN to be used in the ITA variable for the Confirmation URL.
+
+Example configuration in Microsoft Teams/Slack:
+   - Notice URL: Enter the Webhook URL for each service.
+   - Header: { "Content-Type": "application/json" }
+   - Message: {"text": "Notice Name：__NOTICE_NAME__, <br>Conductor Name: __CONDUCTOR_NAME__, <br> Conductor Instance ID:__CONDUCTOR_INSTANCE_ID__,<br> Status ID: __STATUS_ID__, <br> Confirmation URL: __JUMP_URL__, <br> "}
+   * For information on message input format and line break notation, please refer to each service.
+
+ITA variables that can be used in the message:
 You can specify information for the Conductor list.
     __CONDUCTOR_INSTANCE_ID__: Conductor instance ID
     __CONDUCTOR_NAME__: Conductor name
@@ -162,9 +202,35 @@ You can specify information for the Conductor list.
     __TIME_END__: Time end
     __NOTICE_NAME__: Notification log
     __NOTE__: Remarks
-    __JUMP_URL__: URL of the Conductor confirmation (use Confirmation URL)','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(30102,_____DATE_____,'INSERT','30102','30102','T_COMN_CONDUCTOR_NOTICE',NULL,'conductor_notice_id','Conductorで作業時に実行される通知に関する定義を設定し
-ます。通知はWebhookを利用して行います。
+    __JUMP_URL__: URL of the Conductor confirmation (use the enterd Confirmation URL)
+
+The status name corresponding to the status ID is as follows:
+   - 3: Executing
+   - 4: Executing (delayed)
+   - 5: Pause
+   - 6: Normal end
+   - 7: Abend
+   - 8: Warning end
+   - 9: Emergency stop
+   - 10: Schedule Cancellation
+   - 11: Unexpected error','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(30102,_____DATE_____,'INSERT','30102','30102','T_COMN_CONDUCTOR_NOTICE',NULL,'conductor_notice_id','Conductorで作業時に実行される通知に関する定義を設定します。
+通知はWebhookを利用して行います。
+
+各種設定項目について：
+   - 通知先URL：通知先のURLを入力してください。
+   - ヘッダー：httpヘッダーフィールドをJson形式で入力してください。
+   - メッセージ：通知先サービスの仕様に従い、通知内容を入力してください。
+   - PROXY URL：PROXYの設定が必要な場合、URLを入力してください。
+   - PROXY PORT：PROXYの設定が必要な場合、PORTを入力してください。
+   - 作業確認URL：作業確認用URLの予約変数で使用する,FQDNを入力してください。
+
+Microsoft Teams/Slackでの設定例：
+   - 通知先URL：各サービスのWebhook URLを入力します。
+   - ヘッダー：{ "Content-Type": "application/json" }
+   - メッセージ：{"text": "通知名：__NOTICE_NAME__, <br>Conductor名称: __CONDUCTOR_NAME__, <br> ConductorインスタンスID:__CONDUCTOR_INSTANCE_ID__,<br> ステータス: __STATUS_ID__, <br> 作業URL: __JUMP_URL__, <br> "}
+   ※メッセージの入力形式、改行の表記方法については、各サービスのWebhookによるメッセージの送信についてご参照ください。
+
 以下はメッセージ内で利用できる変数となります。
 Conductor作業一覧の情報を指定することができます。
     __CONDUCTOR_INSTANCE_ID__:  ConductorインスタンスID
@@ -185,9 +251,34 @@ Conductor作業一覧の情報を指定することができます。
     __NOTICE_NAME__:  通知ログ
     __NOTE__:  備考
     __JUMP_URL__:  Conductor作業確認画面のURL(作業確認URLを使用)
-','You can set definition for notification performed in Conductor.
+
+ステータスIDに対応するステータス名は以下となります。
+   - 3：実行中
+   - 4：実行中（遅延）
+   - 5：一時停止
+   - 6：正常終了
+   - 7：異常終了
+   - 8：警告終了
+   - 9：緊急停止
+   - 10：予約取消
+   - 11：想定外エラー','You can set definition for notification performed in Conductor.
 Notification is sent using Webhook.
-Below are the variables that can be used in the message.
+
+About setting items:
+   - Notice URL: Enter the URL of the notification destination.
+   - Header: Enter the http header field in Json format.
+   - Message: Enter the content of the notification according to the specifications of the service to be notified.
+   - PROXY URL: If PROXY settings are required, enter the URL.
+   - PROXY PORT：If PROXY settings are required, enter the PORT.
+   - Confirmation URL: Enter the FQDN to be used in the ITA variable for the Confirmation URL.
+
+Example configuration in Microsoft TeamsTeams/Slack:
+   - Notice URL: Enter the Webhook URL for each service.
+   - Header: { "Content-Type": "application/json" }
+   - Message: {"text": "Notice Name：__NOTICE_NAME__, <br>Conductor Name: __CONDUCTOR_NAME__, <br> Conductor Instance ID:__CONDUCTOR_INSTANCE_ID__,<br> Status ID: __STATUS_ID__, <br> Confirmation URL: __JUMP_URL__, <br> "}
+   * For information on message input format and line break notation, please refer to each service.
+
+ITA variables that can be used in the message:
 You can specify information for the Conductor list.
     __CONDUCTOR_INSTANCE_ID__: Conductor instance ID
     __CONDUCTOR_NAME__: Conductor name
@@ -206,7 +297,18 @@ You can specify information for the Conductor list.
     __TIME_END__: Time end
     __NOTICE_NAME__: Notification log
     __NOTE__: Remarks
-    __JUMP_URL__: URL of the Conductor confirmation (use Confirmation URL)','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
+    __JUMP_URL__: URL of the Conductor confirmation (use the enterd Confirmation URL)
+
+The status name corresponding to the status ID is as follows:
+   - 3: Executing
+   - 4: Executing (delayed)
+   - 5: Pause
+   - 6: Normal end
+   - 7: Abend
+   - 8: Warning end
+   - 9: Emergency stop
+   - 10: Schedule Cancellation
+   - 11: Unexpected error','0','1','0','0','0','1','1','1','1','0',NULL,NULL,'conductor_notice_valid',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('30103','30103','T_COMN_CONDUCTOR_CLASS',NULL,'conductor_class_id','Conductorクラスを閲覧できます。
 「詳細」を押下するとConductorクラス編集メニューに遷移します。','You can browse the Conductor class.
 Click Details to move to the Conductor class edit menu.','0','1','0','0','0','0','1','1','1','0',NULL,NULL,NULL,'conductor_class_data_sync',NULL,'0',_____DATE_____,1);
@@ -419,7 +521,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 ・警告終了
 ・緊急停止
 ・予約取消
-・想定外エラー','The following status states exist. 
+・想定外エラー','The following status states exist.
 ・Unexecuted
 ・Unexecuted (schedule)
 ・Executing
@@ -442,7 +544,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 ・警告終了
 ・緊急停止
 ・予約取消
-・想定外エラー','The following status states exist. 
+・想定外エラー','The following status states exist.
 ・Unexecuted
 ・Unexecuted (schedule)
 ・Executing
@@ -597,7 +699,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 ・警告終了
 ・緊急停止
 ・予約取消
-・想定外エラー','The following status states exist. 
+・想定外エラー','The following status states exist.
 ・Unexecuted
 ・Unexecuted (schedule)
 ・Executing
@@ -620,7 +722,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 ・警告終了
 ・緊急停止
 ・予約取消
-・想定外エラー','The following status states exist. 
+・想定外エラー','The following status states exist.
 ・Unexecuted
 ・Unexecuted (schedule)
 ・Executing
@@ -772,9 +874,9 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 ・Unexpected error
 ・Conductor discard
 ・Operation discard',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('3010706','30107','実行ユーザ','Execution user','execution_user',NULL,'27',60,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'EXECUTION_USER_ID',NULL,'1','0','1','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'Conductorを実行するユーザ（登録/更新したユーザが自動的に入力されます。）','User executed “Register” ”renew” will be 
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('3010706','30107','実行ユーザ','Execution user','execution_user',NULL,'27',60,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'EXECUTION_USER_ID',NULL,'1','0','1','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'Conductorを実行するユーザ（登録/更新したユーザが自動的に入力されます。）','User executed “Register” ”renew” will be
 registered as operation user.',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(3010706,_____DATE_____,'INSERT','3010706','30107','実行ユーザ','Execution user','execution_user',NULL,'27',60,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'EXECUTION_USER_ID',NULL,'1','0','1','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'Conductorを実行するユーザ（登録/更新したユーザが自動的に入力されます。）','User executed “Register” ”renew” will be 
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(3010706,_____DATE_____,'INSERT','3010706','30107','実行ユーザ','Execution user','execution_user',NULL,'27',60,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'EXECUTION_USER_ID',NULL,'1','0','1','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'Conductorを実行するユーザ（登録/更新したユーザが自動的に入力されます。）','User executed “Register” ”renew” will be
 registered as operation user.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('3010707','30107','スケジュール設定','Schedule setting','schedule_setting',NULL,'23',70,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'[["modal", "schedule_regulary"]]',NULL,NULL,'0','1','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(3010707,_____DATE_____,'INSERT','3010707','30107','スケジュール設定','Schedule setting','schedule_setting',NULL,'23',70,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'[["modal", "schedule_regulary"]]',NULL,NULL,'0','1','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
@@ -857,7 +959,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 ・警告終了
 ・緊急停止
 ・予約取消
-・想定外エラー','The following status states exist. 
+・想定外エラー','The following status states exist.
 ・Unexecuted
 ・Unexecuted (schedule)
 ・Executing
@@ -880,7 +982,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 ・警告終了
 ・緊急停止
 ・予約取消
-・想定外エラー','The following status states exist. 
+・想定外エラー','The following status states exist.
 ・Unexecuted
 ・Unexecuted (schedule)
 ・Executing
@@ -1034,7 +1136,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 ・一時停止
 ・準備エラー
 ・Skip終了
-・警告終了','The following status states exist. 
+・警告終了','The following status states exist.
 ・Unexecuted
 ・Preparing
 ・Executing
@@ -1061,7 +1163,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 ・一時停止
 ・準備エラー
 ・Skip終了
-・警告終了','The following status states exist. 
+・警告終了','The following status states exist.
 ・Unexecuted
 ・Preparing
 ・Executing

@@ -18,13 +18,13 @@ initial_settings_ansible_controller
 from flask import g
 import json
 
-from common_libs.api import api_filter
+from common_libs.api import api_filter_admin
 from common_libs.common.exception import AppException
 from common_libs.common.dbconnect import *  # noqa: F403
 from libs.admin_common import initial_settings_ansible
 
 
-@api_filter
+@api_filter_admin
 def get_all_initial_setting_ansible():  # noqa: E501
     """get_all_initial_setting_ansible
 
@@ -52,7 +52,7 @@ def get_all_initial_setting_ansible():  # noqa: E501
     return result_data,
 
 
-@api_filter
+@api_filter_admin
 def get_initial_setting_ansible(organization_id):  # noqa: E501
     """get_initial_setting_ansible
 
@@ -81,7 +81,7 @@ def get_initial_setting_ansible(organization_id):  # noqa: E501
     return result_data,
 
 
-@api_filter
+@api_filter_admin
 def post_initial_setting_ansible(organization_id, body=None):  # noqa: E501
     """post_initial_setting_ansible
 

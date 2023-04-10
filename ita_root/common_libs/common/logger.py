@@ -51,7 +51,7 @@ class AppLog:
         isMyapp = True if os.getenv('IS_MYAPP') == "1" else False
 
         # read config.yml
-        with open('logging.yml', 'r') as yml:
+        with open(os.getenv('PYTHONPATH') + 'logging.yml', 'r') as yml:
             dictConfig = yaml.safe_load(yml)
 
         self.__create_instance(isMyapp, dictConfig)

@@ -39,16 +39,13 @@ from libs import common_functions as cm
 ansc_const = AnscConst()
 
 
-def backyard_main(organization_id=None, workspace_id=None):
+def backyard_main(common_db, organization_id=None, workspace_id=None):
     """
     [ita_by_ansible_execute]
     main logicのラッパー
     called 実行君
     """
     g.applogger.debug(g.appmsg.get_log_message("BKY-00001"))
-
-    # db instance
-    common_db = DBConnectCommon()  # noqa: F405
 
     retBool = main_logic(common_db)
     if retBool is True:
@@ -83,9 +80,9 @@ def main_logic(common_db):
         for data in execution_list:
             crr_count += 1
             # 実行前に同時実行数比較
-            if crr_count + int(all_exec_count) > int(all_execution_limit):
+            if all_execution_limit != 0 and crr_count + int(all_exec_count) > int(all_execution_limit):
                 return True
-            if crr_count + int(org_exec_count_list[data["ORGANIZATION_ID"]]) > int(org_execution_limit[data["ORGANIZATION_ID"]]):
+            if org_execution_limit[data["ORGANIZATION_ID"]] != 0 and crr_count + int(org_exec_count_list[data["ORGANIZATION_ID"]]) > int(org_execution_limit[data["ORGANIZATION_ID"]]):
                 return True
 
             common_db.db_transaction_start()

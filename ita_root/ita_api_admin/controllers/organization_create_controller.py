@@ -20,7 +20,7 @@ from flask import g
 import os
 import shutil
 
-from common_libs.api import api_filter
+from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *
 from common_libs.common.util import ky_encrypt
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
@@ -28,7 +28,7 @@ from common_libs.common.exception import AppException
 from common_libs.api import app_exception_response, exception_response
 
 
-@api_filter
+@api_filter_admin
 def organization_create(body, organization_id):  # noqa: E501
     """organization_create
 
@@ -123,7 +123,7 @@ def organization_create(body, organization_id):  # noqa: E501
     return '',
 
 
-@api_filter
+@api_filter_admin
 def organization_delete(organization_id):  # noqa: E501
     """organization_delete
 

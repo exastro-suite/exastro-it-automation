@@ -206,7 +206,10 @@ class DBConnectCommon:
             db_cursor.execute(sql, bind_value_list)
             self.__sql_debug(db_cursor)
         except pymysql.Error as e:
-            raise AppException("999-00003", [self._db, db_cursor._last_executed, e])
+            last_executed = ''
+            if '_last_executed' in db_cursor:
+                last_executed = db_cursor._last_executed
+            raise AppException("999-00003", [self._db, last_executed, e])
 
         data_list = list(db_cursor.fetchall())  # counter plan for 0 data
         db_cursor.close()
@@ -223,7 +226,8 @@ class DBConnectCommon:
         if os.environ.get("DEBUUG_SQL") != "1":
             return
 
-        print(db_cursor._last_executed)
+        if '_last_executed' in db_cursor:
+            print(db_cursor._last_executed)
 
     def table_columns_get(self, table_name):
         """

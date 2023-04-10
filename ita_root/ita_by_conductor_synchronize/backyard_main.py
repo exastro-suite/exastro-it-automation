@@ -61,6 +61,8 @@ def backyard_main(organization_id, workspace_id):
     # conductor backyard lib読込
     objcbkl = ConductorExecuteBkyLibs(objdbca)  # noqa: F405
     if objcbkl.get_objmenus() is False:
+        # DB切断
+        objdbca.db_disconnect()
         tmp_msg = 'ConductorExecuteBkyLibs Load Error'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False,
@@ -68,6 +70,8 @@ def backyard_main(organization_id, workspace_id):
     # storage path 設定
     tmp_result = objcbkl.set_storage_path()
     if tmp_result[0] is not True:
+        # DB切断
+        objdbca.db_disconnect()
         tmp_msg = 'set_storage_path Error'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False,
@@ -76,6 +80,8 @@ def backyard_main(organization_id, workspace_id):
     # 作業対象のConductorの取得
     tmp_result = objcbkl.get_execute_conductor_list()
     if tmp_result[0] is not True:
+        # DB切断
+        objdbca.db_disconnect()
         tmp_msg = 'get_execute_conductor_list Error'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False,
@@ -83,6 +89,8 @@ def backyard_main(organization_id, workspace_id):
 
     # 作業対象無しで終了
     if len(target_conductor_list) == 0:
+        # DB切断
+        objdbca.db_disconnect()
         tmp_msg = 'No Execute Conductor'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return True,
@@ -265,6 +273,9 @@ def backyard_main(organization_id, workspace_id):
 
         tmp_msg = 'conductor instance:{} END'.format(conductor_instance_id)
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+    # DB切断
+    objdbca.db_disconnect()
 
     tmp_msg = 'execute count :{}'.format(execute_conductor_cnt)
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

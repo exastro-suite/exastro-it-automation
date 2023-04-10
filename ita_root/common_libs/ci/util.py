@@ -152,6 +152,36 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WSDB_DATABASE")
 
 
+def wrapper_job_all_org(main_logic, loop_count=500):
+    '''
+    backyard job wrapper
+    '''
+    g.applogger.debug("ITA_DB is connected")
+
+    # pythonでのループ
+    interval = int(os.environ.get("EXECUTE_INTERVAL"))
+    count = 1
+    max = int(loop_count)
+
+    while True:
+        # get organization_info_list
+        # job for organization
+        try:
+            main_logic()
+        except AppException as e:
+            # catch - raise AppException("xxx-xxxxx", log_format)
+            app_exception(e)
+        except Exception as e:
+            # catch - other all error
+            exception(e)
+
+        if count >= max:
+            break
+        else:
+            count = count + 1
+            time.sleep(interval)
+
+
 def allow_proc(organization_id, workspace_id):
     """
         check the process is allowed to run.

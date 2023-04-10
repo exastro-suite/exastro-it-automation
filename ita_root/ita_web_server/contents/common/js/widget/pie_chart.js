@@ -29,8 +29,12 @@ movement( data ) {
     };
     const movementData = {};
     for ( const key in data ) {
-        movementData[ data[ key ].name ] = movementSetting[ data[ key ].name ];
-        movementData[ data[ key ].name ][ 1 ] = data[ key ].number;
+        const num = Number( data[ key ].number );
+        if ( !isNaN( num ) && num !== 0 ) {
+            const name = data[ key ].name;
+            movementData[ name ] = movementSetting[ name ];
+            movementData[ name ][ 1 ] = num;
+        }
     }
     return movementData;
 }

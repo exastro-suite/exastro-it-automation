@@ -1196,6 +1196,10 @@ deleteWidget( $widget, id ) {
     
     // 対象がメニューセットの場合、中のメニューをメニューグループに移動する
     if ( widgetId === 1 ) {
+        // 幅をメニューグループの設定に合わせる
+        const menuNumber = db.widgetInfo['w0'].menu_number;
+        $widget.find('.db-menu-group-item').css('width', `calc(100%/${menuNumber})`);
+        
         db.$.area.find('#w0').find('.db-menu-group-list').append(
             $widget.find('.db-menu-group-list').html()
         );

@@ -1199,7 +1199,6 @@ deleteWidget( $widget, id ) {
         db.$.area.find('#w0').find('.db-menu-group-list').append(
             $widget.find('.db-menu-group-list').html()
         );
-        db.updateMenuInfo();
     }
     
     db.widgetNumber[ widgetId ]--;
@@ -1210,6 +1209,11 @@ deleteWidget( $widget, id ) {
     
     $widget.remove();
     delete db.widgetInfo[ id ];
+
+    // 削除した後にメニュー情報を更新する
+    if ( widgetId === 1 ) {
+        db.updateMenuInfo();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1673,13 +1677,15 @@ setMenuItemMoveEvent() {
             $targetWidget.off('mousemove.blank');
             
             // Widgetタイプ
-            let listType, itemType;
+            let widgetId, listType, itemType;
             if ( $item.is('.db-menu-group-link') ) {
                 db.$.dashboard.addClass('db-menu-group-moving');
+                widgetId = ['0', '1'];
                 listType = '.db-menu-group-list';
                 itemType = '.db-menu-group-item';
             } else {
                 db.$.dashboard.addClass('db-linklist-moving');
+                widgetId = ['10'];
                 listType = '.db-linklist-list';
                 itemType = '.db-linklist-item';
             }
@@ -1783,7 +1789,7 @@ setMenuItemMoveEvent() {
                         db.changeFlag = true;
                         
                         // 別のWidgetに移動した場合
-                        if ( afterWidgetId !== beforeWidgetId ) {
+                        if ( afterWidgetId !== beforeWidgetId && widgetId.indexOf( $targetWidget.attr('data-widget-id') ) !== -1 ) {
                             // 対象の１行項目数
                             const menuNumber = db.widgetInfo[ afterWidgetId ].menu_number;
                             $wrap.css('width', `calc(100%/${menuNumber})`);

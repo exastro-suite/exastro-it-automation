@@ -1554,6 +1554,10 @@ class loadTable():
             else:
                 base_cols_val[REST_KEY_DISCARD] = 0
 
+            # インポート時はエクスポートで出力された値をそのまま使う
+            if import_mode:
+                base_cols_val[REST_KEY_DISCARD] = entry_parameter.get('discard')
+
             entry_parameter.update(base_cols_val)
 
             for rest_key in list(entry_parameter.keys()):
@@ -1588,6 +1592,11 @@ class loadTable():
 
             # rest_key → カラム名に変換
             colname_parameter = self.convert_restkey_colname(tmp_entry_parameter, current_row)
+
+            # import時には履歴を作成しないのでフラグをオフにする
+            if import_mode:
+                history_flg = False
+
             # 登録・更新処理
             if cmd_type == CMD_REGISTER:
                 result = self.objdbca.table_insert(self.get_table_name(), colname_parameter, primary_key, history_flg)

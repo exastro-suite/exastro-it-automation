@@ -152,6 +152,46 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WSDB_DATABASE")
 
 
+def wrapper_job_all_org(main_logic, loop_count=500):
+    '''
+    backyard job wrapper
+    '''
+    g.applogger.debug("ITA_DB is connected")
+
+    # pythonでのループ
+    interval = int(os.environ.get("EXECUTE_INTERVAL"))
+    count = 1
+    max = int(loop_count)
+
+    common_db = DBConnectCommon()  # noqa: F405
+
+    while True:
+        # get organization_info_list
+        # job for organization
+        try:
+
+            # autocommit=falseの場合に、ループ中にorganizationが更新されても、最新データが取得できないバグへの対策
+            common_db.db_transaction_start()
+            common_db.db_commit()
+
+            # set applogger.set_level: default:INFO / Use ITA_DB config value
+            set_service_loglevel(common_db)
+
+            main_logic(common_db)
+        except AppException as e:
+            # catch - raise AppException("xxx-xxxxx", log_format)
+            app_exception(e)
+        except Exception as e:
+            # catch - other all error
+            exception(e)
+
+        if count >= max:
+            break
+        else:
+            count = count + 1
+            time.sleep(interval)
+
+
 def allow_proc(organization_id, workspace_id):
     """
         check the process is allowed to run.

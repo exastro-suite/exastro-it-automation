@@ -18,13 +18,13 @@ loglevel_settings_controller
 from flask import g
 import json
 
-from common_libs.api import api_filter
+from common_libs.api import api_filter_admin
 from common_libs.common.exception import AppException
 from common_libs.common.dbconnect import *  # noqa: F403
 from libs.admin_common import loglevel_settings_container
 
 
-@api_filter
+@api_filter_admin
 def get_all_loglevel_settings():  # noqa: E501
     """get_all_loglevel_settings
 
@@ -51,7 +51,7 @@ def get_all_loglevel_settings():  # noqa: E501
     return result_data,
 
 
-@api_filter
+@api_filter_admin
 def post_all_setting_loglevel(body=None):  # noqa: E501
     """post_all_setting_loglevel
 

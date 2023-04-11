@@ -19,7 +19,7 @@ import sys
 # from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
-from common_libs.ci.util import wrapper_job
+from common_libs.ci.util import wrapper_job, wrapper_job_all_org
 from backyard_main import backyard_main as main_logic
 
 
@@ -39,7 +39,10 @@ def main():
 
         args = sys.argv
         loop_count = 500 if len(args) == 1 else args[1]
-        wrapper_job(main_logic, None, None, loop_count)
+        if g.SERVICE_NAME == "ita-by-ansible-execute":
+            wrapper_job_all_org(main_logic, loop_count)
+        else:
+            wrapper_job(main_logic, None, None, loop_count)
 
 
 if __name__ == '__main__':

@@ -178,6 +178,42 @@ def api_filter(func):
     return wrapper
 
 
+def api_filter_admin(func):
+    '''
+    wrap api controller
+
+    Argument:
+        func: controller(def)
+    Returns:
+        controller wrapper
+    '''
+
+    def wrapper(*args, **kwargs):
+        '''
+        controller wrapper
+
+        Argument:
+            *args, **kwargs: controller args
+        Returns:
+            (flask)response
+        '''
+        try:
+            g.applogger.debug("[ts={}] controller start -> {}".format(api_timestamp, kwargs))
+
+            # controller execute and make response
+            controller_res = func(*args, **kwargs)
+
+            return make_response(*controller_res)
+        except AppException as e:
+            # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+            return app_exception_response(e, True)
+        except Exception as e:
+            # catch - other all error
+            return exception_response(e, True)
+
+    return wrapper
+
+
 def check_request_body():
     '''
     check wheter request_body is json_format or not

@@ -22,7 +22,7 @@ import re
 import json
 import shutil
 
-from common_libs.api import api_filter, check_request_body_key
+from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import ky_encrypt, get_timestamp
 from libs.admin_common import initial_settings_ansible
@@ -30,7 +30,7 @@ from common_libs.common.exception import AppException
 from common_libs.api import app_exception_response, exception_response
 
 
-@api_filter
+@api_filter_admin
 def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     """workspace_create
 
@@ -93,7 +93,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 os.makedirs(abs_dir)
 
         # set initial material
-        with open('files/config.json', 'r') as material_conf_json:
+        with open(os.environ.get('PYTHONPATH') + 'files/config.json', 'r') as material_conf_json:
             material_conf = json.load(material_conf_json)
             for menu_id, file_info_list in material_conf.items():
                 for file_info in file_info_list:
@@ -158,8 +158,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
         for sql_files in sql_list:
 
-            ddl_file = "sql/" + sql_files[0]
-            dml_file = "sql/" + sql_files[1]
+            ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
+            dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
 
             # create table of workspace-db
             ws_db.sqlfile_execute(ddl_file)
@@ -194,6 +194,35 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             initial_settings_ansible(ws_db, json.loads(inistial_data_ansible_if))
             ws_db.db_commit()
 
+        # 同時実行数制御用のVIEW作成
+        view_sql = "CREATE VIEW V_ANSL_EXEC_STS_INST2 AS "
+        view_sql += "SELECT %s as ORGANIZATION_ID, %s as WORKSPACE_ID, %s as WORKSPACE_DB, 'V_ANSL_EXEC_STS_INST2' AS VIEW_NAME, EXECUTE_HOST_NAME, "
+        view_sql += "'Legacy' as DRIVER_NAME, 'L' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER "
+        view_sql += "FROM T_ANSL_EXEC_STS_INST "
+        view_sql += "WHERE DISUSE_FLAG = %s "
+        ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
+        view_sql = "CREATE VIEW V_ANSP_EXEC_STS_INST2 AS "
+        view_sql += "SELECT %s as ORGANIZATION_ID, %s as WORKSPACE_ID, %s as WORKSPACE_DB, 'V_ANSP_EXEC_STS_INST2' AS VIEW_NAME, EXECUTE_HOST_NAME, "
+        view_sql += "'Pioneer' as DRIVER_NAME, 'P' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER "
+        view_sql += "FROM T_ANSP_EXEC_STS_INST "
+        view_sql += "WHERE DISUSE_FLAG = %s "
+        ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
+        view_sql = "CREATE VIEW V_ANSR_EXEC_STS_INST2 AS "
+        view_sql += "SELECT %s as ORGANIZATION_ID, %s as WORKSPACE_ID, %s as WORKSPACE_DB, 'V_ANSR_EXEC_STS_INST2' AS VIEW_NAME, EXECUTE_HOST_NAME, "
+        view_sql += "'Legacy-Role' as DRIVER_NAME, 'R' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER "
+        view_sql += "FROM T_ANSR_EXEC_STS_INST "
+        view_sql += "WHERE DISUSE_FLAG = %s "
+        ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
+        ws_db.db_commit()
+
+        # 権限付与
+        view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSL_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
+        org_root_db.sql_execute(view_sql, [])
+        view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSP_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
+        org_root_db.sql_execute(view_sql, [])
+        view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSR_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
+        org_root_db.sql_execute(view_sql, [])
+
         # register workspace-db connect infomation
         org_db.db_transaction_start()
         org_db.table_insert("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
@@ -213,7 +242,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     return '',
 
 
-@api_filter
+@api_filter_admin
 def workspace_delete(organization_id, workspace_id):  # noqa: E501
     """workspace_delete
 

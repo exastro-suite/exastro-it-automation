@@ -283,6 +283,8 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
         abolished_type = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
+        user_name = util.get_user_name(user_id)
+
         # 登録用パラメータを作成
         parameters = {
             "parameter": {
@@ -292,7 +294,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
                 "abolished_type": abolished_type,
                 "specified_time": body_specified_time,
                 "file_name": None,
-                "execution_user": user_id,
+                "execution_user": user_name,
                 "json_storage_item": json.dumps(body),
                 "discard": "0"
             },
@@ -1123,6 +1125,7 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         RETRUN:
             result_data
     """
+    lang = g.get('LANGUAGE')
     # upload_idの作成
     date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
     upload_id = date + str(secrets.randbelow(9999999999))
@@ -1156,6 +1159,14 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         raise AppException("499-00905", [], [])
     with open(import_id_path + '/MENU_GROUPS') as f:
         menu_group_info = json.load(f)
+
+    # ユーザが使用している言語に合わせてメニューグループ名、メニュー名を設定する
+    for menu_groups in menu_group_info.values():
+        for menu_group in menu_groups:
+            menu_group['menu_group_name'] = menu_group['menu_group_name_' + lang.lower()]
+            menus = menu_group['menus']
+            for menu in menus:
+                menu['menu_name'] = menu['menu_name_' + lang.lower()]
 
     if os.path.isfile(import_id_path + '/DP_INFO') is False:
         # 対象ファイルなし
@@ -1263,6 +1274,8 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
 
         execution_type = ret_dp_execution_type[0].get('EXECUTION_TYPE_NAME_' + lang.upper())
 
+        user_name = util.get_user_name(user_id)
+
         # 登録用パラメータを作成
         parameters = {
             "file": {
@@ -1275,7 +1288,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
                 "abolished_type": abolished_type_name,
                 "specified_time": specified_time,
                 "file_name": file_name,
-                "execution_user": user_id,
+                "execution_user": user_name,
                 "json_storage_item": import_list,
                 "discard": "0"
             },

@@ -14,7 +14,6 @@
 import datetime
 import os
 from flask import g
-from common_libs.common.exception import AppException
 from common_libs.common.dbconnect import *  # noqa: F403
 """
 ライブラリ
@@ -69,17 +68,18 @@ def get_migration_target_versions():
     table_list = common_db.sql_execute(sql, ['T_COMN_ORGANIZATION_DB_INFO'])
     if len(table_list) != 1:
         # T_COMN_ORGANIZATION_DB_INFO テーブルが用意されていない環境＝初期インストールとして全バージョン分対応する
-        return version_list
+        # return version_list
+        return "new_install"
 
     # 2. T_COMN_VERSION から現在のバージョン取得
     table_list = common_db.sql_execute(sql, ['T_COMN_VERSION'])
     if len(table_list) != 1:
-        # T_COMN_VERSION テーブルが用意されていない環境＝初期バージョン2.0.5として以降の全バージョン分対応する
+        # T_COMN_VERSION テーブルが用意されていない環境＝初期バージョン2.0.6として以降の全バージョン分対応する
         return version_list[1:]
 
     data_list = common_db.table_select("T_COMN_VERSION", "WHERE `SERVICE_ID` = 1")
     if len(data_list) != 1:
-        raise AppException("499-00701", ["Failed to get current version."])  # TODO: Message番号を新規で作ること
+        raise Exception("Failed to get current version.")
 
     current_version = data_list[0]['VERSION']
 
@@ -88,7 +88,7 @@ def get_migration_target_versions():
         index = version_list.index(current_version)
         del version_list[:(index + 1)]
     else:
-        raise AppException("499-00701", ["No such version."], [current_version])  # TODO: Message番号を新規で作ること
+        raise Exception(f"No such version. version:{current_version}")
 
     return version_list
 

@@ -17,6 +17,7 @@ import json
 import time
 import pathlib
 import shutil
+import ast
 from flask import g
 # from common_libs.common.exception import AppException
 from common_libs.common import *  # noqa: F403
@@ -213,6 +214,11 @@ def backyard_main(organization_id, workspace_id):
                 taskId = task["EXECUTION_NO"]
                 json_storage_item = json.loads(str(task['JSON_STORAGE_ITEM']))
                 upload_id = json_storage_item["upload_id"]
+                import_menu_list = []
+                menu = json_storage_item["menu"]
+                for menu_id_list in menu.values():
+                    for menu_id in menu_id_list:
+                        import_menu_list.append(menu_id)
 
                 targetImportPath = IMPORT_PATH + "/import/" + upload_id
                 tmpMenuIdFileAry = Path(targetImportPath + '/MENU_LIST.txt').read_text(encoding="utf-8")
@@ -234,6 +240,9 @@ def backyard_main(organization_id, workspace_id):
                 for menuNameRest, fileName in retImportAry.items():
                     menuInfo = util.getMenuInfoByMenuId(menuNameRest, objdbca)
                     menuId = menuInfo["MENU_ID"]
+                    # メニューが画面でチェックされているか確認
+                    if menuId not in import_menu_list:
+                        continue
                     chk_path1 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_JA"].replace("/", "_") + "/" + fileName
                     chk_path2 = IMPORT_PATH + "/import/" + upload_id + "/" + menuInfo["MENU_GROUP_ID"] + "_" + menuInfo["MENU_GROUP_NAME_EN"].replace("/", "_") + "/" + fileName
                     if not os.path.exists(chk_path1) and not os.path.exists(chk_path2) or fileName == "":
@@ -261,7 +270,9 @@ def backyard_main(organization_id, workspace_id):
 
                     # アップロード
                     g.ROLES = "dummy"
+                    g.USER_ID = task["EXECUTION_USER"]
                     aryRetBody = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menuNameRest, menu_record, excel_data, True, lang)
+                    g.USER_ID = "60102"
 
                     # リザルトファイルの作成
                     menuInfo = util.getMenuInfoByMenuId(menuNameRest, objdbca)
@@ -276,9 +287,25 @@ def backyard_main(organization_id, workspace_id):
                     msg_result.append(g.appmsg.get_api_message('MSG-30005'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30007'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30006'))
+                    msg_result.append(g.appmsg.get_api_message('MSG-30034'))
+                    if type(aryRetBody) is str:
+                        # バリデーションエラー時はエラー内容しか返ってこないので、各処理を0件で登録
+                        count = 0
+                        tmp_result = ast.literal_eval(aryRetBody)
+                        for value in tmp_result:
+                            count += 1
+                        aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: count}
+                    else:
+                        aryRetBody[msg_result[4]] = 0
+
                     for name, ct in aryRetBody.items():
                         msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
                         idx += 1
+
+                    if aryRetBody[msg_result[4]] != 0:
+                        for value in tmp_result.values():
+                            for key, err_msg in value.items():
+                                msg += str(key) + ": " + str(err_msg) + "\n"
                     msg += "\n"
 
                     util.dumpResultMsg(msg, taskId, RESULT_PATH)
@@ -294,15 +321,15 @@ def backyard_main(organization_id, workspace_id):
                         result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                         continue
 
-                    # ステータスを完了にする
-                    res = util.setStatus(task['EXECUTION_NO'], STATUS_PROCESSED, objdbca)
-                    if res == 0:
-                        frame = inspect.currentframe().f_back
-                        msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                        g.applogger.error(msgstr)
-                        # ステータスを完了(異常)に更新
-                        result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
-                        continue
+                # ステータスを完了にする
+                res = util.setStatus(task['EXECUTION_NO'], STATUS_PROCESSED, objdbca)
+                if res == 0:
+                    frame = inspect.currentframe().f_back
+                    msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
+                    g.applogger.error(msgstr)
+                    # ステータスを完了(異常)に更新
+                    result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
+                    continue
 
                 # 一時ディレクトリ削除
                 shutil.rmtree(IMPORT_PATH + "/import/" + upload_id)

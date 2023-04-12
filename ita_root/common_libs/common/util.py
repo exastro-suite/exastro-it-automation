@@ -28,6 +28,7 @@ import os
 from flask import g
 import requests
 import json
+import shutil
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
 
@@ -620,6 +621,56 @@ def get_org_execution_limit(limit_key):
             limit_list[record["organization_id"]] = 0
 
     return limit_list
+
+
+def create_dirs(config_file_path, dest_dir):
+    """
+    config_file_pathのファイルに記載されているディレクトリをdest_dir配下に作成する
+
+    Arguments:
+        config_file_path: 設定ファイル
+        dest_dir: 作成するディレクトリ
+    Returns:
+        is success:(bool)
+    """
+    with open(config_file_path) as f:
+        lines = f.readlines()
+
+    for target_path in lines:
+        target_path = target_path.replace("\n", "")
+        os.makedirs(dest_dir + target_path)
+
+    return True
+
+
+def put_uploadfiles(config_file_path, src_dir, dest_dir):
+    """
+    config_file_pathのファイルに記載されているファイルをdest_dir配下に作成する
+
+    Arguments:
+        config_file_path: 設定ファイル
+        src_dir: コピー元のファイル格納ディレクトリ
+        dest_dir: 作成するディレクトリ
+    Returns:
+        is success:(bool)
+    """
+    with open(config_file_path, 'r') as material_conf_json:
+        material_conf = json.load(material_conf_json)
+        for menu_id, file_info_list in material_conf.items():
+            for file_info in file_info_list:
+                for file, copy_cfg in file_info.items():
+                    # org_file = src_dir + "/".join([menu_id, file])
+                    org_file = os.path.join(os.path.join(src_dir, menu_id), file)
+                    old_file_path = os.path.join(dest_dir, menu_id) + copy_cfg[0]
+                    file_path = os.path.join(dest_dir, menu_id) + copy_cfg[1]
+
+                    if not os.path.isdir(old_file_path):
+                        os.makedirs(old_file_path)
+
+                    shutil.copy(org_file, old_file_path + file)
+                    os.symlink(old_file_path + file, file_path + file)
+
+    return True
 
 
 if __name__ == '__main__':

@@ -38,6 +38,10 @@ class DBConnectWs(DBConnectCommon):
         if self._db_con is not None and self._db_con.open is True:
             return True
 
+        if organization_id is None:
+            organization_id = g.get('ORGANIZATION_ID')
+        self.organization_id = organization_id
+
         if workspace_id is None:
             workspace_id = g.get('WORKSPACE_ID')
         self._workspace_id = workspace_id

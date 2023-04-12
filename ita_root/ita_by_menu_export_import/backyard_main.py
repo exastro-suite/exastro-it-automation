@@ -198,6 +198,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             menu_id = param.get('menu_name')
             table_name = param.get('table_name')
             view_name = param.get('view_name')
+            history_table_flag = param.get('history_table_flag')
 
             menu_name_rest = ''
             for menu_data_record in t_comn_menu_data_json:
@@ -249,7 +250,9 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                             if os.path.isfile(view_data_path):
                                 objdbca.sqlfile_execute(view_data_path)
 
-            _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
+            objmenu = _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_name)
+            if history_table_flag == '1':
+                _register_history_data(objdbca, objmenu, execution_no_path, menu_name_rest, menu_id, table_name)
 
         # 正常系リターン
         return True, msg
@@ -355,6 +358,7 @@ def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_na
     objmenu = load_table.loadTable(objdbca, menu_name_rest, dp_mode=True)   # noqa: F405
     pk = objmenu.get_primary_key()
 
+    # パスワードカラムを取得する
     pass_column = ["8", "25", "26"]
     pass_column_list = []
     ret_pass_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s', [menu_id, pass_column])  # noqa: E501
@@ -414,6 +418,7 @@ def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_na
                 result_msg = _format_loadtable_msg(exec_result[2])
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
                 raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+    return objmenu
 
 def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_rest, table_name, objmenu=None):
     # DATAファイル読み込み
@@ -443,6 +448,100 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
 
         colname_parameter = objmenu.convert_restkey_colname(param, [])
         result = objdbca.table_insert(table_name, colname_parameter, pk)
+
+def _register_history_data(objdbca, objmenu, execution_no_path, menu_name_rest, menu_id, table_name):
+    t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
+
+    menu_name_rest += '_JNL'
+
+    # DATAファイル確認
+    if os.path.isfile(execution_no_path + '/' + menu_name_rest) is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+
+    # DATAファイル読み込み
+    sql_data = Path(execution_no_path + '/' + menu_name_rest).read_text(encoding='utf-8')
+    json_sql_data = json.loads(sql_data)
+
+    pk = objmenu.get_primary_key()
+
+    # パスワードカラムを取得する
+    pass_column = ["8", "25", "26"]
+    pass_column_list = []
+    ret_pass_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s', [menu_id, pass_column])  # noqa: E501
+    if len(ret_pass_column) != 0:
+        for record in ret_pass_column:
+            # pass_col_name = record['COL_NAME']
+            pass_col_name_rest = record['COLUMN_NAME_REST']
+            pass_column_list.append(pass_col_name_rest)
+
+    for json_record in json_sql_data:
+        file_param = json_record['file']
+        for k, v in file_param.items():
+            if isinstance(v, str):
+                v = v.encode()
+        param = json_record['parameter']
+
+        # 移行先に主キーの重複データが既に存在するか確認
+        param_type = "Register"
+        ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
+        pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST')
+
+        pk_value = param[pk_name]
+        chk_pk_sql = " SELECT * FROM `" + table_name + "` WHERE `" + pk + "` = '" + pk_value + "'"
+        chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
+        if len(chk_pk_record) != 0:
+            # 主キーが重複する場合は更新で上書きする
+            param_type = "Update"
+            # 最終更新日時のフォーマット
+            last_update_timestamp = chk_pk_record[0].get('LAST_UPDATE_TIMESTAMP')
+            last_update_date_time = last_update_timestamp.strftime('%Y/%m/%d %H:%M:%S.%f')
+            param['last_update_date_time'] = last_update_date_time
+
+        # PasswordColumnかを判定
+        for k, v in param.items():
+            if k in pass_column_list:
+                if v is not None:
+                    v = ky_encrypt(v)
+                    param[k] = v
+
+        # 登録用パラメータを作成
+        parameters = {
+            "file": file_param,
+            "parameter": param,
+            "type": param_type
+        }
+
+        colname_parameter = objmenu.convert_restkey_colname(param, [])
+
+        if isinstance(colname_parameter, dict):
+            colname_parameter = [colname_parameter]
+
+        is_last_res = True
+        history_table_name = table_name + "_JNL"
+        journal_id = param['journal_id']
+        journal_datetime = param['journal_datetime']
+        journal_action = param['journal_action']
+        for data in colname_parameter:
+            add_data = {}
+
+            add_data['JOURNAL_SEQ_NO'] = journal_id
+            add_data['JOURNAL_REG_DATETIME'] = journal_datetime
+            add_data['JOURNAL_ACTION_CLASS'] = journal_action
+            # make history data
+            history_data = dict(data, **add_data)
+
+            # make sql statement
+            column_list = list(history_data.keys())
+            prepared_list = list(map(lambda a: "%s", column_list))
+            value_list = list(history_data.values())
+
+            sql = "INSERT INTO `{}` ({}) VALUES ({})".format(history_table_name, ','.join(column_list), ','.join(prepared_list))
+
+            res = objdbca.sql_execute(sql, value_list)
+            if res is False:
+                is_last_res = False
+                break
 
 def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles_dir):  # noqa: C901
     """
@@ -486,14 +585,16 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             else:
                 add_menu_group['parent_id'] = menu_info_record.get('PARENT_MENU_GROUP_ID')
                 add_menu_group['id'] = menu_group_id
-                add_menu_group['menu_group_name'] = menu_info_record.get('MENU_GROUP_NAME_' + g.LANGUAGE.upper())
+                add_menu_group['menu_group_name_ja'] = menu_info_record.get('MENU_GROUP_NAME_JA')
+                add_menu_group['menu_group_name_en'] = menu_info_record.get('MENU_GROUP_NAME_EN')
                 add_menu_group['disp_seq'] = menu_info_record.get('GROUP_DISP_SEQ')
                 add_menu_group['menus'] = []
                 menu_group_list.append(add_menu_group)
 
             add_menu = {}
             add_menu['id'] = menu_info_record.get('MENU_ID')
-            add_menu['menu_name'] = menu_info_record.get('MENU_NAME_' + g.LANGUAGE.upper())
+            add_menu['menu_name_ja'] = menu_info_record.get('MENU_NAME_JA')
+            add_menu['menu_name_en'] = menu_info_record.get('MENU_NAME_EN')
             add_menu['menu_name_rest'] = menu_info_record.get('MENU_NAME_REST')
             add_menu['disp_seq'] = menu_info_record.get('DISP_SEQ')
             add_menu_group['menus'].append(add_menu)
@@ -593,18 +694,18 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         for table_name in table_name_list:
             sqldump_path = dir_path + '/' + table_name + '.sql'
-            sqldump_sql = 'mysqldump --single-transaction --opt '
-            sqldump_sql += '-u ' + db_user + ' '
-            sqldump_sql += '-p' + db_password + ' '
-            sqldump_sql += '-h ' + db_host + ' '
-            sqldump_sql += db_database + ' '
-            # 定義のみdumpするオプション
-            sqldump_sql += '--no-data' + ' '
-            sqldump_sql += table_name
 
-            sp_sqldump = subprocess.run(sqldump_sql, capture_output=True, text=True, shell=True).stdout
+            cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", db_database, "--no-data", table_name]
+
+            sp_sqldump = subprocess.run(cmd, capture_output=True, text=True)
+
+            if sp_sqldump.stdout == '' and sp_sqldump.returncode != 0:
+                msg = sp_sqldump.stderr
+                log_msg_args = [msg]
+                api_msg_args = [msg]
+                raise AppException("499-00201", [log_msg_args], [api_msg_args])
             with open(sqldump_path, 'w', encoding='utf-8') as f:
-                f.write(sp_sqldump)
+                f.write(sp_sqldump.stdout)
 
         # インポート時に利用するT_COMN_MENU_DATAを作成する
         t_comn_menu_data_path = dir_path + '/T_COMN_MENU_DATA'
@@ -698,7 +799,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
     except Exception as msg:
         # エラー時はtmpの作業ファイルを削除する
-        shutil.rmtree(export_menu_dir)
+        if os.path.isdir(export_menu_dir):
+            shutil.rmtree(export_menu_dir)
 
         # 異常系リターン
         return False, msg

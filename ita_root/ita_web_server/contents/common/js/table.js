@@ -153,6 +153,11 @@ tableStructuralData() {
     for ( const itemId in tb.info.column_group_info ) {
         tb.structural.column_group_info[ itemId ] = [];
         for ( const key of tb.info.column_group_info[ itemId ][`columns_${tb.tableMode}`] ) {
+            // 特定のモードの場合はボタンカラムを除外する
+            const column = tb.info.column_info[ key ];
+            if ( ( tb.mode === 'select' || tb.mode === 'execute' || tb.mode === 'history') && column && column.column_type === 'ButtonColumn') {
+                continue;
+            }
             if ( check( key ) ) tb.structural.column_group_info[itemId].push( key );
         }
         if ( tb.structural.column_group_info[ itemId ].length === 0 ) {
@@ -189,7 +194,8 @@ setHeaderHierarchy() {
     const restOrder = [];
 
     const hierarchy = function( columns, row ){
-        if ( !tb.data.hierarchy[ row ] ) tb.data.hierarchy[ row ] = [];
+        if ( fn.typeof( columns ) !== 'array') return;
+        if ( !tb.data.hierarchy[ row ] ) tb.data.hierarchy[ row ] = [];    
         for ( const columnKey of columns ) {
             const type = columnKey.slice( 0, 1 );
             if ( type === 'g') {
@@ -809,6 +815,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
 
             // Group
             if ( type === 'g') {
+                if ( tb.structural.column_group_info[ columnKey ] === undefined ) continue;
                 const group = groupInfo[ columnKey ],
                       name = fn.cv( group.column_group_name, '', true ),
                       gCount = fn.cv( groupColspan[ columnKey ].group_count, 0 ),

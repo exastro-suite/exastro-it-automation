@@ -192,13 +192,14 @@ def collect_excel_all(
         dict_column_group_id)
 
     # エクセルに表示するヘッダー項目を二次元配列に構築する
-    excel_header_list, header_order = create_excel_headerlist(
+    excel_header_list, excel_header_list_rest_name, header_order = create_excel_headerlist(
         lang, ws, depth, retList_t_common_menu_column_link, dict_column_group_id_name, dict_column_group_id, menu_table_link_list)
 
     # 1行目（項目名）のヘッダーを作成する
     ws = create_excel_header_firstline(
         ws,
         excel_header_list,
+        excel_header_list_rest_name,
         depth,
         startRow,
         startClm,
@@ -702,6 +703,7 @@ def create_excel_headerlist(
         ws.insert_rows(1, depth - 1)
 
     excel_header_list = [[] for i in range(depth)]
+    excel_header_list_rest_name = [[] for i in range(depth)]
     header_order = []
 
     # 表示する項目を二次元配列に構築する
@@ -727,33 +729,39 @@ def create_excel_headerlist(
 
             if column_name == msg:
                 excel_header_list[depth - 1 - i].insert(0, column_name)
+                excel_header_list_rest_name[depth - 1 - i].insert(0, column_name_rest)
                 if column_name_rest not in header_order:
                     header_order.insert(0, column_name_rest)
                 continue
 
             if i == 0:
                 excel_header_list[depth - 1 - i].append(column_name)
+                excel_header_list_rest_name[depth - 1 - i].append(column_name_rest)
                 if column_name_rest not in header_order:
                     header_order.append(column_name_rest)
             elif i == 1:
                 group_id = dict_menu_column.get('COL_GROUP_ID')
                 if group_id is None:
                     excel_header_list[depth - 1 - i].append(column_name)
+                    excel_header_list_rest_name[depth - 1 - i].append(column_name_rest)
                 else:
                     column_group_name = dict_column_group_id_name.get(group_id)
                     if column_group_name is None:
                         column_group_name = ''
                     excel_header_list[depth - 1 - i].append(column_group_name)
+                    excel_header_list_rest_name[depth - 1 - i].append(column_group_name)
             else:
                 group_id = recursive_get_pa_col_group_id(
                     i - 1, dict_menu_column.get('COL_GROUP_ID'), dict_column_group_id)
                 if group_id is None:
                     excel_header_list[depth - 1 - i].append(column_name)
+                    excel_header_list_rest_name[depth - 1 - i].append(column_name_rest)
                 else:
                     column_group_name = dict_column_group_id_name.get(group_id)
                     if column_group_name is None:
                         column_group_name = ''
                     excel_header_list[depth - 1 - i].append(column_group_name)
+                    excel_header_list_rest_name[depth - 1 - i].append(column_group_name)
 
     # 親が一番上にくるようにリストを整える
     for i in range(len(excel_header_list[0])):
@@ -768,18 +776,19 @@ def create_excel_headerlist(
                     elif excel_header_list[j][i] != excel_header_list[j + cnt][i]:
                         loopflg = False
                         excel_header_list[j][i] = excel_header_list[j + cnt][i]
-                        excel_header_list[j +
-                                          cnt][i] = excel_header_list[depth -
-                                                                      1][i]
+                        excel_header_list_rest_name[j][i] = excel_header_list_rest_name[j + cnt][i]
+                        excel_header_list[j + cnt][i] = excel_header_list[depth - 1][i]
+                        excel_header_list_rest_name[j + cnt][i] = excel_header_list_rest_name[depth - 1][i]
                     cnt += 1
 
-    return excel_header_list, header_order
+    return excel_header_list, excel_header_list_rest_name, header_order
 
 
 # 1行目（項目名）のヘッダーを作成し、結合する
 def create_excel_header_firstline(
         ws,
         excel_header_list,
+        excel_header_list_rest_name,
         depth,
         startRow,
         startClm,
@@ -837,6 +846,7 @@ def create_excel_header_firstline(
         startCell = None
         # 前回ループ時の値との比較用
         tmp = None
+        tmp_rest_name = None
         for j, data in enumerate(row):
             msg = g.appmsg.get_api_message('MSG-30015')
             if data == msg:
@@ -868,9 +878,12 @@ def create_excel_header_firstline(
                     continue
                 ws.cell(row=startRow + i, column=startClm + j, value=data)
             if tmp == data and startCell is None:
-                startCell = ws.cell(
-                    row=startRow + i,
-                    column=startClm + j - 1).coordinate
+                # 同じ値が連続していて且つstartCellにまだ値がセットされていない場合
+                if tmp_rest_name == excel_header_list_rest_name[i][j]:
+                    # 実際は違う項目でも項目名が同じだと連結対象だったのでrest名での比較を追加
+                    startCell = ws.cell(
+                        row=startRow + i,
+                        column=startClm + j - 1).coordinate
             elif tmp != data and startCell is not None:
                 # 横軸の結合
                 ws.merge_cells(
@@ -884,6 +897,7 @@ def create_excel_header_firstline(
                         1).coordinate)
                 startCell = None
             tmp = data
+            tmp_rest_name = excel_header_list_rest_name[i][j]
 
     # 縦軸の結合
     for i in range(len(excel_header_list[0])):
@@ -1486,13 +1500,14 @@ def collect_excel_format(
         dict_column_group_id)
 
     # エクセルに表示するヘッダー項目を二次元配列に構築する
-    excel_header_list, header_order = create_excel_headerlist(
+    excel_header_list, excel_header_list_rest_name, header_order = create_excel_headerlist(
         lang, ws, depth, retList_t_common_menu_column_link, dict_column_group_id_name, dict_column_group_id, menu_table_link_list)
 
     # 1行目（項目名）のヘッダーを作成する
     ws = create_excel_header_firstline(
         ws,
         excel_header_list,
+        excel_header_list_rest_name,
         depth,
         startRow,
         startClm,
@@ -1711,13 +1726,14 @@ def collect_excel_journal(
         dict_column_group_id)
 
     # エクセルに表示するヘッダー項目を二次元配列に構築する
-    excel_header_list, header_order = create_excel_headerlist(
+    excel_header_list, excel_header_list_rest_name, header_order = create_excel_headerlist(
         lang, ws, depth, retList_t_common_menu_column_link, dict_column_group_id_name, dict_column_group_id, menu_table_link_list)
 
     # 1行目（項目名）のヘッダーを作成する
     ws = create_excel_header_firstline(
         ws,
         excel_header_list,
+        excel_header_list_rest_name,
         depth,
         startRow,
         startClm,
@@ -1999,13 +2015,14 @@ def collect_excel_filter(
         dict_column_group_id)
 
     # エクセルに表示するヘッダー項目を二次元配列に構築する
-    excel_header_list, header_order = create_excel_headerlist(
+    excel_header_list, excel_header_list_rest_name, header_order = create_excel_headerlist(
         lang, ws, depth, retList_t_common_menu_column_link, dict_column_group_id_name, dict_column_group_id, menu_table_link_list)
 
     # 1行目（項目名）のヘッダーを作成する
     ws = create_excel_header_firstline(
         ws,
         excel_header_list,
+        excel_header_list_rest_name,
         depth,
         startRow,
         startClm,
@@ -2353,7 +2370,7 @@ def execute_excel_maintenance(
 
     # メニューのレコード登録/更新(更新/廃止/復活)
     result_data = menu_maintenance_all.rest_maintenance_all(
-        objdbca, menu, parameter)
+        objdbca, menu, parameter, backyard_exec)
 
     # 処理が終わったらwbは削除する
     os.remove(file_path)

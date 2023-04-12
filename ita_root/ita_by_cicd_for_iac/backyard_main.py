@@ -87,7 +87,7 @@ class CICDMakeParamBase():
 
     def make_rest_param(self, data, *args, **kwargs):
 
-        data['remarks'] = kwargs['NOTE'] if 'NOTE' in kwargs else ''
+        data['remarks'] = kwargs['note'] if 'note' in kwargs else ''
         data['discard'] = '0'
         data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
         data['last_updated_user'] = g.USER_ID
@@ -1218,12 +1218,6 @@ class CICD_GrandChildWorkflow():
 
             # 廃止されていないレコードが操作対象の場合
             else:
-                # 最終更新者が異なる場合は処理を中断
-                if g.USER_ID != rset['LAST_UPDATE_USER']:
-                    logstr = g.appmsg.get_api_message("MSG-90111")
-                    FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-                    return FREE_LOG, True
-
                 # 素材ファイル差分がなくとも、レコードに変更があれば「更新」
                 if diff_flg is False:
                     for tmpkey, tmpval in param.items():
@@ -2518,6 +2512,7 @@ class CICD_ChildWorkflow():
             else:
                 SyncStatus = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
 
+            self.DBobj.db_transaction_start()
             ret = self.UpdateRepoListSyncStatus(SyncStatus)
             if ret is not True:
                 # 異常フラグON
@@ -2527,6 +2522,8 @@ class CICD_ChildWorkflow():
                 logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                 g.applogger.debug(FREE_LOG)
+
+            self.DBobj.db_transaction_end(True)
 
         # 結果出力
         if self.error_flag != 0:

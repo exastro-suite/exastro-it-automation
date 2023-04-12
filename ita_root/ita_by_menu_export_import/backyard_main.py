@@ -585,14 +585,16 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             else:
                 add_menu_group['parent_id'] = menu_info_record.get('PARENT_MENU_GROUP_ID')
                 add_menu_group['id'] = menu_group_id
-                add_menu_group['menu_group_name'] = menu_info_record.get('MENU_GROUP_NAME_' + g.LANGUAGE.upper())
+                add_menu_group['menu_group_name_ja'] = menu_info_record.get('MENU_GROUP_NAME_JA')
+                add_menu_group['menu_group_name_en'] = menu_info_record.get('MENU_GROUP_NAME_EN')
                 add_menu_group['disp_seq'] = menu_info_record.get('GROUP_DISP_SEQ')
                 add_menu_group['menus'] = []
                 menu_group_list.append(add_menu_group)
 
             add_menu = {}
             add_menu['id'] = menu_info_record.get('MENU_ID')
-            add_menu['menu_name'] = menu_info_record.get('MENU_NAME_' + g.LANGUAGE.upper())
+            add_menu['menu_name_ja'] = menu_info_record.get('MENU_NAME_JA')
+            add_menu['menu_name_en'] = menu_info_record.get('MENU_NAME_EN')
             add_menu['menu_name_rest'] = menu_info_record.get('MENU_NAME_REST')
             add_menu['disp_seq'] = menu_info_record.get('DISP_SEQ')
             add_menu_group['menus'].append(add_menu)
@@ -692,17 +694,12 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         for table_name in table_name_list:
             sqldump_path = dir_path + '/' + table_name + '.sql'
-            sqldump_sql = 'mysqldump --single-transaction --opt '
-            sqldump_sql += '-u ' + db_user + ' '
-            sqldump_sql += '-p' + db_password + ' '
-            sqldump_sql += '-h ' + db_host + ' '
-            sqldump_sql += db_database + ' '
-            # 定義のみdumpするオプション
-            sqldump_sql += '--no-data' + ' '
-            sqldump_sql += table_name
 
-            sp_sqldump = subprocess.run(sqldump_sql, capture_output=True, text=True, shell=True)
-            if sp_sqldump.stdout == '':
+            cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", db_database, "--no-data", table_name]
+
+            sp_sqldump = subprocess.run(cmd, capture_output=True, text=True)
+
+            if sp_sqldump.stdout == '' and sp_sqldump.returncode != 0:
                 msg = sp_sqldump.stderr
                 log_msg_args = [msg]
                 api_msg_args = [msg]

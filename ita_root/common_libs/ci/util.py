@@ -242,13 +242,13 @@ def app_exception(e):
         t = traceback.format_exc()
         log_err(arrange_stacktrace_format(t))
 
-        # catch - raise AppException("xxx-xxxxx", log_format), and get message
-        result_code, log_msg_args, api_msg_args = args
-        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-        log_err(log_msg)
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    log_err(log_msg)
 
 
-def exception(e):
+def exception(e, exception_log_need=False):
     '''
     called when Exception occured
 
@@ -269,7 +269,7 @@ def exception(e):
             is_arg = True
 
     # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
-    if ret_db_disuse is False:
+    if ret_db_disuse is False or exception_log_need is True:
         # catch - other all error
         t = traceback.format_exc()
         log_err(arrange_stacktrace_format(t))

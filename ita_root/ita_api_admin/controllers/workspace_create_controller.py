@@ -24,7 +24,7 @@ import shutil
 
 from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_encrypt, get_timestamp
+from common_libs.common.util import ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
 from common_libs.api import app_exception_response, exception_response
@@ -69,44 +69,15 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
     try:
         # make storage directory for workspace job
-        dir_list = [
-            ['driver', 'ansible', 'legacy'],
-            ['driver', 'ansible', 'pioneer'],
-            ['driver', 'ansible', 'legacy_role'],
-            ['driver', 'ansible', 'git_repositories'],
-            ['driver', 'conductor'],
-            ['driver', 'terraform_cloud_ep'],
-            ['driver', 'terraform_cli'],
-            ['driver', 'cicd', 'repositories'],
-            ['uploadfiles'],
-            ['tmp', 'driver', 'ansible'],
-            ['tmp', 'driver', 'import_menu'],
-            ['tmp', 'driver', 'import_excel'],
-            ['tmp', 'driver', 'export_menu'],
-            ['tmp', 'driver', 'export_excel'],
-            ['tmp', 'driver', 'terraform_cloud_ep'],
-            ['tmp', 'driver', 'terraform_cli'],
-        ]
-        for dir in dir_list:
-            abs_dir = workspace_dir + "/".join(dir)
-            if not os.path.isdir(abs_dir):
-                os.makedirs(abs_dir)
+        create_dir_list = os.path.join(os.environ.get('PYTHONPATH'), "config", "create_dir_list.txt")
+        create_dirs(create_dir_list, workspace_dir)
+        g.applogger.debug("make storage directory for workspace job")
 
         # set initial material
-        with open(os.environ.get('PYTHONPATH') + 'files/config.json', 'r') as material_conf_json:
-            material_conf = json.load(material_conf_json)
-            for menu_id, file_info_list in material_conf.items():
-                for file_info in file_info_list:
-                    for file, copy_cfg in file_info.items():
-                        org_file = os.environ.get('PYTHONPATH') + "/".join(["files", menu_id, file])
-                        old_file_path = workspace_dir + "uploadfiles/" + menu_id + copy_cfg[0]
-                        file_path = workspace_dir + "uploadfiles/" + menu_id + copy_cfg[1]
-
-                        if not os.path.isdir(old_file_path):
-                            os.makedirs(old_file_path)
-
-                        shutil.copy(org_file, old_file_path + file)
-                        os.symlink(old_file_path + file, file_path + file)
+        src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
+        dest_dir = os.path.join(workspace_dir, "uploadfiles")
+        config_file_path = os.path.join(src_dir, "config.json")
+        put_uploadfiles(config_file_path, src_dir, dest_dir)
         g.applogger.debug("set initial material")
 
         # make workspace-db connect infomation

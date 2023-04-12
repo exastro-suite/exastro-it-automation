@@ -11,11 +11,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import shutil
+import sys
 import json
 import os
 from flask import g
-from common_libs.common.exception import AppException
+from common_libs.common.util import create_dirs, put_uploadfiles
+from importlib import import_module
 
 
 class Migration:
@@ -47,34 +48,36 @@ class Migration:
         """
         g.applogger.debug(f"[Trace] work_dir_path:{self._work_dir_path}")
 
-        # db_migrate
+        # DBパッチ
         sql_dir = os.path.join(self._resource_dir_path, "sql")
         if os.path.isdir(sql_dir):
+            g.applogger.debug("[Trace] migrate db start")
             self._db_migrate(sql_dir)
+        g.applogger.debug("[Trace] migrate db complete")
 
-        # delivery files (uploadfiles only)
-        file_dir = os.path.join(self._resource_dir_path, "file")
-        if os.path.isdir(file_dir):
-            self._delivery_files(file_dir)
+        # ディレクトリ作成
+        config_file_path = os.path.join(self._resource_dir_path, "create_dir_list.txt")
+        if os.path.isfile(config_file_path):
+            create_dirs(config_file_path, self._work_dir_path)
+            # self._create_dir(dir_file)
+        g.applogger.debug("[Trace] create dir complete")
 
-        # storage migrate
+        # ファイル配置 (uploadfiles only)
+        src_dir = os.path.join(self._resource_dir_path, "file")
+        dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
+        config_file_path = os.path.join(src_dir, "config.json")
+        if os.path.isfile(config_file_path):
+            put_uploadfiles(config_file_path, src_dir, dest_dir)
+            # self._delivery_files(file_dir)
+        g.applogger.debug("[Trace] delivery files complete")
 
-        # create dir
-        dir_file = os.path.join(self._resource_dir_path, "create_dir_list.txt")
-        if os.path.isfile(dir_file):
-            self._create_dir(dir_file)
+        # 特別処理
+        # migrationを呼出す
+        src_dir = os.path.join(self._resource_dir_path, "specific")
+        config_file_path = os.path.join(src_dir, "config.json")
+        if os.path.isfile(config_file_path):
+            self._specific_logic(config_file_path, src_dir)
 
-        # chmod 755
-        chmod_755_file = os.path.join(self._resource_dir_path, "755_list.txt")
-        if os.path.isfile(chmod_755_file):
-            self._chmod(chmod_755_file, 0o755)
-
-        # chmod 777
-        chmod_777_file = os.path.join(self._resource_dir_path, "755_list.txt")
-        if os.path.isfile(chmod_777_file):
-            self._chmod(chmod_777_file, 0o777)
-
-        # self._specific_logic()
 
     def _db_migrate(self, sql_dir):
         """
@@ -83,74 +86,26 @@ class Migration:
         Arguments:
             sql_dir: String
         """
+        config_file_path = os.path.join(sql_dir, "config.json")
+        if not os.path.isfile(config_file_path):
+            return True
 
-        with open(os.path.join(sql_dir, "config.json"), "r") as config_str:
+        with open(config_file_path, "r") as config_str:
             file_list = json.load(config_str)
 
         for sql_file in file_list:
             self._db_conn.sqlfile_execute(os.path.join(sql_dir, sql_file))
 
-    def _delivery_files(self, file_dir):
+        return True
+
+    def _specific_logic(self, config_file_path, src_dir):
         """
-        Delivery files
-
-        Arguments:
-            file_dir: String
+        execute specific logic (python)
         """
+        with open(config_file_path, "r") as config_str:
+            file_list = json.load(config_str)
 
-        with open(os.path.join(file_dir, "config.json"), "r") as config_str:
-            config_json = json.load(config_str)
-
-        for menu_id, resource_dict in config_json.items():
-            menu_dir = os.path.join(file_dir, menu_id)
-            if not os.isdir(menu_dir):
-                raise AppException("499-00701", [f"No such directory. resource:{menu_dir}"])  # TODO: Message番号を新規で作ること
-
-            for item, dest_path_list in resource_dict.items():
-                item_path = os.path.join(file_dir, menu_id, item)
-                if not os.isfile(item_path):
-                    raise AppException("499-00701", [f"No such file. resource:{item_path}"])  # TODO: Message番号を新規で作ること
-
-                for dst_dir in dest_path_list:
-                    # 現在はuploadfilesのみに対応
-                    # TODO: 2系は履歴TBLに実ファイル、更新TBLにはシンボリックリンクだけどそこの対応はどうするか
-                    shutil.copy(item_path, os.path.join(self._work_dir_path, "uploadfiles", menu_id, dst_dir))
-
-    def _create_dir(self, file_path):
-        """
-        Storage file migrate
-            (create dir)
-
-        Arguments:
-            file_path: String
-        """
-
-        with open(file_path) as f:
-            lines = f.readlines()
-
-        for target_path in lines:
-            os.makedirs(target_path)
-
-    def _chmod(self, file_path, mode):
-        """
-        Storage file migrate
-            (chmod)
-
-        Arguments:
-            file_path: str
-            mode: int (0o755 or 0o777)
-        """
-
-        with open(file_path) as f:
-            lines = f.readlines()
-
-        for target_path in lines:
-            if os.path.exists(target_path):
-                os.chmod(target_path, mode)
-
-    # def _specific_logic(self):
-    #     """
-    #     execute specific logic (python)
-    #     """
-
-    #     # TODO: 新規で何かを実行しなければならないものは発生しないか？
+        for src_file in file_list:
+            sys.path.append(src_dir)
+            migration_module = import_module(src_file)
+            result = migration_module.main(self._work_dir_path, self._db_conn)

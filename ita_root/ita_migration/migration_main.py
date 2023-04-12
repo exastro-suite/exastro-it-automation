@@ -15,11 +15,10 @@ from flask import Flask, g
 from dotenv import load_dotenv  # python-dotenv
 import os
 
-from common_libs.common.exception import AppException
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
-from common_libs.ci.util import app_exception, exception
+from common_libs.ci.util import exception
 from libs.functions import util
 from libs.classes.MigrationClass import Migration
 
@@ -58,19 +57,22 @@ def __wrapper():
 
             util.stop_all_backyards()
 
-            for version in versions:
-                __migration_main(version)
+            if versions == "new_install":
+                # 新規インストール
+                __migration_main("latest")
+            else:
+                # バージョンアップ
+                for version in versions:
+                    __migration_main(version)
 
             # set latest version
             util.set_version(versions[-1])
 
             return 0
 
-        except AppException as e:
-            app_exception(e)
-            return 1
         except Exception as e:
-            exception(e)
+            # exception(e, True)
+            exception(e, True)
             return 1
         finally:
             util.restart_all_backyards()
@@ -91,14 +93,15 @@ def __migration_main(version):
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
 
     # 対象バージョンのディレクトリ確認
-    version_dir_path = os.path.join(g.APPPATH, "versions", version)
+    version_dir = version.replace('.', '_')
+    version_dir_path = os.path.join(g.APPPATH, "versions", version_dir)
     if not os.path.isdir(version_dir_path):
-        raise AppException("499-00701", f"No such directory. path:{version_dir_path}")  # TODO: Message番号を新規で作ること
+        raise Exception(f"No such directory. path:{version_dir_path}")
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # メイン処理開始
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-    g.applogger.debug(f"[Trace] Start apply version:{version}")
+    g.applogger.info(f"[Trace] Start apply version:{version}")
 
     # BASE level の処理
     resource_dir_path = os.path.join(version_dir_path, "BASE_level")
@@ -108,7 +111,9 @@ def __migration_main(version):
         worker = Migration(resource_dir_path, work_dir_path, common_db)
 
         common_db.db_transaction_start()
+        g.applogger.debug("[Trace] Begin BASE migrate.")
         worker.migrate()
+        g.applogger.debug("[Trace] End BASE migrate.")
         common_db.db_commit()
 
     org_id_list = util.get_organization_ids()
@@ -122,7 +127,9 @@ def __migration_main(version):
             org_worker = Migration(resource_dir_path, work_dir_path, org_db)
 
             org_db.db_transaction_start()
+            g.applogger.debug("[Trace] Begin ORG migrate.")
             org_worker.migrate()
+            g.applogger.debug("[Trace] End ORG migrate.")
             org_db.db_commit()
 
         ws_id_list = util.get_workspace_ids(organization_id)
@@ -136,7 +143,9 @@ def __migration_main(version):
                 ws_worker = Migration(resource_dir_path, work_dir_path, ws_db)
 
                 ws_db.db_transaction_start()
+                g.applogger.debug("[Trace] Begin WS migrate.")
                 ws_worker.migrate()
+                g.applogger.debug("[Trace] End WS migrate.")
                 ws_db.db_commit()
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +

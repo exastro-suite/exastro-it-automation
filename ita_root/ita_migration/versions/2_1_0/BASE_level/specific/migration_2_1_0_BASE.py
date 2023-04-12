@@ -19,6 +19,7 @@ import requests
 
 def main(work_dir_path, db_conn):
 
+    # システム全体のMovement同時実行数最大値の設定
     host_name = os.environ.get('PLATFORM_API_HOST')
     port = os.environ.get('PLATFORM_API_PORT')
     header_para = {

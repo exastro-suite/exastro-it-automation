@@ -444,6 +444,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
     arrayResult = {}
     msg_args = ""
     intResultCode = ""
+    role_id_list = g.get('ROLES')
 
     body_zipfile = body.get('zipfile')
     # upload_idの作成
@@ -512,6 +513,15 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
             group_disp_seq = tmpMenuInfo["GROUP_DISP_SEQ"]
             parent_id = tmpMenuInfo["PARENT_MENU_GROUP_ID"]
             disp_seq = tmpMenuInfo["DISP_SEQ"]
+
+            # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
+            # 自分のロールが「メンテナンス可」
+            ret_role_menu_link = objdbca.table_select("T_COMN_ROLE_MENU_LINK", 'WHERE MENU_ID = %s AND ROLE_ID IN %s AND DISUSE_FLAG = %s', [menuId, role_id_list, 0])
+            for record in ret_role_menu_link:
+                if record["PRIVILEGE"] != "1":
+                    # 権限エラー
+                    msgstr = g.appmsg.get_api_message("MSG-30033")
+                    menuInfo["error"] = msgstr
 
             # 『メニューテーブル紐付管理』テーブルから対象のデータを取得
             ret_role_menu_link = objdbca.table_select('T_COMN_MENU_TABLE_LINK', 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s ORDER BY MENU_ID', [menuId, 0])

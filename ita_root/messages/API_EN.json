@@ -1359,6 +1359,7 @@
     "MSG-30031": "The target Menu is written multiple times in the MENU_LIST.txt file.",
     "MSG-30032": "The target file does not exist.",
     "MSG-30033": "You don’t have permission to maintain this menu.",
+    "MSG-30034": "Error",
     "MSG-40001": "We have received your reservation cancellation. Please check your status. (Conductor instance ID: {})",
     "MSG-40002": "I received an emergency stop. Please check your status. (Conductor instance ID.:{})",
     "MSG-40003": "We have received the cancellation of the temporary suspension. Please check your status. (Conductor instance ID:{}, Node instance ID:{})",

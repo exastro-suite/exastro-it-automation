@@ -270,7 +270,9 @@ def backyard_main(organization_id, workspace_id):
 
                     # アップロード
                     g.ROLES = "dummy"
+                    g.USER_ID = task["EXECUTION_USER"]
                     aryRetBody = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menuNameRest, menu_record, excel_data, True, lang)
+                    g.USER_ID = "60102"
 
                     # リザルトファイルの作成
                     menuInfo = util.getMenuInfoByMenuId(menuNameRest, objdbca)

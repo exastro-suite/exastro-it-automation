@@ -242,10 +242,10 @@ def app_exception(e):
         t = traceback.format_exc()
         log_err(arrange_stacktrace_format(t))
 
-    # catch - raise AppException("xxx-xxxxx", log_format), and get message
-    result_code, log_msg_args, api_msg_args = args
-    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-    log_err(log_msg)
+        # catch - raise AppException("xxx-xxxxx", log_format), and get message
+        result_code, log_msg_args, api_msg_args = args
+        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+        log_err(log_msg)
 
 
 def exception(e, exception_log_need=False):

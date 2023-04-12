@@ -2321,18 +2321,23 @@ def execute_excel_maintenance(
     excel_data = []
     # 実行処理種別
     process_type = []
+    # 対象行記憶用
+    target_row = []
     for i in range(row_num):
-        # 対象行記憶用
-        target_row = []
+        # 対象行データ記憶用
+        target_row_data = []
         # 実行処理種別を見る
         men_type = ws.cell(row=i + 1, column=3).value
 
         if men_type == msg_reg or men_type == msg_upd or men_type == msg_dis or men_type == msg_res:
+            # 対象のExcelの行数を記憶しておく
+            target_row.append(i + 1)
+
             process_type.append(men_type)
             for j in range(4, col_num + 1):
-                target_row.append(ws.cell(row=i + 1, column=j).value)
+                target_row_data.append(ws.cell(row=i + 1, column=j).value)
 
-            excel_data.append(target_row)
+            excel_data.append(target_row_data)
 
     parameter = []
     dict_param = {}
@@ -2368,9 +2373,29 @@ def execute_excel_maintenance(
 
             parameter[row_i]["type"] = process_type[row_i]
 
-    # メニューのレコード登録/更新(更新/廃止/復活)
-    result_data = menu_maintenance_all.rest_maintenance_all(
-        objdbca, menu, parameter, backyard_exec)
+    try:
+        # メニューのレコード登録/更新(更新/廃止/復活)
+        result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameter, backyard_exec)
+    except Exception as e:
+        # エラー判定
+        # 処理が終わったらwbは削除する
+        os.remove(file_path)
+        # result_codeとmsg_argsを取得
+        result_code = '{}'.format(e.args[0])
+        err_msgs = e.args[1]
+        ret_msg = []
+        for msg in err_msgs:
+            print(json.loads(msg))
+            json_msg = json.loads(msg)
+            for k, v in json_msg.items():
+                for vv in v.values():
+                    # エラー文に行数を追加する
+                    vv[0] = '{}:({}行目)'.format(vv[0], target_row[int(k)])
+        ret_msg.append(json.dumps(json_msg))
+        msg_args = eval('{}'.format(ret_msg))
+        log_msg_args = msg_args
+        api_msg_args = msg_args
+        raise AppException(result_code, log_msg_args, api_msg_args)  # noqa: F405
 
     # 処理が終わったらwbは削除する
     os.remove(file_path)

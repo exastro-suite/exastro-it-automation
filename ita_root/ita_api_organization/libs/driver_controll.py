@@ -28,10 +28,11 @@ from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath
-# from common_libs.ansible_driver.functions.rest_libs import insert_execution_list, execution_scram
+from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
+from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 
 
-def movement_registr_check(objdbca, parameter, Required=False):
+def movement_registr_check(objdbca, parameter, menu_id, Required=False):
     """
         リクエストボディのMovement_id確認
         ARGS:
@@ -39,9 +40,16 @@ def movement_registr_check(objdbca, parameter, Required=False):
             parameter: bodyの中身
             Required: リクエストボディのMovement_idが必須か
                       True:必須　False:任意
+            menu_id: menu id
         RETRUN:
             movement情報
     """
+    orchestra_id = {'execution_ansible_legacy': '1',
+                    'execution_ansible_pioneer': '2',
+                    'execution_ansible_role': '3',
+                    TFCloudEPConst.RN_EXECTION: '4',
+                    TFCLIConst.RN_EXECTION: '5'}
+
     keyName = "movement_name"
     if keyName in parameter:
         movement_name = parameter[keyName]
@@ -53,8 +61,8 @@ def movement_registr_check(objdbca, parameter, Required=False):
             raise AppException("499-00908", [keyName], [keyName])
     if movement_name:
         # Movement情報取得
-        sql = "SELECT * FROM T_COMN_MOVEMENT WHERE MOVEMENT_NAME = %s AND DISUSE_FLAG='0'"
-        row = objdbca.sql_execute(sql, [movement_name])
+        sql = "SELECT * FROM T_COMN_MOVEMENT WHERE MOVEMENT_NAME = %s AND ITA_EXT_STM_ID = %s AND DISUSE_FLAG='0'"
+        row = objdbca.sql_execute(sql, [movement_name, orchestra_id[menu_id]])
         if len(row) != 1:
             # Movement未登録
             raise AppException("499-00901", [movement_name], [movement_name])

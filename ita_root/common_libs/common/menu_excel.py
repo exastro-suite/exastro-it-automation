@@ -2375,7 +2375,7 @@ def execute_excel_maintenance(
 
     try:
         # メニューのレコード登録/更新(更新/廃止/復活)
-        result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameter, backyard_exec)
+        result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameter)
     except Exception as e:
         # エラー判定
         # 処理が終わったらwbは削除する
@@ -2385,12 +2385,15 @@ def execute_excel_maintenance(
         err_msgs = e.args[1]
         ret_msg = []
         for msg in err_msgs:
-            print(json.loads(msg))
             json_msg = json.loads(msg)
             for k, v in json_msg.items():
                 for vv in v.values():
                     # エラー文に行数を追加する
                     vv[0] = '{}:({}行目)'.format(vv[0], target_row[int(k)])
+
+            # バックヤード処理用
+            if backyard_exec is True:
+                return json_msg
         ret_msg.append(json.dumps(json_msg))
         msg_args = eval('{}'.format(ret_msg))
         log_msg_args = msg_args

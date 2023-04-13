@@ -2555,6 +2555,13 @@ class CreateAnsibleExecFiles():
             if ret is not True:
                 return False, mt_host_vars, mt_MultiArray_vars_list, mt_All_vars_list
 
+            #  具体値の暗号化が必要な場合で具体値が空の場合
+            if row['SENSITIVE_FLAG'] == self.AnscObj.DF_SENSITIVE_ON:
+                #  暗号化の処理をパスするようにしたいので、具体値を""に設定し暗号化不要に設定
+                if not row['VARS_ENTRY']:
+                    row['VARS_ENTRY'] = ""
+                    row['SENSITIVE_FLAG'] = self.AnscObj.DF_SENSITIVE_OFF
+
             if row['VARS_ATTRIBUTE_01'] == self.LC_VARS_ATTR_STRUCT:
                 array_tgt_row.append(row)
             else:
@@ -4599,6 +4606,8 @@ class CreateAnsibleExecFiles():
             True/False
         """
         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
+            if not val:  # 空の場合のガード
+                return True
             if len(val.split("\n")) > 1:
                 return False
         return True
@@ -9207,6 +9216,12 @@ class CreateAnsibleExecFiles():
             ret = self.setFileUploadCloumnFileEnv(row)
             if ret is not True:
                 return False, mt_host_vars, mt_pionner_template_host_vars, mt_vault_vars, mt_vault_host_vars_file_list, mt_DB_child_vars_list
+            #  具体値の暗号化が必要な場合で具体値が空の場合
+            if row['SENSITIVE_FLAG'] == self.AnscObj.DF_SENSITIVE_ON:
+                #  暗号化の処理をパスするようにしたいので、具体値を""に設定し暗号化不要に設定
+                if not row['VARS_ENTRY']:
+                    row['VARS_ENTRY'] = ""
+                    row['SENSITIVE_FLAG'] = self.AnscObj.DF_SENSITIVE_OFF
 
             tgt_row.append(row)
 
@@ -9443,7 +9458,6 @@ class CreateAnsibleExecFiles():
                     #  代入順序がブランク以外の場合はスキップ
                     if assign_seq is False:
                         continue
-
                     #  具体値の暗号化が必要か判定 ----
                     if row['SENSITIVE_FLAG'] == self.AnscObj.DF_SENSITIVE_ON:
                         #  Pioneerの場合に暗号化を必要としている変数名リストを生成

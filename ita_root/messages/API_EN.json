@@ -1461,6 +1461,7 @@
     "MSG-80018": "The specified \"Movement name: Variable name\" cannot be entered in  \"Substitution order\".",
     "MSG-80019": "When \"HCL setting\" is ON, \"Movement name: Variable name: Member variable\" and \"Substitution order\" cannot be entered.",
     "MSG-80020": "If there is a record with a matching \"Movement name: Variable name\", the \"HCL setting\" must be either ON or OFF.",
+    "MSG-80021": "If the variable type is map type, set the HCL setting to ON.",
     "MSG-81001": "Interface information is invalid.",
     "MSG-81002": "Failed to register the record to the Substitution value list.",
     "MSG-82001": "Interface information is invalid.",

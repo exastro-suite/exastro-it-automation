@@ -69,7 +69,7 @@ def main_logic(common_db):
         # システム全体の同時実行数取得
         all_execution_limit = get_all_execution_limit("ita.system.ansible.execution_limit")
         # organization毎の同時実行数取得
-        org_execution_limit = get_org_execution_limit("ita.system.ansible.execution_limit")
+        org_execution_limit = get_org_execution_limit("ita.organization.ansible.execution_limit")
         execution_list, all_exec_count, org_exec_count_list, target_shema = execute_control(common_db, all_execution_limit, org_execution_limit)
 
         if len(execution_list) == 0:

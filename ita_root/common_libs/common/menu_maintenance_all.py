@@ -18,7 +18,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 
 
-def rest_maintenance_all(objdbca, menu, parameters, backyard_exec=False):
+def rest_maintenance_all(objdbca, menu, parameters):
     """
         メニューのレコード登録/更新(更新/廃止/復活)
         ARGS:
@@ -43,8 +43,6 @@ def rest_maintenance_all(objdbca, menu, parameters, backyard_exec=False):
     status_code, result, msg = objmenu.rest_maintenance_all(parameters)
 
     if status_code != '000-00000':
-        if backyard_exec is True:
-            return msg
         if status_code is None:
             status_code = '999-99999'
         elif len(status_code) == 0:

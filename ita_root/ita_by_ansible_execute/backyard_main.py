@@ -80,9 +80,9 @@ def main_logic(common_db):
         for data in execution_list:
             crr_count += 1
             # 実行前に同時実行数比較
-            if all_execution_limit != 0 and crr_count + int(all_exec_count) > int(all_execution_limit):
+            if all_execution_limit != "0" and crr_count + int(all_exec_count) > int(all_execution_limit):
                 return True
-            if org_execution_limit[data["ORGANIZATION_ID"]] != 0 and crr_count + int(org_exec_count_list[data["ORGANIZATION_ID"]]) > int(org_execution_limit[data["ORGANIZATION_ID"]]):
+            if org_execution_limit[data["ORGANIZATION_ID"]] != "0" and crr_count + int(org_exec_count_list[data["ORGANIZATION_ID"]]) > int(org_execution_limit[data["ORGANIZATION_ID"]]):
                 return True
 
             common_db.db_transaction_start()
@@ -119,7 +119,10 @@ def main_logic(common_db):
             result = run_unexecuted(wsDb, data["EXECUTION_NO"], data["ORGANIZATION_ID"], data["WORKSPACE_ID"])
             if result[0] is False:
                 g.applogger.error(result[1])
+                wsDb.db_disconnect()
                 return False
+
+            wsDb.db_disconnect()
 
         # 実行中のコンテナの状態確認
         if child_process_exist_check(common_db, target_shema, ansibleAg) is False:
@@ -191,13 +194,13 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
                 org_exec_count_list[rec["ORGANIZATION_ID"]] = rec["EXEC_COUNT"]
 
             # 全オーガナイゼーションの処理件数と上限値比較
-            if all_execution_limit != 0 and all_exec_count > int(all_execution_limit):
+            if all_execution_limit != "0" and all_exec_count > int(all_execution_limit):
                 return []
 
             # オーガナイゼーション毎の処理件数と上限値比較
             for rec in exec_count_records:
                 if rec["ORGANIZATION_ID"] in org_execution_limit:
-                    if org_execution_limit[rec["ORGANIZATION_ID"]] != 0 and rec["EXEC_COUNT"] > org_execution_limit[rec["ORGANIZATION_ID"]]:
+                    if org_execution_limit[rec["ORGANIZATION_ID"]] != "0" and rec["EXEC_COUNT"] > org_execution_limit[rec["ORGANIZATION_ID"]]:
                         exclusion_list.append(rec["ORGANIZATION_ID"])
 
         # 処理対象のソート
@@ -299,6 +302,7 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
             result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
             if result[0] is False:
                 log_err(g.appmsg.get_log_message(result[1], [execution_no]))
+                wsDb.db_disconnect()
                 return False
             execute_data = result[1]
 
@@ -330,6 +334,8 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
                 result = ansibleAg.container_clean(ansc_const, execution_no)
                 if result[0] is False:
                     log_err(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
+
+        wsDb.db_disconnect()
 
     return True
 

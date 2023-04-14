@@ -70,7 +70,9 @@ def main_logic(common_db):
         all_execution_limit = get_all_execution_limit("ita.system.ansible.execution_limit")
         # organization毎の同時実行数取得
         org_execution_limit = get_org_execution_limit("ita.organization.ansible.execution_limit")
+        g.applogger.debug("START execute_control")
         execution_list, all_exec_count, org_exec_count_list, target_shema = execute_control(common_db, all_execution_limit, org_execution_limit)
+        g.applogger.debug("END execute_control")
 
         if len(execution_list) == 0:
             return True
@@ -78,6 +80,7 @@ def main_logic(common_db):
         # 現在の実行数
         crr_count = 0
         for data in execution_list:
+            g.applogger.debug("main_logic EXECUTION_NO=" + data["EXECUTION_NO"])
             crr_count += 1
             # 実行前に同時実行数比較
             if all_execution_limit != "0" and crr_count + int(all_exec_count) > int(all_execution_limit):
@@ -116,7 +119,9 @@ def main_logic(common_db):
             wsDb = DBConnectWs(data["WORKSPACE_ID"], data["ORGANIZATION_ID"])
 
             # 未実行（実行待ち）の作業を実行
+            g.applogger.debug("START run_unexecuted")
             result = run_unexecuted(wsDb, data["EXECUTION_NO"], data["ORGANIZATION_ID"], data["WORKSPACE_ID"])
+            g.applogger.debug("END run_unexecuted")
             if result[0] is False:
                 g.applogger.error(result[1])
                 wsDb.db_disconnect()
@@ -125,6 +130,7 @@ def main_logic(common_db):
             wsDb.db_disconnect()
 
         # 実行中のコンテナの状態確認
+        g.applogger.debug("START child_process_exist_check")
         if child_process_exist_check(common_db, target_shema, ansibleAg) is False:
             g.applogger.debug(g.appmsg.get_log_message("MSG-10059"))
             return False

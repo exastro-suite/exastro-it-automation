@@ -46,6 +46,7 @@ RUN dnf install -y \
     openpyxl \
     six \
     pyrsistent \
+    python-hcl2 \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

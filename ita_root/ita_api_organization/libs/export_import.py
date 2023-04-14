@@ -1323,6 +1323,14 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         msg_args = e.args[1]
         return False, result_code, msg_args, None
 
+    # import_menu/import/アップロードIDのディレクトリを削除する
+    if os.path.isdir(import_path):
+        shutil.rmtree(import_path)
+
+    is_file = os.path.isfile(import_path + '_ita_data.tar.gz')
+    if is_file is True:
+        os.remove(import_path + '_ita_data.tar.gz')
+
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
 
@@ -1516,8 +1524,8 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
 
         if not file == "":
             tmpFileAry = file.split("/")
-            fileName = tmpFileAry[len(tmpFileAry) - 1]
-            declare_check_list.append(fileName)
+            tmpFileName = tmpFileAry[len(tmpFileAry) - 1]
+            declare_check_list.append(tmpFileName)
 
     declare_list = collections.Counter(declare_check_list)
     for value in fileAry:
@@ -1563,13 +1571,16 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
         api_msg_args = [msgstr]
         raise AppException("499-00005", log_msg_args, api_msg_args)
 
+    # アップロードファイル削除
+    cmd = "rm " + uploadPath + fileName
+    ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+    if ret.returncode != 0:
+        raise AppException("499-01301", [], [])
+
     cmd = "rm -rf " + uploadPath + upload_id + " 2>&1"
     ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
     if ret.returncode != 0:
-        msgstr = g.appmsg.get_api_message("MSG-30029")
-        log_msg_args = [msgstr]
-        api_msg_args = [msgstr]
-        raise AppException("499-00005", log_msg_args, api_msg_args)
+        raise AppException("499-01301", [], [])
 
     return declare_list
 

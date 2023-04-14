@@ -159,20 +159,20 @@ def wrapper_job_all_org(main_logic, loop_count=500):
     '''
     backyard job wrapper
     '''
-    g.applogger.debug("ITA_DB is connected")
 
     # pythonでのループ
     interval = int(os.environ.get("EXECUTE_INTERVAL"))
     count = 1
     max = int(loop_count)
 
+    g.applogger.debug("ITA_DB is connected")
     common_db = DBConnectCommon()  # noqa: F405
 
     while True:
         # get organization_info_list
         # job for organization
         try:
-
+            g.applogger.debug(f"wrapper_job_all_org loop=[{count}]")
             # autocommit=falseの場合に、ループ中にorganizationが更新されても、最新データが取得できないバグへの対策
             common_db.db_transaction_start()
             common_db.db_commit()

@@ -19,7 +19,9 @@ import requests
 
 def main(work_dir_path, db_conn):
 
+    ###################################
     # システム全体のMovement同時実行数最大値の設定
+    ###################################
     host_name = os.environ.get('PLATFORM_API_HOST')
     port = os.environ.get('PLATFORM_API_PORT')
     header_para = {
@@ -43,7 +45,39 @@ def main(work_dir_path, db_conn):
     response_data = json.loads(request_response.text)
     print(f'status_code={request_response.status_code}')
     print(f'response_data={str(response_data)}')
-    if request_response.status_code != 200:
+    if request_response.status_code not in [200, 409]:
+        raise Exception(f'API ERROR. URL=[{api_url}], StatusCode=[{request_response.status_code}], Response-[{str(response_data)}]')
+
+    ###################################
+    # OrganizationのMovement同時実行数最大値の設定
+    ###################################
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+    }
+    data = [
+        {
+            "id": "ita.organization.ansible.execution_limit",
+            "informations": {
+                "description": os.environ.get('ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION'),
+                "max": int(os.environ.get('ORG_ANSIBLE_EXECUTION_LIMIT_MAX')),
+                "default": int(os.environ.get('ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT'))
+            }
+        }
+    ]
+
+    data_encode = json.dumps(data)
+
+    # API呼出
+    api_url = "http://{}:{}//internal-api/platform/plan_items".format(host_name, port)
+    request_response = requests.post(api_url, data=data_encode, headers=header_para)
+
+    response_data = json.loads(request_response.text)
+    print(f'status_code2={request_response.status_code}')
+    print(f'response_data2={str(response_data)}')
+    if request_response.status_code not in [200, 409]:
         raise Exception(f'API ERROR. URL=[{api_url}], StatusCode=[{request_response.status_code}], Response-[{str(response_data)}]')
 
     return 0

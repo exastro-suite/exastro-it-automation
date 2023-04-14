@@ -180,6 +180,12 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
 
     # 以下、「HCL設定」がOFFの場合のみ判定
     if str(hcl_setting) == "0":
+        # 変数のタイプがmap(7)の場合はバリデーションエラー
+        if var_type_id == "7":
+            retBool = False
+            msg = g.appmsg.get_api_message("MSG-80021")
+            return retBool, msg, option,
+
         # Movement名:変数名(variable_name)の変数タイプから、メンバー変数(member_variable_name)に値が必要かどうかを判定
         if str(var_member_vars_flag) == "1":
             if not member_variable_name:

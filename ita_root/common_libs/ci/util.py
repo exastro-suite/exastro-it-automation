@@ -49,9 +49,12 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
         common_db.db_transaction_start()
         common_db.db_commit()
 
+        # set applogger.set_level: default:INFO / Use ITA_DB config value
+        set_service_loglevel(common_db)
+
         for organization_info in organization_info_list:
             # set applogger.set_level: default:INFO / Use ITA_DB config value
-            set_service_loglevel(common_db)
+            # set_service_loglevel(common_db)
 
             organization_id = organization_info['ORGANIZATION_ID']
 
@@ -109,7 +112,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
 
     for workspace_info in workspace_info_list:
         # set applogger.set_level: default:INFO / Use ITA_DB config value
-        set_service_loglevel()
+        # set_service_loglevel()
 
         workspace_id = workspace_info['WORKSPACE_ID']
 
@@ -486,6 +489,8 @@ def set_service_loglevel(common_db=None):
                     raise Exception()
     except Exception:
         loglevel = "INFO"
+        if "SERVICE_LOGLEVEL_FLG" in g:
+            g.SERVICE_LOGLEVEL_FLG = None
     finally:
         # applogger.set_level
         g.applogger.set_level(loglevel)

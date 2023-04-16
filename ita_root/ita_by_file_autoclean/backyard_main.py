@@ -82,7 +82,7 @@ def backyard_main(organization_id, workspace_id):
             target_dir = get_target_path([tmp_target_dir])
             target_file_path = get_target_path([tmp_target_dir, target_file])
 
-            tmp_msg = "target_dir:{}, target_file:{}, del_days:{}".format(tmp_target_dir, target_file, del_days)
+            tmp_msg = "target_dir:{}, target_file:{}, del_days:{}".format(target_dir, target_file, del_days)
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # Check: 削除日数
@@ -107,6 +107,9 @@ def backyard_main(organization_id, workspace_id):
 
             # 削除対象ディレクトリ内のファイル一覧取得
             target_df_list = glob.glob(target_file_path)
+            for target_df in target_df_list:
+                tmp_msg = "target: {}".format(target_df)
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             tmp_msg = "target file count: {}".format(len(target_df_list))
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -115,36 +118,53 @@ def backyard_main(organization_id, workspace_id):
             target_time = now_time - timedelta(days=int(del_days))
 
             for target_path in target_df_list:
+                tmp_msg = "target file: {}".format(target_path)
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 del_flg = False
 
                 # ファイル/ディレクトリ確認
                 is_dir_target_path = os.path.isdir(target_path)  # noqa: F405
                 is_file_target_path = os.path.isfile(target_path)  # noqa: F405
+                tmp_msg = "is_dir_target_path: {} / is_file_target_path: {}".format(is_dir_target_path, is_file_target_path)
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
                 # 対象のタイムスタンプ取得
                 target_timestamp = datetime.fromtimestamp(os.path.getmtime(target_path))  # noqa: F405
+                tmp_msg = "target_timestamp < target_time: {} [{} < {}]".format(target_timestamp < target_time, target_timestamp, target_time)
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # ファイル/ディレクトリ削除対象判定
                 if is_file_target_path is True:
                     # ファイル:削除対象日経過
                     if target_timestamp < target_time:
                         del_flg = True
+                    tmp_msg = "del_flg:{}".format(del_flg)
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 elif is_dir_target_path is True and del_subdir_flg == "1":
                     # サブディレクトリ:削除対象日経過かつサブディレクトリ削除ON
                     if target_timestamp < target_time:
                         del_flg = True
+                    tmp_msg = "del_flg:{}".format(del_flg)
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 else:
+                    tmp_msg = "else no target: continue".format()
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # ファイル、サブディレクトリ削除
                 if del_flg is True:
                     try:
-                        # print("del target_path:", del_flg, target_path, target_timestamp, target_time, target_timestamp < target_time)
+
                         if is_file_target_path:
                             # ファイル削除
                             os.remove(target_path)  # noqa: F405
+                            tmp_msg = "delete successfully[file]: {}".format(target_path)
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         elif is_dir_target_path:
                             # サブディレクトリ削除
                             shutil.rmtree(target_path)
+                            tmp_msg = "delete successfully[dir]: {}".format(target_path)
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         else:
                             raise Exception()
                         # 削除件数カウント
@@ -156,6 +176,8 @@ def backyard_main(organization_id, workspace_id):
                         tmp_msg = "faild delete target_path: {}".format(target_path)
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 else:
+                    tmp_msg = "not delete target: {}".format(target_path)
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     pass
 
             # 削除件数(対象)

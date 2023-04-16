@@ -288,13 +288,10 @@ def backyard_main(organization_id, workspace_id):
                     msg_result.append(g.appmsg.get_api_message('MSG-30007'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30006'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30034'))
-                    if type(aryRetBody) is str:
+                    if msg_result[0] not in aryRetBody:
                         # バリデーションエラー時はエラー内容しか返ってこないので、各処理を0件で登録
-                        count = 0
-                        tmp_result = ast.literal_eval(aryRetBody)
-                        for value in tmp_result:
-                            count += 1
-                        aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: count}
+                        tmp_result = aryRetBody
+                        aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: len(aryRetBody)}
                     else:
                         aryRetBody[msg_result[4]] = 0
 

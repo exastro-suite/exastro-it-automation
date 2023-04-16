@@ -28,8 +28,11 @@ from pathlib import Path
 import shutil
 import subprocess
 import time
+import inspect
 
 def backyard_main(organization_id, workspace_id):
+    g.applogger.debug("backyard_main ita_by_menu_export_import called")
+
     """
         メニュー作成機能backyardメイン処理
         ARGS:
@@ -39,6 +42,8 @@ def backyard_main(organization_id, workspace_id):
 
     """
     # DB接続
+    tmp_msg = 'db connect'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     # メイン処理開始
@@ -155,6 +160,9 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         dp_mode = str(record.get('MODE'))
         json_storage_item = str(record.get('JSON_STORAGE_ITEM'))
 
+        tmp_msg = "Target record data: {}, {}, {}, {}".format(execution_no, file_name, dp_mode, json_storage_item)
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
         execution_no_path = uploadfiles_60103_dir + '/file_name/' + execution_no
 
         file_path = execution_no_path + '/' + file_name
@@ -199,6 +207,9 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             table_name = param.get('table_name')
             view_name = param.get('view_name')
             history_table_flag = param.get('history_table_flag')
+
+            tmp_msg = "Target import record data: {}, {}, {}, {}".format(menu_id, table_name, view_name, history_table_flag)
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             menu_name_rest = ''
             for menu_data_record in t_comn_menu_data_json:
@@ -405,6 +416,9 @@ def _register_data(objdbca, execution_no_path, menu_name_rest, menu_id, table_na
             "type": param_type
         }
 
+        tmp_msg = "Target register data: {}".format(parameters)
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
         if param_type == 'Register':
             exec_result = objmenu.exec_maintenance(parameters, pk_value, "", True, False, True, False, True)  # noqa: E999
             if not exec_result[0]:
@@ -561,6 +575,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         mode = json_storage_item.get('mode')
         abolished_type = json_storage_item.get('abolished_type')
         specified_time = json_storage_item.get('specified_timestamp')
+        tmp_msg = "Target record data: {}, {}, {}, {}, {}".format(execution_no, json_storage_item, mode, abolished_type, specified_time)
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         dir_name = 'ita_exportdata_' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         dir_path = export_menu_dir + '/' + dir_name
@@ -871,3 +887,8 @@ def _check_menu_info(menu, wsdb_istc=None):
         raise AppException("499-00002", log_msg_args, api_msg_args)  # noqa: F405
 
     return menu_record[0]
+
+def addline_msg(msg=''):
+    info = inspect.getouterframes(inspect.currentframe())[1]
+    msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
+    return msg_line

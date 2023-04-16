@@ -523,7 +523,7 @@ class ConductorCommonLibs():
         if 'movement_id' not in node_blcok or not node_blcok['movement_id']:
             chk_id_name_flg = False
         else:
-            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s', [node_blcok['movement_id']])
+            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s AND `ITA_EXT_STM_ID`=%s', [node_blcok['movement_id'], node_blcok['orchestra_id']])  # noqa E501
             if len(data_list) == 0:
                 chk_id_name_flg = False
 
@@ -532,8 +532,10 @@ class ConductorCommonLibs():
             if 'movement_name' not in node_blcok or not node_blcok['movement_name']:
                 # err_msg_args.append('movement_id')
                 err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
+            elif 'orchestra_id' not in node_blcok or not node_blcok['orchestra_id']:
+                err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
             else:
-                data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [node_blcok['movement_name']])
+                data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [node_blcok['movement_name'], node_blcok['orchestra_id']])  # noqa E501
                 if len(data_list) == 0:
                     # err_msg_args.append('movement_id is not available')
                     err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
@@ -1014,14 +1016,14 @@ class ConductorCommonLibs():
                 if node_type == 'movement':
                     # movement_name
                     if block_1.get('movement_id'):
-                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s', [block_1['movement_id']])
+                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_id'], block_1['orchestra_id']])  # noqa E501
                         if 0 in data_list:
                             block_1['movement_name'] = data_list[0]['MOVEMENT_NAME']
                         else:
-                            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [block_1['movement_name']])  # noqa E501
+                            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
                             block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
                     elif block_1.get('movement_name'):
-                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [block_1['movement_name']])  # noqa E501
+                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
                         block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
                     # operation_name
                     if block_1.get('operation_id'):

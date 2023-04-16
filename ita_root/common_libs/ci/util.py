@@ -49,9 +49,12 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
         common_db.db_transaction_start()
         common_db.db_commit()
 
+        # set applogger.set_level: default:INFO / Use ITA_DB config value
+        set_service_loglevel(common_db)
+
         for organization_info in organization_info_list:
             # set applogger.set_level: default:INFO / Use ITA_DB config value
-            set_service_loglevel(common_db)
+            # set_service_loglevel(common_db)
 
             organization_id = organization_info['ORGANIZATION_ID']
 
@@ -109,7 +112,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
 
     for workspace_info in workspace_info_list:
         # set applogger.set_level: default:INFO / Use ITA_DB config value
-        set_service_loglevel()
+        # set_service_loglevel()
 
         workspace_id = workspace_info['WORKSPACE_ID']
 
@@ -156,20 +159,20 @@ def wrapper_job_all_org(main_logic, loop_count=500):
     '''
     backyard job wrapper
     '''
-    g.applogger.debug("ITA_DB is connected")
 
     # pythonでのループ
     interval = int(os.environ.get("EXECUTE_INTERVAL"))
     count = 1
     max = int(loop_count)
 
+    g.applogger.debug("ITA_DB is connected")
     common_db = DBConnectCommon()  # noqa: F405
 
     while True:
         # get organization_info_list
         # job for organization
         try:
-
+            g.applogger.debug(f"wrapper_job_all_org loop=[{count}]")
             # autocommit=falseの場合に、ループ中にorganizationが更新されても、最新データが取得できないバグへの対策
             common_db.db_transaction_start()
             common_db.db_commit()
@@ -486,6 +489,8 @@ def set_service_loglevel(common_db=None):
                     raise Exception()
     except Exception:
         loglevel = "INFO"
+        if "SERVICE_LOGLEVEL_FLG" in g:
+            g.SERVICE_LOGLEVEL_FLG = None
     finally:
         # applogger.set_level
         g.applogger.set_level(loglevel)

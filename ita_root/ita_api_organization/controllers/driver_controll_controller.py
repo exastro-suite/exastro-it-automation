@@ -271,7 +271,7 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
 
     Required = True
     # Movementチェック
-    movement_row = driver_controll.movement_registr_check(objdbca, parameter, Required)
+    movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
 
     # オペレーションチェック
     operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
@@ -343,7 +343,7 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
 
     Required = True
     # Movementチェック
-    movement_row = driver_controll.movement_registr_check(objdbca, parameter, Required)
+    movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
 
     # オペレーションチェック
     operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
@@ -479,7 +479,7 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
 
     Required = True
     # Movementチェック
-    movement_row = driver_controll.movement_registr_check(objdbca, parameter, Required)
+    movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
 
     # オペレーションチェック
     operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)

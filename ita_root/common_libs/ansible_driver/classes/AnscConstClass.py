@@ -182,6 +182,7 @@ class AnscConst:
     LC_WINRM_PORT = 5985
 
     # ITA独自変数名
+    # ITA独自変数が追加になったらUnmanaged_ITA_sp_varlistとCannotValueAssign_ITA_sp_varlistに追加する
     ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME = "__loginprotocol__"
     ITA_SP_VAR_ANS_USERNAME_VAR_NAME = "__loginuser__"
     ITA_SP_VAR_ANS_PASSWD_VAR_NAME = "__loginpassword__"
@@ -204,7 +205,6 @@ class AnscConst:
     ITA_SP_VAR_GBL_VAR_NAME = "GBL_[0-9a-zA-Z_]*"
 
     # 変数抜出から除外するITA独自変数リスト
-
     Unmanaged_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
                                 ITA_SP_VAR_ANS_USERNAME_VAR_NAME,
                                 ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME,

@@ -42,6 +42,12 @@ def check_loop(objdbca, objtable, option):
                 checkhgc = entry_parameter.get('parameter').get('hostgroup_child')
                 paHg = entry_parameter.get('parameter').get('hostgroup_parent')
 
+            # check host group parent == child
+            if checkhgc == paHg:
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-70001", [])
+                raise Exception()
+
             # check host group parent child loop: parameter
             # SQL:SELECT
             objhgpc = HostLinkListTable(objdbca)  # noqa: F405

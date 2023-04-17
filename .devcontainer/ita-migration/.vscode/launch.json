@@ -1,0 +1,69 @@
+/*
+#   Copyright 2023 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+*/
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "migration_main.py",
+        "type": "python",
+        "request": "launch",
+        "program": "/exastro/migration_main.py",
+        "env": {
+            "FLASK_APP": "/exastro/migration_main.py"
+        },
+        "cwd": "/exastro",
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/ita_root/ita_migration",
+            "remoteRoot": "/exastro"
+          },
+        ],
+        "args": [
+            "run",
+            "--no-debugger"
+        ],
+        "jinja": true,
+        "justMyCode": true,
+        "noDebug": true,
+      },
+      {
+        "name": "[DEBUG] migration_main.py",
+        "type": "python",
+        "request": "launch",
+        "program": "/exastro/migration_main.py",
+        "env": {
+            "FLASK_APP": "/exastro/migration_main.py",
+            "LOG_LEVEL": "DEBUG"
+        },
+        "cwd": "/exastro",
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}/ita_root/ita_migration",
+            "remoteRoot": "/exastro"
+          },
+        ],
+        "args": [
+            "run",
+            "--no-debugger"
+        ],
+        "jinja": true,
+        "justMyCode": true
+      }
+  ]
+}

@@ -1,0 +1,2 @@
+# list of files or directories in base directory ( os.environ.get('STORAGEPATH') + organization + workspace)
+# e.g. /dummy  ->  /storage/org1/ws1/dummy

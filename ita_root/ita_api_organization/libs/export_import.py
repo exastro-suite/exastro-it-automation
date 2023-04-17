@@ -514,6 +514,13 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
             parent_id = tmpMenuInfo["PARENT_MENU_GROUP_ID"]
             disp_seq = tmpMenuInfo["DISP_SEQ"]
 
+            # 親メニューグループ情報を取得
+            parent_list = {}
+            if parent_id is not None:
+                parent_menu_group_info = getParentMenuGroupInfo(parent_id, objdbca)
+                parent_list["menu_group_name"] = parent_menu_group_info["MENU_GROUP_NAME_" + g.LANGUAGE.upper()]
+                parent_list["disp_seq"] = parent_menu_group_info["DISP_SEQ"]
+
             # 『ロール-メニュー紐付管理』テーブルから対象のデータを取得
             # 自分のロールが「メンテナンス可」
             ret_role_menu_link = objdbca.table_select("T_COMN_ROLE_MENU_LINK", 'WHERE MENU_ID = %s AND ROLE_ID IN %s AND DISUSE_FLAG = %s', [menuId, role_id_list, 0])
@@ -553,6 +560,10 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
                                                         "error": error}},
                                                 "parent_id": parent_id}
 
+                    if parent_id is not None:
+                        retUnImportAry[parent_id] = {"disp_seq": parent_list["disp_seq"],
+                                                    "menu_group_name": parent_list["menu_group_name"]}
+
                     idx_unimport += 1
             else:
                 if menuGroupId in retImportAry:
@@ -571,6 +582,10 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
                                                         "menu_name": menuName,
                                                         "file_name": fileName}},
                                                 "parent_id": parent_id}
+
+                    if parent_id is not None and parent_id not in retImportAry:
+                        retImportAry[parent_id] = {"disp_seq": parent_list["disp_seq"],
+                                                    "menu_group_name": parent_list["menu_group_name"]}
 
                     idx += 1
 
@@ -1118,6 +1133,25 @@ def getMenuInfoByMenuId(menu_id, menuNameRest, objdbca=None):
     else:
         data_list = objdbca.sql_execute(sql, [menu_id])
     data = []
+
+    for data in data_list:
+        if data is None or len(data) == 0:
+            return []
+
+    return data
+
+def getParentMenuGroupInfo(menu_group_id, objdbca=None):
+    """
+    親メニューグループ情報取得
+
+    Arguments:
+        menuId: メニューグループID
+        objdbca: DBオブジェクト
+    Returns:
+        実行結果
+    """
+    where = "WHERE MENU_GROUP_ID = %s AND DISUSE_FLAG = %s"
+    data_list = objdbca.table_select("T_COMN_MENU_GROUP", where, [menu_group_id, 0])
 
     for data in data_list:
         if data is None or len(data) == 0:

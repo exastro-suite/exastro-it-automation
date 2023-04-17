@@ -20,7 +20,7 @@ from common_libs.ansible_driver.classes.CheckAnsibleRoleFiles import VarStructAn
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
 from common_libs.ansible_driver.functions.var_struct_analysis import chkRolePackageVarNameLength
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverHpTmpPath, AnsibleFilesClean
-
+from common_libs.common.exception import AppException
 
 def external_valid_menu_after(objDBCA, objtable, option):
     """

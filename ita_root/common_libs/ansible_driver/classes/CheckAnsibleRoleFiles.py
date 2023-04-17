@@ -61,7 +61,7 @@ class CheckAnsibleRoleFiles():
         """
 
         self.lva_rolename = []
-        self.lva_varname = {}
+        self.lva_itavarname = {}
         self.lv_get_rolevar = None
         self.lv_lasterrmsg = []
         self.lv_objMTS = in_objMTS
@@ -74,19 +74,19 @@ class CheckAnsibleRoleFiles():
         self.php_keys = lambda x: x.keys() if isinstance(x, dict) else range(len(x))
         self.php_vals = lambda x: x.values() if isinstance(x, dict) else x
 
-    def getvarname(self):
+    def getITAvarsname(self):
 
         """
         処理内容
-          zipファイル内で定義されているロール変数名を取得
+          zipファイル内で定義されているITA変数名を取得
         パラメータ
           なし
         戻り値
-          ロール変数名配列
-          lva_varname[role名][変数名]=0
+          ITA変数名配列
+          lva_itavarname[role名][変数名]=0
         """
 
-        return self.lva_varname
+        return self.lva_itavarname
 
     def getglobalvarname(self):
 
@@ -227,8 +227,8 @@ class CheckAnsibleRoleFiles():
         # role名一覧 初期化
         del self.lva_rolename[:]
 
-        # role変数名一覧 初期化
-        self.lva_varname.clear()
+        # role内ITA独自変数名一覧 初期化
+        self.lva_itavarname.clear()
 
         # roleグローバル変数名一覧
         self.lva_globalvarname.clear()
@@ -353,11 +353,14 @@ class CheckAnsibleRoleFiles():
         # role名退避
         self.lva_rolename.append(in_role_name)
 
+        objdbca = DBConnectWs()
+        WrappedStringReplaceAdminObj = WrappedStringReplaceAdmin(objdbca)
+        objdbca.db_disconnect()
         ret, ina_def_vars_list, ina_def_varsval_list, ina_def_array_vars_list, ina_copyvars_list, ina_tpfvars_list, ina_ITA2User_var_list, ina_User2ITA_var_list = self.chkRoleSubDirectory(
             in_base_dir, fullpath, ina_system_vars, in_role_pkg_name, in_role_name,
             ina_def_vars_list, ina_def_varsval_list, ina_def_array_vars_list,
             in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list,
-            ina_ITA2User_var_list, ina_User2ITA_var_list
+            ina_ITA2User_var_list, ina_User2ITA_var_list, WrappedStringReplaceAdminObj
         )
         if not ret:
             return False, ina_def_vars_list, ina_def_varsval_list, ina_def_array_vars_list, ina_copyvars_list, ina_tpfvars_list, ina_ITA2User_var_list, ina_User2ITA_var_list
@@ -369,7 +372,7 @@ class CheckAnsibleRoleFiles():
         in_base_dir, in_dir, ina_system_vars, in_role_pkg_name, in_rolename,
         ina_def_vars_list, ina_def_varsval_list, ina_def_array_vars_list,
         in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list,
-        ina_ITA2User_var_list, ina_User2ITA_var_list
+        ina_ITA2User_var_list, ina_User2ITA_var_list, WrappedStringReplaceAdminObj
     ):
 
         """
@@ -556,7 +559,7 @@ class CheckAnsibleRoleFiles():
                 # p5:TPF/CPF変数取得有(true)/無(false)
                 # p6:ファイル文字コードチェック有(true)/無(false)
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
-                    fullpath, in_rolename, file,
+                    WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1    p2    p3    p4    p5    p6
                     True, True, True, True, True, True,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
@@ -564,7 +567,7 @@ class CheckAnsibleRoleFiles():
 
             elif file == "handlers":
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
-                    fullpath, in_rolename, file,
+                    WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1    p2     p3    p4    p5    p6
                     True, False, True, True, True, True,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
@@ -572,7 +575,7 @@ class CheckAnsibleRoleFiles():
 
             elif file == "templates":
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
-                    fullpath, in_rolename, file,
+                    WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1    p2     p3    p4    p5    p6
                     True, False, True, True, True, False,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
@@ -580,7 +583,7 @@ class CheckAnsibleRoleFiles():
 
             elif file == "meta":
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
-                    fullpath, in_rolename, file,
+                    WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1    p2     p3    p4    p5    p6
                     True, False, True, True, True, True,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
@@ -588,7 +591,7 @@ class CheckAnsibleRoleFiles():
 
             elif file == "files":
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
-                    fullpath, in_rolename, file,
+                    WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1     p2     p3    p4    p5     p6
                     False, False, True, True, False, False,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
@@ -596,7 +599,7 @@ class CheckAnsibleRoleFiles():
 
             elif file == "vars":
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
-                    fullpath, in_rolename, file,
+                    WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1     p2     p3    p4    p5     p6
                     False, False, True, True, False, True,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
@@ -605,7 +608,7 @@ class CheckAnsibleRoleFiles():
             elif file == "defaults":
                 defaults_his = True
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
-                    fullpath, in_rolename, file,
+                    WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1     p2     p3    p4    p5     p6
                     False, False, True, True, False, True,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
@@ -826,7 +829,7 @@ class CheckAnsibleRoleFiles():
         return True, ina_parent_vars_list, ina_vars_list, ina_array_vars_list, ina_varsval_list
 
     def chkRoleFiles(
-        self,
+        self, WrappedStringReplaceAdminObj,
         in_dir, in_rolename, in_dirname, in_get_rolevar, in_main_yml, in_etc_yml, in_sub_dir, in_get_var_tgt_dir,
         in_CharacterCodeCheck, in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
     ):
@@ -835,7 +838,8 @@ class CheckAnsibleRoleFiles():
         処理内容
           roleの各ディレクトリとファイルが妥当かチェックする。
         パラメータ
-          in_base_dir:        ベースディレクトリ
+          WrappedStringReplaceAdminObj:  WrappedStringReplaceAdminクラス
+          in_base_dir:    ベースディレクトリ
           in_dir:         roleディレクトリ
           in_rolename     ロール名
           in_dirname      ディレクトリ名
@@ -889,16 +893,25 @@ class CheckAnsibleRoleFiles():
                 if file == "main.yml":
                     main_yml = True
 
-                # 変数初期化
-                file_vars_list = []
-                file_global_vars_list = []
-
                 # ファイルの内容を読込む
                 dataString = pathlib.Path(fullpath).read_text()
 
                 # ホスト変数の抜出が指定されている場合
                 if in_get_rolevar:
-                    # テンプレートからグローバル変数を抜出す
+                    # ファイル内で定義されていたITA独自変数を退避
+                    ita_vars = AnscConst.CannotValueAssign_ITA_sp_varlist
+                    file_vars_list = []
+                    varsLineArray = []
+                    FillterVars = True  # Fillterを含む変数の抜き出しなし
+                    WrappedStringReplaceAdminObj.SimpleFillterVerSearch(AnscConst.DF_HOST_VAR_HED, dataString, varsLineArray, file_vars_list, ita_vars, FillterVars)
+                    # ファイル内で定義されていた変数(ITA独自)を退避
+                    for var in file_vars_list:
+                        if in_rolename not in self.lva_itavarname:
+                            self.lva_itavarname[in_rolename] = {}
+                        if var in AnscConst.CannotValueAssign_ITA_sp_varlist:
+                            self.lva_itavarname[in_rolename][var] = 0
+
+                    # グローバル変数を抜出す
                     local_vars = []
                     varsLineArray = []
                     file_global_vars_list = []
@@ -908,15 +921,6 @@ class CheckAnsibleRoleFiles():
                         dataString, varsLineArray, file_global_vars_list, local_vars, FillterVars
                     )
 
-                    # ファイル内で定義されていた変数を退避
-                    for var in file_vars_list:
-                        if in_rolename not in self.lva_varname:
-                            self.lva_varname[in_rolename] = {}
-
-                        if var not in self.lva_varname[in_rolename]:
-                            self.lva_varname[in_rolename][var] = None
-
-                        self.lva_varname[in_rolename][var] = 0
 
                     # ファイル内で定義されていたグローバル変数を退避
                     for var in file_global_vars_list:

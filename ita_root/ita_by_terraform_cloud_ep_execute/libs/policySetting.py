@@ -106,6 +106,25 @@ class policySetting():
             for record in ret:
                 policy_set_id_list.append(record.get('POLICY_SET_ID'))
 
+            # Policy set管理テーブルからレコードを取得
+            policy_set_data_dict = {}
+            policy_set_exclusion_list = []
+            for policy_set_id in policy_set_id_list:
+                where_str = 'WHERE POLICY_SET_ID = %s AND DISUSE_FLAG = %s'
+                ret = self.ws_db.table_select(self.TFConst.T_POLICYSET, where_str, [policy_set_id, 0])
+                if not ret:
+                    # 除外リストにIDを追加
+                    policy_set_exclusion_list.append(policy_set_id)
+                    # 対象のレコードがない場合はcontinue
+                    continue
+
+                # policySetの登録情報を格納
+                policy_set_data_dict[policy_set_id] = {"policy_set_id": policy_set_id, "policy_set_name": ret[0].get('POLICY_SET_NAME'), "policy_set_note": ret[0].get('NOTE')}  # noqa: E501
+
+            # 除外リストにあるIDを除外する
+            excluded_policy_set_id_list = set(policy_set_id_list) - set(policy_set_exclusion_list)
+            policy_set_id_list = list(excluded_policy_set_id_list)
+
             # policy_set_idからPolicySet-Policy紐付管理テーブルに登録されているレコードを取得
             policy_set_policy_data_dict = {}
             policy_id_list = []
@@ -114,6 +133,9 @@ class policySetting():
                 where_str = 'WHERE POLICY_SET_ID = %s AND DISUSE_FLAG = %s'
                 ret = self.ws_db.table_select(self.TFConst.T_POLICYSET_POLICY, where_str, [policy_set_id, 0])
                 if not ret:
+                    # 対象のpolicySetのIDでレコードが無い場合、policy_set_data_dictから対象のkeyを削除
+                    policy_set_data_dict.pop(policy_set_id)
+
                     # 対象のレコードがない場合はcontinue
                     continue
 
@@ -127,18 +149,6 @@ class policySetting():
 
             # policy_id_listの重複を削除
             policy_id_list = list(dict.fromkeys(policy_id_list))
-
-            # Policy set管理テーブルからレコードを取得
-            policy_set_data_dict = {}
-            for policy_set_id in policy_set_id_list:
-                where_str = 'WHERE POLICY_SET_ID = %s AND DISUSE_FLAG = %s'
-                ret = self.ws_db.table_select(self.TFConst.T_POLICYSET, where_str, [policy_set_id, 0])
-                if not ret:
-                    # 対象のレコードがない場合はcontinue
-                    continue
-
-                # policySetの登録情報を格納
-                policy_set_data_dict[policy_set_id] = {"policy_set_id": policy_set_id, "policy_set_name": ret[0].get('POLICY_SET_NAME'), "policy_set_note": ret[0].get('NOTE')}  # noqa: E501
 
             # Policy管理テーブルからレコードを取得
             for policy_id in policy_id_list:

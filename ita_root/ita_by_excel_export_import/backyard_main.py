@@ -288,7 +288,7 @@ def backyard_main(organization_id, workspace_id):
                     msg_result.append(g.appmsg.get_api_message('MSG-30007'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30006'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30034'))
-                    if "登録" not in aryRetBody and "Register" not in aryRetBody:
+                    if msg_result[0] not in aryRetBody:
                         # バリデーションエラー時はエラー内容しか返ってこないので、各処理を0件で登録
                         tmp_result = aryRetBody
                         aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: len(aryRetBody)}

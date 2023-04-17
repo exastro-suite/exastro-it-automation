@@ -83,9 +83,9 @@ def main_logic(common_db):
             g.applogger.debug("main_logic EXECUTION_NO=" + data["EXECUTION_NO"])
             crr_count += 1
             # 実行前に同時実行数比較
-            if all_execution_limit != "0" and crr_count + int(all_exec_count) > int(all_execution_limit):
+            if all_execution_limit != 0 and crr_count + int(all_exec_count) > int(all_execution_limit):
                 return True
-            if org_execution_limit[data["ORGANIZATION_ID"]] != "0" and crr_count + int(org_exec_count_list[data["ORGANIZATION_ID"]]) > int(org_execution_limit[data["ORGANIZATION_ID"]]):
+            if org_execution_limit[data["ORGANIZATION_ID"]] != 0 and crr_count + int(org_exec_count_list[data["ORGANIZATION_ID"]]) > int(org_execution_limit[data["ORGANIZATION_ID"]]):
                 return True
 
             common_db.db_transaction_start()
@@ -200,13 +200,13 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
                 org_exec_count_list[rec["ORGANIZATION_ID"]] = rec["EXEC_COUNT"]
 
             # 全オーガナイゼーションの処理件数と上限値比較
-            if all_execution_limit != "0" and all_exec_count > int(all_execution_limit):
+            if all_execution_limit != 0 and all_exec_count > int(all_execution_limit):
                 return []
 
             # オーガナイゼーション毎の処理件数と上限値比較
             for rec in exec_count_records:
                 if rec["ORGANIZATION_ID"] in org_execution_limit:
-                    if org_execution_limit[rec["ORGANIZATION_ID"]] != "0" and rec["EXEC_COUNT"] > org_execution_limit[rec["ORGANIZATION_ID"]]:
+                    if org_execution_limit[rec["ORGANIZATION_ID"]] != 0 and rec["EXEC_COUNT"] > org_execution_limit[rec["ORGANIZATION_ID"]]:
                         exclusion_list.append(rec["ORGANIZATION_ID"])
 
         # 処理対象のソート

@@ -14,6 +14,7 @@
 from flask import g
 import os
 import re
+from datetime import datetime
 
 
 def external_valid_menu_before(objdbca, objtable, option):
@@ -32,6 +33,21 @@ def external_valid_menu_before(objdbca, objtable, option):
             if len(tmp_result) != 0:
                 msg = g.appmsg.get_api_message('MSG-110001', [directories_to_delete])
                 raise Exception()
+
+            # 有効削除日数を取得
+            now_time = datetime.now()
+            _unix_s_time = datetime.strptime("1970-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
+            _allow_days = now_time - _unix_s_time
+            allow_days = _allow_days.days
+            deletion_days = entry_parameter.get('parameter').get('deletion_days')
+            try:
+                if allow_days < deletion_days:
+                    msg = g.appmsg.get_api_message('MSG-110002', [1, allow_days, deletion_days])
+                    raise Exception()
+            except TypeError:
+                # Use validate:NumColumn.check_basic_valid
+                pass
+
     except Exception:
         retBool = False
     return retBool, msg, option,

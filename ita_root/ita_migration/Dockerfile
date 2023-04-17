@@ -93,7 +93,3 @@ WORKDIR $APP_PATH
 COPY ./ita_root/ita_migration/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
-
-USER root
-RUN chmod a+x $APP_PATH/entrypoint.sh
-USER $USERNAME

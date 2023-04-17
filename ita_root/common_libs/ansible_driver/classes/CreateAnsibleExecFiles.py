@@ -933,9 +933,9 @@ class CreateAnsibleExecFiles():
                 # ロール名取得
                 # ina_rolename[role名]
                 mt_rolenames = roleObj.getrolename()
-                # ロール内の変数取得
+                # ロール内のITA独自変数取得
                 # ina_varname[role名][変数名]=0
-                mt_rolevars = roleObj.getvarname()
+                mt_rolevars = roleObj.getITAvarsname()
 
             # 展開先にhostsファイルがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_HOSTS_FILE)
@@ -2561,6 +2561,9 @@ class CreateAnsibleExecFiles():
                 if not row['VARS_ENTRY']:
                     row['VARS_ENTRY'] = ""
                     row['SENSITIVE_FLAG'] = self.AnscObj.DF_SENSITIVE_OFF
+            else:
+                if not row['VARS_ENTRY']:
+                    row['VARS_ENTRY'] = ""
 
             if row['VARS_ATTRIBUTE_01'] == self.LC_VARS_ATTR_STRUCT:
                 array_tgt_row.append(row)
@@ -3274,9 +3277,9 @@ class CreateAnsibleExecFiles():
                     continue
 
                 # ロールに登録されている変数のデータベース登録確認
-                for var_name, dummy in ina_role_rolevars[rolename]:
+                for var_name, dummy in ina_role_rolevars[rolename].items():
                     # ホスト配列のホスト分繰り返し
-                    for no, host_name in ina_hosts:
+                    for no, host_name in ina_hosts.items():
                         # ITA独自変数の具体値確認
                         chkVarDict = {}
                         chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10267"
@@ -9222,7 +9225,9 @@ class CreateAnsibleExecFiles():
                 if not row['VARS_ENTRY']:
                     row['VARS_ENTRY'] = ""
                     row['SENSITIVE_FLAG'] = self.AnscObj.DF_SENSITIVE_OFF
-
+            else:
+                if not row['VARS_ENTRY']:
+                    row['VARS_ENTRY'] = ""
             tgt_row.append(row)
 
         for row in tgt_row:
@@ -9389,6 +9394,7 @@ class CreateAnsibleExecFiles():
                                                             row['VARS_ENTRY_PIONEER_TEMP'])
                         value_count = retAry[0]
                         mt_pionner_template_host_vars[row['HOST_NAME']][row['VARS_NAME']] = retAry[1]
+
 
             elif not row['DISUSE_FLAG']:
                 msgstr = g.appmsg.get_api_message("MSG-10187", [row['ASSIGN_ID']])
@@ -9739,7 +9745,7 @@ class CreateAnsibleExecFiles():
         else:
             if var_name in chkVarDict:
                 error_no = chkVarDict[var_name]
-                # ITA独自変数を使用している場合に対象システム一覧に該当データが登録されているか判定
+                # ITA独自変数を使用している場合に機器一覧に該当データが登録されているか判定
                 if ina_host_vars[var_name] == self.LC_ANS_UNDEFINE_NAME:
                     msgstr = g.appmsg.get_api_message(error_no, errParamList)
                     self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),

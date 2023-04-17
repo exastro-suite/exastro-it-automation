@@ -69,7 +69,7 @@ def get_migration_target_versions():
     if len(table_list) != 1:
         # T_COMN_ORGANIZATION_DB_INFO テーブルが用意されていない環境＝初期インストールとして全バージョン分対応する
         # return version_list
-        return "new_install"
+        return version_list
 
     # 2. T_COMN_VERSION から現在のバージョン取得
     table_list = common_db.sql_execute(sql, ['T_COMN_VERSION'])
@@ -105,7 +105,7 @@ def set_version(version):
     common_db.table_update("T_COMN_VERSION", data, "SERVICE_ID")
 
 
-BACKYARD_STOP_FLAG_FILE_NAME = "stop_file"  # TODO: ファイル名を決める
+BACKYARD_STOP_FLAG_FILE_NAME = "skip_all_service"
 
 
 def stop_all_backyards():

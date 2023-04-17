@@ -30,8 +30,7 @@ def main(work_dir_path, db_conn):
     }
     data = [
         {
-            # "key": "ita.system.ansible.execution_limit",
-            "key": "hoge",
+            "key": "ita.system.ansible.execution_limit",
             "value": os.environ.get('SYSTEM_ANSIBLE_EXECUTION_LIMIT'),
             "description": os.environ.get('SYSTEM_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION')
         }
@@ -43,8 +42,6 @@ def main(work_dir_path, db_conn):
     request_response = requests.post(api_url, data=data_encode, headers=header_para)
 
     response_data = json.loads(request_response.text)
-    print(f'status_code={request_response.status_code}')
-    print(f'response_data={str(response_data)}')
     if request_response.status_code not in [200, 409]:
         raise Exception(f'API ERROR. URL=[{api_url}], StatusCode=[{request_response.status_code}], Response-[{str(response_data)}]')
 
@@ -75,8 +72,6 @@ def main(work_dir_path, db_conn):
     request_response = requests.post(api_url, data=data_encode, headers=header_para)
 
     response_data = json.loads(request_response.text)
-    print(f'status_code2={request_response.status_code}')
-    print(f'response_data2={str(response_data)}')
     if request_response.status_code not in [200, 409]:
         raise Exception(f'API ERROR. URL=[{api_url}], StatusCode=[{request_response.status_code}], Response-[{str(response_data)}]')
 

@@ -44,26 +44,23 @@ def __wrapper():
         g.APPPATH = os.path.dirname(__file__)
         # create app log instance and message class instance
         g.applogger = AppLog()
-        g.applogger.set_level("DEBUG")  # TODO: 完了後消すこと
+        # g.applogger.set_level("DEBUG")  # 試験中は有効にする
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         try:
-            g.applogger.debug("[Trace] Begin main logic.")
+            g.applogger.info("Begin ITA migration.")
 
             versions = util.get_migration_target_versions()
             if len(versions) == 0:
                 g.applogger.info("No need to work.")
                 return 0
 
+            g.applogger.debug("stop_all_backyards")
             util.stop_all_backyards()
 
-            if versions == "new_install":
-                # 新規インストール
-                __migration_main("latest")
-            else:
-                # バージョンアップ
-                for version in versions:
-                    __migration_main(version)
+            # バージョンアップ
+            for version in versions:
+                __migration_main(version)
 
             # set latest version
             util.set_version(versions[-1])
@@ -75,8 +72,9 @@ def __wrapper():
             exception(e, True)
             return 1
         finally:
+            g.applogger.debug("restart_all_backyards")
             util.restart_all_backyards()
-            g.applogger.debug("[Trace] End main logic.")
+            g.applogger.info("End ITA migration.")
 
 
 def __migration_main(version):
@@ -101,7 +99,7 @@ def __migration_main(version):
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # メイン処理開始
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
-    g.applogger.info(f"[Trace] Start apply version:{version}")
+    g.applogger.info(f"Begin apply version:{version}")
 
     # BASE level の処理
     resource_dir_path = os.path.join(version_dir_path, "BASE_level")
@@ -152,7 +150,7 @@ def __migration_main(version):
     # 終了処理
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
 
-    g.applogger.debug("ita_migration end.")
+    g.applogger.info(f"End apply version:{version}")
 
 
 if __name__ == '__main__':

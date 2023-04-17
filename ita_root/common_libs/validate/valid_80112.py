@@ -193,26 +193,76 @@ def external_valid_menu_before(objdbca, objtable, option):  # noqa: C901
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-80015")
                 return retBool, msg, option,
+            else:
+                # Movement名:変数名:メンバー変数(member_variable_name)から、代入順序に値が必要かどうかを判断するため、変数のタイプを取得する
+                # Movement-メンバー変数ビューからレコードを特定
+                where_str = 'WHERE MVMT_VAR_MEMBER_LINK_ID = %s AND DISUSE_FLAG = %s'
+                ret = objdbca.table_select(TFCloudEPConst.V_MOVEMENT_VAR_MEMBER, where_str, [member_variable_name, 0])
+                if not ret:
+                    retBool = False
+                    msg = g.appmsg.get_api_message("MSG-80022")
+                    return retBool, msg, option,
+                child_member_vars_id = ret[0].get('CHILD_MEMBER_VARS_ID')
+
+                # メンバー変数管理テーブルからレコードを特定
+                where_str = 'WHERE CHILD_MEMBER_VARS_ID = %s AND DISUSE_FLAG = %s'
+                ret = objdbca.table_select(TFCloudEPConst.T_VAR_MEMBER, where_str, [child_member_vars_id, 0])
+                if not ret:
+                    retBool = False
+                    msg = g.appmsg.get_api_message("MSG-80022")
+                    return retBool, msg, option,
+
+                # メンバー変数のタイプを特定
+                member_var_type_id = ret[0].get('CHILD_VARS_TYPE_ID')
+
+                # var_type_idの指定がない(None)の場合はStringタイプとして扱う。
+                if not member_var_type_id:
+                    member_var_type_id = '1'  # 1(String)
+
+                # タイプマスターテーブルから、タイプIDのASSIGN_SEQ_FLAGを取得する
+                where_str = 'WHERE TYPE_ID = %s AND DISUSE_FLAG = %s'
+                ret = objdbca.table_select(TFCloudEPConst.T_TYPE_MASTER, where_str, [member_var_type_id, 0])
+                if not ret:
+                    retBool = False
+                    msg = g.appmsg.get_api_message("MSG-80014")
+                    return retBool, msg, option,
+                t_type_master_record = ret[0]
+                member_var_assign_seq_flag = t_type_master_record.get('ASSIGN_SEQ_FLAG')
+
+                # member_var_assign_seq_flagから代入順序が必要かどうかを判断し、値の有無でバリデーションエラー判定を行う
+                if str(member_var_assign_seq_flag) == "1":
+                    if not substitution_order:
+                        # var_assign_seq_flagがTrue(1)かつ代入順序(substitution_order)がない場合はバリデーションエラー
+                        retBool = False
+                        msg = g.appmsg.get_api_message("MSG-80023")
+                        return retBool, msg, option,
+                else:
+                    if substitution_order:
+                        # var_assign_seq_flagがFalse(0)かつ代入順序(substitution_order)がある場合はバリデーションエラー
+                        retBool = False
+                        msg = g.appmsg.get_api_message("MSG-80024")
+                        return retBool, msg, option,
+
         else:
             if member_variable_name:
                 # var_member_vars_flagがFalse(0)かつMovement名:変数名:メンバー変数(member_variable_name)がある場合はバリデーションエラー
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-80016")
                 return retBool, msg, option,
-
-        # Movement名:変数名(variable_name)の変数タイプから、代入順序(substitution_order)に値が必要かどうかを判定
-        if str(var_assign_seq_flag) == "1":
-            if not substitution_order:
-                # var_assign_seq_flagがTrue(1)かつ代入順序(substitution_order)がない場合はバリデーションエラー
-                retBool = False
-                msg = g.appmsg.get_api_message("MSG-80017")
-                return retBool, msg, option,
-        else:
-            if substitution_order:
-                # var_assign_seq_flagがFalse(0)かつ代入順序(substitution_order)がある場合はバリデーションエラー
-                retBool = False
-                msg = g.appmsg.get_api_message("MSG-80018")
-                return retBool, msg, option,
+            else:
+                # Movement名:変数名(variable_name)の変数タイプから、代入順序(substitution_order)に値が必要かどうかを判定
+                if str(var_assign_seq_flag) == "1":
+                    if not substitution_order:
+                        # var_assign_seq_flagがTrue(1)かつ代入順序(substitution_order)がない場合はバリデーションエラー
+                        retBool = False
+                        msg = g.appmsg.get_api_message("MSG-80017")
+                        return retBool, msg, option,
+                else:
+                    if substitution_order:
+                        # var_assign_seq_flagがFalse(0)かつ代入順序(substitution_order)がある場合はバリデーションエラー
+                        retBool = False
+                        msg = g.appmsg.get_api_message("MSG-80018")
+                        return retBool, msg, option,
 
     # Movement名:変数名(variable_name)が一致するレコードがほかにある場合、HCL設定(hcl_setting)の値が統一になっているかどうかを判定
     if cmd_type == 'Update':

@@ -264,7 +264,7 @@ header() {
           h = d.config.header,
           className = ['dialogHeader'],
           html = [];
-    if ( h.title ) html.push(`<div class="dialogHeaderTitle">${h.title}</div>`);
+    if ( h.title ) html.push(`<div class="dialogHeaderTitle"><span class="dialogHeaderTitleInner">${h.title}</span></div>`);
     if ( h.move ) className.push('dialogHeaderMove');
     if ( h.close ) html.push(`<div class="dialogHeaderClose">${d.button('dialogButton dialogHeaderCloseButton', 'close')}</div>`);
     return `<div class="${className.join(' ')}">${html.join('')}</div>`;

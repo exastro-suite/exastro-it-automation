@@ -42,6 +42,8 @@ def ky_encrypt(lcstr):
     Returns:
         Encoded string
     """
+    if lcstr is None:
+        return ""
 
     if len(lcstr) == 0:
         return ""
@@ -58,6 +60,8 @@ def ky_decrypt(lcstr):
     Returns:
         Decoded string
     """
+    if lcstr is None:
+        return ""
 
     if len(lcstr) == 0:
         return ""

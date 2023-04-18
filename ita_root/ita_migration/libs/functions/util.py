@@ -113,7 +113,7 @@ def stop_all_backyards():
     全backyardを停止させる
     """
 
-    flag_file_path = os.path.join(g.APPPATH, BACKYARD_STOP_FLAG_FILE_NAME)
+    flag_file_path = os.path.join(os.environ.get('STORAGEPATH'), BACKYARD_STOP_FLAG_FILE_NAME)
     with open(flag_file_path, "a") as f:
         current_datetime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
         f.write(current_datetime)
@@ -124,7 +124,7 @@ def restart_all_backyards():
     全backyardを再開させる
     """
 
-    flag_file_path = os.path.join(g.APPPATH, BACKYARD_STOP_FLAG_FILE_NAME)
+    flag_file_path = os.path.join(os.environ.get('STORAGEPATH'), BACKYARD_STOP_FLAG_FILE_NAME)
     if os.path.isfile(flag_file_path):
         os.remove(flag_file_path)
 

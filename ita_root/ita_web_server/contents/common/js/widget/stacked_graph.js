@@ -128,7 +128,7 @@ body() {
     const sgLength = stackedGraphData.data.length
     for ( let i = 0; i < sgLength; i++ ) {
         const itemLength = stackedGraphData.data[i].length;
-        for ( let j = 2; j < itemLength; j++ ) {
+        for ( let j = 1; j < itemLength; j++ ) {
             stackedGraphData.data[i][0] += stackedGraphData.data[i][j];
         }
         if ( stackedGraphData.data[i][0] > sgMax ) sgMax = stackedGraphData.data[i][0];

@@ -1185,6 +1185,7 @@
     "BKY-30008": "It does not match another variable definition.(variable name: {})",
     "BKY-30009": "The role name set for material link is missing in the role name list. (Material link ID: {}, Role name: {}, RolePKG ID: {})",
     "BKY-30010": "The role registered in material link is not registered in the role name list. (Material link ID: {})",
+    "BKY-30011": "Update record to `{}` was failed.,",
     "BKY-40001": "No records in status: In preparation.",
     "BKY-40002": "No target conductor to reserve.",
     "BKY-40003": "Execution user disused. (User id: \"{}\")",

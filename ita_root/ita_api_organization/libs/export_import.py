@@ -121,7 +121,7 @@ def get_menu_export_list(objdbca, organization_id, workspace_id):
 
 def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
     """
-        メニューエクスポート対象メニュー一覧取得
+        EXCELエクスポート対象メニュー一覧取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
         RETRUN:
@@ -197,6 +197,25 @@ def get_excel_bulk_export_list(objdbca, organization_id, workspace_id):
         add_menu_group['menu_group_name'] = record.get('MENU_GROUP_NAME_' + lang.upper())
         add_menu_group['disp_seq'] = record.get('DISP_SEQ')
         add_menu_group['menus'] = menus.get(menu_group_id)
+
+        # 親メニューグループ情報を取得
+        parent_menu_group = {}
+        parent_flg = False
+        parent_id = add_menu_group['parent_id']
+        if parent_id is not None:
+            for data in menu_group_list:
+                if parent_id == data['id']:
+                    parent_flg = True
+
+            # 親メニューグループがすでについ枯れているか確認
+            if parent_flg is False:
+                parent_menu_group_info = getParentMenuGroupInfo(parent_id, objdbca)
+                parent_menu_group['parent_id'] = None
+                parent_menu_group['id'] = parent_id
+                parent_menu_group['menu_group_name'] = parent_menu_group_info["MENU_GROUP_NAME_" + g.LANGUAGE.upper()]
+                parent_menu_group["disp_seq"] = parent_menu_group_info["DISP_SEQ"]
+                parent_menu_group['menus'] = []
+                menu_group_list.append(parent_menu_group)
 
         menu_group_list.append(add_menu_group)
 

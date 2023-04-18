@@ -109,6 +109,16 @@ createMenuGroupList( list ) {
         ex.dispSeqSort( parent.menus );
     }
     ex.dispSeqSort( menuGroupList );
+
+    // 子のエラーカウントを調べる
+    for ( const parent of menuGroupList ) {
+        for ( const menu of parent.menus ) {
+            if ( menu.error_count !== undefined ) {
+                if ( !parent.error_count ) parent.error_count = 0;
+                parent.error_count += menu.error_count;
+            }
+        }
+    }
     
     return menuGroupList;
 }

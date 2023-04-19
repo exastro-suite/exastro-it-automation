@@ -207,13 +207,17 @@ def allow_proc(organization_id, workspace_id):
     """
 
     allowed = True
-    base_path = os.environ.get('STORAGEPATH') + "{}/{}".format(organization_id, workspace_id)
-    file_list = ["tmp/driver/import_menu/skip_all_service"]
+    # ita-migrationのスキップファイル
+    migration_skip_file_path = os.environ.get('STORAGEPATH') + "skip_all_service"
+    # メニューインポートのスキップファイル
+    base_path = os.environ.get('STORAGEPATH') + "{}/{}/".format(organization_id, workspace_id)
+    import_menu_skip_file_path = base_path + "tmp/driver/import_menu/skip_all_service"
 
-    for f in file_list:
-        file_path = "{}/{}".format(base_path, f)
+    file_list = [migration_skip_file_path, import_menu_skip_file_path]
+
+    for file_path in file_list:
         if os.path.isfile(file_path) is True:
-            g.applogger.debug("Skip proc. org:{}, ws:{}, file:{}".format(organization_id, workspace_id, f))
+            g.applogger.debug("Skip proc. org:{}, ws:{}, file:{}".format(organization_id, workspace_id, file_path))
             allowed = False
 
     return allowed

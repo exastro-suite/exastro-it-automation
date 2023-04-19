@@ -95,6 +95,8 @@
     "499-01204": "Could not specify the resuming File link Record.(File link Item number:{})",
     "499-01205": "An disuse record cannot be resumed. (File link Item number:{})",
     "499-01206": "The synchronization status of the Repository is not abnormal and cannot be resumed. Please refresh the list and check the synchronization status.(File link Item number:{})",
+    "499-01207": "The target Remote repository file is not registered. (File link item number:{} Remote repository file item number:{})",
+    "499-01208": "The target Remote repository is not registered. (File link item number:{} Remote repository item number:{})",
     "499-01401": "Service name and log level are invalid. ({}:{})",
     "999-00001": "[Database Error] Database({}) connect infomation is not found",
     "999-00002": "[Database Error] Database({}) : {}",

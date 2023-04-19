@@ -60,19 +60,44 @@ def get_migration_target_versions():
     version_list_path = os.path.join(g.APPPATH, "version.list")
     version_list = read_version_list(version_list_path)
 
-    # INFORMATION_SCHEMA から取得し判定
-    common_db = DBConnectCommon()  # noqa: F405
-    sql = "SELECT * FROM `INFORMATION_SCHEMA`.`TABLES` WHERE `TABLE_NAME` = %s"
+    common_db_root = DBConnectCommonRoot()  # noqa: F405
 
-    # 1. T_COMN_ORGANIZATION_DB_INFO が存在するか
-    table_list = common_db.sql_execute(sql, ['T_COMN_ORGANIZATION_DB_INFO'])
-    if len(table_list) != 1:
-        # T_COMN_ORGANIZATION_DB_INFO テーブルが用意されていない環境＝初期インストールとして全バージョン分対応する
-        # return version_list
+    # 1. Databaseの存在確認
+    sql = "SHOW DATABASES"
+    database_list = common_db_root.sql_execute(sql)
+
+    match_flg = False
+    for recode in database_list:
+        if recode.get('Database').lower() == os.environ.get('DB_DATABASE').lower():
+            match_flg = True
+            break
+
+    if match_flg is False:
+        # Databaseが無い場合
+        # シングルコーテーションをエスケープ
+        db_database = os.environ.get('DB_DATABASE').replace('\'', '\\\'')
+        db_user = os.environ.get('DB_USER').replace('\'', '\\\'')
+        db_password = os.environ.get('DB_PASSWORD').replace('\'', '\\\'')
+        # Database作成
+        sql = f"CREATE DATABASE IF NOT EXISTS `{db_database}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+        common_db_root.sql_execute(sql)
+        # ユーザ作成
+        sql = f"CREATE USER IF NOT EXISTS '{db_user}'@'%' IDENTIFIED BY '{db_password}'"
+        common_db_root.sql_execute(sql)
+        # 権限付与
+        sql = f"GRANT ALL PRIVILEGES ON `{db_database}` . * TO '{db_user}'@'%'"
+        common_db_root.sql_execute(sql)
+
+        # Database作成した場合＝初期インストールとして全バージョン分対応する
         return version_list
 
+    common_db_root.db_disconnect()
+
     # 2. T_COMN_VERSION から現在のバージョン取得
+    common_db = DBConnectCommon()  # noqa: F405
+    sql = "SELECT * FROM `INFORMATION_SCHEMA`.`TABLES` WHERE `TABLE_NAME` = %s"
     table_list = common_db.sql_execute(sql, ['T_COMN_VERSION'])
+
     if len(table_list) != 1:
         # T_COMN_VERSION テーブルが用意されていない環境＝初期バージョン2.0.6として以降の全バージョン分対応する
         return version_list[1:]

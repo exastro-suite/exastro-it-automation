@@ -43,6 +43,7 @@ RUN dnf install -y \
     pymysql \
     python-dotenv \
     chardet \
+    dictknife \
     pycryptodome \
     python-hcl2 \
 &&  groupadd $GROUPNAME \

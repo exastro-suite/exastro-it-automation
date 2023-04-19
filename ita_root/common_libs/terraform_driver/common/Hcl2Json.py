@@ -269,14 +269,18 @@ class HCL2JSONParse():
         if isinstance(block_type, dict) and is_map_flag is False:
             # mapの存在をチェックする
             for type_key, type_value in block_type.items():
-                # type_valueが入れ子になっている場合は再度isMapCheckを実行
-                if isinstance(type_value, dict) or isinstance(type_value, list):
-                    ret2 = self.isMapCheck(type_value, False)
-                    if ret2:
-                        ret = True
-                else:
-                    if re.findall(pattern1, type_key) or re.findall(pattern2, type_key) or re.findall(pattern1, type_value) or re.findall(pattern2, type_value):  # noqa: E501
-                        ret = True
+                if re.findall(pattern1, type_key) or re.findall(pattern2, type_key):  # noqa: E501
+                    ret = True
+
+                if ret is False:
+                    # type_valueが入れ子になっている場合は再度isMapCheckを実行
+                    if isinstance(type_value, dict) or isinstance(type_value, list):
+                        ret2 = self.isMapCheck(type_value, False)
+                        if ret2:
+                            ret = True
+                    else:
+                        if re.findall(pattern1, type_key) or re.findall(pattern2, type_key) or re.findall(pattern1, type_value) or re.findall(pattern2, type_value):  # noqa: E501
+                            ret = True
 
         elif isinstance(block_type, list) and is_map_flag is False:
             # mapの存在をチェックする

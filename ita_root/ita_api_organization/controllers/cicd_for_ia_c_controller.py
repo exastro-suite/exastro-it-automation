@@ -55,7 +55,20 @@ def post_cicd_for_iac_resume_filelink(organization_id, workspace_id, uuid, body=
     objdbca.db_transaction_start()
 
     # 再開対象資材紐付確認
-    sql = "SELECT * FROM T_CICD_MATL_LINK WHERE MATL_LINK_ROW_ID = %s"
+    sql = (
+        "SELECT "
+        "  T1.*, "
+        "  T2.DISUSE_FLAG DISUSE_FLAG_REPO, "
+        "  T3.DISUSE_FLAG DISUSE_FLAG_MATL "
+        "FROM T_CICD_MATL_LINK    T1 "
+        "LEFT OUTER JOIN "
+        "  T_CICD_REPOSITORY_LIST T2 "
+        "ON T1.REPO_ROW_ID = T2.REPO_ROW_ID "
+        "LEFT OUTER JOIN "
+        "  T_CICD_MATL_LIST       T3 "
+        "ON T1.MATL_ROW_ID = T3.MATL_ROW_ID "
+        "WHERE MATL_LINK_ROW_ID = %s "
+    )
     rows = objdbca.sql_execute(sql, [uuid])
     if len(rows) == 0:
         log_msg_args = [uuid]
@@ -77,6 +90,20 @@ def post_cicd_for_iac_resume_filelink(organization_id, workspace_id, uuid, body=
             log_msg_args = [uuid]
             api_msg_args = [uuid]
             raise AppException("499-01206", log_msg_args, api_msg_args)
+
+        # 廃止レコード確認(リポジトリ)
+        if row['DISUSE_FLAG_REPO'] != '0':
+            # 対象のリモートリポジトリが登録されていません。(資材紐付 項番:{} リモートリポジトリ項番:{})
+            log_msg_args = [uuid, row['REPO_ROW_ID']]
+            api_msg_args = [uuid, row['REPO_ROW_ID']]
+            raise AppException("499-01208", log_msg_args, api_msg_args)
+
+        # 廃止レコード確認(リポジトリ資材)
+        if row['DISUSE_FLAG_MATL'] != '0':
+            # 対象のリモートリポジトリ資材が登録されていません。(資材紐付 項番:{} リモートリポジトリ資材項番:{})
+            log_msg_args = [uuid, row['MATL_ROW_ID']]
+            api_msg_args = [uuid, row['MATL_ROW_ID']]
+            raise AppException("499-01207", log_msg_args, api_msg_args)
 
     # リモートリポジトリの同期状態を再開に設定
     table_name = "T_CICD_MATL_LINK"

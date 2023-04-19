@@ -2221,7 +2221,7 @@ class CICD_ChildWorkflow():
 
             return True
 
-        ret = self.DBobj.table_update(table_name, row, "REPO_ROW_ID", is_register_history=False)
+        ret = self.DBobj.table_update(table_name, row, "REPO_ROW_ID", is_register_history=False, last_timestamp=False)
         if ret is False:
             # 異常フラグON
             self.error_flag = 1

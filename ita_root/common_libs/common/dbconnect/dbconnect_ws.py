@@ -72,5 +72,5 @@ class DBConnectWs(DBConnectCommon):
     def table_insert(self, table_name, data_list, primary_key_name, is_register_history=True):
         return super().table_insert(table_name, data_list, primary_key_name, is_register_history)
 
-    def table_update(self, table_name, data_list, primary_key_name, is_register_history=True):
-        return super().table_update(table_name, data_list, primary_key_name, is_register_history)
+    def table_update(self, table_name, data_list, primary_key_name, is_register_history=True, last_timestamp=True):
+        return super().table_update(table_name, data_list, primary_key_name, is_register_history, last_timestamp)

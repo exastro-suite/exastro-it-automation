@@ -353,7 +353,7 @@ class DBConnectCommon:
 
         return data_list if is_last_res is True else is_last_res
 
-    def table_update(self, table_name, data_list, primary_key_name, is_register_history=False):
+    def table_update(self, table_name, data_list, primary_key_name, is_register_history=False, last_timestamp=True):
         """
         update table
 
@@ -374,8 +374,9 @@ class DBConnectCommon:
         is_last_res = True
         for data in data_list:
             # auto set
-            timestamp = get_timestamp()
-            data[self._COLUMN_NAME_TIMESTAMP] = timestamp
+            if last_timestamp is True:
+                timestamp = get_timestamp()
+                data[self._COLUMN_NAME_TIMESTAMP] = timestamp
 
             # make sql statement
             prepared_list = list(map(lambda k: "`" + k + "`=%s", data.keys()))

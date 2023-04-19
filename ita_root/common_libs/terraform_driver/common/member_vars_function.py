@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 from flask import g
+from dictknife import deepmerge
 import re
 import json
 import uuid
@@ -169,10 +170,10 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 # 変数ネスト管理に登録された要素数を特定
                 registed_max_col_seq = registed_max_member_col_data.get('max_col_seq')
                 # tfファイルのdefaultから要素数を特定
-                tf_max_col_seq = r_member_data.get('MAX_COL_SEC')
+                tf_max_col_seq = r_member_data.get('MAX_COL_SEQ')
                 # 変数ネスト管理とtfファイルから取得した最大繰り返し数に差分があり、最終更新者がバックヤードシステムの場合は、変数ネスト管理の値を更新
                 if registed_max_member_col_data.get('is_regist') is True and not str(registed_max_col_seq) == str(tf_max_col_seq) and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -180,7 +181,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がバックヤードシステムの場合は、tf_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -188,7 +189,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がユーザのの場合は、registed_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is False:  # noqa: E501
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), registed_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), registed_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -219,11 +220,11 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 # 変数ネスト管理に登録された要素数を特定
                 registed_max_col_seq = registed_max_member_col_data.get('max_col_seq')
                 # tfファイルのdefaultから要素数を特定
-                tf_max_col_seq = r_member_data.get('MAX_COL_SEC')
+                tf_max_col_seq = r_member_data.get('MAX_COL_SEQ')
 
                 # 変数ネスト管理とtfファイルから取得した最大繰り返し数に差分があり、最終更新者がシステムの場合は変数ネスト管理の値を更新
                 if registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "0" and not str(registed_max_col_seq) == str(tf_max_col_seq) and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -246,11 +247,11 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 # 変数ネスト管理に登録された要素数を特定
                 registed_max_col_seq = registed_max_member_col_data.get('max_col_seq')
                 # tfファイルのdefaultから要素数を特定
-                tf_max_col_seq = r_member_data.get('MAX_COL_SEC')
+                tf_max_col_seq = r_member_data.get('MAX_COL_SEQ')
 
                 # 復活を実行
                 if registed_max_member_col_data.get('is_regist') is True:
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -270,11 +271,11 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                 # 変数ネスト管理に登録された要素数を特定
                 registed_max_col_seq = registed_max_member_col_data.get('max_col_seq')
                 # tfファイルのdefaultから要素数を特定
-                tf_max_col_seq = r_member_data.get('MAX_COL_SEC')
+                tf_max_col_seq = r_member_data.get('MAX_COL_SEQ')
 
                 # 変数ネスト管理とtfファイルから取得した最大繰り返し数に差分があり、最終更新者がバックヤードシステムの場合は、変数ネスト管理の値を更新
                 if registed_max_member_col_data.get('is_regist') is True and not str(registed_max_col_seq) == str(tf_max_col_seq) and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -282,7 +283,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がバックヤードシステムの場合は、tf_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is True:  # noqa: E501
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), tf_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -290,7 +291,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
 
                 # 変数ネスト管理のレコードが廃止済みかつ最終更新者がユーザのの場合は、registed_max_col_seqで変数ネスト管理の値を更新(復活)
                 elif registed_max_member_col_data.get('is_regist') is True and str(registed_max_member_col_data.get('DISUSE_FLAG')) == "1" and registed_max_member_col_data.get('is_system') is False:  # noqa: E501
-                    res = update_max_col(objdbca, TFConst, registed_max_col_seq.get('MAX_COL_SEQ_ID'), registed_max_col_seq)
+                    res = update_max_col(objdbca, TFConst, registed_max_member_col_data.get('MAX_COL_SEQ_ID'), registed_max_col_seq)
                     if not res:
                         # 変数ネスト管理のレコード更新に失敗
                         msg = g.appmsg.get_log_message("BKY-50110", [])
@@ -1404,8 +1405,8 @@ def adjust_type_data_by_max_col_seq(objdbca, TFConst, type_data, temp_member_dat
                         trg_default_key_data = member_data.get('type_nest_dict')
                         temp_type_data = type_data.copy()
                         for key, value in trg_default_key_data.items():
-                            if type_data.get(value):
-                                temp_type_data = type_data[value]
+                            if temp_type_data.get(value):
+                                temp_type_data = temp_type_data[value]
 
                         # 変数ネスト管理対象
                         trg_nest_type_data = temp_type_data
@@ -1523,8 +1524,8 @@ def generate_member_vars_type_data(objdbca, TFConst, member_vars_data, trg_max_c
     delete_key = temp_list[-1]
     map_data.pop(delete_key)
 
-    temp_list = []
     if not map_data:
+        temp_list = []
         # マップデータが空の場合
         for i in range(int(trg_max_col_seq)):
             temp_list.append(trg_nest_type_data)
@@ -1539,13 +1540,31 @@ def generate_member_vars_type_data(objdbca, TFConst, member_vars_data, trg_max_c
             trg_nest_type_data = decode_hcl(trg_nest_type_data)
 
         ref = {}
-        temp_list_2 = []
-        for i in range(int(trg_max_col_seq)):
-            temp_list_2.append(trg_nest_type_data)
+        temp_list = []
 
-        ref[member_vars_key] = temp_list_2
+        for i in range(int(trg_max_col_seq)):
+            temp_list.append(trg_nest_type_data)
+
+        ref[member_vars_key] = temp_list
+
+        # map_dataをlist型に変換する
+        map_data_list = []
+        for index, key in map_data.items():
+            map_data_list.append(key)
+
+        # map_dataをもとにtemp_dictを生成する
+        temp_dict = {}
+
+        def create_map_data_dict(map_data_list, ref, temp_dict, n=0):
+            if n < len(map_data) - 1:
+                temp_dict[map_data[n]] = {}
+                create_map_data_dict(list, ref, temp_dict[map_data[n]], n + 1)
+            else:
+                temp_dict[map_data[n]] = ref
+
+        create_map_data_dict(map_data, ref, temp_dict)
 
         # 仮配列と返却用配列をマージ
-        return_data = member_vars_data.update(ref)
+        return_data = deepmerge(temp_dict, member_vars_data)
 
     return return_data

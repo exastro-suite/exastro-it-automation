@@ -353,7 +353,7 @@ class DBConnectCommon:
 
         return data_list if is_last_res is True else is_last_res
 
-    def table_update(self, table_name, data_list, primary_key_name, is_register_history=False):
+    def table_update(self, table_name, data_list, primary_key_name, is_register_history=False, last_timestamp=True):
         """
         update table
 
@@ -374,8 +374,9 @@ class DBConnectCommon:
         is_last_res = True
         for data in data_list:
             # auto set
-            timestamp = get_timestamp()
-            data[self._COLUMN_NAME_TIMESTAMP] = timestamp
+            if last_timestamp is True:
+                timestamp = get_timestamp()
+                data[self._COLUMN_NAME_TIMESTAMP] = timestamp
 
             # make sql statement
             prepared_list = list(map(lambda k: "`" + k + "`=%s", data.keys()))
@@ -571,3 +572,48 @@ class DBConnectCommon:
             'DB_DATABASE': g.db_connect_info.get('ORGDB_DATABASE'),
             'INITIAL_DATA_ANSIBLE_IF': g.db_connect_info.get('INITIAL_DATA_ANSIBLE_IF')
         }
+
+
+class DBConnectCommonRoot(DBConnectCommon):
+    """
+    database connection agnet class on mariadb
+    """
+    def __init__(self):
+        """
+        constructor
+        """
+        if self._db_con is not None and self._db_con.open is True:
+            return True
+
+        self._host = os.environ.get('DB_HOST')
+        self._port = int(os.environ.get('DB_PORT'))
+        self._db_user = os.environ.get('DB_ADMIN_USER')
+        self._db_passwd = os.environ.get('DB_ADMIN_PASSWORD')
+
+        # connect database
+        self.db_connect()
+
+
+    def db_connect(self):
+        """
+        connect database
+
+        Returns:
+            is success:(bool)
+        """
+        if self._db_con is not None and self._db_con.open is True:
+            return True
+
+        try:
+            self._db_con = pymysql.connect(
+                host=self._host,
+                port=self._port,
+                user=self._db_user,
+                passwd=self._db_passwd,
+                charset='utf8',
+                cursorclass=pymysql.cursors.DictCursor
+            )
+        except Exception as e:
+            raise AppException("999-00002", [f"{self._host}:{self._port}", e])
+
+        return True

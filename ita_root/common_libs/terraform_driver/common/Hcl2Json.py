@@ -115,8 +115,9 @@ class HCL2JSONParse():
                         pattern = r'\)\,\)'
                         replacement = r'))'
                         match = re.findall(pattern, type_str)
-                        if match:
+                        while match:
                             type_str = re.sub(pattern, replacement, type_str)
+                            match = re.findall(pattern, type_str)
 
                         # typeがlist/setの場合の対応(1~4)
                         # 1. list(string) => list(string) 代入順序なし、メンバー変数なしの場合は対応なし
@@ -127,36 +128,41 @@ class HCL2JSONParse():
                         pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\((.*?)\)\)\}\"'
                         replacement = r'{"${\1(\2)}": ["${\2(\3)}"]}'
                         match = re.findall(pattern, type_str)
-                        if match:
+                        while match:
                             type_str = re.sub(pattern, replacement, type_str)
+                            match = re.findall(pattern, type_str)
 
                         # 3. tuple
                         pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\(\[(.*)\]\)\)\}\"'
                         replacement = r'{"${\1}": ["${\2([\3])}"]}'
                         match = re.findall(pattern, type_str)
-                        if match:
+                        while match:
                             type_str = re.sub(pattern, replacement, type_str)
+                            match = re.findall(pattern, type_str)
 
                         # 4. object
                         pattern = r'\"\$\{([a-z]+?)\(([a-z]+?)\(\{(.*)\}\)\)\}\"'
                         replacement = r'{"${\1}": ["${\2({\3})}"]}'
                         match = re.findall(pattern, type_str)
-                        if match:
+                        while match:
                             type_str = re.sub(pattern, replacement, type_str)
+                            match = re.findall(pattern, type_str)
 
                         # typeがtupleの場合の対応
                         # 入れ子になっている場合
                         pattern = r'\"\$\{([a-z]+?)\(\[(.*)\]\)\}\"'
                         replacement = r'{"${\1}": [\2]}'
                         match = re.findall(pattern, type_str)
-                        if match:
+                        while match:
                             type_str = re.sub(pattern, replacement, type_str)
+                            match = re.findall(pattern, type_str)
 
                         pattern = r'\$\{([a-z]+?)\(\[(.*)\]\)\}'
                         replacement = r'{"${\1}": [\2]}'
                         match = re.findall(pattern, type_str)
-                        if match:
+                        while match:
                             type_str = re.sub(pattern, replacement, type_str)
+                            match = re.findall(pattern, type_str)
 
                         # 入れ子以外で並んでいる場合
                         pattern = r'\"\$\{([a-z]*?)\(\[(.*)\]\)\}\"'
@@ -176,8 +182,9 @@ class HCL2JSONParse():
                         pattern = r'\"\$\{([a-z]+?)\(\{(.*)\}\)\}\"'
                         replacement = r'{"${\1}": {\2}}'
                         match = re.findall(pattern, type_str)
-                        if match:
+                        while match:
                             type_str = re.sub(pattern, replacement, type_str)
+                            match = re.findall(pattern, type_str)
 
                         # 入れ子以外で並んでいる場合
                         pattern = r'\"\$\{([a-z]*?)\(\{(.*)\}\)\}\"'

@@ -130,7 +130,7 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-        ret = self.read_val_assign(self.in_driver_name, self.ws_db)
+        ret = self.read_val_assign(self.in_driver_name, self.ws_db, movement_id)
 
         if ret[0] == 0:
             error_flag = 1

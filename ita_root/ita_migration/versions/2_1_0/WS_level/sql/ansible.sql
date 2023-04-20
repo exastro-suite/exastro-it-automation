@@ -1,45 +1,45 @@
 -- ------------------------------------------------------------
--- ¥ TABLE CREATE START
+-- â–¼ TABLE CREATE START
 -- ------------------------------------------------------------
--- 20109 ŽûW€–Ú’lŠÇ—
+-- 20109 åŽé›†é …ç›®å€¤ç®¡ç†
 CREATE TABLE T_ANSC_CMDB_LINK
 (
-    ROW_ID                          VARCHAR(40),                                -- €”Ô
-    FILE_PREFIX                     VARCHAR(4000),                              -- PREFIX(ƒtƒ@ƒCƒ‹–¼)
-    VARS_NAME                       VARCHAR(4000),                              -- •Ï”–¼
-    VRAS_MEMBER_NAME                VARCHAR(4000),                              -- ƒƒ“ƒo•Ï”
-    PARSE_TYPE_ID                   VARCHAR(2),                                 -- ƒp[ƒXŒ`Ž®
-    COLUMN_LIST_ID                  VARCHAR(40),                                -- €–Ú
-    INPUT_ORDER                     INT,                                        -- ‘ã“ü‡˜
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    ROW_ID                          VARCHAR(40),                                -- é …ç•ª
+    FILE_PREFIX                     VARCHAR(4000),                              -- PREFIX(ãƒ•ã‚¡ã‚¤ãƒ«å)
+    VARS_NAME                       VARCHAR(4000),                              -- å¤‰æ•°å
+    VRAS_MEMBER_NAME                VARCHAR(4000),                              -- ãƒ¡ãƒ³ãƒå¤‰æ•°
+    PARSE_TYPE_ID                   VARCHAR(2),                                 -- ãƒ‘ãƒ¼ã‚¹å½¢å¼
+    COLUMN_LIST_ID                  VARCHAR(40),                                -- é …ç›®
+    INPUT_ORDER                     INT,                                        -- ä»£å…¥é †åº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSC_CMDB_LINK_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    ROW_ID                          VARCHAR(40),                                -- €”Ô
-    FILE_PREFIX                     VARCHAR(4000),                              -- PREFIX(ƒtƒ@ƒCƒ‹–¼)
-    VARS_NAME                       VARCHAR(4000),                              -- •Ï”–¼
-    VRAS_MEMBER_NAME                VARCHAR(4000),                              -- ƒƒ“ƒo•Ï”
-    PARSE_TYPE_ID                   VARCHAR(2),                                 -- ƒp[ƒXŒ`Ž®
-    COLUMN_LIST_ID                  VARCHAR(40),                                -- €–Ú
-    INPUT_ORDER                     INT,                                        -- ‘ã“ü‡˜
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    ROW_ID                          VARCHAR(40),                                -- é …ç•ª
+    FILE_PREFIX                     VARCHAR(4000),                              -- PREFIX(ãƒ•ã‚¡ã‚¤ãƒ«å)
+    VARS_NAME                       VARCHAR(4000),                              -- å¤‰æ•°å
+    VRAS_MEMBER_NAME                VARCHAR(4000),                              -- ãƒ¡ãƒ³ãƒå¤‰æ•°
+    PARSE_TYPE_ID                   VARCHAR(2),                                 -- ãƒ‘ãƒ¼ã‚¹å½¢å¼
+    COLUMN_LIST_ID                  VARCHAR(40),                                -- é …ç›®
+    INPUT_ORDER                     INT,                                        -- ä»£å…¥é †åº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20201 Legacy Movemnetˆê——
+-- 20201 Legacy Movemnetä¸€è¦§
 CREATE VIEW V_ANSL_MOVEMENT AS
 SELECT 
 MOVEMENT_ID,
@@ -88,253 +88,253 @@ WHERE
 
 
 
--- 20202 Legacy Playbook‘fÞW
+-- 20202 Legacy Playbookç´ æé›†
 CREATE TABLE T_ANSL_MATL_COLL
 (
-    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- €”Ô
-    PLAYBOOK_MATTER_NAME            VARCHAR(255),                               -- Playbook‘fÞ–¼
-    PLAYBOOK_MATTER_FILE            VARCHAR(255),                               -- Playbook‘fÞ
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- é …ç•ª
+    PLAYBOOK_MATTER_NAME            VARCHAR(255),                               -- Playbookç´ æå
+    PLAYBOOK_MATTER_FILE            VARCHAR(255),                               -- Playbookç´ æ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(PLAYBOOK_MATTER_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSL_MATL_COLL_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- €”Ô
-    PLAYBOOK_MATTER_NAME            VARCHAR(255),                               -- Playbook‘fÞ–¼
-    PLAYBOOK_MATTER_FILE            VARCHAR(255),                               -- Playbook‘fÞ
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- é …ç•ª
+    PLAYBOOK_MATTER_NAME            VARCHAR(255),                               -- Playbookç´ æå
+    PLAYBOOK_MATTER_FILE            VARCHAR(255),                               -- Playbookç´ æ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20203 Legacy Movement-•Ï”•R•t
+-- 20203 Legacy Movement-å¤‰æ•°ç´ä»˜
 CREATE TABLE T_ANSL_MVMT_VAR_LINK
 (
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- €”Ô
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- é …ç•ª
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    VARS_NAME                       VARCHAR(255),                               -- •Ï”–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    VARS_NAME                       VARCHAR(255),                               -- å¤‰æ•°å
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(MVMT_VAR_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
 
--- 20204 Legacy Move-Playbook•R•t
+-- 20204 Legacy Move-Playbookç´ä»˜
 CREATE TABLE T_ANSL_MVMT_MATL_LINK
 (
-    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- €”Ô
+    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- é …ç•ª
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- Playbook‘fÞ
-    INCLUDE_SEQ                     INT,                                        -- ƒCƒ“ƒNƒ‹[ƒh‡˜
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- Playbookç´ æ
+    INCLUDE_SEQ                     INT,                                        -- ã‚¤ãƒ³ã‚¯ãƒ«ãƒ¼ãƒ‰é †åº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(MVMT_MATL_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSL_MVMT_MATL_LINK_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- €”Ô
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- é …ç•ª
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- Playbook‘fÞ
-    INCLUDE_SEQ                     INT,                                        -- ƒCƒ“ƒNƒ‹[ƒh‡˜
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    PLAYBOOK_MATTER_ID              VARCHAR(40),                                -- Playbookç´ æ
+    INCLUDE_SEQ                     INT,                                        -- ã‚¤ãƒ³ã‚¯ãƒ«ãƒ¼ãƒ‰é †åº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20205 Legacy ‘ã“ü’lŽ©“®“o˜^
+-- 20205 Legacy ä»£å…¥å€¤è‡ªå‹•ç™»éŒ²
 CREATE TABLE T_ANSL_VALUE_AUTOREG
 (
-    COLUMN_ID                       VARCHAR(40),                                -- €”Ô
-    MENU_ID                         VARCHAR(40),                                -- ƒƒjƒ…[–¼
-    COLUMN_LIST_ID                  VARCHAR(40),                                -- €–Ú–¼
-    COLUMN_ASSIGN_SEQ               INT,                                        -- ‘ã“ü‡˜
-    COL_TYPE                        VARCHAR(2),                                 -- “o˜^•ûŽ®
+    COLUMN_ID                       VARCHAR(40),                                -- é …ç•ª
+    MENU_ID                         VARCHAR(40),                                -- ãƒ¡ãƒ‹ãƒ¥ãƒ¼å
+    COLUMN_LIST_ID                  VARCHAR(40),                                -- é …ç›®å
+    COLUMN_ASSIGN_SEQ               INT,                                        -- ä»£å…¥é †åº
+    COL_TYPE                        VARCHAR(2),                                 -- ç™»éŒ²æ–¹å¼
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- •Ï”–¼
-    ASSIGN_SEQ                      INT,                                        -- ‘ã“ü‡˜
-    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL˜AŒg
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- å¤‰æ•°å
+    ASSIGN_SEQ                      INT,                                        -- ä»£å…¥é †åº
+    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULLé€£æº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(COLUMN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSL_VALUE_AUTOREG_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    COLUMN_ID                       VARCHAR(40),                                -- €”Ô
-    MENU_ID                         VARCHAR(40),                                -- ƒƒjƒ…[–¼
-    COLUMN_LIST_ID                  VARCHAR(40),                                -- €–Ú–¼
-    COLUMN_ASSIGN_SEQ               INT,                                        -- ‘ã“ü‡˜
-    COL_TYPE                        VARCHAR(2),                                 -- “o˜^•ûŽ®
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    COLUMN_ID                       VARCHAR(40),                                -- é …ç•ª
+    MENU_ID                         VARCHAR(40),                                -- ãƒ¡ãƒ‹ãƒ¥ãƒ¼å
+    COLUMN_LIST_ID                  VARCHAR(40),                                -- é …ç›®å
+    COLUMN_ASSIGN_SEQ               INT,                                        -- ä»£å…¥é †åº
+    COL_TYPE                        VARCHAR(2),                                 -- ç™»éŒ²æ–¹å¼
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- •Ï”–¼
-    ASSIGN_SEQ                      INT,                                        -- ‘ã“ü‡˜
-    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL˜AŒg
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- å¤‰æ•°å
+    ASSIGN_SEQ                      INT,                                        -- ä»£å…¥é †åº
+    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULLé€£æº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20206 Legacy ì‹Æ‘ÎÛƒzƒXƒg
+-- 20206 Legacy ä½œæ¥­å¯¾è±¡ãƒ›ã‚¹ãƒˆ
 CREATE TABLE T_ANSL_TGT_HOST
 (
-    PHO_LINK_ID                     VARCHAR(40),                                -- €”Ô
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹ÆŽÀs”Ô†
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“
+    PHO_LINK_ID                     VARCHAR(40),                                -- é …ç•ª
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­å®Ÿè¡Œç•ªå·
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    SYSTEM_ID                       VARCHAR(40),                                -- ƒzƒXƒg
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    SYSTEM_ID                       VARCHAR(40),                                -- ãƒ›ã‚¹ãƒˆ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(PHO_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
 
--- 20207 Legacy ‘ã“ü’lŠÇ—
+-- 20207 Legacy ä»£å…¥å€¤ç®¡ç†
 CREATE TABLE T_ANSL_VALUE
 (
-    ASSIGN_ID                       VARCHAR(40),                                -- €”Ô
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹ÆŽÀs”Ô†
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“
+    ASSIGN_ID                       VARCHAR(40),                                -- é …ç•ª
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­å®Ÿè¡Œç•ªå·
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    SYSTEM_ID                       VARCHAR(40),                                -- ƒzƒXƒg
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- •Ï”–¼
-    SENSITIVE_FLAG                  VARCHAR(2),                                 -- SensitiveÝ’è
-    VARS_ENTRY                      TEXT,                                       -- ’l
-    VARS_ENTRY_FILE                 VARCHAR(255),                               -- ƒtƒ@ƒCƒ‹
-    ASSIGN_SEQ                      INT,                                        -- ‘ã“ü‡˜
-    VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- ƒeƒ“ƒvƒŒ[ƒg•Ï”Žg—p—L–³
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    SYSTEM_ID                       VARCHAR(40),                                -- ãƒ›ã‚¹ãƒˆ
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- å¤‰æ•°å
+    SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitiveè¨­å®š
+    VARS_ENTRY                      TEXT,                                       -- å€¤
+    VARS_ENTRY_FILE                 VARCHAR(255),                               -- ãƒ•ã‚¡ã‚¤ãƒ«
+    ASSIGN_SEQ                      INT,                                        -- ä»£å…¥é †åº
+    VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- ãƒ†ãƒ³ãƒ—ãƒ¬ãƒ¼ãƒˆå¤‰æ•°ä½¿ç”¨æœ‰ç„¡
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(ASSIGN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
 
--- 20209 Legacy ì‹ÆŠÇ—
+-- 20209 Legacy ä½œæ¥­ç®¡ç†
 CREATE TABLE T_ANSL_EXEC_STS_INST
 (
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹Æ”Ô†
-    RUN_MODE                        VARCHAR(2),                                 -- ŽÀsŽí•Ê
-    STATUS_ID                       VARCHAR(2),                                 -- ƒXƒe[ƒ^ƒX
-    EXEC_MODE                       VARCHAR(2),                                 -- ŽÀsƒGƒ“ƒWƒ“
-    CONDUCTOR_NAME                  VARCHAR(255),                               -- ŒÄoŒ³Conductor
-    EXECUTION_USER                  VARCHAR(255),                               -- ŽÀsƒ†[ƒU
-    TIME_REGISTER                   DATETIME(6),                                -- “o˜^“úŽž
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­ç•ªå·
+    RUN_MODE                        VARCHAR(2),                                 -- å®Ÿè¡Œç¨®åˆ¥
+    STATUS_ID                       VARCHAR(2),                                 -- ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    EXEC_MODE                       VARCHAR(2),                                 -- å®Ÿè¡Œã‚¨ãƒ³ã‚¸ãƒ³
+    CONDUCTOR_NAME                  VARCHAR(255),                               -- å‘¼å‡ºå…ƒConductor
+    EXECUTION_USER                  VARCHAR(255),                               -- å®Ÿè¡Œãƒ¦ãƒ¼ã‚¶
+    TIME_REGISTER                   DATETIME(6),                                -- ç™»éŒ²æ—¥æ™‚
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement/ID
-    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/–¼Ì
-    I_TIME_LIMIT                    INT,                                        -- Movement/’x‰„ƒ^ƒCƒ}[
-    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/ƒzƒXƒgŽw’èŒ`Ž®
-    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible—˜—pî•ñ/•À—ñŽÀs”
-    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/WinRMÚ‘±
-    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible—˜—pî•ñ/ƒwƒbƒ_[ƒZƒNƒVƒ‡ƒ“
-    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller—˜—pî•ñ/ŽÀsŠÂ‹«
+    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/åç§°
+    I_TIME_LIMIT                    INT,                                        -- Movement/é…å»¶ã‚¿ã‚¤ãƒžãƒ¼
+    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ›ã‚¹ãƒˆæŒ‡å®šå½¢å¼
+    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ä¸¦åˆ—å®Ÿè¡Œæ•°
+    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/WinRMæŽ¥ç¶š
+    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ˜ãƒƒãƒ€ãƒ¼ã‚»ã‚¯ã‚·ãƒ§ãƒ³
+    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controlleråˆ©ç”¨æƒ…å ±/å®Ÿè¡Œç’°å¢ƒ
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/No.
-    I_OPERATION_NAME                VARCHAR(255),                               -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/–¼Ì
-    FILE_INPUT                      VARCHAR(1024),                              -- “ü—Íƒf[ƒ^/“Š“üƒf[ƒ^
-    FILE_RESULT                     VARCHAR(1024),                              -- o—Íƒf[ƒ^/Œ‹‰Êƒf[ƒ^
-    TIME_BOOK                       DATETIME(6),                                -- ì‹Æó‹µ/—\–ñ“úŽž
-    TIME_START                      DATETIME(6),                                -- ì‹Æó‹µ/ŠJŽn“úŽž
-    TIME_END                        DATETIME(6),                                -- ì‹Æó‹µ/I—¹“úŽž
-    COLLECT_STATUS                  VARCHAR(2),                                 -- ŽûWó‹µ/ƒXƒe[ƒ^ƒX
-    COLLECT_LOG                     VARCHAR(1024),                              -- ŽûWó‹µ/ŽûWƒƒO
-    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- ConductorƒCƒ“ƒXƒ^ƒ“ƒX”Ô†
-    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ƒIƒvƒVƒ‡ƒ“ƒpƒ‰ƒ[ƒ^
-    LOGFILELIST_JSON                TEXT,                                       -- •ªŠ„‚³‚ê‚½ŽÀsƒƒOî•ñ
-    MULTIPLELOG_MODE                INT,                                        -- ŽÀsƒƒO•ªŠ„ƒtƒ‰ƒO
-    EXECUTE_HOST_NAME               VARCHAR(40),                                -- ŽÀsƒzƒXƒg–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/No.
+    I_OPERATION_NAME                VARCHAR(255),                               -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/åç§°
+    FILE_INPUT                      VARCHAR(1024),                              -- å…¥åŠ›ãƒ‡ãƒ¼ã‚¿/æŠ•å…¥ãƒ‡ãƒ¼ã‚¿
+    FILE_RESULT                     VARCHAR(1024),                              -- å‡ºåŠ›ãƒ‡ãƒ¼ã‚¿/çµæžœãƒ‡ãƒ¼ã‚¿
+    TIME_BOOK                       DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/äºˆç´„æ—¥æ™‚
+    TIME_START                      DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/é–‹å§‹æ—¥æ™‚
+    TIME_END                        DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/çµ‚äº†æ—¥æ™‚
+    COLLECT_STATUS                  VARCHAR(2),                                 -- åŽé›†çŠ¶æ³/ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    COLLECT_LOG                     VARCHAR(1024),                              -- åŽé›†çŠ¶æ³/åŽé›†ãƒ­ã‚°
+    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- Conductorã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ç•ªå·
+    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ã‚ªãƒ—ã‚·ãƒ§ãƒ³ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+    LOGFILELIST_JSON                TEXT,                                       -- åˆ†å‰²ã•ã‚ŒãŸå®Ÿè¡Œãƒ­ã‚°æƒ…å ±
+    MULTIPLELOG_MODE                INT,                                        -- å®Ÿè¡Œãƒ­ã‚°åˆ†å‰²ãƒ•ãƒ©ã‚°
+    EXECUTE_HOST_NAME               VARCHAR(40),                                -- å®Ÿè¡Œãƒ›ã‚¹ãƒˆå
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSL_EXEC_STS_INST_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹Æ”Ô†
-    RUN_MODE                        VARCHAR(2),                                 -- ŽÀsŽí•Ê
-    STATUS_ID                       VARCHAR(2),                                 -- ƒXƒe[ƒ^ƒX
-    EXEC_MODE                       VARCHAR(2),                                 -- ŽÀsƒGƒ“ƒWƒ“
-    CONDUCTOR_NAME                  VARCHAR(255),                               -- ŒÄoŒ³Conductor
-    EXECUTION_USER                  VARCHAR(255),                               -- ŽÀsƒ†[ƒU
-    TIME_REGISTER                   DATETIME(6),                                -- “o˜^“úŽž
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­ç•ªå·
+    RUN_MODE                        VARCHAR(2),                                 -- å®Ÿè¡Œç¨®åˆ¥
+    STATUS_ID                       VARCHAR(2),                                 -- ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    EXEC_MODE                       VARCHAR(2),                                 -- å®Ÿè¡Œã‚¨ãƒ³ã‚¸ãƒ³
+    CONDUCTOR_NAME                  VARCHAR(255),                               -- å‘¼å‡ºå…ƒConductor
+    EXECUTION_USER                  VARCHAR(255),                               -- å®Ÿè¡Œãƒ¦ãƒ¼ã‚¶
+    TIME_REGISTER                   DATETIME(6),                                -- ç™»éŒ²æ—¥æ™‚
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement/ID
-    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/–¼Ì
-    I_TIME_LIMIT                    INT,                                        -- Movement/’x‰„ƒ^ƒCƒ}[
-    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/ƒzƒXƒgŽw’èŒ`Ž®
-    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible—˜—pî•ñ/•À—ñŽÀs”
-    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/WinRMÚ‘±
-    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible—˜—pî•ñ/ƒwƒbƒ_[ƒZƒNƒVƒ‡ƒ“
-    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller—˜—pî•ñ/ŽÀsŠÂ‹«
+    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/åç§°
+    I_TIME_LIMIT                    INT,                                        -- Movement/é…å»¶ã‚¿ã‚¤ãƒžãƒ¼
+    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ›ã‚¹ãƒˆæŒ‡å®šå½¢å¼
+    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ä¸¦åˆ—å®Ÿè¡Œæ•°
+    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/WinRMæŽ¥ç¶š
+    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ˜ãƒƒãƒ€ãƒ¼ã‚»ã‚¯ã‚·ãƒ§ãƒ³
+    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controlleråˆ©ç”¨æƒ…å ±/å®Ÿè¡Œç’°å¢ƒ
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/No.
-    I_OPERATION_NAME                VARCHAR(255),                               -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/–¼Ì
-    FILE_INPUT                      VARCHAR(1024),                              -- “ü—Íƒf[ƒ^/“Š“üƒf[ƒ^
-    FILE_RESULT                     VARCHAR(1024),                              -- o—Íƒf[ƒ^/Œ‹‰Êƒf[ƒ^
-    TIME_BOOK                       DATETIME(6),                                -- ì‹Æó‹µ/—\–ñ“úŽž
-    TIME_START                      DATETIME(6),                                -- ì‹Æó‹µ/ŠJŽn“úŽž
-    TIME_END                        DATETIME(6),                                -- ì‹Æó‹µ/I—¹“úŽž
-    COLLECT_STATUS                  VARCHAR(2),                                 -- ŽûWó‹µ/ƒXƒe[ƒ^ƒX
-    COLLECT_LOG                     VARCHAR(1024),                              -- ŽûWó‹µ/ŽûWƒƒO
-    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- ConductorƒCƒ“ƒXƒ^ƒ“ƒX”Ô†
-    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ƒIƒvƒVƒ‡ƒ“ƒpƒ‰ƒ[ƒ^
-    LOGFILELIST_JSON                TEXT,                                       -- •ªŠ„‚³‚ê‚½ŽÀsƒƒOî•ñ
-    MULTIPLELOG_MODE                INT,                                        -- ŽÀsƒƒO•ªŠ„ƒtƒ‰ƒO
-    EXECUTE_HOST_NAME               VARCHAR(40),                                -- ŽÀsƒzƒXƒg–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/No.
+    I_OPERATION_NAME                VARCHAR(255),                               -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/åç§°
+    FILE_INPUT                      VARCHAR(1024),                              -- å…¥åŠ›ãƒ‡ãƒ¼ã‚¿/æŠ•å…¥ãƒ‡ãƒ¼ã‚¿
+    FILE_RESULT                     VARCHAR(1024),                              -- å‡ºåŠ›ãƒ‡ãƒ¼ã‚¿/çµæžœãƒ‡ãƒ¼ã‚¿
+    TIME_BOOK                       DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/äºˆç´„æ—¥æ™‚
+    TIME_START                      DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/é–‹å§‹æ—¥æ™‚
+    TIME_END                        DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/çµ‚äº†æ—¥æ™‚
+    COLLECT_STATUS                  VARCHAR(2),                                 -- åŽé›†çŠ¶æ³/ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    COLLECT_LOG                     VARCHAR(1024),                              -- åŽé›†çŠ¶æ³/åŽé›†ãƒ­ã‚°
+    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- Conductorã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ç•ªå·
+    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ã‚ªãƒ—ã‚·ãƒ§ãƒ³ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+    LOGFILELIST_JSON                TEXT,                                       -- åˆ†å‰²ã•ã‚ŒãŸå®Ÿè¡Œãƒ­ã‚°æƒ…å ±
+    MULTIPLELOG_MODE                INT,                                        -- å®Ÿè¡Œãƒ­ã‚°åˆ†å‰²ãƒ•ãƒ©ã‚°
+    EXECUTE_HOST_NAME               VARCHAR(40),                                -- å®Ÿè¡Œãƒ›ã‚¹ãƒˆå
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20301 Pionner Movemnetˆê——
+-- 20301 Pionner Movemnetä¸€è¦§
 CREATE VIEW V_ANSP_MOVEMENT AS
 SELECT 
 MOVEMENT_ID,
@@ -383,345 +383,345 @@ WHERE
 
 
 
--- 20302 Pionner ‘Î˜bŽí•Ê
+-- 20302 Pionner å¯¾è©±ç¨®åˆ¥
 CREATE TABLE T_ANSP_DIALOG_TYPE
 (
-    DIALOG_TYPE_ID                  VARCHAR(40),                                -- €”Ô
-    DIALOG_TYPE_NAME                VARCHAR(255),                               -- ‘Î˜bŽí•Ê–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    DIALOG_TYPE_ID                  VARCHAR(40),                                -- é …ç•ª
+    DIALOG_TYPE_NAME                VARCHAR(255),                               -- å¯¾è©±ç¨®åˆ¥å
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(DIALOG_TYPE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSP_DIALOG_TYPE_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    DIALOG_TYPE_ID                  VARCHAR(40),                                -- €”Ô
-    DIALOG_TYPE_NAME                VARCHAR(255),                               -- ‘Î˜bŽí•Ê–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    DIALOG_TYPE_ID                  VARCHAR(40),                                -- é …ç•ª
+    DIALOG_TYPE_NAME                VARCHAR(255),                               -- å¯¾è©±ç¨®åˆ¥å
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20303 Pionner OSŽí•Ê
+-- 20303 Pionner OSç¨®åˆ¥
 CREATE TABLE T_ANSP_OS_TYPE
 (
-    OS_TYPE_ID                      VARCHAR(40),                                -- €”Ô
-    OS_TYPE_NAME                    VARCHAR(255),                               -- OSŽí•Ê–¼
+    OS_TYPE_ID                      VARCHAR(40),                                -- é …ç•ª
+    OS_TYPE_NAME                    VARCHAR(255),                               -- OSç¨®åˆ¥å
     HARDAWRE_TYPE_SV                VARCHAR(2),                                 -- SV
     HARDAWRE_TYPE_ST                VARCHAR(2),                                 -- ST
     HARDAWRE_TYPE_NW                VARCHAR(2),                                 -- NW
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(OS_TYPE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSP_OS_TYPE_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    OS_TYPE_ID                      VARCHAR(40),                                -- €”Ô
-    OS_TYPE_NAME                    VARCHAR(255),                               -- OSŽí•Ê–¼
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    OS_TYPE_ID                      VARCHAR(40),                                -- é …ç•ª
+    OS_TYPE_NAME                    VARCHAR(255),                               -- OSç¨®åˆ¥å
     HARDAWRE_TYPE_SV                VARCHAR(2),                                 -- SV
     HARDAWRE_TYPE_ST                VARCHAR(2),                                 -- ST
     HARDAWRE_TYPE_NW                VARCHAR(2),                                 -- NW
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20304 Pionner ‘Î˜bƒtƒ@ƒCƒ‹‘fÞW
+-- 20304 Pionner å¯¾è©±ãƒ•ã‚¡ã‚¤ãƒ«ç´ æé›†
 CREATE TABLE T_ANSP_MATL_COLL
 (
-    DIALOG_MATTER_ID                VARCHAR(40),                                -- €”Ô
-    DIALOG_TYPE_ID                  VARCHAR(40),                                -- ‘Î˜bŽí•Ê
-    OS_TYPE_ID                      VARCHAR(40),                                -- OSŽí•Ê
-    DIALOG_MATTER_FILE              VARCHAR(255),                               -- ‘Î˜bƒtƒ@ƒCƒ‹‘fÞ
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    DIALOG_MATTER_ID                VARCHAR(40),                                -- é …ç•ª
+    DIALOG_TYPE_ID                  VARCHAR(40),                                -- å¯¾è©±ç¨®åˆ¥
+    OS_TYPE_ID                      VARCHAR(40),                                -- OSç¨®åˆ¥
+    DIALOG_MATTER_FILE              VARCHAR(255),                               -- å¯¾è©±ãƒ•ã‚¡ã‚¤ãƒ«ç´ æ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(DIALOG_MATTER_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSP_MATL_COLL_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    DIALOG_MATTER_ID                VARCHAR(40),                                -- €”Ô
-    DIALOG_TYPE_ID                  VARCHAR(40),                                -- ‘Î˜bŽí•Ê
-    OS_TYPE_ID                      VARCHAR(40),                                -- OSŽí•Ê
-    DIALOG_MATTER_FILE              VARCHAR(255),                               -- ‘Î˜bƒtƒ@ƒCƒ‹‘fÞ
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    DIALOG_MATTER_ID                VARCHAR(40),                                -- é …ç•ª
+    DIALOG_TYPE_ID                  VARCHAR(40),                                -- å¯¾è©±ç¨®åˆ¥
+    OS_TYPE_ID                      VARCHAR(40),                                -- OSç¨®åˆ¥
+    DIALOG_MATTER_FILE              VARCHAR(255),                               -- å¯¾è©±ãƒ•ã‚¡ã‚¤ãƒ«ç´ æ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20305 Pionner Movement-•Ï”•R•t
+-- 20305 Pionner Movement-å¤‰æ•°ç´ä»˜
 CREATE TABLE T_ANSP_MVMT_VAR_LINK
 (
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- €”Ô
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- é …ç•ª
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    VARS_NAME                       VARCHAR(255),                               -- •Ï”–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    VARS_NAME                       VARCHAR(255),                               -- å¤‰æ•°å
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(MVMT_VAR_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
 
--- 20306 Pioneer Movement-‘Î˜bŽí•Ê•R•t
+-- 20306 Pioneer Movement-å¯¾è©±ç¨®åˆ¥ç´ä»˜
 CREATE TABLE T_ANSP_MVMT_MATL_LINK
 (
-    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- €”Ô
+    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- é …ç•ª
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    DIALOG_TYPE_ID                  VARCHAR(40),                                -- ‘Î˜bŽí•Ê
-    INCLUDE_SEQ                     INT,                                        -- ƒCƒ“ƒNƒ‹[ƒh‡˜
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    DIALOG_TYPE_ID                  VARCHAR(40),                                -- å¯¾è©±ç¨®åˆ¥
+    INCLUDE_SEQ                     INT,                                        -- ã‚¤ãƒ³ã‚¯ãƒ«ãƒ¼ãƒ‰é †åº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(MVMT_MATL_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSP_MVMT_MATL_LINK_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- €”Ô
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    MVMT_MATL_LINK_ID               VARCHAR(40),                                -- é …ç•ª
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    DIALOG_TYPE_ID                  VARCHAR(40),                                -- ‘Î˜bŽí•Ê
-    INCLUDE_SEQ                     INT,                                        -- ƒCƒ“ƒNƒ‹[ƒh‡˜
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    DIALOG_TYPE_ID                  VARCHAR(40),                                -- å¯¾è©±ç¨®åˆ¥
+    INCLUDE_SEQ                     INT,                                        -- ã‚¤ãƒ³ã‚¯ãƒ«ãƒ¼ãƒ‰é †åº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20307 Pioneer ‘ã“ü’lŽ©“®“o˜^
+-- 20307 Pioneer ä»£å…¥å€¤è‡ªå‹•ç™»éŒ²
 CREATE TABLE T_ANSP_VALUE_AUTOREG
 (
-    COLUMN_ID                       VARCHAR(40),                                -- €”Ô
-    MENU_ID                         VARCHAR(40),                                -- ƒƒjƒ…[–¼
-    COLUMN_LIST_ID                  VARCHAR(40),                                -- €–Ú–¼
-    COLUMN_ASSIGN_SEQ               INT,                                        -- ‘ã“ü‡˜
-    COL_TYPE                        VARCHAR(2),                                 -- “o˜^•ûŽ®
+    COLUMN_ID                       VARCHAR(40),                                -- é …ç•ª
+    MENU_ID                         VARCHAR(40),                                -- ãƒ¡ãƒ‹ãƒ¥ãƒ¼å
+    COLUMN_LIST_ID                  VARCHAR(40),                                -- é …ç›®å
+    COLUMN_ASSIGN_SEQ               INT,                                        -- ä»£å…¥é †åº
+    COL_TYPE                        VARCHAR(2),                                 -- ç™»éŒ²æ–¹å¼
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- •Ï”–¼
-    ASSIGN_SEQ                      INT,                                        -- ‘ã“ü‡˜
-    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL˜AŒg
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- å¤‰æ•°å
+    ASSIGN_SEQ                      INT,                                        -- ä»£å…¥é †åº
+    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULLé€£æº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(COLUMN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSP_VALUE_AUTOREG_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    COLUMN_ID                       VARCHAR(40),                                -- €”Ô
-    MENU_ID                         VARCHAR(40),                                -- ƒƒjƒ…[–¼
-    COLUMN_LIST_ID                  VARCHAR(40),                                -- €–Ú–¼
-    COLUMN_ASSIGN_SEQ               INT,                                        -- ‘ã“ü‡˜
-    COL_TYPE                        VARCHAR(2),                                 -- “o˜^•ûŽ®
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    COLUMN_ID                       VARCHAR(40),                                -- é …ç•ª
+    MENU_ID                         VARCHAR(40),                                -- ãƒ¡ãƒ‹ãƒ¥ãƒ¼å
+    COLUMN_LIST_ID                  VARCHAR(40),                                -- é …ç›®å
+    COLUMN_ASSIGN_SEQ               INT,                                        -- ä»£å…¥é †åº
+    COL_TYPE                        VARCHAR(2),                                 -- ç™»éŒ²æ–¹å¼
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- •Ï”–¼
-    ASSIGN_SEQ                      INT,                                        -- ‘ã“ü‡˜
-    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULL˜AŒg
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- å¤‰æ•°å
+    ASSIGN_SEQ                      INT,                                        -- ä»£å…¥é †åº
+    NULL_DATA_HANDLING_FLG          VARCHAR(2),                                 -- NULLé€£æº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
--- 20308 Pioneer ì‹Æ‘ÎÛƒzƒXƒg
+-- 20308 Pioneer ä½œæ¥­å¯¾è±¡ãƒ›ã‚¹ãƒˆ
 CREATE TABLE T_ANSP_TGT_HOST
 (
-    PHO_LINK_ID                     VARCHAR(40),                                -- €”Ô
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹ÆŽÀs”Ô†
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“
+    PHO_LINK_ID                     VARCHAR(40),                                -- é …ç•ª
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­å®Ÿè¡Œç•ªå·
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    SYSTEM_ID                       VARCHAR(40),                                -- ƒzƒXƒg
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    SYSTEM_ID                       VARCHAR(40),                                -- ãƒ›ã‚¹ãƒˆ
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(PHO_LINK_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
 
--- 20309 Pioneer ‘ã“ü’lŠÇ—
+-- 20309 Pioneer ä»£å…¥å€¤ç®¡ç†
 CREATE TABLE T_ANSP_VALUE
 (
-    ASSIGN_ID                       VARCHAR(40),                                -- €”Ô
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹ÆŽÀs”Ô†
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“
+    ASSIGN_ID                       VARCHAR(40),                                -- é …ç•ª
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­å®Ÿè¡Œç•ªå·
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement
-    SYSTEM_ID                       VARCHAR(40),                                -- ƒzƒXƒg
-    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- •Ï”–¼
-    SENSITIVE_FLAG                  VARCHAR(2),                                 -- SensitiveÝ’è
-    VARS_ENTRY                      TEXT,                                       -- ’l
-    VARS_ENTRY_FILE                 VARCHAR(255),                               -- ƒtƒ@ƒCƒ‹
-    ASSIGN_SEQ                      INT,                                        -- ‘ã“ü‡˜
-    VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- ƒeƒ“ƒvƒŒ[ƒg•Ï”Žg—p—L–³
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    SYSTEM_ID                       VARCHAR(40),                                -- ãƒ›ã‚¹ãƒˆ
+    MVMT_VAR_LINK_ID                VARCHAR(40),                                -- å¤‰æ•°å
+    SENSITIVE_FLAG                  VARCHAR(2),                                 -- Sensitiveè¨­å®š
+    VARS_ENTRY                      TEXT,                                       -- å€¤
+    VARS_ENTRY_FILE                 VARCHAR(255),                               -- ãƒ•ã‚¡ã‚¤ãƒ«
+    ASSIGN_SEQ                      INT,                                        -- ä»£å…¥é †åº
+    VARS_ENTRY_USE_TPFVARS          VARCHAR(1),                                 -- ãƒ†ãƒ³ãƒ—ãƒ¬ãƒ¼ãƒˆå¤‰æ•°ä½¿ç”¨æœ‰ç„¡
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(ASSIGN_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 
 
--- 20310 Pioneer ì‹ÆŠÇ—
+-- 20310 Pioneer ä½œæ¥­ç®¡ç†
 CREATE TABLE T_ANSP_EXEC_STS_INST
 (
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹Æ”Ô†
-    RUN_MODE                        VARCHAR(2),                                 -- ŽÀsŽí•Ê
-    STATUS_ID                       VARCHAR(2),                                 -- ƒXƒe[ƒ^ƒX
-    EXEC_MODE                       VARCHAR(2),                                 -- ŽÀsƒGƒ“ƒWƒ“
-    CONDUCTOR_NAME                  VARCHAR(255),                               -- ŒÄoŒ³Conductor
-    EXECUTION_USER                  VARCHAR(255),                               -- ŽÀsƒ†[ƒU
-    TIME_REGISTER                   DATETIME(6),                                -- “o˜^“úŽž
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­ç•ªå·
+    RUN_MODE                        VARCHAR(2),                                 -- å®Ÿè¡Œç¨®åˆ¥
+    STATUS_ID                       VARCHAR(2),                                 -- ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    EXEC_MODE                       VARCHAR(2),                                 -- å®Ÿè¡Œã‚¨ãƒ³ã‚¸ãƒ³
+    CONDUCTOR_NAME                  VARCHAR(255),                               -- å‘¼å‡ºå…ƒConductor
+    EXECUTION_USER                  VARCHAR(255),                               -- å®Ÿè¡Œãƒ¦ãƒ¼ã‚¶
+    TIME_REGISTER                   DATETIME(6),                                -- ç™»éŒ²æ—¥æ™‚
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement/ID
-    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/–¼Ì
-    I_TIME_LIMIT                    INT,                                        -- Movement/’x‰„ƒ^ƒCƒ}[
-    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/ƒzƒXƒgŽw’èŒ`Ž®
-    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible—˜—pî•ñ/•À—ñŽÀs”
-    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/WinRMÚ‘±
-    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible—˜—pî•ñ/ƒwƒbƒ_[ƒZƒNƒVƒ‡ƒ“
-    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller—˜—pî•ñ/ŽÀsŠÂ‹«
+    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/åç§°
+    I_TIME_LIMIT                    INT,                                        -- Movement/é…å»¶ã‚¿ã‚¤ãƒžãƒ¼
+    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ›ã‚¹ãƒˆæŒ‡å®šå½¢å¼
+    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ä¸¦åˆ—å®Ÿè¡Œæ•°
+    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/WinRMæŽ¥ç¶š
+    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ˜ãƒƒãƒ€ãƒ¼ã‚»ã‚¯ã‚·ãƒ§ãƒ³
+    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controlleråˆ©ç”¨æƒ…å ±/å®Ÿè¡Œç’°å¢ƒ
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/No.
-    I_OPERATION_NAME                VARCHAR(255),                               -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/–¼Ì
-    FILE_INPUT                      VARCHAR(1024),                              -- “ü—Íƒf[ƒ^/“Š“üƒf[ƒ^
-    FILE_RESULT                     VARCHAR(1024),                              -- o—Íƒf[ƒ^/Œ‹‰Êƒf[ƒ^
-    TIME_BOOK                       DATETIME(6),                                -- ì‹Æó‹µ/—\–ñ“úŽž
-    TIME_START                      DATETIME(6),                                -- ì‹Æó‹µ/ŠJŽn“úŽž
-    TIME_END                        DATETIME(6),                                -- ì‹Æó‹µ/I—¹“úŽž
-    COLLECT_STATUS                  VARCHAR(2),                                 -- ŽûWó‹µ/ƒXƒe[ƒ^ƒX
-    COLLECT_LOG                     VARCHAR(1024),                              -- ŽûWó‹µ/ŽûWƒƒO
-    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- ConductorƒCƒ“ƒXƒ^ƒ“ƒX”Ô†
-    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ƒIƒvƒVƒ‡ƒ“ƒpƒ‰ƒ[ƒ^
-    LOGFILELIST_JSON                TEXT,                                       -- •ªŠ„‚³‚ê‚½ŽÀsƒƒOî•ñ
-    MULTIPLELOG_MODE                INT,                                        -- ŽÀsƒƒO•ªŠ„ƒtƒ‰ƒO
-    EXECUTE_HOST_NAME               VARCHAR(40),                                -- ŽÀsƒzƒXƒg–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/No.
+    I_OPERATION_NAME                VARCHAR(255),                               -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/åç§°
+    FILE_INPUT                      VARCHAR(1024),                              -- å…¥åŠ›ãƒ‡ãƒ¼ã‚¿/æŠ•å…¥ãƒ‡ãƒ¼ã‚¿
+    FILE_RESULT                     VARCHAR(1024),                              -- å‡ºåŠ›ãƒ‡ãƒ¼ã‚¿/çµæžœãƒ‡ãƒ¼ã‚¿
+    TIME_BOOK                       DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/äºˆç´„æ—¥æ™‚
+    TIME_START                      DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/é–‹å§‹æ—¥æ™‚
+    TIME_END                        DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/çµ‚äº†æ—¥æ™‚
+    COLLECT_STATUS                  VARCHAR(2),                                 -- åŽé›†çŠ¶æ³/ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    COLLECT_LOG                     VARCHAR(1024),                              -- åŽé›†çŠ¶æ³/åŽé›†ãƒ­ã‚°
+    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- Conductorã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ç•ªå·
+    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ã‚ªãƒ—ã‚·ãƒ§ãƒ³ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+    LOGFILELIST_JSON                TEXT,                                       -- åˆ†å‰²ã•ã‚ŒãŸå®Ÿè¡Œãƒ­ã‚°æƒ…å ±
+    MULTIPLELOG_MODE                INT,                                        -- å®Ÿè¡Œãƒ­ã‚°åˆ†å‰²ãƒ•ãƒ©ã‚°
+    EXECUTE_HOST_NAME               VARCHAR(40),                                -- å®Ÿè¡Œãƒ›ã‚¹ãƒˆå
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(EXECUTION_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 CREATE TABLE T_ANSP_EXEC_STS_INST_JNL
 (
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- —š—ð—pƒV[ƒPƒ“ƒX
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- —š—ð—p•ÏX“úŽž
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- —š—ð—p•ÏXŽí•Ê
-    EXECUTION_NO                    VARCHAR(40),                                -- ì‹Æ”Ô†
-    RUN_MODE                        VARCHAR(2),                                 -- ŽÀsŽí•Ê
-    STATUS_ID                       VARCHAR(2),                                 -- ƒXƒe[ƒ^ƒX
-    EXEC_MODE                       VARCHAR(2),                                 -- ŽÀsƒGƒ“ƒWƒ“
-    CONDUCTOR_NAME                  VARCHAR(255),                               -- ŒÄoŒ³Conductor
-    EXECUTION_USER                  VARCHAR(255),                               -- ŽÀsƒ†[ƒU
-    TIME_REGISTER                   DATETIME(6),                                -- “o˜^“úŽž
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- å±¥æ­´ç”¨ã‚·ãƒ¼ã‚±ãƒ³ã‚¹
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- å±¥æ­´ç”¨å¤‰æ›´æ—¥æ™‚
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- å±¥æ­´ç”¨å¤‰æ›´ç¨®åˆ¥
+    EXECUTION_NO                    VARCHAR(40),                                -- ä½œæ¥­ç•ªå·
+    RUN_MODE                        VARCHAR(2),                                 -- å®Ÿè¡Œç¨®åˆ¥
+    STATUS_ID                       VARCHAR(2),                                 -- ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    EXEC_MODE                       VARCHAR(2),                                 -- å®Ÿè¡Œã‚¨ãƒ³ã‚¸ãƒ³
+    CONDUCTOR_NAME                  VARCHAR(255),                               -- å‘¼å‡ºå…ƒConductor
+    EXECUTION_USER                  VARCHAR(255),                               -- å®Ÿè¡Œãƒ¦ãƒ¼ã‚¶
+    TIME_REGISTER                   DATETIME(6),                                -- ç™»éŒ²æ—¥æ™‚
     MOVEMENT_ID                     VARCHAR(40),                                -- Movement/ID
-    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/–¼Ì
-    I_TIME_LIMIT                    INT,                                        -- Movement/’x‰„ƒ^ƒCƒ}[
-    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/ƒzƒXƒgŽw’èŒ`Ž®
-    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible—˜—pî•ñ/•À—ñŽÀs”
-    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible—˜—pî•ñ/WinRMÚ‘±
-    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible—˜—pî•ñ/ƒwƒbƒ_[ƒZƒNƒVƒ‡ƒ“
-    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller—˜—pî•ñ/ŽÀsŠÂ‹«
+    I_MOVEMENT_NAME                 VARCHAR(255),                               -- Movement/åç§°
+    I_TIME_LIMIT                    INT,                                        -- Movement/é…å»¶ã‚¿ã‚¤ãƒžãƒ¼
+    I_ANS_HOST_DESIGNATE_TYPE_ID    VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ›ã‚¹ãƒˆæŒ‡å®šå½¢å¼
+    I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ä¸¦åˆ—å®Ÿè¡Œæ•°
+    I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/WinRMæŽ¥ç¶š
+    I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansibleåˆ©ç”¨æƒ…å ±/ãƒ˜ãƒƒãƒ€ãƒ¼ã‚»ã‚¯ã‚·ãƒ§ãƒ³
+    I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controlleråˆ©ç”¨æƒ…å ±/å®Ÿè¡Œç’°å¢ƒ
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
-    OPERATION_ID                    VARCHAR(40),                                -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/No.
-    I_OPERATION_NAME                VARCHAR(255),                               -- ƒIƒyƒŒ[ƒVƒ‡ƒ“/–¼Ì
-    FILE_INPUT                      VARCHAR(1024),                              -- “ü—Íƒf[ƒ^/“Š“üƒf[ƒ^
-    FILE_RESULT                     VARCHAR(1024),                              -- o—Íƒf[ƒ^/Œ‹‰Êƒf[ƒ^
-    TIME_BOOK                       DATETIME(6),                                -- ì‹Æó‹µ/—\–ñ“úŽž
-    TIME_START                      DATETIME(6),                                -- ì‹Æó‹µ/ŠJŽn“úŽž
-    TIME_END                        DATETIME(6),                                -- ì‹Æó‹µ/I—¹“úŽž
-    COLLECT_STATUS                  VARCHAR(2),                                 -- ŽûWó‹µ/ƒXƒe[ƒ^ƒX
-    COLLECT_LOG                     VARCHAR(1024),                              -- ŽûWó‹µ/ŽûWƒƒO
-    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- ConductorƒCƒ“ƒXƒ^ƒ“ƒX”Ô†
-    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ƒIƒvƒVƒ‡ƒ“ƒpƒ‰ƒ[ƒ^
-    LOGFILELIST_JSON                TEXT,                                       -- •ªŠ„‚³‚ê‚½ŽÀsƒƒOî•ñ
-    MULTIPLELOG_MODE                INT,                                        -- ŽÀsƒƒO•ªŠ„ƒtƒ‰ƒO
-    EXECUTE_HOST_NAME               VARCHAR(40),                                -- ŽÀsƒzƒXƒg–¼
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    OPERATION_ID                    VARCHAR(40),                                -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/No.
+    I_OPERATION_NAME                VARCHAR(255),                               -- ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³/åç§°
+    FILE_INPUT                      VARCHAR(1024),                              -- å…¥åŠ›ãƒ‡ãƒ¼ã‚¿/æŠ•å…¥ãƒ‡ãƒ¼ã‚¿
+    FILE_RESULT                     VARCHAR(1024),                              -- å‡ºåŠ›ãƒ‡ãƒ¼ã‚¿/çµæžœãƒ‡ãƒ¼ã‚¿
+    TIME_BOOK                       DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/äºˆç´„æ—¥æ™‚
+    TIME_START                      DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/é–‹å§‹æ—¥æ™‚
+    TIME_END                        DATETIME(6),                                -- ä½œæ¥­çŠ¶æ³/çµ‚äº†æ—¥æ™‚
+    COLLECT_STATUS                  VARCHAR(2),                                 -- åŽé›†çŠ¶æ³/ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹
+    COLLECT_LOG                     VARCHAR(1024),                              -- åŽé›†çŠ¶æ³/åŽé›†ãƒ­ã‚°
+    CONDUCTOR_INSTANCE_NO           VARCHAR(40),                                -- Conductorã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ç•ªå·
+    I_ANS_EXEC_OPTIONS              TEXT,                                       -- ã‚ªãƒ—ã‚·ãƒ§ãƒ³ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+    LOGFILELIST_JSON                TEXT,                                       -- åˆ†å‰²ã•ã‚ŒãŸå®Ÿè¡Œãƒ­ã‚°æƒ…å ±
+    MULTIPLELOG_MODE                INT,                                        -- å®Ÿè¡Œãƒ­ã‚°åˆ†å‰²ãƒ•ãƒ©ã‚°
+    EXECUTE_HOST_NAME               VARCHAR(40),                                -- å®Ÿè¡Œãƒ›ã‚¹ãƒˆå
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 CREATE TABLE T_ANSC_PARSE_TYPE
 (
     PARSE_TYPE_ID                   VARCHAR(2),                                 -- ROW_ID
-    PARSE_TYPE_NAME                 VARCHAR(255),                               -- ƒp[ƒXŒ`Ž®–¼
-    DISP_SEQ                        INT,                                        -- •\Ž¦‡˜
-    NOTE                            TEXT,                                       -- ”õl
-    DISUSE_FLAG                     VARCHAR(1),                                 -- ”pŽ~ƒtƒ‰ƒO
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- ÅIXV“úŽž
-    LAST_UPDATE_USER                VARCHAR(40),                                -- ÅIXVŽÒ
+    PARSE_TYPE_NAME                 VARCHAR(255),                               -- ãƒ‘ãƒ¼ã‚¹å½¢å¼å
+    DISP_SEQ                        INT,                                        -- è¡¨ç¤ºé †åº
+    NOTE                            TEXT,                                       -- å‚™è€ƒ
+    DISUSE_FLAG                     VARCHAR(1),                                 -- å»ƒæ­¢ãƒ•ãƒ©ã‚°
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- æœ€çµ‚æ›´æ–°æ—¥æ™‚
+    LAST_UPDATE_USER                VARCHAR(40),                                -- æœ€çµ‚æ›´æ–°è€…
     PRIMARY KEY(PARSE_TYPE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 -- ------------------------------------------------------------
--- £ TABLE CREATE END
+-- â–² TABLE CREATE END
 -- ------------------------------------------------------------
 
 -- ------------------------------------------------------------
--- ¥TABLE UPDATE START
+-- â–¼TABLE UPDATE START
 -- ------------------------------------------------------------
--- 20101 ‹@Šíˆê——
+-- 20101 æ©Ÿå™¨ä¸€è¦§
 ALTER TABLE T_ANSC_DEVICE            MODIFY OS_TYPE_ID VARCHAR(40);
 ALTER TABLE T_ANSC_DEVICE_JNL        MODIFY OS_TYPE_ID VARCHAR(40);
--- 20412 Role ì‹ÆŠÇ—
+-- 20412 Role ä½œæ¥­ç®¡ç†
 ALTER TABLE T_ANSR_EXEC_STS_INST     ADD COLUMN  EXECUTE_HOST_NAME VARCHAR(40)  AFTER MULTIPLELOG_MODE;
 ALTER TABLE T_ANSR_EXEC_STS_INST_JNL ADD COLUMN  EXECUTE_HOST_NAME VARCHAR(40)  AFTER MULTIPLELOG_MODE;
 -- ------------------------------------------------------------
--- £ TABLE UPDATE END
+-- â–² TABLE UPDATE END
 -- ------------------------------------------------------------
 
 -- ------------------------------------------------------------
--- £ VIEW UPDATE START
+-- â–² VIEW UPDATE START
 -- ------------------------------------------------------------
--- V002_ì‹ÆŠÇ—ŒŸõƒrƒ…[
+-- V002_ä½œæ¥­ç®¡ç†æ¤œç´¢ãƒ“ãƒ¥ãƒ¼
 DROP VIEW V_ANSC_EXEC_STS_INST;
 
 CREATE VIEW V_ANSC_EXEC_STS_INST     AS
@@ -746,13 +746,13 @@ FROM
 WHERE
   DISUSE_FLAG = '0';
 -- ------------------------------------------------------------
--- £ VIEW UPDATE END
+-- â–² VIEW UPDATE END
 -- ------------------------------------------------------------
 
 -- ------------------------------------------------------------
--- ¥ VIEW CREATE START
+-- â–¼ VIEW CREATE START
 -- ------------------------------------------------------------
--- V011_‘ã“ü’lŽ©“®“o˜^_Movement–¼_•Ï”–¼ƒrƒ…[
+-- V011_ä»£å…¥å€¤è‡ªå‹•ç™»éŒ²_Movementå_å¤‰æ•°åãƒ“ãƒ¥ãƒ¼
 CREATE VIEW V_ANSL_VAL_VARS_LINK AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
@@ -790,7 +790,7 @@ TAB_A.DISUSE_FLAG = 0
 AND
 TAB_B.DISUSE_FLAG = 0;
 
--- V012_‘ã“ü’lŽ©“®“o˜^_Movement–¼_•Ï”–¼ƒrƒ…[
+-- V012_ä»£å…¥å€¤è‡ªå‹•ç™»éŒ²_Movementå_å¤‰æ•°åãƒ“ãƒ¥ãƒ¼
 CREATE VIEW V_ANSP_VAL_VARS_LINK AS
 SELECT
 TAB_A.MVMT_VAR_LINK_ID,
@@ -831,7 +831,7 @@ TAB_B.DISUSE_FLAG = 0;
 
 
 
--- V013_‘ã“ü’lŽ©“®“o˜^—p€–Ú•\Ž¦ƒrƒ…[
+-- V013_ä»£å…¥å€¤è‡ªå‹•ç™»éŒ²ç”¨é …ç›®è¡¨ç¤ºãƒ“ãƒ¥ãƒ¼
 CREATE VIEW V_ANSP_COLUMN_LIST AS 
 SELECT
 TAB_A.COLUMN_DEFINITION_ID,
@@ -939,7 +939,7 @@ AND TAB_B.SUBSTITUTION_VALUE_LINK_FLAG =1
 AND TAB_C.DISUSE_FLAG = 0
 AND TAB_D.DISUSE_FLAG = 0;
 
--- V014_“ü—Í—p€–Ú•\Ž¦ƒrƒ…[
+-- V014_å…¥åŠ›ç”¨é …ç›®è¡¨ç¤ºãƒ“ãƒ¥ãƒ¼
 CREATE VIEW V_ANSC_INPUT_COLUMN_LIST AS 
 SELECT
 TAB_A.COLUMN_DEFINITION_ID,
@@ -1047,11 +1047,11 @@ AND TAB_B.SUBSTITUTION_VALUE_LINK_FLAG =0
 AND TAB_C.DISUSE_FLAG = 0
 AND TAB_D.DISUSE_FLAG = 0;
 -- ------------------------------------------------------------
--- £ VIEW CREATE END 
+-- â–² VIEW CREATE END 
 -- ------------------------------------------------------------
 
 -- ------------------------------------------------------------
--- ¥ INDEX CREATE END 
+-- â–¼ INDEX CREATE END 
 -- ------------------------------------------------------------
 CREATE INDEX IND_T_ANSL_MATL_COLL_01          ON T_ANSL_MATL_COLL(DISUSE_FLAG);
 CREATE INDEX IND_T_ANSL_MVMT_VAR_LINK_01      ON T_ANSL_MVMT_VAR_LINK(DISUSE_FLAG);
@@ -1084,5 +1084,5 @@ CREATE INDEX IND_T_ANSP_EXEC_STS_INST_01      ON T_ANSP_EXEC_STS_INST(DISUSE_FLA
 CREATE INDEX IND_T_ANSC_TWR_INSTANCE_GROUP_01 ON T_ANSC_TWR_INSTANCE_GROUP(DISUSE_FLAG);
 CREATE INDEX IND_T_ANSC_TWR_ORGANIZATION_01   ON T_ANSC_TWR_ORGANIZATION(DISUSE_FLAG);
 -- ------------------------------------------------------------
--- £ INDEX CREATE END 
+-- â–² INDEX CREATE END 
 -- ------------------------------------------------------------

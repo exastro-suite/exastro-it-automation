@@ -14,8 +14,9 @@
 import sys
 import json
 import os
+import re
 from flask import g
-from common_libs.common.util import create_dirs, put_uploadfiles
+from common_libs.common.util import create_dirs, put_uploadfiles, get_timestamp
 from importlib import import_module
 
 
@@ -78,7 +79,6 @@ class Migration:
         if os.path.isfile(config_file_path):
             self._specific_logic(config_file_path, src_dir)
 
-
     def _db_migrate(self, sql_dir):
         """
         DB migrate
@@ -93,8 +93,32 @@ class Migration:
         with open(config_file_path, "r") as config_str:
             file_list = json.load(config_str)
 
-        for sql_file in file_list:
-            self._db_conn.sqlfile_execute(os.path.join(sql_dir, sql_file))
+        last_update_timestamp = str(get_timestamp())
+        for sql_files in file_list:
+
+            ddl_file = os.path.join(sql_dir,  sql_files[0])
+            dml_file = os.path.join(sql_dir,  sql_files[1])
+
+            if os.path.isfile(ddl_file):
+                # DDLファイルの実行
+                g.applogger.debug(f"[Trace] EXECUTE SQL FILE=[{ddl_file}]")
+                self._db_conn.sqlfile_execute(ddl_file)
+
+            if os.path.isfile(dml_file):
+
+                g.applogger.debug(f"[Trace] EXECUTE SQL FILE=[{dml_file}]")
+                self._db_conn.db_transaction_start()
+                with open(dml_file, "r") as f:
+                    sql_list = f.read().split(";\n")
+                    for sql in sql_list:
+                        if re.fullmatch(r'[\s\n\r]*', sql):
+                            continue
+
+                        sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
+
+                        # DMLファイルの実行
+                        self._db_conn.sql_execute(sql)
+                self._db_conn.db_commit()
 
         return True
 

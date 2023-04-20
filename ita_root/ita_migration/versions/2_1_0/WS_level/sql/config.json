@@ -1,1 +1,6 @@
-[]
+[
+    ["workspace.sql", "workspace_master.sql"],
+    ["menu_create.sql", "menu_create_master.sql"],
+    ["conductor.sql", "conductor_master.sql"],
+    ["ansible.sql", "ansible_master.sql"]
+]

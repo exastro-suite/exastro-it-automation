@@ -44,7 +44,7 @@ def __wrapper():
         g.APPPATH = os.path.dirname(__file__)
         # create app log instance and message class instance
         g.applogger = AppLog()
-        # g.applogger.set_level("DEBUG")  # 試験中は有効にする
+        g.applogger.set_level("DEBUG")  # 試験中は有効にする
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         try:
@@ -108,11 +108,9 @@ def __migration_main(version):
         work_dir_path = g.STORAGEPATH
         worker = Migration(resource_dir_path, work_dir_path, common_db)
 
-        common_db.db_transaction_start()
         g.applogger.debug("[Trace] Begin BASE migrate.")
         worker.migrate()
         g.applogger.debug("[Trace] End BASE migrate.")
-        common_db.db_commit()
 
     org_id_list = util.get_organization_ids()
     for organization_id in org_id_list:
@@ -124,11 +122,9 @@ def __migration_main(version):
             work_dir_path = os.path.join(g.STORAGEPATH, organization_id)
             org_worker = Migration(resource_dir_path, work_dir_path, org_db)
 
-            org_db.db_transaction_start()
             g.applogger.debug("[Trace] Begin ORG migrate.")
             org_worker.migrate()
             g.applogger.debug("[Trace] End ORG migrate.")
-            org_db.db_commit()
 
         ws_id_list = util.get_workspace_ids(organization_id)
         for workspace_id in ws_id_list:
@@ -140,11 +136,9 @@ def __migration_main(version):
                 work_dir_path = os.path.join(g.STORAGEPATH, organization_id, workspace_id)
                 ws_worker = Migration(resource_dir_path, work_dir_path, ws_db)
 
-                ws_db.db_transaction_start()
                 g.applogger.debug("[Trace] Begin WS migrate.")
                 ws_worker.migrate()
                 g.applogger.debug("[Trace] End WS migrate.")
-                ws_db.db_commit()
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 終了処理

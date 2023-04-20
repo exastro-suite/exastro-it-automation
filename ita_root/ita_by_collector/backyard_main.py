@@ -812,6 +812,8 @@ def backyard_main(organization_id, workspace_id):
                                                     else:
                                                         dbAccess.db_rollback()
                                                         fail_cnt = fail_cnt + 1
+                                                        if len(ret) >= 3:
+                                                            collection_log = '%s\n%s' % (collection_log, ret[2]) if collection_log else ret[2]
 
                                             if fail_cnt > 0:
                                                 FREE_LOG = g.appmsg.get_api_message("MSG-10851", ["%s/%s" % (fail_cnt, rec_cnt), ])

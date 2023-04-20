@@ -5444,7 +5444,6 @@ operationUpdate( nodeID, id, name ) {
       $node.find('.node-operation-data').text('');
     }
     cd.panelChange( nodeID );
-    console.log(cd.data)
 }
 /*
 ##################################################

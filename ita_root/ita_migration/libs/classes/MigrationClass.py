@@ -116,9 +116,9 @@ class Migration:
 
                         sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
 
-                        workspace_id = self._db_conn._workspace_id
                         prepared_list = []
-                        if workspace_id is not None:
+                        if hasattr(self._db_conn, '_workspace_id') and self._db_conn._workspace_id is not None:
+                            workspace_id = self._db_conn._workspace_id
                             role_id = f"_{workspace_id}-admin"
                             trg_count = sql.count('__ROLE_ID__')
                             if trg_count > 0:

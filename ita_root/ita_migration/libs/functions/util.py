@@ -74,6 +74,7 @@ def get_migration_target_versions():
 
     if match_flg is False:
         # Databaseが無い場合
+        g.applogger.info("Current version=[None].")
         # シングルコーテーションをエスケープ
         db_database = os.environ.get('DB_DATABASE').replace('\'', '\\\'')
         db_user = os.environ.get('DB_USER').replace('\'', '\\\'')
@@ -100,6 +101,7 @@ def get_migration_target_versions():
 
     if len(table_list) != 1:
         # T_COMN_VERSION テーブルが用意されていない環境＝初期バージョン2.0.6として以降の全バージョン分対応する
+        g.applogger.info("Current version=[2.0.6].")
         return version_list[1:]
 
     data_list = common_db.table_select("T_COMN_VERSION", "WHERE `SERVICE_ID` = 1")
@@ -110,6 +112,7 @@ def get_migration_target_versions():
 
     # current_version が含まれていたら、それ以降のversion_listを返す
     if current_version in version_list:
+        g.applogger.info(f"Current version=[{current_version}].")
         index = version_list.index(current_version)
         del version_list[:(index + 1)]
     else:
@@ -127,7 +130,9 @@ def set_version(version):
         'SERVICE_ID': 1,
         'VERSION': version
     }
+    common_db.db_transaction_start()
     common_db.table_update("T_COMN_VERSION", data, "SERVICE_ID")
+    common_db.db_commit()
 
 
 BACKYARD_STOP_FLAG_FILE_NAME = "skip_all_service"

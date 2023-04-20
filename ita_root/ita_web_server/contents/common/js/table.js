@@ -3116,8 +3116,11 @@ buttonAction( columnInfo, item, columnKey ) {
                 } else {
                     buttonAttrs.redirect += '&';
                 }
+                const param = fn.cv( item.parameter[ action[2] ], '', true );
                 buttonAttrs.action = 'positive';
-                buttonAttrs.redirect += action[1] + item.parameter[ action[2] ];
+                buttonAttrs.redirect += action[1] + param;
+                // 値が無い場合はボタンを無効化
+                if ( param === '') buttonAttrs.disabled = 'disabled';
             break;
             case 'redirect_filter':
                 buttonAttrs.item = item.parameter[ tb.idNameRest ];

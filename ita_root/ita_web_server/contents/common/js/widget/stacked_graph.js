@@ -247,7 +247,7 @@ setDetaileEvent() {
                 }
                 
                 const numHtml = ( number !== 0 )?
-                    wg.linkHtml('db-cell-l', `${url}&filter=${fn.filterEncode( filter )}`, number, wg.data.page_move ):
+                    wg.linkHtml('db-cell-l db-cell-ln', `${url}&filter=${fn.filterEncode( filter )}`, number, wg.data.page_move ):
                     `<span class="db-cell-z">0</span>`;
             
                 return ''

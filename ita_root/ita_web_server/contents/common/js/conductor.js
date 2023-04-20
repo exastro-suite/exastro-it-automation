@@ -562,7 +562,9 @@ message( type, title, message ) {
           const list = JSON.parse( message ),
                 body = [];
           for ( const key in list ) {
-              body.push(`<li class="messageErrorItem">${key + ' / ' + list[ key ]}</li>`);
+              for ( const item of list[key] ) {
+                  body.push(`<li class="messageErrorItem">${key + ' / ' + fn.escape( item )}</li>`);
+              }
           }
           fn.message( type, title, `<ul class="messageErrorList">${body.join('')}</ul>`, null, time );
       } catch( error ) {
@@ -4363,8 +4365,8 @@ panelMovementHtml( nodeId ) {
           id = fn.cv( node.movement_id, '', true ),
           name = fn.cv( node.movement_name, '', true ),
           note = fn.cv( node.note, '', true ),
-          orchestrator = fn.cv( cd.getOrchestratorName( node.orchestra_id ), 'Unkown'),
-          operation = fn.cv( cd.getOperationName( node.operation_id ), ''),
+          orchestrator = fn.cv( cd.getOrchestratorName( node.orchestra_id ), 'Unkown', true ),
+          operation = fn.cv( cd.getOperationName( node.operation_id ), '', true ),
           skip = ( node.skip_flag === '1')? { checked: 'checked'}: {},
           skipId = `${cd.id}_movementSkip`;
           
@@ -5433,10 +5435,12 @@ operationUpdate( nodeID, id, name ) {
     if ( id !== null ) { 
       $node.addClass('operation');
       cd.data[ nodeID ].operation_id = id;
+      cd.data[ nodeID ].operation_name = name;
       $node.find('.node-operation-data').text( name );
     } else {
       $node.removeClass('operation');
       cd.data[ nodeID ].operation_id = null;
+      cd.data[ nodeID ].operation_name = null;
       $node.find('.node-operation-data').text('');
     }
     cd.panelChange( nodeID );
@@ -5625,7 +5629,7 @@ panelEvents() {
                 });
             break;
             case 'clearOperation':
-                cd.operationUpdate( nodeId, null );
+                cd.operationUpdate( nodeId, null, null );
             break;
             case 'conductor':
                 cd.selectModalOpen('condcutor').then(function( selectId ){

@@ -176,7 +176,7 @@ body() {
         for ( let key in pieChartData ) {
             const number = Number( pieChartData[key][1] ),
                   numHtml = ( number !== 0 )?
-                wg.linkHtml('db-cell-l', pieChartData[key][2], number, wg.data.page_move ):
+                wg.linkHtml('db-cell-l db-cell-ln', pieChartData[key][2], number, wg.data.page_move ):
                 `<span class="db-cell-z">0</span>`;
 
             tableHTML += ''

@@ -96,8 +96,8 @@ class Migration:
         last_update_timestamp = str(get_timestamp())
         for sql_files in file_list:
 
-            ddl_file = os.path.join(sql_dir,  sql_files[0])
-            dml_file = os.path.join(sql_dir,  sql_files[1])
+            ddl_file = os.path.join(sql_dir, sql_files[0])
+            dml_file = os.path.join(sql_dir, sql_files[1])
 
             if os.path.isfile(ddl_file):
                 # DDLファイルの実行
@@ -116,8 +116,17 @@ class Migration:
 
                         sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
 
+                        prepared_list = []
+                        if hasattr(self._db_conn, '_workspace_id') and self._db_conn._workspace_id is not None:
+                            workspace_id = self._db_conn._workspace_id
+                            role_id = f"_{workspace_id}-admin"
+                            trg_count = sql.count('__ROLE_ID__')
+                            if trg_count > 0:
+                                prepared_list = list(map(lambda a: role_id, range(trg_count)))
+                                sql = self._db_conn.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
+
                         # DMLファイルの実行
-                        self._db_conn.sql_execute(sql)
+                        self._db_conn.sql_execute(sql, prepared_list)
                 self._db_conn.db_commit()
 
         return True

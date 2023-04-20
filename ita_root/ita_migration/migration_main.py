@@ -44,7 +44,7 @@ def __wrapper():
         g.APPPATH = os.path.dirname(__file__)
         # create app log instance and message class instance
         g.applogger = AppLog()
-        g.applogger.set_level("DEBUG")  # 試験中は有効にする
+        # g.applogger.set_level("DEBUG")  # 試験中は有効にする
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         try:

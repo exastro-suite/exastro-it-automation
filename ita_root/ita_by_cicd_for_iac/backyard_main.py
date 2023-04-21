@@ -909,7 +909,8 @@ class ControlGit():
             return_var = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             if return_var.returncode != 0:
                 logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
-                g.applogger.debug(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+                FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
+                g.applogger.debug(FREE_LOG)
 
                 if self.retryCount - 1 > idx:
                     time.sleep(self.retryWaitTime)

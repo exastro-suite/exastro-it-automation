@@ -1461,7 +1461,7 @@ class CICD_GrandChildWorkflow():
                 else:
                     UIMatlSyncMsg = ""
                     UIDelvMsg = ""
-                    SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_ERROR
+                    SyncSts = TD_SYNC_STATUS_NAME_DEFINE.STS_NORMAL
                     DelvExecInsNo = ""
                     DelvExecMenuId = ""
                     self.setUIMatlSyncStatus(UIMatlSyncMsg, UIDelvMsg, SyncSts, DelvExecInsNo, DelvExecMenuId)

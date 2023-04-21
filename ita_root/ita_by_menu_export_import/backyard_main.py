@@ -13,15 +13,11 @@
 #
 import json
 import os
-import re
-import ast
-import base64
 import datetime
 import tarfile
-import mimetypes
-import secrets
 from flask import g
 from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.exception import AppException  # noqa: F401
 from pathlib import Path
@@ -29,6 +25,7 @@ import shutil
 import subprocess
 import time
 import inspect
+
 
 def backyard_main(organization_id, workspace_id):
     g.applogger.debug("backyard_main ita_by_menu_export_import called")
@@ -229,7 +226,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                 # _dp_preparation()で既に処理していた場合はスキップする
                 continue
 
-            # 環境移行モードの場合既存のデータは全て削除してからデータをインポートする
+            # 環境移行モードの場合、既存のデータは全て削除してからデータをインポートする
             if dp_mode == '1':
                 chk_table_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
                 chk_table_rtn = objdbca.sql_execute(chk_table_sql, [table_name])
@@ -242,7 +239,6 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                         # テーブルを削除する
                         delete_table_sql = "DELETE FROM  `{}`".format(table_name)
                         objdbca.sql_execute(delete_table_sql, [])
-                        deleted_table_list.append(table_name)
 
                 # DBデータファイル読み込み
                 db_data_path = execution_no_path + '/' + table_name + '.sql'
@@ -251,9 +247,11 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                 if table_name not in deleted_table_list:
                     # テーブルを作成
                     objdbca.sqlfile_execute(db_data_path)
+                    deleted_table_list.append(table_name)
                     if os.path.isfile(jnl_db_data_path):
                         # 履歴テーブルを作成
                         objdbca.sqlfile_execute(jnl_db_data_path)
+                        deleted_table_list.append(table_name + '_JNL')
 
                 if view_name:
                     if table_name.startswith('T_CMDB'):
@@ -817,10 +815,17 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         with open(dp_info_path, "w") as f:
             json.dump(dp_info, f)
 
-        # ロール-メニュー紐付管理のロール置換用にWORKSPACE_IDを確保しておく
+        # ロール-メニュー紐付管理のロール置換用にエクスポート時のWORKSPACE_IDを確保しておく
         workspace_id_path = dir_path + '/WORKSPACE_ID'
         with open(workspace_id_path, "w") as f:
             f.write(workspace_id)
+
+        # アップロード時のバージョン差異チェック用にエクスポート時のVERSIONを確保しておく
+        common_db = DBConnectCommon()
+        version_data = _collect_ita_version(common_db)
+        version_path = dir_path + '/VERSION'
+        with open(version_path, "w") as f:
+            f.write(version_data["version"])
 
         # データをtar.gzにまとめる
         gztar_path = shutil.make_archive(base_name=dir_path, format="gztar", root_dir=dir_path)
@@ -872,6 +877,38 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         # 異常系リターン
         return False, msg
+
+
+def _collect_ita_version(common_db):
+    """
+        ITAのバージョン情報を取得する
+        ARGS:
+            common_db:DB接クラス  DBConnectCommon()
+        RETRUN:
+            version_data
+    """
+
+    # 変数定義
+    lang = g.get('LANGUAGE')
+
+    # 『バージョン情報』テーブルからバージョン情報を取得
+    ret = common_db.table_select('T_COMN_VERSION', 'WHERE DISUSE_FLAG = %s', [0])
+
+    # 件数確認
+    if len(ret) != 1:
+        raise AppException("499-00601")
+
+    if lang == 'ja':
+        installed_driver = json.loads(ret[0].get('INSTALLED_DRIVER_JA'))
+    else:
+        installed_driver = json.loads(ret[0].get('INSTALLED_DRIVER_EN'))
+
+    version_data = {
+        "version": ret[0].get('VERSION'),
+        "installed_driver": installed_driver
+    }
+
+    return version_data
 
 
 def _create_objmenu(objdbca, menu_name_rest_list, target_menu):

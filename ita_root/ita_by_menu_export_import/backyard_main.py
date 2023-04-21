@@ -189,10 +189,15 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             raise AppException("499-00905", [], [])
         # インポート対象メニュー取得
         menu_name_rest_list = json_storage_item.split(',')
+
+        # 環境移行にて削除したテーブル名を記憶する用
+        deleted_table_list = []
+
         # 環境移行モードの場合はDELETE→INSERTするので特定のメニューは事前に退避しておく
         if dp_mode == '1':
-            _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path)
+            _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, deleted_table_list)
 
+        # 作成したview名を記憶する用
         tmp_table_list = []
         # インポート対象メニュー取得
         # T_COMN_MENU_TABLE_LINK_DATAファイル読み込み
@@ -232,18 +237,23 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                     # uploadfiles配下のデータを削除する
                     if os.path.isdir(uploadfiles_dir + '/' + menu_id):
                         shutil.rmtree(uploadfiles_dir + '/' + menu_id)
-                    # テーブルを削除する
-                    delete_table_sql = "DELETE FROM  `{}`".format(table_name)
-                    objdbca.sql_execute(delete_table_sql, [])
+
+                    if table_name not in deleted_table_list:
+                        # テーブルを削除する
+                        delete_table_sql = "DELETE FROM  `{}`".format(table_name)
+                        objdbca.sql_execute(delete_table_sql, [])
+                        deleted_table_list.append(table_name)
 
                 # DBデータファイル読み込み
                 db_data_path = execution_no_path + '/' + table_name + '.sql'
                 jnl_db_data_path = execution_no_path + '/' + table_name + '_JNL.sql'
-                # テーブルを作成
-                objdbca.sqlfile_execute(db_data_path)
-                if os.path.isfile(jnl_db_data_path):
-                    # 履歴テーブルを作成
-                    objdbca.sqlfile_execute(jnl_db_data_path)
+
+                if table_name not in deleted_table_list:
+                    # テーブルを作成
+                    objdbca.sqlfile_execute(db_data_path)
+                    if os.path.isfile(jnl_db_data_path):
+                        # 履歴テーブルを作成
+                        objdbca.sqlfile_execute(jnl_db_data_path)
 
                 if view_name:
                     if table_name.startswith('T_CMDB'):
@@ -279,31 +289,33 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         return False, msg
 
 
-def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path):
+def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, deleted_table_list):
     if 'menu_list' in menu_name_rest_list:
-        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'menu_list', execution_no_path)
+        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'menu_list', execution_no_path, deleted_table_list)
 
     if 'menu_table_link_list' in menu_name_rest_list:
-        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'menu_table_link_list', execution_no_path)
+        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'menu_table_link_list', execution_no_path, deleted_table_list)
 
     if 'menu_column_link_list' in menu_name_rest_list:
-        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'menu_column_link_list', execution_no_path)
+        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'menu_column_link_list', execution_no_path, deleted_table_list)
 
     if 'role_menu_link_list' in menu_name_rest_list:
-        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'role_menu_link_list', execution_no_path)
+        _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, 'role_menu_link_list', execution_no_path, deleted_table_list)
 
 
-def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_name_rest, execution_no_path):
+def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_name_rest, execution_no_path, deleted_table_list):
     # 指定のメニューに紐づいたテーブルを削除し、インポートデータを登録する
     objmenu = _create_objmenu(objdbca, menu_name_rest_list, menu_name_rest)
 
     menu_id, table_name, history_table_flag = _menu_data_file_read(menu_name_rest, 'menu_id', execution_no_path)
     delete_sql = "DELETE FROM {}".format(table_name)
     objdbca.sql_execute(delete_sql, [])
+    deleted_table_list.append(table_name)
     _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_rest, table_name, objmenu=objmenu)
     if history_table_flag == '1':
         delete_jnl_sql = "DELETE FROM {}".format(table_name + '_JNL')
         objdbca.sql_execute(delete_jnl_sql, [])
+        deleted_table_list.append(table_name + '_JNL')
         _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
     menu_name_rest_list.remove(menu_name_rest)
 
@@ -672,6 +684,18 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         for menu in menu_list:
             DB_path = dir_path + '/' + menu
             objmenu = load_table.loadTable(objdbca, menu, dp_mode=True)   # noqa: F405
+
+            if menu == 'movement_list_ansible_legacy':
+                filter_parameter["orchestrator"] = {"LIST": ['Ansible Legacy']}
+            elif menu == 'movement_list_ansible_pioneer':
+                filter_parameter["orchestrator"] = {"LIST": ['Ansible Pioneer']}
+            elif menu == 'movement_list_ansible_role':
+                filter_parameter["orchestrator"] = {"LIST": ['Ansible Legacy Role']}
+            elif menu == 'movement_list_terraform_cloud_ep':
+                filter_parameter["orchestrator"] = {"LIST": ['Terraform Cloud/EP']}
+            elif menu == 'movement_list_terraform_cli':
+                filter_parameter["orchestrator"] = {"LIST": ['Terraform CLI']}
+
             filter_mode = 'export'
             status_code, result, msg = objmenu.rest_export_filter(filter_parameter, filter_mode)
             if status_code != '000-00000':

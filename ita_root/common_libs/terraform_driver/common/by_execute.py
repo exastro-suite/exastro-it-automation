@@ -43,8 +43,19 @@ def encode_hcl(arr):
 
 # HCL形式から配列にデコードする
 def decode_hcl(hcl_data):
-    res = re.sub(r'\"(.*?)\"(\s|)=(\s|)\"(.*?)\"', r'"\1":"\4"', hcl_data)
-    res = json.loads(res)
+    if type(hcl_data) is not str:
+        return hcl_data
+
+    pattern = r'\"(.*?)\"(\s|)=(\s|)\"(.*?)\"'
+    # match = re.findall(pattern, hcl_data)
+    # if len(match) == 0:
+    #     return hcl_data
+    res = re.sub(pattern, r'"\1":"\4"', hcl_data)
+
+    try:
+        res = json.loads(res)
+    except Exception:
+        return res
 
     return res
 

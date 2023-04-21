@@ -1,0 +1,9 @@
+/driver/terraform_cloud_ep/
+/driver/terraform_cli/
+/driver/cicd/repositories/
+/tmp/driver/import_menu/
+/tmp/driver/import_excel/
+/tmp/driver/export_menu/
+/tmp/driver/export_excel/
+/tmp/driver/terraform_cloud_ep/
+/tmp/driver/terraform_cli/

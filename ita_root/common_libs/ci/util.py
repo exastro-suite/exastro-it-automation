@@ -210,10 +210,12 @@ def allow_proc(organization_id, workspace_id):
     # ita-migrationのスキップファイル
     migration_skip_file_path = os.environ.get('STORAGEPATH') + "skip_all_service"
     # メニューインポートのスキップファイル
-    base_path = os.environ.get('STORAGEPATH') + "{}/{}/".format(organization_id, workspace_id)
-    import_menu_skip_file_path = base_path + "tmp/driver/import_menu/skip_all_service"
+    workspace_path = os.environ.get('STORAGEPATH') + "{}/{}/".format(organization_id, workspace_id)
+    import_menu_skip_file_path = workspace_path + "tmp/driver/import_menu/skip_all_service"
+    # Workspace削除のスキップファイル
+    ws_del_skip_file_path = workspace_path + "skip_all_service_for_ws_del"
 
-    file_list = [migration_skip_file_path, import_menu_skip_file_path]
+    file_list = [migration_skip_file_path, import_menu_skip_file_path, ws_del_skip_file_path]
 
     for file_path in file_list:
         if os.path.isfile(file_path) is True:

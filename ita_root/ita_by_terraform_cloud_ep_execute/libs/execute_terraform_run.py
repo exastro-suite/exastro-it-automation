@@ -710,7 +710,7 @@ def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace
                                     "MEMBER_VARS": member_vars_id,
                                     "SENSITIVE_FLAG": sensitive_flag,
                                     "VARS_ENTRY": tmp_arr,
-                                    "VARS_ASSIGN_FLAG": member_vars_list[key]["VARS_ASSIGN_FLAG"]
+                                    "VARS_ASSIGN_FLAG": trg_member_vars_records[key]["VARS_ASSIGN_FLAG"]
                                 })
                             else:
                                 key = [m.get('MEMBER_VARS_ID') for m in member_vars_list].index(member_vars_id)

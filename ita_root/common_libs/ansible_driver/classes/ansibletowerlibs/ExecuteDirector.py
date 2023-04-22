@@ -2241,13 +2241,13 @@ class ExecuteDirector():
             subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
             cmd = ["git", "add", "."]
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.gitCommandRetry(cmd)
 
             cmd = ["git", "commit", "-m", '"%s"' % (commit_comment)]
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.gitCommandRetry(cmd)
 
             cmd = ["git", "push", "origin", "main"]
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.gitCommandRetry(cmd)
 
         except subprocess.CalledProcessError as e:
             log = e.stdout.decode()
@@ -2264,6 +2264,19 @@ class ExecuteDirector():
             return False
 
         return True
+
+    def gitCommandRetry(self, cmd):
+        try:
+            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            # 詳細ログの取得を設定し、gitコマンドをリトライする。
+            os.environ["GIT_TRACE"] = 'true'
+            os.environ["GIT_TRACE_SETUP"] = 'true'
+            os.environ["GIT_CURL_VERBOSE"]= 'true'
+            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            os.environ.pop('GIT_TRACE',None)
+            os.environ.pop('GIT_TRACE_SETUP',None)
+            os.environ.pop('GIT_CURL_VERBOSE',None)
 
     def saveGitProjectId(self, execution_no, project_id):
         execute_path = getAnsibleExecutDirPath(self.AnsConstObj, execution_no)

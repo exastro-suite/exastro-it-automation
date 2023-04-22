@@ -21,6 +21,8 @@ import os
 import re
 import json
 import shutil
+import time
+from pathlib import Path
 
 from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -247,9 +249,15 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     org_db.db_commit()
 
     try:
-        # delete storage directory for workspace
         strage_path = os.environ.get('STORAGEPATH')
         workspace_dir = strage_path + "/".join([organization_id, workspace_id]) + "/"
+
+        # サービススキップファイルを配置する
+        f = Path(workspace_dir + '/skip_all_service_for_ws_del')
+        f.touch()
+        time.sleep(3)
+
+        # delete storage directory for workspace
         if os.path.isdir(workspace_dir):
             shutil.rmtree(workspace_dir)
 
@@ -260,12 +268,18 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         org_root_db.db_disconnect()
 
     except AppException as e:
+        # スキップファイルが存在する場合は削除する
+        if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
+            os.remove(workspace_dir + '/skip_all_service_for_ws_del')
         # 廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
         exception_flg = True
         exception_log_need = True
         result_list = app_exception_response(e, exception_log_need)
 
     except Exception as e:
+        # スキップファイルが存在する場合は削除する
+        if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
+            os.remove(workspace_dir + '/skip_all_service_for_ws_del')
         # 廃止されているとexceptionはログを抑止するので、ここでログだけ出力
         exception_flg = True
         exception_log_need = True

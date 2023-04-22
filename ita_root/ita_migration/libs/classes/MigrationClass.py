@@ -14,8 +14,9 @@
 import sys
 import json
 import os
+import re
 from flask import g
-from common_libs.common.util import create_dirs, put_uploadfiles
+from common_libs.common.util import create_dirs, put_uploadfiles, get_timestamp
 from importlib import import_module
 
 
@@ -59,17 +60,18 @@ class Migration:
         config_file_path = os.path.join(self._resource_dir_path, "create_dir_list.txt")
         if os.path.isfile(config_file_path):
             create_dirs(config_file_path, self._work_dir_path)
-            # self._create_dir(dir_file)
-        g.applogger.debug("[Trace] create dir complete")
+            g.applogger.debug("[Trace] create dir complete")
 
         # ファイル配置 (uploadfiles only)
-        src_dir = os.path.join(self._resource_dir_path, "file")
+        src_dir = os.path.join(self._resource_dir_path, "files")
         dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
         config_file_path = os.path.join(src_dir, "config.json")
+        g.applogger.debug(f"[Trace] src_dir={src_dir}")
+        g.applogger.debug(f"[Trace] dest_dir={dest_dir}")
+        g.applogger.debug(f"[Trace] config_file_path={config_file_path}")
         if os.path.isfile(config_file_path):
             put_uploadfiles(config_file_path, src_dir, dest_dir)
-            # self._delivery_files(file_dir)
-        g.applogger.debug("[Trace] delivery files complete")
+            g.applogger.debug("[Trace] delivery files complete")
 
         # 特別処理
         # migrationを呼出す
@@ -77,7 +79,7 @@ class Migration:
         config_file_path = os.path.join(src_dir, "config.json")
         if os.path.isfile(config_file_path):
             self._specific_logic(config_file_path, src_dir)
-
+            g.applogger.debug("[Trace] specific logic complete")
 
     def _db_migrate(self, sql_dir):
         """
@@ -93,8 +95,41 @@ class Migration:
         with open(config_file_path, "r") as config_str:
             file_list = json.load(config_str)
 
-        for sql_file in file_list:
-            self._db_conn.sqlfile_execute(os.path.join(sql_dir, sql_file))
+        last_update_timestamp = str(get_timestamp())
+        for sql_files in file_list:
+
+            ddl_file = os.path.join(sql_dir, sql_files[0])
+            dml_file = os.path.join(sql_dir, sql_files[1])
+
+            if os.path.isfile(ddl_file):
+                # DDLファイルの実行
+                g.applogger.debug(f"[Trace] EXECUTE SQL FILE=[{ddl_file}]")
+                self._db_conn.sqlfile_execute(ddl_file)
+
+            if os.path.isfile(dml_file):
+
+                g.applogger.debug(f"[Trace] EXECUTE SQL FILE=[{dml_file}]")
+                self._db_conn.db_transaction_start()
+                with open(dml_file, "r") as f:
+                    sql_list = f.read().split(";\n")
+                    for sql in sql_list:
+                        if re.fullmatch(r'[\s\n\r]*', sql):
+                            continue
+
+                        sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
+
+                        prepared_list = []
+                        if hasattr(self._db_conn, '_workspace_id') and self._db_conn._workspace_id is not None:
+                            workspace_id = self._db_conn._workspace_id
+                            role_id = f"_{workspace_id}-admin"
+                            trg_count = sql.count('__ROLE_ID__')
+                            if trg_count > 0:
+                                prepared_list = list(map(lambda a: role_id, range(trg_count)))
+                                sql = self._db_conn.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
+
+                        # DMLファイルの実行
+                        self._db_conn.sql_execute(sql, prepared_list)
+                self._db_conn.db_commit()
 
         return True
 

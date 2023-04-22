@@ -642,8 +642,10 @@ def create_dirs(config_file_path, dest_dir):
 
     for target_path in lines:
         target_path = target_path.replace("\n", "")
-        os.makedirs(dest_dir + target_path)
-
+        try:
+            os.makedirs(dest_dir + target_path)
+        except FileExistsError:
+            pass
     return True
 
 
@@ -672,7 +674,10 @@ def put_uploadfiles(config_file_path, src_dir, dest_dir):
                         os.makedirs(old_file_path)
 
                     shutil.copy(org_file, old_file_path + file)
-                    os.symlink(old_file_path + file, file_path + file)
+                    try:
+                        os.symlink(old_file_path + file, file_path + file)
+                    except FileExistsError:
+                        pass
 
     return True
 

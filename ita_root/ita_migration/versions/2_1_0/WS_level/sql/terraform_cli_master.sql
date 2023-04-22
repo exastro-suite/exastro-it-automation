@@ -64,10 +64,10 @@ INSERT INTO T_COMN_ROLE_MENU_LINK (LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE
 INSERT INTO T_COMN_ROLE_MENU_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,LINK_ID,MENU_ID,ROLE_ID,PRIVILEGE,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(90115,_____DATE_____,'INSERT','90115','90115','__ROLE_ID__','2',NULL,'1',_____DATE_____,1);
 
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('90101','90101','T_TERC_IF_INFO',NULL,'item_no','インターフェース情報をメンテナンス(閲覧/更新)できます。
-本メニューは必ず1レコードである必要があります。','You can perform maintenance (view/update) for connection interface information. 
+本メニューは必ず1レコードである必要があります。','You can perform maintenance (view/update) for connection interface information.
 This menu should be one record.','0','1','0','0','0','0','1','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(90101,_____DATE_____,'INSERT','90101','90101','T_TERC_IF_INFO',NULL,'item_no','インターフェース情報をメンテナンス(閲覧/更新)できます。
-本メニューは必ず1レコードである必要があります。','You can perform maintenance (view/update) for connection interface information. 
+本メニューは必ず1レコードである必要があります。','You can perform maintenance (view/update) for connection interface information.
 This menu should be one record.','0','1','0','0','0','0','1','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('90102','90102','T_TERC_WORKSPACE',NULL,'item_no','TerraformのWorkspace情報をメンテナンス(閲覧/登録/更新/廃止)できます。
 また連携先TerraformへWorkspacenの[登録/更新/削除]を行うことができます。
@@ -95,7 +95,7 @@ INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_
 
 項目の設定値の登録方法には2種類あります。
 Value型:項目の設定値を紐付けた変数の具体値として代入値管理に登録されます。
-Key型:項目の名称を紐付けた変数の具体値として代入値管理に登録されます。','You can perform maintenance (view/register/update/discard) for operations registered in the associated menu, and Movement and variables associated with the setting value of item. 
+Key型:項目の名称を紐付けた変数の具体値として代入値管理に登録されます。','You can perform maintenance (view/register/update/discard) for operations registered in the associated menu, and Movement and variables associated with the setting value of item.
 
 There are two methods to register the setting value of item.
 Value type: Setting value of item is registered in the substitution value list as a specific value of associated variable.
@@ -104,7 +104,7 @@ INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOUR
 
 項目の設定値の登録方法には2種類あります。
 Value型:項目の設定値を紐付けた変数の具体値として代入値管理に登録されます。
-Key型:項目の名称を紐付けた変数の具体値として代入値管理に登録されます。','You can perform maintenance (view/register/update/discard) for operations registered in the associated menu, and Movement and variables associated with the setting value of item. 
+Key型:項目の名称を紐付けた変数の具体値として代入値管理に登録されます。','You can perform maintenance (view/register/update/discard) for operations registered in the associated menu, and Movement and variables associated with the setting value of item.
 
 There are two methods to register the setting value of item.
 Value type: Setting value of item is registered in the substitution value list as a specific value of associated variable.
@@ -115,7 +115,7 @@ INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_
 が可能です。
 実行時にはMovementとオペレーションIDを選択して下さい。','The following Stand alone Movement executions are possible.
 ・Immediate execution
-・Scheduled execution 
+・Scheduled execution
 Select Movement and Operation ID to execute.','11','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(90108,_____DATE_____,'INSERT','90108','90108',NULL,NULL,NULL,'Movementを単体実行できます。
 ・即時実行
@@ -123,7 +123,7 @@ INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOUR
 が可能です。
 実行時にはMovementとオペレーションIDを選択して下さい。','The following Stand alone Movement executions are possible.
 ・Immediate execution
-・Scheduled execution 
+・Scheduled execution
 Select Movement and Operation ID to execute.','11','0','0','0','0','0','0','0','0','0',NULL,NULL,NULL,NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,VERTICAL,HOSTGROUP,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('90109','90109','T_TERC_EXEC_STS_INST',NULL,'execution_no','作業一覧(実行履歴)を閲覧できます。
 「詳細」を押下すると作業状態確認メニューに遷移します。','You can view execution list (execution history).

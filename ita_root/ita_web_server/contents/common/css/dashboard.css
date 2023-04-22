@@ -573,6 +573,9 @@ color: #7FAFEC;
 border: 1px solid transparent;
 opacity: .3;
 }
+.db-cell-ln {
+white-space: nowrap;
+}
 .db-nodata {
 display: flex;
 justify-content: center;
@@ -624,7 +627,7 @@ vertical-align: top;
 }
 .db-menu-group-link {
 display: block;
-padding: 16px;
+padding: 10%;
 border-radius: 4px;
 text-decoration: none;
 word-break: break-all;

@@ -3327,7 +3327,7 @@ add( type, title, message, icon, closeTime = 5000 ) {
     const html = [];
     html.push(`<div class="messageTime">${fn.date( new Date(), 'yyyy/MM/dd HH:mm:ss')}</div>`);
     if ( icon ) html.push(`<div class="messageIcon">${fn.html.icon( icon )}</div>`);
-    if ( title ) html.push(`<div class="messageTitle">${title}</div>`);
+    if ( title ) html.push(`<div class="messageTitle">${fn.escape( title )}</div>`);
     if ( message ) html.push(`<div class="messageBody">${message}</div>`);
     html.push(`<div class="messageClose"><button class="messageCloseButton">${fn.html.icon('cross')}</button></div>`
     + `<div class="messageTimer"><div class="messageTimerBar"></div></div>`);

@@ -299,6 +299,7 @@ def backyard_main(organization_id, workspace_id):
     intWarningFlag = 0
     menu_restcol_info = {}
     upload_restcol_info = {}
+    bandle_menus = []
 
     NOTICE_FLG = 1  # 1:収集済み
 
@@ -663,6 +664,8 @@ def backyard_main(organization_id, workspace_id):
                                                             "  T_COMN_MENU_COLUMN_LINK "
                                                             "WHERE "
                                                             "  MENU_ID = %s "
+                                                            "AND "
+                                                            "  DISUSE_FLAG = '0' "
                                                             "ORDER BY "
                                                             "  COLUMN_DISP_SEQ ASC "
                                                         )
@@ -723,6 +726,10 @@ def backyard_main(organization_id, workspace_id):
                                                             if filedata is not False:
                                                                 tmp_param['file'][col_name] = filedata
 
+                                                    # バンドル使用のメニュー名を保持
+                                                    if vertical_flag and menu_name not in bandle_menus:
+                                                        bandle_menus.append(menu_name)
+
                                     if len(arrSqlinsertParm) <= 0:
                                         # 収集項目値管理上の対象ファイル無しの場合
                                         FREE_LOG = g.appmsg.get_api_message("MSG-10856")
@@ -744,7 +751,7 @@ def backyard_main(organization_id, workspace_id):
                                                     collection_log = '%s\n%s' % (collection_log, FREE_LOG1) if collection_log else FREE_LOG1
                                                     output_flag = False
 
-                                                vertical_flag = True if 'input_order' in tmparr3 else False
+                                                vertical_flag = True if menu_name in bandle_menus else False
 
                                                 # 項目のないパラメーターシートは収集エラー
                                                 # 11 or 12: uuid, host, ope_name1, ope_name2, base_dt, ope_dt, last_exe, (order), note, discard, last_dt, last_user
@@ -769,7 +776,7 @@ def backyard_main(organization_id, workspace_id):
                                                     filter_info['operation_name_select'] = {'LIST': [aryOperation['OPERATION_DATE_NAME']]}
                                                     filter_info['host_name'] = {'LIST': [hostname]}
                                                     if vertical_flag:
-                                                        filter_info['input_order'] = {'LIST': [input_order]}
+                                                        filter_info['input_order'] = {'RANGE': {'START':input_order, 'END':input_order}}
 
                                                     sts, params, msg = objmenu.rest_filter(filter_info, 'inner')
 
@@ -813,6 +820,7 @@ def backyard_main(organization_id, workspace_id):
                                                         dbAccess.db_rollback()
                                                         fail_cnt = fail_cnt + 1
                                                         if len(ret) >= 3:
+                                                            g.applogger.debug(ret[2])
                                                             collection_log = '%s\n%s' % (collection_log, ret[2]) if collection_log else ret[2]
 
                                             if fail_cnt > 0:
@@ -847,6 +855,8 @@ def backyard_main(organization_id, workspace_id):
                         ret = objmenu_orch.exec_maintenance(request_param, request_param['parameter']['execution_no'], load_table.CMD_UPDATE, pk_use_flg=False, auth_check=False)
                         if ret[0] is False:
                             dbAccess.db_rollback()
+                            if len(ret) >= 3:
+                                g.applogger.debug(ret[2])
                         else:
                             dbAccess.db_commit()
 

@@ -14,7 +14,25 @@
 # from flask import g
 import json
 import re
-from dictknife import deepmerge
+from deepmerge import Merger
+
+
+my_deep_merger = Merger(
+    # pass in a list of tuple, with the
+    # strategies you are looking to apply
+    # to each type.
+    [
+        (list, ["append"]),
+        (dict, ["merge"]),
+        (set, ["union"])
+    ],
+    # next, choose the fallback strategies,
+    # applied to all other types:
+    ["override"],
+    # finally, choose the strategies in
+    # the case where the types conflict:
+    ["override"]
+)
 
 
 # Typeの情報を取得する
@@ -43,8 +61,19 @@ def encode_hcl(arr):
 
 # HCL形式から配列にデコードする
 def decode_hcl(hcl_data):
-    res = re.sub(r'\"(.*?)\"(\s|)=(\s|)\"(.*?)\"', r'"\1":"\4"', hcl_data)
-    res = json.loads(res)
+    if type(hcl_data) is not str:
+        return hcl_data
+
+    pattern = r'\"(.*?)\"(\s|)=(\s|)\"(.*?)\"'
+    # match = re.findall(pattern, hcl_data)
+    # if len(match) == 0:
+    #     return hcl_data
+    res = re.sub(pattern, r'"\1":"\4"', hcl_data)
+
+    try:
+        res = json.loads(res)
+    except Exception:
+        return res
 
     return res
 
@@ -188,8 +217,10 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
             index = index + 1
 
         # g.applogger.debug("ref=" + str(ref))
+        # g.applogger.debug("member_vars_array=" + str(member_vars_array))
         # g.applogger.debug("tmp_array=" + str(tmp_array))
         # 仮配列と返却用配列をマージ
-        res = deepmerge(member_vars_array, tmp_array)
+        res = my_deep_merger.merge(member_vars_array, tmp_array)
+
         # g.applogger.debug("res=" + str(res))
     return res

@@ -911,6 +911,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                             # メンバー変数IDからタイプ情報を取得する
                             key = [m.get('CHILD_MEMBER_VARS_ID') for m in trg_member_vars_records].index(member_vars_id)
                             type_info = get_type_info(wsDb, TFCLIConst, trg_member_vars_records[key]["CHILD_VARS_TYPE_ID"])
+
                             # メンバー変数対象でない配列型のみ配列型に形成する
                             if type_info["MEMBER_VARS_FLAG"] == '0' and type_info["ASSIGN_SEQ_FLAG"] == '1' and type_info["ENCODE_FLAG"] == '1':
                                 tmp_list = {}
@@ -928,7 +929,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                                     "MEMBER_VARS": member_vars_id,
                                     "SENSITIVE_FLAG": sensitive_flag,
                                     "VARS_ENTRY": tmp_arr,
-                                    "VARS_ASSIGN_FLAG": member_vars_list[key]["VARS_ASSIGN_FLAG"]
+                                    "VARS_ASSIGN_FLAG": trg_member_vars_records[key]["VARS_ASSIGN_FLAG"]
                                 })
                             else:
                                 key = [m.get('MEMBER_VARS_ID') for m in member_vars_list].index(member_vars_id)
@@ -1003,5 +1004,3 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
         # secure.tfvarsが存在
         if os.path.exists(secure_tfvars_file_path) is True:
             secure_tfvars_flg = True
-
-

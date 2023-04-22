@@ -60,17 +60,18 @@ class Migration:
         config_file_path = os.path.join(self._resource_dir_path, "create_dir_list.txt")
         if os.path.isfile(config_file_path):
             create_dirs(config_file_path, self._work_dir_path)
-            # self._create_dir(dir_file)
-        g.applogger.debug("[Trace] create dir complete")
+            g.applogger.debug("[Trace] create dir complete")
 
         # ファイル配置 (uploadfiles only)
-        src_dir = os.path.join(self._resource_dir_path, "file")
+        src_dir = os.path.join(self._resource_dir_path, "files")
         dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
         config_file_path = os.path.join(src_dir, "config.json")
+        g.applogger.debug(f"[Trace] src_dir={src_dir}")
+        g.applogger.debug(f"[Trace] dest_dir={dest_dir}")
+        g.applogger.debug(f"[Trace] config_file_path={config_file_path}")
         if os.path.isfile(config_file_path):
             put_uploadfiles(config_file_path, src_dir, dest_dir)
-            # self._delivery_files(file_dir)
-        g.applogger.debug("[Trace] delivery files complete")
+            g.applogger.debug("[Trace] delivery files complete")
 
         # 特別処理
         # migrationを呼出す
@@ -78,6 +79,7 @@ class Migration:
         config_file_path = os.path.join(src_dir, "config.json")
         if os.path.isfile(config_file_path):
             self._specific_logic(config_file_path, src_dir)
+            g.applogger.debug("[Trace] specific logic complete")
 
     def _db_migrate(self, sql_dir):
         """
@@ -116,9 +118,9 @@ class Migration:
 
                         sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
 
-                        workspace_id = self._db_conn._workspace_id
                         prepared_list = []
-                        if workspace_id is not None:
+                        if hasattr(self._db_conn, '_workspace_id') and self._db_conn._workspace_id is not None:
+                            workspace_id = self._db_conn._workspace_id
                             role_id = f"_{workspace_id}-admin"
                             trg_count = sql.count('__ROLE_ID__')
                             if trg_count > 0:

@@ -24,6 +24,8 @@
 #   is_int(self, int_value):
 #   DateCalc(self, AddDay):
 # backyard_main(organization_id, workspace_id):
+
+
 import os
 import datetime
 import shutil
@@ -317,6 +319,8 @@ class MainFunctions():
 
         # 対象メニューがビューの場合
         SelectObjName = DelList['TABLE_NAME']
+        if DelList['VIEW_NAME']:
+            SelectObjName = DelList['VIEW_NAME']
 
         # 対象メニューがビューの場合、SELECTはビューを使用
         sql = '''SELECT
@@ -364,6 +368,8 @@ class MainFunctions():
 
         # 対象メニューがビューの場合
         SelectObjName = DelList['TABLE_NAME']
+        if DelList['VIEW_NAME']:
+            SelectObjName = DelList['VIEW_NAME']
 
         # 対象メニューがビューの場合、SELECTはビューを使用
         sql = '''SELECT
@@ -413,76 +419,10 @@ class MainFunctions():
         rows = self.ws_db.sql_execute(sql)
 
         if DelList['HISTORY_TABLE_FLAG'] == '1':
-            sql = '''DELETE
-                     FROM
-                       {}
-                     WHERE
-                       {} in ({})
-                  '''.format(DelList['TABLE_NAME_JNL'], DelList['PKEY_NAME'], PkeyString)
-            # print(sql)
-            rows = self.ws_db.sql_execute(sql)
-
             # [処理] テーブルから保管期限切れレコードの物理削除(テーブル名:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME_JNL"]])
             g.applogger.debug(FREE_LOG)
 
-    def PhysicalDeleteDBbyOperationDelete(self, DelList):
-        """
-          削除されているオペレーションに紐づいているオペレーションのレコードを削除
-          Arguments:
-            DelList: 削除対象のメニュー情報
-          Returns:
-            なし
-        """
-        # 対象メニューがビューの場合
-        print("この処理必要？")
-        SelectObjName = DelList['TABLE_NAME']
-
-        MasterRows, JournalRows = getOperationDeleteRows(DelList):
-
-        PkeyList = []
-        PkeyString = ""
-        # 物理対象のレコードのPkeyを取得
-        for row in roMasterRowsws:
-            PkeyList.append(row[DelList['PKEY_NAME']])
-            if len(PkeyString) != 0:
-                PkeyString += ","
-            PkeyString += "'" + row[DelList['PKEY_NAME']] + "'"
-
-        # 削除対象のレコードがある場合
-        if len(PkeyList) != 0:
-            # 物理対象のレコードに紐づいているファイルアップロードカラムのファイルを削除
-            for Pkey in PkeyList:
-                for TgtPath in DelList['FILE_UPLOAD_COLUMNS']:
-                    DelPath = "{}/{}/{}".format(self.getDataRelayStorageDir(), TgtPath, Pkey)
-                    if os.path.isdir(DelPath):
-                        # [処理] テーブルに紐づく不要ディレクトリ削除(テーブル名:({}) ディレクトリ名:({}))
-                        FREE_LOG = g.appmsg.get_api_message("MSG-100009", [DelList["TABLE_NAME"], DelPath])
-                        g.applogger.debug(FREE_LOG)
-                        shutil.rmtree(DelPath)
-
-            sql = '''DELETE
-                    FROM
-                    {}
-                    WHERE
-                    {} in ({})
-                '''.format(DelList['TABLE_NAME'], DelList['PKEY_NAME'], PkeyString)
-            # print(sql)
-            rows = self.ws_db.sql_execute(sql)
-
-            #	[処理] オペレーションが削除されているレコードの物理削除(テーブル名:{})
-            FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME"]])
-            g.applogger.debug(FREE_LOG)
-
-        PkeyList = []
-        PkeyString = ""
-        # 物理対象の履歴レコードのPkeyを取得
-        for row in JournalRows:
-            PkeyList.append(row[DelList['PKEY_NAME']])
-            if len(PkeyString) != 0:
-                PkeyString += ","
-            PkeyString += "'" + row[DelList['PKEY_NAME']] + "'"
-
             sql = '''DELETE
                      FROM
                        {}
@@ -491,59 +431,6 @@ class MainFunctions():
                   '''.format(DelList['TABLE_NAME_JNL'], DelList['PKEY_NAME'], PkeyString)
             # print(sql)
             rows = self.ws_db.sql_execute(sql)
-
-            #	[処理] オペレーションが削除されているレコードの物理削除(テーブル名:{})
-            FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME_JNL"]])
-            g.applogger.debug(FREE_LOG)
-
-    def getOperationDeleteRows(DelList):
-        MasterRows = []
-        JournalRows = []
-        # Terraform作業管理系テーブルについて、RUN_MODE:3(リソース削除)の場合オペレーションIDが指定されないので、削除対象として除外する。
-        Terrafomesql = " select {} from {} TAB_A "   .
-        " where NOT EXISTS "      .
-        "   (select "             .
-        "      * "                .
-        "    from "               .
-        "      (select * from T_COMN_OPERATION) TAB_B " .
-        "    where "              .
-        "      TAB_A.{} = TAB_B.OPERATION_ID " .
-        "   ) AND NOT TAB_A.RUN_MODE = '4' " .
-        ")"
-
-        Otherssql = "select {} from {} TAB_A
-        " where NOT EXISTS "      .
-        "   (select "             .
-        "      * "                .
-        "    from "               .
-        "      (select * from T_COMN_OPERATION) TAB_B " .
-        "    where "              .
-        "      TAB_A.{} = TAB_B.OPERATION_ID " .
-        ")"
-
-        OpeDelJnlPkeyLists = {}
-        # 対象メニューがビューの場合、SELECTはビューを使用
-        if DelList['TABLE_NAME'] == "T_TERE_EXEC_STS_INST" or
-           DelList['TABLE_NAME'] == "T_TERC_EXEC_STS_INST" or
-            sql = Terrafomesql.format(DelList['PKEY_NAME'], DelList['TABLE_NAME'], self.operation_id_column_name)
-        else:
-            sql = Otherssql.format(DelList['PKEY_NAME'], DelList['TABLE_NAME'], self.operation_id_column_name)
-
-        print(sql)
-        MasterRows = self.ws_db.sql_execute(sql)
-        resuleList.append(rows)
-
-        if DelList['HISTORY_TABLE_FLAG'] == '1':
-            if DelList['TABLE_NAME'] == "T_TERE_EXEC_STS_INST" or
-               DelList['TABLE_NAME'] == "T_TERC_EXEC_STS_INST" or
-                sql = Terrafomesql.format(DelList['PKEY_NAME'], DelList['TABLE_NAME_JNL'], self.operation_id_column_name)
-            else:
-                sql = Otherssql.format(DelList['PKEY_NAME'], DelList['TABLE_NAME_JNL'], self.operation_id_column_name)
-
-            print(sql)
-            JournalRows = self.ws_db.sql_execute(sql)
-
-        return MasterRows, JournalRows
 
     def getDataRelayStorageDir(self):
         """

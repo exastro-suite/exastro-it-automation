@@ -2269,7 +2269,7 @@ class ExecuteDirector():
         try:
             subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            # 詳細ログの取得を設定し、gitコマンドをリトライする。
+            # 詳細ログの取得を設定し、 gitコマンドをリトライする。
             os.environ["GIT_TRACE"] = 'true'
             os.environ["GIT_TRACE_SETUP"] = 'true'
             os.environ["GIT_CURL_VERBOSE"]= 'true'

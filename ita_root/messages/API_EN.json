@@ -1642,6 +1642,7 @@
     "MSG-100019": "The menu is not registered in the menu table link. (menu:{})",
     "MSG-100020": "Operation deletion management information acquisition",
     "MSG-100021": "Operation deletion management information (deletion information: {})",
+    "MSG-100022": "[Process] Physical deletion of records associated with deleted operations (Table name:{})",
     "MSG-110001": "Paths cannot be set using '..' or spaces. ({})",
     "MSG-110002": "Enter the number of Deletion days within the range of days that can be specified. (Minimum value: {}, Maximum value: {}, Input value: {})",
     "BKY-00001": "-",

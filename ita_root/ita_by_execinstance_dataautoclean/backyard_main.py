@@ -35,46 +35,46 @@ from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 
 class MainFunctions():
     """
-      ƒIƒyƒŒ[ƒVƒ‡ƒ“íœ@ƒƒCƒ“ˆ—ƒNƒ‰ƒX
+      ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ã€€ãƒ¡ã‚¤ãƒ³å‡¦ç†ã‚¯ãƒ©ã‚¹
     """
     def __init__(self):
         if getattr(g, 'USER_ID', None) is None:
             g.USER_ID = '110101'
-        self.warning_flag = 0  # Œxƒtƒ‰ƒO(1FŒx”­¶)
-        self.error_flag = 0    # ˆÙíƒtƒ‰ƒO(1FˆÙí”­¶)
+        self.warning_flag = 0  # è­¦å‘Šãƒ•ãƒ©ã‚°(1ï¼šè­¦å‘Šç™ºç”Ÿ)
+        self.error_flag = 0    # ç•°å¸¸ãƒ•ãƒ©ã‚°(1ï¼šç•°å¸¸ç™ºç”Ÿ)
         self.test_mode = False
         self.ws_db = None
         self.operation_id_column_name = "OPERATION_ID"
 
     def InitFunction(self):
         """
-          ‰Šúˆ—
+          åˆæœŸå‡¦ç†
           Arguments:
-            ‚È‚µ
+            ãªã—
           Returns:
-            ‚È‚µ
+            ãªã—
         """
-        # [ˆ—]ƒvƒƒV[ƒWƒƒŠJn
+        # [å‡¦ç†]ãƒ—ãƒ­ã‚·ãƒ¼ã‚¸ãƒ£é–‹å§‹
         FREE_LOG = g.appmsg.get_api_message("MSG-100001")
         g.applogger.debug(FREE_LOG)
 
         self.ws_db = DBConnectWs()
 
-        # [ˆ—]DBƒRƒlƒNƒgŠ®—¹
+        # [å‡¦ç†]DBã‚³ãƒã‚¯ãƒˆå®Œäº†
         FREE_LOG = g.appmsg.get_api_message("MSG-100002")
         g.applogger.debug(FREE_LOG)
 
-        # [ˆ—]ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“ŠJn
+        # [å‡¦ç†]ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³é–‹å§‹
         FREE_LOG = g.appmsg.get_api_message("MSG-100004")
         self.ws_db.db_transaction_start()
 
     def MainFunction(self):
         """
-          ƒƒCƒ“ˆ—
+          ãƒ¡ã‚¤ãƒ³å‡¦ç†
           Arguments:
-            ‚È‚µ
+            ãªã—
           Returns:
-            bool True:³í@False:ˆÙí
+            bool True:æ­£å¸¸ã€€False:ç•°å¸¸
         """
         ret_bool = True
         OpeDelLists = []
@@ -83,84 +83,84 @@ class MainFunctions():
 
         for DelList in OpeDelLists:
 
-            # [ˆ—] ƒe[ƒuƒ‹‚©‚ç•ÛŠÇŠúŒÀØ‚êƒf[ƒ^‚ÌíœŠJn(ƒe[ƒuƒ‹–¼:{})
+            # [å‡¦ç†] ãƒ†ãƒ¼ãƒ–ãƒ«ã‹ã‚‰ä¿ç®¡æœŸé™åˆ‡ã‚Œãƒ‡ãƒ¼ã‚¿ã®å‰Šé™¤é–‹å§‹(ãƒ†ãƒ¼ãƒ–ãƒ«å:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100005", [DelList["TABLE_NAME"]])
             g.applogger.debug(FREE_LOG)
 
-            # ˜_—íœ“ú”‚É‘Î‰‚·‚éƒIƒyƒŒ[ƒVƒ‡ƒ“‚ÌƒŒƒR[ƒh‚ğ”p~
+            # è«–ç†å‰Šé™¤æ—¥æ•°ã«å¯¾å¿œã™ã‚‹ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å»ƒæ­¢
             TgtDelDate = DelList['LG_DATE'].strftime('%Y/%m/%d %H:%M:%S')
             TgtLogicalOpeList = self.getTgtDelOpeList(TgtDelDate)
             self.LogicalDeleteDB(DelList, TgtLogicalOpeList)
-            # •¨—íœ“ú”‚É‘Î‰‚·‚éƒIƒyƒŒ[ƒVƒ‡ƒ“‚ÌƒŒƒR[ƒh‚ğíœ
+            # ç‰©ç†å‰Šé™¤æ—¥æ•°ã«å¯¾å¿œã™ã‚‹ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å‰Šé™¤
             TgtDelDate = DelList['PH_DATE'].strftime('%Y/%m/%d %H:%M:%S')
             TgtPhysicsOpeList = self.getTgtDelOpeList(TgtDelDate)
             self.PhysicalDeleteDB(DelList, TgtPhysicsOpeList)
-            # íœ‚³‚ê‚Ä‚¢‚éƒIƒyƒŒ[ƒVƒ‡ƒ“‚É•R‚Ã‚¢‚Ä‚¢‚éƒŒƒR[ƒh‚ğíœ
+            # å‰Šé™¤ã•ã‚Œã¦ã„ã‚‹ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã«ç´ã¥ã„ã¦ã„ã‚‹ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å‰Šé™¤
             self.PhysicalDeleteDBbyOperationDelete(DelList)
 
-            # [ˆ—] ƒe[ƒuƒ‹‚©‚ç•ÛŠÇŠúŒÀØ‚êƒf[ƒ^‚ÌíœŠ®—¹(ƒe[ƒuƒ‹–¼:{})
+            # [å‡¦ç†] ãƒ†ãƒ¼ãƒ–ãƒ«ã‹ã‚‰ä¿ç®¡æœŸé™åˆ‡ã‚Œãƒ‡ãƒ¼ã‚¿ã®å‰Šé™¤å®Œäº†(ãƒ†ãƒ¼ãƒ–ãƒ«å:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100006", [DelList["TABLE_NAME"]])
             g.applogger.debug(FREE_LOG)
         return ret_bool
 
     def EndFunction(self, result):
         """
-          I—¹ˆ—
+          çµ‚äº†å‡¦ç†
           Arguments:
-            ‚È‚µ
+            ãªã—
           Returns:
-            ‚È‚µ
+            ãªã—
         """
         if result is True:
-            # ƒRƒ~ƒbƒg(ƒŒƒR[ƒhƒƒbƒN‚ğ‰ğœ)
+            # ã‚³ãƒŸãƒƒãƒˆ(ãƒ¬ã‚³ãƒ¼ãƒ‰ãƒ­ãƒƒã‚¯ã‚’è§£é™¤)
             FREE_LOG = g.appmsg.get_api_message("MSG-100016")
             g.applogger.debug(FREE_LOG)
 
             self.ws_db.db_commit()
 
-            # ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“I—¹
+            # ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³çµ‚äº†
             FREE_LOG = g.appmsg.get_api_message("MSG-100015")
             g.applogger.debug(FREE_LOG)
 
             self.ws_db.db_transaction_end(True)
 
             if self.warning_flag == 0:
-                # [ˆ—]ƒvƒƒV[ƒWƒƒI—¹(³í)
+                # [å‡¦ç†]ãƒ—ãƒ­ã‚·ãƒ¼ã‚¸ãƒ£çµ‚äº†(æ­£å¸¸)
                 FREE_LOG = g.appmsg.get_api_message("MSG-100003")
                 g.applogger.debug(FREE_LOG)
 
             else:
-                # ƒvƒƒV[ƒWƒƒI—¹(Œx)
+                # ãƒ—ãƒ­ã‚·ãƒ¼ã‚¸ãƒ£çµ‚äº†(è­¦å‘Š)
                 FREE_LOG = g.appmsg.get_api_message("MSG-100011")
                 g.applogger.debug(FREE_LOG)
 
         else:
-            # ƒ[ƒ‹ƒoƒbƒN(ƒŒƒR[ƒhƒƒbƒN‚ğ‰ğœ)
+            # ãƒ­ãƒ¼ãƒ«ãƒãƒƒã‚¯(ãƒ¬ã‚³ãƒ¼ãƒ‰ãƒ­ãƒƒã‚¯ã‚’è§£é™¤)
             FREE_LOG = g.appmsg.get_api_message("MSG-100017")
             g.applogger.debug(FREE_LOG)
 
             self.ws_db.db_rollback()
 
-            # ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“I—¹
+            # ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³çµ‚äº†
             FREE_LOG = g.appmsg.get_api_message("MSG-100015")
             g.applogger.debug(FREE_LOG)
 
             self.ws_db.db_transaction_end(False)
 
-            # ƒvƒƒV[ƒWƒƒI—¹(ˆÙí)
+            # ãƒ—ãƒ­ã‚·ãƒ¼ã‚¸ãƒ£çµ‚äº†(ç•°å¸¸)
             FREE_LOG = g.appmsg.get_api_message("MSG-100010")
             g.applogger.debug(FREE_LOG)
 
     def getOpeDelMenuList(self, OpeDelLists):
         """
-          ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—uT_COMN_DEL_OPERATION_LISTv‚Ìî•ñæ“¾
+          ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†ã€ŒT_COMN_DEL_OPERATION_LISTã€ã®æƒ…å ±å–å¾—
           Arguments:
-            OpeDelLists: ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—‚Ìæ“¾î•ñ
+            OpeDelLists: ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†ã®å–å¾—æƒ…å ±
           Returns:
             bool(True,False), OpeDelLists
         """
 
-        # ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—î•ñæ“¾
+        # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†æƒ…å ±å–å¾—
         FREE_LOG = g.appmsg.get_api_message("MSG-100020")
         g.applogger.debug(FREE_LOG)
 
@@ -168,19 +168,19 @@ class MainFunctions():
         sql = "SELECT * FROM T_COMN_DEL_OPERATION_LIST WHERE DISUSE_FLAG='0'"
         DelLists = self.ws_db.sql_execute(sql)
         if len(DelLists) == 0:
-            # ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—@ƒŒƒR[ƒh–¢“o˜^
+            # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†ã€€ãƒ¬ã‚³ãƒ¼ãƒ‰æœªç™»éŒ²
             return True, OpeDelLists
 
         for DelList in DelLists:
 
             tbl_info = {}
 
-            # ƒƒjƒ…[Eƒe[ƒuƒ‹•R•t‚©‚çƒƒjƒ…[î•ñæ“¾
+            # ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒ»ãƒ†ãƒ¼ãƒ–ãƒ«ç´ä»˜ã‹ã‚‰ãƒ¡ãƒ‹ãƒ¥ãƒ¼æƒ…å ±å–å¾—
             sql = "SELECT * FROM T_COMN_MENU_TABLE_LINK WHERE MENU_ID = %s AND DISUSE_FLAG='0'"
             MenuTblLinkLists = self.ws_db.sql_execute(sql, [DelList["MENU_NAME"]])
 
             if len(MenuTblLinkLists) == 0:
-                # ƒƒjƒ…[Eƒe[ƒuƒ‹•R•t‚Éƒƒjƒ…[‚ª–¢“o˜^‚Å‚·B (ƒƒjƒ…[:{})
+                # ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒ»ãƒ†ãƒ¼ãƒ–ãƒ«ç´ä»˜ã«ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒæœªç™»éŒ²ã§ã™ã€‚ (ãƒ¡ãƒ‹ãƒ¥ãƒ¼:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100019", [DelList["MENU_NAME"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
@@ -192,12 +192,12 @@ class MainFunctions():
             if DelList['DATA_STORAGE_PATH']:
                 tbl_info['FILE_UPLOAD_COLUMNS'].append(DelList['DATA_STORAGE_PATH'])
             RestNameConfig = {}
-            # ƒƒjƒ…[EƒJƒ‰ƒ€•R•t‚©‚çƒƒjƒ…[î•ñæ“¾
+            # ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒ»ã‚«ãƒ©ãƒ ç´ä»˜ã‹ã‚‰ãƒ¡ãƒ‹ãƒ¥ãƒ¼æƒ…å ±å–å¾—
             sql = "SELECT * FROM T_COMN_MENU_COLUMN_LINK WHERE MENU_ID = %s and DISUSE_FLAG = '0'"
             MenuColLinkLists = self.ws_db.sql_execute(sql, [DelList["MENU_NAME"]])
 
             if len(MenuColLinkLists) == 0:
-                # ƒƒjƒ…[EƒJƒ‰ƒ€•R•t‚ÉƒJƒ‰ƒ€î•ñ‚ª–¢“o˜^‚Å‚·B(ƒƒjƒ…[:{})
+                # ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒ»ã‚«ãƒ©ãƒ ç´ä»˜ã«ã‚«ãƒ©ãƒ æƒ…å ±ãŒæœªç™»éŒ²ã§ã™ã€‚(ãƒ¡ãƒ‹ãƒ¥ãƒ¼:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
@@ -205,71 +205,71 @@ class MainFunctions():
 
             for MenuColLinkList in MenuColLinkLists:
                 RestNameConfig[MenuColLinkList["COLUMN_NAME_REST"]] = MenuColLinkList["COL_NAME"]
-                # ƒtƒ@ƒCƒ‹ƒAƒbƒvƒ[ƒhƒJƒ‰ƒ€”»’è
+                # ãƒ•ã‚¡ã‚¤ãƒ«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã‚«ãƒ©ãƒ åˆ¤å®š
                 if MenuColLinkList['COLUMN_CLASS'] in ('9', '20'):
-                    # ƒtƒ@ƒCƒ‹ƒAƒbƒvƒ[ƒh”z’uêŠ‚ªİ’è‚³‚ê‚Ä‚¢‚éê‡‚Ì”»’è
+                    # ãƒ•ã‚¡ã‚¤ãƒ«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰é…ç½®å ´æ‰€ãŒè¨­å®šã•ã‚Œã¦ã„ã‚‹å ´åˆã®åˆ¤å®š
                     if MenuColLinkList['FILE_UPLOAD_PLACE']:
                         tbl_info['FILE_UPLOAD_COLUMNS'].append(MenuColLinkList['FILE_UPLOAD_PLACE'])
                     else:
                         tbl_info['FILE_UPLOAD_COLUMNS'].append("/uploadfiles/" + DelList["MENU_NAME"] + "/" + MenuColLinkList["COLUMN_NAME_REST"])
 
-            # åƒL[–¼Šm”F
+            # ä¸»ã‚­ãƒ¼åç¢ºèª
             if MenuTblLinkList['PK_COLUMN_NAME_REST'] not in RestNameConfig:
-                # ƒƒjƒ…[EƒJƒ‰ƒ€•R•t‚ÉƒJƒ‰ƒ€î•ñ‚ª–¢“o˜^‚Å‚·B(ƒƒjƒ…[:{})
+                # ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãƒ»ã‚«ãƒ©ãƒ ç´ä»˜ã«ã‚«ãƒ©ãƒ æƒ…å ±ãŒæœªç™»éŒ²ã§ã™ã€‚(ãƒ¡ãƒ‹ãƒ¥ãƒ¼:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
                 continue
 
-            # p1:”p~‚Ü‚Å‚Ì“ú”
+            # p1:å»ƒæ­¢ã¾ã§ã®æ—¥æ•°
             tbl_info['LG_DAYS'] = DelList['LG_DAYS']
-            # ”p~‚Ü‚Å‚Ì“ú”‚Ì‘Ã“–«ƒ`ƒFƒbƒN
+            # å»ƒæ­¢ã¾ã§ã®æ—¥æ•°ã®å¦¥å½“æ€§ãƒã‚§ãƒƒã‚¯
             if self.is_int(tbl_info['LG_DAYS']) is False:
-                # ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—‚Ì€”Ô[{}]F˜_—íœ“ú”[{}]‚ª‘Ã“–‚Å‚Í‚ ‚è‚Ü‚¹‚ñB
+                # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†ã®é …ç•ª[{}]ï¼šè«–ç†å‰Šé™¤æ—¥æ•°[{}]ãŒå¦¥å½“ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚
                 FREE_LOG = g.appmsg.get_api_message("MSG-100012", [DelList["ROW_ID"], DelList["LG_DAYS"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
                 continue
 
-            # p2:•¨—íœ‚Ü‚Å‚Ì“ú”
+            # p2:ç‰©ç†å‰Šé™¤ã¾ã§ã®æ—¥æ•°
             tbl_info['PH_DAYS'] = DelList['PH_DAYS']
-            # ”p~‚Ü‚Å‚Ì“ú”‚Ì‘Ã“–«ƒ`ƒFƒbƒN
+            # å»ƒæ­¢ã¾ã§ã®æ—¥æ•°ã®å¦¥å½“æ€§ãƒã‚§ãƒƒã‚¯
             if self.is_int(tbl_info['PH_DAYS']) is False:
-                # ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—‚Ì€”Ô[{}]F•¨—íœ“ú”[{}]‚ª‘Ã“–‚Å‚Í‚ ‚è‚Ü‚¹‚ñB
+                # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†ã®é …ç•ª[{}]ï¼šç‰©ç†å‰Šé™¤æ—¥æ•°[{}]ãŒå¦¥å½“ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚
                 FREE_LOG = g.appmsg.get_api_message("MSG-100013", [DelList["ROW_ID"], DelList["PH_DAYS"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
                 continue
 
-            # ”p~‚Ü‚Å‚Ì“ú”‚Æ•¨—íœ‚Ü‚Å‚Ì“ú”‚Ì‘Ã“–«ƒ`ƒFƒbƒN
+            # å»ƒæ­¢ã¾ã§ã®æ—¥æ•°ã¨ç‰©ç†å‰Šé™¤ã¾ã§ã®æ—¥æ•°ã®å¦¥å½“æ€§ãƒã‚§ãƒƒã‚¯
             if tbl_info['LG_DAYS'] >= tbl_info['PH_DAYS']:
-                # ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—‚Ì€”Ô[{}]Fi˜_—íœ“ú”[{}]„•¨—íœ“ú”[{}]j‚É‚È‚Á‚Ä‚¢‚Ü‚·B
+                # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†ã®é …ç•ª[{}]ï¼šï¼ˆè«–ç†å‰Šé™¤æ—¥æ•°[{}]ï¼ï¼ç‰©ç†å‰Šé™¤æ—¥æ•°[{}]ï¼‰ã«ãªã£ã¦ã„ã¾ã™ã€‚
                 FREE_LOG = g.appmsg.get_api_message("MSG-100014", [DelList["ROW_ID"], DelList["LG_DAYS"], DelList["PH_DAYS"]])
                 g.applogger.error(FREE_LOG)
                 self.warning_flag = True
                 continue
 
-            # •Û‘¶ŠúŠÔZo
+            # ä¿å­˜æœŸé–“ç®—å‡º
             tbl_info['LG_DATE'] = self.DateCalc(tbl_info['LG_DAYS'])
 
             tbl_info['PH_DATE'] = self.DateCalc(tbl_info['PH_DAYS'])
 
-            # •¨—ƒe[ƒuƒ‹–¼
+            # ç‰©ç†ãƒ†ãƒ¼ãƒ–ãƒ«å
             tbl_info['TABLE_NAME'] = MenuTblLinkList['TABLE_NAME']
 
-            # ƒrƒ…[–¼
+            # ãƒ“ãƒ¥ãƒ¼å
             tbl_info['VIEW_NAME'] = MenuTblLinkList['VIEW_NAME']
 
-            # •¨—ƒe[ƒuƒ‹–¼iƒWƒƒ[ƒiƒ‹j
+            # ç‰©ç†ãƒ†ãƒ¼ãƒ–ãƒ«åï¼ˆã‚¸ãƒ£ãƒ¼ãƒŠãƒ«ï¼‰
             tbl_info['TABLE_NAME_JNL'] = MenuTblLinkList['TABLE_NAME'] + "_JNL"
 
-            # åƒL[–¼
+            # ä¸»ã‚­ãƒ¼å
             tbl_info['PKEY_NAME'] = RestNameConfig[MenuTblLinkList['PK_COLUMN_NAME_REST']]
 
-            # ÅIXVÒID
+            # æœ€çµ‚æ›´æ–°è€…ID
             tbl_info['LAST_UPD_USER_ID'] = 110101
 
-            # ƒIƒyƒŒ[ƒVƒ‡ƒ“íœŠÇ—î•ñ (î•ñ:{})
+            # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³å‰Šé™¤ç®¡ç†æƒ…å ± (æƒ…å ±:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100021", [str(tbl_info)])
             g.applogger.debug(FREE_LOG)
 
@@ -279,13 +279,13 @@ class MainFunctions():
 
     def getTgtDelOpeList(self, TgtDelDate):
         """
-          íœ‘ÎÛ“ú‚æ‚èŒÃ‚¢À{—\’è“ú‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“‚ğæ“¾
+          å‰Šé™¤å¯¾è±¡æ—¥æ™‚ã‚ˆã‚Šå¤ã„å®Ÿæ–½äºˆå®šæ—¥ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã‚’å–å¾—
           Arguments:
-            TgtDelDate:  íœ‘ÎÛ“ú
+            TgtDelDate:  å‰Šé™¤å¯¾è±¡æ—¥æ™‚
           Returns:
-            TgtOpeList: íœ‘ÎÛ“ú‚æ‚èŒÃ‚¢À{—\’è“ú‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“(uuid)
+            TgtOpeList: å‰Šé™¤å¯¾è±¡æ—¥æ™‚ã‚ˆã‚Šå¤ã„å®Ÿæ–½äºˆå®šæ—¥ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³(uuid)
         """
-        # ”p~‚³‚ê‚Ä‚¢‚éƒŒƒR[ƒh‚à‘ÎÛ‚É‚·‚éB
+        # å»ƒæ­¢ã•ã‚Œã¦ã„ã‚‹ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚‚å¯¾è±¡ã«ã™ã‚‹ã€‚
         sql = '''
               SELECT
                 CONCAT('"', OPERATION_ID, '"') AS OPERATION_ID
@@ -304,25 +304,25 @@ class MainFunctions():
 
     def LogicalDeleteDB(self, DelList, TgtOpeList):
         """
-          íœ‘ÎÛ“ú‚æ‚èŒÃ‚¢À{—\’è“ú‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“‚ÌƒŒƒR[ƒh‚ğ”p~
+          å‰Šé™¤å¯¾è±¡æ—¥æ™‚ã‚ˆã‚Šå¤ã„å®Ÿæ–½äºˆå®šæ—¥ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å»ƒæ­¢
           Arguments:
-            DelList: íœ‘ÎÛ‚Ìƒƒjƒ…[î•ñ
-            TgtOpeList:  íœ‘ÎÛ‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“
+            DelList: å‰Šé™¤å¯¾è±¡ã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼æƒ…å ±
+            TgtOpeList:  å‰Šé™¤å¯¾è±¡ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³
           Returns:
-            ‚È‚µ
+            ãªã—
         """
-        # íœ‘ÎÛ‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“‚ª‚È‚¢ê‡
+        # å‰Šé™¤å¯¾è±¡ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ãŒãªã„å ´åˆ
         if not TgtOpeList:
             return
 
-        # ‘ÎÛƒƒjƒ…[‚ªƒrƒ…[‚Ìê‡
-        # ƒIƒyƒŒ[ƒVƒ‡ƒ“ID‚ª‚È‚¢ƒe[ƒuƒ‹‚Ì‘Î‰uT_COMN_CONDUCTOR_NODE_INSTANCEv
-        # —š—ğ—pView‚Ìì¬‚ª•K—v
+        # å¯¾è±¡ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒãƒ“ãƒ¥ãƒ¼ã®å ´åˆ
+        # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³IDãŒãªã„ãƒ†ãƒ¼ãƒ–ãƒ«ã®å¯¾å¿œã€ŒT_COMN_CONDUCTOR_NODE_INSTANCEã€
+        # å±¥æ­´ç”¨Viewã®ä½œæˆãŒå¿…è¦
         SelectObjName = DelList['TABLE_NAME']
         if DelList['VIEW_NAME']:
             SelectObjName = DelList['VIEW_NAME']
 
-        # ‘ÎÛƒƒjƒ…[‚ªƒrƒ…[‚Ìê‡ASELECT‚Íƒrƒ…[‚ğg—p
+        # å¯¾è±¡ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒãƒ“ãƒ¥ãƒ¼ã®å ´åˆã€SELECTã¯ãƒ“ãƒ¥ãƒ¼ã‚’ä½¿ç”¨
         sql = '''SELECT
                    {},
                    DISUSE_FLAG,
@@ -339,12 +339,12 @@ class MainFunctions():
         if len(rows) == 0:
             return
 
-        # [ˆ—] ƒe[ƒuƒ‹‚©‚ç•ÛŠÇŠúŒÀØ‚êƒŒƒR[ƒh‚Ì”p~(ƒe[ƒuƒ‹–¼:{})
+        # [å‡¦ç†] ãƒ†ãƒ¼ãƒ–ãƒ«ã‹ã‚‰ä¿ç®¡æœŸé™åˆ‡ã‚Œãƒ¬ã‚³ãƒ¼ãƒ‰ã®å»ƒæ­¢(ãƒ†ãƒ¼ãƒ–ãƒ«å:{})
         FREE_LOG = g.appmsg.get_api_message("MSG-100007", [DelList["TABLE_NAME"]])
         g.applogger.debug(FREE_LOG)
 
         for row in rows:
-            # ˜_—íœ‘ÎÛ‚ÌƒŒƒR[ƒh‚ğ”p~‚·‚éB
+            # è«–ç†å‰Šé™¤å¯¾è±¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å»ƒæ­¢ã™ã‚‹ã€‚
             row['LAST_UPDATE_USER'] = DelList['LAST_UPD_USER_ID']
             row['DISUSE_FLAG'] = '1'
             history_table = False
@@ -355,25 +355,25 @@ class MainFunctions():
 
     def PhysicalDeleteDB(self, DelList, TgtOpeList):
         """
-          íœ‘ÎÛ“ú‚æ‚èŒÃ‚¢À{—\’è“ú‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“‚ÌƒŒƒR[ƒh‚ğíœ
+          å‰Šé™¤å¯¾è±¡æ—¥æ™‚ã‚ˆã‚Šå¤ã„å®Ÿæ–½äºˆå®šæ—¥ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å‰Šé™¤
           Arguments:
-            DelList: íœ‘ÎÛ‚Ìƒƒjƒ…[î•ñ
-            TgtOpeList:  íœ‘ÎÛ‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“
+            DelList: å‰Šé™¤å¯¾è±¡ã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼æƒ…å ±
+            TgtOpeList:  å‰Šé™¤å¯¾è±¡ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³
           Returns:
-            ‚È‚µ
+            ãªã—
         """
-        # íœ‘ÎÛ‚ÌƒIƒyƒŒ[ƒVƒ‡ƒ“‚ª‚È‚¢ê‡
+        # å‰Šé™¤å¯¾è±¡ã®ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ãŒãªã„å ´åˆ
         if not TgtOpeList:
             return
 
-        # ‘ÎÛƒƒjƒ…[‚ªƒrƒ…[‚Ìê‡
-        # ƒIƒyƒŒ[ƒVƒ‡ƒ“ID‚ª‚È‚¢ƒe[ƒuƒ‹‚Ì‘Î‰uT_COMN_CONDUCTOR_NODE_INSTANCEv
-        # —š—ğ—pView‚Ìì¬‚ª•K—v
+        # å¯¾è±¡ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒãƒ“ãƒ¥ãƒ¼ã®å ´åˆ
+        # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³IDãŒãªã„ãƒ†ãƒ¼ãƒ–ãƒ«ã®å¯¾å¿œã€ŒT_COMN_CONDUCTOR_NODE_INSTANCEã€
+        # å±¥æ­´ç”¨Viewã®ä½œæˆãŒå¿…è¦
         SelectObjName = DelList['TABLE_NAME']
         if DelList['VIEW_NAME']:
             SelectObjName = DelList['VIEW_NAME']
 
-        # ‘ÎÛƒƒjƒ…[‚ªƒrƒ…[‚Ìê‡ASELECT‚Íƒrƒ…[‚ğg—p
+        # å¯¾è±¡ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒãƒ“ãƒ¥ãƒ¼ã®å ´åˆã€SELECTã¯ãƒ“ãƒ¥ãƒ¼ã‚’ä½¿ç”¨
         sql = '''SELECT
                    {}
                  FROM
@@ -386,28 +386,28 @@ class MainFunctions():
 
         PkeyList = []
         PkeyString = ""
-        # •¨—‘ÎÛ‚ÌƒŒƒR[ƒh‚ÌPkey‚ğæ“¾
+        # ç‰©ç†å¯¾è±¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã®Pkeyã‚’å–å¾—
         for row in rows:
             PkeyList.append(row[DelList['PKEY_NAME']])
             if len(PkeyString) != 0:
                 PkeyString += ","
             PkeyString += "'" + row[DelList['PKEY_NAME']] + "'"
 
-        # íœ‘ÎÛ‚ÌƒŒƒR[ƒh‚ª‚È‚¢ê‡
+        # å‰Šé™¤å¯¾è±¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ãŒãªã„å ´åˆ
         if len(PkeyList) == 0:
             return
 
-        # •¨—‘ÎÛ‚ÌƒŒƒR[ƒh‚É•R‚Ã‚¢‚Ä‚¢‚éƒtƒ@ƒCƒ‹ƒAƒbƒvƒ[ƒhƒJƒ‰ƒ€‚Ìƒtƒ@ƒCƒ‹‚ğíœ
+        # ç‰©ç†å¯¾è±¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã«ç´ã¥ã„ã¦ã„ã‚‹ãƒ•ã‚¡ã‚¤ãƒ«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã‚«ãƒ©ãƒ ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’å‰Šé™¤
         for Pkey in PkeyList:
             for TgtPath in DelList['FILE_UPLOAD_COLUMNS']:
                 DelPath = "{}/{}/{}".format(self.getDataRelayStorageDir(), TgtPath, Pkey)
                 if os.path.isdir(DelPath):
-                    # [ˆ—] ƒe[ƒuƒ‹‚É•R‚Ã‚­•s—vƒfƒBƒŒƒNƒgƒŠíœ(ƒe[ƒuƒ‹–¼:({}) ƒfƒBƒŒƒNƒgƒŠ–¼:({}))
+                    # [å‡¦ç†] ãƒ†ãƒ¼ãƒ–ãƒ«ã«ç´ã¥ãä¸è¦ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå‰Šé™¤(ãƒ†ãƒ¼ãƒ–ãƒ«å:({}) ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå:({}))
                     FREE_LOG = g.appmsg.get_api_message("MSG-100009", [DelList["TABLE_NAME"], DelPath])
                     g.applogger.debug(FREE_LOG)
                     shutil.rmtree(DelPath)
 
-        # [ˆ—] ƒe[ƒuƒ‹‚©‚ç•ÛŠÇŠúŒÀØ‚êƒŒƒR[ƒh‚Ì•¨—íœ(ƒe[ƒuƒ‹–¼:{})
+        # [å‡¦ç†] ãƒ†ãƒ¼ãƒ–ãƒ«ã‹ã‚‰ä¿ç®¡æœŸé™åˆ‡ã‚Œãƒ¬ã‚³ãƒ¼ãƒ‰ã®ç‰©ç†å‰Šé™¤(ãƒ†ãƒ¼ãƒ–ãƒ«å:{})
         FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME"]])
         g.applogger.debug(FREE_LOG)
 
@@ -430,37 +430,37 @@ class MainFunctions():
 
             rows = self.ws_db.sql_execute(sql)
 
-            # [ˆ—] ƒe[ƒuƒ‹‚©‚ç•ÛŠÇŠúŒÀØ‚êƒŒƒR[ƒh‚Ì•¨—íœ(ƒe[ƒuƒ‹–¼:{})
+            # [å‡¦ç†] ãƒ†ãƒ¼ãƒ–ãƒ«ã‹ã‚‰ä¿ç®¡æœŸé™åˆ‡ã‚Œãƒ¬ã‚³ãƒ¼ãƒ‰ã®ç‰©ç†å‰Šé™¤(ãƒ†ãƒ¼ãƒ–ãƒ«å:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100008", [DelList["TABLE_NAME_JNL"]])
             g.applogger.debug(FREE_LOG)
 
     def PhysicalDeleteDBbyOperationDelete(self, DelList):
         """
-          íœ‚³‚ê‚Ä‚¢‚éƒIƒyƒŒ[ƒVƒ‡ƒ“‚É•R‚Ã‚¢‚Ä‚¢‚éƒIƒyƒŒ[ƒVƒ‡ƒ“‚ÌƒŒƒR[ƒh‚ğíœ
+          å‰Šé™¤ã•ã‚Œã¦ã„ã‚‹ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã«ç´ã¥ã„ã¦ã„ã‚‹ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’å‰Šé™¤
           Arguments:
-            DelList: íœ‘ÎÛ‚Ìƒƒjƒ…[î•ñ
+            DelList: å‰Šé™¤å¯¾è±¡ã®ãƒ¡ãƒ‹ãƒ¥ãƒ¼æƒ…å ±
           Returns:
-            ‚È‚µ
+            ãªã—
         """
         MasterRows, JournalRows = self.getOperationDeleteRows(DelList)
 
         PkeyList = []
         PkeyString = ""
-        # •¨—‘ÎÛ‚ÌƒŒƒR[ƒh‚ÌPkey‚ğæ“¾
+        # ç‰©ç†å¯¾è±¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã®Pkeyã‚’å–å¾—
         for row in MasterRows:
             PkeyList.append(row[DelList['PKEY_NAME']])
             if len(PkeyString) != 0:
                 PkeyString += ","
             PkeyString += "'" + row[DelList['PKEY_NAME']] + "'"
 
-        # íœ‘ÎÛ‚ÌƒŒƒR[ƒh‚ª‚ ‚éê‡
+        # å‰Šé™¤å¯¾è±¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ãŒã‚ã‚‹å ´åˆ
         if len(PkeyList) != 0:
-            # •¨—‘ÎÛ‚ÌƒŒƒR[ƒh‚É•R‚Ã‚¢‚Ä‚¢‚éƒtƒ@ƒCƒ‹ƒAƒbƒvƒ[ƒhƒJƒ‰ƒ€‚Ìƒtƒ@ƒCƒ‹‚ğíœ
+            # ç‰©ç†å¯¾è±¡ã®ãƒ¬ã‚³ãƒ¼ãƒ‰ã«ç´ã¥ã„ã¦ã„ã‚‹ãƒ•ã‚¡ã‚¤ãƒ«ã‚¢ãƒƒãƒ—ãƒ­ãƒ¼ãƒ‰ã‚«ãƒ©ãƒ ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’å‰Šé™¤
             for Pkey in PkeyList:
                 for TgtPath in DelList['FILE_UPLOAD_COLUMNS']:
                     DelPath = "{}/{}/{}".format(self.getDataRelayStorageDir(), TgtPath, Pkey)
                     if os.path.isdir(DelPath):
-                        # [ˆ—] ƒe[ƒuƒ‹‚É•R‚Ã‚­•s—vƒfƒBƒŒƒNƒgƒŠíœ(ƒe[ƒuƒ‹–¼:({}) ƒfƒBƒŒƒNƒgƒŠ–¼:({}))
+                        # [å‡¦ç†] ãƒ†ãƒ¼ãƒ–ãƒ«ã«ç´ã¥ãä¸è¦ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå‰Šé™¤(ãƒ†ãƒ¼ãƒ–ãƒ«å:({}) ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå:({}))
                         FREE_LOG = g.appmsg.get_api_message("MSG-100009", [DelList["TABLE_NAME"], DelPath])
                         g.applogger.debug(FREE_LOG)
                         shutil.rmtree(DelPath)
@@ -474,13 +474,13 @@ class MainFunctions():
 
             rows = self.ws_db.sql_execute(sql)
 
-            #	[ˆ—] íœ‚³‚ê‚½ƒIƒyƒŒ[ƒVƒ‡ƒ“‚É•R‚Ã‚¢‚Ä‚¢‚éƒŒƒR[ƒh‚Ì•¨—íœ(ƒe[ƒuƒ‹–¼:{})
+            #	[å‡¦ç†] å‰Šé™¤ã•ã‚ŒãŸã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã«ç´ã¥ã„ã¦ã„ã‚‹ãƒ¬ã‚³ãƒ¼ãƒ‰ã®ç‰©ç†å‰Šé™¤(ãƒ†ãƒ¼ãƒ–ãƒ«å:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100022", [DelList["TABLE_NAME"]])
             g.applogger.debug(FREE_LOG)
 
         PkeyList = []
         PkeyString = ""
-        # •¨—‘ÎÛ‚Ì—š—ğƒŒƒR[ƒh‚ÌPkey‚ğæ“¾
+        # ç‰©ç†å¯¾è±¡ã®å±¥æ­´ãƒ¬ã‚³ãƒ¼ãƒ‰ã®Pkeyã‚’å–å¾—
         for row in JournalRows:
             PkeyList.append(row[DelList['PKEY_NAME']])
             if len(PkeyString) != 0:
@@ -496,21 +496,21 @@ class MainFunctions():
 
             rows = self.ws_db.sql_execute(sql)
 
-            #	[ˆ—] íœ‚³‚ê‚½ƒIƒyƒŒ[ƒVƒ‡ƒ“‚É•R‚Ã‚¢‚Ä‚¢‚éƒŒƒR[ƒh‚Ì•¨—íœ(ƒe[ƒuƒ‹–¼:{})
+            #	[å‡¦ç†] å‰Šé™¤ã•ã‚ŒãŸã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³ã«ç´ã¥ã„ã¦ã„ã‚‹ãƒ¬ã‚³ãƒ¼ãƒ‰ã®ç‰©ç†å‰Šé™¤(ãƒ†ãƒ¼ãƒ–ãƒ«å:{})
             FREE_LOG = g.appmsg.get_api_message("MSG-100022", [DelList["TABLE_NAME_JNL"]])
             g.applogger.debug(FREE_LOG)
 
     def getOperationDeleteRows(self, DelList):
-        # ‘ÎÛƒƒjƒ…[‚ªƒrƒ…[‚Ìê‡
-        # ƒIƒyƒŒ[ƒVƒ‡ƒ“ID‚ª‚È‚¢ƒe[ƒuƒ‹‚Ì‘Î‰uT_COMN_CONDUCTOR_NODE_INSTANCEv
-        # —š—ğ—pView‚Ìì¬‚ª•K—v
+        # å¯¾è±¡ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒãƒ“ãƒ¥ãƒ¼ã®å ´åˆ
+        # ã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³IDãŒãªã„ãƒ†ãƒ¼ãƒ–ãƒ«ã®å¯¾å¿œã€ŒT_COMN_CONDUCTOR_NODE_INSTANCEã€
+        # å±¥æ­´ç”¨Viewã®ä½œæˆãŒå¿…è¦
         SelectObjName = DelList['TABLE_NAME']
         if DelList['VIEW_NAME']:
             SelectObjName = DelList['VIEW_NAME']
 
         MasterRows = []
         JournalRows = []
-        # Terraformì‹ÆŠÇ—Œnƒe[ƒuƒ‹‚É‚Â‚¢‚ÄARUN_MODE:3(ƒŠƒ\[ƒXíœ)‚Ìê‡ƒIƒyƒŒ[ƒVƒ‡ƒ“ID‚ªw’è‚³‚ê‚È‚¢‚Ì‚ÅAíœ‘ÎÛ‚Æ‚µ‚ÄœŠO‚·‚éB
+        # Terraformä½œæ¥­ç®¡ç†ç³»ãƒ†ãƒ¼ãƒ–ãƒ«ã«ã¤ã„ã¦ã€RUN_MODE:3(ãƒªã‚½ãƒ¼ã‚¹å‰Šé™¤)ã®å ´åˆã‚ªãƒšãƒ¬ãƒ¼ã‚·ãƒ§ãƒ³IDãŒæŒ‡å®šã•ã‚Œãªã„ã®ã§ã€å‰Šé™¤å¯¾è±¡ã¨ã—ã¦é™¤å¤–ã™ã‚‹ã€‚
         Terrafomesql = '''
                     select {} from {} TAB_A
                     where NOT EXISTS
@@ -536,7 +536,7 @@ class MainFunctions():
                     '''
 
         OpeDelJnlPkeyLists = {}
-        # ‘ÎÛƒƒjƒ…[‚ªƒrƒ…[‚Ìê‡ASELECT‚Íƒrƒ…[‚ğg—p
+        # å¯¾è±¡ãƒ¡ãƒ‹ãƒ¥ãƒ¼ãŒãƒ“ãƒ¥ãƒ¼ã®å ´åˆã€SELECTã¯ãƒ“ãƒ¥ãƒ¼ã‚’ä½¿ç”¨
         if DelList['TABLE_NAME'] in ("T_TERE_EXEC_STS_INST","T_TERC_EXEC_STS_INST"):
             sql = Terrafomesql.format(DelList['PKEY_NAME'], SelectObjName, self.operation_id_column_name)
         else:
@@ -556,21 +556,21 @@ class MainFunctions():
 
     def getDataRelayStorageDir(self):
         """
-          ƒf[ƒ^ƒŠƒŒƒCƒXƒgƒŒ[ƒW‚ÌƒpƒXæ“¾
+          ãƒ‡ãƒ¼ã‚¿ãƒªãƒ¬ã‚¤ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸ã®ãƒ‘ã‚¹å–å¾—
         Arguments:
-          ‚È‚µ
+          ãªã—
         Returns:
-          ƒf[ƒ^ƒŠƒŒƒCƒXƒgƒŒ[ƒW‚ÌƒpƒX
+          ãƒ‡ãƒ¼ã‚¿ãƒªãƒ¬ã‚¤ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸ã®ãƒ‘ã‚¹
         """
         return os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
 
     def is_int(self, int_value):
         """
-          ”’l”»’è
+          æ•°å€¤åˆ¤å®š
         Arguments:
-          int_value: ”’l
+          int_value: æ•°å€¤
         Returns:
-          bool True:”’l False:”’lˆÈŠO
+          bool True:æ•°å€¤ False:æ•°å€¤ä»¥å¤–
         """
         if not int_value:
             return False
@@ -584,11 +584,11 @@ class MainFunctions():
 
     def DateCalc(self, AddDay):
         """
-          Œ»İ‚É“ú”‰ÁZ
+          ç¾åœ¨æ™‚åˆ»ã«æ—¥æ•°åŠ ç®—
         Arguments:
-          AddDay: ‰ÁZ“ú”
+          AddDay: åŠ ç®—æ—¥æ•°
         Returns:
-          Œ»İ‚É“ú”Œ¸Z‚µ‚½“ú
+          ç¾åœ¨æ™‚åˆ»ã«æ—¥æ•°æ¸›ç®—ã—ãŸæ—¥æ™‚
         """
         NowDate = datetime.datetime.now()
         AddDate = datetime.timedelta(days=AddDay)
@@ -597,12 +597,12 @@ class MainFunctions():
 
 def backyard_main(organization_id, workspace_id):
     """
-      ƒoƒbƒNƒ„[ƒhƒƒCƒ“ˆ—
+      ãƒãƒƒã‚¯ãƒ¤ãƒ¼ãƒ‰ãƒ¡ã‚¤ãƒ³å‡¦ç†
     Arguments:
       organization_id: organization id
       workspace_id: workspace id
     Returns:
-      ‚È‚µ
+      ãªã—
     """
     g.applogger.debug("ita_by_execinstance_dataautoclean backyard_main started")
 

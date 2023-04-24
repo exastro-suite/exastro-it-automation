@@ -1222,7 +1222,7 @@ def count_max_col_seq_by_module(objdbca, TFConst, trg_default_key_list, default_
             temp_default_data = default_data.copy()
             for default_key in trg_default_key_list:
                 if isinstance(temp_default_data, dict):
-                    default = temp_default_data.get(default_key)
+                    default = temp_default_data.get(str(default_key))
                 else:
                     default = None
                 temp_default_data = default
@@ -1405,8 +1405,14 @@ def adjust_type_data_by_max_col_seq(objdbca, TFConst, type_data, temp_member_dat
                         trg_default_key_data = member_data.get('type_nest_dict')
                         temp_type_data = type_data.copy()
                         for key, value in trg_default_key_data.items():
-                            if temp_type_data.get(value):
-                                temp_type_data = temp_type_data[value]
+                            if isinstance(temp_type_data, list):
+                                if value.isdecimal:
+                                    if len(temp_type_data) >= int(value):
+                                        temp_type_data = temp_type_data[int(value)]
+
+                            if isinstance(temp_type_data, dict):
+                                if temp_type_data.get(value):
+                                    temp_type_data = temp_type_data[value]
 
                         # 変数ネスト管理対象
                         trg_nest_type_data = temp_type_data
@@ -1565,6 +1571,9 @@ def generate_member_vars_type_data(objdbca, TFConst, member_vars_data, trg_max_c
         create_map_data_dict(map_data, ref, temp_dict)
 
         # 仮配列と返却用配列をマージ
-        return_data = deepmerge(temp_dict, member_vars_data)
+        try:
+            return_data = deepmerge(temp_dict, member_vars_data)
+        except Exception:
+            return_data = temp_dict
 
     return return_data

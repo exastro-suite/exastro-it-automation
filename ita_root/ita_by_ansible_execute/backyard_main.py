@@ -74,9 +74,6 @@ def main_logic(common_db):
         execution_list, all_exec_count, org_exec_count_list, target_shema = execute_control(common_db, all_execution_limit, org_execution_limit)
         g.applogger.debug("END execute_control")
 
-        if len(execution_list) == 0:
-            return True
-
         # 現在の実行数
         crr_count = 0
         for data in execution_list:
@@ -271,8 +268,11 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
         driver_id = rec["DRIVER_ID"]
         driver_name = rec["DRIVER_NAME"]
         execution_no = rec["EXECUTION_NO"]
-        organization_id = ["ORGANIZATION_ID"]
-        workspace_id = ["WORKSPACE_ID"]
+        organization_id = rec["ORGANIZATION_ID"]
+        workspace_id = rec["WORKSPACE_ID"]
+
+        g.ORGANIZATION_ID = organization_id
+        g.WORKSPACE_ID = workspace_id
 
         wsDb = DBConnectWs(workspace_id)
 
@@ -398,9 +398,6 @@ def get_running_process(common_db, target_shema):
     """
     global ansc_const
 
-    status_id_list = [ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED]
-    prepared_list = list(map(lambda a: "%s", status_id_list))
-
     if target_shema is not None and len(target_shema) > 0:
         count = 0
         sql = ""
@@ -413,7 +410,7 @@ def get_running_process(common_db, target_shema):
             else:
                 sql += "SELECT * FROM `" + table_schema + "`.`" + table_name + "` "
 
-            sql = 'WHERE `DISUSE_FLAG` = 0 AND `STATUS_ID` in ({})'.format(','.join(prepared_list))
+            sql += " WHERE `DISUSE_FLAG` = 0 AND `STATUS_ID` in ('{}', '{}', '{}') ".format(ansc_const.PREPARE, ansc_const.PROCESSING, ansc_const.PROCESS_DELAYED)
 
             if len(target_shema) > count:
                 sql += "UNION ALL "

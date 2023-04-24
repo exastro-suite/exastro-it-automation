@@ -109,7 +109,7 @@ def generate_member_vars_array_for_hcl(wsDb, TFConst, member_vars_records):
     for member_vars_record in member_vars_records:
         key = member_vars_record["CHILD_MEMBER_VARS_KEY"]
         # indexが数値の場合は[]を外す
-        match = re.findall(pattern, key)
+        match = re.findall(pattern, str(key))
         if len(match) != 0:
             key = int(match[0])
 
@@ -144,7 +144,7 @@ def make_parent_id_map(member_vars_records):
             # キーの取得
             key = member_vars_record["CHILD_MEMBER_VARS_KEY"]
             # indexが数値の場合は[]を外す
-            match = re.findall(pattern, key)
+            match = re.findall(pattern, str(key))
             if len(match) != 0:
                 key = int(match[0])
 
@@ -159,7 +159,7 @@ def make_parent_id_map(member_vars_records):
 
                     # indexが数値の場合は[]を外す
                     if res[parent_index]["child_member_vars_key"] != "":
-                        match2 = re.findall(pattern, res[parent_index]["child_member_vars_key"])
+                        match2 = re.findall(pattern, str(res[parent_index]["child_member_vars_key"]))
                         if len(match2) != 0:
                             parent_key = match2[0]
                         parent_member_keys_list.append(parent_key)

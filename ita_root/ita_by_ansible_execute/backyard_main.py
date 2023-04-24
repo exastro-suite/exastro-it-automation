@@ -74,6 +74,15 @@ def main_logic(common_db):
         execution_list, all_exec_count, org_exec_count_list, target_shema = execute_control(common_db, all_execution_limit, org_execution_limit)
         g.applogger.debug("END execute_control")
 
+        # 実行中のコンテナの状態確認
+        g.applogger.debug("START child_process_exist_check")
+        if child_process_exist_check(common_db, target_shema, ansibleAg) is False:
+            g.applogger.debug(g.appmsg.get_log_message("MSG-10059"))
+            return False
+
+        if len(execution_list) == 0:
+            return True
+
         # 現在の実行数
         crr_count = 0
         for data in execution_list:
@@ -125,12 +134,6 @@ def main_logic(common_db):
                 return False
 
             wsDb.db_disconnect()
-
-        # 実行中のコンテナの状態確認
-        g.applogger.debug("START child_process_exist_check")
-        if child_process_exist_check(common_db, target_shema, ansibleAg) is False:
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10059"))
-            return False
 
     except AppException as e:
         common_db.db_rollback()

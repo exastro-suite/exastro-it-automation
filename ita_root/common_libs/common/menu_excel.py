@@ -388,6 +388,12 @@ def make_master_sheet(wb, objdbca, lang, retList_t_common_menu_column_link, menu
     msg = g.appmsg.get_api_message('MSG-30006')
     ws_master.cell(row=1, column=5, value=msg)
 
+    # プルダウンリストをソートする
+    sorted_pulldown_list = {}
+    for key, value in pulldown_list.items():
+        sorted_value_list = dict(sorted(value.items(), key=lambda x: x[1]))
+        sorted_pulldown_list[key] = sorted_value_list
+
     name_define_list = []
     for i, dict_menu_column in enumerate(retList_t_common_menu_column_link):
         ws_master.cell(
@@ -400,9 +406,8 @@ def make_master_sheet(wb, objdbca, lang, retList_t_common_menu_column_link, menu
             # 名前の定義開始、終了位置
             startCell = None
             endCell = None
-            for j, value in enumerate(
-                    pulldown_list[column_name_rest].values(), 1):
-                last_loop = len(pulldown_list[column_name_rest])
+            for j, value in enumerate(sorted_pulldown_list[column_name_rest].values(), 1):
+                last_loop = len(sorted_pulldown_list[column_name_rest])
                 ws_master.cell(
                     row=startRow_master + j,
                     column=startClm_master + i,

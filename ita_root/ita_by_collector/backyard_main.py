@@ -118,10 +118,11 @@ def yamlParseAnalysis(strTargetfile):
                     if key1 not in arrVarsList:
                         arrVarsList[key1] = {}
 
+                    str_key2 = '[%s]' % (key2)
                     if str(key2) not in arrVarsList[key1]:
-                        arrVarsList[key1][str(key2)] = None
+                        arrVarsList[key1][str_key2] = None
 
-                    arrVarsList[key1][str(key2)] = value2
+                    arrVarsList[key1][str_key2] = value2
 
             in_fastarry_f = ""
             in_var_name = ""

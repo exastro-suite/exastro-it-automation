@@ -115,6 +115,12 @@ def yamlParseAnalysis(strTargetfile):
         else:
             for key2, value2 in php_array(value1):
                 if type(value2) not in (list, dict) and is_num(key2):
+                    if key1 not in arrVarsList:
+                        arrVarsList[key1] = {}
+
+                    if str(key2) not in arrVarsList[key1]:
+                        arrVarsList[key1][str(key2)] = None
+
                     arrVarsList[key1][str(key2)] = value2
 
             in_fastarry_f = ""
@@ -136,20 +142,21 @@ def yamlParseAnalysis(strTargetfile):
                 ina_parent_var_key, in_chl_var_key, in_nest_lvl
             )
 
-            for key2, value2 in php_array(result):
-                for key3, value3 in php_array(value2):
-                    if type(value3['VAR_VALUE']) not in (list, dict):
-                        if key1 in arrVarsList and value3['VAR_NAME_PATH'] in arrVarsList[key1] and arrVarsList[key1][value3['VAR_NAME_PATH']] is not None:
-                            arrVarsList[key1][value3['VAR_NAME_PATH']].append(value3['VAR_VALUE'])
+            if type(result) in (dict, list):
+                for key2, value2 in php_array(result):
+                    for key3, value3 in php_array(value2):
+                        if type(value3['VAR_VALUE']) not in (list, dict):
+                            if key1 in arrVarsList and value3['VAR_NAME_PATH'] in arrVarsList[key1] and arrVarsList[key1][value3['VAR_NAME_PATH']] is not None:
+                                arrVarsList[key1][value3['VAR_NAME_PATH']].append(value3['VAR_VALUE'])
+
+                            else:
+                                arrVarsList[key1][value3['VAR_NAME_PATH']] = value3['VAR_VALUE']
 
                         else:
-                            arrVarsList[key1][value3['VAR_NAME_PATH']] = value3['VAR_VALUE']
-
-                    else:
-                        for key4, value4 in php_array(value3['VAR_VALUE']):
-                            if is_num(key4) and type(value4) not in (list, dict):
-                                keyname = '%s[%s]' % (value3['VAR_NAME_PATH'], key4)
-                                arrVarsList[key1][keyname] = value4
+                            for key4, value4 in php_array(value3['VAR_VALUE']):
+                                if is_num(key4) and type(value4) not in (list, dict):
+                                    keyname = '%s[%s]' % (value3['VAR_NAME_PATH'], key4)
+                                    arrVarsList[key1][keyname] = value4
 
     return arrVarsList
 
@@ -170,7 +177,8 @@ def MakeMultiArrayToFirstVarChainArray(
         return False, ina_vars_chain_list, in_error_code, in_line, in_col_count, in_assign_count, in_chl_var_key
 
     fastarry_f_on = False
-    for var, val in ina_parent_var_array:
+    php_array = lambda x: x.items() if isinstance(x, dict) else enumerate(x)
+    for var, val in php_array(ina_parent_var_array):
         col_array_f = ""
         if is_num(var):
             if type(val) not in (list, dict):
@@ -237,7 +245,7 @@ def MakeMultiArrayToFirstVarChainArray(
         if fastarry_f_on is True:
             in_fastarry_f = False
 
-    return True, ina_vars_chain_list, in_error_code, in_line, in_col_count, in_assign_count, in_chl_var_key
+    return ina_vars_chain_list, ina_vars_chain_list, in_error_code, in_line, in_col_count, in_assign_count, in_chl_var_key
 
 
 def is_assoc(in_array):
@@ -249,7 +257,7 @@ def is_assoc(in_array):
 
     php_keys = lambda x: x.keys() if isinstance(x, dict) else range(len(x))
     keys = php_keys(in_array)
-    for i, value in keys:
+    for value in keys:
         if isinstance(value, int):
             key_int = True
 

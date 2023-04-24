@@ -28,6 +28,7 @@ import pathlib
 import time
 from collections import Counter
 from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body, check_request_body_key
 from flask import g
@@ -1595,6 +1596,23 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
         api_msg_args = [msgstr]
         raise AppException("499-00005", log_msg_args, api_msg_args)
 
+    # バージョン差異チェック
+    common_db = DBConnectCommon()
+    version_data = _collect_ita_version(common_db)
+
+    export_version = ''
+    if os.path.isfile(uploadPath + upload_id + '/VERSION'):
+        # エクスポート時のバージョンを取得
+        export_version = Path(uploadPath + upload_id + '/VERSION').read_text(encoding='utf-8')
+
+    if version_data["version"] != export_version:
+        # エクスポート時のバージョンとインポートする環境のバージョンが違う場合はエラー
+        shutil.rmtree(uploadPath + upload_id)
+        msgstr = g.appmsg.get_api_message("MSG-30035")
+        log_msg_args = [msgstr]
+        api_msg_args = [msgstr]
+        raise AppException("499-00701", log_msg_args, api_msg_args)
+
     # ファイル移動
     if not os.path.exists(importPath):
         os.makedirs(importPath)
@@ -1677,6 +1695,37 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
         raise AppException("499-01301", [], [])
 
     return declare_list
+
+def _collect_ita_version(common_db):
+    """
+        ITAのバージョン情報を取得する
+        ARGS:
+            common_db:DB接クラス  DBConnectCommon()
+        RETRUN:
+            version_data
+    """
+
+    # 変数定義
+    lang = g.get('LANGUAGE')
+
+    # 『バージョン情報』テーブルからバージョン情報を取得
+    ret = common_db.table_select('T_COMN_VERSION', 'WHERE DISUSE_FLAG = %s', [0])
+
+    # 件数確認
+    if len(ret) != 1:
+        raise AppException("499-00601")
+
+    if lang == 'ja':
+        installed_driver = json.loads(ret[0].get('INSTALLED_DRIVER_JA'))
+    else:
+        installed_driver = json.loads(ret[0].get('INSTALLED_DRIVER_EN'))
+
+    version_data = {
+        "version": ret[0].get('VERSION'),
+        "installed_driver": installed_driver
+    }
+
+    return version_data
 
 def _decode_zip_file(file_path, base64Data):
     # アップロードファイルbase64変換処理

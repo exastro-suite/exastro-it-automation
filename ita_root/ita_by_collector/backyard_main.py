@@ -350,6 +350,9 @@ def backyard_main(organization_id, workspace_id):
     if getattr(g, 'LANGUAGE', None) is None:
         g.LANGUAGE = 'en'
 
+    # v2.1.0 では日本語を設定する
+    setattr(g, 'LANGUAGE', 'ja')
+
     if getattr(g, 'USER_ID', None) is None:
         g.USER_ID = '20103'
 

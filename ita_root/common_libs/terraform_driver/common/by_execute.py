@@ -15,6 +15,7 @@
 import json
 import re
 from deepmerge import Merger
+# from dictknife import deepmerge
 
 
 my_deep_merger = Merger(
@@ -158,8 +159,8 @@ def make_parent_id_map(member_vars_records):
                     parent_key = res[parent_index]["child_member_vars_key"]
 
                     # indexが数値の場合は[]を外す
-                    if res[parent_index]["child_member_vars_key"] != "":
-                        match2 = re.findall(pattern, str(res[parent_index]["child_member_vars_key"]))
+                    if parent_key != "":
+                        match2 = re.findall(pattern, str(parent_key))
                         if len(match2) != 0:
                             parent_key = match2[0]
                         parent_member_keys_list.append(parent_key)
@@ -184,11 +185,20 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
     # g.applogger.debug("map=" + str(map))
     if len(map) == 0:
         # 仮配列と返却用配列をマージ
-        member_vars_array[member_vars_key] = member_vars_value
+        if type(member_vars_key) is int:
+            if member_vars_value is not None:
+                if type(member_vars_array) is not list:
+                    member_vars_array = [member_vars_value]
+                else:
+                    member_vars_array.append(member_vars_value)
+        else:
+            member_vars_array[member_vars_key] = member_vars_value
+
+        # g.applogger.debug("empty:member_vars_array=" + str(member_vars_array))
+
         res = member_vars_array
     else:
-        # 仮配列
-        ref = {}
+        ref = None
 
         # メンバー変数を設定・具体値を代入
         if type_info["ENCODE_FLAG"] == '1':

@@ -1,4 +1,4 @@
--- INSERT/UPDATE: -2.1.0 
+-- INSERT/UPDATE: -2.1.0
     -- T_COMN_MENU_GROUP: UPDATE
     -- T_COMN_MENU: UPDATE
     -- T_COMN_MENU_TABLE_LINK: UPDATE
@@ -416,8 +416,8 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = '設定値を紐付けするパラメータシートをプルダウンから選択します。', DESCRIPTION_EN = 'Select the parameter sheet to link the parameter from the pulldown menu.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010602';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = '設定値を紐付けするパラメータシートをプルダウンから選択します。', DESCRIPTION_EN = 'Select the parameter sheet to link the parameter from the pulldown menu.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010602';
 
-UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = 'ロールを紐付けするパラメータシートをプルダウンから選択します。', DESCRIPTION_EN = 'Select the parameter sheet to link the role from the pulldown menu.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010702';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = 'ロールを紐付けするパラメータシートをプルダウンから選択します。', DESCRIPTION_EN = 'Select the parameter sheet to link the role from the pulldown menu.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010702';
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = 'ロールを紐付けするパラメータシートをプルダウンから選択します。', DESCRIPTION_EN = 'Select the parameter sheet to link the role from the pulldown menu.', UNIQUE_ITEM = '0', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010702';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = 'ロールを紐付けするパラメータシートをプルダウンから選択します。', DESCRIPTION_EN = 'Select the parameter sheet to link the role from the pulldown menu.', UNIQUE_ITEM = '0', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010702';
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = '作成対象のパラメータシート名です。', DESCRIPTION_EN = 'Name of the parameter sheet to be created.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010902';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_NAME_JA = 'パラメータシート名', COLUMN_NAME_EN = 'Parameter sheet name', DESCRIPTION_JA = '作成対象のパラメータシート名です。', DESCRIPTION_EN = 'Name of the parameter sheet to be created.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '5010902';

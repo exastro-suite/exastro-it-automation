@@ -1077,7 +1077,7 @@ class CICD_GrandChildWorkflow():
             g.applogger.debug(FREE_LOG)
             return True
 
-        ret = self.DBobj.table_update('T_CICD_MATL_LINK', row, 'MATL_LINK_ROW_ID', is_register_history=False)
+        ret = self.DBobj.table_update('T_CICD_MATL_LINK', row, 'MATL_LINK_ROW_ID', is_register_history=False, last_timestamp=False)
         if ret is False:
             self.error_flag = 1
 
@@ -1100,7 +1100,7 @@ class CICD_GrandChildWorkflow():
             "  T1.*, "
             "  T3.MATL_FILE_PATH         M_MATL_FILE_PATH, "
             "  T3.MATL_FILE_TYPE_ROW_ID  M_MATL_FILE_TYPE_ROW_ID, "
-            "  T7.OPERATION_ID      OPE_OPERATION_NAME, "
+            "  T7.OPERATION_NAME    OPE_OPERATION_NAME, "
             "  T8.ITA_EXT_STM_ID    M_ITA_EXT_STM_ID, "
             "  T8.MOVEMENT_NAME     MV_MOVEMENT_NAME, "
             "  T8.TIME_LIMIT        MV_TIME_LIMIT, "

@@ -47,31 +47,31 @@ class Migration:
         """
         migrate
         """
-        g.applogger.debug(f"[Trace] work_dir_path:{self._work_dir_path}")
+        g.applogger.info(f"[Trace] work_dir_path:{self._work_dir_path}")
 
         # DBパッチ
         sql_dir = os.path.join(self._resource_dir_path, "sql")
         if os.path.isdir(sql_dir):
-            g.applogger.debug("[Trace] migrate db start")
+            g.applogger.info("[Trace] migrate db start")
             self._db_migrate(sql_dir)
-        g.applogger.debug("[Trace] migrate db complete")
+        g.applogger.info("[Trace] migrate db complete")
 
         # ディレクトリ作成
         config_file_path = os.path.join(self._resource_dir_path, "create_dir_list.txt")
         if os.path.isfile(config_file_path):
             create_dirs(config_file_path, self._work_dir_path)
-            g.applogger.debug("[Trace] create dir complete")
+            g.applogger.info("[Trace] create dir complete")
 
         # ファイル配置 (uploadfiles only)
         src_dir = os.path.join(self._resource_dir_path, "files")
         dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
         config_file_path = os.path.join(src_dir, "config.json")
-        g.applogger.debug(f"[Trace] src_dir={src_dir}")
-        g.applogger.debug(f"[Trace] dest_dir={dest_dir}")
-        g.applogger.debug(f"[Trace] config_file_path={config_file_path}")
+        g.applogger.info(f"[Trace] src_dir={src_dir}")
+        g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+        g.applogger.info(f"[Trace] config_file_path={config_file_path}")
         if os.path.isfile(config_file_path):
             put_uploadfiles(config_file_path, src_dir, dest_dir)
-            g.applogger.debug("[Trace] delivery files complete")
+            g.applogger.info("[Trace] delivery files complete")
 
         # 特別処理
         # migrationを呼出す
@@ -79,7 +79,7 @@ class Migration:
         config_file_path = os.path.join(src_dir, "config.json")
         if os.path.isfile(config_file_path):
             self._specific_logic(config_file_path, src_dir)
-            g.applogger.debug("[Trace] specific logic complete")
+            g.applogger.info("[Trace] specific logic complete")
 
     def _db_migrate(self, sql_dir):
         """
@@ -103,12 +103,12 @@ class Migration:
 
             if os.path.isfile(ddl_file):
                 # DDLファイルの実行
-                g.applogger.debug(f"[Trace] EXECUTE SQL FILE=[{ddl_file}]")
+                g.applogger.info(f"[Trace] EXECUTE SQL FILE=[{ddl_file}]")
                 self._db_conn.sqlfile_execute(ddl_file)
 
             if os.path.isfile(dml_file):
 
-                g.applogger.debug(f"[Trace] EXECUTE SQL FILE=[{dml_file}]")
+                g.applogger.info(f"[Trace] EXECUTE SQL FILE=[{dml_file}]")
                 self._db_conn.db_transaction_start()
                 with open(dml_file, "r") as f:
                     sql_list = f.read().split(";\n")

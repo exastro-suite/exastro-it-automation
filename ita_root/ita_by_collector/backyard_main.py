@@ -118,10 +118,11 @@ def yamlParseAnalysis(strTargetfile):
                     if key1 not in arrVarsList:
                         arrVarsList[key1] = {}
 
+                    str_key2 = '[%s]' % (key2)
                     if str(key2) not in arrVarsList[key1]:
-                        arrVarsList[key1][str(key2)] = None
+                        arrVarsList[key1][str_key2] = None
 
-                    arrVarsList[key1][str(key2)] = value2
+                    arrVarsList[key1][str_key2] = value2
 
             in_fastarry_f = ""
             in_var_name = ""
@@ -146,7 +147,13 @@ def yamlParseAnalysis(strTargetfile):
                 for key2, value2 in php_array(result):
                     for key3, value3 in php_array(value2):
                         if type(value3['VAR_VALUE']) not in (list, dict):
-                            if key1 in arrVarsList and value3['VAR_NAME_PATH'] in arrVarsList[key1] and arrVarsList[key1][value3['VAR_NAME_PATH']] is not None:
+                            if key1 not in arrVarsList:
+                                arrVarsList[key1] = {}
+
+                            if value3['VAR_NAME_PATH'] not in arrVarsList[key1]:
+                                arrVarsList[key1][value3['VAR_NAME_PATH']] = None
+
+                            if arrVarsList[key1][value3['VAR_NAME_PATH']] is not None:
                                 arrVarsList[key1][value3['VAR_NAME_PATH']].append(value3['VAR_VALUE'])
 
                             else:
@@ -203,8 +210,8 @@ def MakeMultiArrayToFirstVarChainArray(
                 wk_var_name = in_var_name
 
         else:
-            wk_var_name_path = var
-            wk_var_name = var
+            wk_var_name_path = str(var)
+            wk_var_name = str(var)
 
         # 配列の開始かを判定する
         if col_array_f == "I":
@@ -213,6 +220,12 @@ def MakeMultiArrayToFirstVarChainArray(
                 fastarry_f_on = True
 
         in_chl_var_key = in_chl_var_key + 1
+        if parent_var_key not in ina_vars_chain_list:
+            ina_vars_chain_list[parent_var_key] = {}
+
+        if in_chl_var_key not in ina_vars_chain_list[parent_var_key]:
+            ina_vars_chain_list[parent_var_key][in_chl_var_key] = {}
+
         ina_vars_chain_list[parent_var_key][in_chl_var_key]['VAR_NAME'] = var
         ina_vars_chain_list[parent_var_key][in_chl_var_key]['NEST_LEVEL'] = in_nest_lvl
         ina_vars_chain_list[parent_var_key][in_chl_var_key]['LIST_STYLE'] = "0"
@@ -336,6 +349,9 @@ def backyard_main(organization_id, workspace_id):
     # 言語情報
     if getattr(g, 'LANGUAGE', None) is None:
         g.LANGUAGE = 'en'
+
+    # v2.1.0 では日本語を設定する
+    setattr(g, 'LANGUAGE', 'ja')
 
     if getattr(g, 'USER_ID', None) is None:
         g.USER_ID = '20103'

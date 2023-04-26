@@ -14,25 +14,27 @@
 # from flask import g
 import json
 import re
-from deepmerge import Merger
+import copy
+# from deepmerge import Merger
+# from dictknife import deepmerge
 
 
-my_deep_merger = Merger(
-    # pass in a list of tuple, with the
-    # strategies you are looking to apply
-    # to each type.
-    [
-        (list, ["append"]),
-        (dict, ["merge"]),
-        (set, ["union"])
-    ],
-    # next, choose the fallback strategies,
-    # applied to all other types:
-    ["override"],
-    # finally, choose the strategies in
-    # the case where the types conflict:
-    ["override"]
-)
+# my_deep_merger = Merger(
+#     # pass in a list of tuple, with the
+#     # strategies you are looking to apply
+#     # to each type.
+#     [
+#         (list, ["append"]),
+#         (dict, ["merge"]),
+#         (set, ["union"])
+#     ],
+#     # next, choose the fallback strategies,
+#     # applied to all other types:
+#     ["override"],
+#     # finally, choose the strategies in
+#     # the case where the types conflict:
+#     ["override"]
+# )
 
 
 # Typeの情報を取得する
@@ -80,7 +82,7 @@ def decode_hcl(hcl_data):
 
 # HCL作成のためにメンバー変数一覧を取得
 def get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFConst, module_vars_link_id):
-    condition = "WHERE DISUSE_FLAG = '0' AND PARENT_VARS_ID = %s ORDER BY ARRAY_NEST_LEVEL, ASSIGN_SEQ ASC"
+    condition = "WHERE DISUSE_FLAG = '0' AND PARENT_VARS_ID = %s ORDER BY ARRAY_NEST_LEVEL, ASSIGN_SEQ, CHILD_MEMBER_VARS_KEY, CHILD_MEMBER_VARS_NEST ASC"  # noqa:E501
     records = wsDb.table_select(TFConst.V_VAR_MEMVER, condition, [module_vars_link_id])
 
     res = []
@@ -93,7 +95,7 @@ def get_member_vars_ModuleVarsLinkID_for_hcl(wsDb, TFConst, module_vars_link_id)
 
 # HCL作成のためにメンバー変数一覧を配列に形成
 def generate_member_vars_array_for_hcl(wsDb, TFConst, member_vars_records):
-    member_vars_res = {}
+    member_vars_res = None
 
     # 親リストの取得
     parent_id_map = make_parent_id_map(member_vars_records)
@@ -158,8 +160,8 @@ def make_parent_id_map(member_vars_records):
                     parent_key = res[parent_index]["child_member_vars_key"]
 
                     # indexが数値の場合は[]を外す
-                    if res[parent_index]["child_member_vars_key"] != "":
-                        match2 = re.findall(pattern, str(res[parent_index]["child_member_vars_key"]))
+                    if parent_key != "":
+                        match2 = re.findall(pattern, str(parent_key))
                         if len(match2) != 0:
                             parent_key = match2[0]
                         parent_member_keys_list.append(parent_key)
@@ -183,19 +185,28 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
     # g.applogger.debug("type_info=" + str(type_info))
     # g.applogger.debug("map=" + str(map))
     if len(map) == 0:
+        ref = None
         # 仮配列と返却用配列をマージ
-        member_vars_array[member_vars_key] = member_vars_value
-        res = member_vars_array
+        if type(member_vars_key) is int:
+            l_len = member_vars_key + 1
+            ref = [None] * l_len
+        else:
+            ref = {}
+        ref[member_vars_key] = member_vars_value
+
+        # g.applogger.debug("empty:map")
+        res = my_deep_merge(member_vars_array, ref)
     else:
-        # 仮配列
-        ref = {}
+        ref = None
 
         # メンバー変数を設定・具体値を代入
         if type_info["ENCODE_FLAG"] == '1':
             member_vars_value = decode_hcl(member_vars_value)
 
         if type(member_vars_key) is int:
-            ref = [member_vars_value]
+            l_len = member_vars_key + 1
+            ref = [None] * l_len
+            ref[member_vars_key] = member_vars_value
         else:
             ref = {}
             ref[member_vars_key] = member_vars_value
@@ -203,7 +214,11 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
         # 階層構造をつくる
         def make_val(_key, _val):
             if type(_key) is int:
-                return [_val]
+                # return [_val]
+                l_len = _key + 1
+                _res = [None] * l_len
+                _res[_key] = _val
+                return _res
             return {_key: _val}
 
         index = 0
@@ -217,10 +232,68 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
             index = index + 1
 
         # g.applogger.debug("ref=" + str(ref))
-        # g.applogger.debug("member_vars_array=" + str(member_vars_array))
         # g.applogger.debug("tmp_array=" + str(tmp_array))
         # 仮配列と返却用配列をマージ
-        res = my_deep_merger.merge(member_vars_array, tmp_array)
+        # res = my_deep_merger.merge(member_vars_array, tmp_array)
+        # res = deepmerge(member_vars_array, tmp_array)
+        res = my_deep_merge(member_vars_array, tmp_array)
 
-        # g.applogger.debug("res=" + str(res))
+    # g.applogger.debug("res=" + str(res))
+    return res
+
+
+def my_deep_merge(a, b):
+    # list
+    def merge_list(a, b):
+        if a is None:
+            return b
+        if b is None:
+            return a
+
+        m = copy.copy(a)
+
+        for i, value in enumerate(b):
+            if isinstance(value, dict):
+                m[i] = merge_dict(a[i], b[i])
+            elif isinstance(value, list) and 0 <= i < len(a):
+                m[i] = merge_list(a[i], b[i])
+            else:
+                if value is None:
+                    if 0 <= i < len(a):
+                        m[i] = a[i]
+                    else:
+                        m.append(value)
+                else:
+                    if 0 <= i < len(a):
+                        # conflict?
+                        pass
+                    else:
+                        m.append(value)
+        return m
+
+    # dict
+    def merge_dict(a, b):
+        if a is None:
+            return b
+        if b is None:
+            return a
+
+        m = copy.copy(a)
+
+        for item in b:
+            if isinstance(b[item], dict):
+                m[item] = merge_dict(a[item], b[item])
+            elif isinstance(b[item], list):
+                m[item] = merge_list(a[item], b[item])
+            else:
+                m[item] = b[item]
+        return m
+
+    # ここから
+    res = None
+    if isinstance(a, dict):
+        res = merge_dict(a, b)
+    else:
+        res = merge_list(a, b)
+
     return res

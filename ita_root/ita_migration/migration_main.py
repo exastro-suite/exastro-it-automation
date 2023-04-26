@@ -55,7 +55,7 @@ def __wrapper():
                 g.applogger.info("No need to work.")
                 return 0
 
-            g.applogger.debug("stop_all_backyards")
+            g.applogger.info("stop_all_backyards")
             util.stop_all_backyards()
 
             # バージョンアップ
@@ -72,7 +72,7 @@ def __wrapper():
             exception(e, True)
             return 1
         finally:
-            g.applogger.debug("restart_all_backyards")
+            g.applogger.info("restart_all_backyards")
             util.restart_all_backyards()
             g.applogger.info("End ITA migration.")
 
@@ -84,7 +84,7 @@ def __migration_main(version):
     Returns:
         int: result(0=succeed / other=failed)
     """
-    g.applogger.debug("ita_migration called.")
+    g.applogger.info("ita_migration called.")
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 実行準備
@@ -108,9 +108,9 @@ def __migration_main(version):
         work_dir_path = g.STORAGEPATH
         worker = Migration(resource_dir_path, work_dir_path, common_db)
 
-        g.applogger.debug("[Trace] Begin BASE migrate.")
+        g.applogger.info("[Trace] Begin BASE migrate.")
         worker.migrate()
-        g.applogger.debug("[Trace] End BASE migrate.")
+        g.applogger.info("[Trace] End BASE migrate.")
 
     org_id_list = util.get_organization_ids()
     for organization_id in org_id_list:
@@ -122,9 +122,9 @@ def __migration_main(version):
             work_dir_path = os.path.join(g.STORAGEPATH, organization_id)
             org_worker = Migration(resource_dir_path, work_dir_path, org_db)
 
-            g.applogger.debug("[Trace] Begin ORG migrate.")
+            g.applogger.info("[Trace] Begin ORG migrate.")
             org_worker.migrate()
-            g.applogger.debug("[Trace] End ORG migrate.")
+            g.applogger.info("[Trace] End ORG migrate.")
 
         ws_id_list = util.get_workspace_ids(organization_id)
         for workspace_id in ws_id_list:
@@ -136,9 +136,9 @@ def __migration_main(version):
                 work_dir_path = os.path.join(g.STORAGEPATH, organization_id, workspace_id)
                 ws_worker = Migration(resource_dir_path, work_dir_path, ws_db)
 
-                g.applogger.debug("[Trace] Begin WS migrate.")
+                g.applogger.info("[Trace] Begin WS migrate.")
                 ws_worker.migrate()
-                g.applogger.debug("[Trace] End WS migrate.")
+                g.applogger.info("[Trace] End WS migrate.")
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 終了処理

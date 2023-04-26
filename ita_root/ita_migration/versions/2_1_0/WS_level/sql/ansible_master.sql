@@ -731,6 +731,19 @@ LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '2040605';
 -- -----------------
 -- 項目:DESCRIPTION_EN
 -- -----------------
+UPDATE T_COMN_MENU_COLUMN_LINK     SET DESCRIPTION_EN="The following status states exist.
+・Not executed
+・Preparing
+・Executing
+・Executing (delayed)
+・Completed
+・Completed (error)
+・Unexpected error
+・Emergency stop
+・Unexecuted (schedule)
+・Schedule canceled",
+LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '2041204';
+
 UPDATE T_COMN_MENU_COLUMN_LINK     SET DESCRIPTION_EN="Define the structure of the variable used in Template file in YAML format.
 The structure of variables can be defined by the following three types.
 ・Variable that can define one specific value for variable name.
@@ -833,6 +846,19 @@ LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE JOURNAL_SEQ_NO = '2010303';
 
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL     SET DESCRIPTION_JA="sshでAnsible Automation Controllerに接続する場合のユーザ名です。プロジェクトパス(/var/lib/awx/projects)への書込み権限が必要です。",
 LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE JOURNAL_SEQ_NO = '2010304';
+
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL     SET DESCRIPTION_EN="The following status states exist.
+・Not executed
+・Preparing
+・Executing
+・Executing (delayed)
+・Completed
+・Completed (error)
+・Unexpected error
+・Emergency stop
+・Unexecuted (schedule)
+・Schedule canceled",
+LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '2041204';
 
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL     SET DESCRIPTION_JA="テンプレート素材で使用している変数の構造をYAML形式で定義します。
 変数の構造は以下の３種類で定義可能です。

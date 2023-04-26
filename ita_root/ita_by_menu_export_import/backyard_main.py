@@ -336,13 +336,11 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
     objdbca.sql_execute(delete_sql, [])
     deleted_table_list.append(table_name)
     _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_rest, table_name, objmenu=objmenu)
-    deleted_table_list.append(table_name)
     if history_table_flag == '1':
         delete_jnl_sql = "DELETE FROM {}".format(table_name + '_JNL')
         objdbca.sql_execute(delete_jnl_sql, [])
         deleted_table_list.append(table_name + '_JNL')
         _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
-        deleted_table_list.append(table_name + '_JNL')
     menu_name_rest_list.remove(menu_name_rest)
 
     tmp_msg = '_basic_table_preparation END: '

@@ -1078,7 +1078,7 @@ class SubValueAutoReg():
                             # メニューID取得
                             upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
                             col_filepath = ""
-                            if not col_val == "":
+                            if col_val is not None and not col_val == "":
                                 storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
                                 col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
                                 if not os.path.exists(col_filepath):

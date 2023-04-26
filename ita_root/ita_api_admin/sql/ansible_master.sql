@@ -279,7 +279,7 @@ IPアドレス
 パスワード
 {{ __loginpassword__ }}','You can perform maintenance (view/register/update/discard) for the Ansible Playbook.
 
-Playbook variables can be described with half-width characters and underscores (_). 
+Playbook variables can be described with half-width characters and underscores (_).
 (Example) {{ var_Example }}
 
 The following are reserved variables.
@@ -312,7 +312,7 @@ IPアドレス
 パスワード
 {{ __loginpassword__ }}','You can perform maintenance (view/register/update/discard) for the Ansible Playbook.
 
-Playbook variables can be described with half-width characters and underscores (_). 
+Playbook variables can be described with half-width characters and underscores (_).
 (Example) {{ var_Example }}
 
 The following are reserved variables.
@@ -419,7 +419,7 @@ IPアドレス
 パスワード
 {{ __loginpassword__ }}"','You can perform maintenance (view/register/update/discard) for the dialog file for each OS type.
 
-Dialog file variables can be described with half-width characters and underscores (_). 
+Dialog file variables can be described with half-width characters and underscores (_).
 (Example) {{ var_Example }}
 
 The following are reserved word.
@@ -452,7 +452,7 @@ IPアドレス
 パスワード
 {{ __loginpassword__ }}"','You can perform maintenance (view/register/update/discard) for the dialog file for each OS type.
 
-Dialog file variables can be described with half-width characters and underscores (_). 
+Dialog file variables can be described with half-width characters and underscores (_).
 (Example) {{ var_Example }}
 
 The following are reserved word.

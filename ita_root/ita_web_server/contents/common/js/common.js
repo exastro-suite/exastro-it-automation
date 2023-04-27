@@ -27,18 +27,18 @@
 */
 const fn = ( function() {
     'use strict';
-    
+
     // AbortController
     const controller = new AbortController();
-    
+
     // インスタンス管理用
     const modalInstance = {},
           operationInstance = {},
           conductorInstance = {};
-          
+
     let messageInstance = null,
         uiSettingInstance = null;
-    
+
     // Contentローディングフラグ
     let contentLoadingFlag = false;
 
@@ -52,23 +52,17 @@ const fn = ( function() {
         }
     };
     const windowFlag = windowCheck();
-    
-    // document.referrerが空の場合、WebStorageをクリア
-    if ( windowFlag && !document.referrer.length ) {
-        localStorage.clear();
-        sessionStorage.clear();
-    }
-    
+
     // iframeフラグ
     const iframeFlag = windowFlag? ( window.parent !== window ): false;
-    
+
     const organization_id = ( windowFlag )? CommonAuth.getRealm(): null,
           workspace_id =  ( windowFlag )? window.location.pathname.split('/')[3]: null;
-    
+
     const typeofValue = function( value ) {
         return Object.prototype.toString.call( value ).slice( 8, -1 ).toLowerCase();
     };
-    
+
     const classNameCheck = function( className, type ) {
         if ( fn.typeof( className ) === 'array') {
             className = className.concat([ type ]);
@@ -77,10 +71,10 @@ const fn = ( function() {
         }
         return className;
     };
-    
+
     const bindAttrs = function( attrs ) {
         const attr = [];
-        
+
         for ( const key in attrs ) {
             if ( attrs[key] !== undefined ) {
                 const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class', 'readonly']; // dataをつけない
@@ -93,14 +87,14 @@ const fn = ( function() {
         }
         return attr;
     };
-    
+
     const inputCommon = function( value, name, attrs, id ) {
         const attr = bindAttrs( attrs );
-        
+
         if ( value !== undefined && value !== null ) {
             attr.push(`value="${value}"`);
         }
-        
+
         if ( name ) {
             if ( id ) {
                 attr.push(`id="${id}"`);
@@ -109,7 +103,7 @@ const fn = ( function() {
             }
             attr.push(`name="${name}"`);
         }
-        
+
         return attr;
     };
 
@@ -131,10 +125,10 @@ loadAssets: function( assets ){
     const f = function( type, url, id ){
         return new Promise(function( resolve, reject ){
             type = ( type === 'css')? 'link': 'script';
-            
+
             const body = document.getElementById('container'),
                   asset = document.createElement( type );
-            
+
             switch ( type ) {
                 case 'script':
                     asset.src = url;
@@ -145,14 +139,14 @@ loadAssets: function( assets ){
                     asset.rel = 'stylesheet';
                     if ( id ) asset.id = id;
                 break;
-            }            
-            
+            }
+
             body.appendChild( asset );
-            
+
             asset.onload = function() {
                 resolve();
             };
-            
+
             asset.onerror = function( e ) {
                 reject( e )
             };
@@ -190,24 +184,24 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
 ##################################################
 */
 fetch: function( url, token, method = 'GET', json, option = {} ) {
-    
+
     if ( !token ) {
         token = CommonAuth.getToken();
     }
-    
+
     let errorCount = 0;
-    
+
     const f = function( u ){
         return new Promise(function( resolve, reject ){
-            
+
             // ダミー用処理
             if ( u === 'dummy') {
                 resolve('dummy');
                 return;
             }
-            
+
             if ( windowFlag ) u = cmn.getRestApiUrl( u );
-            
+
             const init = {
                 method: method,
                 headers: {
@@ -216,18 +210,18 @@ fetch: function( url, token, method = 'GET', json, option = {} ) {
                 },
                 signal: controller.signal
             };
-            
-            if ( ( method === 'POST' || method === 'PATCH' ) && json !== undefined ) {            
+
+            if ( ( method === 'POST' || method === 'PATCH' ) && json !== undefined ) {
                 try {
                     init.body = JSON.stringify( json );
                 } catch ( e ) {
                     reject( e );
                 }
             }
-            
+
             fetch( u, init ).then(function( response ){
                 if ( errorCount === 0 ) {
-                    
+
                     if( response.ok ) {
                         //200の場合
                         response.json().then(function( result ){
@@ -239,7 +233,7 @@ fetch: function( url, token, method = 'GET', json, option = {} ) {
                         });
                     } else {
                         errorCount++;
-                        
+
                         switch ( response.status ) {
                             //バリデーションエラーは呼び出し元に返す
                             case 499:
@@ -325,14 +319,14 @@ editFlag: function( menuInfo ) {
     flag.initFilter = ( menuInfo.initial_filter_flg === '1')? true: false;
     flag.autoFilter = ( menuInfo.auto_filter_flg === '1')? true: false;
     flag.history = ( menuInfo.history_table_flag === '1')? true: false;
-    
+
     flag.privilege = ( menuInfo.privilege === '1')? true: false;
     flag.insert = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1')? true: false: false;
     flag.update = ( menuInfo.privilege === '1')? ( menuInfo.row_update_flag === '1')? true: false: false;
     flag.disuse = ( menuInfo.privilege === '1')? ( menuInfo.row_disuse_flag === '1')? true: false: false;
     flag.reuse = ( menuInfo.privilege === '1')? ( menuInfo.row_reuse_flag === '1')? true: false: false;
     flag.edit = ( menuInfo.privilege === '1')? ( menuInfo.row_insert_flag === '1' && menuInfo.row_update_flag === '1')? true: false: false;
-    
+
     return flag;
 },
 /*
@@ -466,12 +460,12 @@ deselection: function() {
 ##################################################
 */
 date: function( date, format ) {
-    
+
     if ( cmn.typeof( date ) === 'string' && date.match(/^[0-9]{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\s/) ) {
         date = date.replace(/\//g,'-');
         date = date.replace(/\s/,'T');
     }
-    
+
     if ( date ) {
         const d = new Date(date);
         if ( !Number.isNaN( d.getTime()) ) {
@@ -484,7 +478,7 @@ date: function( date, format ) {
             format = format.replace(/SSS/g, ('00' + d.getMilliseconds()).slice(-3));
             return format;
         } else {
-            return date;            
+            return date;
         }
     } else {
         return '';
@@ -530,56 +524,56 @@ clipboard: {
 ##################################################
 */
 download: function( type, data, fileName = 'noname') {
-    
+
     let url;
-    
+
     // URL形式に変換
     try {
         switch ( type ) {
-        
+
             // エクセル
             case 'excel': {
                 // BASE64 > Binary > Unicode変換
                 const binary = window.atob( data ),
                       decode = new Uint8Array( Array.prototype.map.call( binary, function( c ){ return c.charCodeAt(); }));
-                
+
                 const blob = new Blob([ decode ], {
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 });
                 fileName += '.xlsx';
                 url = URL.createObjectURL( blob );
             } break;
-            
+
             // テキスト
             case 'text': {
                 const blob = new Blob([ data ], {'type': 'text/plain'});
                 fileName += '.txt';
                 url = URL.createObjectURL( blob );
             } break;
-            
+
             // JSON
             case 'json': {
                 const blob = new Blob([ JSON.stringify( data, null, '\t') ], {'type': 'application/json'});
                 fileName += '.json';
                 url = URL.createObjectURL( blob );
             } break;
-            
+
             // BASE64
             case 'base64': {
                 url = 'data:;base64,' + data;
             } break;
-                
+
         }
     } catch ( e ) {
         window.console.error( e );
     }
-    
+
     const a = document.createElement('a');
 
     a.href = url;
     a.download = fileName;
     a.click();
-    
+
     if ( type !== 'base64') URL.revokeObjectURL( url );
 
 },
@@ -592,21 +586,21 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
     return new Promise( function( resolve, reject ) {
         const file = document.createElement('input');
         let cancelFlag = true;
-        
-        file.type = 'file'; 
+
+        file.type = 'file';
         if ( accept !== undefined ) file.accept = accept;
-        
+
         file.addEventListener('change', function(){
             const file = this.files[0],
                   reader = new FileReader();
-            
+
             cancelFlag = false;
 
             if ( limitFileSize && file.size > limitFileSize ) {
                 reject( getMessage.FTE10060( file.size, limitFileSize ) );
                 return false;
             }
-            
+
             if ( type === 'base64') {
                 reader.readAsDataURL( file );
 
@@ -635,7 +629,7 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
                 resolve( formData );
             } else if ( type === 'json') {
                 reader.readAsText( file );
-                
+
                 reader.onload = function(){
                     try {
                         const json = JSON.parse( reader.result );
@@ -646,17 +640,17 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
                         });
                     } catch( e ) {
                         reject( getMessage.FTE10021 );
-                    }                    
+                    }
                 };
 
                 reader.onerror = function(){
                     reject( reader.error );
-                };                
+                };
             }
         });
 
         file.click();
-        
+
         // bodyフォーカスでダイアログを閉じたか判定
         document.body.onfocus = function(){
             setTimeout( function(){
@@ -710,7 +704,7 @@ storage: {
             e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
             // acknowledge QuotaExceededError only if there's something already stored
             storage.length !== 0;
-        }    
+        }
     },
     'set': function( key, value, type ) {
         if ( type === undefined ) type = 'local';
@@ -741,12 +735,12 @@ storage: {
             return false;
         }
     },
-    'remove': function( key, type ) {
+    'remove': function( key, type, storageKeyFlag = true ) {
         if ( type === undefined ) type = 'local';
-        key = cmn.createStorageKey( key );
+        if ( storageKeyFlag === true ) key = cmn.createStorageKey( key );
         const storage = ( type === 'local')? localStorage: ( type === 'session')? sessionStorage: undefined;
         if ( storage !== undefined ) {
-            storage.removeItem( key )
+            storage.removeItem( key );
         } else {
             return false;
         }
@@ -763,7 +757,7 @@ storage: {
     }
 },
 createStorageKey: function( key ) {
-    key = `${organization_id}_${workspace_id}_${key}`;
+    key = `ita_ui_${organization_id}_${workspace_id}_${key}`;
     return key;
 },
 /*
@@ -774,7 +768,7 @@ createStorageKey: function( key ) {
 alert: function( title, elements, type = 'alert', buttons = { ok: { text: getMessage.FTE10043, action: 'normal'}}, width = '640px') {
     return new Promise(function( resolve ){
         const funcs = {};
-        
+
         funcs.ok = function(){
             dialog.close();
             dialog = null;
@@ -802,7 +796,7 @@ alert: function( title, elements, type = 'alert', buttons = { ok: { text: getMes
         };
         let dialog = new Dialog( config, funcs );
         dialog.open(`<div class="alertMessage ${type}Container">${elements}</div>`);
-        
+
         setTimeout(function(){
             if ( dialog ) {
                 dialog.buttonPositiveDisabled( false );
@@ -829,10 +823,10 @@ iconConfirm: function( icon, title, elements, okText = getMessage.FTE10058, canc
 calendar: function( setDate, currentDate, startDate, endDate ){
     const weekText = getMessage.FTE10036,
           weekClass = ['sun','mon','tue','wed','thu','fri','sat'];
-    
+
     if ( startDate ) startDate = fn.date( startDate, 'yyyy/MM/dd');
     if ( endDate ) endDate = fn.date( endDate, 'yyyy/MM/dd');
-    
+
     // 今月
     const date = ( setDate )? new Date( setDate ): new Date(),
           year = date.getFullYear(),
@@ -851,9 +845,9 @@ calendar: function( setDate, currentDate, startDate, endDate ){
     const nextMonthDate = new Date( year, month + 1, 0 ),
           nextMonthYear = nextMonthDate.getFullYear(),
           nextMonth = nextMonthDate.getMonth() + 1;
-    
-    if ( currentDate ) currentDate = fn.date( currentDate, 'yyyy/MM/dd');    
-    
+
+    if ( currentDate ) currentDate = fn.date( currentDate, 'yyyy/MM/dd');
+
     // HTML
     const thead = function() {
         const th = [],
@@ -892,7 +886,7 @@ calendar: function( setDate, currentDate, startDate, endDate ){
                 dataDate = `${year}/${cmn.zeroPadding( month, 2 )}/`;
             }
             const cellDate = dataDate + cmn.zeroPadding( num, 2 );
-                        
+
             if ( currentDate ) {
                 if ( currentDate === cellDate ) className += ' currentCell';
                 if ( ( startDate === cellDate ) || ( endDate && currentDate === cellDate ) ) className += ' startCell';
@@ -900,7 +894,7 @@ calendar: function( setDate, currentDate, startDate, endDate ){
                 if ( ( startDate && startDate < cellDate && currentDate > cellDate )
                     || ( endDate && endDate > cellDate && currentDate < cellDate )  ) className += ' periodCell';
             }
-            
+
             if ( ( startDate && startDate > cellDate ) || ( endDate && endDate < cellDate ) ) {
                 cellHtml.push( disabledCell( num, className ) );
             } else {
@@ -926,24 +920,24 @@ calendar: function( setDate, currentDate, startDate, endDate ){
 */
 datePicker: function( timeFlag, className, date, start, end ) {
     const monthText = getMessage.FTE10037;
-    
+
     let initDate;
     if ( date && !isNaN( new Date( date ) ) ) {
         initDate = new Date( date )
     } else {
         initDate = new Date();
     }
-    
+
     let monthCount = 0;
-    
+
     let inputDate;
-    
+
     let year = initDate.getFullYear(),
         month = initDate.getMonth(),
         day = initDate.getDate();
-    
+
     let hour, min , sec;
-    
+
     if ( date ) {
         hour = initDate.getHours(),
         min = initDate.getMinutes(),
@@ -954,7 +948,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
     } else {
         hour = min = sec = 0;
     }
-    
+
     let placeholder = 'yyyy/MM/dd';
     if ( timeFlag ) {
         if ( timeFlag === 'hm') {
@@ -965,7 +959,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
             placeholder += ' HH:mm:ss';
         }
     }
-    
+
     if ( className === 'datePickerFromDateText' && !end ) {
         end = date;
         placeholder = 'From : ' + placeholder;
@@ -974,7 +968,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
         start = date;
         placeholder = 'To : ' + placeholder;
     }
-    
+
     const $datePicker = $('<div/>', {
         'class': 'datePickerBlock'
     }).html(`
@@ -998,7 +992,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
     <div class="datePickerCalendar">
         ${cmn.calendar( initDate, date, start, end )}
     </div>`);
-    
+
     const setInputDate = function( changeFlag = true ) {
         inputDate = `${year}/${fn.zeroPadding( month + 1, 2 )}/${fn.zeroPadding( day, 2 )}`;
         if ( timeFlag ) {
@@ -1016,14 +1010,14 @@ datePicker: function( timeFlag, className, date, start, end ) {
         }
         if ( changeFlag ) $date.change();
     };
-    
+
     const $date = $datePicker.find('.datePickerDateInput'),
           $year = $datePicker.find('.datePickerYearText'),
           $month = $datePicker.find('.datePickerMonthText'),
           $cal = $datePicker.find('.datePickerCalendar');
-    
+
     if ( date ) setInputDate( false );
-    
+
     $datePicker.find('.datePickerButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
@@ -1035,55 +1029,55 @@ datePicker: function( timeFlag, className, date, start, end ) {
             case 'nextMonth': monthCount += 1; break;
         }
         const newData = new Date( initDate.getFullYear(), initDate.getMonth() + monthCount, 1 );
-        
+
         year = newData.getFullYear();
         month = newData.getMonth();
-        
+
         $year.text( year );
         $month.text( monthText[month] );
-                
+
         $cal.html( cmn.calendar( newData, inputDate, start, end ) );
     });
-    
+
     $datePicker.on('click', '.calButton', function(){
         const $button = $( this ),
               ckickDate = $button.attr('data-date').split('/');
-              
+
         year = ckickDate[0];
         month = Number( ckickDate[1] ) - 1;
         day = ckickDate[2];
-        
+
         if ( $button.closest('.nextMonth').length ) {
             monthCount += 1;
         }
-        
+
         if ( $button.closest('.lastMonth').length ) {
             monthCount -= 1;
         }
-        
+
         $year.text( year );
         $month.text( monthText[month] );
-        
+
         setInputDate();
         $cal.html( cmn.calendar( inputDate, inputDate, start, end ) );
     });
-    
+
     // FromTo用:片方のカレンダーの設定が変わった場合
     $datePicker.find('.datePickerDateHidden').on('change', function(){
         const $hidden = $( this ),
               value = $hidden.val();
-              
+
         if ( $hidden.is('.datePickerDateStart') ) {
             start = value;
         } else {
             end = value;
         }
-        
+
         const setDate = `${year}/${month+1}/1`;
-        
+
         $cal.html( cmn.calendar( setDate, inputDate, start, end ) );
     });
-    
+
     // 時間
     if ( timeFlag ) {
         const datePickerTime = [`<div class="datePickerHour">${cmn.html.inputFader('datePickerHourInput', hour, null, { min: 0, max: 23 }, { after: getMessage.FTE10089 } )}</div>`];
@@ -1093,16 +1087,16 @@ datePicker: function( timeFlag, className, date, start, end ) {
         if ( timeFlag === 'true' || timeFlag === true || timeFlag === 'hms') {
             datePickerTime.push(`<div class="datePickerSec">${cmn.html.inputFader('datePickerSecInput', sec, null, { min: 0, max: 59 }, { after: getMessage.FTE10091 } )}</div>`);
         }
-        
+
         $datePicker.append(`
         <div class="datePickerTime">
-            ${datePickerTime.join('')}            
+            ${datePickerTime.join('')}
         </div>`);
-        
+
         $datePicker.find('.inputFaderWrap').each(function(){
             cmn.faderEvent( $( this ) );
         });
-        
+
         $datePicker.find('.inputFader').on('change', function(){
             const $input = $( this ),
                   value = $input.val();
@@ -1116,33 +1110,33 @@ datePicker: function( timeFlag, className, date, start, end ) {
             setInputDate( false );
         });
     }
-    
+
     $datePicker.append(`<div class="datePickerMenu">
         <ul class="datePickerMenuList">
             <li class="datePickerMenuItem">${fn.html.button( getMessage.FTE10039, ['datePickerMenuButton', 'itaButton'], { type: 'current', action: 'normal', style: 'width:100%'})}</li>
             <li class="datePickerMenuItem">${fn.html.button( getMessage.FTE10040, ['datePickerMenuButton', 'itaButton'], { type: 'clear', action: 'normal', style: 'width:100%'})}</li>
         </ul>
     </div>`);
-    
+
     const nowCalender = function( clearFlag ) {
         const now = new Date();
-        
+
         const $h = $datePicker.find('.datePickerHourInput'),
               $m = $datePicker.find('.datePickerMinInput'),
               $s = $datePicker.find('.datePickerSecInput');
-        
+
         year = now.getFullYear();
         month = now.getMonth();
         day =  now.getDate();
-        
+
         $year.text( year );
         $month.text( monthText[month] );
-        
+
         if ( clearFlag ) {
             inputDate = null;
             $date.val('').change();
             $cal.html( cmn.calendar( now ) );
-            
+
             if ( timeFlag ) {
                 if ( className === 'datePickerToDateText') {
                     hour = 23;
@@ -1161,14 +1155,14 @@ datePicker: function( timeFlag, className, date, start, end ) {
             setInputDate();
             $cal.html( cmn.calendar( inputDate, inputDate, start, end ) );
         }
-        
+
         if ( timeFlag ) {
             $h.val( hour ).trigger('input');
             $m.val( min ).trigger('input');
             $s.val( sec ).trigger('input');
         }
     };
-    
+
     $datePicker.find('.datePickerMenuButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
@@ -1181,7 +1175,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
             break;
         }
     });
-    
+
     return $datePicker;
 },
 /*
@@ -1202,7 +1196,7 @@ datePickerDialog: function( type, timeFlag, title, date ){
         const funcs = {
             ok: function() {
                 const result = {};
-                
+
                 if ( type === 'fromTo') {
                     result.from = $dataPicker.find('.datePickerFromDateText').val();
                     result.to = $dataPicker.find('.datePickerToDateText').val();
@@ -1222,12 +1216,12 @@ datePickerDialog: function( type, timeFlag, title, date ){
                 });
             }
         };
-        
+
         const buttons = {
             ok: { text: getMessage.FTE10038, action: 'default', style: 'width:160px;'},
             cancel: { text: getMessage.FTE10026, action: 'normal'}
         };
-        
+
         const config = {
             mode: 'modeless',
             position: 'center',
@@ -1241,24 +1235,24 @@ datePickerDialog: function( type, timeFlag, title, date ){
                 button: buttons
             }
         };
-        
+
         let dialog = new Dialog( config, funcs );
-        
+
         // Data picker
         const $dataPicker = $('<div/>', {
             'class': 'datePickerContainer'
         });
-            
+
         if ( type === 'fromTo') {
             $dataPicker.addClass('datePickerFromToContainer').html(`<div class="datePickerFrom"></div>`
             + `<div class="datePickerTo"></div>`);
-            
+
             if ( !cmn.checkDate( date.from ) ) date.from = '';
             if ( !cmn.checkDate( date.to ) ) date.to = '';
 
             $dataPicker.find('.datePickerFrom').html( cmn.datePicker( timeFlag, 'datePickerFromDateText', date.from, null, date.to ) );
             $dataPicker.find('.datePickerTo').html( cmn.datePicker( timeFlag, 'datePickerToDateText', date.to, date.from, null ) );
-            
+
             // FromTo相互で日付の入力をチェックする
             $dataPicker.find('.datePickerFromDateText').on('change', function(){
                 const val = $( this ).val();
@@ -1268,12 +1262,12 @@ datePickerDialog: function( type, timeFlag, title, date ){
                 const val = $( this ).val();
                 $dataPicker.find('.datePickerFrom').find('.datePickerDateEnd').val( val ).change();
             });
-            
+
         } else {
             if ( !cmn.checkDate( date ) ) date = '';
             $dataPicker.html( cmn.datePicker( timeFlag, 'datePickerDateText', date ) );
         }
-        
+
         dialog.open( $dataPicker );
     });
 },
@@ -1286,7 +1280,7 @@ setDatePickerEvent: function( $target, title ) {
     const $container = $target.closest('.inputDateContainer'),
           $button = $container.find('.inputDateCalendarButton'),
           timeFlag = $button.attr('data-timeflag');
-    
+
     $button.on('click', function(){
         const value = $target.val();
         fn.datePickerDialog('date', timeFlag, title, value ).then(function( result ){
@@ -1295,7 +1289,7 @@ setDatePickerEvent: function( $target, title ) {
             }
         });
     });
-    
+
 },
 /*
 ##################################################
@@ -1367,7 +1361,7 @@ faderEvent: function( $item ) {
             },
             'mousemove.faderKnob': function( mme ){
               const moveX = mme.pageX - mde.pageX;
-              ratio = ( positionX + moveX ) / width;                  
+              ratio = ( positionX + moveX ) / width;
               ratioVal();
             }
           });
@@ -1398,7 +1392,7 @@ faderEvent: function( $item ) {
         $window.off('mousemove.faderTooltip');
       }
     });
-    
+
     $input.on('change', function(){
         val = $input.val();
         width = $fader.width();
@@ -1415,14 +1409,14 @@ faderEvent: function( $item ) {
           val = '';
         }
     });
-    
+
     // 最大値が変わった場合ノブの位置を更新する
     $input.on('maxChange', function(){
         max = Number( $input.attr('data-max') );
         inputRange = max - min;
         valPosition();
     });
-    
+
     $input.on('input', function(){
         val = $input.val();
         valPosition();
@@ -1454,7 +1448,7 @@ html: {
         if ( option.minWidth ) {
             html.push(`<span class="buttonMinWidth" style="width:${option.minWidth}"></span>`);
         }
-        
+
         attr.push(`class="${className.join(' ')}"`);
         return `<button ${attr.join(' ')}><span class="inner">${html.join('')}</span></button>`;
     },
@@ -1466,24 +1460,24 @@ html: {
     inputHidden: function( className, value, name, attrs = {}) {
         const attr = inputCommon( value, name, attrs );
         attr.push(`class="${classNameCheck( className, 'inputHidden input').join(' ')}"`);
-        
+
         return `<input type="hidden" ${attr.join(' ')}>`;
     },
     span: function( className, value, name, attrs = {}) {
         const attr = inputCommon( null, name, attrs );
         attr.push(`class="${classNameCheck( className, 'inputSpan').join(' ')}"`);
-        
+
         return `<span ${attr.join(' ')}>${value}</span>`;
     },
     inputText: function( className, value, name, attrs = {}, option = {}) {
         const attr = inputCommon( value, name, attrs );
-        
+
         className = classNameCheck( className, 'inputText input');
         if ( option.widthAdjustment ) className.push('inputTextWidthAdjustment')
         attr.push(`class="${className.join(' ')}"` );
-        
+
         let input = `<input type="text" ${attr.join(' ')} autocomplete="off">`;
-        
+
         if ( option.widthAdjustment ) {
             input = ``
             + `<div class="inputTextWidthAdjustmentWrap">`
@@ -1491,11 +1485,11 @@ html: {
                 + `<div class="inputTextWidthAdjustmentText">${value}</div>`
             + `</div>`
         }
-        
+
         if ( option.before || option.after ) {
           const before = ( option.before )? `<div class="inputTextBefore">${option.before}</div>`: '',
                 after =  ( option.after )? `<div class="inputTextAfter">${option.after}</div>`: '';
-        
+
           input = `<div class="inputTextWrap">${before}<div class="inputTextBody">${input}</div>${after}</div>`;
         }
         return  input;
@@ -1503,13 +1497,13 @@ html: {
     inputPassword: function( className, value, name, attrs = {}, option = {} ) {
         const wrapClass = ['inputPasswordWrap'],
               attr = inputCommon( value, name, attrs );
-        
+
         className = classNameCheck( className, 'inputPassword input');
         if ( option.widthAdjustment ) className.push('inputTextWidthAdjustment')
         attr.push(`class="${className.join(' ')}"` );
-        
+
         let input = `<input type="password" ${attr.join(' ')} autocomplete="new-password">`;
-        
+
         if ( option.widthAdjustment ) {
             input = ``
             + `<div class="inputTextWidthAdjustmentWrap">`
@@ -1517,19 +1511,19 @@ html: {
                 + `<div class="inputTextWidthAdjustmentText">${value}</div>`
             + `</div>`
         }
-        
+
         // パスワード表示
         const eyeAttrs = { action: 'default'};
         if ( attrs.disabled ) eyeAttrs.disabled = 'disabled';
         input = `<div class="inputPasswordBody">${input}</div>`
         + `<div class="inputPasswordToggle">${cmn.html.button( cmn.html.icon('eye_close'), 'itaButton inputPasswordToggleButton', eyeAttrs )}</div>`;
-        
+
         // パスワード削除
         if ( option.deleteToggle ) {
             const deleteClass = ['itaButton', 'inputPasswordDeleteToggleButton', 'popup'],
                   deleteAttrs = { action: 'danger', title: getMessage.FTE10041 };
             let iconName = 'cross';
-            
+
             if ( attrs.disabled ) deleteAttrs.disabled = 'disabled';
             if ( option.deleteFlag ) {
                 deleteClass.push('on');
@@ -1542,7 +1536,7 @@ html: {
                 + cmn.html.button( cmn.html.icon( iconName ), deleteClass, deleteAttrs )
             + `</div>`;
         }
-        
+
         return `<div class="${wrapClass.join(' ')}">`
             + input
         + `</div>`;
@@ -1550,21 +1544,21 @@ html: {
     inputNumber: function( className, value, name, attrs = {}) {
         const attr = inputCommon( value, name, attrs );
         attr.push(`class="${classNameCheck( className, 'inputNumber input').join(' ')}"`);
-        
+
         return `<input type="number" ${attr.join(' ')}>`;
     },
     inputColor: function( className, value, name, attrs = {}, option = {}) {
         const attr = inputCommon( value, name, attrs );
-        
+
         className = classNameCheck( className, 'inputColor');
         attr.push(`class="${className.join(' ')}"` );
-        
+
         let input = `<input type="color" ${attr.join(' ')}>`;
-        
+
         if ( option.before || option.after ) {
           const before = ( option.before )? `<div class="inputColorBefore">${option.before}</div>`: '',
                 after =  ( option.after )? `<div class="inputColorAfter">${option.after}</div>`: '';
-        
+
           input = `<div class="inputColorWrap">${before}<div class="inputColorBody">${input}</div>${after}</div>`;
         }
         return  input;
@@ -1575,20 +1569,20 @@ html: {
         className = classNameCheck( className, 'inputFader inputNumber input');
         if ( option.before ) bodyClass += ' inputFaderBeforeWrap';
         if ( option.after ) bodyClass += ' inputFaderAfterWrap';
-        
+
         attr.push(`class="${className.join(' ')}"`);
-        
+
         let input = `<div class="${bodyClass}">`
             + `<input type="number" ${attr.join(' ')}>`
         + `</div>`;
-        
+
         if ( option.before || option.after ) {
             const before = ( option.before )? `<div class="inputFaderBefore">${option.before}</div>`: '',
                   after =  ( option.after )? `<div class="inputFaderAfter">${option.after}</div>`: '';
 
             input = `${before}${input}${after}`;
         }
-        
+
         return `<div class="inputFaderWrap">`
             + input
             + `<div class="inputFaderRange">`
@@ -1596,7 +1590,7 @@ html: {
                 + `<div class="inputFaderRangeLower"></div>`
                 + `<div class="inputFaderRangeTooltip"></div>`
             + `</div>`
-        + `</div>`;    
+        + `</div>`;
     },
     inputButton: function( className, input, button ) {
         className = classNameCheck( className, 'inputButtonWrap');
@@ -1609,11 +1603,11 @@ html: {
     },
     textarea: function( className, value, name, attrs = {}, widthAdjustmentFlag ) {
         const attr = inputCommon( null, name, attrs );
-        
+
         className = classNameCheck( className, 'textarea input');
         if ( widthAdjustmentFlag ) className.push('textareaAdjustment')
         attr.push(`class="${className.join(' ')}"` );
-        
+
         if ( widthAdjustmentFlag ) {
             return ``
             + `<div class="textareaAdjustmentWrap">`
@@ -1628,7 +1622,7 @@ html: {
     check: function( className, value, name, id, attrs = {}) {
         const attr = inputCommon( value, name, attrs, id );
         attr.push(`class="${classNameCheck( className, 'checkbox').join(' ')}"`);
-        
+
         return ``
         + `<div class="checkboxWrap">`
             + `<input type="checkbox" ${attr.join(' ')}>`
@@ -1638,7 +1632,7 @@ html: {
     checkboxText: function( className, value, name, id, attrs = {}, text ) {
         const attr = inputCommon( value, name, attrs, id );
         attr.push(`class="${classNameCheck( className, 'checkboxText').join(' ')}"`);
-        
+
         return ``
         + `<div class="checkboxTextWrap">`
             + `<input type="checkbox" ${attr.join(' ')}>`
@@ -1648,7 +1642,7 @@ html: {
     radio: function( className, value, name, id, attrs = {}) {
         const attr = inputCommon( value, name, attrs, id );
         attr.push(`class="${classNameCheck( className, 'radio').join(' ')}"`);
-        
+
         return ``
         + `<div class="radioWrap">`
             + `<input type="radio" ${attr.join(' ')}>`
@@ -1658,7 +1652,7 @@ html: {
     radioText: function( className, value, name, id, attrs = {}, text ) {
         const attr = inputCommon( value, name, attrs, id );
         attr.push(`class="${classNameCheck( className, 'radioText').join(' ')}"`);
-        
+
         return ``
         + `<div class="radioTextWrap">`
             + `<input type="radio" ${attr.join(' ')}>`
@@ -1674,12 +1668,12 @@ html: {
             className = classNameCheck( className );
         }
         attr.push(`class="${className.join(' ')}"`);
-        
+
         // 必須じゃない場合空白を追加
         if ( attrs.required === '0') {
             selectOption.push(`<option value=""></option>`);
         }
-        
+
         // listを名称順にソートする
         const sortList = Object.keys( list ).map(function(key){
             return list[key];
@@ -1687,15 +1681,15 @@ html: {
         sortList.sort(function( a, b ){
             return a.localeCompare( b );
         });
-        
-        
+
+
         for ( const item of sortList ) {
             const val = cmn.escape( item ),
                   optAttr = [`value="${val}"`];
             if ( value === val ) optAttr.push('selected', 'selected');
             selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
         }
-        
+
         return ``
         + `<select ${attr.join(' ')}>`
             + selectOption.join('')
@@ -1720,7 +1714,7 @@ html: {
     },
     table: function( tableData, className, thNumber ) {
         className = classNameCheck( className, 'commonTable');
- 
+
         const table = [];
         for ( const type in tableData ) {
             table.push(`<${type}>`);
@@ -1746,12 +1740,12 @@ html: {
             table.push( row.join('') );
             table.push(`</${type}>`);
         }
-        
+
         return `<table class="${className.join(' ')}">${table.join('')}</table>`;
     },
     dateInput: function( timeFlag, className, value, name, attrs = {} ) {
         className = classNameCheck( className, 'inputDate');
-        
+
         let placeholder = 'yyyy/MM/dd';
         if ( timeFlag ) {
             if ( timeFlag === 'hm') {
@@ -1764,12 +1758,12 @@ html: {
         }
         attrs.timeFlag = timeFlag;
         attrs.placeholder = placeholder;
-        
+
         const buttonAttrs = { action: 'normal', timeFlag: timeFlag };
         if ( attrs.disabled ) {
             buttonAttrs.disabled = 'disabled';
         }
-                
+
         return `<div class="inputDateContainer">`
             + `<div class="inputDateBody">`
                 + fn.html.inputText( className, value, name, attrs )
@@ -1789,7 +1783,7 @@ html: {
         + `<div class="inputFileClear">`
             + cmn.html.button( cmn.html.icon('clear'), 'itaButton inputFileClearButton popup', { action: 'restore', title: getMessage.FTE00076 })
         + `</div>`;
-            
+
         return `<div class="inputFileWrap">`
             + file
         + `</div>`;
@@ -1802,16 +1796,16 @@ html: {
               itemStyle = [],
               itemClass = ['operationMenuItem'],
               itemAttr = {};
-        
+
         // item
         if ( item.className ) itemClass.push( item.className );
         if ( item.separate ) itemClass.push('operationMenuSeparate');
         if ( item.display ) itemStyle.push(`display:${item.display}`);
         if ( itemStyle.length ) itemAttr.style = itemStyle.join(';');
         itemAttr.class = itemClass.join(' ');
-        
+
         const itemAttrs = bindAttrs( itemAttr );
-        
+
         // button
         if ( item.button ) {
             const button = item.button,
@@ -1838,17 +1832,17 @@ html: {
                   inputClass = ['operationMenuInput'],
                   inputOption = { widthAdjustment: true, before: input.before, after: input.after };
             if ( input.className ) inputClass.push( input.className );
-            itemHtml.push( cmn.html.inputText( inputClass, input.value, null, null, inputOption ) );            
+            itemHtml.push( cmn.html.inputText( inputClass, input.value, null, null, inputOption ) );
         }
-        
+
         // check
         if ( item.check ) {
             const check = item.check,
                   checkClass = ['operationMenuInput'];
             if ( check.className ) checkClass.push( check.className );
-            itemHtml.push( cmn.html.checkboxText( checkClass, check.value, check.name, check.name ) );            
+            itemHtml.push( cmn.html.checkboxText( checkClass, check.value, check.name, check.name ) );
         }
-        
+
         // message
         if ( item.message ) {
             const messageIcon = ( item.message.icon )? item.message.icon: 'circle_info';
@@ -1861,13 +1855,13 @@ html: {
     },
     operationMenu: function( menu, className ) {
         className = classNameCheck( className, 'operationMenuList');
-        
+
         const html = [];
         const list = {
             Main: [],
             Sub: []
         };
-                
+
         for ( const menuType in list ) {
             if ( menu[ menuType ] ) {
                 for ( const item of menu[ menuType ] ) {
@@ -1877,8 +1871,8 @@ html: {
                     html.push(`<ul class="${className.join(' ')} operationMenu${menuType}">${list[ menuType ].join('')}</ul>`);
                 }
             }
-        }        
-        
+        }
+
         return `<div class="operationMenu">${html.join('')}</div>`;
     }
 },
@@ -1896,10 +1890,10 @@ processingModal: function( title ) {
         },
         width: '320px'
     };
-    
+
     const dialog = new Dialog( config );
     dialog.open();
-    
+
     return dialog;
 },
 /*
@@ -1926,15 +1920,15 @@ resultModal: function( result ) {
             }
         };
         const html = []
-    
+
         const listOrder = ['Register', 'Update', 'Discard', 'Restore'];
         for ( const key of listOrder ) {
               html.push(`<dl class="resultList resultType${key}">`
                   + `<dt class="resultType">${key}</dt>`
                   + `<dd class="resultNumber">${result[key]}</dd>`
               + `</dl>`);
-        }    
-        
+        }
+
         const dialog = new Dialog( config, funcs );
         dialog.open(`<div class="resultContainer">${html.join('')}</div>`);
     });
@@ -1964,9 +1958,9 @@ errorModal: function( errors, pageName, info ) {
                 const columnId = Object.keys( info.column_info ).find(function( key ){
                     return info.column_info[ key ].column_name_rest === name;
                 });
-                
+
                 const columnName = ( columnId )? info.column_info[ columnId ].column_name: error;
-                
+
                 errorHtml.push(`<tr class="tBodyTr tr">`
                 + cmn.html.cell( number, ['tBodyTh', 'tBodyLeftSticky'], 'th')
                 + cmn.html.cell( columnName, 'tBodyTd')
@@ -1990,7 +1984,7 @@ errorModal: function( errors, pageName, info ) {
                 </tbody>
             </table>
         </div>`;
-        
+
         const funcs = {};
         funcs.ok = function() {
             dialog.close();
@@ -2013,11 +2007,11 @@ errorModal: function( errors, pageName, info ) {
               }
             }
         };
-        
+
         const dialog = new Dialog( config, funcs );
         dialog.open(`<div class="errorContainer">${html}</div>`);
     });
-    
+
 },
 /*
 ##################################################
@@ -2027,22 +2021,22 @@ errorModal: function( errors, pageName, info ) {
 setCommonEvents: function() {
     const $window = $( window ),
           $body = $('body');
-    
+
     // input textの幅を入力に合わせる
     $body.on('input.textWidthAdjustment', '.inputTextWidthAdjustment', function(){
         const $text = $( this ),
               value = $text.val();
         $text.next('.inputTextWidthAdjustmentText').text( value );
     });
-    
+
     // textareaの幅と高さを調整する
     $body.on('input.textareaWidthAdjustment', '.textareaAdjustment', cmn.textareaAdjustment );
-    
+
     // パスワード表示・非表示切替
     $body.on('click', '.inputPasswordToggleButton', function(){
         const $button = $( this ),
               $input = $button.closest('.inputPasswordWrap').find('.inputPassword');
-        
+
         if ( !$button.is('.on') ) {
             $button.addClass('on');
             $button.find('.inner').html( cmn.html.icon('eye_open'));
@@ -2053,17 +2047,17 @@ setCommonEvents: function() {
             $input.attr('type', 'password');
         }
     });
-    
+
     // パスワード候補を初回クリックで出さないようにする
     $body.on('pointerdown', '.inputPassword', function( e ){
         e.preventDefault();
         const $input = $( this );
-        
+
         setTimeout( function(){
             $input.focus();
         }, 1 );
     });
-    
+
     // 切替ボタン
     $body.on('click', '.toggleButton', function(){
         const $button = $( this ),
@@ -2072,7 +2066,7 @@ setCommonEvents: function() {
             $button.attr('data-toggle', flag );
         }
     });
-    
+
     // titel の内容をポップアップ
     $body.on('pointerenter.popup', '.popup', function(){
         const $t = $( this ),
@@ -2084,12 +2078,12 @@ setCommonEvents: function() {
                 'class': 'popupBlock',
                 'html': `<div class="popupInner">${fn.escape( ttl, true )}</div>`
             }).append('<div class="popupArrow"><span></span></div>');
-            
+
             const $inner = $p.find('.popupInner'),
                   $arrow = $p.find('.popupArrow');
-            
+
             if( $t.is('.darkPopup') ) $p.addClass('darkPopup');
-            
+
             $body.append( $p );
 
             const r = $t[0].getBoundingClientRect(),
@@ -2106,7 +2100,7 @@ setCommonEvents: function() {
             let pL = ( tL + tW / 2 ) - ( pW / 2 ) - wsL,
                 pH = $p.outerHeight(),
                 pT = tT - pH;
-            
+
             // 上か下か
             if ( pT <= 0 && tT < tB ) {
                 $p.addClass('popupBottom');
@@ -2118,14 +2112,14 @@ setCommonEvents: function() {
             }
             if ( wW < pL + pW ) pL = wW - pW;
             if ( pL <= 0 ) pL = 0;
-            
+
             $p.css({
                 'width': pW,
                 'height': pH,
                 'left': pL,
                 'top': pT
             });
-            
+
             // 矢印の位置
             let aL = 0;
             if ( tL - wsL + tW > wW ) {
@@ -2135,7 +2129,7 @@ setCommonEvents: function() {
                 } else {
                     aL = pW - ( twW / 2 );
                     if ( pW - aL < 20 ) aL = pW - 20;
-                }    
+                }
             } else if ( tL < wsL ) {
                 const twW = tL + tW - wsL;
                 if ( twW > pW ) {
@@ -2152,13 +2146,13 @@ setCommonEvents: function() {
             if ( $t.is('.popupHide') ) {
                 $p.addClass('popupHide');
             }
-            
-            
+
+
             // ホイールでポップアップ内をスクロール
             $t.on('wheel.popup', function( e ){
                 if ( !$t.is('.popupScroll') ) return;
                 e.preventDefault();
-                
+
                 const delta = e.originalEvent.deltaY ? - ( e.originalEvent.deltaY ) : e.originalEvent.wheelDelta ? e.originalEvent.wheelDelta : - ( e.originalEvent.detail );
 
                 if ( delta < 0 ) {
@@ -2167,14 +2161,14 @@ setCommonEvents: function() {
                     $inner.scrollTop( $inner.scrollTop() - 16 );
                 }
             });
-            
+
             $t.on('pointerleave.popup', function(){
                 const $p = $body.find('.popupBlock'),
                       title = ttl;
                 $p.remove();
                 $t.off('pointerleave.popup click.popup wheel.popup').attr('title', title );
             });
-            
+
             // data-popupがclickの場合クリック時に一旦非表示
             $t.on('click.popup', function(){
                 if ( $t.attr('data-popup') === 'click') {
@@ -2193,7 +2187,7 @@ setCommonEvents: function() {
                     }
                 } else {
                     $p.remove();
-                }              
+                }
             };
             targetCheck();
         }
@@ -2209,19 +2203,19 @@ textareaAdjustment: function() {
           $parent = $text.parent('.textareaAdjustmentWrap'),
           $width = $parent.find('.textareaWidthAdjustmentText'),
           $height = $parent.find('.textareaHeightAdjustmentText');
-    
+
     // 空の場合、高さを求めるためダミー文字を入れる
     let value = fn.escape( $text.val() ).replace(/\n/g, '<br>').replace(/<br>$/g, '<br>!');
     if ( value === '') value = '!';
 
     $width.add( $height ).html( value );
-    
+
     if ( $width.get(0).scrollWidth > 632 ) {
         $parent.addClass('textareaOverWrap');
     } else {
         $parent.removeClass('textareaOverWrap');
     }
-    
+
     $parent.css('height', $height.outerHeight() + 1 );
 
 },
@@ -2243,7 +2237,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
     return new Promise(function( resolve, reject ){
         const modalFuncs = {
             ok: function() {
-                modalInstance[ modalId ].modal.hide();   
+                modalInstance[ modalId ].modal.hide();
                 const selectId = modalInstance[ modalId ].table.select.select;
                 resolve( selectId );
             },
@@ -2252,7 +2246,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
                 resolve( null );
             }
         };
-        
+
         if ( !modalInstance[ modalId ] ) {
             fn.initSelectModal( modalId, title, menu, config ).then(function( modalAndTable ){
                 modalInstance[ modalId ] = modalAndTable;
@@ -2271,7 +2265,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
 ##################################################
 */
 initSelectModal: function( modalId, title, menu, selectConfig ) {
-    
+
     return new Promise(function( resolve, reject ) {
         const modalConfig = {
             mode: 'modeless',
@@ -2288,12 +2282,12 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
                 }
             }
         };
-        
+
         const processingModal = cmn.processingModal( title );
-        
+
         const modal = new Dialog( modalConfig );
         modal.open();
-        
+
         const resolveModal = function( info ) {
             const params = cmn.getCommonParams();
             params.menuNameRest = menu;
@@ -2302,14 +2296,14 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
             params.restFilterPulldown = selectConfig.filterPulldown;
             if ( selectConfig.selectOtherKeys ) params.selectOtherKeys = selectConfig.selectOtherKeys;
             if ( selectConfig.selectType ) params.selectType = selectConfig.selectType;
-            
+
             // 取得したinfoのSubキー確認
             if ( selectConfig.sub ) info = info[ selectConfig.sub ];
 
             const tableId = `${modalId}_${menu.toUpperCase()}${( selectConfig.sub )? `_${selectConfig.sub}`: ``}`,
                   table = new DataTable( tableId, 'select', info, params );
             modal.setBody( table.setup() );
-            
+
             // 選択チェック
             table.$.container.on(`${table.id}selectChange`, function(){
                 if ( table.select.select.length ) {
@@ -2318,7 +2312,7 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
                     modal.buttonPositiveDisabled( true );
                 }
             });
-            
+
             // 初期表示の場合は読み込み完了後に表示
             $( window ).one( tableId + '__tableReady', function(){
                 processingModal.close();
@@ -2326,13 +2320,13 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
                 modal.$.dialog.removeClass('hiddenDialog');
                 modal.show();
             });
-            
+
             resolve({
                 modal: modal,
                 table: table
             });
         };
-        
+
         // Table info確認
         if ( selectConfig.infoData ) {
             resolveModal( selectConfig.infoData );
@@ -2431,30 +2425,30 @@ executeModalOpen: function( modalId, menu, executeConfig ) {
                 }
             };
             modalInstance[ modalId ] = new Dialog( config, funcs );
-            
+
             modalInstance[ modalId ].open( html );
             cmn.setDatePickerEvent( modalInstance[ modalId ].$.dbody.find('.executeSchedule'), getMessage.FTE10052 );
 
             // 選択しているItemをセット
             modalInstance[ modalId ].$.dbody.find('.selectId').text( executeConfig.selectId );
             modalInstance[ modalId ].$.dbody.find('.selectName').text( executeConfig.selectName );
-            
+
             // オペレーション選択
             modalInstance[ modalId ].$.dbody.find('.executeOperetionSelectButton').on('click', function(){
                 cmn.selectModalOpen( 'operation', getMessage.FTE10050, menu, executeConfig.operation ).then(function( selectResult ){
                     if ( selectResult && selectResult[0] ) {
                         modalInstance[ modalId ].$.dbody.find('.executeOperetionId').text( selectResult[0].id );
                         modalInstance[ modalId ].$.dbody.find('.executeOperetionName').text( selectResult[0].name );
-                        
+
                         modalInstance[ modalId ].buttonPositiveDisabled( false );
                     }
                 });
             });
-            
+
         } else {
             modalInstance[ modalId ].btnFn = funcs;
             modalInstance[ modalId ].show();
-            
+
             // 選択しているItemをセット
             modalInstance[ modalId ].$.dbody.find('.selectId').text( executeConfig.selectId );
             modalInstance[ modalId ].$.dbody.find('.selectName').text( executeConfig.selectName );
@@ -2483,9 +2477,9 @@ messageClear: function() {
 ##################################################
 */
 commonErrorAlert: function( error ) {
-    
+
     console.error( error );
-    
+
     if ( error.message ) {
         if ( e.message !== 'Failed to fetch' && windowFlag ) {
             alert( error.message );
@@ -2519,7 +2513,7 @@ gotoErrPage: function( message ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   Contentローディング
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 contentLoadingStart: function() {
@@ -2553,7 +2547,7 @@ jsonStringify: function( json ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   iframeモーダル
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 modalIframe: function( menu, title, option = {}){
@@ -2577,7 +2571,7 @@ modalIframe: function( menu, title, option = {}){
                 }
             }
         };
-        
+
         const url = [`?menu=${menu}`];
         if ( option.filter ) {
             url.push(`&filter=${cmn.filterEncode( option.filter )}`);
@@ -2585,10 +2579,10 @@ modalIframe: function( menu, title, option = {}){
         if ( option.iframeMode ) {
             url.push(`&iframeMode=${option.iframeMode}`);
         }
-        
+
         // モーダル作成
         modalInstance[ menu ] = new Dialog( modalConfig, modalFuncs );
-        
+
         const modal = modalInstance[ menu ];
         modal.open(`<iframe class="iframe" src="${url.join('')}"></iframe>`);
     }
@@ -2606,7 +2600,7 @@ iframeMessage( message ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   作業状態確認管理
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -2619,7 +2613,7 @@ createCheckOperation: function( menu, operationId ) {
         operationInstance[ operationId ] = new Status( menu, operationId );
         operationInstance[ operationId ].setup();
         return operationInstance[ operationId ];
-    }    
+    }
 },
 /*
 ##################################################
@@ -2635,7 +2629,7 @@ clearCheckOperation: function( operationId ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   Conductor管理
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -2689,12 +2683,12 @@ modalConductor: function( menu, mode, conductorId, option ) {
             }
         };
         const target = `cd-${conductorId}-area`;
-        
+
         // モーダル作成
         modalInstance[ conductorId ] = new Dialog( modalConfig, modalFuncs );
         const modal = modalInstance[ conductorId ];
         modal.open(`<div id="${target}" class="modalConductor"></div>`);
-        
+
         // Conductor作成
         conductorInstance[ conductorId ] = new Conductor( menu, '#' + target, mode, conductorId, option );
         const cd = conductorInstance[ conductorId ];
@@ -2706,7 +2700,7 @@ modalConductor: function( menu, mode, conductorId, option ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  画面設定
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 setUiSetting() {
@@ -2729,7 +2723,7 @@ setTheme( theme ) {
     const $theme = $('#thema'),
           src = `/_/ita/thema/${theme}.css`;
     $theme.attr('href', src );
-    
+
     // ダークモード
     if ( theme === 'darkmode') {
         $('body').addClass('darkmode');
@@ -2768,25 +2762,25 @@ uiSetting() {
                 resolve('cancel');
             }
         };
-        
+
         // データ更新
         const setUiSettingData = function() {
-            
+
             // ユーザー情報取得
             const sessionUserData = cmn.storage.get('restUser', 'session');
             if ( sessionUserData ) {
                 const process = cmn.processingModal();
-                        
+
                 const uiSettingData = {
                     theme: uiSettingInstance.$.dbody.find('.displaySettingTheme').val(),
                     filter: getFilterValue()
                 };
-                
-                if ( !sessionUserData.web_table_settings ) sessionUserData.web_table_settings = {};                
+
+                if ( !sessionUserData.web_table_settings ) sessionUserData.web_table_settings = {};
                 sessionUserData.web_table_settings.ui = uiSettingData;
                 cmn.fetch('/user/table_settings/', null, 'POST', sessionUserData.web_table_settings ).then(function(){
                     cmn.storage.set('ui_setting', uiSettingData );
-                    cmn.setUiSetting(); 
+                    cmn.setUiSetting();
                 }).catch(function(){
                     cmn.alert( getMessage.FTE10092, getMessage.FTE10093 );
                 }).then(function(){
@@ -2804,14 +2798,14 @@ uiSetting() {
             // フィルター
             const $colorSetting = uiSettingInstance.$.dbody.find('.displaySettingColor'),
                   filterList = {};
-            
+
             $colorSetting.each(function(){
                 const $input = $( this ),
                       value = Number( $input.val() ),
                       type = $input.attr('data-type');
                 filterList[type] = value;
             });
-            
+
             return filterList;
         };
 
@@ -2834,7 +2828,7 @@ uiSetting() {
                 epoch: getMessage.FTE10079,
                 darkmode: getMessage.FTE10080,
             };
-            
+
             const restUser = cmn.storage.get('restUser', 'session'),
                   uiSettingData = ( restUser && restUser.web_table_settings )? restUser.web_table_settings: {},
                   theme = ( uiSettingData && uiSettingData.ui )? uiSettingData.ui.theme: '';
@@ -2844,7 +2838,7 @@ uiSetting() {
                 const selected = ( theme === key )? ' selected': '';
                 select.push(`<option value="${key}"${selected}>${themeList[key]}</option>`);
             }
-            
+
             const filterList = function( type = 'html') {
                 // [ 名称, className, min, max, 単位, 初期値 ]
                 const list = {
@@ -2873,7 +2867,7 @@ uiSetting() {
                     }
                 }
             };
-            
+
             const html = ``
             + `<div class="commonSection">`
                 + `<div class="commonTitle">${getMessage.FTE10063}</div>`
@@ -2917,24 +2911,24 @@ uiSetting() {
             };
             uiSettingInstance = new Dialog( config, funcs );
             uiSettingInstance.open( html );
-            
+
             const $body = uiSettingInstance.$.dbody;
-            
+
             // 反映ボタン
             $body.find('.input').on('change', function(){
                 uiSettingInstance.buttonPositiveDisabled( false );
             });
-            
+
             // テーマ変更
             $body.find('.displaySettingTheme').on('change', function(){
                 cmn.setTheme( $( this ).val() );
             });
-            
+
             // フェーダー
             $body.find('.inputFaderWrap').each(function(){
                 cmn.faderEvent( $( this ) );
             });
-            
+
             // フィルター
             const setFilterevent = function() {
                 $body.find('.displaySettingColor').on('change.filter', function(){
@@ -2954,7 +2948,7 @@ uiSetting() {
                 setFilterevent();
                 uiSettingInstance.buttonPositiveDisabled( false );
             })
-            
+
         } else {
             uiSettingInstance.btnFn = funcs;
             uiSettingInstance.show();
@@ -2965,7 +2959,7 @@ uiSetting() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   画面フルスクリーン
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
@@ -2977,7 +2971,7 @@ fullScreenCheck() {
     if (
         ( document.fullScreenElement !== undefined && document.fullScreenElement === null ) ||
         ( document.msFullscreenElement !== undefined && document.msFullscreenElement === null ) ||
-        ( document.mozFullScreen !== undefined && !document.mozFullScreen ) || 
+        ( document.mozFullScreen !== undefined && !document.mozFullScreen ) ||
         ( document.webkitIsFullScreen !== undefined && !document.webkitIsFullScreen )
     ) {
         return false;
@@ -3019,21 +3013,37 @@ fullScreen( elem ) {
 */
 commonTab( $target ) {
     $target.find('.commonTabItem').eq(0).add( $target.find('.commonTabSection').eq(0) ).addClass('open');
-    
+
     $target.find('.commonTabItem').on('click', function(){
         const $item = $( this );
-        
+
         if ( !$item.is('.open') ) {
             const index = $target.find('.commonTabItem').index( this );
             $target.find('.open').removeClass('open');
             $( this ).add( $target.find('.commonTabSection').eq( index ) ).addClass('open');
-        }        
+        }
     });
 }
 
 }; // end cmn
 
-
+    // document.referrerが空の場合、WebStorageをクリア
+    if ( windowFlag && !document.referrer.length ) {
+        // Local storage
+        const localKeys = cmn.storage.getKeys('local');
+        for ( const key of localKeys ) {
+            if ( key.indexOf('ita_ui_') === 0 ) {
+                cmn.storage.remove( key, 'local', false );
+            }
+        }
+        // Session storage
+        const sessionKeys = cmn.storage.getKeys('session');
+        for ( const key of sessionKeys ) {
+            if ( key.indexOf('ita_ui_') === 0 ) {
+                cmn.storage.remove( key, 'session', false );
+            }
+        }
+    }
 
     // 共通パラメーター
     const commonParams = {};
@@ -3071,7 +3081,7 @@ constructor( id, max ) {
 */
 setup( className ) {
     const lg = this;
-    
+
     const menu = {
         Main: [
             { input: { className: 'logSearchInput', before: getMessage.FTE10053 } },
@@ -3079,12 +3089,12 @@ setup( className ) {
         ],
         Sub: []
     };
-    
+
     lg.searchString = '';
-    
+
     const containerClassName = ['operationLogContainer'];
     if ( className ) containerClassName.push( className );
-    
+
     const $log = $(`
     <div class="${containerClassName.join(' ')}"${( lg.id )? ` id="${lg.id}"`: ``}>
         ${fn.html.operationMenu( menu, 'operationLogMenu')}
@@ -3111,7 +3121,7 @@ setup( className ) {
             </div>
         </div>
     </div>`);
-    
+
     lg.$ = {};
     lg.$.log = $log.find('.operationLog');
     lg.$.logList = $log.find('.operationLogList');
@@ -3119,8 +3129,8 @@ setup( className ) {
     lg.$.num = $log.find('.operationLogLinesNumber');
     lg.$.search = $log.find('.logSearchInput');
     lg.$.filter = $log.find('.logSearchHidden ');
-    
-    
+
+
     lg.$.search.on('change', function(){
         lg.searchString = $( this ).val();
         if ( lg.searchString !== '') {
@@ -3130,13 +3140,13 @@ setup( className ) {
         }
         lg.search();
     });
-    
+
     lg.$.filter.on('change', function(){
         const flag = $( this ).prop('checked');
         lg.$.logList.attr('data-filter', flag );
     });
-    
-    
+
+
     return $log;
 }
 /*
@@ -3145,8 +3155,8 @@ setup( className ) {
 ##################################################
 */
 search() {
-    const lg = this;    
-    
+    const lg = this;
+
     if ( lg.$.logList.attr('data-search') !== lg.searchString ) {
         lg.$.logList.find('.operationLogItem').each(function(){
             const $list = $( this ),
@@ -3188,14 +3198,14 @@ replacer( match, p1, offset, str ) {
 */
 logLine( id ) {
     const lg = this;
-    
+
     const itemClass = ['operationLogItem'];
     let log = fn.cv( lg.logSplit[id], '', true );
     if ( lg.regexp && lg.regexp.test( log ) ) {
         log = log.replace( lg.regexp, lg.replacer );
         itemClass.push('logSearchMatch');
     }
-    
+
     return `<li class="${itemClass.join(' ')}">
         <div class="operationLogNumber">${(id + 1).toLocaleString()}</div>
         <div class="operationLogText" data-id="${id}">${log}</div>
@@ -3208,50 +3218,50 @@ logLine( id ) {
 */
 update( log ) {
     const lg = this;
-    
+
     // ログを改行で分割
     lg.logSplit = log.split(/\r\n|\n/);
     lg.lines = lg.logSplit.length;
-    
+
     // 最後の行が空白の場合削除
     if ( lg.logSplit[ lg.lines - 1 ] === '') {
         lg.logSplit.pop();
         lg.lines -= 1;
     }
-    
+
     // 行数表示
     lg.$.num.text( lg.lines.toLocaleString() );
-    
+
     // 進行状態表示行数内にする
     let start = 0;
     if ( lg.lines > lg.max ) {
         start = lg.lines - lg.max;
     }
-    
+
     // HTML
     const logHtml = [];
     for ( let i = start; i < lg.lines; i++ ) {
         logHtml.push( lg.logLine( i ) );
     }
-    
+
     // スクロールチェック
     const logArea = lg.$.log.get(0),
           logHeight = logArea.clientHeight,
           scrollTop = logArea.scrollTop,
           scrollHeight = logArea.scrollHeight,
           scrollFlag = ( logHeight < scrollHeight && scrollTop >= scrollHeight - logHeight )? true: false;
-    
-    lg.$.logList.html( logHtml.join('') );  
-    
+
+    lg.$.logList.html( logHtml.join('') );
+
     // 追加後進行状態表示行数を超えた部分を削除
     if ( lg.lines > lg.max ) {
         const itemLength = lg.$.logList.find('.operationLogItem').length;
         lg.$.logList.find('.operationLogItem').slice( 0, itemLength - lg.max ).remove();
-    }  
-    
+    }
+
     // 検索
     lg.search();
-    
+
     // 追加後にスクロール可能になった場合スクロール
     // 最下部にいる場合のみ追加分スクロール
     const afterScrollHeight = logArea.scrollHeight;
@@ -3270,7 +3280,7 @@ clear() {
     lg.lines = 0;
     lg.searchString = '';
     lg.regexp = null;
-    
+
     lg.$.num.text( 0 );
     lg.$.logList.empty();
 }
@@ -3290,11 +3300,11 @@ class Message {
 */
 constructor( type, title, message, icon, closeTime = 5000 ) {
     const ms = this;
-    
+
     ms.$ = {};
     ms.$.window = $( window );
     ms.$.body = $('body');
-    
+
     ms.message = {};
     ms.number = 0;
 }
@@ -3305,10 +3315,10 @@ constructor( type, title, message, icon, closeTime = 5000 ) {
 */
 add( type, title, message, icon, closeTime = 5000 ) {
     const ms = this;
-    
+
     const num = ms.number++;
     ms.message[ num ] = {};
-    
+
     if ( !icon ) {
         switch ( type ) {
             case 'success': icon = 'check'; break;
@@ -3316,14 +3326,14 @@ add( type, title, message, icon, closeTime = 5000 ) {
             case 'danger': icon = 'attention'; break;
             case 'unkown': icon = 'circle_question'; break;
             default: icon = 'circle_info';
-        }        
+        }
     }
-    
+
     // Container
     if ( !fn.exists('#messageContainer') ) {
         ms.$.body.append('<div id="messageContainer"></div>');
     }
-    
+
     const html = [];
     html.push(`<div class="messageTime">${fn.date( new Date(), 'yyyy/MM/dd HH:mm:ss')}</div>`);
     if ( icon ) html.push(`<div class="messageIcon">${fn.html.icon( icon )}</div>`);
@@ -3331,10 +3341,10 @@ add( type, title, message, icon, closeTime = 5000 ) {
     if ( message ) html.push(`<div class="messageBody">${message}</div>`);
     html.push(`<div class="messageClose"><button class="messageCloseButton">${fn.html.icon('cross')}</button></div>`
     + `<div class="messageTimer"><div class="messageTimerBar"></div></div>`);
-    
+
     ms.message[ num ].$ = $(`<div class="messageItem" data-message="${type}">${html.join('')}</div>`);
     $('#messageContainer').append( ms.message[ num ].$ );
-    
+
     if ( closeTime !== 0 ) {
         ms.message[ num ].$.find('.messageTimerBar').animate({width: '100%'}, closeTime );
         ms.message[ num ].timer = setTimeout(function(){
@@ -3343,7 +3353,7 @@ add( type, title, message, icon, closeTime = 5000 ) {
     } else {
         ms.message[ num ].$.find('.messageTimer').addClass('messageTimerZero');
     }
-    
+
     ms.message[ num ].$.find('.messageCloseButton').on('click', function(){
         if ( ms.message[ num ].timer ) clearTimeout( ms.message[ num ].timer );
         ms.close( num );
@@ -3358,7 +3368,7 @@ close( number ) {
     const ms = this;
     ms.message[ number ].$.fadeOut( 300 );
     delete ms.message[ number ];
-    
+
     /*
     ms.$.message.fadeOut( 300, function(){
         ms.$.message.remove();

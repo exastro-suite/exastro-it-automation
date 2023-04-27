@@ -15,26 +15,6 @@
 import json
 import re
 import copy
-# from deepmerge import Merger
-# from dictknife import deepmerge
-
-
-# my_deep_merger = Merger(
-#     # pass in a list of tuple, with the
-#     # strategies you are looking to apply
-#     # to each type.
-#     [
-#         (list, ["append"]),
-#         (dict, ["merge"]),
-#         (set, ["union"])
-#     ],
-#     # next, choose the fallback strategies,
-#     # applied to all other types:
-#     ["override"],
-#     # finally, choose the strategies in
-#     # the case where the types conflict:
-#     ["override"]
-# )
 
 
 # Typeの情報を取得する
@@ -234,8 +214,6 @@ def generate_member_vars_array(member_vars_array, member_vars_key, member_vars_v
         # g.applogger.debug("ref=" + str(ref))
         # g.applogger.debug("tmp_array=" + str(tmp_array))
         # 仮配列と返却用配列をマージ
-        # res = my_deep_merger.merge(member_vars_array, tmp_array)
-        # res = deepmerge(member_vars_array, tmp_array)
         res = my_deep_merge(member_vars_array, tmp_array)
 
     # g.applogger.debug("res=" + str(res))

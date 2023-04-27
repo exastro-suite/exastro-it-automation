@@ -169,8 +169,7 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
                 sql += "SELECT * FROM `" + table_schema + "`.`" + table_name + "` "
 
             sql += "WHERE ( `TIME_BOOK` IS NULL AND `STATUS_ID` = " + ansc_const.NOT_YET + " ) "
-            sql += "OR (`TIME_BOOK` <= SYSDATE() AND `STATUS_ID` = " + ansc_const.RESERVE + " ) "
-            sql += "OR (`TIME_BOOK` <= SYSDATE() AND `STATUS_ID` = " + ansc_const.PREPARE + " ) "
+            sql += "OR (`TIME_BOOK` <= '" + get_now_datetime() + "' AND `STATUS_ID` = " + ansc_const.RESERVE + " ) "
 
             if len(records) > count:
                 sql += "UNION ALL "
@@ -217,10 +216,10 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             if rec["ORGANIZATION_ID"] in exclusion_list:
                 continue
 
-            # 「オーガナイゼーション毎の処理中件数」/ 「オーガナイゼーションの同時実行数のLimit値」
+            # 「オーガナイゼーション毎の処理中件数」/ 「オーガナイゼーションの同時実行数のLimit値
             for rec2 in exec_count_records:
                 if rec["ORGANIZATION_ID"] == rec2["ORGANIZATION_ID"]:
-                    organization_priority = rec2["EXEC_COUNT"] // org_execution_limit
+                    organization_priority = rec2["EXEC_COUNT"] // org_execution_limit[rec2["ORGANIZATION_ID"]]
             if rec["TIME_BOOK"] is None:
                 time_book = rec["TIME_REGISTER"]
             else:

@@ -29,7 +29,6 @@
 ######################################################################
 STDOUT='/tmp/ita_stdout.'$$
 STDERR='/tmp/ita_stderr.'$$
-SVSTDERR='/tmp/ita_stderr'
 GREPCMD='/tmp/ita_grepcommand'
 /bin/rm -f $GREPCMD
 # 引数からgrepコマンドを生成
@@ -53,12 +52,10 @@ eval ${grep_cmd}
 RET=$?
 # grepコマンドが実行出来なかった場合
 if [ $RET -ne 0 ]; then
-    /bin/cp -fp ${STDERR} ${SVSTDERR}
     EXIT_CODE=$RET
 else
     # grepコマンドでエラーになった場合
     if [ -s ${STDERR} ]; then
-        /bin/cp -fp ${STDERR} ${SVSTDERR}
         EXIT_CODE=1
     else
         # grepコマンドで検索された行数取得

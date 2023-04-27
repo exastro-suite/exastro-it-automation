@@ -719,9 +719,6 @@ def backyard_main(organization_id, workspace_id):
                                                         tmp_param['parameter'] = {}
                                                         tmp_param['input_file'] = []
 
-                                                        for restcol in menu_restcol_info[menu_name]:
-                                                            tmp_param['parameter'][restcol] = None
-
                                                         if vertical_flag:
                                                             tmp_param['parameter']['input_order'] = input_order
 
@@ -780,7 +777,7 @@ def backyard_main(organization_id, workspace_id):
                                                 # 項目のないパラメーターシートは収集エラー
                                                 # 11 or 12: uuid, host, ope_name1, ope_name2, base_dt, ope_dt, last_exe, (order), note, discard, last_dt, last_user
                                                 least_item_count = 12 if vertical_flag else 11
-                                                req_param_item_count = len(tmparr3['parameter'])
+                                                req_param_item_count = len(menu_restcol_info[menu_name])
                                                 if least_item_count >= req_param_item_count:
                                                     FREE_LOG = g.appmsg.get_api_message("MSG-10850")
                                                     g.applogger.debug(FREE_LOG)
@@ -807,9 +804,14 @@ def backyard_main(organization_id, workspace_id):
                                                     # 既存レコードがなければ「登録」
                                                     if len(params) <= 0 or 'parameter' not in params[0]:
                                                         tmparr3['type'] = load_table.CMD_REGISTER
+                                                        tmparr3['parameter']['uuid'] = None
                                                         tmparr3['parameter']['host_name'] = hostname
                                                         tmparr3['parameter']['operation_name_select'] = aryOperation['OPERATION_DATE_NAME']
+                                                        tmparr3['parameter']['base_datetime'] = None
+                                                        tmparr3['parameter']['operation_date'] = None
+                                                        tmparr3['parameter']['last_execute_timestamp'] = None
                                                         tmparr3['parameter']['discard'] = '0'
+                                                        tmparr3['parameter']['remarks'] = None
                                                         tmparr3['parameter']['last_update_date_time'] = now
                                                         tmparr3['parameter']['last_updated_user'] = g.USER_ID
 
@@ -829,7 +831,7 @@ def backyard_main(organization_id, workspace_id):
                                                         tmparr3['parameter']['last_update_date_time'] = now
                                                         tmparr3['parameter']['last_updated_user'] = g.USER_ID
                                                         for k, v in param.items():
-                                                            if k not in tmparr3['parameter'] or tmparr3['parameter'][k] is None:
+                                                            if k not in tmparr3['parameter']:
                                                                 tmparr3['parameter'][k] = v
 
                                                     # 登録、更新

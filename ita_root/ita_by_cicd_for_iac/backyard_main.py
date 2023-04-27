@@ -561,6 +561,7 @@ class ControlGit():
         try:
             reg_flg = False
             cmd = ["git", "config", "--global", "-l"]
+            os.chdir("/exastro")
 
             if os.path.exists("/home/app_user/.gitconfig"):
                 return_var = subprocess.run(cmd, encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -2606,6 +2607,7 @@ def backyard_main(organization_id, workspace_id):
 
     except Exception:
         error_flag = 1
+        raise
 
     # 結果出力
     FREE_LOG = ""

@@ -1634,7 +1634,7 @@
     "MSG-100011": "End procedure (warning)",
     "MSG-100012": "Operation deletion management item number [{}]: Logical deletion days [{}] is invalid.",
     "MSG-100013": "Operation deletion management item number [{}]: Physical deletion days [{}] is invalid.",
-    "MSG-100014": "Operation deletion management item number [{}]: (logical deletion days [{}]>",
+    "MSG-100014": "Operation deletion management item number [{}]: (logical deletion days [{}] > Physical deletion days [{}])",
     "MSG-100015": "[Process] End transaction",
     "MSG-100016": "[Process] Commit",
     "MSG-100017": "[Process] Rollback",

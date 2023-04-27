@@ -328,7 +328,7 @@ class MainFunctions():
                    DISUSE_FLAG,
                    LAST_UPDATE_USER
                  FROM
-                   {}
+                   `{}`
                  WHERE
                    DISUSE_FLAG = '0' AND
                    {} in ({})
@@ -377,7 +377,7 @@ class MainFunctions():
         sql = '''SELECT
                    {}
                  FROM
-                   {}
+                   `{}`
                  WHERE
                    {} in ({})
               '''.format(DelList['PKEY_NAME'], SelectObjName, self.operation_id_column_name, TgtOpeList)
@@ -413,7 +413,7 @@ class MainFunctions():
 
         sql = '''DELETE
                  FROM
-                   {}
+                   `{}`
                  WHERE
                    {} in ({})
               '''.format(DelList['TABLE_NAME'], DelList['PKEY_NAME'], PkeyString)
@@ -423,7 +423,7 @@ class MainFunctions():
         if DelList['HISTORY_TABLE_FLAG'] == '1':
             sql = '''DELETE
                      FROM
-                       {}
+                       `{}`
                      WHERE
                        {} in ({})
                   '''.format(DelList['TABLE_NAME_JNL'], DelList['PKEY_NAME'], PkeyString)
@@ -467,7 +467,7 @@ class MainFunctions():
 
             sql = '''DELETE
                     FROM
-                    {}
+                    `{}`
                     WHERE
                     {} in ({})
                 '''.format(DelList['TABLE_NAME'], DelList['PKEY_NAME'], PkeyString)
@@ -489,7 +489,7 @@ class MainFunctions():
 
             sql = '''DELETE
                      FROM
-                       {}
+                       `{}`
                      WHERE
                        {} in ({})
                   '''.format(DelList['TABLE_NAME_JNL'], DelList['PKEY_NAME'], PkeyString)
@@ -512,7 +512,7 @@ class MainFunctions():
         JournalRows = []
         # Terraform作業管理系テーブルについて、RUN_MODE:3(リソース削除)の場合オペレーションIDが指定されないので、削除対象として除外する。
         Terrafomesql = '''
-                    select {} from {} TAB_A
+                    select {} from `{}` TAB_A
                     where NOT EXISTS
                         (select
                             *
@@ -524,7 +524,7 @@ class MainFunctions():
                     '''
 
         Otherssql = '''
-                    select {} from {} TAB_A
+                    select {} from `{}` TAB_A
                     where NOT EXISTS
                         (select
                             *

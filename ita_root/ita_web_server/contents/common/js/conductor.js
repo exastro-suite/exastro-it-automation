@@ -7011,7 +7011,7 @@ noticClear() {
 
 noticList() {
     const cd = this;
-    
+
     const notice = cd.info.list.notice_info,
           status = cd.info.list.conductor_status,
           exclusionStatusId = ['1','2'],
@@ -7053,7 +7053,7 @@ noticList() {
                     + `<th class="tBodyTh th"><div class="ci noticeName">${noticeNameEscape}</div></th>`;
             
             for ( let j = 0; j < statusLength; j++ ) {
-                const noticeInfo = cd.data.conductor.notice_info,
+                const noticeInfo = fn.cv( cd.data.conductor.notice_info, {}),
                       statusName = fn.cv( status[j].name, '', true ),
                       statusId =  fn.cv( status[j].id, ''),
                       noticeCheckName = `check_${noticeId}`,

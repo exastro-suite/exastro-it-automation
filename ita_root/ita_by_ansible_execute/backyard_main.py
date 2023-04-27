@@ -98,9 +98,9 @@ def main_logic(common_db):
             # 対象データのレコードロック
             sql = "SELECT * FROM `" + data["WORKSPACE_DB"] + "`.`" + data["VIEW_NAME"] + "` "
             sql += "WHERE EXECUTION_NO = %s "
-            sql += "AND STATUS_ID IN (%s, %s) "
+            sql += "AND STATUS_ID IN (%s, %s, %s) "
             sql += "FOR UPDATE "
-            records3 = common_db.sql_execute(sql, [data["EXECUTION_NO"], ansc_const.NOT_YET, ansc_const.PREPARE])
+            records3 = common_db.sql_execute(sql, [data["EXECUTION_NO"], ansc_const.NOT_YET, ansc_const.PREPARE, ansc_const.RESERVE])
 
             if records3 is not None and len(records3) > 0:
                 for rec3 in records3:
@@ -169,6 +169,7 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
                 sql += "SELECT * FROM `" + table_schema + "`.`" + table_name + "` "
 
             sql += "WHERE ( `TIME_BOOK` IS NULL AND `STATUS_ID` = " + ansc_const.NOT_YET + " ) "
+            sql += "OR (`TIME_BOOK` <= SYSDATE() AND `STATUS_ID` = " + ansc_const.RESERVE + " ) "
             sql += "OR (`TIME_BOOK` <= SYSDATE() AND `STATUS_ID` = " + ansc_const.PREPARE + " ) "
 
             if len(records) > count:

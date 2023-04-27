@@ -804,9 +804,14 @@ def backyard_main(organization_id, workspace_id):
                                                     # 既存レコードがなければ「登録」
                                                     if len(params) <= 0 or 'parameter' not in params[0]:
                                                         tmparr3['type'] = load_table.CMD_REGISTER
+                                                        tmparr3['parameter']['uuid'] = None
                                                         tmparr3['parameter']['host_name'] = hostname
                                                         tmparr3['parameter']['operation_name_select'] = aryOperation['OPERATION_DATE_NAME']
+                                                        tmparr3['parameter']['base_datetime'] = None
+                                                        tmparr3['parameter']['operation_date'] = None
+                                                        tmparr3['parameter']['last_execute_timestamp'] = None
                                                         tmparr3['parameter']['discard'] = '0'
+                                                        tmparr3['parameter']['remarks'] = None
                                                         tmparr3['parameter']['last_update_date_time'] = now
                                                         tmparr3['parameter']['last_updated_user'] = g.USER_ID
 

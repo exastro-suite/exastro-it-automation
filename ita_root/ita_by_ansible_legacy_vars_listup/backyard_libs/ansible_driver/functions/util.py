@@ -52,7 +52,7 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_va
 
     for movement_id, vars_set in mov_vars_dict.items():
         # Movementの追加オプションの変数の追加
-        ans_exec_options = mov_records[movement_id]['ANS_EXEC_OPTIONS']
+        ans_exec_options = mov_records[movement_id]['ANS_PLAYBOOK_HED_DEF']
 
         var_heder_id = AnscConst.DF_HOST_VAR_HED  # VAR変数
         vars_line_array = []  # [{行番号:変数名}, ...]

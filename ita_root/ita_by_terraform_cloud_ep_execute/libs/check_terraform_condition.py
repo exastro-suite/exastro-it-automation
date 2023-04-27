@@ -379,10 +379,13 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                         attributes = respons_contents_data.get('attributes')
                         output_name = attributes.get('name')
                         output_value = attributes.get('value')
-                        output_data[output_name] = output_value
+                        output_sensitive = attributes.get('sensitive')
+                        output_type = attributes.get('type')
+                        output_detail = {'sensitive': output_sensitive, 'type': output_type, 'value': output_value}
+                        output_data[output_name] = output_detail
 
                 # output_dataをjson化
-                output_data_json = json.dumps(output_data)
+                output_data_json = json.dumps(output_data, ensure_ascii=False, indent=2, sort_keys=True, separators=(',', ': '))
                 # 格納先のディレクトリを指定
                 output_dir = base_dir + '/driver/conductor/' + str(conductor_instance_no) + '/'
                 # output_dataのjsonファイルを保存

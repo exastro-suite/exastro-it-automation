@@ -1,4 +1,4 @@
--- メニュー定義一覧
+-- パラメータシート定義一覧
 CREATE TABLE T_MENU_DEFINE
 (
     MENU_CREATE_ID                  VARCHAR(40),                                -- 項番(UUID)
@@ -7,11 +7,12 @@ CREATE TABLE T_MENU_DEFINE
     MENU_NAME_REST                  VARCHAR(255),                               -- メニュー名_REST
     SHEET_TYPE                      VARCHAR(2) ,                                -- シートタイプ
     DISP_SEQ                        INT,                                        -- 表示順序
-    VERTICAL                        VARCHAR(2) ,                                -- 縦メニュー利用
+    VERTICAL                        VARCHAR(2) ,                                -- バンドル
+    HOSTGROUP                       VARCHAR(2) ,                                -- ホストグループ
     MENU_GROUP_ID_INPUT             VARCHAR(40),                                -- 入力用メニューグループ
     MENU_GROUP_ID_SUBST             VARCHAR(40),                                -- 代入値自動登録用メニューグループ
     MENU_GROUP_ID_REF               VARCHAR(40),                                -- 参照用メニューグループ
-    MENU_CREATE_DONE_STATUS         VARCHAR(2) ,                                -- メニュー作成状態
+    MENU_CREATE_DONE_STATUS         VARCHAR(2) ,                                -- パラメータシート作成状態
     DESCRIPTION_JA                  TEXT,                                       -- 説明_JA
     DESCRIPTION_EN                  TEXT,                                       -- 説明_EN
     NOTE                            TEXT,                                       -- 備考
@@ -32,11 +33,12 @@ CREATE TABLE T_MENU_DEFINE_JNL
     MENU_NAME_REST                  VARCHAR(255),                               -- メニュー名_REST
     SHEET_TYPE                      VARCHAR(2) ,                                -- シートタイプ
     DISP_SEQ                        INT,                                        -- 表示順序
-    VERTICAL                        VARCHAR(2) ,                                -- 縦メニュー利用
+    VERTICAL                        VARCHAR(2) ,                                -- バンドル
+    HOSTGROUP                       VARCHAR(2) ,                                -- ホストグループ
     MENU_GROUP_ID_INPUT             VARCHAR(40),                                -- 入力用メニューグループ
     MENU_GROUP_ID_SUBST             VARCHAR(40),                                -- 代入値自動登録用メニューグループ
     MENU_GROUP_ID_REF               VARCHAR(40),                                -- 参照用メニューグループ
-    MENU_CREATE_DONE_STATUS         VARCHAR(2) ,                                -- メニュー作成状態
+    MENU_CREATE_DONE_STATUS         VARCHAR(2) ,                                -- パラメータシート作成状態
     DESCRIPTION_JA                  TEXT,                                       -- 説明_JA
     DESCRIPTION_EN                  TEXT,                                       -- 説明_EN
     NOTE                            TEXT,                                       -- 備考
@@ -84,11 +86,11 @@ CREATE TABLE T_MENU_COLUMN_GROUP_JNL
 
 
 
--- メニュー項目作成情報
+-- パラメータシート項目作成情報
 CREATE TABLE T_MENU_COLUMN
 (
     CREATE_COLUMN_ID                VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     COLUMN_NAME_JA                  VARCHAR(255),                               -- 項目名(ja)
     COLUMN_NAME_EN                  VARCHAR(255),                               -- 項目名(en)
     COLUMN_NAME_REST                VARCHAR(255),                               -- 項目名(REST）
@@ -135,7 +137,7 @@ CREATE TABLE T_MENU_COLUMN_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     CREATE_COLUMN_ID                VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     COLUMN_NAME_JA                  VARCHAR(255),                               -- 項目名(ja)
     COLUMN_NAME_EN                  VARCHAR(255),                               -- 項目名(en)
     COLUMN_NAME_REST                VARCHAR(255),                               -- 項目名(REST）
@@ -182,7 +184,7 @@ CREATE TABLE T_MENU_COLUMN_JNL
 CREATE TABLE T_MENU_UNIQUE_CONSTRAINT
 (
     UNIQUE_CONSTRAINT_ID            VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     UNIQUE_CONSTRAINT_ITEM          TEXT,                                       -- 一意制約(複数項目)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
@@ -197,7 +199,7 @@ CREATE TABLE T_MENU_UNIQUE_CONSTRAINT_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     UNIQUE_CONSTRAINT_ID            VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     UNIQUE_CONSTRAINT_ITEM          TEXT,                                       -- 一意制約(複数項目)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
@@ -208,11 +210,11 @@ CREATE TABLE T_MENU_UNIQUE_CONSTRAINT_JNL
 
 
 
--- メニューロール作成情報
+-- パラメータシートロール作成情報
 CREATE TABLE T_MENU_ROLE
 (
     MENU_ROLE_ID                    VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     ROLE_ID                         VARCHAR(64),                                -- ロールID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
@@ -227,7 +229,7 @@ CREATE TABLE T_MENU_ROLE_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     MENU_ROLE_ID                    VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     ROLE_ID                         VARCHAR(64),                                -- ロールID
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
@@ -238,11 +240,11 @@ CREATE TABLE T_MENU_ROLE_JNL
 
 
 
--- メニュー作成履歴
+-- パラメータシート作成履歴
 CREATE TABLE T_MENU_CREATE_HISTORY
 (
     HISTORY_ID                      VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     STATUS_ID                       VARCHAR(40),                                -- ステータス
     CREATE_TYPE                     VARCHAR(40),                                -- 作成タイプ
     NOTE                            TEXT,                                       -- 備考
@@ -258,7 +260,7 @@ CREATE TABLE T_MENU_CREATE_HISTORY_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     HISTORY_ID                      VARCHAR(40),                                -- 項番(UUID)
-    MENU_CREATE_ID                  VARCHAR(40),                                -- メニュー定義一覧のID
+    MENU_CREATE_ID                  VARCHAR(40),                                -- パラメータシート定義一覧のID
     STATUS_ID                       VARCHAR(40),                                -- ステータス
     CREATE_TYPE                     VARCHAR(40),                                -- 作成タイプ
     NOTE                            TEXT,                                       -- 備考
@@ -270,7 +272,7 @@ CREATE TABLE T_MENU_CREATE_HISTORY_JNL
 
 
 
--- メニュー定義-テーブル紐付管理
+-- パラメータシート定義-テーブル紐付管理
 CREATE TABLE T_MENU_TABLE_LINK
 (
     MENU_TABLE_LINK_ID              VARCHAR(40),                                -- 項番(UUID)
@@ -320,7 +322,7 @@ CREATE TABLE T_MENU_OTHER_LINK
     REF_SORT_CONDITIONS             TEXT,                                       -- ID連携ソート条件
     REF_MULTI_LANG                  VARCHAR(2),                                 -- ID連携多言語対応有無
     COLUMN_CLASS                    VARCHAR(2),                                 -- カラムクラス
-    MENU_CREATE_FLAG                VARCHAR(2),                                 -- メニュー作成対象フラグ
+    MENU_CREATE_FLAG                VARCHAR(2),                                 -- パラメータシート作成対象フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -344,7 +346,7 @@ CREATE TABLE T_MENU_OTHER_LINK_JNL
     REF_SORT_CONDITIONS             TEXT,                                       -- ID連携ソート条件
     REF_MULTI_LANG                  VARCHAR(2),                                 -- ID連携多言語対応有無
     COLUMN_CLASS                    VARCHAR(2),                                 -- カラムクラス
-    MENU_CREATE_FLAG                VARCHAR(2),                                 -- メニュー作成対象フラグ
+    MENU_CREATE_FLAG                VARCHAR(2),                                 -- パラメータシート作成対象フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)   ,                              -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -575,7 +577,7 @@ CREATE TABLE T_MENU_SELECT_2
 
 
 
--- メニュー作成ステータスマスタ
+-- パラメータシート作成ステータスマスタ
 CREATE TABLE T_MENU_CREATE_STATUS
 (
     STATUS_ID                       VARCHAR(40),                                -- 項番
@@ -592,7 +594,7 @@ CREATE TABLE T_MENU_CREATE_STATUS
 
 
 
--- メニュー作成タイプマスタ
+-- パラメータシート作成タイプマスタ
 CREATE TABLE T_MENU_CREATE_TYPE
 (
     TYPE_ID                         VARCHAR(40),                                -- 項番
@@ -609,7 +611,7 @@ CREATE TABLE T_MENU_CREATE_TYPE
 
 
 
--- メニュー作成用途マスタ
+-- パラメータシート作成用途マスタ
 CREATE TABLE T_MENU_PARAM_PURPOSE
 (
     PURPOSE_ID                      VARCHAR(40),                                -- 項番
@@ -626,7 +628,7 @@ CREATE TABLE T_MENU_PARAM_PURPOSE
 
 
 
--- メニュー作成状態マスタ
+-- パラメータシート作成状態マスタ
 CREATE TABLE T_MENU_CREATE_DONE_STATUS
 (
     DONE_STATUS_ID                  VARCHAR(40),                                -- 項番
@@ -643,7 +645,7 @@ CREATE TABLE T_MENU_CREATE_DONE_STATUS
 
 
 
--- メニュー作成用カラムクラス一覧ビュー
+-- パラメータシート作成用カラムクラス一覧ビュー
 CREATE OR REPLACE VIEW V_MENU_COLUMN_CLASS AS
 SELECT
     COLUMN_CLASS_ID,
@@ -665,7 +667,7 @@ AND
 
 
 
--- メニュー作成用シートタイプ一覧ビュー
+-- パラメータシート作成用シートタイプ一覧ビュー
 CREATE OR REPLACE VIEW V_MENU_SHEET_TYPE AS
 SELECT
     SHEET_TYPE_NAME_ID,
@@ -686,7 +688,7 @@ AND
 
 
 
--- メニュー作成用対象メニューグループ一覧ビュー
+-- パラメータシート作成用対象メニューグループ一覧ビュー
 CREATE OR REPLACE VIEW V_MENU_TARGET_MENU_GROUP AS
 SELECT
     TAB_A.MENU_GROUP_ID,
@@ -754,6 +756,97 @@ SELECT
     LAST_UPDATE_USER
 FROM
     T_COMN_OPERATION_JNL
+;
+
+
+
+-- パラメータシート参照用ビュー
+CREATE OR REPLACE VIEW V_MENU_PARAMETER_SHEET_REFERENCE_ITEM AS
+SELECT
+    TAB_A.COLUMN_DEFINITION_ID,
+    TAB_B.MENU_GROUP_ID,
+    TAB_D.MENU_GROUP_NAME_JA,
+    TAB_D.MENU_GROUP_NAME_EN,
+    TAB_B.MENU_ID,
+    TAB_B.MENU_NAME_JA,
+    TAB_B.MENU_NAME_EN,
+    TAB_C.TABLE_NAME,
+    TAB_C.VIEW_NAME,
+    TAB_A.COLUMN_CLASS,
+    TAB_A.COLUMN_NAME_REST,
+    TAB_A.COLUMN_NAME_JA,
+    TAB_A.COLUMN_NAME_EN,
+    TAB_A.COL_GROUP_ID,
+    TAB_E.FULL_COL_GROUP_NAME_JA,
+    TAB_E.FULL_COL_GROUP_NAME_EN,
+    CASE WHEN TAB_E.FULL_COL_GROUP_NAME_JA IS NULL THEN CONCAT(TAB_D.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_A.COLUMN_NAME_JA) ELSE CONCAT(TAB_D.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_E.FULL_COL_GROUP_NAME_JA,'/',TAB_A.COLUMN_NAME_JA) END AS SELECT_FULL_NAME_JA,
+    CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL THEN CONCAT(TAB_D.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_A.COLUMN_NAME_EN) ELSE CONCAT(TAB_D.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_E.FULL_COL_GROUP_NAME_EN,'/',TAB_A.COLUMN_NAME_EN) END AS SELECT_FULL_NAME_EN,
+    TAB_A.COLUMN_DISP_SEQ,
+    TAB_A.NOTE,
+    TAB_A.DISUSE_FLAG,
+    TAB_A.LAST_UPDATE_TIMESTAMP,
+    TAB_A.LAST_UPDATE_USER
+FROM
+    T_COMN_MENU_COLUMN_LINK TAB_A
+LEFT JOIN T_COMN_MENU TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
+LEFT JOIN T_COMN_MENU_TABLE_LINK TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
+LEFT JOIN T_COMN_MENU_GROUP TAB_D ON (TAB_B.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID)
+LEFT JOIN T_COMN_COLUMN_GROUP TAB_E ON (TAB_A.COL_GROUP_ID = TAB_E.COL_GROUP_ID)
+WHERE TAB_A.COL_NAME = "DATA_JSON"
+AND TAB_C.SHEET_TYPE = 3
+AND TAB_C.VERTICAL = 0
+AND TAB_C.SUBSTITUTION_VALUE_LINK_FLAG = 1
+AND (TAB_A.COLUMN_CLASS != 7 AND TAB_A.COLUMN_CLASS != 11 AND TAB_A.COLUMN_CLASS != 21)
+AND TAB_A.DISUSE_FLAG = 0
+AND TAB_B.DISUSE_FLAG = 0
+AND TAB_C.DISUSE_FLAG = 0
+AND TAB_D.DISUSE_FLAG = 0
+AND TAB_E.DISUSE_FLAG = 0
+;
+CREATE OR REPLACE VIEW V_MENU_PARAMETER_SHEET_REFERENCE_ITEM_JNL AS
+SELECT
+    TAB_A.JOURNAL_SEQ_NO,
+    TAB_A.JOURNAL_REG_DATETIME,
+    TAB_A.JOURNAL_ACTION_CLASS,
+    TAB_A.COLUMN_DEFINITION_ID,
+    TAB_B.MENU_GROUP_ID,
+    TAB_D.MENU_GROUP_NAME_JA,
+    TAB_D.MENU_GROUP_NAME_EN,
+    TAB_B.MENU_ID,
+    TAB_A.COLUMN_NAME_REST,
+    TAB_B.MENU_NAME_JA,
+    TAB_B.MENU_NAME_EN,
+    TAB_C.TABLE_NAME,
+    TAB_C.VIEW_NAME,
+    TAB_A.COLUMN_CLASS,
+    TAB_A.COLUMN_NAME_JA,
+    TAB_A.COLUMN_NAME_EN,
+    TAB_A.COL_GROUP_ID,
+    TAB_E.FULL_COL_GROUP_NAME_JA,
+    TAB_E.FULL_COL_GROUP_NAME_EN,
+    CASE WHEN TAB_E.FULL_COL_GROUP_NAME_JA IS NULL THEN CONCAT(TAB_D.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_A.COLUMN_NAME_JA) ELSE CONCAT(TAB_D.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_E.FULL_COL_GROUP_NAME_JA,'/',TAB_A.COLUMN_NAME_JA) END AS SELECT_FULL_NAME_JA,
+    CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL THEN CONCAT(TAB_D.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_A.COLUMN_NAME_EN) ELSE CONCAT(TAB_D.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_E.FULL_COL_GROUP_NAME_EN,'/',TAB_A.COLUMN_NAME_EN) END AS SELECT_FULL_NAME_EN,
+    TAB_A.COLUMN_DISP_SEQ,
+    TAB_A.NOTE,
+    TAB_A.DISUSE_FLAG,
+    TAB_A.LAST_UPDATE_TIMESTAMP,
+    TAB_A.LAST_UPDATE_USER
+FROM
+    T_COMN_MENU_COLUMN_LINK_JNL TAB_A
+LEFT JOIN T_COMN_MENU_JNL TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
+LEFT JOIN T_COMN_MENU_TABLE_LINK_JNL TAB_C ON (TAB_B.MENU_ID = TAB_C.MENU_ID)
+LEFT JOIN T_COMN_MENU_GROUP_JNL TAB_D ON (TAB_B.MENU_GROUP_ID = TAB_D.MENU_GROUP_ID)
+LEFT JOIN T_COMN_COLUMN_GROUP_JNL TAB_E ON (TAB_A.COL_GROUP_ID = TAB_E.COL_GROUP_ID)
+WHERE TAB_A.COL_NAME = "DATA_JSON"
+AND TAB_C.SHEET_TYPE = 3
+AND TAB_C.VERTICAL = 0
+AND TAB_C.SUBSTITUTION_VALUE_LINK_FLAG = 1
+AND (TAB_A.COLUMN_CLASS != 7 AND TAB_A.COLUMN_CLASS != 11 AND TAB_A.COLUMN_CLASS != 21)
+AND TAB_A.DISUSE_FLAG = 0
+AND TAB_B.DISUSE_FLAG = 0
+AND TAB_C.DISUSE_FLAG = 0
+AND TAB_D.DISUSE_FLAG = 0
+AND TAB_E.DISUSE_FLAG = 0
 ;
 
 

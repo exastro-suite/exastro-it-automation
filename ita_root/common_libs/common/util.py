@@ -28,6 +28,7 @@ import os
 from flask import g
 import requests
 import json
+import shutil
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
 
@@ -41,6 +42,8 @@ def ky_encrypt(lcstr):
     Returns:
         Encoded string
     """
+    if lcstr is None:
+        return ""
 
     if len(lcstr) == 0:
         return ""
@@ -57,6 +60,8 @@ def ky_decrypt(lcstr):
     Returns:
         Decoded string
     """
+    if lcstr is None:
+        return ""
 
     if len(lcstr) == 0:
         return ""
@@ -77,13 +82,13 @@ def ky_file_encrypt(src_file, dest_file):
     try:
         # ファイルオープン
         fsrc = open(src_file)
-        
+
         # ファイル読み込み
         lcstr = Path(src_file).read_text(encoding="utf-8")
-        
+
         # エンコード関数呼び出し
         enc_data = ky_encrypt(lcstr)
-        
+
         # ファイル書き込み
         Path(dest_file).write_text(enc_data, encoding="utf-8")
     except Exception:
@@ -91,7 +96,7 @@ def ky_file_encrypt(src_file, dest_file):
     finally:
         # ファイルクローズ
         fsrc.close()
-    
+
     return True
 
 
@@ -108,13 +113,13 @@ def ky_file_decrypt(src_file, dest_file):
     try:
         # ファイルオープン
         fsrc = open(src_file)
-        
+
         # ファイル読み込み
         lcstr = Path(src_file).read_text(encoding="utf-8")
-        
+
         # デコード関数呼び出し
         enc_data = ky_decrypt(lcstr)
-        
+
         # ファイル書き込み
         Path(dest_file).write_text(enc_data, encoding="utf-8")
     except Exception:
@@ -122,7 +127,7 @@ def ky_file_decrypt(src_file, dest_file):
     finally:
         # ファイルクローズ
         fsrc.close()
-    
+
     return True
 
 
@@ -246,7 +251,7 @@ def file_encode(file_path):
         is_file = os.path.isfile(file_path)
         if not is_file:
             return ""
-        
+
         with open(file_path, "rb") as f:
             return base64.b64encode(f.read()).decode()
     except Exception:
@@ -314,7 +319,7 @@ def upload_file(file_path, text):
 
     if type(text) is bytes:
         text = base64.b64decode(text.encode()).decode()
-    
+
     if isinstance(text, str):
         text = base64.b64decode(text.encode())
 
@@ -326,6 +331,8 @@ def upload_file(file_path, text):
             f.write(text)
     except Exception:
         return False
+
+    f.close
 
     return True
 
@@ -340,8 +347,12 @@ def encrypt_upload_file(file_path, text):
     Returns:
         is success:(bool)
     """
-    text = base64.b64decode(text.encode()).decode()
-    text = ky_encrypt(text)
+    try:
+        text = base64.b64decode(text.encode()).decode()
+        text = ky_encrypt(text)
+    except Exception:
+        return False
+
     path = os.path.dirname(file_path)
 
     if not os.path.isdir(path):
@@ -384,7 +395,7 @@ def get_exastro_platform_workspaces():
     }
 
     # 2回目以降の検索はgの値を使用する
-    if 'PLATFORM_WORKSPACES' in g:
+    if organization_id == g.get("PLATFORM_WORKSPACES_ORG") and workspace_id == g.get("PLATFORM_WORKSPACES_WS") and user_id == g.get("PLATFORM_WORKSPACES_USER"):  # noqa: E501
         workspaces = g.get('PLATFORM_WORKSPACES')
         environments = g.get('PLATFORM_ENVIRONMENTS')
 
@@ -411,6 +422,10 @@ def get_exastro_platform_workspaces():
         # gに値を設定しておく
         g.PLATFORM_WORKSPACES = workspaces
         g.PLATFORM_ENVIRONMENTS = environments
+
+        g.PLATFORM_WORKSPACES_ORG = organization_id
+        g.PLATFORM_WORKSPACES_WS = workspace_id
+        g.PLATFORM_WORKSPACES_USER = user_id
 
     return workspaces, environments
 
@@ -440,7 +455,7 @@ def get_workspace_roles():
     }
 
     # 2回目以降の検索はgの値を使用する
-    if 'WORKSPACE_ROLES' in g:
+    if organization_id == g.get("WORKSPACE_ROLES_ORG") and workspace_id == g.get("WORKSPACE_ROLES_WS"):
         roles = g.get('WORKSPACE_ROLES')
 
     else:
@@ -459,6 +474,9 @@ def get_workspace_roles():
 
         # gに値を設定しておく
         g.WORKSPACE_ROLES = roles
+
+        g.WORKSPACE_ROLES_ORG = organization_id
+        g.WORKSPACE_ROLES_WS = workspace_id
 
     return roles
 
@@ -480,15 +498,20 @@ def get_exastro_platform_users():
     language = g.get('LANGUAGE')
     users = {}
 
+    if "ROLES" in g:
+        roles = g.ROLES
+    else:
+        roles = ""
+
     header_para = {
         "Content-Type": "application/json",
         "User-Id": user_id,
-        "Roles": json.dumps(g.ROLES),
+        "Roles": json.dumps(roles),
         "Language": language
     }
 
     # 2回目以降の検索はgの値を使用する
-    if 'PLATFORM_USERS' in g:
+    if organization_id == g.get("PLATFORM_USERS_ORG") and workspace_id == g.get("PLATFORM_USERS_WS"):
         users = g.get('PLATFORM_USERS')
 
     else:
@@ -507,6 +530,8 @@ def get_exastro_platform_users():
 
         # gに値を設定しておく
         g.PLATFORM_USERS = users
+        g.PLATFORM_USERS_ORG = organization_id
+        g.PLATFORM_USERS_WS = workspace_id
 
     return users
 
@@ -530,6 +555,131 @@ def get_user_name(user_id):
         user_name = g.appmsg.get_api_message(status_code, [user_id])
 
     return user_name
+
+
+def get_all_execution_limit(limit_key):
+    """
+    システム全体の同時実行数最大値取得
+
+    Returns:
+        limit値
+    """
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+    }
+
+    # API呼出
+    api_url = "http://{}:{}/internal-api/platform/settings/common".format(host_name, port)
+    request_response = requests.get(api_url, headers=header_para)
+
+    response_data = json.loads(request_response.text)
+
+    if request_response.status_code != 200:
+        raise AppException('999-00005', [api_url, response_data])
+
+    # システム全体の同時実行数最大値取得
+    limit = 0
+    for record in response_data['data']:
+        if record["key"] == limit_key:
+            limit = record["value"]
+
+    return limit
+
+
+def get_org_execution_limit(limit_key):
+    """
+    Organization毎の同時実行数最大値取得
+
+    Returns:
+        limit値
+    """
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+        "Roles": "dummy",
+        "Language": g.get('LANGUAGE')
+    }
+
+    # API呼出
+    api_url = "http://{}:{}/internal-api/platform/limits".format(host_name, port)
+    request_response = requests.get(api_url, headers=header_para)
+
+    response_data = json.loads(request_response.text)
+
+    if request_response.status_code != 200:
+        raise AppException('999-00005', [api_url, response_data])
+
+    # システム全体の同時実行数最大値取得
+    limit_list = {}
+    for record in response_data['data']:
+        if limit_key in record["limits"]:
+            limit_list[record["organization_id"]] = record["limits"][limit_key]
+        else:
+            limit_list[record["organization_id"]] = 0
+
+    return limit_list
+
+
+def create_dirs(config_file_path, dest_dir):
+    """
+    config_file_pathのファイルに記載されているディレクトリをdest_dir配下に作成する
+
+    Arguments:
+        config_file_path: 設定ファイル
+        dest_dir: 作成するディレクトリ
+    Returns:
+        is success:(bool)
+    """
+    with open(config_file_path) as f:
+        lines = f.readlines()
+
+    for target_path in lines:
+        target_path = target_path.replace("\n", "")
+        try:
+            os.makedirs(dest_dir + target_path)
+        except FileExistsError:
+            pass
+    return True
+
+
+def put_uploadfiles(config_file_path, src_dir, dest_dir):
+    """
+    config_file_pathのファイルに記載されているファイルをdest_dir配下に作成する
+
+    Arguments:
+        config_file_path: 設定ファイル
+        src_dir: コピー元のファイル格納ディレクトリ
+        dest_dir: 作成するディレクトリ
+    Returns:
+        is success:(bool)
+    """
+    with open(config_file_path, 'r') as material_conf_json:
+        material_conf = json.load(material_conf_json)
+        for menu_id, file_info_list in material_conf.items():
+            for file_info in file_info_list:
+                for file, copy_cfg in file_info.items():
+                    # org_file = src_dir + "/".join([menu_id, file])
+                    org_file = os.path.join(os.path.join(src_dir, menu_id), file)
+                    old_file_path = os.path.join(dest_dir, menu_id) + copy_cfg[0]
+                    file_path = os.path.join(dest_dir, menu_id) + copy_cfg[1]
+
+                    if not os.path.isdir(old_file_path):
+                        os.makedirs(old_file_path)
+
+                    shutil.copy(org_file, old_file_path + file)
+                    try:
+                        os.symlink(old_file_path + file, file_path + file)
+                    except FileExistsError:
+                        pass
+
+    return True
 
 
 if __name__ == '__main__':

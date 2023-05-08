@@ -11,8 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
-
+import os
+import inspect
 import json
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
@@ -84,7 +84,7 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
     @classmethod
     def post(cls, RestApiCaller, param, addparam={}):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}
@@ -92,7 +92,7 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
 
         if  'execution_no' in param and param['execution_no'] \
         and 'loopCount' in param and param['loopCount']:
-            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
+            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
 
         else:
             response_array['success'] = False
@@ -185,10 +185,10 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み
-        filteringName = cls.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no), '')
+        filteringName = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no), '')
         query = "?name__startswith=%s" % (filteringName)
         pickup_response_array = cls.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -201,69 +201,6 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
-
-    @classmethod
-    def deleteRelatedCurrnetExecutionForPrepare(cls, RestApiCaller, execution_no):
-
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
-
-        # データ絞り込み
-        filteringName = cls.PREPARE_BUILD_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
-        query = "?name=%s" % (filteringName)
-        pickup_response_array = cls.getAll(RestApiCaller, query)
-        if not pickup_response_array['success']:
-            return pickup_response_array
-
-        count = 0 if 'responseContents' not in pickup_response_array else len(pickup_response_array['responseContents'])
-        if count == 0:  # 対象なし
-            return pickup_response_array
-
-        elif count == 1:  # SUCCESS
-            pass
-
-        else:  # 2つ以上取得できる場合は異常
-            pickup_response_array['success'] = False
-            if 'errorMessage' not in pickup_response_array['responseContents']:
-                pickup_response_array['responseContents']['errorMessage'] = ''
-
-            pickup_response_array['responseContents']['errorMessage'] = "Exception! More than one prepare job template for one execution."
-            return pickup_response_array
-
-        jobTplData = pickup_response_array['responseContents'][0]
-
-        response_array = cls.delete(RestApiCaller, jobTplData['id'])
-        if not response_array['success']:
-            return response_array
-
-        # データ絞り込み
-        filteringName = cls.CLEANUP_PREPARED_BUILD_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
-        query = "?name=%s" % (filteringName)
-        pickup_response_array = cls.getAll(RestApiCaller, query)
-        if not pickup_response_array['success']:
-            return pickup_response_array
-
-        count = len(pickup_response_array['responseContents'])
-        if count == 0:  # 対象なし
-            return pickup_response_array
-
-        elif count == 1:  # SUCCESS
-            pass
-
-        else:  # 2つ以上取得できる場合は異常
-            pickup_response_array['success'] = False
-            if 'errorMessage' not in pickup_response_array['responseContents']:
-                pickup_response_array['responseContents']['errorMessage'] = ''
-
-            pickup_response_array['responseContents']['errorMessage'] = "Exception! More than one prepare job template for one execution."
-            return pickup_response_array
-
-        jobTplData = pickup_response_array['responseContents'][0]
-
-        response_array = cls.delete(RestApiCaller, jobTplData['id'])
-        if not response_array['success']:
-            return response_array
-
-        return response_array
 
     @classmethod
     def launch(cls, RestApiCaller, param):
@@ -304,7 +241,7 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
     @classmethod
     def postCredentialsAdd(cls, RestApiCaller, jobTplId, credentialiId):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}

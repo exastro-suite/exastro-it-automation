@@ -15,7 +15,10 @@ from flask import g
 import os
 import shutil
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
+
 """
   Ansible共通モジュール
 """
@@ -132,6 +135,28 @@ def getLegayRoleExecutResultDataUploadDirPath():
     return getDataRelayStorageDir() + "/uploadfiles/20412/result_data"
 
 
+def getLegacyPlaybookUploadDirPath():
+    """
+      Legacy Playbook素材集のPlaybook素材ディレクトリバスを取得する。
+      Arguments:
+        なし
+      Returns:
+        作業管理結果データディレクトリバス
+    """
+    return getDataRelayStorageDir() + "/uploadfiles/20202/playbook_file"
+
+
+def getPioneerDialogUploadDirPath():
+    """
+      Pioneer 対話ファイル素材集の対話ファイル素材ディレクトリバスを取得する。
+      Arguments:
+        なし
+      Returns:
+        作業管理結果データディレクトリバス
+    """
+    return getDataRelayStorageDir() + "/uploadfiles/20304/dialog_file"
+
+
 def to_str(bstr):
     """
       byte型をstr型に変換
@@ -145,17 +170,6 @@ def to_str(bstr):
     else:
         toStr = bstr
     return toStr
-
-
-def get_AnsibleDriverTmpPath():
-    """
-      Ansible用tmpバスを取得する。
-      Arguments:
-        なし
-      Returns:
-        Ansible用tmpバス
-    """
-    return getDataRelayStorageDir() + "/tmp/driver/ansible"
 
 def get_AnsibleDriverHpTmpPath():
     """
@@ -181,6 +195,17 @@ def AnsibleFilesClean(FilesList):
         elif os.path.isfile(path):
             os.remove(path)
 
+def get_AnsibleDriverTmpPath():
+    """
+      Ansible用tmpバスを取得する。
+      Arguments:
+        なし
+      Returns:
+        Ansible用tmpバス
+    """
+    return getDataRelayStorageDir() + "/tmp/driver/ansible"
+
+
 def getFileupLoadColumnPath(menuid, Column):
     """
       FileUploadColumnのパスを取得する。
@@ -204,22 +229,16 @@ def get_AnsibleDriverShellPath():
     return "{}common_libs/ansible_driver/shells".format(os.environ["PYTHONPATH"])
 
 
-def getAnsibleExecutDirPath(driver_id, execute_no):
+def getAnsibleExecutDirPath(ansConstObj, execute_no):
     """
       ansibe作業実行ディレクトリパス取得
       Arguments:
-        driver_id: ドライバID
+        ansConstObj: ansible共通定数オブジェクト
         execute_no: 作業番号
       Returns:
         ansibe作業実行ディレクトリパスを取得
     """
-    AnscObj = AnscConst()
-    if driver_id == AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
-        del AnscObj
-        AnscObj = AnsrConst()
-        driver_dir_name = AnscObj.vg_OrchestratorSubId_dir
-
-    return getDataRelayStorageDir() + "/driver/ansible/{}/{}".format(driver_dir_name, execute_no)
+    return getDataRelayStorageDir() + "/driver/ansible/{}/{}".format(ansConstObj.vg_OrchestratorSubId_dir, execute_no)
 
 
 def getDataRelayStorageDir():
@@ -231,7 +250,7 @@ def getInputDataTempDir(EcecuteNo, DriverName):
       Ansible Gitリポジトリ用 tmpバスを取得する。
       Arguments:
         EcecuteNo: 作業番号
-        DriverName: オケストレータID  vg_tower_driver_name
+        DriverName: オケストレータID
       Returns:
         Ansible Gitリポジトリ用 tmpバス
     """
@@ -243,6 +262,23 @@ def getInputDataTempDir(EcecuteNo, DriverName):
     return ary
 
 
+def getAnsibleConst(driver_id):
+    """
+    ansible共通定数オブジェクト生成
+    Arguments
+        driver_id: ドライバ区分
+    Returns:
+        bool
+    """
+    if driver_id == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+        ansc_const = AnsrConst()
+    elif driver_id == AnscConst.DF_LEGACY_DRIVER_ID:
+        ansc_const = AnslConst()
+    elif driver_id == AnscConst.DF_PIONEER_DRIVER_ID:
+        ansc_const = AnspConst()
+    return ansc_const
+
+
 def getSpecialColumnVaule(column_rest_name, option):
     """
       パスワードカラム入力値取得
@@ -252,7 +288,7 @@ def getSpecialColumnVaule(column_rest_name, option):
       Returns:
         Ansible Gitリポジトリ用 tmpバス
     """
-    str_token = option["current_parameter"]["parameter"][column_rest_name]
+    str_token = option.get("current_parameter").get("parameter").get(column_rest_name)
     if column_rest_name in option["entry_parameter"]["parameter"]:
         str_token = option["entry_parameter"]["parameter"][column_rest_name]
     return str_token

@@ -2,9 +2,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,7 +47,7 @@ class FloatColumn(Column):
                 col_name = objcol.get('COL_NAME')
 
         self.col_name = col_name
-        
+
         # rest用項目名
         self.rest_key_name = rest_key_name
 
@@ -56,7 +56,7 @@ class FloatColumn(Column):
         self.objdbca = objdbca
 
         self.cmd_type = cmd_type
-        
+
     def check_basic_valid(self, val, option={}):
         """
             バリデーション処理
@@ -151,15 +151,32 @@ class FloatColumn(Column):
         retBool = True
         msg = ''
         rest_name = self.get_rest_key_name()
-        
+
         # 小数点以下の不要な0を削除した値に書き換える
         try:
             if str(float(val))[-2:] == '.0':
-                val = str(float(val))[:-2]
+                tmp_val = str(float(val))[:-2]
             else:
-                val = str(float(val))
+                tmp_val = str(float(val))
+
+            # 指数表記の場合に再度変換
+            if 'e' in tmp_val:
+                tmp_val_float = float(tmp_val)
+                digits, exp = tmp_val.split('e')
+                digits = digits.replace('.', '').replace('-', '')
+                exp = int(exp)
+                zero_padding = '0' * (abs(int(exp)) - 1)
+                sign = '-' if tmp_val_float < 0 else ''
+                if exp > 0:
+                    val = '{}{}{}.0'.format(sign, digits, zero_padding)
+                else:
+                    val = '{}0.{}{}'.format(sign, zero_padding, digits)
+            else:
+                val = tmp_val
+
             option['entry_parameter']['parameter'][rest_name] = val
+
         except Exception:
             pass
-        
+
         return retBool, msg, option

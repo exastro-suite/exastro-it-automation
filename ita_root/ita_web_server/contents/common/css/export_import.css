@@ -1,0 +1,177 @@
+@charset "utf-8";
+/* CSS Document */
+
+.exportImportContainer {
+display: flex;
+flex-direction: column;
+height: 100%;
+}
+.exportImportContainer > div {
+min-height: 0;
+}
+.exportImportHeader {
+flex: 0 0 auto;
+}
+.exportImportBody {
+display: flex;
+flex: 1 1 auto;
+gap: 16px;
+}
+.exportImportBody > div {
+min-width: 0;
+}
+.exportImportSetting {
+overflow: auto;
+flex: 0 0 auto;
+width: 256px; height: 100%;
+padding-right: 16px;
+border-right: 1px solid rgba( 0,0,0,.2 );
+}
+.exportImportSelect {
+overflow: auto;
+flex: 1 1 auto;
+height: 100%;
+}
+.exportImportAllMenu {
+margin-top: 16px;
+}
+.exportImportAllMenuName,
+.exportImportMenuGroup,
+.exportImportSubMenuGroup {
+margin-bottom: 12px; padding: 8px;
+background-color: #FFF;
+background-image: linear-gradient( rgba( 0,0,0,0 ) 16px, rgba( 0,0,0,.05 ) );
+border: 1px solid rgba( 0,0,0,.2 );
+border-radius: 4px;
+}
+.exportImportMenuGroup {
+border-radius: 0 4px 4px 0;
+border-left-width: 4px;
+border-left-color: var(--mainColor50);
+}
+.exportImportMenuGroup {
+margin-left: 48px;
+}
+.exportImportSubMenuGroup {
+margin-top: 8px;
+}
+.exportImportMenuGroup:last-child {
+margin-bottom: 0;
+}
+.exportImportMenuGroupList,
+.exportImportSubMenuGroupList {
+display: none;
+margin-top: 8px;
+padding: 16px;
+background-color: rgba( 0,0,0,.03 );
+border: 1px solid rgba( 0,0,0,.2 );
+border-radius: 2px;
+}
+.exportImportMenuGroupName,
+.exportImportSubMenuGroupName {
+display: flex;
+}
+.exportImportMenuGroupName > *,
+.exportImportSubMenuGroupName > *{
+min-width: 0;
+}
+.exportImportMenuGroupName > .checkboxTextWrap,
+.exportImportSubMenuGroupName > .checkboxTextWrap{
+flex: 1 1 auto;
+padding-right: 8px;
+}
+.exportImportToggleWrap {
+display: flex;
+align-items: center;
+flex:  0 0 auto;
+}
+.exportImportToggleWrap .inner {
+padding: 0 8px;
+}
+.exportImportMenuGroupName,
+.exportImportMenuGroup {
+position: relative;
+z-index: 0;
+}
+.exportImportMenuGroupName::before,
+.exportImportMenuGroup:last-child .exportImportMenuGroupName::after,
+.exportImportMenuGroup::after {
+content: '';
+display: block;
+position: absolute;
+background-color: var(--mainColor50);
+}
+.exportImportMenuGroupName::before {
+top: 50%; left: -32px;
+width: 24px; height: 1px;
+}
+.exportImportMenuGroup::after {
+left: -24px; top: -14px;
+width: 1px;
+height: calc( 100% + 22px );
+}
+.exportImportMenuGroup:last-child::after {
+display: none;
+}
+.exportImportMenuGroup:last-child .exportImportMenuGroupName::after {
+left: -32px; top: -22px;
+width: 1px;
+height: calc( 50% + 23px );
+}
+.exportImportMenuGroupNameUnkown .checkboxTextText {
+opacity: .3;
+}
+.exportImportName .checkboxTextLabel:hover {
+background-color: var(--accentColor10);
+}
+.exportImportMenuName .checkboxTextLabel:hover {
+background-color: rgba( 255,255,255,.5 );
+}
+.exportImportMenuFileName {
+margin-left: 1em;
+font-size: 80%;
+opacity: .5;
+}
+.exportImportSetting .commonBody {
+margin: 8px 0 24px;
+}
+.inputDateContainer {
+width: 100%;
+margin-top: 8px;
+}
+.inputDateBody {
+flex: 1 1 auto;
+}
+.exportImportError {
+position: relative;
+display: inline-flex;
+align-items: center;
+width: 100%;
+min-height: 32px;
+margin: 0;
+padding: 0 8px;
+font-family: "Osaka-mono", "MS Gothic", "monospace";
+letter-spacing: .75px;
+font-size: 14px;
+word-break: break-all;
+color: var(--black50);
+}
+.exportImportError::before {
+content: '';
+display: inline-block;
+width: 18px; height: 18px;
+margin-right: 8px;
+background-color: var(--black50);
+border: 1px solid var(--black50);
+border-radius: 4px;
+opacity: .3;
+}
+.exportImportErrorMessage {
+display: inline-flex;
+margin-left: .5em; padding-left: .5em;
+border-left: 1px solid #C80000;
+color: #C80000;
+}
+.exportImportErrorMessage > .icon {
+margin-right: .2em;
+}

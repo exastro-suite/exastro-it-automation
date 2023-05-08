@@ -29,8 +29,14 @@ from .WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 
 # ローカル変数(全体)宣言
 lv_val_assign_tbl = 'T_ANSR_VALUE_AUTOREG'
+lv_l_val_assign_tbl = 'T_ANSL_VALUE_AUTOREG'
+lv_p_val_assign_tbl = 'T_ANSP_VALUE_AUTOREG'
 lv_pattern_link_tbl = 'T_ANSR_MVMT_MATL_LINK'
+lv_l_pattern_link_tbl = 'T_ANSL_MVMT_MATL_LINK'
+lv_p_pattern_link_tbl = 'T_ANSP_MVMT_MATL_LINK'
 lv_ptn_vars_link_tbl = 'T_ANSR_MVMT_VAR_LINK'
+lv_l_ptn_vars_link_tbl = 'T_ANSL_MVMT_VAR_LINK'
+lv_p_ptn_vars_link_tbl = 'T_ANSP_MVMT_VAR_LINK'
 lv_member_col_comb_tbl = 'T_ANSR_NESTVAR_MEMBER_COL_COMB'
 lv_array_member_tbl = 'T_ANSR_NESTVAR_MEMBER'
 vg_FileUPloadColumnBackupFilePath = ""
@@ -84,7 +90,22 @@ class SubValueAutoReg():
     代入値自動登録とパラメータシートを抜くclass
     """
 
-    def get_data_from_parameter_sheet(self, operation_id="", movement_id="", execution_no="", WS_DB=None):
+    def __init__(self, in_driver_name="", ws_db=None):
+
+        """
+        処理内容
+            コンストラクタ
+        パラメータ
+            ansible_driver: ansibleドライバ名
+            ws_db: WorkspaceDBインスタンス
+        戻り値
+            なし
+        """
+
+        self.in_driver_name = in_driver_name
+        self.ws_db = ws_db
+
+    def get_data_from_parameter_sheet(self, operation_id="", movement_id="", execution_no=""):
         """
         代入値自動登録とパラメータシートを抜く
         """
@@ -94,7 +115,7 @@ class SubValueAutoReg():
         global error_flag
 
         # インターフェース情報からNULLデータを代入値管理に登録するかのデフォルト値を取得する。
-        ret = self.getIFInfoDB(WS_DB)
+        ret = self.getIFInfoDB(self.ws_db)
 
         if ret[0] == 0:
             error_flag = 1
@@ -109,7 +130,7 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-        ret = self.read_val_assign(WS_DB, movement_id)
+        ret = self.read_val_assign(self.in_driver_name, self.ws_db, movement_id)
 
         if ret[0] == 0:
             error_flag = 1
@@ -131,7 +152,7 @@ class SubValueAutoReg():
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
         warning_flag = 0
-        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, operation_id, warning_flag, WS_DB)
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, operation_id, warning_flag, self.ws_db)
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]
@@ -141,7 +162,7 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-        WS_DB.db_transaction_start()
+        self.ws_db.db_transaction_start()
 
         # 作業対象ホストに登録が必要な配列初期化
         lv_phoLinkList = {}
@@ -164,7 +185,7 @@ class SubValueAutoReg():
             # 代入値管理に具体値を登録
             # 項目なしの場合はスキップ
             if not varsAssRecord['STATUS'] == 'skip':
-                ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, WS_DB)
+                ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, self.in_driver_name, self.ws_db)
                 if ret == 0:
                     error_flag = 1
                     raise ValidationException("MSG-10466")
@@ -193,7 +214,7 @@ class SubValueAutoReg():
             # 代入値管理に具体値を登録
             # 項目なしの場合はスキップ
             if not varsAssRecord['STATUS'] == 'skip':
-                ret = self.addStg1ArrayVarsAssign(varsAssRecord, lv_tableNameToMenuIdList, execution_no, WS_DB)
+                ret = self.addStg1ArrayVarsAssign(varsAssRecord, execution_no, self.in_driver_name, self.ws_db)
                 if ret == 0:
                     error_flag = 1
                     raise ValidationException("MSG-10441")
@@ -211,17 +232,17 @@ class SubValueAutoReg():
         del lv_arrayVarsAssList
 
         # コミット(レコードロックを解除)
-        WS_DB.db_commit()
+        self.ws_db.db_commit()
 
         # トランザクション終了
-        WS_DB.db_transaction_end(True)
+        self.ws_db.db_transaction_end(True)
 
         # トレースメッセージ
         traceMsg = g.appmsg.get_api_message("MSG-10785")
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-        WS_DB.db_transaction_start()
+        self.ws_db.db_transaction_start()
 
         # 代入値管理で登録したオペ+作業パターン+ホストが作業対象ホストに登録されているか判定し、未登録の場合は登録する
         # トレースメッセージ
@@ -233,7 +254,7 @@ class SubValueAutoReg():
             for ptn_id, host_list in ptn_list.items():
                 for host_id, access_auth in host_list.items():
                     lv_phoLinkData = {'OPERATION_ID': ope_id, 'MOVEMENT_ID': ptn_id, 'SYSTEM_ID': host_id}
-                    ret = self.addStg1PhoLink(lv_phoLinkData, execution_no, WS_DB)
+                    ret = self.addStg1PhoLink(lv_phoLinkData, execution_no, self.in_driver_name, self.ws_db)
 
                     if ret == 0:
                         error_flag = 1
@@ -243,11 +264,11 @@ class SubValueAutoReg():
 
         # コミット(レコードロックを解除)
         # トランザクション終了
-        WS_DB.db_transaction_end(True)
+        self.ws_db.db_transaction_end(True)
 
         return True
 
-    def get_data_from_all_parameter_sheet(self, WS_DB=None):
+    def get_data_from_all_parameter_sheet(self):
         """
         代入値自動登録とパラメータシートを抜く
         """
@@ -257,7 +278,7 @@ class SubValueAutoReg():
         global error_flag
 
         # インターフェース情報からNULLデータを代入値管理に登録するかのデフォルト値を取得する。
-        ret = self.getIFInfoDB(WS_DB)
+        ret = self.getIFInfoDB(self.ws_db)
 
         if ret[0] == 0:
             error_flag = 1
@@ -272,7 +293,7 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-        ret = self.read_val_assign(WS_DB)
+        ret = self.read_val_assign(self.in_driver_name, self.ws_db)
 
         if ret[0] == 0:
             error_flag = 1
@@ -294,13 +315,13 @@ class SubValueAutoReg():
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
         warning_flag = 0
-        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, WS_DB)
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, self.ws_db)
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]
 
-        template_list = {}  # { MovementID: { TPF変数名: 0 }, … }
-        host_list = {}  # { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
+        template_list = {} # { MovementID: { TPF変数名: 0 }, … }
+        host_list = {} # { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 
         var_extractor = WrappedStringReplaceAdmin()
 
@@ -321,7 +342,7 @@ class SubValueAutoReg():
         file = in_dir + '/' + in_pkey.rjust(intNumPadding, '0') + '/' + in_filename
         return file
 
-    def addStg1PhoLink(self, in_phoLinkData, execution_no, WS_DB):
+    def addStg1PhoLink(self, in_phoLinkData, execution_no, in_driver_name, WS_DB):
         """
         作業対象ホストの廃止レコードを復活または新規レコード追加
 
@@ -347,7 +368,12 @@ class SubValueAutoReg():
         key += in_phoLinkData["MOVEMENT_ID"] + "_"
         key += in_phoLinkData["SYSTEM_ID"] + "_1"
 
-        objmenu = load_table.loadTable(WS_DB, "target_host_ansible_role")
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_role")
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_legacy")
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_pioneer")
         tgt_row = arrayValue
 
         # 更新対象の作業対象ホスト管理主キー値を退避
@@ -362,7 +388,7 @@ class SubValueAutoReg():
         tgt_row['DISUSE_FLAG'] = "0"
         tgt_row['LAST_UPDATE_USER'] = db_valautostup_user_id
 
-        tgt_row = self.getLoadtableRegisterValue(tgt_row, False, WS_DB)
+        tgt_row = self.getLoadtableRegisterValue(tgt_row, False, in_driver_name, WS_DB)
         parameter = {
             "item_no": tgt_row['PHO_LINK_ID'],
             "operation": tgt_row['OPERATION_NAME'],
@@ -622,7 +648,7 @@ class SubValueAutoReg():
 
         return inout_varsAssList
 
-    def addStg1StdListVarsAssign(self, in_varsAssignList, execution_no, WS_DB):
+    def addStg1StdListVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, WS_DB):
         """
         代入値管理（一般変数・複数具体値変数）を更新する。
 
@@ -641,7 +667,12 @@ class SubValueAutoReg():
         arrayValue = arrayValueTmplOfVarAss
         db_valautostup_user_id = g.USER_ID
 
-        objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_legacy")
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_pioneer")
 
         tgt_row = arrayValue
         # 登録する情報設定
@@ -676,7 +707,7 @@ class SubValueAutoReg():
         tgt_row['DISUSE_FLAG'] = "0"
         tgt_row['LAST_UPDATE_USER'] = db_valautostup_user_id
 
-        tgt_row = self.getLoadtableRegisterValue(tgt_row, True, WS_DB)
+        tgt_row = self.getLoadtableRegisterValue(tgt_row, True, in_driver_name, WS_DB)
         parameter = {
             "item_no": tgt_row['ASSIGN_ID'],
             "execution_no": execution_no,
@@ -711,7 +742,7 @@ class SubValueAutoReg():
 
         return True
 
-    def addStg1ArrayVarsAssign(self, in_varsAssignList, in_tableNameToMenuIdList, execution_no, WS_DB):
+    def addStg1ArrayVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, WS_DB):
         """
         代入値管理（多次元配列変数）の廃止レコードの復活またき新規レコード追加
 
@@ -731,7 +762,12 @@ class SubValueAutoReg():
         arrayValue = arrayValueTmplOfVarAss
         db_valautostup_user_id = g.USER_ID
 
-        objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_legacy")
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_pioneer")
 
         tgt_row = arrayValue
 
@@ -771,7 +807,7 @@ class SubValueAutoReg():
         tgt_row['DISUSE_FLAG'] = "0"
         tgt_row['LAST_UPDATE_USER'] = db_valautostup_user_id
 
-        tgt_row = self.getLoadtableRegisterValue(tgt_row, True, WS_DB)
+        tgt_row = self.getLoadtableRegisterValue(tgt_row, True, in_driver_name, WS_DB)
         parameter = {
             "item_no": tgt_row['ASSIGN_ID'],
             "execution_no": execution_no,
@@ -931,7 +967,7 @@ class SubValueAutoReg():
 
                 # 代入値自動登録設定に登録されている変数に対応する具体値を取得する
                 # パラメータシート側の項番取得
-                col_row_id = row['__ITA_LOCAL_COLUMN_4__']
+                col_row_id = row[AnscConst.DF_ITA_LOCAL_PKEY]
 
                 col_name = 'DATA_JSON'  # 2系からデータの持ち方変わった
 
@@ -1024,11 +1060,11 @@ class SubValueAutoReg():
                                 # TPF/CPF変数カラム判定
                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                        if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
-                                            col_val = "'{{ " + col_val + " }}'"
-                                        else:
-                                            continue
-
+                                        if col_val is not None:
+                                            if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
+                                                col_val = "'{{ " + col_val + " }}'"
+                                            else:
+                                                continue
                                 # オブジェクト解放
                                 del objmenu
                                 exec_flag = True
@@ -1042,7 +1078,7 @@ class SubValueAutoReg():
                             # メニューID取得
                             upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
                             col_filepath = ""
-                            if not col_val == "":
+                            if col_val is not None and not col_val == "":
                                 storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
                                 col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
                                 if not os.path.exists(col_filepath):
@@ -1218,7 +1254,7 @@ class SubValueAutoReg():
             # 具体値が空白か判定
             ret = self.validateKeyTypeColValue(in_col_val, in_menu_id, in_row_id, col_name)
             if ret == 0:
-                return ina_vars_ass_list, ina_vars_ass_chk_list, ina_array_vars_ass_list, ina_array_vars_ass_chk_list
+                return False, ina_vars_ass_chk_list, False, ina_array_vars_ass_chk_list
 
             # checkAndCreateVarsAssignDataの戻りは判定しない。
             ret = self.checkAndCreateVarsAssignData(in_table_name,
@@ -1250,7 +1286,7 @@ class SubValueAutoReg():
 
         return ina_vars_ass_list, ina_vars_ass_chk_list, ina_array_vars_ass_list, ina_array_vars_ass_chk_list
 
-    def getLoadtableRegisterValue(self, row, exe_flag, WS_DB):
+    def getLoadtableRegisterValue(self, row, exe_flag, in_driver_name, WS_DB):
         """
         loadtable.py用の登録情報取得
 
@@ -1270,7 +1306,12 @@ class SubValueAutoReg():
             row['OPERATION_NAME'] = data['OPERATION_NAME']
 
         # Movement名
-        sql = "SELECT MOVEMENT_NAME FROM V_ANSR_MOVEMENT WHERE MOVEMENT_ID = %s"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql = "SELECT MOVEMENT_NAME FROM V_ANSR_MOVEMENT WHERE MOVEMENT_ID = %s"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            sql = "SELECT MOVEMENT_NAME FROM V_ANSL_MOVEMENT WHERE MOVEMENT_ID = %s"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            sql = "SELECT MOVEMENT_NAME FROM V_ANSP_MOVEMENT WHERE MOVEMENT_ID = %s"
 
         data_list = WS_DB.sql_execute(sql, [row['MOVEMENT_ID']])
         for data in data_list:
@@ -1286,7 +1327,12 @@ class SubValueAutoReg():
         # 代入値管理用のデータ取得
         if exe_flag == 1:
             # 変数名
-            sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSR_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
+            if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSR_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
+            elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSL_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
+            elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSP_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
 
             data_list = WS_DB.sql_execute(sql, [row['MVMT_VAR_LINK_ID']])
             for data in data_list:
@@ -1614,7 +1660,7 @@ class SubValueAutoReg():
 
         return ina_vars_ass_list, ina_vars_ass_chk_list, ina_array_vars_ass_list, ina_array_vars_ass_chk_list
 
-    def read_val_assign(self, WS_DB, movement_id = None):
+    def read_val_assign(self, in_driver_name, WS_DB, movement_id = None):
         """
         代入値自動登録設定からカラム情報を取得する。
 
@@ -1658,9 +1704,15 @@ class SubValueAutoReg():
         sql += "   TBL_A.COLUMN_ASSIGN_SEQ                                     ,  \n"
         sql += "   TBL_A.DISUSE_FLAG                                           ,  \n"
         sql += "   TBL_E.VARS_NAME                                             ,  \n"
-        sql += "   TBL_E.VARS_ATTRIBUTE_01                                     ,  \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += "   TBL_E.VARS_ATTRIBUTE_01                                 ,  \n"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID or in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            # Legacy/Pioneerには必要ない
+            sql += "   NULL AS VARS_ATTRIBUTE_01                               ,  \n"
+            sql += "   NULL AS COL_SEQ_COMBINATION_ID                          ,  \n"
+            sql += "   NULL AS VAL_COL_COMBINATION_MEMBER_ALIAS                ,  \n"
+            sql += "   NULL AS KEY_COL_COMBINATION_MEMBER_ALIAS                ,  \n"
 
-        # 代入値管理データ連携フラグ
         sql += "   TBL_A.NULL_DATA_HANDLING_FLG                                ,  \n"
 
         # 作業パターン詳細の登録確認
@@ -1669,7 +1721,12 @@ class SubValueAutoReg():
         sql += "     SELECT                                                       \n"
         sql += "       COUNT(*)                                                   \n"
         sql += "     FROM                                                         \n"
-        sql += lv_pattern_link_tbl + "                                            \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += lv_pattern_link_tbl + "                                        \n"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            sql += lv_l_pattern_link_tbl + "                                      \n"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            sql += lv_p_pattern_link_tbl + "                                      \n"
         sql += "     WHERE                                                        \n"
         sql += "       MOVEMENT_ID  = TBL_A.MOVEMENT_ID AND                       \n"
         sql += "       DISUSE_FLAG = '0'                                          \n"
@@ -1682,67 +1739,74 @@ class SubValueAutoReg():
         sql += "     SELECT                                                       \n"
         sql += "       COUNT(*)                                                   \n"
         sql += "     FROM                                                         \n"
-        sql += lv_ptn_vars_link_tbl + "                                           \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += lv_ptn_vars_link_tbl + "                                       \n"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            sql += lv_l_ptn_vars_link_tbl + "                                     \n"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            sql += lv_p_ptn_vars_link_tbl + "                                     \n"
         sql += "     WHERE                                                        \n"
         sql += "       MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND              \n"
         sql += "       MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND            \n"
         sql += "       DISUSE_FLAG   = '0'                                        \n"
         sql += "   ) AS VAL_PTN_VARS_LINK_CNT                                  ,  \n"
 
-        # (Val)多次元変数配列組合せ管理
-        sql += "   TBL_A.COL_SEQ_COMBINATION_ID                                ,  \n"
-        sql += "   (                                                              \n"
-        sql += "     SELECT                                                       \n"
-        sql += "       COL_COMBINATION_MEMBER_ALIAS                               \n"
-        sql += "     FROM                                                         \n"
-        sql += lv_member_col_comb_tbl + "                                         \n"
-        sql += "     WHERE                                                        \n"
-        sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
-        sql += "         SELECT                                                   \n"
-        sql += "           MVMT_VAR_LINK_ID                                       \n"
-        sql += "         FROM                                                     \n"
-        sql += lv_ptn_vars_link_tbl + "                                           \n"
-        sql += "         WHERE                                                    \n"
-        sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
-        sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
-        sql += "           DISUSE_FLAG   = '0'                                    \n"
-        sql += "         )                                                        \n"
-        sql += "       AND                                                        \n"
-        sql += "       COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND     \n"
-        sql += "       DISUSE_FLAG = '0'                                          \n"
-        sql += "   ) AS VAL_COL_COMBINATION_MEMBER_ALIAS                       ,  \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            # (Val)多次元変数配列組合せ管理
+            sql += "   TBL_A.COL_SEQ_COMBINATION_ID                                ,  \n"
+            sql += "   (                                                              \n"
+            sql += "     SELECT                                                       \n"
+            sql += "       COL_COMBINATION_MEMBER_ALIAS                               \n"
+            sql += "     FROM                                                         \n"
+            sql += lv_member_col_comb_tbl + "                                         \n"
+            sql += "     WHERE                                                        \n"
+            sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
+            sql += "         SELECT                                                   \n"
+            sql += "           MVMT_VAR_LINK_ID                                       \n"
+            sql += "         FROM                                                     \n"
+            sql += lv_ptn_vars_link_tbl + "                                           \n"
+            sql += "         WHERE                                                    \n"
+            sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
+            sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
+            sql += "           DISUSE_FLAG   = '0'                                    \n"
+            sql += "         )                                                        \n"
+            sql += "       AND                                                        \n"
+            sql += "       COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND  \n"
+            sql += "       DISUSE_FLAG = '0'                                          \n"
+            sql += "   ) AS VAL_COL_COMBINATION_MEMBER_ALIAS                       ,  \n"
 
         # (Val)多次元変数メンバー管理
-        sql += "   TBL_A.ASSIGN_SEQ                                            ,  \n"
-        sql += "   (                                                              \n"
-        sql += "     SELECT                                                       \n"
-        sql += "       ASSIGN_SEQ_NEED                                            \n"
-        sql += "     FROM                                                         \n"
-        sql += lv_array_member_tbl + "                                            \n"
-        sql += "     WHERE                                                        \n"
-        sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
-        sql += "         SELECT                                                   \n"
-        sql += "           MVMT_VAR_LINK_ID                                       \n"
-        sql += "         FROM                                                     \n"
-        sql += lv_ptn_vars_link_tbl + "                                           \n"
-        sql += "         WHERE                                                    \n"
-        sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
-        sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
-        sql += "           DISUSE_FLAG   = '0'                                    \n"
-        sql += "         )                                                        \n"
-        sql += "       AND                                                        \n"
-        sql += "       ARRAY_MEMBER_ID IN (                                       \n"
-        sql += "         SELECT                                                   \n"
-        sql += "           ARRAY_MEMBER_ID                                        \n"
-        sql += "         FROM                                                     \n"
-        sql += lv_member_col_comb_tbl + "                                         \n"
-        sql += "         WHERE                                                    \n"
-        sql += "           COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND \n"
-        sql += "           DISUSE_FLAG   = '0'                                    \n"
-        sql += "         )                                                        \n"
-        sql += "       AND                                                        \n"
-        sql += "       DISUSE_FLAG = '0'                                          \n"
-        sql += "   ) AS VAL_ASSIGN_SEQ_NEED                                    ,  \n"
+        sql += "   TBL_A.ASSIGN_SEQ                                                ,  \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += "   (                                                              \n"
+            sql += "     SELECT                                                       \n"
+            sql += "       ASSIGN_SEQ_NEED                                            \n"
+            sql += "     FROM                                                         \n"
+            sql += lv_array_member_tbl + "                                            \n"
+            sql += "     WHERE                                                        \n"
+            sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
+            sql += "         SELECT                                                   \n"
+            sql += "           MVMT_VAR_LINK_ID                                       \n"
+            sql += "         FROM                                                     \n"
+            sql += lv_ptn_vars_link_tbl + "                                           \n"
+            sql += "         WHERE                                                    \n"
+            sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
+            sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
+            sql += "           DISUSE_FLAG   = '0'                                    \n"
+            sql += "         )                                                        \n"
+            sql += "       AND                                                        \n"
+            sql += "       ARRAY_MEMBER_ID IN (                                       \n"
+            sql += "         SELECT                                                   \n"
+            sql += "           ARRAY_MEMBER_ID                                        \n"
+            sql += "         FROM                                                     \n"
+            sql += lv_member_col_comb_tbl + "                                         \n"
+            sql += "         WHERE                                                    \n"
+            sql += "           COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND \n"
+            sql += "           DISUSE_FLAG   = '0'                                    \n"
+            sql += "         )                                                        \n"
+            sql += "       AND                                                        \n"
+            sql += "       DISUSE_FLAG = '0'                                          \n"
+            sql += "   ) AS VAL_ASSIGN_SEQ_NEED                                    ,  \n"
 
         # (Key)作業パターン変数紐付の登録確認
         sql += "   TBL_A.MVMT_VAR_LINK_ID                                      ,  \n"
@@ -1750,82 +1814,99 @@ class SubValueAutoReg():
         sql += "     SELECT                                                       \n"
         sql += "       COUNT(*)                                                   \n"
         sql += "     FROM                                                         \n"
-        sql += lv_ptn_vars_link_tbl + "                                           \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += lv_ptn_vars_link_tbl + "                                       \n"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            sql += lv_l_ptn_vars_link_tbl + "                                     \n"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            sql += lv_p_ptn_vars_link_tbl + "                                     \n"
         sql += "     WHERE                                                        \n"
         sql += "       MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND              \n"
         sql += "       MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND            \n"
         sql += "       DISUSE_FLAG   = '0'                                        \n"
         sql += "   ) AS KEY_PTN_VARS_LINK_CNT                                  ,  \n"
 
-        # (Key)多次元変数配列組合せ管理
-        sql += "   TBL_A.COL_SEQ_COMBINATION_ID                                ,  \n"
-        sql += "   (                                                              \n"
-        sql += "     SELECT                                                       \n"
-        sql += "       COL_COMBINATION_MEMBER_ALIAS                               \n"
-        sql += "     FROM                                                         \n"
-        sql += lv_member_col_comb_tbl + "                                         \n"
-        sql += "     WHERE                                                        \n"
-        sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
-        sql += "         SELECT                                                   \n"
-        sql += "           MVMT_VAR_LINK_ID                                       \n"
-        sql += "         FROM                                                     \n"
-        sql += lv_ptn_vars_link_tbl + "                                           \n"
-        sql += "         WHERE                                                    \n"
-        sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
-        sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
-        sql += "           DISUSE_FLAG   = '0'                                    \n"
-        sql += "         )                                                        \n"
-        sql += "       AND                                                        \n"
-        sql += "       COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND     \n"
-        sql += "       DISUSE_FLAG = '0'                                          \n"
-        sql += "   ) AS KEY_COL_COMBINATION_MEMBER_ALIAS                       ,  \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            # (Key)多次元変数配列組合せ管理
+            sql += "   TBL_A.COL_SEQ_COMBINATION_ID                                ,  \n"
+            sql += "   (                                                              \n"
+            sql += "     SELECT                                                       \n"
+            sql += "       COL_COMBINATION_MEMBER_ALIAS                               \n"
+            sql += "     FROM                                                         \n"
+            sql += lv_member_col_comb_tbl + "                                         \n"
+            sql += "     WHERE                                                        \n"
+            sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
+            sql += "         SELECT                                                   \n"
+            sql += "           MVMT_VAR_LINK_ID                                       \n"
+            sql += "         FROM                                                     \n"
+            sql += lv_ptn_vars_link_tbl + "                                           \n"
+            sql += "         WHERE                                                    \n"
+            sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
+            sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
+            sql += "           DISUSE_FLAG   = '0'                                    \n"
+            sql += "         )                                                        \n"
+            sql += "       AND                                                        \n"
+            sql += "       COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND  \n"
+            sql += "       DISUSE_FLAG = '0'                                          \n"
+            sql += "   ) AS KEY_COL_COMBINATION_MEMBER_ALIAS                       ,  \n"
 
         # (Key)多次元変数メンバー管理
         sql += "   TBL_A.ASSIGN_SEQ                                            ,  \n"
-        sql += "   (                                                              \n"
-        sql += "     SELECT                                                       \n"
-        sql += "       ASSIGN_SEQ_NEED                                            \n"
-        sql += "     FROM                                                         \n"
-        sql += lv_array_member_tbl + "                                            \n"
-        sql += "     WHERE                                                        \n"
-        sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
-        sql += "         SELECT                                                   \n"
-        sql += "           MVMT_VAR_LINK_ID                                       \n"
-        sql += "         FROM                                                     \n"
-        sql += lv_ptn_vars_link_tbl + "                                           \n"
-        sql += "         WHERE                                                    \n"
-        sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
-        sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
-        sql += "           DISUSE_FLAG   = '0'                                    \n"
-        sql += "         )                                                        \n"
-        sql += "       AND                                                        \n"
-        sql += "       ARRAY_MEMBER_ID IN (                                       \n"
-        sql += "         SELECT                                                   \n"
-        sql += "           ARRAY_MEMBER_ID                                        \n"
-        sql += "         FROM                                                     \n"
-        sql += lv_member_col_comb_tbl + "                                         \n"
-        sql += "         WHERE                                                    \n"
-        sql += "           COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND \n"
-        sql += "           DISUSE_FLAG   = '0'                                    \n"
-        sql += "         )                                                        \n"
-        sql += "       AND                                                        \n"
-        sql += "       DISUSE_FLAG = '0'                                          \n"
-        sql += "   ) AS KEY_ASSIGN_SEQ_NEED,                                      \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += "   (                                                              \n"
+            sql += "     SELECT                                                       \n"
+            sql += "       ASSIGN_SEQ_NEED                                            \n"
+            sql += "     FROM                                                         \n"
+            sql += lv_array_member_tbl + "                                            \n"
+            sql += "     WHERE                                                        \n"
+            sql += "       MVMT_VAR_LINK_ID IN (                                      \n"
+            sql += "         SELECT                                                   \n"
+            sql += "           MVMT_VAR_LINK_ID                                       \n"
+            sql += "         FROM                                                     \n"
+            sql += lv_ptn_vars_link_tbl + "                                           \n"
+            sql += "         WHERE                                                    \n"
+            sql += "           MOVEMENT_ID    = TBL_A.MOVEMENT_ID        AND          \n"
+            sql += "           MVMT_VAR_LINK_ID  = TBL_A.MVMT_VAR_LINK_ID  AND        \n"
+            sql += "           DISUSE_FLAG   = '0'                                    \n"
+            sql += "         )                                                        \n"
+            sql += "       AND                                                        \n"
+            sql += "       ARRAY_MEMBER_ID IN (                                       \n"
+            sql += "         SELECT                                                   \n"
+            sql += "           ARRAY_MEMBER_ID                                        \n"
+            sql += "         FROM                                                     \n"
+            sql += lv_member_col_comb_tbl + "                                         \n"
+            sql += "         WHERE                                                    \n"
+            sql += "           COL_SEQ_COMBINATION_ID = TBL_A.COL_SEQ_COMBINATION_ID AND \n"
+            sql += "           DISUSE_FLAG   = '0'                                    \n"
+            sql += "         )                                                        \n"
+            sql += "       AND                                                        \n"
+            sql += "       DISUSE_FLAG = '0'                                          \n"
+            sql += "   ) AS KEY_ASSIGN_SEQ_NEED,                                      \n"
         sql += "   TBL_D.DISUSE_FLAG AS ANSIBLE_TARGET_TABLE                      \n"
         sql += " FROM                                                             \n"
-        sql += lv_val_assign_tbl + "  TBL_A                                       \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += lv_val_assign_tbl + "  TBL_A                                   \n"
+        if in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            sql += lv_l_val_assign_tbl + " TBL_A                                  \n"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            sql += lv_p_val_assign_tbl + " TBL_A                                  \n"
         sql += "   LEFT JOIN T_COMN_MENU_COLUMN_LINK TBL_B ON                     \n"
         sql += "          (TBL_A.COLUMN_LIST_ID = TBL_B.COLUMN_DEFINITION_ID)     \n"
         sql += "   LEFT JOIN T_COMN_MENU_TABLE_LINK          TBL_C ON             \n"
         sql += "          (TBL_B.MENU_ID        = TBL_C.MENU_ID)                  \n"
         sql += "   LEFT JOIN T_COMN_MENU   TBL_D ON                               \n"
         sql += "          (TBL_C.MENU_ID        = TBL_D.MENU_ID)                  \n"
-        sql += "   LEFT JOIN T_ANSR_MVMT_VAR_LINK TBL_E ON                        \n"
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            sql += "   LEFT JOIN T_ANSR_MVMT_VAR_LINK TBL_E ON                    \n"
+        if in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            sql += "   LEFT JOIN T_ANSL_MVMT_VAR_LINK TBL_E ON                    \n"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            sql += "   LEFT JOIN T_ANSP_MVMT_VAR_LINK TBL_E ON                    \n"
         sql += "          (TBL_A.MVMT_VAR_LINK_ID    = TBL_E.MVMT_VAR_LINK_ID)    \n"
         sql += " WHERE                                                            \n"
         sql += "   TBL_A.DISUSE_FLAG='0'                                          \n"
         if movement_id is not None:
-            sql += "   AND TBL_A.MOVEMENT_ID = %s                                     \n"
+            sql += "   AND TBL_A.MOVEMENT_ID = %s                                 \n"
         sql += "   AND TBL_C.DISUSE_FLAG='0'                                      \n"
         sql += "   AND TBL_B.AUTOREG_HIDE_ITEM = '0'                              \n"
         sql += " ORDER BY TBL_A.COLUMN_ID                                         \n"
@@ -1892,7 +1973,8 @@ class SubValueAutoReg():
                                                 "COL_SEQ_COMBINATION_ID",
                                                 "VAL_COL_COMBINATION_MEMBER_ALIAS",
                                                 "ASSIGN_SEQ",
-                                                "VAL_ASSIGN_SEQ_NEED")
+                                                "VAL_ASSIGN_SEQ_NEED",
+                                                in_driver_name)
 
                     if ret[0] == 0:
                         continue
@@ -1918,7 +2000,8 @@ class SubValueAutoReg():
                                                 "COL_SEQ_COMBINATION_ID",
                                                 "KEY_COL_COMBINATION_MEMBER_ALIAS",
                                                 "ASSIGN_SEQ",
-                                                "KEY_ASSIGN_SEQ_NEED")
+                                                "KEY_ASSIGN_SEQ_NEED",
+                                                in_driver_name)
 
                     if ret[0] == 0:
                         continue
@@ -1944,7 +2027,6 @@ class SubValueAutoReg():
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']] = {}
             if data['COL_NAME'] not in inout_tabColNameToValAssRowList[data['TABLE_NAME']]:
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']][data['COL_NAME']] = {}
-                idx = 0
 
             inout_tabColNameToValAssRowList[data['TABLE_NAME']][data['COL_NAME']][idx] = {
                                                                             'COLUMN_ID': data['COLUMN_ID'],
@@ -1988,7 +2070,8 @@ class SubValueAutoReg():
                             in_col_seq_combination_id,
                             in_col_combination_member_alias,
                             in_assign_seq,
-                            in_assign_seq_need):
+                            in_assign_seq_need,
+                            in_driver_name=AnscConst.DF_LEGACY_ROLE_DRIVER_ID):
         """
         代入値自動登録設定のカラム情報を検査する。
 
@@ -2019,44 +2102,49 @@ class SubValueAutoReg():
             g.applogger.debug(msgstr)
             return False, inout_vars_attr
 
-        if row[in_vars_attribute_01] in [AnscConst.GC_VARS_ATTR_STD, AnscConst.GC_VARS_ATTR_LIST, AnscConst.GC_VARS_ATTR_M_ARRAY]:
-            inout_vars_attr = row[in_vars_attribute_01]
-        else:
-            msgstr = g.appmsg.get_api_message("MSG-10439", [row['COLUMN_ID'], in_col_type])
-            g.applogger.debug(msgstr)
-            return False, inout_vars_attr
-
-        # メンバー変数がメンバー変数一覧にあるか判定
-        if inout_vars_attr == AnscConst.GC_VARS_ATTR_M_ARRAY:
-            # メンバー変数の選択判定
-            if row[in_col_seq_combination_id] is None or len(row[in_col_seq_combination_id]) == 0:
-                msgstr = g.appmsg.get_api_message("MSG-10419", [row['COLUMN_ID'], in_col_type])
+        # ロールのみ変数タイプの判定
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            if row[in_vars_attribute_01] in [AnscConst.GC_VARS_ATTR_STD, AnscConst.GC_VARS_ATTR_LIST, AnscConst.GC_VARS_ATTR_M_ARRAY]:
+                inout_vars_attr = row[in_vars_attribute_01]
+            else:
+                msgstr = g.appmsg.get_api_message("MSG-10439", [row['COLUMN_ID'], in_col_type])
                 g.applogger.debug(msgstr)
                 return False, inout_vars_attr
 
-            # カラムタイプ型に設定されているメンバー変数がメンバー変数一覧にあるか判定
-            if row[in_col_combination_member_alias] is None or len(row[in_col_combination_member_alias]) == 0:
-                msgstr = g.appmsg.get_api_message("MSG-10349", [row['COLUMN_ID'], in_col_type])
-                g.applogger.debug(msgstr)
-                return False, inout_vars_attr
-        else:
-            if not row[in_col_seq_combination_id] is None and not len(row[in_col_seq_combination_id]) == 0:
-                msgstr = g.appmsg.get_api_message("MSG-10418", [row['COLUMN_ID'], in_col_type])
-                g.applogger.debug(msgstr)
-                return False, inout_vars_attr
+            # メンバー変数がメンバー変数一覧にあるか判定
+            if inout_vars_attr == AnscConst.GC_VARS_ATTR_M_ARRAY:
+                # メンバー変数の選択判定
+                if row[in_col_seq_combination_id] is None or len(row[in_col_seq_combination_id]) == 0:
+                    msgstr = g.appmsg.get_api_message("MSG-10419", [row['COLUMN_ID'], in_col_type])
+                    g.applogger.debug(msgstr)
+                    return False, inout_vars_attr
 
-        if inout_vars_attr == AnscConst.GC_VARS_ATTR_LIST:
-            if row[in_assign_seq] is None or len(str(row[in_assign_seq])) == 0:
-                msgstr = g.appmsg.get_api_message("MSG-10350", [row['COLUMN_ID'], in_col_type])
-                g.applogger.debug(msgstr)
-                return False, inout_vars_attr
+                # カラムタイプ型に設定されているメンバー変数がメンバー変数一覧にあるか判定
+                if row[in_col_combination_member_alias] is None or len(row[in_col_combination_member_alias]) == 0:
+                    msgstr = g.appmsg.get_api_message("MSG-10349", [row['COLUMN_ID'], in_col_type])
+                    g.applogger.debug(msgstr)
+                    return False, inout_vars_attr
+            else:
+                if not row[in_col_seq_combination_id] is None and not len(row[in_col_seq_combination_id]) == 0:
+                    msgstr = g.appmsg.get_api_message("MSG-10418", [row['COLUMN_ID'], in_col_type])
+                    g.applogger.debug(msgstr)
+                    return False, inout_vars_attr
 
-        elif inout_vars_attr == AnscConst.GC_VARS_ATTR_M_ARRAY:
-            if row[in_assign_seq_need] == 1:
-                if row[in_assign_seq] is None or row[in_assign_seq] == 0:
+            if inout_vars_attr == AnscConst.GC_VARS_ATTR_LIST:
+                if row[in_assign_seq] is None or len(str(row[in_assign_seq])) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10350", [row['COLUMN_ID'], in_col_type])
                     g.applogger.debug(msgstr)
                     return False, inout_vars_attr
+
+            elif inout_vars_attr == AnscConst.GC_VARS_ATTR_M_ARRAY:
+                if row[in_assign_seq_need] == 1:
+                    if row[in_assign_seq] is None or row[in_assign_seq] == 0:
+                        msgstr = g.appmsg.get_api_message("MSG-10350", [row['COLUMN_ID'], in_col_type])
+                        g.applogger.debug(msgstr)
+                        return False, inout_vars_attr
+        else:
+            # Legacy・Pioneerは一般変数として処理
+            inout_vars_attr = AnscConst.GC_VARS_ATTR_STD
 
         return True, inout_vars_attr
 

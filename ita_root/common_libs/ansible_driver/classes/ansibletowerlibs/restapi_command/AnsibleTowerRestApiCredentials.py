@@ -11,7 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import os
+import inspect
 
 from common_libs.common.util import ky_decrypt
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
@@ -74,7 +75,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
     @classmethod
     def post(cls, RestApiCaller, param):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}
@@ -82,7 +83,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
 
         if  'execution_no' in param and param['execution_no'] \
         and 'loopCount' in param and param['loopCount']:
-            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
+            content['name'] = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
 
         else:
             # 必須のためNG返す
@@ -170,10 +171,10 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み
-        filteringName = cls.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no), '')
+        filteringName = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no), '')
         query = "?name__startswith=%s" % (filteringName)
         pickup_response_array = cls.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -189,14 +190,14 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
     @classmethod
     def git_post(cls, RestApiCaller, param):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}
         response_array = {}
 
         if 'execution_no' in param and param['execution_no']:
-            content['name'] = cls.GIT_IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']))
+            content['name'] = cls.GIT_IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']))
 
         else:
             # 必須のためNG返す
@@ -265,14 +266,14 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
     @classmethod
     def vault_post(cls, RestApiCaller, param):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}
         response_array = {}
 
         if 'execution_no' in param and param['execution_no']:
-            content['name'] = cls.VAULT_IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(param['execution_no']))
+            content['name'] = cls.VAULT_IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']))
 
         else:
             # 必須のためNG返す
@@ -327,10 +328,10 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
     @classmethod
     def deleteVault(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み
-        filteringName = cls.VAULT_IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = cls.VAULT_IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name__startswith=%s" % (filteringName)
         pickup_response_array = cls.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -346,10 +347,10 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
     @classmethod
     def deleteGit(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み
-        filteringName = cls.GIT_IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no))
+        filteringName = cls.GIT_IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no))
         query = "?name__startswith=%s" % (filteringName)
         pickup_response_array = cls.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:

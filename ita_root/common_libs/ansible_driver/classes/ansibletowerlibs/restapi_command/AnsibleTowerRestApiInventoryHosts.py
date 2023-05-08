@@ -11,7 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+import os
+import inspect
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
@@ -141,10 +142,10 @@ class AnsibleTowerRestApiInventoryHosts(AnsibleTowerRestApiBase):
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
-        vg_tower_driver_name = AnsrConst.vg_tower_driver_name
+        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # データ絞り込み(親)
-        filteringName = AnsibleTowerRestApiInventories.IDENTIFIED_NAME_PREFIX % (vg_tower_driver_name, FuncCommonLib.addPadding(execution_no), '')
+        filteringName = AnsibleTowerRestApiInventories.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(execution_no), '')
         query = "?name__startswith=%s" % (filteringName)
         pickup_response_array = AnsibleTowerRestApiInventories.getAll(RestApiCaller, query)
         if not pickup_response_array['success']:
@@ -162,6 +163,6 @@ class AnsibleTowerRestApiInventoryHosts(AnsibleTowerRestApiBase):
             for inventoryHostData in pickup_response_array_2['responseContents']:
                 response_array = AnsibleTowerRestApiHosts.delete(RestApiCaller, inventoryHostData['id'])
                 if not response_array['success']:
-                    response_array
+                    return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま

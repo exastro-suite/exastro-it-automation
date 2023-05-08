@@ -1,0 +1,16 @@
+/driver/ansible/legacy/
+/driver/ansible/pioneer/
+/driver/ansible/legacy_role/
+/driver/ansible/git_repositories/
+/driver/conductor/
+/driver/terraform_cloud_ep/
+/driver/terraform_cli/
+/driver/cicd/repositories/
+/uploadfiles/
+/tmp/driver/ansible/
+/tmp/driver/import_menu/
+/tmp/driver/import_excel/
+/tmp/driver/export_menu/
+/tmp/driver/export_excel/
+/tmp/driver/terraform_cloud_ep/
+/tmp/driver/terraform_cli/

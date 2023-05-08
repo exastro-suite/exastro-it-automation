@@ -1,0 +1,257 @@
+@charset "utf-8";
+/* CSS Document */
+
+
+.compareContainer {
+display: flex;
+flex-direction: column;
+height: 100%;
+}
+.compareContainer > div {
+min-height: 0;
+}
+.compareHeader {
+flex: 0 0 auto;
+}
+.compareBody {
+display: flex;
+flex: 1 1 auto;
+gap: 16px;
+}
+.compareBody > div {
+min-width: 0;
+}
+.compareSetting,
+.compareHost {
+overflow: auto;
+flex: 0 0 auto;
+width: 256px; height: 100%;
+border-right: 1px solid rgba( 0,0,0,.2 );
+}
+.compareHost {
+}
+.compareResult {
+overflow: auto;
+flex: 1 1 auto;
+height: 100%;
+}
+.compareContainer .commonBody {
+margin: 8px 0 24px;
+}
+.compareMenuButton {
+padding: 6px 8px 0;
+}
+.compareButton {
+width: 100%;
+max-width: 222px;
+}
+.compareHostItem {
+position: relative;
+z-index: 0;
+display: flex;
+margin: 8px 0; padding: 4px;
+background-color: #FFF;
+background-image: linear-gradient( rgba( 0,0,0,0 ), rgba( 0,0,0,.05 ) );
+border: 1px solid rgba( 0,0,0,.2 );
+}
+.compareHostItemName {
+padding: 4px 8px;
+font-size: 14px;
+}
+.inputDateContainer {
+width: 100%;
+}
+.inputDateBody {
+flex: 1 1 auto;
+}
+.inputDateBody .input {
+letter-spacing: .5px;
+font-size: 12px;
+}
+.compareHostItem .commonStatus {
+flex: 1 1 auto;
+min-width: 0;
+margin-bottom: 0; padding-bottom: 4px;
+border-bottom: none;
+}
+.compareHostItem .commonStatusKey,
+.compareHostItem .commonStatusValue {
+border-color: var(--mainColor60);
+}
+.compareHostDiff {
+display: none;
+position: relative;
+z-index: 0;
+flex: 0 0 48px;
+min-width: 0;
+background-color: #FFF;
+border: 1px solid rgba( 0,0,0,.2 );
+}
+.compareHostDiffTitle {
+position: absolute;
+top: -8px; left: 10%;
+width: 80%;
+padding: 2px 0 1px;
+background: linear-gradient( var(--accentColor80), var(--accentColor100) );
+border-radius: 4px;
+text-align: center;
+font-size: 11px;
+font-weight: bold;
+color: #FFF;
+}
+.compareExecuteHost .compareHostItem {
+opacity: .3;
+}
+.compareExecuteHost .compareHostItem.compareExecuteItem {
+opacity: 1;
+}
+.compareExecuteHost .compareHostItem.compareExecuteItem:hover {
+background-image: none;
+}
+.compareExecuteHost .compareHostItem.compareOpen {
+background-image: none;
+cursor: default;
+}
+.compareExecuteHost .compareHostItem.compareExecuteItem .compareHostDiff {
+display: block;
+}
+.compareHostItem.compareOpen::after {
+content: '\e91c';
+display: block;
+position: absolute;
+right: -14px; top: 50%;
+transform: translateY(-50%);
+font-size: 12px;
+font-family: 'exastro-ui-icons';
+color: var(--accentColor100);
+}
+.compareHostItem.compareOpen .commonStatusKey,
+.compareHostItem.compareOpen .commonStatusValue {
+border-color: var(--accentColor100);
+}
+.compareExecuteItem {
+cursor: pointer;
+}
+.compareExecuteItem:hover {
+background-image: none;
+}
+.comparaResultBlock {
+display: none;
+}
+.comparaResultBlock.compareOpen {
+display: flex;
+flex-direction: column;
+height: 100%;
+}
+.comparaResultBlock .commonSubTitle {
+flex: 0 0 auto;
+min-height: 0;
+}
+.comparaResultBlock .commonBody {
+overflow: auto;
+flex: 1 1 auto;
+min-height: 0;
+margin-bottom: 0;
+background-color: rgba(0,0,0,.05);
+border: 1px solid rgba( 0,0,0,.1);
+}
+.compareBodyBlock {
+display: flex;
+flex-direction: column;
+}
+.compareContentHeader {
+flex: 0 0 32px;
+padding-right: 16px;
+}
+.compareContentBody {
+overflow: auto;
+flex: 1 1 auto;
+min-height: 0;
+padding-right: 16px;
+}
+.compareBodyBlock:last-child > div {
+padding-right: 0;
+}
+.compareHostDiffFlag {
+display: flex;
+align-items: center;
+justify-content: center;
+height: 100%;
+font-size: 28px;
+}
+.compareHostItem[data-flag="true"] .compareHostDiff {
+border-color: #60C60D;
+color: #60C60D;
+}
+.compareHostItem[data-flag="false"] .compareHostDiff {
+color: #CCC;
+}
+.messageVertical {
+margin-right: 16px;
+}
+.messageVertical.commonMessage > .commonMessageInner .icon {
+position: static;
+transform: none;
+display: block;
+width: auto; height: auto;
+margin: 0 auto 8px;
+text-align: center;
+font-size: 40px;
+}
+.messageVertical .commonMessageInner {
+padding: 0 16px;
+}
+.compareItemDiffMark {
+text-align: center;
+}
+.tBodyTd[data-flag="true"] .compareItemDiffMark {
+color: #60C60D;
+}
+.tBodyTd[data-flag="false"] .compareItemDiffMark {
+color: #CCC;
+}
+.failedMessage {
+height: calc( 100% - 8px );
+margin-top: 8px;
+}
+.comparaResultBlock .table {
+transform: translateX(-1px);
+}
+.fileDiffButton {
+height: 24px; line-height: 24px;
+}
+.fileDiffButton > .inner {
+font-size: 12px;
+}
+.comparaResultBlock .tBodyTh {
+background-color: var(--mainColor10)!important;
+}
+.comparaResultBlock .tBodyTd {
+background-color: #FFF!important;
+}
+.differenceTr > .tBodyTh,
+.differenceTr > .tBodyTd {
+background-color: #F2F2F2!important;
+}
+.differenceTr .ci {
+opacity: .3;
+}
+
+
+.diffModal .dialogBody {
+overflow: hidden;
+}
+.d2h-wrapper {
+height: 100%;
+}
+.d2h-file-wrapper {
+overflow: auto;
+height: 100%;
+margin-bottom: 0!important;
+}
+.d2h-code-wrapper {
+position: relative;
+}
+.d2h-file-name {
+padding: 1px!important;
+}

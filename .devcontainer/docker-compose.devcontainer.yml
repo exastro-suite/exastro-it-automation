@@ -21,6 +21,8 @@ services:
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-api-organization/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-api-organization/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -54,6 +56,8 @@ services:
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-api-admin/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-api-admin/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -69,6 +73,8 @@ services:
     volumes:
       - ../ita_root/ita_web_server/contents/:/var/www/html/:cached
       - ../ita_root/ita_web_server/config/httpd.conf/httpd.conf:/etc/httpd/conf/httpd.conf:cached
+      - ../.vscode_extensions/ita-web-server/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-web-server/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -81,6 +87,8 @@ services:
       - "8080:80"
     volumes:
       - ../.volumes/phpmyadmin/sessions:/sessions
+      - ../.vscode_extensions/phpmyadmin/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/phpmyadmin/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
 
   ita-by-ansible-execute:
     build:
@@ -105,16 +113,19 @@ services:
       # kube or docker
       - ../ita_root/ita_by_ansible_execute/config/kubernetes/admin.conf:/home/app_user/.kube/config:cached
       - /var/run/docker.sock:/var/run/docker.sock:cached
+      - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,192.168.141.90
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,192.168.141.90
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,192.168.141.90,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,192.168.141.90,platform-api
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
   ita-by-ansible-legacy-role-vars-listup:
     build:
       target: develop_build
@@ -135,16 +146,85 @@ services:
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-ansible-legacy-role-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-ansible-legacy-role-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-ansible-legacy-vars-listup:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_legacy_vars_listup/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_ansible_legacy_vars_listup/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_ansible_legacy_vars_listup/backyard:cached
+      - ../ita_root/ita_by_ansible_legacy_vars_listup:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-ansible-legacy-vars-listup/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-ansible-legacy-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-ansible-legacy-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-ansible-pioneer-vars-listup:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_pioneer_vars_listup/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_ansible_pioneer_vars_listup/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_ansible_pioneer_vars_listup/backyard:cached
+      - ../ita_root/ita_by_ansible_pioneer_vars_listup:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-ansible-pioneer-vars-listup/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-ansible-pioneer-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-ansible-pioneer-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
   ita-by-ansible-towermaster-sync:
     build:
       target: develop_build
@@ -165,13 +245,47 @@ services:
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-ansible-towermaster-sync/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-ansible-towermaster-sync/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+  ita-by-collector:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_collector/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_collector/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_collector/backyard:cached
+      - ../ita_root/ita_by_collector:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-collector/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-collector/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-collector/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -195,13 +309,47 @@ services:
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-conductor-synchronize/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-conductor-synchronize/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+  ita-by-conductor-regularly:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_conductor_regularly/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_conductor_regularly/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_conductor_regularly/backyard:cached
+      - ../ita_root/ita_by_conductor_regularly:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-conductor-regularly/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-conductor-regularly/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-conductor-regularly/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -225,13 +373,381 @@ services:
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-menu-create/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-menu-create/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-menu-export-import:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_menu_export_import/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_menu_export_import/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_menu_export_import/backyard:cached
+      - ../ita_root/ita_by_menu_export_import:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-menu-export-import/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-menu-export-import/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-menu-export-import/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-excel-export-import:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_excel_export_import/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_excel_export_import/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_excel_export_import/backyard:cached
+      - ../ita_root/ita_by_excel_export_import:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-excel-export-import/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-excel-export-import/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-excel-export-import/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+
+  ita-by-terraform-cloud-ep-execute:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_execute/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_terraform_cloud_ep_execute/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_terraform_cloud_ep_execute/backyard:cached
+      - ../ita_root/ita_by_terraform_cloud_ep_execute:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-terraform-cloud-ep-execute/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-terraform-cloud-ep-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-terraform-cloud-ep-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-terraform-cloud-ep-vars-listup:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_vars_listup/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_terraform_cloud_ep_vars_listup/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_terraform_cloud_ep_vars_listup/backyard:cached
+      - ../ita_root/ita_by_terraform_cloud_ep_vars_listup:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-terraform-cloud-ep-vars-listup/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-terraform-cloud-ep-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-terraform-cloud-ep-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-terraform-cli-execute:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_execute/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_terraform_cli_execute/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_terraform_cli_execute/backyard:cached
+      - ../ita_root/ita_by_terraform_cli_execute:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-terraform-cli-execute/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-terraform-cli-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-terraform-cli-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-terraform-cli-vars-listup:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_vars_listup/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_terraform_cli_vars_listup/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_terraform_cli_vars_listup/backyard:cached
+      - ../ita_root/ita_by_terraform_cli_vars_listup:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-terraform-cli-vars-listup/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-terraform-cli-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-terraform-cli-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+
+  ita-by-hostgroup-split:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_hostgroup_split/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_hostgroup_split/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_hostgroup_split/backyard:cached
+      - ../ita_root/ita_by_hostgroup_split:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-hostgroup-split/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-hostgroup-split/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-hostgroup-split/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-cicd-for-iac:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_cicd_for_iac/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_cicd_for_iac/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_cicd_for_iac/backyard:cached
+      - ../ita_root/ita_by_cicd_for_iac:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-cicd-for-iac/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-cicd-for-iac/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-cicd-for-iac/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-execinstance-dataautoclean:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_execinstance_dataautoclean/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_execinstance_dataautoclean/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_execinstance_dataautoclean/backyard:cached
+      - ../ita_root/ita_by_execinstance_dataautoclean:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-execinstance-dataautoclean/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-execinstance-dataautoclean/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-execinstance-dataautoclean/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-by-file-autoclean:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_file_autoclean/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_file_autoclean/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_file_autoclean/backyard:cached
+      - ../ita_root/ita_by_file_autoclean:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-file-autoclean/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-file-autoclean/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-file-autoclean/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-migration:
+    depends_on:
+      platform-migration-2:
+        condition: service_completed_successfully
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_migration/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_migration/messages:cached
+      - ../ita_root/ita_migration:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-migration/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-migration/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-migration/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt

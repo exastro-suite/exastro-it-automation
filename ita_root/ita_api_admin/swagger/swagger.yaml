@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API (System Management)
   description: Exastro IT Automation API for System Manager
-  version: 2.0.3
+  version: 2.1.0
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -33,6 +33,8 @@ tags:
   description: Workspace作成(Exastro Platform連携用) ※利用不可
 - name: Initial Settings Ansible
   description: 初期データ設定(Ansible)
+- name: LogLevel Settings
+  description: ログレベル設定
 paths:
   /api/organizations/{organization_id}/ita/:
     post:
@@ -294,6 +296,64 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.initial_settings_ansible_controller
+  /api/ita/loglevel-settings/:
+    get:
+      tags:
+      - LogLevel Settings
+      description: すべてのServiceのログレベルを取得する
+      operationId: get_all_loglevel_settings
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.loglevel_settings_controller
+    patch:
+      tags:
+      - LogLevel Settings
+      description: 複数のServiceのログレベルを更新する
+      operationId: post_all_setting_loglevel
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ita_loglevelsettings_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.loglevel_settings_controller
 components:
   schemas:
     ERROR_TEMPLATE:
@@ -635,6 +695,31 @@ components:
               user: user
               remarks: remarks
         input_limit_setting: true
+    inline_response_200_3:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_3_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          service_name_1: INFO/DEBUG
+          service_name_2: INFO/DEBUG
+        message: message
+    ita_loglevelsettings_body:
+      type: object
+      properties:
+        service_name_1:
+          type: string
+          example: INFO/DEBUG
+        service_name_2:
+          type: string
+          example: INFO/DEBUG
     inline_response_200_1_data:
       properties:
         (organization_id):
@@ -680,6 +765,17 @@ components:
                 user: user
                 remarks: remarks
           input_limit_setting: true
+    inline_response_200_3_data:
+      properties:
+        service_name_1:
+          type: string
+          example: INFO/DEBUG
+        service_name_2:
+          type: string
+          example: INFO/DEBUG
+      example:
+        service_name_1: INFO/DEBUG
+        service_name_2: INFO/DEBUG
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid
@@ -689,10 +785,10 @@ components:
       description: Credentials or access token for API
       scheme: bearer
       bearerFormat: JWT
-      x-bearerInfoFunc: controllers.authorization_controller.check_BearerAuth
+      x-bearerInfoFunc: swagger_server.controllers.authorization_controller.check_BearerAuth
     BasicAuth:
       type: http
       description: Value converted from ID/Password in base64
       scheme: basic
-      x-basicInfoFunc: controllers.authorization_controller.check_BasicAuth
+      x-basicInfoFunc: swagger_server.controllers.authorization_controller.check_BasicAuth
 

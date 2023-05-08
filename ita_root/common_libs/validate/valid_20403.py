@@ -20,7 +20,7 @@ from common_libs.ansible_driver.classes.CheckAnsibleRoleFiles import VarStructAn
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
 from common_libs.ansible_driver.functions.var_struct_analysis import chkRolePackageVarNameLength
 from common_libs.ansible_driver.functions.util import get_AnsibleDriverHpTmpPath, AnsibleFilesClean
-
+from common_libs.common.exception import AppException
 
 def external_valid_menu_after(objDBCA, objtable, option):
     """
@@ -41,8 +41,9 @@ def external_valid_menu_after(objDBCA, objtable, option):
     zip_file_path = ""
     role_package_name = ""
     PkeyID = option['uuid']
-    g.AnsibleCreateFiles = []
 
+    # 999
+    g.AnsibleCreateFiles = []
     zipFileName = "{}/20403_zip_format_role_package_file_{}.zip"
     if option["cmd_type"] == "Register":
         zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
@@ -58,9 +59,9 @@ def external_valid_menu_after(objDBCA, objtable, option):
             # zip_file_path = zipFileName.format(get_AnsibleDriverTmpPath(), os.getpid())
             # /storageは遅いので/tmpに変更
             zip_file_path = zipFileName.format(get_AnsibleDriverHpTmpPath(), os.getpid())
+            fd = open(zip_file_path, "wb")
             # 例外等が発生した場合でもファイル名を削除するようにする為、ファイル名を退避
             g.AnsibleCreateFiles.append(zip_file_path)
-            fd = open(zip_file_path, "wb")
             fd.write(base64.b64decode(zip_data))
             fd.close()
         else:

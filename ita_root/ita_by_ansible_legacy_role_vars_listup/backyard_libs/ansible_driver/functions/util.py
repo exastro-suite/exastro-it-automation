@@ -78,7 +78,7 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, registerd_r
             g.applogger.debug(debug_msg)
 
         # Movementの追加オプションの変数の追加
-        ans_exec_options = mov_records[movement_id]['ANS_EXEC_OPTIONS']
+        ans_exec_options = mov_records[movement_id]['ANS_PLAYBOOK_HED_DEF']
 
         var_heder_id = AnscConst.DF_HOST_VAR_HED  # VAR変数
         mt_varsLineArray = []  # [{行番号:変数名}, ...]
@@ -113,8 +113,9 @@ def extract_variable_for_execute(mov_vars_dict, tpl_varmng_dict, device_varmng_d
     """
     g.applogger.debug("[Trace] Call util.extract_variable_for_execute()")
 
-    sub_value_auto_reg = SubValueAutoReg()
-    _, template_list, host_list = sub_value_auto_reg.get_data_from_all_parameter_sheet(WS_DB=ws_db)
+    driver_type = AnscConst.DF_LEGACY_ROLE_DRIVER_ID
+    sub_value_auto_reg = SubValueAutoReg(driver_type, ws_db)
+    _, template_list, host_list = sub_value_auto_reg.get_data_from_all_parameter_sheet()
     # template_list = { MovementID: { TPF変数名: 0 }, … }
     # host_list = { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 

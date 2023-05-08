@@ -23,7 +23,7 @@ from common_libs.api import check_request_body_key
 
 def collect_menu_create_data(objdbca):
     """
-        メニュー定義・作成(新規)用の情報取得
+        パラメータシート定義・作成(新規)用の情報取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
         RETRUN:
@@ -37,7 +37,7 @@ def collect_menu_create_data(objdbca):
 
 def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     """
-        メニュー定義・作成(既存)用の情報取得
+        パラメータシート定義・作成(既存)用の情報取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
         RETRUN:
@@ -72,7 +72,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     for target in create_data['column_class_list']:
         format_column_class_list[target.get('column_class_id')] = {'column_class_name': target.get('column_class_name'), 'column_class_disp_name': target.get('column_class_disp_name')}  # noqa: E501
 
-    # 「メニュー定義一覧」から対象のメニューのレコードを取得
+    # 「パラメータシート定義一覧」から対象のメニューのレコードを取得
     ret = objdbca.table_select(t_menu_define, 'WHERE MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_create, 0])
     if not ret:
         log_msg_args = [menu_create]
@@ -103,10 +103,13 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     last_updated_user_id = ret[0].get('LAST_UPDATE_USER')
     last_updated_user = users_list.get(last_updated_user_id)
 
-    # 縦メニュー利用の有無を取得
+    # バンドルが有効かどうかを取得
     vertical = ret[0].get('VERTICAL')
 
-    # 「メニュー-ロール作成情報」から対象のレコードを取得
+    # ホストグループ利用の有無を取得
+    hostgroup = ret[0].get('HOSTGROUP')
+
+    # 「パラメータシートロール作成情報」から対象のレコードを取得
     selected_role_list = []
     ret_role_list = objdbca.table_select(t_menu_role, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
     if ret_role_list:
@@ -124,6 +127,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         "sheet_type_name": sheet_type_name,
         "disp_seq": ret[0].get('DISP_SEQ'),
         "vertical": vertical,
+        "hostgroup": hostgroup,
         "menu_group_for_input_id": menu_group_for_input_id,
         "menu_group_for_subst_id": menu_group_for_subst_id,
         "menu_group_for_ref_id": menu_group_for_ref_id,
@@ -160,7 +164,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         }
         column_group_list[record.get('CREATE_COL_GROUP_ID')] = add_data
 
-    # 「メニュー項目作成情報」から対象のメニューのレコードを取得
+    # 「パラメータシート項目作成情報」から対象のメニューのレコードを取得
     column_info_data = {}
     column_group_info_data = {}
     tmp_column_group = {}
@@ -271,9 +275,9 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 col_detail["link_maximum_bytes"] = record.get('LINK_MAX_LENGTH')  # リンク 最大バイト数
                 col_detail["link_default_value"] = record.get('LINK_DEFAULT_VALUE')  # リンク 初期値
 
-            # カラムクラス「パラメータシート参照」用のパラメータを追加 (未実装)
-            # if column_class_name == "LinkIDColumn":
-            #     col_detail["parameter_sheet_reference"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照
+            # カラムクラス「パラメータシート参照」用のパラメータを追加
+            if column_class_name == "ParameterSheetReference":
+                col_detail["parameter_sheet_reference"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照
 
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = col_detail
@@ -306,7 +310,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
 def _collect_common_menu_create_data(objdbca):
     """
-        【内部呼び出し用】メニュー定義・作成用情報の共通部分取得
+        【内部呼び出し用】パラメータシート定義・作成用情報の共通部分取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
         RETRUN:
@@ -319,6 +323,7 @@ def _collect_common_menu_create_data(objdbca):
     v_menu_sheet_type = 'V_MENU_SHEET_TYPE'
     v_menu_target_menu_group = 'V_MENU_TARGET_MENU_GROUP'
     v_menu_other_link = 'V_MENU_OTHER_LINK'
+    v_menu_parameter_sheet_reference_item = 'V_MENU_PARAMETER_SHEET_REFERENCE_ITEM'
 
     # 変数定義
     lang = g.get('LANGUAGE')
@@ -328,9 +333,6 @@ def _collect_common_menu_create_data(objdbca):
     ret = objdbca.table_select(v_menu_column_class, 'ORDER BY DISP_SEQ ASC')
     for record in ret:
         column_class_id = record.get('COLUMN_CLASS_ID')
-        # 「11:パラメータシート参照」は未実装のため除外
-        if str(column_class_id) == "11":
-            continue
         column_class_name = record.get('COLUMN_CLASS_NAME')
         column_class_disp_name = record.get('COLUMN_CLASS_DISP_NAME_' + lang.upper())
         column_class_list.append({'column_class_id': column_class_id, 'column_class_name': column_class_name, 'column_class_disp_name': column_class_disp_name})  # noqa: E501
@@ -363,6 +365,14 @@ def _collect_common_menu_create_data(objdbca):
         link_pulldown = record.get('LINK_PULLDOWN_' + lang.upper())
         pulldown_item_list.append({'link_id': link_id, 'menu_id': menu_id, 'menu_name_rest': menu_name_rest, 'column_name_rest': column_name_rest, 'link_pulldown': link_pulldown})  # noqa: E501
 
+    # カラムクラス「パラメータシート参照」の選択項目一覧
+    parameter_sheet_reference_list = []
+    ret = objdbca.table_select(v_menu_parameter_sheet_reference_item, 'ORDER BY MENU_ID, COLUMN_DISP_SEQ')
+    for record in ret:
+        column_definition_id = record.get('COLUMN_DEFINITION_ID')
+        select_full_name = record.get('SELECT_FULL_NAME_' + lang.upper())
+        parameter_sheet_reference_list.append({'column_definition_id': column_definition_id, 'select_full_name': select_full_name})
+
     # ロールの選択肢一覧
     role_list = util.get_workspace_roles()  # noqa: F405
 
@@ -391,6 +401,7 @@ def _collect_common_menu_create_data(objdbca):
         "target_menu_group_list": target_menu_group_list,
         "sheet_type_list": sheet_type_list,
         "pulldown_item_list": pulldown_item_list,
+        "parameter_sheet_reference_list": parameter_sheet_reference_list,
         "role_list": role_list,
         "name_convert_list": name_convert_list
     }
@@ -438,7 +449,7 @@ def collect_pulldown_initial_value(objdbca, menu_name_rest, column_name_rest):
         else:
             value = record.get(ref_col_name)
 
-        # メニュー作成機能で作ったメニューの場合、値がJSON形式なので取り出す。
+        # パラメータシート作成機能で作ったメニューの場合、値がJSON形式なので取り出す。
         if str(menu_create_flag) == "1":
             value_dict = ast.literal_eval(value)
             value = value_dict.get(ref_col_name_rest)
@@ -491,10 +502,10 @@ def collect_pulldown_reference_item(objdbca, menu_name_rest, column_name_rest):
 
 def menu_create_execute(objdbca, exec_target):
     """
-        メニュー作成の実行
+        パラメータシート作成の実行
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            exec_target: メニュー作成の実行対象
+            exec_target: パラメータシート作成の実行対象
         RETRUN:
             result_data
     """
@@ -504,10 +515,10 @@ def menu_create_execute(objdbca, exec_target):
 
 def menu_create_define(objdbca, create_param):
     """
-        メニュー定義および作成の実行
+        パラメータシート定義および作成の実行
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            create_param: メニュー定義用パラメータ
+            create_param: パラメータシート定義用パラメータ
         RETRUN:
             result_data
     """
@@ -523,10 +534,10 @@ def menu_create_define(objdbca, create_param):
     menu_create_id = menu_data.get('menu_create_id')
 
     if type_name == 'create_new' and not menu_create_id:
-        # 「新規作成」かつmenu_create_idが無い場合、レコードの登録処理のみ実行し、「メニュー作成履歴」にレコードを登録
+        # 「新規作成」かつmenu_create_idが無い場合、レコードの登録処理のみ実行し、「パラメータシート作成履歴」にレコードを登録
         result = _create_new_execute(objdbca, create_param)
     else:
-        # menu_create_idがある場合、レコードの登録/更新/廃止処理を実行し、「メニュー作成履歴」にレコードを登録
+        # menu_create_idがある場合、レコードの登録/更新/廃止処理を実行し、「パラメータシート作成履歴」にレコードを登録
         result = _create_exist_execute(objdbca, create_param, type_name)
 
     # 返却用の値を取得
@@ -539,10 +550,10 @@ def menu_create_define(objdbca, create_param):
 
 def _create_new_execute(objdbca, create_param):  # noqa: C901
     """
-        【内部呼び出し用】「新規作成」時のメニュー作成用メニューに対するレコードをの登録（メニュー定義一覧に対象が存在しない）
+        【内部呼び出し用】「新規作成」時のパラメータシート作成用メニューに対するレコードをの登録（パラメータシート定義一覧に対象が存在しない）
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            create_param: メニュー定義用パラメータ
+            create_param: パラメータシート定義用パラメータ
         RETRUN:
             result_data
     """
@@ -564,7 +575,7 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
         if not retbool:
             raise Exception(result_code, msg_args)
 
-        # 「メニュー定義一覧」にレコードを登録
+        # 「パラメータシート定義一覧」にレコードを登録
         retbool, result_code, msg_args, menu_create_id = _insert_t_menu_define(objdbca, menu_data)
         if not retbool:
             raise Exception(result_code, msg_args)
@@ -575,7 +586,7 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
             if not retbool:
                 raise Exception(result_code, msg_args)
 
-        # 「メニュー項目作成情報」にレコードを登録
+        # 「パラメータシート項目作成情報」にレコードを登録
         retbool, result_code, msg_args = _insert_t_menu_column(objdbca, menu_data, column_data_list)
         if not retbool:
             raise Exception(result_code, msg_args)
@@ -585,14 +596,14 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
         if not retbool:
             raise Exception(result_code, msg_args)
 
-        # 「メニュー-ロール作成情報」にレコードを登録
+        # 「パラメータシートロール作成情報」にレコードを登録
         menu_name = menu_data.get('menu_name')
         role_list = menu_data.get('role_list')
         retbool, result_code, msg_args = _insert_t_menu_role(objdbca, menu_name, role_list)
         if not retbool:
             raise Exception(result_code, msg_args)
 
-        # 「メニュー作成履歴」にレコードを登録
+        # 「パラメータシート作成履歴」にレコードを登録
         status_id = "1"  # (1:未実行)
         create_type = "1"  # (1:新規作成)
         retbool, result_code, msg_args, history_id = _insert_t_menu_create_history(objdbca, menu_create_id, status_id, create_type, user_id)
@@ -630,10 +641,10 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
 
 def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
     """
-        【内部呼び出し用】「新規作成」「初期化」「編集」時のメニュー作成用メニューに対するレコードの登録/更新/廃止
+        【内部呼び出し用】「新規作成」「初期化」「編集」時のパラメータシート作成用メニューに対するレコードの登録/更新/廃止
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            create_param: メニュー定義用パラメータ
+            create_param: パラメータシート定義用パラメータ
             type_name: create_new, initialize, editのいずれか
         RETRUN:
             result_data
@@ -662,18 +673,18 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
         if not retbool:
             raise Exception(result_code, msg_args)
 
-        # 対象の「メニュー定義一覧」のuuidおよびメニュー名を取得
+        # 対象の「パラメータシート定義一覧」のuuidおよびメニュー名を取得
         menu_create_id = menu_data.get('menu_create_id')
         menu_name = menu_data.get('menu_name')
 
-        # 現在の「メニュー定義一覧」のレコードを取得
+        # 現在の「パラメータシート定義一覧」のレコードを取得
         current_t_menu_define = objdbca.table_select(t_menu_define, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         if not current_t_menu_define:
-            # 「メニュー定義一覧」に対象のmenu_create_idのレコードが存在しない場合
+            # 「パラメータシート定義一覧」に対象のmenu_create_idのレコードが存在しない場合
             raise Exception("499-00703", ["menu_create_id"])  # 対象keyの値が不正です。(key: {})
         current_t_menu_define = current_t_menu_define[0]
 
-        # 「メニュー定義一覧」のレコードを更新
+        # 「パラメータシート定義一覧」のレコードを更新
         retbool, result_code, msg_args = _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name)
         if not retbool:
             raise Exception(result_code, msg_args)
@@ -684,20 +695,20 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
             if not retbool:
                 raise Exception(result_code, msg_args)
 
-        # 現在の「メニュー項目作成情報」のレコードを取得
+        # 現在の「パラメータシート項目作成情報」のレコードを取得
         current_t_menu_column_list = objdbca.table_select(t_menu_column, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
 
-        # 「メニュー項目作成情報」から未使用となる項目のレコードを廃止
+        # 「パラメータシート項目作成情報」から未使用となる項目のレコードを廃止
         retbool, result_code, msg_args = _disuse_t_menu_column(objdbca, current_t_menu_column_list, column_data_list)
         if not retbool:
             raise Exception(result_code, msg_args)
 
-        # 「メニュー項目作成情報」から更新対象のレコードを更新
+        # 「パラメータシート項目作成情報」から更新対象のレコードを更新
         retbool, result_code, msg_args = _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column_data_list, type_name)
         if not retbool:
             raise Exception(result_code, msg_args)
 
-        # 「メニュー項目作成情報」に新規追加項目用レコードを登録
+        # 「パラメータシート項目作成情報」に新規追加項目用レコードを登録
         retbool, result_code, msg_args = _insert_t_menu_column(objdbca, menu_data, column_data_list)
         if not retbool:
             raise Exception(result_code, msg_args)
@@ -729,7 +740,7 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
         # 「ロール選択」の値を取得
         role_list = menu_data.get('role_list')
 
-        # 現在の「メニュー-ロール作成情報」のレコードを取得
+        # 現在の「パラメータシートロール作成情報」のレコードを取得
         current_t_menu_role = objdbca.table_select(t_menu_role, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         current_role_list = []
         current_role_dict = {}
@@ -756,7 +767,7 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
             if not retbool:
                 raise Exception(result_code, msg_args)
 
-        # 「メニュー作成履歴」にレコードを登録
+        # 「パラメータシート作成履歴」にレコードを登録
         status_id = "1"  # (1:未実行)
         if type_name == "create_new":
             create_type = "1"  # (1:新規作成)
@@ -799,7 +810,7 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
 
 def _insert_t_menu_define(objdbca, menu_data):
     """
-        【内部呼び出し用】「メニュー定義一覧」にレコードを登録
+        【内部呼び出し用】「パラメータシート定義一覧」にレコードを登録
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu_data: 登録対象のメニュー情報
@@ -810,10 +821,15 @@ def _insert_t_menu_define(objdbca, menu_data):
         # loadTableの呼び出し
         objmenu = load_table.loadTable(objdbca, 'menu_definition_list')  # noqa: F405
 
-        # 縦メニュー利用有無のkeyが無い場合はFalseを指定
+        # バンドルのkeyが無い場合はFalseを指定
         vertical = menu_data.get('vertical')
         if not vertical:
             vertical = "False"
+
+        # ホストグループ利用のkeyが無い場合はFalseを指定
+        hostgroup = menu_data.get('hostgroup')
+        if not hostgroup:
+            hostgroup = "False"
 
         # 登録用パラメータを作成
         parameters = {
@@ -826,7 +842,8 @@ def _insert_t_menu_define(objdbca, menu_data):
                 "description_ja": menu_data.get('description'),  # 説明(ja)
                 "description_en": menu_data.get('description'),  # 説明(en)
                 "remarks": menu_data.get('remarks'),  # 備考
-                "vertical": vertical,  # 縦メニュー利用有無
+                "vertical": vertical,  # バンドル有無
+                "hostgroup": hostgroup,  # ホストグループ利用有無
                 "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                 "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
                 "menu_group_for_ref": menu_data.get('menu_group_for_ref')  # 参照用メニューグループ名
@@ -854,10 +871,10 @@ def _insert_t_menu_define(objdbca, menu_data):
 
 def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
     """
-        【内部呼び出し用】「メニュー定義一覧」のレコードを更新
+        【内部呼び出し用】「パラメータシート定義一覧」のレコードを更新
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            current_t_menu_define: 「メニュー定義一覧」の更新対象のレコード
+            current_t_menu_define: 「パラメータシート定義一覧」の更新対象のレコード
             menu_data: 登録対象のメニュー情報
             type_name: 新規作成(create_new), 初期化(initialize), 編集(edit)のいずれか
         RETRUN:
@@ -870,28 +887,33 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
     lang = g.get('LANGUAGE')
 
     try:
-        # 更新対象レコードの「メニュー作成状態」が「1:未作成」の場合「初期化」「編集」はできないのでエラー判定
+        # 更新対象レコードの「パラメータシート作成状態」が「1:未作成」の場合「初期化」「編集」はできないのでエラー判定
         menu_create_done_status = str(current_t_menu_define.get('MENU_CREATE_DONE_STATUS'))
         if (type_name == 'edit') and menu_create_done_status == "1":
-            raise Exception("499-00709", [])  # 「メニュー定義一覧」の更新対象のレコードの「メニュー作成状態」が「未作成」の場合「初期化」および「編集」は実行できません
+            raise Exception("499-00709", [])  # 「パラメータシート定義一覧」の更新対象のレコードの「パラメータシート作成状態」が「未作成」の場合「初期化」および「編集」は実行できません
 
-        # 更新対象レコードの「メニュー作成状態」が「2:作成済み」の場合「新規作成」はできないのでエラー判定
+        # 更新対象レコードの「パラメータシート作成状態」が「2:作成済み」の場合「新規作成」はできないのでエラー判定
         menu_create_done_status = str(current_t_menu_define.get('MENU_CREATE_DONE_STATUS'))
         if type_name == 'create_new' and menu_create_done_status == "2":
-            raise Exception("499-00710", [])  # 「メニュー定義一覧」の更新対象のレコードの「メニュー作成状態」が「作成済み」の場合「新規作成」は実行できません
+            raise Exception("499-00710", [])  # 「パラメータシート定義一覧」の更新対象のレコードの「パラメータシート作成状態」が「作成済み」の場合「新規作成」は実行できません
 
         # 各種メニュー名称を取得
         menu_name_ja = menu_data.get('menu_name')
         menu_name_en = menu_data.get('menu_name')
         menu_name_rest = menu_data.get('menu_name_rest')
 
-        # 「シートタイプ」「縦メニュー利用」を取得
+        # 「シートタイプ」「バンドル」「ホストグループ」を取得
         sheet_type = str(menu_data.get('sheet_type'))
         vertical = menu_data.get('vertical')
+        hostgroup = menu_data.get('hostgroup')
 
-        # 縦メニュー利用有無のkeyが無い場合はFalseを指定
+        # バンドル有無のkeyが無い場合はFalseを指定
         if not vertical:
             vertical = "False"
+
+        # ホストグループ利用有無のkeyが無い場合はFalseを指定
+        if not hostgroup:
+            hostgroup = "False"
 
         # 「初期化」「編集」の場合のみチェックするバリデーション
         if type_name == 'initialize' or type_name == 'edit':
@@ -903,6 +925,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         if type_name == 'edit':
             current_sheet_type = str(current_t_menu_define.get('SHEET_TYPE'))
             current_vertical = str(current_t_menu_define.get('VERTICAL'))
+            current_hostgroup = str(current_t_menu_define.get('HOSTGROUP'))
 
             # シートタイプのIDと名称の紐付け取得
             sheet_type_list = objdbca.table_select(v_menu_sheet_type, 'ORDER BY DISP_SEQ ASC')
@@ -918,6 +941,10 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
             vertical_id = "1" if vertical == "True" else "0"
             if not current_vertical == vertical_id:
                 raise Exception("499-00704", ["vertical"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
+
+            hostgroup_id = "1" if hostgroup == "True" else "0"
+            if not current_hostgroup == hostgroup_id:
+                raise Exception("499-00704", ["hostgroup"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
         # 対象のuuidを取得
         menu_create_id = menu_data.get('menu_create_id')
@@ -937,7 +964,8 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
                     "description_ja": menu_data.get('description'),  # 説明(ja)
                     "description_en": menu_data.get('description'),  # 説明(en)
                     "remarks": menu_data.get('remarks'),  # 備考
-                    "vertical": vertical,  # 縦メニュー利用有無
+                    "vertical": vertical,  # バンドル有無
+                    "hostgroup": hostgroup,  # ホストグループ利用有無
                     "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                     "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
                     "menu_group_for_ref": menu_data.get('menu_group_for_ref'),  # 参照用メニューグループ名
@@ -955,7 +983,8 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
                     "description_ja": menu_data.get('description'),  # 説明(ja)
                     "description_en": menu_data.get('description'),  # 説明(en)
                     "remarks": menu_data.get('remarks'),  # 備考
-                    "vertical": vertical,  # 縦メニュー利用有無
+                    "vertical": vertical,  # バンドル有無
+                    "hostgroup": hostgroup,  # ホストグループ利用有無
                     "menu_group_for_input": menu_data.get('menu_group_for_input'),  # 入力用メニューグループ名
                     "menu_group_for_subst": menu_data.get('menu_group_for_subst'),  # 代入値自動登録用メニューグループ名
                     "menu_group_for_ref": menu_data.get('menu_group_for_ref'),  # 参照用メニューグループ名
@@ -964,7 +993,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
                 "type": "Update"
             }
 
-        # 「メニュー定義一覧」のレコードを更新
+        # 「パラメータシート定義一覧」のレコードを更新
         exec_result = objmenu.exec_maintenance(parameters, menu_create_id)  # noqa: F405
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
@@ -1072,7 +1101,7 @@ def _insert_t_menu_column_group(objdbca, group_data_list):
 
 def _insert_t_menu_column(objdbca, menu_data, column_data_list):
     """
-        【内部呼び出し用】「メニュー項目作成情報」にレコードを登録
+        【内部呼び出し用】「パラメータシート項目作成情報」にレコードを登録
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu_data: 登録対象のメニュー情報
@@ -1087,7 +1116,7 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
         # menu_dataから登録用のメニュー名を取得
         menu_name = menu_data.get('menu_name')
 
-        # 「メニュー項目作成情報」登録処理のループスタート
+        # 「パラメータシート項目作成情報」登録処理のループスタート
         for column_data in column_data_list.values():
             # create_column_idが空(null)のもののみ対象とする
             create_column_id = column_data.get('create_column_id')
@@ -1095,7 +1124,7 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                 # 登録用パラメータを作成
                 column_class = column_data.get('column_class')
                 parameter = {
-                    "menu_name": menu_name,  # メニュー名(「メニュー定義一覧」のメニュー名)
+                    "menu_name": menu_name,  # メニュー名(「パラメータシート定義一覧」のメニュー名)
                     "item_name_ja": column_data.get('item_name'),  # 項目名(ja)
                     "item_name_en": column_data.get('item_name'),  # 項目名(en)
                     "item_name_rest": column_data.get('item_name_rest'),  # 項目名(rest)
@@ -1182,9 +1211,9 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                     parameter["link_maximum_bytes"] = link_maximum_bytes  # リンク 最大バイト数
                     parameter["link_default_value"] = column_data.get('link_default_value')  # リンク 初期値
 
-                # カラムクラス「パラメータシート参照」用のパラメータを追加 (未実装)
-                # if column_class == "LinkIDColumn":
-                #     parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                # カラムクラス「パラメータシート参照」用のパラメータを追加
+                if column_class == "ParameterSheetReference":
+                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
                 parameters = {
                     "parameter": parameter,
                     "type": "Register"
@@ -1207,10 +1236,10 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
 
 def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column_data_list, type_name):  # noqa: C901
     """
-        【内部呼び出し用】「メニュー項目作成情報」のレコードを更新する
+        【内部呼び出し用】「パラメータシート項目作成情報」のレコードを更新する
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            current_t_menu_column_list: 「メニュー項目作成情報」の現在登録されているレコード（対象メニューのMENU_CREATE_IDと紐づいているもの）
+            current_t_menu_column_list: 「パラメータシート項目作成情報」の現在登録されているレコード（対象メニューのMENU_CREATE_IDと紐づいているもの）
             column_data_list: 登録対象のカラム情報一覧
             type_name: 初期化(initialize), 編集(edit)のいずれか
         RETRUN:
@@ -1219,6 +1248,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
     # テーブル/ビュー名
     v_menu_other_link = 'V_MENU_OTHER_LINK'
     v_menu_column_class = 'V_MENU_COLUMN_CLASS'
+    v_menu_parameter_sheet_reference_item = 'V_MENU_PARAMETER_SHEET_REFERENCE_ITEM'
 
     # 変数定義
     lang = g.get('LANGUAGE')
@@ -1240,13 +1270,23 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
             link_pulldown_en = record.get('LINK_PULLDOWN_EN')
             format_other_menu_link_list[record.get('LINK_ID')] = {'link_pulldown_ja': link_pulldown_ja, 'link_pulldown_en': link_pulldown_en}
 
+        # 「パラメータシート参照」項目の対象一覧レコードを取得
+        parameter_sheet_reference_list = objdbca.table_select(v_menu_parameter_sheet_reference_item, 'WHERE DISUSE_FLAG = %s', [0])
+
+        # 「パラメータシート参照」項目の対象のレコードをCOLUMN_DEFINITION_IDをkeyとしたdict型に変換
+        format_parameter_sheet_reference_list = {}
+        for record in parameter_sheet_reference_list:
+            select_full_name_ja = record.get('SELECT_FULL_NAME_JA')
+            select_full_name_en = record.get('SELECT_FULL_NAME_EN')
+            format_parameter_sheet_reference_list[record.get('COLUMN_DEFINITION_ID')] = {'select_full_name_ja': select_full_name_ja, 'select_full_name_en': select_full_name_en}  # noqa: E501
+
         # loadTableの呼び出し
         objmenu = load_table.loadTable(objdbca, 'menu_item_creation_info')  # noqa: F405
 
         # menu_dataから登録用のメニュー名を取得
         menu_name = menu_data.get('menu_name')
 
-        # 「メニュー項目作成情報」更新処理のループスタート
+        # 「パラメータシート項目作成情報」更新処理のループスタート
         for column_data in column_data_list.values():
             # 更新対象のuuidを取得
             create_column_id = column_data.get('create_column_id')
@@ -1394,9 +1434,22 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         if current_link_maximum_bytes > update_link_maximum_bytes:
                             raise Exception("499-00707", [item_name, "link_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
+                    # カラムクラス「パラメータシート参照」の場合のバリデーションチェック
+                    if column_class == "ParameterSheetReference":
+                        update_parameter_sheet_reference = column_data.get('parameter_sheet_reference')
+
+                        # 現在設定されているIDのparameter_sheet_referenceを取得
+                        current_parameter_sheet_reference_id = target_record.get('PARAM_SHEET_LINK_ID')
+                        current_parameter_sheet_reference_data = format_parameter_sheet_reference_list.get(current_parameter_sheet_reference_id)
+                        current_parameter_sheet_reference = current_parameter_sheet_reference_data.get('select_full_name_' + lang.lower())
+
+                        # pulldown_selectionが変更されている場合エラー判定
+                        if not update_parameter_sheet_reference == current_parameter_sheet_reference:
+                            raise Exception("499-00706", [item_name, "parameter_sheet_reference"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+
                 # 更新用パラメータを作成
                 parameter = {
-                    "menu_name": menu_name,  # メニュー名(「メニュー定義一覧」のメニュー名)
+                    "menu_name": menu_name,  # メニュー名(「パラメータシート定義一覧」のメニュー名)
                     "item_name_ja": item_name,  # 項目名(ja)
                     "item_name_en": item_name,  # 項目名(en)
                     "item_name_rest": column_data.get('item_name_rest'),  # 項目名(rest)
@@ -1503,9 +1556,9 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     parameter["link_maximum_bytes"] = column_data.get('link_maximum_bytes')  # リンク 最大バイト数
                     parameter["link_default_value"] = column_data.get('link_default_value')  # リンク 初期値
 
-                # カラムクラス「パラメータシート参照」用のパラメータを追加 (未実装)
-                # if column_class == "LinkIDColumn":
-                #     parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                # カラムクラス「パラメータシート参照」用のパラメータを追加
+                if column_class == "ParameterSheetReference":
+                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
 
                 parameters = {
                     "parameter": parameter,
@@ -1529,10 +1582,10 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
 def _disuse_t_menu_column(objdbca, current_t_menu_column_list, column_data_list):
     """
-        【内部呼び出し用】「メニュー項目作成情報」の不要なレコードを調査し廃止する
+        【内部呼び出し用】「パラメータシート項目作成情報」の不要なレコードを調査し廃止する
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            current_t_menu_column_list: 「メニュー項目作成情報」の現在登録されているレコード（対象メニューのMENU_CREATE_IDと紐づいているもの）
+            current_t_menu_column_list: 「パラメータシート項目作成情報」の現在登録されているレコード（対象メニューのMENU_CREATE_IDと紐づいているもの）
             column_data_list: 登録対象のカラム情報一覧
         RETRUN:
             boolean, result_code, msg_args
@@ -1723,7 +1776,7 @@ def _disuse_t_menu_unique_constraint(objdbca, target_record):
 
 def _insert_t_menu_role(objdbca, menu_name, role_list):
     """
-        【内部呼び出し用】「メニュー-ロール作成情報」にレコードを登録する
+        【内部呼び出し用】「パラメータシートロール作成情報」にレコードを登録する
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu_name: 対象のメニュー名
@@ -1760,7 +1813,7 @@ def _insert_t_menu_role(objdbca, menu_name, role_list):
 
 def _disuse_t_menu_role(objdbca, role_list, current_role_dict):
     """
-        【内部呼び出し用】「メニュー-ロール作成情報」のレコードを廃止する
+        【内部呼び出し用】「パラメータシートロール作成情報」のレコードを廃止する
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu_name: 対象のメニュー名
@@ -1800,12 +1853,12 @@ def _disuse_t_menu_role(objdbca, role_list, current_role_dict):
 
 def _insert_t_menu_create_history(objdbca, menu_create_id, status_id, create_type, user_id):
     """
-        【内部呼び出し用】「メニュー作成履歴」にレコードを登録
+        【内部呼び出し用】「パラメータシート作成履歴」にレコードを登録
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
-            menu_create_id: 「メニュー定義一覧」の対象レコードのUUID
-            status_id: 「メニュー作成履歴」のステータスID
-            create_type: 「メニュー作成履歴」の作成タイプ
+            menu_create_id: 「パラメータシート定義一覧」の対象レコードのUUID
+            status_id: 「パラメータシート作成履歴」のステータスID
+            create_type: 「パラメータシート作成履歴」の作成タイプ
             user_id: ユーザID
         RETRUN:
             boolean, result_code, msg_args, history_id
@@ -1854,8 +1907,11 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         # シートタイプのIDを取得
         sheet_type_name = menu_data.get('sheet_type')
 
-        # 縦メニュー利用を取得
+        # バンドル有無を取得
         vertical = menu_data.get('vertical')
+
+        # ホストグループ利用を取得
+        hostgroup = menu_data.get('hostgroup')
 
         # シートタイプ一覧情報を取得
         ret = objdbca.table_select(v_menu_sheet_type, 'WHERE DISUSE_FLAG = %s', [0])
@@ -1868,9 +1924,24 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
         if sheet_id == "2" and not column_data_list:
             raise Exception("499-00711", [])  # シートタイプが「データシート」の場合、項目数が0件のメニューを作成できません。
 
-        # 「縦メニュー利用」かつ、登録する項目が無い場合エラー判定
+        # シートタイプが「3: パラメータシート（オペレーションあり）」かつ、登録する項目が無い場合エラー判定
+        if sheet_id == "3" and not column_data_list:
+            raise Exception("499-00714", [])  # シートタイプが「パラメータシート（オペレーションあり）」の場合、項目数が0件のメニューを作成できません。
+
+        # 「バンドル」有効かつ、登録する項目が無い場合エラー判定
         if vertical == "True" and not column_data_list:
-            raise Exception("499-00712", [])  # 「縦メニュー利用」の場合、項目数が0件のメニューを作成できません。
+            raise Exception("499-00712", [])  # 「バンドル」が有効の場合、項目数が0件のメニューを作成できません。
+
+        # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
+        if sheet_id == "2" and hostgroup == "True":
+            raise Exception("499-00713", [])
+
+        # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」以外で「パラメータシート参照」項目を利用している場合
+        if not sheet_id == "1":
+            for column_data in column_data_list.values():
+                column_class = column_data.get('column_class')
+                if column_class == "ParameterSheetReference":
+                    raise Exception("499-00715", [])
 
         # ロールを取得
         role_list = menu_data.get('role_list')

@@ -14,6 +14,7 @@
 
 import os
 import sys
+import json
 from flask import g
 
 # import column_class
@@ -50,20 +51,20 @@ class IDColumn(Column):
                 col_name = objcol.get('COL_NAME')
 
         self.col_name = col_name
-        
+
         # rest用項目名
         self.rest_key_name = rest_key_name
 
         self.db_qm = "'"
 
         self.objdbca = objdbca
-        
+
         self.cmd_type = cmd_type
 
         self.id_data_list = {}
 
         self.data_list_set_flg = False
-        
+
     def get_id_data_list(self):
         """
             データリストを取得する
@@ -72,7 +73,7 @@ class IDColumn(Column):
             RETRUN:
                 データリスト
         """
-        
+
         if self.data_list_set_flg:
             return self.id_data_list
         else:
@@ -117,7 +118,7 @@ class IDColumn(Column):
 
         for record in return_values:
             values[record[ref_pkey_name]] = record[ref_col_name]
-        
+
         # 自テーブル名と参照先テーブル名が同一の場合、data_list_set_flgをFalseに設定する
         if self.table_name == ref_table_name:
             self.data_list_set_flg = False
@@ -197,7 +198,7 @@ class IDColumn(Column):
         retBool = True
 
         return_values = self.get_values_by_value([val])
-        
+
         # 返却値が存在するか確認
         if len(return_values) == 0:
             retBool = False
@@ -205,7 +206,7 @@ class IDColumn(Column):
             msg_args = [val]
             msg = g.appmsg.get_api_message(status_code, msg_args)
             return retBool, msg
-        
+
         return retBool,
 
     # [load_table] 値を入力用の値へ変換
@@ -245,7 +246,7 @@ class IDColumn(Column):
 
         retBool = True
         msg = ''
-        
+
         if val is not None:
 
             return_values = self.get_values_by_key([val])
@@ -256,7 +257,7 @@ class IDColumn(Column):
                 status_code = 'MSG-00001'
                 msg_args = [val]
                 val = g.appmsg.get_api_message(status_code, msg_args)
-                
+
         return retBool, msg, val,
 
     # [filter] SQL生成用のwhere句
@@ -303,9 +304,14 @@ class IDColumn(Column):
 
                     if len(str_where) != 0:
                         conjunction = 'or'
-                    str_where = str_where + ' ' + conjunction + ' JSON_CONTAINS(`{}`, \'"{}"\', "$.{}")'.format(
+                    bindvalue = json.dumps(bindvalue)
+                    bindkey = "__{}__{}__".format(self.get_col_name(), listno)
+                    bindkeys.append(bindkey)
+                    bindvalues.setdefault(bindkey, bindvalue)
+                    listno = listno + 1
+                    str_where = str_where + ' ' + conjunction + ' JSON_CONTAINS(`{}`, {}, "$.{}")'.format(
                         self.get_col_name(),
-                        bindvalue,
+                        bindkey,
                         self.get_rest_key_name()
                     )
                 if len(str_where) != 0:

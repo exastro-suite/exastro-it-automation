@@ -51,7 +51,7 @@ class AppLog:
         isMyapp = True if os.getenv('IS_MYAPP') == "1" else False
 
         # read config.yml
-        with open('logging.yml', 'r') as yml:
+        with open(os.getenv('PYTHONPATH') + 'logging.yml', 'r') as yml:
             dictConfig = yaml.safe_load(yml)
 
         self.__create_instance(isMyapp, dictConfig)
@@ -64,7 +64,7 @@ class AppLog:
             isMyapp: (bool) True : no-container-app, False : container-app(Saas)
             dictConfig: (dict) logging dict-config
         Returns:
-            
+
         """
         self.__name__ = "fileAppLogger" if isMyapp is True else "stdAppLogger"
 
@@ -82,7 +82,7 @@ class AppLog:
         logging.config.dictConfig(self._config)
         # set instance
         self.__logger_obj = logging.getLogger(self.__name__)
-        self.info("AppLog instance({}) is created".format(self.__name__))
+        self.debug("AppLog instance({}) is created".format(self.__name__))
 
     def set_user_setting(self, wsdb_instance):
         """

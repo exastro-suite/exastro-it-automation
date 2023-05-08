@@ -24,6 +24,7 @@ ENV USER_ID="30101"
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
+ENV SERVICE_NAME=ita-by-conductor-synchronize
 
 RUN dnf install -y \
     gcc \
@@ -70,7 +71,9 @@ RUN dnf install -y \
 
 USER $USERNAME
 
-RUN mkdir ~/.config
+RUN mkdir ~/.config \
+&& mkdir ~/.vscode-server \
+&& mkdir ~/.vscode-server-insiders
 
 WORKDIR $APP_PATH
 

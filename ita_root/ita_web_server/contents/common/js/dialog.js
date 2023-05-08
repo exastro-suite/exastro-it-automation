@@ -264,7 +264,7 @@ header() {
           h = d.config.header,
           className = ['dialogHeader'],
           html = [];
-    if ( h.title ) html.push(`<div class="dialogHeaderTitle">${h.title}</div>`);
+    if ( h.title ) html.push(`<div class="dialogHeaderTitle"><span class="dialogHeaderTitleInner">${h.title}</span></div>`);
     if ( h.move ) className.push('dialogHeaderMove');
     if ( h.close ) html.push(`<div class="dialogHeaderClose">${d.button('dialogButton dialogHeaderCloseButton', 'close')}</div>`);
     return `<div class="${className.join(' ')}">${html.join('')}</div>`;
@@ -301,12 +301,14 @@ footer() {
     if ( f.button ) {
         const buttonHtml = [];
         for ( const kind in f.button ) {
-            const className = ['itaButton', 'dialogButton', 'dialogFooterMenuButton'];
+            const className = ['itaButton', 'dialogButton', 'dialogFooterMenuButton'],
+                  listAttr = ['class="dialogFooterMenuItem"'];
             if ( f.button[ kind ].className ) className.push( f.button[ kind ].className );
+            if ( f.button[ kind ].separate ) listAttr.push('style="margin-left:auto;"')
             
             const button = fn.html.button( f.button[kind].text, className,
-                { kind: kind, action: f.button[kind].action, style: f.button[kind].style, disabled: 'disabled'});
-            buttonHtml.push(`<li class="dialogFooterMenuItem">${button}</li>`);
+                { kind: kind, action: f.button[kind].action, style: f.button[kind].style, disabled: 'disabled'}, { minWidth:f.button[kind].width });
+            buttonHtml.push(`<li ${listAttr.join(' ')}>${button}</li>`);
         }
         html.push(`<ul class="dialogFooterMenuList">${buttonHtml.join('')}</ul>`);
     }
@@ -344,6 +346,18 @@ buttonPositiveDisabled( flag ) {
     const d = this;
     
     d.$.header.add( d.$.footer ).find('.dialogPositive').prop('disabled', flag );
+}
+/*
+--------------------------------------------------
+   Modal body print
+--------------------------------------------------
+*/
+printBody() {
+    const d = this;
+    
+    d.$.body.addClass('dialogPrintMode');
+    window.print();
+    d.$.body.removeClass('dialogPrintMode');
 }
 /*
 --------------------------------------------------

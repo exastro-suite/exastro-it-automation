@@ -125,7 +125,7 @@ class AnscConst:
     DF_ITA_LOCAL_PKEY = '__ITA_LOCAL_COLUMN_4__'
 
     # ansible-vault command default password
-    DF_ANSIBLE_VAULT_PASSWORD ="2FP7-DPJ7-6P6B-B7E2"
+    DF_ANSIBLE_VAULT_PASSWORD = "2FP7-DPJ7-6P6B-B7E2"
     ############################################################
     # 変数定義の変数名定義判定配列
     # parant  :親変数名として利用可否
@@ -181,12 +181,12 @@ class AnscConst:
     # WINRM接続ポート デフォルト値
     LC_WINRM_PORT = 5985
 
-
     # ITA独自変数名
+    # ITA独自変数が追加になったらUnmanaged_ITA_sp_varlistとCannotValueAssign_ITA_sp_varlistに追加する
     ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME = "__loginprotocol__"
     ITA_SP_VAR_ANS_USERNAME_VAR_NAME = "__loginuser__"
     ITA_SP_VAR_ANS_PASSWD_VAR_NAME = "__loginpassword__"
-    ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME = "__loginhostname__"
+    ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME = "__inventory_hostname__"
     ITA_SP_VAR_ANS_OUTDIR_VAR_NAME = "__workflowdir__"
     ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME = "__conductor_workflowdir__"
     ITA_SP_VAR_OPERATION_VAR_NAME = "__operation__"
@@ -196,6 +196,10 @@ class AnscConst:
     ITA_SP_VAR_OUT_PARAM_FILE_DIR = "__parameters_file_dir__"
     ITA_SP_VAR_MOVEMENT_STS_FILE = "__movement_status_filepath__"
     ITA_SP_VAR_CONDUCTOR_ID = "__conductor_id__"
+    ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME = "__dnshostname__"
+    ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME = "__ipaddress__"
+    # pioneerモジュール実行時のホスト名として使用
+    ITA_SP_VAR_TARGETHOSTNAME_VAR_NAME = "__logintarget__"
     ITA_SP_VAR_CPF_VAR_NAME = "CPF_[0-9a-zA-Z_]*"
     ITA_SP_VAR_TPF_VAR_NAME = "TPF_[0-9a-zA-Z_]*"
     ITA_SP_VAR_GBL_VAR_NAME = "GBL_[0-9a-zA-Z_]*"
@@ -203,8 +207,10 @@ class AnscConst:
     # 変数抜出から除外するITA独自変数リスト
     Unmanaged_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
                                 ITA_SP_VAR_ANS_USERNAME_VAR_NAME,
+                                ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME,
+                                ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME,
                                 ITA_SP_VAR_ANS_PASSWD_VAR_NAME,
-                                ITA_SP_VAR_ANS_LOGINHOST_VAR_NAME,
+                                ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME,
                                 ITA_SP_VAR_ANS_OUTDIR_VAR_NAME,
                                 ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME,
                                 ITA_SP_VAR_OPERATION_VAR_NAME,
@@ -217,3 +223,19 @@ class AnscConst:
                                 ITA_SP_VAR_CPF_VAR_NAME,
                                 ITA_SP_VAR_TPF_VAR_NAME,
                                 ITA_SP_VAR_GBL_VAR_NAME]
+
+    CannotValueAssign_ITA_sp_varlist = [ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME,
+                                        ITA_SP_VAR_ANS_USERNAME_VAR_NAME,
+                                        ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME,
+                                        ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME,
+                                        ITA_SP_VAR_ANS_PASSWD_VAR_NAME,
+                                        ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME,
+                                        ITA_SP_VAR_ANS_OUTDIR_VAR_NAME,
+                                        ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME,
+                                        ITA_SP_VAR_OPERATION_VAR_NAME,
+                                        ITA_SP_VAR_IN_PARAM_DIR_EPC,
+                                        ITA_SP_VAR_IN_PARAM_FILE_DIR_EPC,
+                                        ITA_SP_VAR_OUT_PARAM_DIR,
+                                        ITA_SP_VAR_OUT_PARAM_FILE_DIR,
+                                        ITA_SP_VAR_MOVEMENT_STS_FILE,
+                                        ITA_SP_VAR_CONDUCTOR_ID]

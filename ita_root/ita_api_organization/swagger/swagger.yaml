@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: 2.0.3
+  version: 2.1.0
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -18,10 +18,10 @@ servers:
   description: API endpoint (Development)
   variables:
     protocol:
+      default: https
       enum:
       - http
       - https
-      default: https
     host:
       default: localhost
     port:
@@ -42,11 +42,19 @@ tags:
 - name: System Info
   description: ITAの情報取得
 - name: Menu Create
-  description: メニュー作成機能
+  description: パラメータシート作成機能
 - name: Conductor Controll
   description: Conductorの情報取得・操作
 - name: Driver Controll
   description: Driverの情報取得・操作
+- name: Export Import
+  description: データのエクスポート・インポート
+- name: Compare Controll
+  description: 比較の情報取得・操作
+- name: Terraform Cloud EP
+  description: Terraform Cloud/Enterpriseとの連携
+- name: CI/CD for IaC
+  description: CI/CD for IaCの操作
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
     get:
@@ -978,7 +986,7 @@ paths:
     get:
       tags:
       - User Info
-      description: ユーザの権限情報を取得する
+      description: ユーザの権限情報とWebのテーブル設定を取得する
       operationId: get_user_auth
       parameters:
       - name: organization_id
@@ -1103,12 +1111,61 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.user_info_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/version/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/table_settings/:
+    post:
+      tags:
+      - User Info
+      description: Webのテーブル設定を登録する
+      operationId: post_table_settings
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: テーブル設定
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.user_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/user/dashboard/:
     get:
       tags:
-      - System Info
-      description: ITAのバージョン情報を取得する
-      operationId: get_ita_version
+      - User Info
+      description: Dashboardのwidget設定を取得する
+      operationId: get_widget_settings
       parameters:
       - name: organization_id
         in: path
@@ -1145,12 +1202,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.user_info_controller
+    post:
+      tags:
+      - User Info
+      description: Dashboardのwidget設定を登録する
+      operationId: post_widget_settings
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: widget設定
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.user_info_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/version/:
+    get:
+      tags:
+      - System Info
+      description: ITAのバージョン情報を取得する
+      operationId: get_ita_version
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.system_info_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/execute/:
     post:
       tags:
       - Menu Create
-      description: メニュー作成実行
+      description: パラメータシート作成実行
       operationId: execute_menu_create
       parameters:
       - name: organization_id
@@ -1173,14 +1321,14 @@ paths:
         content:
           application/json:
             schema:
-              description: 作成対象のメニュー定義一覧IDを指定(複数指定可)
+              description: 作成対象のパラメータシート定義一覧IDを指定(複数指定可)
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -1198,7 +1346,7 @@ paths:
     post:
       tags:
       - Menu Create
-      description: メニュー定義および作成の実行
+      description: パラメータシート定義および作成の実行
       operationId: define_and_execute_menu_create
       parameters:
       - name: organization_id
@@ -1221,14 +1369,14 @@ paths:
         content:
           application/json:
             schema:
-              description: メニュー定義用パラメータ
+              description: パラメータシート定義用パラメータ
       responses:
         "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -1246,7 +1394,7 @@ paths:
     get:
       tags:
       - Menu Create
-      description: メニュー定義・作成(新規)用の情報取得
+      description: パラメータシート定義・作成(新規)用の情報取得
       operationId: get_menu_create_data
       parameters:
       - name: organization_id
@@ -1271,7 +1419,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -1289,7 +1437,7 @@ paths:
     get:
       tags:
       - Menu Create
-      description: メニュー定義・作成(既存)用の情報取得
+      description: パラメータシート定義・作成(既存)用の情報取得
       operationId: get_exist_menu_create_data
       parameters:
       - name: organization_id
@@ -1310,7 +1458,7 @@ paths:
           type: string
       - name: menu_create
         in: path
-        description: 「メニュー定義一覧」の「メニュー名(REST)」
+        description: 「パラメータシート定義一覧」の「メニュー名(REST)」
         required: true
         style: simple
         explode: false
@@ -1322,7 +1470,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -1381,7 +1529,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -1440,7 +1588,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -1607,7 +1755,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -1672,7 +1820,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2020,7 +2168,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2202,7 +2350,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2266,7 +2414,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2338,7 +2486,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2640,6 +2788,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/execute_delete_resource/:
+    post:
+      tags:
+      - Driver Controll
+      description: Driver作業実行(リソース削除)
+      operationId: post_driver_execute_delete_resource
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/driver_execute_delete_resource_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_18'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.driver_controll_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/:
     get:
       tags:
@@ -2685,7 +2889,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2744,7 +2948,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2803,7 +3007,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_12'
+                $ref: '#/components/schemas/inline_response_200_11'
         "401":
           description: Unauthorized
           content:
@@ -2999,6 +3203,1812 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.driver_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/export/info/:
+    get:
+      tags:
+      - Export Import
+      description: メニューエクスポート対象メニュー一覧取得
+      operationId: get_menu_export_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/bulk/export/execute/:
+    post:
+      tags:
+      - Export Import
+      description: メニュー一括エクスポート実行
+      operationId: execute_menu_bulk_export
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/export_execute_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/upload/:
+    post:
+      tags:
+      - Export Import
+      description: メニューインポートのアップロード
+      operationId: post_menu_import_upload
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/import_upload_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/import/execute/:
+    post:
+      tags:
+      - Export Import
+      description: メニューインポート実行
+      operationId: execute_menu_import
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/import_execute_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/export/info/:
+    get:
+      tags:
+      - Export Import
+      description: Excel一括エクスポート対象メニュー一覧取得
+      operationId: get_excel_bulk_export_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/export/execute/:
+    post:
+      tags:
+      - Export Import
+      description: Excel一括エクスポート実行
+      operationId: execute_excel_bulk_export
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/export_execute_body_1'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/upload/:
+    post:
+      tags:
+      - Export Import
+      description: Excel一括インポートのアップロード
+      operationId: post_excel_bulk_upload
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bulk_upload_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/excel/bulk/import/execute/:
+    post:
+      tags:
+      - Export Import
+      description: Excel一括インポート実行
+      operationId: execute_excel_bulk_import
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/import_execute_body_1'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.export_import_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/info/:
+    get:
+      tags:
+      - Compare Controll
+      description: 比較実行の基本情報取得
+      operationId: get_compares_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/info/:
+    get:
+      tags:
+      - Compare Controll
+      description: "Compare,Deviceのメニューの基本情報および項目情報を取得する"
+      operationId: get_compare_execute_info
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_20'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/:
+    post:
+      tags:
+      - Compare Controll
+      description: "Compare,Deviceを対象に、検索条件を指定し、レコードを取得する"
+      operationId: post_copmare_execute_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: compare_list or device_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/filter_target_body_2'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/filter/{target}/search/candidates/{column}/:
+    get:
+      tags:
+      - Compare Controll
+      description: 表示フィルタで利用するプルダウン検索の候補一覧を取得する
+      operationId: get_compare_execute_search_candidates
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: target
+        in: path
+        description: conductor_list or operation_list
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: REST用項目名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/:
+    post:
+      tags:
+      - Compare Controll
+      description: 比較実行
+      operationId: post_compare_execute
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/compare_execute_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/output/:
+    post:
+      tags:
+      - Compare Controll
+      description: 比較実行ファイル出力
+      operationId: post_compare_execute_output
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/execute_output_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_21'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/:
+    post:
+      tags:
+      - Compare Controll
+      description: 比較実行(ファイル)
+      operationId: post_compare_execute_file
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/execute_file_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.compare_controll_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからOrganizationの一覧を取得する
+      operationId: get_terraform_organization_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+    post:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseにOrganizationを作成する
+      operationId: create_terraform_organization
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/terraform_organization_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/:
+    delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているOrganizationを削除する
+      operationId: delete_terraform_organization
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+    patch:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているOrganizationを更新する
+      operationId: update_terraform_organization
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/organization_tf_organization_name_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/check/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 対象のOrganizatinoの連携状態を確認する
+      operationId: check_terraform_organization
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからWorkspaceの一覧を取得する
+      operationId: get_terraform_workspace_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/:
+    post:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseにWorkspaceを作成する
+      operationId: create_terraform_workspace
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/workspace_tf_organization_name_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/workspace/{tf_organization_name}/{tf_workspace_name}/:
+    delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているWorkspaceを削除する
+      operationId: delete_terraform_workspace
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_workspace_name
+        in: path
+        description: Terraform Workspace Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+    patch:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/Enterpriseに登録されているWorkspaceを更新する
+      operationId: update_terraform_workspace
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_workspace_name
+        in: path
+        description: Terraform Workspace Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tf_organization_name_tf_workspace_name_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/organization/{tf_organization_name}/{tf_workspace_name}/check/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 対象のWorkspaceの連携状態を確認する
+      operationId: check_terraform_workspace
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_workspace_name
+        in: path
+        description: Terraform Workspace Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicyの一覧を取得する
+      operationId: get_terraform_policy_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/download/{policy_name}/:
+    post:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicyコードをダウンロードする
+      operationId: get_terraform_policy_file
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/download_policy_name_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policy/{tf_organization_name}/delete/{policy_name}/:
+    delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicyを削除する
+      operationId: delete_terraform_policy
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/:
+    get:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetの一覧を取得する
+      operationId: get_terraform_policy_set_list
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/delete/{policy_set_name}/:
+    delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetを削除する
+      operationId: delete_terraform_policy_set
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_set_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/workspace/{tf_workspace_name}/
+  : delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetとWorkspaceの紐付けを解除する
+      operationId: delete_terraform_policy_set_relationship_workspace
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_set_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_workspace_name
+        in: path
+        description: Terraform Workspace Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  ? /api/{organization_id}/workspaces/{workspace_id}/ita/terraform/policyset/{tf_organization_name}/relationship/{policy_set_name}/policy/{policy_name}/
+  : delete:
+      tags:
+      - Terraform Cloud EP
+      description: 連携しているTerraform Cloud/EnterpriseからPolicySetとPolicyの紐付けを解除する
+      operationId: delete_terraform_policy_set_relationship_policy
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: tf_organization_name
+        in: path
+        description: Terraform Organization Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_set_name
+        in: path
+        description: Policy Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: policy_name
+        in: path
+        description: Terraform Workspace Name
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.terraform_cloud_ep_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/repository/{uuid}/:
+    post:
+      tags:
+      - CI/CD for IaC
+      description: リモートリポジトリの再開
+      operationId: post_cicd_for_iac_resume_repository
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: uuid
+        in: path
+        description: uuid
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.cicd_for_ia_c_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/cicd_for_iac/resume/file_link/{uuid}/:
+    post:
+      tags:
+      - CI/CD for IaC
+      description: 資材紐付の再開
+      operationId: post_cicd_for_iac_resume_filelink
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: uuid
+        in: path
+        description: uuid
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.cicd_for_ia_c_controller
 components:
   schemas:
     TABLE:
@@ -3771,6 +5781,7 @@ components:
           - role1
           - role2
           - role3
+          table_settings: {}
           workspaces:
           - workspace1
           - workspace2
@@ -3872,6 +5883,20 @@ components:
           type: string
           example: 000-00000
         data:
+          type: boolean
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: true
+        message: message
+    inline_response_200_12:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
           type: object
           example:
             version: string
@@ -3887,20 +5912,6 @@ components:
           installed_driver:
           - string
           - string
-        message: message
-    inline_response_200_12:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: boolean
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: true
         message: message
     inline_response_200_13:
       type: object
@@ -4179,6 +6190,12 @@ components:
           type: string
           example: YYYY/MM/DD hh:mm
       description: 作業実行するDriverの構成情報
+    driver_execute_delete_resource_body:
+      type: object
+      properties:
+        tf_workspace_name:
+          type: string
+      description: 作業実行するDriverの構成情報
     inline_response_200_19:
       type: object
       properties:
@@ -4265,6 +6282,224 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
+    export_execute_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    import_upload_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    import_execute_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    export_execute_body_1:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    bulk_upload_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    import_execute_body_1:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    inline_response_200_20:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_20_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          device_list: null
+          compare_list:
+            column_group_info:
+              key:
+                parent_column_group_name: parent_column_group_name
+                columns:
+                - ""
+                - ""
+                parent_column_group_id: parent_column_group_id
+                column_group_id: column_group_id
+                column_group_name: column_group_name
+            menu_info:
+              sheet_type: sheet_type
+              history_table_flag: true
+              row_update_flag: true
+              web_print_limit: 7
+              initial_filter_flg: true
+              columns:
+              - ""
+              - ""
+              row_reuse_flag: true
+              vertical: true
+              row_insert_flag: true
+              privilege: 2
+              row_disuse_flag: true
+              table_name: table_name
+              parent_menu_group_name: parent_menu_group_name
+              menu_name: menu_name
+              menu_group_name: menu_group_name
+              auto_filter_flg: true
+              menu_id: menu_id
+              view_name: view_name
+              web_print_confirm: 9
+              pk_column_name_rest: pk_column_name_rest
+              sort_key: sort_key
+              parent_menu_group_id: parent_menu_group_id
+              menu_group_id: menu_group_id
+              xls_print_limit: 3
+              menu_info: menu_info
+              inherit: true
+              login_necessity: true
+            column_info:
+              key:
+                initial_value: initial_value
+                column_disp_seq: 6
+                required_item: 2
+                ref_table_name: ref_table_name
+                save_type: save_type
+                column_name: column_name
+                unique_item: 5
+                description: description
+                input_item: 5
+                before_validate_register: {}
+                col_name: col_name
+                column_name_rest: column_name_rest
+                column_id: column_id
+                ref_multi_lang: ref_multi_lang
+                validate_option: {}
+                ref_pkey_name: ref_pkey_name
+                auto_input: 1
+                view_item: view_item
+                ref_col_name: ref_col_name
+                column_group_id: column_group_id
+                after_validate_register: {}
+                column_type: 0
+                column_group_name: column_group_name
+                ref_sort_conditions: ref_sort_conditions
+        message: message
+    filter_target_body_2:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    compare_execute_body:
+      properties:
+        compare:
+          type: string
+          example: compare_name
+        base_date_1:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        base_date_2:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        host:
+          type: array
+          items:
+            example: host_name
+      description: 比較条件を設定
+    execute_output_body:
+      properties:
+        compare:
+          type: string
+          example: compare_name
+        base_date_1:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        base_date_2:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        host:
+          type: array
+          items:
+            example: host_name
+      description: 比較条件を設定
+    inline_response_200_21:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_21_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
+          file_data: Compare result base64 string
+        message: message
+    execute_file_body:
+      properties:
+        compare:
+          type: string
+          example: compare_name
+        base_date_1:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        base_date_2:
+          type: string
+          example: YYYY/MM/DD hh:mm:ss
+        host:
+          type: string
+          example: host_name
+        copmare_target_column:
+          type: string
+          example: target_colum
+      description: 比較条件を設定
+    terraform_organization_body:
+      properties:
+        tf_organization_name:
+          type: string
+          example: example_organization
+        email_address:
+          type: string
+          example: example@example.com
+      description: Organization名およびemailを指定
+    organization_tf_organization_name_body:
+      properties:
+        email_address:
+          type: string
+          example: example@example.com
+      description: emailを指定
+    workspace_tf_organization_name_body:
+      properties:
+        tf_workspace_name:
+          type: string
+          example: example_workspace
+        terraform_version:
+          type: string
+          example: 1.0.0
+      description: Workspace名およびVersionを指定(Versionがnullの場合、自動的に最新のVersionが適用されます。)
+    tf_organization_name_tf_workspace_name_body:
+      properties:
+        terraform_version:
+          type: string
+          example: 1.0.0
+      description: Versionを指定
+    download_policy_name_body:
+      properties:
+        download_path:
+          type: string
+          example: /api/v2/policies/pol-xxxxxxxxxx/download
+      description: policyコードのダウンロードパスを記載
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:
@@ -4446,6 +6681,8 @@ components:
           - workspace1
           - workspace2
           - workspace3
+        table_settings:
+          type: object
       example:
         user_id: id-xxxxxxxx
         user_name: User Name
@@ -4453,6 +6690,7 @@ components:
         - role1
         - role2
         - role3
+        table_settings: {}
         workspaces:
         - workspace1
         - workspace2
@@ -4826,6 +7064,93 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
+    inline_response_200_20_data:
+      type: object
+      properties:
+        compare_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+        device_list:
+          $ref: '#/components/schemas/inline_response_200_data'
+      example:
+        device_list: null
+        compare_list:
+          column_group_info:
+            key:
+              parent_column_group_name: parent_column_group_name
+              columns:
+              - ""
+              - ""
+              parent_column_group_id: parent_column_group_id
+              column_group_id: column_group_id
+              column_group_name: column_group_name
+          menu_info:
+            sheet_type: sheet_type
+            history_table_flag: true
+            row_update_flag: true
+            web_print_limit: 7
+            initial_filter_flg: true
+            columns:
+            - ""
+            - ""
+            row_reuse_flag: true
+            vertical: true
+            row_insert_flag: true
+            privilege: 2
+            row_disuse_flag: true
+            table_name: table_name
+            parent_menu_group_name: parent_menu_group_name
+            menu_name: menu_name
+            menu_group_name: menu_group_name
+            auto_filter_flg: true
+            menu_id: menu_id
+            view_name: view_name
+            web_print_confirm: 9
+            pk_column_name_rest: pk_column_name_rest
+            sort_key: sort_key
+            parent_menu_group_id: parent_menu_group_id
+            menu_group_id: menu_group_id
+            xls_print_limit: 3
+            menu_info: menu_info
+            inherit: true
+            login_necessity: true
+          column_info:
+            key:
+              initial_value: initial_value
+              column_disp_seq: 6
+              required_item: 2
+              ref_table_name: ref_table_name
+              save_type: save_type
+              column_name: column_name
+              unique_item: 5
+              description: description
+              input_item: 5
+              before_validate_register: {}
+              col_name: col_name
+              column_name_rest: column_name_rest
+              column_id: column_id
+              ref_multi_lang: ref_multi_lang
+              validate_option: {}
+              ref_pkey_name: ref_pkey_name
+              auto_input: 1
+              view_item: view_item
+              ref_col_name: ref_col_name
+              column_group_id: column_group_id
+              after_validate_register: {}
+              column_type: 0
+              column_group_name: column_group_name
+              ref_sort_conditions: ref_sort_conditions
+    inline_response_200_21_data:
+      type: object
+      properties:
+        file_name:
+          type: string
+          example: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
+        file_data:
+          type: string
+          example: Compare result base64 string
+      example:
+        file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
+        file_data: Compare result base64 string
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid
@@ -4835,10 +7160,10 @@ components:
       description: Credentials or access token for API
       scheme: bearer
       bearerFormat: JWT
-      x-bearerInfoFunc: controllers.authorization_controller.check_BearerAuth
+      x-bearerInfoFunc: swagger_server.controllers.authorization_controller.check_BearerAuth
     BasicAuth:
       type: http
       description: Value converted from ID/Password in base64
       scheme: basic
-      x-basicInfoFunc: controllers.authorization_controller.check_BasicAuth
+      x-basicInfoFunc: swagger_server.controllers.authorization_controller.check_BasicAuth
 

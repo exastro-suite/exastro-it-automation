@@ -57,8 +57,30 @@ class MovementVarsLinkTable(TableBase):
 
         user_id = g.get('USER_ID')
 
-        # 登録
         for_register_keys = extracted_keys - stored_keys
+
+        # 変数タイプが変更されている場合の更新
+        update_list = []
+        for key in extracted_keys:
+            # 新規データ判定
+            if key in for_register_keys:
+                continue
+            # 変数タイプが変更されている場合
+            if extracted_records_by_tuple_key[key].var_attr != stored_records_by_tuple_key[key]['VARS_ATTRIBUTE_01']:
+                update_list.append({
+                'MVMT_VAR_LINK_ID': stored_records_by_tuple_key[key]['MVMT_VAR_LINK_ID'],
+                'VARS_ATTRIBUTE_01': extracted_records_by_tuple_key[key].var_attr,
+                'LAST_UPDATE_USER': user_id
+            })
+
+        # 登録
+        ret = self._ws_db.table_update(self.table_name, update_list, self.pkey, False)
+        if ret is False:
+            result_code = "BKY-30011"
+            log_msg_args = [self.table_name]
+            raise AppException(result_code, log_msg_args)
+
+        # 登録
         register_list = []
         for key in for_register_keys:
             var_item = extracted_records_by_tuple_key[key]

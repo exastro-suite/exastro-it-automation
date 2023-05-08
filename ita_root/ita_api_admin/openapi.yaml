@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API (System Management)
   description: Exastro IT Automation API for System Manager
-  version: 2.0.3
+  version: 2.1.0
 
 servers:
   - url: "https://{host}"
@@ -35,6 +35,9 @@ tags:
     description: Workspace作成(Exastro Platform連携用) ※利用不可
   - name: Initial Settings Ansible
     description: 初期データ設定(Ansible)
+  - name: LogLevel Settings
+    description: ログレベル設定
+
 paths:
   /api/organizations/{organization_id}/ita/:
     post:
@@ -42,6 +45,7 @@ paths:
         - Organization Create
       description: Organizationを作成する
       operationId: organizationCreate
+      x-openapi-router-controller: controllers.organization_create_controller
       parameters:
         - name: organization_id
           in: path
@@ -79,6 +83,7 @@ paths:
         - Organization Create
       description: Organizationを削除する
       operationId: organizationDelete
+      x-openapi-router-controller: controllers.organization_create_controller
       parameters:
         - name: organization_id
           in: path
@@ -118,6 +123,7 @@ paths:
         - Workspace Create
       description: Workspaceを作成する
       operationId: workspaceCreate
+      x-openapi-router-controller: controllers.workspace_create_controller
       parameters:
         - name: organization_id
           in: path
@@ -166,6 +172,7 @@ paths:
         - Workspace Create
       description: Workspaceを削除する
       operationId: workspaceDelete
+      x-openapi-router-controller: controllers.workspace_create_controller
       parameters:
         - name: organization_id
           in: path
@@ -211,6 +218,7 @@ paths:
         - Initial Settings Ansible
       description: すべてのorganizationのAnsibleの初期データを取得する
       operationId: getAllInitialSettingAnsible
+      x-openapi-router-controller: controllers.initial_settings_ansible_controller
       parameters: []
       responses:
         '200':
@@ -327,6 +335,7 @@ paths:
         - Initial Settings Ansible
       description: Ansibleの初期データを取得する
       operationId: getInitialSettingAnsible
+      x-openapi-router-controller: controllers.initial_settings_ansible_controller
       parameters:
         - name: organization_id
           in: path
@@ -445,6 +454,7 @@ paths:
         - Initial Settings Ansible
       description: Ansibleの初期データを登録・更新する
       operationId: postInitialSettingAnsible
+      x-openapi-router-controller: controllers.initial_settings_ansible_controller
       parameters:
         - name: organization_id
           in: path
@@ -536,6 +546,93 @@ paths:
                             proxy_port:
                               type: string
                               nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/ita/loglevel-settings/:
+    get:
+      tags:
+        - LogLevel Settings
+      description: すべてのServiceのログレベルを取得する
+      operationId: getAllLoglevelSettings
+      x-openapi-router-controller: controllers.loglevel_settings_controller
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    properties:
+                      service_name_1:
+                        type: string
+                        example: "INFO/DEBUG"
+                      service_name_2:
+                        type: string
+                        example: "INFO/DEBUG"
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+    patch:
+      tags:
+        - LogLevel Settings
+      description: 複数のServiceのログレベルを更新する
+      operationId: postAllSettingLoglevel
+      x-openapi-router-controller: controllers.loglevel_settings_controller
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_name_1:
+                  type: string
+                  example: "INFO/DEBUG"
+                service_name_2:
+                  type: string
+                  example: "INFO/DEBUG"
       responses:
         '200':
           description: Success

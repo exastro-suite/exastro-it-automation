@@ -20,13 +20,15 @@ from flask import g
 import os
 import shutil
 
-from common_libs.api import api_filter
-from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.api import api_filter_admin
+from common_libs.common.dbconnect import *
 from common_libs.common.util import ky_encrypt
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
+from common_libs.common.exception import AppException
+from common_libs.api import app_exception_response, exception_response
 
 
-@api_filter
+@api_filter_admin
 def organization_create(body, organization_id):  # noqa: E501
     """organization_create
 
@@ -92,11 +94,12 @@ def organization_create(body, organization_id):  # noqa: E501
         g.applogger.debug("executed sql/organization.sql")
 
         # make gitlab user and token value
-        gitlab_agent = GitLabAgent()
-        res = gitlab_agent.create_user(org_db_name)
-        g.applogger.debug("GitLab create_user : {}".format(res))
-        data["GITLAB_USER"] = res['username']
-        data["GITLAB_TOKEN"] = gitlab_agent.create_personal_access_tokens(res['id'], res['username'])
+        if (os.environ.get('GITLAB_HOST') is not None) and (len(os.environ.get('GITLAB_HOST')) > 0):
+            gitlab_agent = GitLabAgent()
+            res = gitlab_agent.create_user(org_db_name)
+            g.applogger.debug("GitLab create_user : {}".format(res))
+            data["GITLAB_USER"] = res['username']
+            data["GITLAB_TOKEN"] = gitlab_agent.create_personal_access_tokens(res['id'], res['username'])
 
         # register organization-db connect infomation and gitlab connect infomation
         common_db.db_transaction_start()
@@ -120,7 +123,7 @@ def organization_create(body, organization_id):  # noqa: E501
     return '',
 
 
-@api_filter
+@api_filter_admin
 def organization_delete(organization_id):  # noqa: E501
     """organization_delete
 
@@ -131,18 +134,13 @@ def organization_delete(organization_id):  # noqa: E501
 
     :rtype: InlineResponse200
     """
+    exception_flg = False
+
+    # ITA_DB connect
     common_db = DBConnectCommon()  # noqa: F405
     connect_info = common_db.get_orgdb_connect_info(organization_id)
     if connect_info is False:
         return '', "ALREADY DELETED", "499-00002", 499
-
-    # delete storage directory for organization
-    strage_path = os.environ.get('STORAGEPATH')
-    organization_dir = strage_path + organization_id + "/"
-    if os.path.isdir(organization_dir):
-        shutil.rmtree(organization_dir)
-    # else:
-    #     return '', "ALREADY DELETED", "499-00002", 499
 
     g.db_connect_info = {}
     g.db_connect_info["ORGDB_HOST"] = connect_info["DB_HOST"]
@@ -154,47 +152,88 @@ def organization_delete(organization_id):  # noqa: E501
     g.db_connect_info["ORGDB_DATABASE"] = connect_info["DB_DATABASE"]
 
     # get ws-db connect infomation
-    org_db = DBConnectOrg(organization_id)  # noqa: F405
+    org_db = DBConnectOrg(organization_id)
+
+    # get workspace info
+    workspace_data_list = []
     workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
 
-    org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
-    for workspace_data in workspace_data_list:
-        # drop ws-db and ws-db-user
-        org_root_db.database_drop(workspace_data['DB_DATABASE'])
-        org_root_db.user_drop(workspace_data['DB_USER'])
+    # org-db root user connect
+    org_root_db = DBConnectOrgRoot(organization_id)
 
-        # disuse ws-db connect infomation
-        data = {
-            'PRIMARY_KEY': workspace_data['PRIMARY_KEY'],
-            'DISUSE_FLAG': 1
-        }
+    try:
+        # OrganizationとWorkspaceが削除されている場合のエラーログ抑止する為、廃止してからデータベース削除
         org_db.db_transaction_start()
-        org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
+        for workspace_data in workspace_data_list:
+            db_disuse_set(org_db, workspace_data['PRIMARY_KEY'], 'T_COMN_WORKSPACE_DB_INFO', 1)
         org_db.db_commit()
-    org_db.db_disconnect()
 
-    # drop org-db and org-db-user
-    org_root_db.database_drop(connect_info['DB_DATABASE'])
-    org_root_db.user_drop(connect_info['DB_USER'])
-    org_root_db.db_disconnect()
+        common_db.db_transaction_start()
+        db_disuse_set(common_db, connect_info['PRIMARY_KEY'], 'T_COMN_ORGANIZATION_DB_INFO', 1)
+        common_db.db_commit()
 
-    # delete gitlab user and projects
-    gitlab_agent = GitLabAgent()
-    user_list = gitlab_agent.get_user_by_username(connect_info['GITLAB_USER'])
-    for user in user_list:
-        gitlab_user_id = user['id']
-        projects = gitlab_agent.get_all_project_by_user_id(gitlab_user_id)
-        for project in projects:
-            gitlab_agent.delete_project(project['id'])
-        gitlab_agent.delete_user(gitlab_user_id)
+        # delete gitlab user and projects
+        if (os.environ.get('GITLAB_HOST') is not None) and (len(os.environ.get('GITLAB_HOST')) > 0):
+            gitlab_agent = GitLabAgent()
+            user_list = gitlab_agent.get_user_by_username(connect_info['GITLAB_USER'])
+            for user in user_list:
+                gitlab_user_id = user['id']
+                projects = gitlab_agent.get_all_project_by_user_id(gitlab_user_id)
+                for project in projects:
+                    gitlab_agent.delete_project(project['id'])
+                gitlab_agent.delete_user(gitlab_user_id)
 
+        # delete storage directory for organization
+        strage_path = os.environ.get('STORAGEPATH')
+        organization_dir = strage_path + organization_id + "/"
+        if os.path.isdir(organization_dir):
+            shutil.rmtree(organization_dir)
+
+        for workspace_data in workspace_data_list:
+            # drop ws-db and ws-db-user
+            org_root_db.database_drop(workspace_data['DB_DATABASE'])
+            org_root_db.user_drop(workspace_data['DB_USER'])
+
+        # drop org-db and org-db-user
+        org_root_db.database_drop(connect_info['DB_DATABASE'])
+        org_root_db.user_drop(connect_info['DB_USER'])
+
+    except AppException as e:
+        # 廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
+        exception_flg = True
+        exception_log_need = True
+        result_list = app_exception_response(e, exception_log_need)
+
+    except Exception as e:
+        # 廃止されているとexceptionはログを抑止するので、ここでログだけ出力
+        exception_flg = True
+        exception_log_need = True
+        result_list = exception_response(e, exception_log_need)
+
+    finally:
+        if exception_flg is True:
+            # 廃止を復活
+            org_db.db_transaction_start()
+            for workspace_data in workspace_data_list:
+                db_disuse_set(org_db, workspace_data['PRIMARY_KEY'], 'T_COMN_WORKSPACE_DB_INFO', 0)
+            org_db.db_commit()
+
+            common_db.db_transaction_start()
+            db_disuse_set(common_db, connect_info['PRIMARY_KEY'], 'T_COMN_ORGANIZATION_DB_INFO', 0)
+            common_db.db_commit()
+
+            common_db.db_disconnect()
+            org_db.db_disconnect()
+            org_root_db.db_disconnect()
+
+            return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
+    return '',
+
+
+def db_disuse_set(db_obj, pkey, table, disuse_flg):
     # disuse org-db connect infomation
     data = {
-        'PRIMARY_KEY': connect_info['PRIMARY_KEY'],
-        'DISUSE_FLAG': 1
+        'PRIMARY_KEY': pkey,
+        'DISUSE_FLAG': disuse_flg
     }
-    common_db.db_transaction_start()
-    common_db.table_update("T_COMN_ORGANIZATION_DB_INFO", data, "PRIMARY_KEY")
-    common_db.db_commit()
-
-    return '',
+    db_obj.table_update(table, data, "PRIMARY_KEY")

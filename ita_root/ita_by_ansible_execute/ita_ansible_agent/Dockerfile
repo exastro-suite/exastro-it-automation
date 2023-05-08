@@ -36,6 +36,7 @@ RUN dnf install -y \
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/centos8.repo /etc/yum.repos.d/centos8.repo
 RUN dnf install -y --enablerepo=baseos expect
+RUN dnf install -y --enablerepo=appstream telnet
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/ansible.cfg /etc/ansible/ansible.cfg
 

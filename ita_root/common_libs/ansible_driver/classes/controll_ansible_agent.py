@@ -32,7 +32,7 @@ class AnsibleAgent(ABC):
         self._workspace_id = g.get('WORKSPACE_ID')
 
     @abstractclassmethod
-    def container_start_up(self, execution_no, conductor_instance_no, str_shell_command):
+    def container_start_up(self, ansConstObj, execution_no, conductor_instance_no, str_shell_command):
         """
         コンテナを立ち上げる
         """
@@ -46,7 +46,7 @@ class AnsibleAgent(ABC):
         pass
 
     @abstractclassmethod
-    def container_kill(self, execution_no):
+    def container_kill(self, ansConstObj, execution_no):
         """
         コンテナを削除する
         """
@@ -59,7 +59,7 @@ class AnsibleAgent(ABC):
         return "%s_%s_%s" % (self._organization_id, self._workspace_id, execution_no)
 
     @abstractclassmethod
-    def container_clean(self, execution_no):
+    def container_clean(self, ansConstObj, execution_no):
         """
         実行完了しているコンテナがあれば削除する
         """
@@ -75,14 +75,12 @@ class DockerMode(AnsibleAgent):
         """
         super().__init__()
 
-    def container_start_up(self, execution_no, conductor_instance_no, str_shell_command):
+    def container_start_up(self, ansConstObj, execution_no, conductor_instance_no, str_shell_command):
         """
         コンテナを立ち上げる
         """
-        # print("method: container_start_up")
-
         # create path string
-        driver_path = "{}/{}/driver/ansible/legacy_role/{}".format(self._organization_id, self._workspace_id, execution_no)
+        driver_path = "{}/{}/driver/ansible/{}/{}".format(self._organization_id, self._workspace_id, ansConstObj.vg_OrchestratorSubId_dir, execution_no)
         _conductor_instance_no = conductor_instance_no if conductor_instance_no else "dummy"
         conductor_path = "{}/{}/driver/conductor/{}".format(self._organization_id, self._workspace_id, _conductor_instance_no)
 
@@ -153,12 +151,10 @@ class DockerMode(AnsibleAgent):
 
         return False, {"function": "is_container_running", "return_code": cp.returncode, "stderr": "not running"}
 
-    def container_kill(self, execution_no):
+    def container_kill(self, ansConstObj, execution_no):
         """
         コンテナを削除する
         """
-        # print("method: container_kill")
-
         # docker-compose -p project kill
         project_name = self.get_unique_name(execution_no)
         docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "kill"]
@@ -180,7 +176,7 @@ class DockerMode(AnsibleAgent):
 
         return True, cp.stdout
 
-    def container_clean(self, execution_no):
+    def container_clean(self, ansConstObj, execution_no):
         """
         実行完了しているコンテナがあれば削除する
         """
@@ -235,14 +231,12 @@ class KubernetesMode(AnsibleAgent):
         """
         super().__init__()
 
-    def container_start_up(self, execution_no, conductor_instance_no, str_shell_command):
+    def container_start_up(self, ansConstObj, execution_no, conductor_instance_no, str_shell_command):
         '''
         コンテナ(Pod)を立ち上げる
         '''
-        # print("method: container_start_up")
-
         # create path string
-        driver_path = "{}/{}/driver/ansible/legacy_role/{}".format(self._organization_id, self._workspace_id, execution_no)
+        driver_path = "{}/{}/driver/ansible/{}/{}".format(self._organization_id, self._workspace_id, ansConstObj.vg_OrchestratorSubId_dir, execution_no)
         _conductor_instance_no = conductor_instance_no if conductor_instance_no else "dummy"
         conductor_path = "{}/{}/driver/conductor/{}".format(self._organization_id, self._workspace_id, _conductor_instance_no)
 
@@ -303,14 +297,12 @@ class KubernetesMode(AnsibleAgent):
 
         return False, {"function": "is_container_running", "return_code": return_code, "stderr": "not running"}
 
-    def container_kill(self, execution_no):
+    def container_kill(self, ansConstObj, execution_no):
         """
         コンテナ(Pod)を削除する
         """
-        # print("method: container_kill")
-
         # create command string
-        ansible_role_driver_middle_path = "driver/ansible/legacy_role"
+        ansible_role_driver_middle_path = "driver/ansible/%s" % (ansConstObj.vg_OrchestratorSubId_dir)
         container_mount_path_driver = "/storage/%s/%s/%s/%s" % (self._organization_id, self._workspace_id, ansible_role_driver_middle_path, execution_no)  # noqa E501
         exec_manifest = "%s/.tmp/.k8s_pod.yml" % (container_mount_path_driver)
 
@@ -323,15 +315,13 @@ class KubernetesMode(AnsibleAgent):
 
         return True, cp.stdout
 
-    def container_clean(self, execution_no):
+    def container_clean(self, ansConstObj, execution_no):
         """
         実行完了しているコンテナ(Pod)があれば削除する
         """
-        # print("method: container_clean")
-
         return_code, status, errmsg = self._check_status(execution_no)
         if status in ["Succeeded", "Failed"]:
-            retBool, retCon = self.container_kill(execution_no)
+            retBool, retCon = self.container_kill(ansConstObj, execution_no)
             if retBool is False:
                 retCon["function"] = "container_clean"
             return retBool, retCon

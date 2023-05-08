@@ -104,7 +104,7 @@ class ConductorCommonLibs():
         data_list = wsdb_istc.table_select('T_COMN_CONDUCTOR_NODE_STATUS', 'WHERE `DISUSE_FLAG`=0')
         for data in data_list:
             self._node_status_list.append(data['STATUS_ID'])
-        ###  暫定追加
+        #  暫定追加
         self._node_status_list.append('__else__')
         self._node_status_list.append('9999')
         # print(self._node_status_list)
@@ -321,6 +321,22 @@ class ConductorCommonLibs():
         if 'last_update_date_time' not in c_data:
             err_msg_args.append('conductor.last_update_date_time')
 
+        if 'notice_info' not in c_data:
+            pass
+        elif c_data['notice_info']:
+            if isinstance(c_data['notice_info'], dict):
+                for key, values in c_data['notice_info'].items():
+                    key_list = self.__db.table_select('T_COMN_CONDUCTOR_NOTICE', 'WHERE `DISUSE_FLAG`=0 AND `NOTICE_NAME`=%s', key)  # noqa E501
+                    if len(key_list) == 0:
+                        err_msg_args.append('conductor.notice_info not exists')
+                    else:
+                        for value in values:
+                            value_list = self.__db.table_select('T_COMN_CONDUCTOR_STATUS', 'WHERE `DISUSE_FLAG`=0 AND `STATUS_ID`=%s', value)
+                            if len(value_list) == 0:
+                                err_msg_args.append('conductor status not exists')
+            else:
+                err_msg_args.append('conductor.notice_info not exists')
+
         if len(err_msg_args) != 0:
             msg = g.appmsg.get_api_message('MSG-40006')
             return False, msg,
@@ -507,7 +523,7 @@ class ConductorCommonLibs():
         if 'movement_id' not in node_blcok or not node_blcok['movement_id']:
             chk_id_name_flg = False
         else:
-            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s', [node_blcok['movement_id']])
+            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s AND `ITA_EXT_STM_ID`=%s', [node_blcok['movement_id'], node_blcok['orchestra_id']])  # noqa E501
             if len(data_list) == 0:
                 chk_id_name_flg = False
 
@@ -516,8 +532,10 @@ class ConductorCommonLibs():
             if 'movement_name' not in node_blcok or not node_blcok['movement_name']:
                 # err_msg_args.append('movement_id')
                 err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
+            elif 'orchestra_id' not in node_blcok or not node_blcok['orchestra_id']:
+                err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
             else:
-                data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [node_blcok['movement_name']])
+                data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [node_blcok['movement_name'], node_blcok['orchestra_id']])  # noqa E501
                 if len(data_list) == 0:
                     # err_msg_args.append('movement_id is not available')
                     err_msg_args.append(g.appmsg.get_api_message('MSG-40014', [node_blcok.get('movement_id'), node_blcok.get('movement_name')]))
@@ -988,20 +1006,24 @@ class ConductorCommonLibs():
                     data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [self.conductor_data['id']])  # noqa E501
                     self.conductor_data['conductor_name'] = data_list[0]['CONDUCTOR_NAME']
 
+            # notice_info
+            if self.conductor_data.get('notice_info') is None:
+                self.conductor_data['notice_info'] = {}
+
             for key, block_1 in self.node_datas.items():
                 node_type = block_1['type']
 
                 if node_type == 'movement':
                     # movement_name
                     if block_1.get('movement_id'):
-                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s', [block_1['movement_id']])
+                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_id'], block_1['orchestra_id']])  # noqa E501
                         if 0 in data_list:
                             block_1['movement_name'] = data_list[0]['MOVEMENT_NAME']
                         else:
-                            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [block_1['movement_name']])  # noqa E501
+                            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
                             block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
                     elif block_1.get('movement_name'):
-                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s', [block_1['movement_name']])  # noqa E501
+                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
                         block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
                     # operation_name
                     if block_1.get('operation_id'):
@@ -1038,7 +1060,6 @@ class ConductorCommonLibs():
 
         except Exception as e:
             g.applogger.error(e)
-            print(e)
             msg = g.appmsg.get_api_message('MSG-40013')
             return False, msg
             # return False, retCode
@@ -1161,7 +1182,7 @@ class ConductorCommonLibs():
         except Exception:
             result = False
         return result
-    
+
     # Node検索処理呼び出し
     def search_target_node(self, terminal_type, base_node_id, target_node_type, c_data):
         """

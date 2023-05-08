@@ -63,6 +63,7 @@
 		// "mtxr.sqltools",
 		// "mtxr.sqltools-driver-mysql",
 		"mitchdenny.ecdc",
+		"snyk-security.snyk-vulnerability-scanner",
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [
@@ -71,6 +72,7 @@
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "onCreateCommand":"sudo dnf install -y git vim diffutils bind-utils iputils && sudo pip3.9 install flake8 && sudo pip3.9 install autopep8",
 	// "postAttachCommand": "",
+	"postCreateCommand": "sudo chmod -R 777 /home/app_user/.vscode-server && sudo chmod 777 /home/app_user/.vscode-server-insiders",
 	"workspaceFolder": "/workspace",
-	"overrideCommand": true,
+	"overrideCommand": true
 }

@@ -21,13 +21,18 @@ import re
 import os
 import datetime
 import json
+import pathlib
 from common_libs.common.exception import AppException
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
-from common_libs.ansible_driver.functions.util import *
-from common_libs.ansible_driver.functions.rest_libs import insert_execution_list, execution_scram
+from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
+from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
+from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
+from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath
+from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
+from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 
 
-def movement_registr_check(objdbca, parameter, Required=False):
+def movement_registr_check(objdbca, parameter, menu_id, Required=False):
     """
         リクエストボディのMovement_id確認
         ARGS:
@@ -35,9 +40,16 @@ def movement_registr_check(objdbca, parameter, Required=False):
             parameter: bodyの中身
             Required: リクエストボディのMovement_idが必須か
                       True:必須　False:任意
+            menu_id: menu id
         RETRUN:
             movement情報
     """
+    orchestra_id = {'execution_ansible_legacy': '1',
+                    'execution_ansible_pioneer': '2',
+                    'execution_ansible_role': '3',
+                    TFCloudEPConst.RN_EXECTION: '4',
+                    TFCLIConst.RN_EXECTION: '5'}
+
     keyName = "movement_name"
     if keyName in parameter:
         movement_name = parameter[keyName]
@@ -49,8 +61,8 @@ def movement_registr_check(objdbca, parameter, Required=False):
             raise AppException("499-00908", [keyName], [keyName])
     if movement_name:
         # Movement情報取得
-        sql = "SELECT * FROM T_COMN_MOVEMENT WHERE MOVEMENT_NAME = %s AND DISUSE_FLAG='0'"
-        row = objdbca.sql_execute(sql, [movement_name])
+        sql = "SELECT * FROM T_COMN_MOVEMENT WHERE MOVEMENT_NAME = %s AND ITA_EXT_STM_ID = %s AND DISUSE_FLAG='0'"
+        row = objdbca.sql_execute(sql, [movement_name, orchestra_id[menu_id]])
         if len(row) != 1:
             # Movement未登録
             raise AppException("499-00901", [movement_name], [movement_name])
@@ -101,7 +113,7 @@ def scheduled_format_check(parameter, useed=False):
         else:
             result = True
             # 予約時間のフォーマット確認
-            match = re.findall("^[0-9]{4}/[0-9]{2}/[0-9]{2}[\s][0-9]{2}:[0-9]{2}:[0-9]{2}$", schedule_date)
+            match = re.findall(r"^[0-9]{4}/[0-9]{2}/[0-9]{2}[\s][0-9]{2}:[0-9]{2}:[0-9]{2}$", schedule_date)
             if len(match) == 0:
                 result = False
             else:
@@ -161,7 +173,8 @@ def get_execution_info(objdbca, target, execution_no):
     execution_info['progress'] = {}
     execution_info['progress']['execution_log'] = {}
     execution_info['progress']['execution_log']['exec_log'] = {}
-    path = getAnsibleExecutDirPath(AnscConst.DF_LEGACY_ROLE_DRIVER_ID, execution_no)
+
+    path = getAnsibleExecutDirPath(target['ansConstObj'], execution_no)
 
     if table_row['MULTIPLELOG_MODE'] == 1:
         if not table_row['LOGFILELIST_JSON']:
@@ -171,18 +184,17 @@ def get_execution_info(objdbca, target, execution_no):
         for log in list_log:
             log_file_path = path + '/out/' + log
             if os.path.isfile(log_file_path):
-                lcstr = Path(log_file_path).read_text(encoding="utf-8")
+                lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
                 execution_info['progress']['execution_log']['exec_log'][log] = lcstr
 
     log_file_path = path + '/out/exec.log'
     if os.path.isfile(log_file_path):
-        if os.path.isfile(log_file_path):
-            lcstr = Path(log_file_path).read_text(encoding="utf-8")
-            execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
+        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+        execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
 
     log_file_path = path + '/out/error.log'
     if os.path.isfile(log_file_path):
-        lcstr = Path(log_file_path).read_text(encoding="utf-8")
+        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
         execution_info['progress']['execution_log']['error_log'] = lcstr
 
     # 状態監視周期・進行状態表示件数
@@ -194,21 +206,29 @@ def get_execution_info(objdbca, target, execution_no):
 
     return execution_info
 
-def reserve_cancel(objdbca, execution_no):
+
+def reserve_cancel(objdbca, driver_id, execution_no):
     """
         予約取消
         ARGS:
             objdbca:DB接続クラス  DBConnectWs()
+            driver_id: ドライバ区分
             execution_no: 作業実行No
         RETRUN:
             status: SUCCEED
             execution_no: 作業No
     """
+    TableDict = {}
+    TableDict["TABLE_NAME"] = {}
+    TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_DRIVER_ID] = AnslConst.vg_exe_ins_msg_table_name
+    TableDict["TABLE_NAME"][AnscConst.DF_PIONEER_DRIVER_ID] = AnspConst.vg_exe_ins_msg_table_name
+    TableDict["TABLE_NAME"][AnscConst.DF_LEGACY_ROLE_DRIVER_ID] = AnsrConst.vg_exe_ins_msg_table_name
+    TableName = TableDict["TABLE_NAME"][driver_id]
 
     # 該当の作業実行のステータス取得
     where = "WHERE EXECUTION_NO = %s"
-    objdbca.table_lock(["T_ANSR_EXEC_STS_INST"])
-    data_list = objdbca.table_select("T_ANSR_EXEC_STS_INST", where, [execution_no])
+    objdbca.table_lock([TableName])
+    data_list = objdbca.table_select(TableName, where, [execution_no])
 
     # 該当する作業実行が存在しない
     if len(data_list) is None or len(data_list) == 0:
@@ -234,7 +254,8 @@ def reserve_cancel(objdbca, execution_no):
 
         # ステータスを予約取消に変更
         update_list = {'EXECUTION_NO': execution_no, 'STATUS_ID': AnscConst.RESERVE_CANCEL}
-        ret = objdbca.table_update('T_ANSR_EXEC_STS_INST', update_list, 'EXECUTION_NO', True)
+        # ret = objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
+        objdbca.table_update(TableName, update_list, 'EXECUTION_NO', True)
         objdbca.db_commit()
 
     result_msg = g.appmsg.get_api_message("MSG-10904", [execution_no])

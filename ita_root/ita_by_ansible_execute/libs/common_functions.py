@@ -18,7 +18,7 @@ from common_libs.common.exception import AppException
 def get_ansible_interface_info(wsDb):
     """
     ANSIBLEインタフェース情報を取得
-    
+
     Arguments:
         WsDb: db instance
     Returns:
@@ -40,7 +40,7 @@ def get_ansible_interface_info(wsDb):
 def get_conductor_interface_info(wsDb):
     """
     Conductorインタフェース情報を取得
-    
+
     Arguments:
         WsDb: db instance
     Returns:
@@ -58,39 +58,40 @@ def get_conductor_interface_info(wsDb):
 
     return True, records[0]
 
-
-def get_execution_process_info(wsDb, execution_no):
+def get_execution_process_info(wsDb, ansConstObj, execution_no):
     """
     作業実行の情報を取得
-    
+
     Arguments:
         WsDb: db instance
+        ansConstObj: ansible共通定数オブジェクト
+        execution_no: 作業番号
     Returns:
         result: bool
         record or err_msg:
     """
     condition = "WHERE `DISUSE_FLAG`=0 AND `EXECUTION_NO`=%s"
-    records = wsDb.table_select('T_ANSR_EXEC_STS_INST', condition, [execution_no])
+    records = wsDb.table_select(ansConstObj.vg_exe_ins_msg_table_name, condition, [execution_no])
 
     if len(records) == 0:
         return False, "MSG-10047"
 
     return True, records[0]
 
-
-def update_execution_record(wsDb, data):
+def update_execution_record(wsDb, ansConstObj, data):
     """
     作業実行の情報を更新
-    
+
     Arguments:
         WsDb: db instance
+        ansConstObj: ansible共通定数オブジェクト
         data: 更新データ
     Returns:
         result: bool
         record:
     """
     try:
-        sql = "SELECT * FROM {} WHERE EXECUTION_NO=%s".format("T_ANSR_EXEC_STS_INST")
+        sql = "SELECT * FROM {} WHERE EXECUTION_NO=%s".format(ansConstObj.vg_exe_ins_msg_table_name)
         rows = wsDb.sql_execute(sql, [data['EXECUTION_NO']])
         row = rows[0]
         if "TIME_START" in data:
@@ -101,7 +102,7 @@ def update_execution_record(wsDb, data):
                 del data["TIME_END"]
         if "LAST_UPDATE_USER" not in data:
             data["LAST_UPDATE_USER"] = g.USER_ID
-        result = wsDb.table_update('T_ANSR_EXEC_STS_INST', [data], 'EXECUTION_NO')
+        result = wsDb.table_update(ansConstObj.vg_exe_ins_msg_table_name, [data], 'EXECUTION_NO')
         return True, result
     except AppException as e:
         wsDb.db_rollback()

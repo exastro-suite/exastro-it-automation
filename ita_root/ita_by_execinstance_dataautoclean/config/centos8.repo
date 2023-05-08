@@ -1,0 +1,14 @@
+[baseos]
+name=AlmaLinux $releasever - BaseOS
+mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/baseos
+# baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
+gpgcheck=0
+enabled=0
+sslverify=0
+[appstream]
+name=AlmaLinux $releasever - AppStream
+mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/appstream
+# baseurl=https://repo.almalinux.org/almalinux/$releasever/AppStream/$basearch/os/
+gpgcheck=0
+enabled=0
+sslverify=0

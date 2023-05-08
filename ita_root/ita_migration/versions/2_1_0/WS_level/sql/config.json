@@ -1,0 +1,13 @@
+[
+    ["workspace.sql", "workspace_master.sql"],
+    ["menu_create.sql", "menu_create_master.sql"],
+    ["conductor.sql", "conductor_master.sql"],
+    ["ansible.sql", "ansible_master.sql"],
+    ["export_import.sql", "export_import_master.sql"],
+    ["compare.sql", "compare_master.sql"],
+    ["terraform_common.sql", "terraform_common_master.sql"],
+    ["terraform_cloud_ep.sql", "terraform_cloud_ep_master.sql"],
+    ["terraform_cli.sql", "terraform_cli_master.sql"],
+    ["hostgroup.sql", "hostgroup_master.sql"],
+    ["cicd.sql", "cicd_master.sql"]
+]

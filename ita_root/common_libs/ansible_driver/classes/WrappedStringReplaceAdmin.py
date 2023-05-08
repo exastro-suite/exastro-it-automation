@@ -71,6 +71,9 @@ class WrappedStringReplaceAdmin:
                 # 各変数を具体値に置換
                 for dectReplace in aryReplaceSource:
                     for strVar, strVal in dectReplace.items():
+                        # 具体値が空の場合
+                        if not strVal:
+                            strVal = ""
                         # 変数を具体値に置換
                         strVarName = strHeadPattern + strVar + strTailPattern
                         strReplace = lineString.replace(strVarName, strVal)
@@ -125,7 +128,7 @@ class WrappedStringReplaceAdmin:
         for lineString in arry_list:
             # 行番号
             line += 1
-    
+
             lineString += "\n"
             # コメント行は読み飛ばす
             if lineString.find("#") == 0:
@@ -200,10 +203,10 @@ class WrappedStringReplaceAdmin:
                     # 変数名の重複チェック
                     if mt_varsArray.count(var_name) == 0:
                         mt_varsArray.append(var_name)
-                        
+
             # 予約変数　{{ 予約変数 | Fillter function }}　の抜き出し ---
         return True, mt_varsLineArray
-    
+
     def chkUnmanagedVarname(self, var_heder_id, var_name, arryLocalMnageVars=[]):
         """
           指定された変数名が管理対象外か判定する。

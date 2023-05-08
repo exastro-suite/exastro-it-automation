@@ -1,0 +1,721 @@
+@charset "utf-8";
+/* CSS Document */
+
+:root {
+/* Header color */
+--headerColor: #001631;
+
+/* Main color */
+--mainColor100:#00224E;--mainColor95:#082853;--mainColor90:#0F2F58;--mainColor85:#17355C;--mainColor80:#1F3C61;--mainColor75:#264266;--mainColor70:#2E486B;--mainColor65:#364F6F;--mainColor60:#3D5574;--mainColor55:#455C79;--mainColor50:#4D627E;--mainColor45:#546882;--mainColor40:#5C6F87;--mainColor35:#63758C;--mainColor30:#6B7C91;--mainColor25:#738295;--mainColor20:#7A889A;--mainColor15:#828F9F;--mainColor10:#8A95A4;--mainColor5:#919CA8;--mainColor0:#99A2AD;
+
+/* Accent color */ 
+--accentColor100:#FF821E;--accentColor95:#FF8829;--accentColor90:#FF8F35;--accentColor85:#FF9540;--accentColor80:#FF9B4B;--accentColor75:#FFA156;--accentColor70:#FFA862;--accentColor65:#FFAE6D;--accentColor60:#FFB478;--accentColor55:#FFBA83;--accentColor50:#FFC18F;--accentColor45:#FFC79A;--accentColor40:#FFCDA5;--accentColor35:#FFD3B0;--accentColor30:#FFDABC;--accentColor25:#FFE0C7;--accentColor20:#FFE6D2;--accentColor15:#FFECDD;--accentColor10:#FFF3E9;--accentColor5:#FFF9F4;--accentColor0:#FFFFFF;
+
+/* Black color */
+--black100:#000B19;--black95:#0D1725;--black90:#1A2330;--black85:#26303C;--black80:#333C47;--black75:#404853;--black70:#4D545E;--black65:#59606A;--black60:#666D75;--black55:#737981;--black50:#80858C;--black45:#8C9198;--black40:#999DA3;--black35:#A6AAAF;--black30:#B3B6BA;--black25:#BFC2C6;--black20:#CCCED1;--black15:#D9DADD;--black10:#E6E7E8;--black5:#F2F3F4;--black0:#FFFFFF;
+
+--baseColor100:#35393E;
+
+--white100:#DDD;
+
+--focusColor:#0070FF;--focusBackgroundColor:#001633;
+
+--buttonColor: #BF6217;
+
+/* Table row color */
+--rowColor: #202325;
+--rowEvenColor: #26292D;
+--rowHeadColor: #26292D;
+--rowHeadEvenColor: #2C3034;
+--rowHoverColor: #2C3034;
+--rowHoverHeadColor: #303439;
+--rowDiscardColor:#333;
+--rowDiscardHoverColor:#393939;
+--rowDiscardTextColor:#888;
+}
+
+body {
+background-color: #333;
+} 
+
+.contentHeader {
+background-image: linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,0) 40% );
+}
+.tabContent .contentHeader {
+border-bottom-color: #111;
+}
+.contentTitle {
+color: #DDD;
+}
+.contentMenuInfo {
+color: #DDD;
+}
+.contentMenuInfoButton {
+background-color: rgba(0,0,0,.2);
+}
+.contentMenuInfoButton:hover .inner {
+background-image: none;
+}
+.contentMenuLinkInner {
+background-image: linear-gradient(rgba(255,255,255,.1), rgba(0,0,0,.075), rgba(255,255,255,0) );
+border-color: #111;
+color: #DDD;
+}
+.contentMenuLink.tabOpen .contentMenuLinkInner {
+color: #DDD;
+}
+.contentMenuLink.tabOpen .contentMenuLinkInner::after {
+background-color: #60C60D;
+}
+#content,
+.contentBody {
+background-color: #393D43;
+}
+.tabContent .section {
+border-top-color: #111;
+}
+.tabContent .contentBody {
+background-color: #222528;
+}
+.th, .td,
+.tBodyTr > .tBodyTh:first-child,
+.tBodyTr:first-child .tBodyTh, .tBodyTr:first-child .tBodyTd {
+border-color: #111!important;
+}
+.ci {
+color: #DDD;
+}
+.tBodyTrDiscard .ci {
+color: #666;
+}
+.tHeadFilter {
+background-color: #26292D;
+}
+.tHeadFilterHeader {
+background-color: #2C3034;
+}
+.filterSelectArea,
+.filterMenuItemSeparate::before,
+.operationMenuSeparate::before {
+border-color: #111;
+}
+.button[data-action="normal"] > .inner, .button[data-action="negative"] > .inner {
+background-color: var(--black80);
+color: var(--black30);
+}
+.input,
+.inputColor,
+.tableEditSelectFile,
+.datePickerDateInput,
+.select2-container--default .select2-selection--single,
+.noSelect, .tableEditInputSelectValue,
+.checkboxLabel, .radioLabel,
+.checkboxTextMark, .radioTextMark {
+background-color: #000;
+border-color: #111;
+color: #DDD;
+}
+.checkboxTextText,
+.radioTextText {
+color: var(--white100);
+}
+.input:disabled,
+.tBodyTrDiscard .tableEditInputSelectValue,
+.tBodyTrDiscard .input[data-key="remarks"] {
+background-color: var(--black85)!important;
+border-color: var(--black100)!important;
+opacity: .5!important;
+}
+.inputColorBefore,
+.inputColorAfter,
+.inputFaderAfter {
+background-color: #303439;
+border-color: #111;
+color: #DDD;
+}
+.inputFaderRange::before {
+background-color: #111;
+}
+.inputFaderRangeLower {
+background-color: #666;
+}
+.inputFaderRangeKnob {
+background-color: #111;
+border-color: #666;
+}
+.inputFaderRangeTooltip {
+background-color: #333;
+border-color: #111;
+}
+.inputFaderRangeTooltip::after {
+background-color: #333;
+border-left-color: #111;
+border-bottom-color: #111;
+}
+.menu-column-config-table textarea:focus,
+.menu-column-config-table input[type="text"]:focus,
+.menu-column-config-table input[type="number"]:focus {
+background-color: var(--focusBackgroundColor);
+border-color: var(--focusColor);
+}
+.radioText:disabled ~ .radioTextLabel > .radioTextMark {
+background-color: #111!important;
+border-color: #333!important;
+opacity: .5;
+}
+#menu-editor[data-editor-mode="view"] .input:disabled {
+background-color: #222!important;
+color: #DDD!important;
+}
+#menu-editor[data-editor-mode="view"] .required-label[disabled],
+#menu-editor[data-editor-mode="view"] .unique-label[disabled] {
+color: #DDD!important;
+}
+.required-label.hover, .unique-label.hover {
+background-color: rgba(0,0,0,.1);
+border-color: rgba(0,0,0,.2);
+}
+.config-checkbox + span {
+background-color: #000;
+border-color: #111;
+}
+.config-checkbox.disabled-checkbox + span {
+background-color: #111!important;
+border-color: #333!important;
+opacity: .5;
+}
+.config-checkbox + span::after {
+border-color: #DDD;
+}
+.calTd {
+background-color: #202325;
+border-color: #111;
+}
+.calButton {
+color: #DDD;
+}
+.calTd.sat .calButton {
+color: #EBEFFF;
+}
+.calTd.sun .calButton {
+color: #FBEBEB;
+}
+.calTd.sat {
+background-color: #101253;
+}
+.calTd.sun {
+background-color: #7F1213;
+}
+.lastMonth,
+.nextMonth {
+background-color: #303439;
+}
+.calTd.sat.lastMonth,
+.calTd.sat.nextMonth {
+background-color: #282C40;
+}
+.calTd.sun.lastMonth,
+.calTd.sun.nextMonth {
+background-color: #442C30;
+}
+.lastMonth .calButton,
+.nextMonth .calButton {
+font-size: 14px;
+color: #AAA!important;
+}
+.calTd.disabled,
+.calTd.disabled.lastMonth,
+.calTd.disabled.nextMonth,
+.calTd.disabled.lastMonth,
+.calTd.disabled.nextMonth {
+background-color: #000;
+}
+.calButtonDisabled {
+color: #DDD!important;
+}
+.startCell .calTdInner,
+.endCell .calTdInner,
+.periodCell .calTdInner {
+background-color: var(--mainColor90);
+}
+
+
+.tableEditSelectFile::after {
+color: #DDD;
+}
+.tbody .input, .tbody .tableEditSelectFile {
+background-color: #000;
+}
+.noSelect::after, .tableEditInputSelectValue::after {
+color: #DDD;
+}
+.button:focus,
+.checkboxWrap:focus-within, .radioWrap:focus-within {
+box-shadow: 0 0 0 1px var(--black100), 0 0 0 3px var(--focusColor);
+}
+.input.tableEditChange,
+.tableEditSelectFile.tableEditChange,
+.tableEditInputSelectContainer.tableEditChange .tableEditInputSelectValue,
+.tableEditInputSelectContainer.tableEditChange .select2-selection {
+background-color: #132803;
+border-color: #4D9E0A;
+color: #DDD;
+}
+.filterPulldownOpenButton > .inner {
+background-color: var(--black70);
+}
+.button:disabled > .inner {
+background-color: var(--black90)!important;
+}
+.input.tableEditRequiredError {
+background-color: #280000;
+}
+.checkboxTextLabel {
+color: #DDD;
+}
+.rowSelectButton,
+.checkboxTextMark {
+background-color: #000;
+border-color: #111;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+color: #DDD;
+}
+.discardMark.false::after,
+.tHeadFilterNone .filterNone, .tBodyAutoInput {
+background-color: rgba( 255,255,255,.1 )!important;
+}
+.discardMark.true::after {
+background-color: var(--black45);
+}
+.tableEditChange .discardMark::after {
+background-color: #60C60D!important;
+}
+.contentMessage, .commonMessage,
+.initFilterStandBy .tableMessage, .historyStandBy .tableMessage, .noData .tableMessage {
+background-color: rgba( 0,0,0,.2 );
+border-color: rgba( 0,0,0,.4 );
+color: #DDD;
+}
+.operationTitle {
+background-color: rgba( 0,0,0,.3 );
+border-right-color: #111;
+}
+.operationDescription {
+background-color: rgba( 0,0,0,.2 );
+color: #DDD;
+}
+
+.dashboardMenuGroupLink {
+color: #DDD;
+}
+.tBodyRowMenu:hover > .ci {
+background-color: rgba( 255,255,255,.1 );
+}
+.tHeadFilterTitle {
+color: #CCC;
+}
+
+.commonTh,
+.commonTd {
+border-color: #111;
+color: #DDD;
+}
+.commonTh {
+background-color: #2C3034;
+}
+.commonTd {
+background-color: #26292D;
+}
+.commonErrorItem {
+background-color: #280000;
+border-color: #A00000;
+color: #D00;
+}
+.commonErrorItem > .icon {
+color: #D00;
+}
+
+.dialogBody {
+background-color: #222528;
+color: #DDD;
+}
+.dialogFooter {
+background-color: #393D43;
+}
+.menuInfoTitle,
+.menuInfoDescription {
+color: #CCC;
+}
+.tableRowMenu,
+.tableRowMenu::before {
+background-color: #0B0C0D;
+border-color: #060607;
+}
+.tableRowMenu::after {
+border-color: #060607;
+}
+.operationMenuMessage {
+color: #DDD;
+}
+.commonSubTitle {
+background-image: linear-gradient( var(--mainColor90), var(--mainColor95) );
+border: 1px solid var(--mainColor80);
+box-shadow: 0 1px 1px rgb(0 0 0 / 60%) inset;
+color: #DDD;
+}
+.commonSubTitle::after {
+background-image: linear-gradient( transparent 6px, var(--mainColor90) 6px, var(--mainColor90) 10px, transparent 10px ), linear-gradient( 90deg, transparent 6px, var(--mainColor90) 6px, var(--mainColor90) 10px, transparent 10px );
+}
+.containerLoading,
+.tableLoading {
+background-color: rgba( 0,0,0,.2 );
+}
+.containerLoading::after,
+.tableLoading::after {
+border: 24px solid rgba(255,255,255,.1);
+border-bottom-color: rgba(255,255,255,.3);
+}
+.errorLogTab .contentMenuLink.tabOpen .contentMenuLinkInner {
+color: #DDD;
+}
+.operationLog {
+background-color: #333;
+border-color: #111;
+}
+.operationLogItem > * {
+border-color: #111;
+color: #DDD;
+}
+.editType {
+background-color: #333;
+}
+.errorTable .tBodyTh,
+.errorTable .tBodyTd {
+border-color: #600!important;
+border-bottom-color: #600!important;
+}
+.errorTable .tBodyTh {
+background-color: #3C0000!important;
+}
+.errorTable .tBodyTd  {
+background-color: #280000!important;
+}
+.resultList {
+background-color: #111;
+}
+.resultType {
+color: #CCC;
+}
+.resultNumber {
+color: #DDD;
+}
+#menu-editor-edit .menu-editor-block-inner {
+background: linear-gradient( transparent, transparent 99px, rgba(255,255,255,.025) 99px, rgba(255,255,255,.025) 100px ),
+linear-gradient( 90deg, transparent, transparent 99px, rgba(255,255,255,.025) 99px, rgba(255,255,255,.025) 100px ), #222;
+background-size: 100px 100px, 100px 100px;
+}
+.menu-table {
+background-color: #333;
+}
+.menu-column-title-input:active,
+.menu-column-title-input:focus,
+.menu-column-title-rest-input:active,
+.menu-column-title-rest-input:focus {
+border-color: #111;
+background-color: #000!important;
+color: #DDD;
+}
+.menu-column-type {
+background-color: #333;
+}
+select.menu-column-type-select {
+border-color: #111;
+color: #DDD;
+}
+.menu-column-config {
+background-color: #333;
+}
+.menu-column-config-table th, .menu-column-config-table td {
+border-color: #111;
+color: #DDD;
+}
+.menu-column-config-table th {
+background-color: var(--black80);
+background-image: linear-gradient(rgba(255,255,255,.075), rgba(255,255,255,0));
+box-shadow: 0 1px 1px rgb(255 255 255 / 20%) inset;
+}
+.menu-column-config-table td {
+background-color: var(--black70);
+}
+.column-empty {
+background-color: #333;
+}
+.column-empty p {
+background-color: #333;
+background-image: linear-gradient( -45deg, rgba( 255,255,255,.05 ) 25%, transparent 25%, transparent 50%,
+rgba( 255,255,255,.05 ) 50%, rgba( 255,255,255,.05 ) 75%, transparent 75%, transparent);
+border-color: #111;
+}
+.art-board,
+.movementArea {
+background: linear-gradient( transparent, transparent 99px, rgba(255,255,255,.025) 99px, rgba(255,255,255,.025) 100px ), linear-gradient( 90deg, transparent, transparent 99px, rgba(255,255,255,.025) 99px, rgba(255,255,255,.025) 100px ), linear-gradient( transparent, transparent 49px, rgba(255,255,255,.05) 49px, rgba(255,255,255,.05) 50px ), linear-gradient( 90deg, transparent, transparent 49px, rgba(255,255,255,.05) 49px, rgba(255,255,255,.025) 50px ), linear-gradient( transparent, transparent 9px, rgba(255,255,255,.025) 9px, rgba(255,255,255,.025) 10px ), linear-gradient( 90deg, transparent, transparent 9px, rgba(255,255,255,.025) 9px, rgba(255,255,255,.05) 10px ), transparent;
+background-color: #222;
+background-size: 100px 100px, 100px 100px, 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+border-color: #111;
+}
+.svg-line-back {
+stroke: #222;
+}
+.movementArea::after {
+border-color: #222;
+}
+.movementArea[data-result="done"] {
+background-color: #132803;
+}
+.movementArea[data-result="error"] {
+background-color: #280000;
+}
+
+.userInfoContainer {
+background-color: #222528;
+border-color: #111;
+border-top-color: var(--mainColor80);
+color: #DDD;
+}
+.userInfoBlock {
+border-color: #111;
+}
+.userInfoMenu {
+background-color: rgba(255,255,255,.1);
+}
+.userInfoWorkspaceButton {
+color: #DDD;
+}
+.userInfoWorkspaceButton:hover {
+background-color: rgba(255,255,255,.1);
+}
+.userInfoWorkspaceButton:hover::after {
+border-top-color: var(--accentColor100);
+border-right-color: var(--accentColor100);
+}
+.processingContainer::after {
+background-color: #666;
+box-shadow: 0 0 0 2px #111;
+}
+.popupInner {
+background-color: #000;
+color: #CCC;
+}
+.popupTop .popupArrow > span {
+border-top-color: #000;
+}
+.popupBottom .popupArrow > span {
+border-bottom-color: #000;
+}
+.installedDriver {
+border-top-color: #111;
+}
+.driverTitle {
+color: #DDD;
+}
+.driverItem {
+background-color: var(--black95);
+border: 1px solid var(--black80);
+color: #DDD;
+}
+.commonTabItem.open {
+color: #DDD;
+}
+.commonTabItem.open::after {
+background-color: var(--accentColor100);
+}
+.commonParagraph {
+border-left-color: rgba( 255,255,255,.15 );
+color: #CCC;
+}
+.commonInputGroup {
+background-color: rgba( 0,0,0,.2 );
+border: 1px solid rgba( 0,0,0,.3 );
+}
+.commonWrap,
+.compareHostItem {
+background-color: rgba( 0,0,0,.2 );
+color: #DDD;
+}
+.commonStatus {
+border-color: rgba( 0,0,0,.3 );
+}
+.tableSettingGroupName,
+.tableSettingItemName {
+background-color: rgba( 0,0,0,.25 );
+background-image: linear-gradient( rgba( 255,255,255,.05 ) 16px, rgba( 255,255,255,.0 ) );
+border: 1px solid rgba( 0,0,0,.3 );
+border-radius: 0 4px 4px 0;
+}
+.compareHostDiff {
+background-color: rgba( 0,0,0,.2 );
+}
+.compareHostItem[data-flag="false"] .compareHostDiff {
+color: #444;
+}
+.comparaResultBlock .tBodyTh {
+background-color: var(--rowHeadColor)!important;
+}
+.comparaResultBlock .tBodyTd {
+background-color: var(--rowColor)!important;
+}
+.differenceTr > .tBodyTh,
+.differenceTr > .tBodyTd {
+background-color: #var(--rowDiscardColor)!important;
+}
+
+
+.tableShowChangeValue .tBodyAfterValue {
+background-color: #132803;
+}
+.tBodyBeforeValue {
+background-color: #2E1919;
+}
+
+/* button color */
+.button[data-action="positive"] > .inner {
+background-color: #418609;
+}
+.button[data-action="restore"] > .inner {
+background-color: #005AA5;
+}
+.button[data-action="duplicat"] > .inner {
+background-color: #6A17BF;
+}
+.button[data-action="warning"] > .inner {
+background-color: #BFA600;
+color: #333;
+}
+.button[data-action="danger"] > .inner {
+background-color: #990D00;
+}
+.button[data-action="history"] > .inner {
+background-color: #117A2C;
+}
+
+.userinfoWorkspaceItem,
+.userinfoRoleItem,
+.tableHorizontal .tableWrap .tBodyTh,
+.tableHorizontal .tableWrap .tBodyTd {
+border-color: #111;
+}
+
+.select2-dropdown {
+background-color: #333;
+border-color: #111;
+color: #DDD;
+}
+.select2-container--default .select2-selection--multiple {
+background-color: #000;
+border-color: #111;
+color: #DDD;
+}
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+border-color: #0070FF;
+background-color: #001633;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+background-color: #333;
+border-color: #111;
+}
+.select2-container .select2-search--inline .select2-search__field {
+color: #DDD;
+}
+.select2-container--default .select2-results__option[aria-selected=true] {
+background-color: #444;
+}
+.tableWrap,
+.dialogBody{
+scrollbar-color: #222528 #393D43;
+}
+.tableWrap::-webkit-scrollbar,
+.commonScroll::-webkit-scrollbar,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar,
+.dialogBody::-webkit-scrollbar {
+width: 16px; height: 16px;
+}
+.tableWrap::-webkit-scrollbar-corner,
+.commonScroll::-webkit-scrollbar-corner,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-corner,
+.dialogBody::-webkit-scrollbar-corner,
+.tableWrap::-webkit-scrollbar-track,
+.commonScroll::-webkit-scrollbar-track,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-track,
+.dialogBody::-webkit-scrollbar-track {
+background-color: #0C0D0E;
+}
+.tableWrap::-webkit-scrollbar-thumb,
+.commonScroll::-webkit-scrollbar-thumb,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-thumb,
+.dialogBody::-webkit-scrollbar-thumb {
+background-color: #393D43;
+border: 2px solid #0C0D0E;
+}
+.tableWrap::-webkit-scrollbar-button:single-button,
+.commonScroll::-webkit-scrollbar-button:single-button,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-button:single-button,
+.dialogBody::-webkit-scrollbar-button:single-button {
+background-color: #303439;
+width: 16px; height: 16px;
+background-repeat: no-repeat;
+background-size: 8px 8px;
+}
+.tableWrap::-webkit-scrollbar-button:single-button:vertical:decrement,
+.commonScroll::-webkit-scrollbar-button:single-button:vertical:decrement,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-button:single-button:vertical:decrement,
+.dialogBody::-webkit-scrollbar-button:single-button:vertical:decrement {
+background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='rgb(128,133,140)'><polygon points='50,00 0,50 100,50'/></svg>");
+background-position: center 6px;
+}
+.tableWrap::-webkit-scrollbar-button:single-button:vertical:increment,
+.commonScroll::-webkit-scrollbar-button:single-button:vertical:increment,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-button:single-button:vertical:increment,
+.dialogBody::-webkit-scrollbar-button:single-button:vertical:increment {
+background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='rgb(128,133,140)'><polygon points='0,0 100,0 50,50'/></svg>");
+background-position: center 6px;
+}
+.tableWrap::-webkit-scrollbar-button:single-button:horizontal:decrement,
+.commonScroll::-webkit-scrollbar-button:single-button:horizontal:decrement,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-button:single-button:horizontal:decrement,
+.dialogBody::-webkit-scrollbar-button:single-button:horizontal:decrement {
+background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='rgb(128,133,140)'><polygon points='0,50 50,100 50,0'/></svg>");
+background-position: 6px center;
+}
+.tableWrap::-webkit-scrollbar-button:single-button:horizontal:increment,
+.commonScroll::-webkit-scrollbar-button:single-button:horizontal:increment,
+.select2-container--default .select2-results>.select2-results__options::-webkit-scrollbar-button:single-button:horizontal:increment,
+.dialogBody::-webkit-scrollbar-button:single-button:horizontal:increment {
+background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='rgb(128,133,140)'><polygon points='0,0 0,100 50,50'/></svg>");
+background-position: 6px center;
+}
+
+.exportImportAllMenuName,
+.exportImportMenuGroup,
+.exportImportSubMenuGroup {
+background-color: rgba( 0,0,0,.25 );
+background-image: linear-gradient( rgba( 255,255,255,.05 ) 16px, rgba( 255,255,255,.0 ) );
+border: 1px solid rgba( 0,0,0,.3 );
+border-radius: 0 4px 4px 0;
+}
+.exportImportName .checkboxTextLabel:hover {
+background-color: rgba(255,255,255,.05);
+}
+.exportImportToggleWrap .inner {
+color: var(--white100);
+}
+.button:hover > .inner {
+background-image: linear-gradient( rgba( 255,255,255,.1 ), rgba( 255,255,255,.05 ) );
+}
+.exportImportMenuGroupList, .exportImportSubMenuGroupList {
+background-color: rgba(0,0,0,.2);
+}
+
+.schedulePeriodRadioList {
+border-bottom-color: var(--black75);
+}

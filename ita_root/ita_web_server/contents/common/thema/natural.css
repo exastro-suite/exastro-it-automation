@@ -1,0 +1,44 @@
+@charset "utf-8";
+/* CSS Document */
+
+:root {
+/* Header color */
+--headerColor: #165632;
+
+/* Main color */
+--mainColor100:#165632;--mainColor95:#225E3C;--mainColor90:#2D6747;--mainColor85:#396F51;--mainColor80:#45785B;--mainColor75:#508065;--mainColor70:#5C8970;--mainColor65:#68917A;--mainColor60:#739A84;--mainColor55:#7FA28E;--mainColor50:#8BAB99;--mainColor45:#96B3A3;--mainColor40:#A2BBAD;--mainColor35:#ADC4B7;--mainColor30:#B9CCC2;--mainColor25:#C5D5CC;--mainColor20:#D0DDD6;--mainColor15:#DCE6E0;--mainColor10:#E8EEEB;--mainColor5:#F3F7F5;--mainColor0:#FFFFFF;
+
+/* Accent color */ 
+--accentColor100:#DDCC00;--accentColor95:#DFCF0D;--accentColor90:#E0D11A;--accentColor85:#E2D426;--accentColor80:#E4D633;--accentColor75:#E6D940;--accentColor70:#E7DB4D;--accentColor65:#E9DE59;--accentColor60:#EBE066;--accentColor55:#ECE373;--accentColor50:#EEE680;--accentColor45:#F0E88C;--accentColor40:#F1EB99;--accentColor35:#F3EDA6;--accentColor30:#F5F0B3;--accentColor25:#F7F2BF;--accentColor20:#F8F5CC;--accentColor15:#FAF7D9;--accentColor10:#FCFAE6;--accentColor5:#FDFCF2;--accentColor0:#FFFFFF;
+
+/* Black color */
+--black100:#2C201B;--black95:#372B26;--black90:#413632;--black85:#4C413D;--black80:#564D49;--black75:#615854;--black70:#6B635F;--black65:#766E6B;--black60:#807976;--black55:#8B8482;--black50:#96908D;--black45:#A09B98;--black40:#ABA6A4;--black35:#B5B1AF;--black30:#C0BCBB;--black25:#CAC7C6;--black20:#D5D2D1;--black15:#DFDEDD;--black10:#EAE9E8;--black5:#F4F4F4;--black0:#FFFFFF;
+
+--baseColor100:#E8EEEA;
+
+/* Table row color */
+    --rowColor: #FFF;
+    --rowEvenColor: #F1F5F3;
+    --rowHeadColor: #F1F5F3;
+    --rowHeadEvenColor: #E3EBE6;
+    --rowHoverColor: #E3EBE6;
+    --rowHoverHeadColor: #DAE4DE;
+}
+
+.menuBody {
+background-image: linear-gradient( transparent, transparent 50%, rgba( 255,255,255,.03 ) 50%, rgba( 255,255,255,.03 )),
+linear-gradient( var(--black90) 80%, var(--black100) );
+background-size: 32px 32px, 100% 100%;
+}
+.containerHeader {
+border-bottom-color: #936959;
+}
+.tabContent .contentHeader {
+border-bottom-color: #8CACD7;
+}
+.tabContent .contentBody {
+background-color: #ADC4E2;
+}
+.commonTitle::before {
+background-color: var(--accentColor50);
+}

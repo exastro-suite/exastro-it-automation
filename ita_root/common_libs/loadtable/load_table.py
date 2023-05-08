@@ -113,7 +113,7 @@ class loadTable():
 
     """
 
-    def __init__(self, objdbca='', menu=''):
+    def __init__(self, objdbca='', menu='', dp_mode=False):
         # コンストラクタ
         # メニューID
         self.menu = menu
@@ -147,6 +147,7 @@ class loadTable():
         self.column_list = ''
 
         # メニュー関連情報
+        self.dp_mode = dp_mode
         self.objtable = {}
         if self.menu is not None:
             self.objtable = self.get_menu_info()
@@ -174,6 +175,7 @@ class loadTable():
             COLNAME_JNL_REG_DATETIME: REST_KEY_LAST_JNL_REG_DATETIME,
             COLNAME_JNL_ACTION_CLASS: REST_KEY_LAST_JNL_ACTION_CLASS,
         }
+
 
     # message設定
     def reset_message(self):
@@ -364,9 +366,12 @@ class loadTable():
             SELECT * FROM `T_COMN_MENU_TABLE_LINK` `TAB_A`
             LEFT JOIN `T_COMN_MENU` `TAB_B` ON ( `TAB_A`.`MENU_ID` = `TAB_B`.`MENU_ID` )
             WHERE `TAB_B`.`MENU_NAME_REST` = %s
-            AND `TAB_A`.`DISUSE_FLAG` <> 1
-            AND `TAB_B`.`DISUSE_FLAG` <> 1
         """).format(menu=self.menu).strip()
+        if self.dp_mode is False:
+            query_str += textwrap.dedent("""
+                AND `TAB_A`.`DISUSE_FLAG` <> 1
+                AND `TAB_B`.`DISUSE_FLAG` <> 1
+            """).strip()
         tmp_menu_info = self.objdbca.sql_execute(query_str, [self.menu])
         if len(tmp_menu_info) == 0:
             status_code = '401-00003'
@@ -386,9 +391,12 @@ class loadTable():
             FROM `T_COMN_MENU_COLUMN_LINK` `TAB_A`
             LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_B` ON ( `TAB_A`.`COLUMN_CLASS` = `TAB_B`.`COLUMN_CLASS_ID` )
             WHERE `MENU_ID` = '{menu_id}'
-            AND `TAB_A`.`DISUSE_FLAG` <> 1
-            AND `TAB_B`.`DISUSE_FLAG` <> 1
-            """).format(menu_id=menu_id).strip()
+        """).format(menu_id=menu_id).strip()
+        if self.dp_mode is False:
+            query_str += textwrap.dedent("""
+                AND `TAB_A`.`DISUSE_FLAG` <> 1
+                AND `TAB_B`.`DISUSE_FLAG` <> 1
+            """).strip()
         tmp_cols_info = self.objdbca.sql_execute(query_str)
         if len(tmp_cols_info) == 0:
             status_code = '401-00003'
@@ -802,7 +810,7 @@ class loadTable():
             required_item = self.get_objcol(rest_key).get(COLNAME_REQUIRED_ITEM)
             input_item = self.get_objcol(rest_key).get(COLNAME_INPUT_ITEM)
             auto_input = self.get_objcol(rest_key).get(COLNAME_AUTO_INPUT)
-            if required_item == '1' and input_item == '1' and auto_input != '1':
+            if required_item == '1' and input_item in ['1', '3'] and auto_input != '1':
                 required_restkey_list.append(rest_key)
 
         return required_restkey_list
@@ -942,29 +950,50 @@ class loadTable():
                     base_datetime_condition = parameter.get('base_datetime')
                     if not base_datetime_condition:
                         # 「基準日時」に指定が無い場合のwhereを作成
-                        ref_where_str = textwrap.dedent("""
-                            BASE_TIMESTAMP = (
-                                select max(BASE_TIMESTAMP)
-                                from `{table_name}` as tbl
-                                where `{table_name}`.HOST_ID = tbl.HOST_ID
-                                and DISUSE_FLAG = "0"
-                            )
-                            and DISUSE_FLAG = "0"
-                        """).format(table_name=table_name).strip()
-                    else:
-                        # 「基準日時」に指定がある場合のwhereを作成
-                        base_datetime = base_datetime_condition.get('NORMAL')
-                        if base_datetime:
+                        if str(self.get_sheet_type()) == "5":  # シートタイプが「5: 参照用（ホスト/オペレーションあり）」
                             ref_where_str = textwrap.dedent("""
                                 BASE_TIMESTAMP = (
                                     select max(BASE_TIMESTAMP)
                                     from `{table_name}` as tbl
                                     where `{table_name}`.HOST_ID = tbl.HOST_ID
                                     and DISUSE_FLAG = "0"
-                                    and tbl.BASE_TIMESTAMP <= '{base_datetime}'
                                 )
                                 and DISUSE_FLAG = "0"
-                            """).format(table_name=table_name, base_datetime=base_datetime).strip()
+                            """).format(table_name=table_name).strip()
+                        else:  # シートタイプが「6: 参照用（オペレーションあり）」
+                            ref_where_str = textwrap.dedent("""
+                                BASE_TIMESTAMP = (
+                                    select max(BASE_TIMESTAMP)
+                                    from `{table_name}` as tbl
+                                    where DISUSE_FLAG = "0"
+                                )
+                                and DISUSE_FLAG = "0"
+                            """).format(table_name=table_name).strip()
+                    else:
+                        # 「基準日時」に指定がある場合のwhereを作成
+                        base_datetime = base_datetime_condition.get('NORMAL')
+                        if base_datetime:
+                            if str(self.get_sheet_type()) == "5":  # シートタイプが「5: 参照用（ホスト/オペレーションあり）」
+                                ref_where_str = textwrap.dedent("""
+                                    BASE_TIMESTAMP = (
+                                        select max(BASE_TIMESTAMP)
+                                        from `{table_name}` as tbl
+                                        where `{table_name}`.HOST_ID = tbl.HOST_ID
+                                        and DISUSE_FLAG = "0"
+                                        and tbl.BASE_TIMESTAMP <= '{base_datetime}'
+                                    )
+                                    and DISUSE_FLAG = "0"
+                                """).format(table_name=table_name, base_datetime=base_datetime).strip()
+                            else:  # シートタイプが「6: 参照用（オペレーションあり）」
+                                ref_where_str = textwrap.dedent("""
+                                    BASE_TIMESTAMP = (
+                                        select max(BASE_TIMESTAMP)
+                                        from `{table_name}` as tbl
+                                        where DISUSE_FLAG = "0"
+                                        and tbl.BASE_TIMESTAMP <= '{base_datetime}'
+                                    )
+                                    and DISUSE_FLAG = "0"
+                                """).format(table_name=table_name, base_datetime=base_datetime).strip()
 
                         # parameterから「基準日時(key:base_datetime)」を削除する
                         parameter.pop('base_datetime')
@@ -988,13 +1017,7 @@ class loadTable():
                                         if objcolumn.__class__.__name__ == "NumColumn":
                                             convert_search_conf = {}
                                             for k, v in search_conf.items():
-                                                if str.isnumeric(v):
-                                                    if int(v) == 0:
-                                                        convert_search_conf[k] = v
-                                                    else:
-                                                        convert_search_conf[k] = int(v)
-                                                else:
-                                                    convert_search_conf[k] = v
+                                                convert_search_conf[k] = v
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         # 小数カラムの場合は検索する値をfloat型に変換する
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
@@ -1027,12 +1050,12 @@ class loadTable():
                             if isinstance(bindkeys, str):
                                 bindkey = bindkeys
                                 tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                if filter_query.get('bindvalue').get(bindkey):
+                                if filter_query.get('bindvalue').get(bindkey) is not None:
                                     bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             elif isinstance(bindkeys, list):
                                 for bindkey in bindkeys:
                                     tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                    if filter_query.get('bindvalue').get(bindkey):
+                                    if filter_query.get('bindvalue').get(bindkey) is not None:
                                         bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             where_str = where_str + tmp_where_str
 
@@ -1269,7 +1292,7 @@ class loadTable():
         return status_code, result, msg,
 
     # [maintenance]:メニューのレコード操作
-    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False):
+    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False, import_mode=False):
         """
             RESTAPI[filter]:メニューのレコード操作
             ARGS:
@@ -1336,8 +1359,9 @@ class loadTable():
                     current_parametr, current_file = self.convert_colname_restkey(current_row, target_uuid, '', 'input')
                     # 更新系の追い越し判定
                     self.chk_lastupdatetime(target_uuid, current_parametr, entry_parameter)
-                    # 更新系処理の場合、廃止フラグから処理種別判定、変更
-                    cmd_type = self.convert_cmd_type(cmd_type, target_uuid, current_row, entry_parameter)
+                    if import_mode is False:
+                        # 更新系処理の場合、廃止フラグから処理種別判定、変更
+                        cmd_type = self.convert_cmd_type(cmd_type, target_uuid, current_row, entry_parameter)
                     # 履歴の一括取得
                     target_jnls = self.get_target_jnl_uuids(target_uuid)
 
@@ -1349,8 +1373,8 @@ class loadTable():
             # 不要パラメータの除外
             if inner_mode is False:
                 entry_parameter = self.exclusion_parameter(cmd_type, entry_parameter)
-            # 必須項目チェック
-            self.chk_required(cmd_type, entry_parameter)
+                # 必須項目チェック
+                self.chk_required(cmd_type, entry_parameter)
 
             # 登録時、primary_key指定時の重複チェック
             exec_chk_primay_val = self.chk_primay_val(entry_parameter, target_uuid_key, target_uuid, cmd_type)
@@ -1377,7 +1401,7 @@ class loadTable():
                 if objcol is not None:
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                 # INPUT_ITEMが1の場合
-                if input_item == '1' or force_conv is True:
+                if input_item in ['1', '3'] or force_conv is True:
                     if rest_key in self.restkey_list:
                         target_col_option = {
                             'uuid': target_uuid,
@@ -1424,28 +1448,44 @@ class loadTable():
                         # カラムクラス呼び出し
                         objcolumn = self.get_columnclass(rest_key, cmd_type)
 
-                        # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前
-                        tmp_exec = objcolumn.before_iud_action(rest_val, copy.deepcopy(target_col_option))
-                        if tmp_exec[0] is not True:
-                            dict_msg = {
-                                'status_code': '',
-                                'msg_args': '',
-                                'msg': tmp_exec[1],
-                            }
-                            self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
-                        else:
-                            tmp_target_col_option = tmp_exec[3]
-                            entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
-                            entry_file = tmp_target_col_option.get('entry_parameter').get('file')
-                            rest_val = entry_parameter.get(rest_key)
-                            # entry_file[rest_key] = target_col_option.get('file_data')
+                        if import_mode is False:
+                            # カラムクラス毎の処理:レコード操作前 + カラム毎の個別処理:レコード操作前
+                            tmp_exec = objcolumn.before_iud_action(rest_val, copy.deepcopy(target_col_option))
+                            if tmp_exec[0] is not True:
+                                dict_msg = {
+                                    'status_code': '',
+                                    'msg_args': '',
+                                    'msg': tmp_exec[1],
+                                }
+                                self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                            else:
+                                tmp_target_col_option = tmp_exec[3]
+                                entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
+                                entry_file = tmp_target_col_option.get('entry_parameter').get('file')
+                                rest_val = entry_parameter.get(rest_key)
+                                # entry_file[rest_key] = target_col_option.get('file_data')
 
-                            if rest_val is not None:
-                                if self.get_col_class_name(rest_key) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
-                                    sensitive_col_name = objcolumn.get_objcol().get(COLNAME_SENSITIVE_COL_NAME)
-                                    sensitive_settings = entry_parameter.get(sensitive_col_name)
-                                    # SENSITIVEがONの場合
-                                    if sensitive_settings == '1':
+                                if rest_val is not None:
+                                    if self.get_col_class_name(rest_key) in ['SensitiveSingleTextColumn', 'SensitiveMultiTextColumn']:
+                                        sensitive_col_name = objcolumn.get_objcol().get(COLNAME_SENSITIVE_COL_NAME)
+                                        sensitive_settings = entry_parameter.get(sensitive_col_name)
+                                        # SENSITIVEがONの場合
+                                        if sensitive_settings == '1':
+                                            tmp_exec = objcolumn.convert_value_input(rest_val)
+                                            if tmp_exec[0] is True:
+                                                entry_parameter[rest_key] = tmp_exec[2]
+                                            else:
+                                                dict_msg = {
+                                                    'status_code': '',
+                                                    'msg_args': '',
+                                                    'msg': tmp_exec[1],
+                                                }
+                                                self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                                        else:
+                                            entry_parameter[rest_key] = rest_val
+
+                                    else:
+                                        # VALUE 変換処理不要ならVALUE変更無し
                                         tmp_exec = objcolumn.convert_value_input(rest_val)
                                         if tmp_exec[0] is True:
                                             entry_parameter[rest_key] = tmp_exec[2]
@@ -1456,24 +1496,10 @@ class loadTable():
                                                 'msg': tmp_exec[1],
                                             }
                                             self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
-                                    else:
-                                        entry_parameter[rest_key] = rest_val
-
-                                else:
-                                    # VALUE 変換処理不要ならVALUE変更無し
-                                    tmp_exec = objcolumn.convert_value_input(rest_val)
-                                    if tmp_exec[0] is True:
-                                        entry_parameter[rest_key] = tmp_exec[2]
-                                    else:
-                                        dict_msg = {
-                                            'status_code': '',
-                                            'msg_args': '',
-                                            'msg': tmp_exec[1],
-                                        }
-                                        self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
 
             # メニュー共通処理:レコード操作前 組み合わせ一意制約
-            self.exec_unique_constraint(entry_parameter, target_uuid)
+            if import_mode is False:
+                self.exec_unique_constraint(entry_parameter, target_uuid)
 
             # 復活時にバリデーション＋組み合わせ(current,entryを使用)
             current_data = {'parameter': current_parametr, 'file': current_file}
@@ -1481,36 +1507,37 @@ class loadTable():
             self.exec_restore_validate(cmd_type, target_uuid, current_data, entry_data)
 
             # メニュー、カラム個別処理:レコード操作前
-            target_menu_option = {
-                'uuid': target_uuid,
-                'uuid_jnl': '',
-                'cmd_type': cmd_type,
-                'rest_key_name': '',
-                'col_name': '',
-                'file_data': '',
-                'entry_parameter': {
-                    'parameter': entry_parameter,
-                    'file': entry_file,
-                },
-                'current_parameter': {
-                    'parameter': current_parametr,
-                    'file': current_file,
-                },
-                'user': self.user
-            }
-            tmp_exec = self.exec_menu_before_validate(copy.deepcopy(target_menu_option))
-
-            if tmp_exec[0] is not True:
-                dict_msg = {
-                    'status_code': '',
-                    'msg_args': '',
-                    'msg': tmp_exec[1],
+            if import_mode is False:
+                target_menu_option = {
+                    'uuid': target_uuid,
+                    'uuid_jnl': '',
+                    'cmd_type': cmd_type,
+                    'rest_key_name': '',
+                    'col_name': '',
+                    'file_data': '',
+                    'entry_parameter': {
+                        'parameter': entry_parameter,
+                        'file': entry_file,
+                    },
+                    'current_parameter': {
+                        'parameter': current_parametr,
+                        'file': current_file,
+                    },
+                    'user': self.user
                 }
-                self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
-            else:
-                tmp_target_menu_option = tmp_exec[2]
-                entry_parameter = tmp_target_menu_option.get('entry_parameter').get('parameter')
-                entry_file = tmp_target_menu_option.get('entry_parameter').get('file')
+                tmp_exec = self.exec_menu_before_validate(copy.deepcopy(target_menu_option))
+
+                if tmp_exec[0] is not True:
+                    dict_msg = {
+                        'status_code': '',
+                        'msg_args': '',
+                        'msg': tmp_exec[1],
+                    }
+                    self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+                else:
+                    tmp_target_menu_option = tmp_exec[2]
+                    entry_parameter = tmp_target_menu_option.get('entry_parameter').get('parameter')
+                    entry_file = tmp_target_menu_option.get('entry_parameter').get('file')
 
             # レコード操作前エラー確認
             if self.get_message_count(MSG_LEVEL_ERROR) > 0:
@@ -1526,6 +1553,10 @@ class loadTable():
                 base_cols_val[REST_KEY_DISCARD] = 1
             else:
                 base_cols_val[REST_KEY_DISCARD] = 0
+
+            # インポート時はエクスポートで出力された値をそのまま使う
+            if import_mode:
+                base_cols_val[REST_KEY_DISCARD] = entry_parameter.get('discard')
 
             entry_parameter.update(base_cols_val)
 
@@ -1561,6 +1592,11 @@ class loadTable():
 
             # rest_key → カラム名に変換
             colname_parameter = self.convert_restkey_colname(tmp_entry_parameter, current_row)
+
+            # import時には履歴を作成しないのでフラグをオフにする
+            if import_mode:
+                history_flg = False
+
             # 登録・更新処理
             if cmd_type == CMD_REGISTER:
                 result = self.objdbca.table_insert(self.get_table_name(), colname_parameter, primary_key, history_flg)
@@ -1658,23 +1694,24 @@ class loadTable():
 
             # テーブル単位の個別処理後を実行
             # メニュー、カラム個別処理:レコード操作後
-            target_menu_option['uuid'] = result_uuid
-            target_menu_option['uuid_jnl'] = result_uuid_jnl
-            target_menu_option['entry_parameter']['parameter'] = entry_parameter
-            target_menu_option['entry_parameter']['file'] = entry_file
+            if import_mode is False:
+                target_menu_option['uuid'] = result_uuid
+                target_menu_option['uuid_jnl'] = result_uuid_jnl
+                target_menu_option['entry_parameter']['parameter'] = entry_parameter
+                target_menu_option['entry_parameter']['file'] = entry_file
 
-            tmp_exec = self.exec_menu_after_validate(copy.deepcopy(target_menu_option))
-            if tmp_exec[0] is not True:
-                dict_msg = {
-                    'status_code': '',
-                    'msg_args': '',
-                    'msg': tmp_exec[1],
-                }
-                self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
-            else:
-                tmp_target_menu_option = tmp_exec[2]
-                entry_parameter = tmp_target_menu_option.get('entry_parameter').get('parameter')
-                entry_file = tmp_target_menu_option.get('entry_parameter').get('file')
+                tmp_exec = self.exec_menu_after_validate(copy.deepcopy(target_menu_option))
+                if tmp_exec[0] is not True:
+                    dict_msg = {
+                        'status_code': '',
+                        'msg_args': '',
+                        'msg': tmp_exec[1],
+                    }
+                    self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+                else:
+                    tmp_target_menu_option = tmp_exec[2]
+                    entry_parameter = tmp_target_menu_option.get('entry_parameter').get('parameter')
+                    entry_file = tmp_target_menu_option.get('entry_parameter').get('file')
 
             # 実行結果を保存
             target_result_info = {}
@@ -1747,12 +1784,12 @@ class loadTable():
 
         return result
 
-    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal'):
+    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False):
         """
             []::RESTパラメータへキー変換
             ARGS:
                 parameter:パラメータ
-                mode: inner/normal/input/excel/excel_jnl
+                mode: inner/export/normal/input/excel/excel_jnl
             RETRUN:
                 {}
         """
@@ -1760,7 +1797,7 @@ class loadTable():
         rest_file = {}
         json_cols_base_key = list(rest_parameter.keys())
         for col_name, col_val in rows.items():
-            # メニュー作成パラメータDATA_JSON構造
+            # パラメータシート作成パラメータDATA_JSON構造
             if col_name == 'DATA_JSON':
                 try:
                     json_rows = json.loads(col_val)
@@ -1773,7 +1810,7 @@ class loadTable():
                             # ID → VALUE 変換処理不要ならVALUE変更無し
                             if self.get_col_class_name(jsonkey) in ['PasswordColumn']:
                                 # 内部処理用
-                                if mode in ['input']:
+                                if mode in ['input', 'export']:
                                     if jsonval is not None:
                                         objcolumn = self.get_columnclass(jsonkey)
                                         jsonval = util.ky_decrypt(jsonval)    # noqa: F405
@@ -1785,10 +1822,10 @@ class loadTable():
                                     jsonval = None
                             elif self.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:
                                 # 内部処理用
-                                if mode in ['input']:
+                                if mode in ['input', 'export']:
                                     if jsonval is not None:
-                                        objcolumn = self.get_columnclass(jsonkey)
-                                        jsonval = util.ky_decrypt(jsonval)    # noqa: F405
+                                        result = objcolumn.get_values_by_key([jsonval])
+                                        jsonval = util.ky_decrypt(result.get(jsonval))# noqa: F405
                                 elif mode in ['inner']:
                                     if jsonval is not None:
                                         # base64した値をそのまま返却
@@ -1807,7 +1844,7 @@ class loadTable():
                                         if col_val is not None:
                                             objcolumn = self.get_columnclass(jsonkey)
                                             col_val = util.ky_decrypt(col_val)    # noqa: F405
-                                    elif mode in ['inner']:
+                                    elif mode in ['inner', 'export']:
                                         if jsonval is not None:
                                             # base64した値をそのまま返却
                                             pass
@@ -1820,6 +1857,7 @@ class loadTable():
                                         jsonval = tmp_exec[2]
 
                             rest_parameter[jsonkey] = jsonval
+
                             if mode not in ['excel', 'excel_jnl']:
                                 if self.get_col_class_name(jsonkey) == 'FileUploadColumn':
                                     objcolumn = self.get_columnclass(jsonkey)
@@ -1847,7 +1885,7 @@ class loadTable():
                     # ID → VALUE 変換処理不要ならVALUE変更無し
                     if self.get_col_class_name(rest_key) in ['PasswordColumn']:
                         # 内部処理用
-                        if mode in ['input']:
+                        if mode in ['input', 'export']:
                             if col_val is not None:
                                 objcolumn = self.get_columnclass(rest_key)
                                 col_val = util.ky_decrypt(col_val)    # noqa: F405
@@ -1867,19 +1905,19 @@ class loadTable():
                                 if col_val is not None:
                                     objcolumn = self.get_columnclass(rest_key)
                                     col_val = util.ky_encrypt(col_val)    # noqa: F405
-                            elif mode in ['inner']:
+                            elif mode in ['inner', 'export']:
                                 if jsonval is not None:
                                     # base64した値をそのまま返却
                                     pass
                             else:
                                 col_val = None
                     else:
-                        if mode not in ['input']:
+                        if mode not in ['input', 'export'] and force_export is False:
                             tmp_exec = objcolumn.convert_value_output(col_val)
                             if tmp_exec[0] is True:
                                 col_val = tmp_exec[2]
 
-                    if mode in ['input', 'inner']:
+                    if mode in ['input', 'inner', 'export']:
                         rest_parameter.setdefault(rest_key, col_val)
                     else:
                         # if view_item == '1' or auto_input_item == '1':
@@ -1893,7 +1931,7 @@ class loadTable():
                             file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
                             rest_file.setdefault(rest_key, file_data)
                         elif self.get_col_class_name(rest_key) == 'FileUploadEncryptColumn':
-                            if mode in ['input', 'inner']:
+                            if mode in ['input', 'inner', 'export']:
                                 objcolumn = self.get_columnclass(rest_key)
                                 # ファイル取得＋64変換
                                 file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
@@ -2030,7 +2068,7 @@ class loadTable():
         # file = target_option.get('file')
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu_id())
@@ -2062,7 +2100,7 @@ class loadTable():
         # file = target_option.get('file')
         if exec_config is not None:
             if str(self.get_sheet_type()) in ["1", "2", "3", "4"]:
-                # メニュー作成機能で作成したメニュー用のファイルを指定
+                # パラメータシート作成機能で作成したメニュー用のファイルを指定
                 external_validate_path = 'common_libs.validate.valid_cmdb_menu'
             else:
                 external_validate_path = 'common_libs.validate.valid_{}'.format(self.get_menu_id())
@@ -2247,7 +2285,7 @@ class loadTable():
                 if objcol is not None:
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                     tmp_col_name = self.get_col_name(tmp_keys)
-                    if input_item != '1':
+                    if input_item != '1' and input_item != '3':
                         if tmp_col_name not in primary_key_list:
                             if tmp_keys in parameter:
                                 del parameter[tmp_keys]
@@ -2405,3 +2443,179 @@ class loadTable():
 
             # メニュー共通処理: 組み合わせ一意制約
             self.exec_unique_constraint(restore_chk_parameter, target_uuid)
+
+    # [filter]:メニューのレコード取得
+    def rest_export_filter(self, parameter, mode='nomal'):
+        """
+            RESTAPI[filter]:メニューのレコード取得
+            ARGS:
+                parameter:検索条件
+                mode
+                    export:内部処理用(IDColumn等は変換後の値、PasswordColumn等は復号化された状態で返却)
+            RETURN:
+                status_code, result, msg,
+        """
+        status_code = '000-00000'  # 成功
+        msg = ''
+
+        search_mode_list = [
+            SEARCH_MODE_NOMAL,
+            SEARCH_MODE_LIST,
+            SEARCH_MODE_RANGE
+        ]
+
+        result_list = []
+        filter_querys = []
+        try:
+            # テーブル情報（カラム、PK取得）
+            column_list = self.get_column_list()
+            primary_key = self.get_primary_key()
+            # テーブル本体
+
+            if mode in ['inner', 'export', 'nomal', 'excel', 'count']:
+                view_name = self.get_view_name()
+                table_name = self.get_table_name()
+
+                # シートタイプが「参照用(5, 6)」の場合、専用の検索条件生成処理
+                if str(self.get_sheet_type()) in ["5", "6"] and table_name is None:
+                    return status_code, result, msg,
+
+                # parameter check
+                if isinstance(parameter, dict):
+                    for search_key, search_confs in parameter.items():
+                        if len(search_confs) > 0:
+                            for search_mode, search_conf in search_confs.items():
+                                if search_mode in search_mode_list:
+                                    if search_key in self.get_restkey_list():
+                                        objcolumn = self.get_columnclass(search_key)
+                                        # search_modeのチェック
+                                        if search_mode == 'RANGE' and objcolumn.__class__.__name__ not in ['LastUpdateDateColumn', 'NumColumn', 'FloatColumn', 'DateTimeColumn', 'DateColumn']:
+                                            status_code = '499-00101'
+                                            log_msg_args = [search_key]
+                                            api_msg_args = [search_key]
+                                            raise AppException(status_code, log_msg_args, api_msg_args)
+
+                                        # 整数カラムの場合は検索する値をint型に変換する
+                                        if objcolumn.__class__.__name__ == "NumColumn":
+                                            convert_search_conf = {}
+                                            for k, v in search_conf.items():
+                                                if str.isnumeric(v):
+                                                    if int(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = int(v)
+                                                else:
+                                                    convert_search_conf[k] = v
+                                            filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
+                                        # 小数カラムの場合は検索する値をfloat型に変換する
+                                        elif objcolumn.__class__.__name__ == "FloatColumn":
+                                            convert_search_conf = {}
+                                            for k, v in search_conf.items():
+                                                try:
+                                                    if float(v) == 0:
+                                                        convert_search_conf[k] = v
+                                                    else:
+                                                        convert_search_conf[k] = float(v)
+                                                except Exception:
+                                                    convert_search_conf[k] = v
+                                            filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
+                                        else:
+                                            filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
+
+                #  全件
+                where_str = ''
+                bind_value_list = []
+                conjunction = "where"
+
+                # where生成
+                if len(filter_querys) > 0:
+                    for filter_query in filter_querys:
+                        if filter_query.get('where') is not None:
+                            if len(where_str) != 0:
+                                conjunction = 'and'
+                            tmp_where_str = ' {} {}'.format(conjunction, filter_query.get('where'))
+                            bindkeys = filter_query.get('bindkey')
+                            if isinstance(bindkeys, str):
+                                bindkey = bindkeys
+                                tmp_where_str = tmp_where_str.replace(bindkey, '%s')
+                                if filter_query.get('bindvalue').get(bindkey):
+                                    bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
+                            elif isinstance(bindkeys, list):
+                                for bindkey in bindkeys:
+                                    tmp_where_str = tmp_where_str.replace(bindkey, '%s')
+                                    if filter_query.get('bindvalue').get(bindkey):
+                                        bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
+                            where_str = where_str + tmp_where_str
+
+                sort_key = self.get_sort_key()
+                if sort_key is not None:
+                    str_orderby = ''
+                    where_str = where_str + str_orderby
+            elif mode in ['jnl', 'excel_jnl', 'count_jnl', 'jnl_all', 'excel_jnl_all', 'jnl_count_all']:
+                # 履歴テーブル
+                where_str = ''
+                bind_value_list = []
+                view_name = self.get_view_name_jnl()
+                table_name = self.get_table_name_jnl()
+
+                if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all']:
+                    tmp_jnl_conf = parameter.get('JNL')
+                    if tmp_jnl_conf is not None:
+                        bindvalue = tmp_jnl_conf
+                        bind_value_list = [bindvalue]
+                    else:
+                        bindvalue = None
+
+                    if bindvalue is None or isinstance(bindvalue, str) is False:
+                        status_code = '499-00102'
+                        log_msg_args = []
+                        api_msg_args = []
+                        # raise AppException(status_code, msg_ags)
+                        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+                elif mode in ['jnl_all']:
+                    for k, v in parameter.items():
+                        if len(where_str) > 0:
+                            where_str += ' AND '
+                        else:
+                            where_str += 'where '
+
+                        if k == 'LAST_UPDATE_TIMESTAMP':
+                            where_str += k + ' >= ' + "'" + v + "' "
+                        else:
+                            where_str += k + ' = ' + "'" + v + "' "
+
+                target_uuid_key = self.get_rest_key(primary_key)
+
+                if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all']:
+                    where_str = textwrap.dedent("""
+                        where `{col_name}` IN ( %s )
+                        ORDER BY `JOURNAL_REG_DATETIME` DESC
+                    """).format(col_name=primary_key).strip()
+                else:
+                    where_str += textwrap.dedent("""
+                        ORDER BY `JOURNAL_REG_DATETIME` DESC
+                    """).format().strip()
+
+                sort_key = self.get_sort_key()
+                if sort_key is not None:
+                    str_orderby = ''
+                    where_str = where_str + str_orderby
+
+            # データ取得
+            tmp_result = self.objdbca.table_select(table_name, where_str, bind_value_list)
+
+            # RESTパラメータへキー変換
+            for rows in tmp_result:
+                target_uuid = rows.get(primary_key)
+                target_uuid_jnl = rows.get(COLNAME_JNL_SEQ_NO)
+                rest_parameter, rest_file = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, force_export=True)
+                tmp_data = {}
+                tmp_data.setdefault(REST_PARAMETER_KEYNAME, rest_parameter)
+                tmp_data.setdefault(REST_FILE_KEYNAME, rest_file)
+                result_list.append(tmp_data)
+
+        except AppException as e:
+            raise e
+        finally:
+            result = result_list
+        return status_code, result, msg,

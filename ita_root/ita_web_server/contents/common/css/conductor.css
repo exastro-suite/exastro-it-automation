@@ -1173,9 +1173,13 @@ transform: translate(-50%,-50%) rotate(-45deg);
 .add-node.dsc,
 .node-dsc .node-circle .node-gem { background-color: #F5600A; }
 
-.node-terraform .node-type  { background-color: #5c4ee5; }
-.add-node.terraform,
-.node-terraform .node-circle .node-gem { background-color: #5c4ee5; }
+.node-terraform-cli .node-type  { background-color: #844fba; }
+.add-node.terraform-cli,
+.node-terraform-cli .node-circle .node-gem { background-color: #844fba; font-size: 20px; }
+
+.node-terraform-cloud-ep .node-type  { background-color: #5c4ee5; }
+.add-node.terraform-cloud-ep,
+.node-terraform-cloud-ep .node-circle .node-gem { background-color: #5c4ee5; font-size: 20px; }
 
 /* Running */
 .editor[data-editor-mode="confirmation"] .node {
@@ -2169,4 +2173,96 @@ color: #333;
 .mouse-onIcon {
 z-index: 2;
 color: #FFA500;
+}
+
+
+.noticeStatusBar {
+display: block;
+width: 100%; height: 8px;
+margin-bottom: 6px;
+background-color: #CCC;
+border: 2px solid #111;
+border-radius: 4px;
+}
+.statusColor3 { background-color: #335581; } /* 実行中 */
+.statusColor4 { background-color: #29ABE2; } /* 実行中（遅延）*/
+.statusColor5 { background-color: #006400; } /* 一時停止 */
+.statusColor6 { background-color: #91D21E; color: #000; } /* 正常終了 */
+.statusColor7 { background-color: #8227B4; } /* 異常終了 */
+.statusColor8 { background-color: #FFB400; color: #000; } /* 警告終了 */
+.statusColor9 { background-color: #FFDC00; color: #000; } /* 緊急停止 */
+.statusColor10 { background-color: #FF69A3; } /* 予約取消 */
+.statusColor11 { background-color: #E60000; } /* 想定外エラー */
+
+.noticeStatusName {
+display: block;
+overflow: hidden;
+width: 38px;
+font-size: 11px;
+}
+.noticeStatusNameInner {
+display: block;
+transform-origin: left;
+white-space: nowrap;
+text-align: left;
+}
+.tbody .ci.noticeName {
+max-width: 320px;
+word-break: break-all;
+white-space: normal;
+text-align: right;
+}
+.noticeStatusCheckWrap {
+padding: 0;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 32px;
+}
+.noticeStatusCheckTd {
+cursor: pointer;
+}
+.noticeStatusCheckTd:hover .checkboxLabel {
+background-image: none;
+border-color: var(--accentColor100);
+border-width: 2px;
+}
+.noticeStatusCheckTd :hover .checkbox:checked ~ .checkboxLabel {
+background-color: var(--accentColor100);
+}
+.panelNoticeList {
+width: 100%;
+padding: 8px 0;
+}
+.panelNoticeName,
+.panelNoticeStatus {
+background-color: rgba( 0,0,0,.2 );
+border-left: 4px solid var(--accentColor80);
+}
+.panelNoticeName {
+padding: 4px 0 4px 12px;
+border-radius: 0 4px 0 0;
+font-size: 13px;
+}
+.panelNoticeStatus {
+padding: 4px 0 8px 12px;
+margin-bottom: 12px;
+border-radius: 0 0 4px 0;
+}
+.panelNoticeStatus:last-child {
+margin-bottom: 0;
+}
+.panelNoticeStatusList {
+display: flex;
+flex-wrap: wrap;
+gap: 4px;
+}
+.panelNoticeStatusItem {
+padding: 4px 4px 3px;
+border-radius: 4px;
+line-height: 1;
+font-size: 12px;
+}
+.noticeHeadTh {
+vertical-align: top;
 }

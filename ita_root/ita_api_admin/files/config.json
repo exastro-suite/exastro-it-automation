@@ -6,9 +6,17 @@
         {"Conductor.png":["/menu_group_icon/301/_old/301/","/menu_group_icon/301/"]},
         {"anscmn.png":["/menu_group_icon/201/_old/201/","/menu_group_icon/201/"]},
         {"anslr.png":["/menu_group_icon/204/_old/204/","/menu_group_icon/204/"]},
+        {"anslgc.png":["/menu_group_icon/202/_old/202/","/menu_group_icon/202/"]},
+        {"anspnr.png":["/menu_group_icon/203/_old/203/","/menu_group_icon/203/"]},
         {"sheet.png":["/menu_group_icon/501/_old/501/","/menu_group_icon/501/"]},
         {"for-input.png":["/menu_group_icon/502/_old/502/","/menu_group_icon/502/"]},
         {"for-subst.png":["/menu_group_icon/503/_old/503/","/menu_group_icon/503/"]},
-        {"for-view.png":["/menu_group_icon/504/_old/504/","/menu_group_icon/504/"]}
+        {"for-view.png":["/menu_group_icon/504/_old/504/","/menu_group_icon/504/"]},
+        {"compare.png":["/menu_group_icon/401/_old/401/","/menu_group_icon/401/"]},
+        {"migration.png":["/menu_group_icon/601/_old/601/","/menu_group_icon/601/"]},
+        {"host_group.png":["/menu_group_icon/701/_old/701/","/menu_group_icon/701/"]},
+        {"terraform_cloud_ep.png":["/menu_group_icon/801/_old/801/","/menu_group_icon/801/"]},
+        {"terraform_cli.png":["/menu_group_icon/901/_old/901/","/menu_group_icon/901/"]},
+        {"cicd.png":["/menu_group_icon/1001/_old/1001/","/menu_group_icon/1001/"]}
     ]
 }

@@ -28,6 +28,7 @@ ENV APACHE_PID_DIR          /var/run_$USERNAME/httpd/pid
 ENV APACHE_SOCKET_DIR       /var/run_$USERNAME/httpd/socket
 ENV APACHE_USERNAME         $USERNAME
 ENV APACHE_GROUPNAME        $GROUPNAME
+ENV SERVICE_NAME=ita-api-organization
 
 RUN dnf install -y \
     gcc \
@@ -54,6 +55,8 @@ RUN dnf install -y \
     chardet \
     connexion[swagger-ui] \
     pycryptodome \
+    dictdiffer \
+    python-hcl2 \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \
@@ -89,7 +92,9 @@ RUN dnf install -y \
 
 USER $USERNAME
 
-RUN mkdir ~/.config
+RUN mkdir ~/.config \
+&& mkdir ~/.vscode-server \
+&& mkdir ~/.vscode-server-insiders
 
 WORKDIR $APP_PATH
 

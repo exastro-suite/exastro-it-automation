@@ -50,14 +50,14 @@ class FileUploadColumn(Column):
                 col_name = objcol.get('COL_NAME')
 
         self.col_name = col_name
-        
+
         # rest用項目名
         self.rest_key_name = rest_key_name
 
         self.db_qm = "'"
 
         self.objdbca = objdbca
-        
+
         self.cmd_type = cmd_type
 
     def check_basic_valid(self, val, option={}):
@@ -76,7 +76,7 @@ class FileUploadColumn(Column):
         upload_max_size = None
         # ファイル名正規表現　カンマとダブルクォートとタブとスラッシュと改行以外の文字
         preg_match = r"^[^,\"\t\/\r\n]*$"
-        
+
         if val is not None:
             if option.get("file_data") is not None:
                 # デコード値
@@ -90,9 +90,9 @@ class FileUploadColumn(Column):
 
                 # 禁止拡張子
                 forbidden_extension_arry = self.objdbca.table_select("T_COMN_SYSTEM_CONFIG", "WHERE CONFIG_ID = %s", bind_value_list=['FORBIDDEN_UPLOAD'])  # noqa:E501
-                
+
                 forbidden_extension = forbidden_extension_arry[0]["VALUE"]
-                
+
                 # カラムの閾値を取得
                 objcols = self.get_objcols()
                 if objcols is not None:
@@ -111,7 +111,7 @@ class FileUploadColumn(Column):
                             retBool = False
                             msg = g.appmsg.get_api_message('MSG-00008', [max_length, check_val])
                             return retBool, msg
-                
+
                 # ファイル名のチェック
                 if preg_match is not None:
                     if len(preg_match) != 0:
@@ -160,7 +160,7 @@ class FileUploadColumn(Column):
         # 廃止の場合return
         if cmd_type == "Discard":
             return retBool
-        
+
         if val is not None:
             if len(str(val)) != 0:
                 decode_option = option.get("file_data")
@@ -180,7 +180,7 @@ class FileUploadColumn(Column):
 
                 dir_path = path["file_path"]
                 old_dir_path = path["old_file_path"]
-                        
+
                 # old配下にファイルアップロード
                 if len(old_dir_path) > 0:
                     upload_file(old_dir_path, decode_option)  # noqa: F405
@@ -188,7 +188,7 @@ class FileUploadColumn(Column):
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00013', [])
                     return retBool, msg
-                
+
                 # 更新、復活の場合シンボリックリンクを削除
                 if cmd_type == "Update" or cmd_type == "Restore":
                     # 更新前のファイルパス取得
@@ -200,7 +200,7 @@ class FileUploadColumn(Column):
                             filelist.append(f)
                     if len(filelist) != 0:
                         old_file_path = filepath + "/" + filelist[0]
-                        
+
                         try:
                             os.unlink(old_file_path)
                         except Exception:
@@ -215,9 +215,9 @@ class FileUploadColumn(Column):
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00015', [old_dir_path, dir_path])
                     return retBool, msg
-            
+
         return retBool,
-    
+
     def get_file_data(self, file_name, target_uuid, target_uuid_jnl=''):
         """
             ファイル(base64)を取得
@@ -253,6 +253,49 @@ class FileUploadColumn(Column):
 
         return result
 
+    def get_file_data_path(self, file_name, target_uuid, target_uuid_jnl='', file_chk=True):
+        """
+            ファイルのパスを取得
+            ARGS:
+                file_name:ファイル名
+                target_uuid:uuid
+                target_uuid_jnl:uuid
+            RETRUN:
+                file_path string
+        """
+        result = None
+
+        if file_name is not None:
+            if len(file_name) != 0:
+                workspace_id = g.get("WORKSPACE_ID")
+                menu_id = self.get_menu()
+                rest_name = self.get_rest_key_name()
+
+                ret = self.get_file_upload_place()
+                if not ret:
+                    path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, target_uuid_jnl)   # noqa:F405
+                else:
+                    path = get_upload_file_path_specify(workspace_id, ret, target_uuid, file_name, target_uuid_jnl)   # noqa:F405
+                dir_path = path["file_path"]
+                old_file_path = path["old_file_path"]
+                if target_uuid_jnl:
+                    # target_uuid_jnl指定時
+                    # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
+                    result = file_encode(old_file_path)  # noqa: F405
+                    if result is False or result == "" and file_chk is True:
+                        result = None
+                    else:
+                        result = old_file_path  # noqa: F405
+                else:
+                    # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
+                    result = file_encode(dir_path)  # noqa: F405
+                    if result is False or result == "" and file_chk is True:
+                        result = None
+                    else:
+                        result = dir_path  # noqa: F405
+
+        return result
+
     def after_iud_restore_action(self, val="", option={}):
         """
             カラムクラス毎の個別処理 レコード操作後の状態回復処理
@@ -264,7 +307,7 @@ class FileUploadColumn(Column):
         retBool = True
         msg = ''
         cmd_type = self.get_cmd_type()
-        
+
         # 廃止の場合return
         if cmd_type == "Discard":
             return retBool, msg
@@ -299,8 +342,7 @@ class FileUploadColumn(Column):
                     except Exception:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00016', [old_dir_path])
-                        print(msg)
-                        # return retBool, msg
+
                     try:
                         # ファイルの更新があった最終更新時点のファイルでシンボリックリンク生成
                         for jnlid in option.get('target_jnls'):
@@ -321,6 +363,5 @@ class FileUploadColumn(Column):
                     except Exception:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00017', [old_dir_path])
-                        print(msg)
-                        # return retBool, msg
+
         return retBool, msg

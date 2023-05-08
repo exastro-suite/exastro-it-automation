@@ -19,7 +19,7 @@ import sys
 # from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
-from common_libs.ci.util import wrapper_job
+from common_libs.ci.util import wrapper_job, wrapper_job_all_org
 from backyard_main import backyard_main as main_logic
 
 
@@ -32,13 +32,17 @@ def main():
     with flask_app.app_context():
         g.USER_ID = os.environ.get("USER_ID")
         g.LANGUAGE = os.environ.get("LANGUAGE")
+        g.SERVICE_NAME = os.environ.get("SERVICE_NAME")
         # create app log instance and message class instance
         g.applogger = AppLog()
         g.appmsg = MessageTemplate(g.LANGUAGE)
 
         args = sys.argv
         loop_count = 500 if len(args) == 1 else args[1]
-        wrapper_job(main_logic, None, None, loop_count)
+        if g.SERVICE_NAME == "ita-by-ansible-execute":
+            wrapper_job_all_org(main_logic, loop_count)
+        else:
+            wrapper_job(main_logic, None, None, loop_count)
 
 
 if __name__ == '__main__':

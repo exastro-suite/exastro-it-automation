@@ -15,9 +15,7 @@ import os
 import re
 from flask import g
 
-from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
-from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, get_AnsibleDriverShellPath
+from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, get_AnsibleDriverShellPath, getAnsibleConst
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
 from common_libs.common.util import ky_file_decrypt
 from common_libs.common.util import ky_decrypt
@@ -75,12 +73,11 @@ class AnsibleExecute():
         """
         self.getLastErrormsg = msg
 
-    def execute_construct(self, driver_id, execute_no, conductor_instance_no, virtualenv_name, execute_user, ansible_path, vault_password, run_mode, forks):  # noqa: E501
+    def execute_construct(self, ansConstObj, execute_no, conductor_instance_no, virtualenv_name, execute_user, ansible_path, vault_password, run_mode, forks):  # noqa: E501
         """
         作業実行コンテナよりansible-playbookコマンド実行
         Arguments:
-            driver_id:      ドライバID:
-                            AnscConst.DF_LEGACY_ROLE_DRIVER_ID
+            ansConstObj:    ansible共通定数オブジェクト
             execute_no:     作業番号:
                             T_ANSR_EXEC_STS_INST.EXECUTION_NO
             conductor_instance_no:  コンダクターno:
@@ -105,10 +102,8 @@ class AnsibleExecute():
         strPlayBookFileName = 'playbook.yml'
         strExecshellName = '/.playbook_execute_shell.sh'
 
-        AnsObj = AnscConst()
-        
         # 作業実行パス取得（作業番号まで）
-        execute_path = getAnsibleExecutDirPath(driver_id, execute_no)
+        execute_path = getAnsibleExecutDirPath(ansConstObj, execute_no)
 
         # palybook実行に必要なファイルパス生成
         strExecshellTemplateName = "{}/ky_ansible_playbook_command_shell_template.sh".format(get_AnsibleDriverShellPath())
@@ -132,9 +127,7 @@ class AnsibleExecute():
             execute_user = " "
 
         # 親playbook取得
-        if driver_id == AnsObj.DF_LEGACY_ROLE_DRIVER_ID:
-            del AnsObj
-            AnsObj = AnsrConst()
+        if ansConstObj.vg_driver_id == ansConstObj.DF_LEGACY_ROLE_DRIVER_ID:
             strPlayBookFileName = 'site.yml'
 
         # ansible-playbookコマンド実行時のオプションパラメータファイルパス
@@ -176,7 +169,7 @@ class AnsibleExecute():
         strhosts = "{}/{}/hosts".format(execute_path, self.strInFolderName)
         # playbookフルパス
         strPlaybookPath = "{}/{}/{}".format(execute_path, self.strInFolderName, strPlayBookFileName)
-            
+
         # virtualenv が設定されている場合、ansible_vaultのパスを空白にする。
         if virtualenv_name:
             virtualenv_flg = "__define__"
@@ -194,7 +187,7 @@ class AnsibleExecute():
             stransibleplaybook_options,
             strVaultPasswordFileName,
             strPlaybookPath)
-        
+
         # sshAgentの設定とPlaybookを実行するshellのテンプレートを読み込み
         strShell = ""
         with open(strExecshellTemplateName) as fd:
@@ -213,7 +206,7 @@ class AnsibleExecute():
         # ansible-playbook実行 shell作成
         with open(strExecshellName, 'w') as fd:
             fd.write(strShell)
-        
+
         os.chmod(strExecshellName, 0o777)
         # ansible-playbook 標準エラー出力先
         strSTDERRFileName = "{}/{}/{}".format(execute_path, self.strOutFolderName, self.STDERRLogfile)
@@ -234,20 +227,19 @@ class AnsibleExecute():
         else:
             ansibleAg = KubernetesMode()
 
-        result = ansibleAg.container_start_up(execute_no, conductor_instance_no, str_shell_command)
+        result = ansibleAg.container_start_up(ansConstObj, execute_no, conductor_instance_no, str_shell_command)
         if result[0] is True:
             g.applogger.debug(result[1])
             return True
         else:
             self.setLastError(result[1])
             return False
-        
-    def execute_statuscheck(self, driver_id, execute_no):
+
+    def execute_statuscheck(self, ansConstObj, execute_no):
         """
         作業実行コンテナの実行状態を確認
         Arguments:
-            driver_id:      ドライバID:
-                            AnscConst.DF_LEGACY_ROLE_DRIVER_ID
+            ansConstObj:    ansible共通定数オブジェクト
             execute_no:     作業番号
                             T_ANSR_EXEC_STS_INST.EXECUTION_NO
         Returns:
@@ -259,11 +251,9 @@ class AnsibleExecute():
         """
         self.setLastError("")
 
-        AnsObj = AnscConst()
-
         retStatus = "2"
         # 作業実行パス取得（作業番号まで）
-        execute_path = getAnsibleExecutDirPath(driver_id, execute_no)
+        execute_path = getAnsibleExecutDirPath(ansConstObj, execute_no)
         # 緊急停止ファイル作成
         strForcedFileName = "{}/{}/{}".format(execute_path, self.strOutFolderName, self.forcedfile)
         # ansible-playbookコマンド実行結果ファイル
@@ -290,7 +280,7 @@ class AnsibleExecute():
                 # コンテナ停止
                 #   True: 停止
                 #   False: 停止失敗
-                res_container_kill = ansibleAg.container_kill(execute_no)
+                res_container_kill = ansibleAg.container_kill(ansConstObj, execute_no)
                 if res_container_kill[0] is True:
                     # ステータス 緊急停止
                     retStatus = "8"
@@ -332,7 +322,7 @@ class AnsibleExecute():
                 retStatus = "7"
 
             # 終了済みコンテナの削除
-            res_is_container_clean = ansibleAg.container_clean(execute_no)
+            res_is_container_clean = ansibleAg.container_clean(ansConstObj, execute_no)
             if res_is_container_clean[0] is False:
                 # ステータス 想定外エラー
                 self.setLastError(res_is_container_clean[1])
@@ -345,7 +335,8 @@ class AnsibleExecute():
         if os.path.isfile(strorgSTDOUTFileName):
             with open(strorgSTDOUTFileName, "r") as fd:
                 log_data = fd.read()
-            if driver_id == AnsObj.DF_PIONEER_DRIVER_ID:
+
+            if ansConstObj.vg_driver_id == ansConstObj.DF_PIONEER_DRIVER_ID:
                 # ログ(", ")  =>  (",\n")を改行する
                 log_data = log_data.replace("\", \"", "\",\n\"")
                 # 改行文字列\r\nを改行コードに置換える
@@ -369,7 +360,7 @@ class AnsibleExecute():
             fd.write(log_data)
 
         return retStatus
-    
+
     def execute_abort(self, driver_id, execute_no):
         """
         作業実行コンテナの緊急停止
@@ -384,10 +375,12 @@ class AnsibleExecute():
         self.setLastError("")
 
         # 作業実行パス取得（作業番号まで）
-        execute_path = getAnsibleExecutDirPath(driver_id, execute_no)
+        ansc_const = getAnsibleConst(driver_id)
+
+        execute_path = getAnsibleExecutDirPath(ansc_const, execute_no)
         # 緊急停止ファイル作成
         strForcedFileName = "{}/{}/{}".format(execute_path, self.strOutFolderName, self.forcedfile)
         with open(strForcedFileName, 'w') as fd:
             fd.write("")
-            
+
         return True

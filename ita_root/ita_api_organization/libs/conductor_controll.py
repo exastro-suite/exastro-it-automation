@@ -55,7 +55,7 @@ def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
             if 'conductor' in conductor_data:
                 conductor_data['conductor']['id'] = conductor_class_id
                 conductor_data['conductor']['last_update_date_time'] = None
-            
+
             tmp_parameter = {}
             tmp_parameter.setdefault('conductor_class_id', conductor_class_id)
             tmp_parameter.setdefault('conductor_name', conductor_name)
@@ -100,7 +100,7 @@ def conductor_maintenance(objdbca, menu, conductor_data, target_uuid=''):
         if (objmovement.get_objtable() is False or
                 objcclass.get_objtable() is False):
             raise Exception()
-        
+
         objmenus = {
             "objmovement": objmovement,
             "objcclass": objcclass
@@ -250,7 +250,7 @@ def get_conductor_execute_class_info(objdbca, menu):
         log_msg_args = [menu]
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-    
+
     try:
         result = get_conductor_class_info_data(objdbca)
     except Exception:
@@ -278,7 +278,7 @@ def get_conductor_class_info(objdbca, menu):
         log_msg_args = [menu]
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-    
+
     try:
         result = get_conductor_class_info_data(objdbca)
     except Exception:
@@ -325,7 +325,7 @@ def get_conductor_class_info_data(objdbca, mode=""):
 
         objCexec = ConductorExecuteLibs(objdbca, '', objmenus)  # noqa: F405
         result = objCexec.get_class_info_data(mode)
-    
+
     except Exception:
         status_code = "499-00803"
         log_msg_args = []
@@ -357,22 +357,25 @@ def conductor_execute(objdbca, menu, parameter):
         cc_menu = 'conductor_class_edit'
         n_menu = 'conductor_node_instance_list'
         m_menu = 'movement_list'
+        notice = 'conductor_notice_definition'
         objconductor = load_table.loadTable(objdbca, c_menu)  # noqa: F405
         objnode = load_table.loadTable(objdbca, n_menu)  # noqa: F405
         objmovement = load_table.loadTable(objdbca, m_menu)  # noqa: F405
         objcclass = load_table.loadTable(objdbca, cc_menu)  # noqa: F405
+        objcnotice = load_table.loadTable(objdbca, notice)
 
         if (objconductor.get_objtable() is False or
                 objnode.get_objtable() is False or
                 objmovement.get_objtable() is False or
                 objcclass.get_objtable() is False):
             raise Exception()
-        
+
         objmenus = {
             "objconductor": objconductor,
             "objnode": objnode,
             "objmovement": objmovement,
-            "objcclass": objcclass
+            "objcclass": objcclass,
+            "objcnotice": objcnotice
         }
     except Exception:
         status_code = "499-00804"
@@ -405,9 +408,9 @@ def conductor_execute(objdbca, menu, parameter):
         conductor_parameter = create_parameter[1].get('conductor')
         node_parameters = create_parameter[1].get('node')
         conductor_instance_id = create_parameter[1].get('conductor_instance_id')
-        
+
         status_code = "000-00000"
-        
+
         # トランザクション開始
         objdbca.db_transaction_start()
 
@@ -436,7 +439,7 @@ def conductor_execute(objdbca, menu, parameter):
         log_msg_args = [conductor_class_name, operation_name, schedule_date]
         api_msg_args = [conductor_class_name, operation_name, schedule_date]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-        
+
     result = {
         "conductor_instance_id": conductor_instance_id
     }
@@ -460,7 +463,7 @@ def get_conductor_info(objdbca, menu, conductor_instance_id):
         log_msg_args = [menu]
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-    
+
     try:
         # 対象メニューのload_table生成(conductor_instance_list,conductor_node_instance_list,movement_list)
         c_menu = 'conductor_instance_list'
@@ -534,7 +537,7 @@ def get_conductor_instance_data(objdbca, menu, conductor_instance_id):
 
         objCexec = ConductorExecuteLibs(objdbca, '', objmenus)  # noqa: F405
         result = objCexec.get_instance_data(conductor_instance_id)
-    
+
     except Exception:
         status_code = "499-00806"
         log_msg_args = [conductor_instance_id]
@@ -570,7 +573,7 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
         if (objconductor.get_objtable() is False or
                 objnode.get_objtable() is False):
             raise Exception()
-        
+
         objmenus = {
             "objconductor": objconductor,
             "objnode": objnode
@@ -581,7 +584,7 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
         log_msg_args = [mode, conductor_instance_id, node_instance_id]
         api_msg_args = [mode, conductor_instance_id, node_instance_id]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-    
+
     try:
         status_code = "000-00000"
         msg_args = []
@@ -603,7 +606,7 @@ def conductor_execute_action(objdbca, menu, mode='', conductor_instance_id='', n
             raise Exception()
 
         objdbca.db_transaction_end(True)
-        
+
         if mode == 'cancel':
             msg_code = 'MSG-40001'
         elif mode == 'scram':
@@ -642,7 +645,7 @@ def create_movement_zip(objdbca, menu, data_type, conductor_instance_id):
             raise Exception()
         if conductor_instance_id == '' or conductor_instance_id is None:
             raise Exception()
-        
+
         # 対象メニューのload_table生成(conductor_instance_list,conductor_node_instance_list,movement_list)
         c_menu = 'conductor_instance_list'
         n_menu = 'conductor_node_instance_list'

@@ -1,0 +1,13 @@
+{
+    "10102":
+    [
+        {"anslgc.png":["/menu_group_icon/202/_old/202/","/menu_group_icon/202/"]},
+        {"anspnr.png":["/menu_group_icon/203/_old/203/","/menu_group_icon/203/"]},
+        {"compare.png":["/menu_group_icon/401/_old/401/","/menu_group_icon/401/"]},
+        {"migration.png":["/menu_group_icon/601/_old/601/","/menu_group_icon/601/"]},
+        {"host_group.png":["/menu_group_icon/701/_old/701/","/menu_group_icon/701/"]},
+        {"terraform_cloud_ep.png":["/menu_group_icon/801/_old/801/","/menu_group_icon/801/"]},
+        {"terraform_cli.png":["/menu_group_icon/901/_old/901/","/menu_group_icon/901/"]},
+        {"cicd.png":["/menu_group_icon/1001/_old/1001/","/menu_group_icon/1001/"]}
+    ]
+}

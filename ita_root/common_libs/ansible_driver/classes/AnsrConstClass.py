@@ -28,11 +28,10 @@ class AnsrConst(AnscConst):
     vg_ansible_roleDB = "T_ANSR_ROLE_NAME"
     vg_ansible_role_varsDB = "T_ANSR_ROLE_VAR"
     vg_ansible_pattern_listDB = "V_ANSR_MOVEMENT"
-    # vg_ansible_role_packageDB = "T_ANSR_MATL_COLL"
     vg_ansible_master_fileDB = "T_ANSR_MATL_COLL"
     vg_ansible_master_file_pkeyITEM = "ROLE_PACKAGE_ID"
     vg_ansible_master_file_nameITEM = "ROLE_PACKAGE_NAME"
-    vg_ansible_vars_masterDB = ""
+    vg_ansible_vars_masterDB = "T_ANSR_MVMT_VAR_LINK"
     vg_ansible_pattern_linkDB = "T_ANSR_MVMT_MATL_LINK"
     vg_ansible_pattern_vars_linkDB = "T_ANSR_MVMT_VAR_LINK"
     vg_ansible_nestvar_member_max_colDB = "T_ANSR_NESTVAR_MEMBER_MAX_COL"
@@ -41,10 +40,8 @@ class AnsrConst(AnscConst):
     vg_ansible_vars_assignDB = "T_ANSR_VALUE"
     vg_ansible_nestvar_memberDB = "T_ANSR_NESTVAR_MEMBER"
     vg_ansible_nestvar_member_col_combDB = "T_ANSR_NESTVAR_MEMBER_COL_COMB"
-    
+
     # AnsibleTowerのita_executions_prepare_buildで使用している変数
-    vg_tower_driver_name = "legacy_role"
+    vg_OrchestratorSubId_dir = "legacy_role"
     # 親Playbookのファイル名
     vg_parent_playbook_name = "site.yml"
-    
-    vg_OrchestratorSubId_dir = vg_tower_driver_name

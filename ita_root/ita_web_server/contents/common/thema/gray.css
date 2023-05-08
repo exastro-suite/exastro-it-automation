@@ -1,0 +1,28 @@
+@charset "utf-8";
+/* CSS Document */
+
+:root {
+/* Header color */
+--headerColor: #49474C;
+
+/* Main color */
+--mainColor100:#49474C;--mainColor95:#525055;--mainColor90:#5B595E;--mainColor85:#646367;--mainColor80:#6D6C70;--mainColor75:#777579;--mainColor70:#807E82;--mainColor65:#89878B;--mainColor60:#929194;--mainColor55:#9B9A9D;--mainColor50:#A4A3A6;--mainColor45:#ADACAE;--mainColor40:#B6B5B7;--mainColor35:#BFBFC0;--mainColor30:#C8C8C9;--mainColor25:#D2D1D2;--mainColor20:#DBDADB;--mainColor15:#E4E3E4;--mainColor10:#EDEDED;--mainColor5:#F6F6F6;--mainColor0:#FFFFFF;
+
+/* Accent color */ 
+--accentColor100:#9D9C9E;--accentColor95:#A2A1A3;--accentColor90:#A7A6A8;--accentColor85:#ACABAD;--accentColor80:#B1B0B1;--accentColor75:#B6B5B6;--accentColor70:#BABABB;--accentColor65:#BFBFC0;--accentColor60:#C4C4C5;--accentColor55:#C9C9CA;--accentColor50:#CECECF;--accentColor45:#D3D2D3;--accentColor40:#D8D7D8;--accentColor35:#DDDCDD;--accentColor30:#E2E1E2;--accentColor25:#E7E6E7;--accentColor20:#EBEBEC;--accentColor15:#F0F0F0;--accentColor10:#F5F5F5;--accentColor5:#FAFAFA;--accentColor0:#FFFFFF;
+
+/* Black color */
+--black100:#0F0E0F;--black95:#1B1A1B;--black90:#272627;--black85:#333233;--black80:#3F3E3F;--black75:#4B4A4B;--black70:#575657;--black65:#636263;--black60:#6F6E6F;--black55:#7B7A7B;--black50:#878787;--black45:#939393;--black40:#9F9F9F;--black35:#ABABAB;--black30:#B7B7B7;--black25:#C3C3C3;--black20:#CFCFCF;--black15:#DBDBDB;--black10:#E7E7E7;--black5:#F3F3F3;--black0:#FFFFFF;
+
+/* Table row color */
+    --rowColor: #FFF;
+    --rowEvenColor: #F4F4F4;
+    --rowHeadColor: #F4F4F4;
+    --rowHeadEvenColor: #E9E9EA;
+    --rowHoverColor: #E9E9EA;
+    --rowHoverHeadColor: #E2E2E2;
+}
+
+.containerHeader {
+border-bottom-color: #3A393D;
+}

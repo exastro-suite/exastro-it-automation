@@ -531,7 +531,8 @@ setInitialConductorData() {
             'id': null,
             'conductor_name': null,
             'last_update_date_time': null,
-            'note': null
+            'note': null,
+            'notice_info': {}
         }
     };
 }
@@ -561,7 +562,9 @@ message( type, title, message ) {
           const list = JSON.parse( message ),
                 body = [];
           for ( const key in list ) {
-              body.push(`<li class="messageErrorItem">${key + ' / ' + list[ key ]}</li>`);
+              for ( const item of list[key] ) {
+                  body.push(`<li class="messageErrorItem">${key + ' / ' + fn.escape( item )}</li>`);
+              }
           }
           fn.message( type, title, `<ul class="messageErrorList">${body.join('')}</ul>`, null, time );
       } catch( error ) {
@@ -650,7 +653,7 @@ initEvents() {
               fn.executeModalOpen('conductor_execute', cd.menu,  executeConfig ).then(function( result ){
                   if ( result === 'cancel') {
                       cd.menuButtonDisabled( false );
-                  } else {
+                  } else {                  
                       const executeData = {
                           conductor_class_name: cd.data.conductor.conductor_name,
                           operation_name: result.name,
@@ -1873,7 +1876,8 @@ initNode() {
         '1': 'AL', // Ansible Legacy
         '2': 'AP', // Ansible Pioneer
         '3': 'ALR', // Ansible Legacy Role
-        '4': 'Tf',  // Terraform
+        '4': 'TERE',  // Terraform Cloud/EP
+        '5': 'TERC'   // Terraform CLI
     };
         
     // --------------------------------------------------
@@ -2758,7 +2762,7 @@ createNode( nodeID ) {
         if ( !nodeName ) nodeName = 'Unknown';
         if ( !nodeType ) nodeType = 'unknown';
         if ( !nodeCircle ) nodeCircle = 'Mv';
-        nodeClass.push('node-' + nodeType.toLocaleLowerCase().replace(/\s/g, '-') );
+        nodeClass.push('node-' + nodeType.toLocaleLowerCase().replace(/\s|\//g, '-') );
     } else {
         nodeCircle = nodeText[ nodeData.type ][0];
         nodeType = nodeText[ nodeData.type ][1];
@@ -2789,18 +2793,18 @@ createNode( nodeID ) {
     // Node name
     typeCheck = ['start', 'end', 'movement'];
     if ( typeCheck.indexOf( nodeData.type ) !== -1 ) {
-        nodeHTML += '<div class="node-name"><span>' + nodeName + '</span></div>';
+        nodeHTML += '<div class="node-name"><span>' + fn.cv( nodeName, '', true ) + '</span></div>';
     }
     if ( nodeData.type === 'call' ) {
         const callConductorId = nodeData['call_conductor_id'];
         if ( callConductorId !== undefined && callConductorId !== null ) {
             nodeClass.push('call-select');
-            nodeName = cd.getConductorName(  callConductorId);
+            nodeName = cd.getConductorName( callConductorId );
         }
         nodeHTML += ``
         + `<div class="node-name">`
             + `<span class="select-conductor-name">`
-                + `<span class="select-conductor-name-inner">${nodeName}</span>`
+                + `<span class="select-conductor-name-inner">${fn.cv( nodeName, '', true )}</span>`
             + `</span>`
         + `</div>`;
     }
@@ -2926,7 +2930,7 @@ createNode( nodeID ) {
       + '<div class="node-operation">'
         + '<dl class="node-operation-body">'
           + '<dt class="node-operation-name">OP</dt>'
-          + '<dd class="node-operation-data">' + nodeOperationData + '</dd>'
+          + '<dd class="node-operation-data">' + fn.cv( nodeOperationData, '', true ) + '</dd>'
         + '</dl>'
         + '<div class="node-operation-border"></div>'
       + '</div>'
@@ -4046,6 +4050,9 @@ initPanel() {
       '8': ['warning', getMessage.FTE02058] // 警告
     };
     
+    // 通知設定
+    cd.notice = {};
+    
     // 初期パネルをセットする
     cd.setInitPanel();
     cd.$.conductorParameter = cd.$.panel.find('.conductor-parameter > .editor-block-inner');
@@ -4291,13 +4298,14 @@ panelConductorHtml() {
           id = fn.cv( condcutor.id, '', true ),
           name = fn.cv( condcutor.conductor_name, '', true ),
           note = fn.cv( condcutor.note, '', true ),
-          update = fn.date( condcutor.last_update_date_time, 'yyyy/MM/dd HH:mm:ss');
+          update = fn.date( condcutor.last_update_date_time, 'yyyy/MM/dd HH:mm:ss'),
+          notice = fn.cv( condcutor.notice_info, undefined );
     
     const autoInput = `<span class="editorAutoInput">${getMessage.FTE02143}</span>`;
     
     const html = `
     <div class="panel-group">
-        <div class="panel-group-title">` + getMessage.FTE02067 + `</div>
+        <div class="panel-group-title">${getMessage.FTE02067}</div>
         <table class="panel-table">
             <tbody>
                 <tr>
@@ -4326,6 +4334,21 @@ panelConductorHtml() {
             </tbody>
         </table>
     </div>
+    <div class="panel-group">
+        <div class="panel-group-title">${getMessage.FTE02172}</div>
+        <table class="panel-table">
+            <tbody>
+                <tr>
+                    <td class="panel-td"><span class="panel-span">${cd.noticePanelHtml( notice )}</span></td>
+                </tr>
+            </tbody>
+        </table>
+        ${( cd.mode === 'edit' || cd.mode === 'update')?
+        `<ul class="panel-button-group">
+            <li class="panel-button-group-item"><button class="panel-button panel-select-button" data-type="selectNotice">${getMessage.FTE02168}</button></li>
+            <li class="panel-button-group-item"><button class="panel-button panel-select-button" data-type="clearNotice">` + getMessage.FTE02076 + `</button></li>
+        </ul>`: ``}
+    </div>
     ${cd.panelTextareaHtml( note )}`;
     
     return cd.panelCommon('Condcutor', html );
@@ -4342,8 +4365,8 @@ panelMovementHtml( nodeId ) {
           id = fn.cv( node.movement_id, '', true ),
           name = fn.cv( node.movement_name, '', true ),
           note = fn.cv( node.note, '', true ),
-          orchestrator = fn.cv( cd.getOrchestratorName( node.orchestra_id ), 'Unkown'),
-          operation = fn.cv( cd.getOperationName( node.operation_id ), ''),
+          orchestrator = fn.cv( cd.getOrchestratorName( node.orchestra_id ), 'Unkown', true ),
+          operation = fn.cv( cd.getOperationName( node.operation_id ), '', true ),
           skip = ( node.skip_flag === '1')? { checked: 'checked'}: {},
           skipId = `${cd.id}_movementSkip`;
           
@@ -4595,9 +4618,9 @@ panelCallHtml( nodeId ) {
     
     const node = cd.data[ nodeId ],
           note = fn.cv( node.note, '', true ),
-          conductor = fn.cv( cd.getConductorName( node.call_conductor_id ), ''),
-          operation = fn.cv( cd.getOperationName( node.operation_id ), ''),
-          skip = ( node.skip_flag === '1')? ' checked': '',
+          conductor = fn.cv( cd.getConductorName( node.call_conductor_id ), '', true ),
+          operation = fn.cv( cd.getOperationName( node.operation_id ), '', true ),
+          skip = ( node.skip_flag === '1')? { checked: 'checked'}: {},
           skipId = `${cd.id}_movementSkip`;
           
     return cd.panelCommon('Condcutor call', `
@@ -4763,7 +4786,8 @@ panelCommonHtml( nodeId, title ) {
 panelConfirmationConductorHtml() {
     const cd = this;
     
-    const conductorInfo = cd.confirmation.conductor;
+    const conductorInfo = cd.confirmation.conductor,
+          noticeInfo = cd.data.conductor.notice_info;
     
     return cd.panelCommon('Conductor', `
     <div class="panel-group">
@@ -4815,6 +4839,16 @@ panelConfirmationConductorHtml() {
             <tbody>
                 <tr>
                     <td class="panel-td"><span class="panel-span">${fn.cv( conductorInfo.operation_name, '', true )}</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="panel-group">
+        <div class="panel-group-title">通知</div>
+        <table class="panel-table">
+            <tbody>
+                <tr>
+                    <td class="panel-td"><span class="panel-span">${cd.noticePanelHtml( fn.cv( noticeInfo, {}) )}</span></td>
                 </tr>
             </tbody>
         </table>
@@ -4948,7 +4982,7 @@ movementList() {
       + `<li>`
           + `<label class="property-label">`
               + `<input type="checkbox" class="orchestra${orchestra.id}" name="${cd.createId('filter-orchestra', false )}" checked>`
-              + orchestra.name
+              + fn.cv( orchestra.name, '', true )
           + `</label>`
       + `</li>`);
       
@@ -4983,13 +5017,13 @@ movementList() {
         
         const movementSortLost = [];
         for ( const movement of movementList ) {
-            const orchestraName = movement.orchestra_name.toLocaleLowerCase().replace(/\s/g, '-');
+            const orchestraName = movement.orchestra_name.toLocaleLowerCase().replace(/\s|\//g, '-');
             movementSortLost.push(``
             + `<tr class="orche${movement.orchestra_id}">`
                 + `<th class="movement-list-orchestrator" title="${orchestraName}">`
                     + `<span class="add-node ${orchestraName}" data-id="${movement.id}"></span>`
                 + `</th> `
-                + `<td class="movement-list-name"><div>${movement.name}</div></td>`
+                + `<td class="movement-list-name"><div>${fn.cv( movement.name, '', true )}</div></td>`
             + `</tr>`);
         }
         $movementListRows.html( movementSortLost.join('') );
@@ -5401,10 +5435,12 @@ operationUpdate( nodeID, id, name ) {
     if ( id !== null ) { 
       $node.addClass('operation');
       cd.data[ nodeID ].operation_id = id;
+      cd.data[ nodeID ].operation_name = name;
       $node.find('.node-operation-data').text( name );
     } else {
       $node.removeClass('operation');
       cd.data[ nodeID ].operation_id = null;
+      cd.data[ nodeID ].operation_name = null;
       $node.find('.node-operation-data').text('');
     }
     cd.panelChange( nodeID );
@@ -5593,7 +5629,7 @@ panelEvents() {
                 });
             break;
             case 'clearOperation':
-                cd.operationUpdate( nodeId, null );
+                cd.operationUpdate( nodeId, null, null );
             break;
             case 'conductor':
                 cd.selectModalOpen('condcutor').then(function( selectId ){
@@ -5610,6 +5646,12 @@ panelEvents() {
             break;
             case 'clearConductor':
                 cd.callConductorUpdate( nodeId, null );
+            break;
+            case 'selectNotice':
+                cd.noticeModalOpen();
+            break;
+            case 'clearNotice':
+                cd.noticClear();
             break;
         }
     });
@@ -6860,6 +6902,211 @@ unpause( instanceId ) {
             reject( error );
         });
     });
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   通知設定
+// 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+noticeModalOpen() {
+    const cd = this;
+    
+    // 通知先があるかチェック
+    const notice = cd.info.list.notice_info,
+          noticeLength = notice.length;
+    
+    if ( noticeLength === 0 ) {
+        fn.iconConfirm('circle_info', getMessage.FTE02165, getMessage.FTE02164, getMessage.FTE02166, getMessage.FTE02167 ).then(function( flag ){
+            if ( flag ) {
+                window.location.href = '?menu=conductor_notice_definition';
+            }
+        });
+    } else {
+    
+        if ( cd.notice.modal ) {
+            const noticeInfo = cd.data.conductor.notice_info;
+            cd.notice.modal.show();
+
+            // チェック状態をセット
+            cd.notice.modal.$.dbody.find('.noticeCheck').each(function(){
+                const $check = $( this ),
+                      val = $check.val(),
+                      notice = $check.attr('data-notice');
+                if ( noticeInfo[ notice ] && noticeInfo[ notice ].indexOf( val ) !== -1 ) {
+                    $check.prop('checked', true );
+                } else {
+                    $check.prop('checked', false );
+                }
+            });
+        } else {
+            // モーダル表示
+            const config = {
+                mode: 'modeless',
+                position: 'center',
+                width: 'auto',
+                header: {
+                    title: getMessage.FTE02168,
+                },
+                footer: {
+                    button: {
+                        ok: { text: getMessage.FTE02169, action: 'default', width: '120px'},
+                        cancel: { text: getMessage.FTE02170, action: 'normal', width: '120px'},
+                    }
+                }
+            };
+
+            // モーダルOK、キャンセル
+            const funcs = {
+                ok: function() {
+                    cd.data.conductor.notice_info = {};
+                    cd.notice.modal.$.dbody.find('.noticeCheck:checked').each(function(){
+                        const $check = $( this ),
+                              key = $check.attr('data-notice'),
+                              val = $check.val();
+                        if ( !cd.data.conductor.notice_info[ key ] ) cd.data.conductor.notice_info[ key ] = [];
+                        cd.data.conductor.notice_info[ key ].push( val );
+                        cd.panelChange();                    
+                    });
+                    cd.notice.modal.hide();
+                },
+                cancel: function() {
+                    cd.notice.modal.hide();
+                },
+            };
+
+            cd.notice.modal = new Dialog( config, funcs );
+            cd.notice.modal.open( cd.noticList() );
+
+            // 見出しの幅を調整する
+            cd.notice.modal.$.dbody.find('.noticeStatusNameInner').each(function(){
+                const $text = $( this ),
+                      sWidth = $text.get(0).scrollWidth,
+                      cWidth = $text.closest('.noticeStatusName').get(0).offsetWidth;
+                if ( cWidth < sWidth ) {
+                    $text.css('transform', 'scaleX(' + ( cWidth / sWidth ) + ')')
+                } else {
+                    $text.removeAttr('style');
+                }
+            });
+
+            // チェックボックスの外がクリックされても変更する
+            cd.notice.modal.$.dbody.find('.tbody').on('click', '.noticeStatusCheckTd', function( e ){
+                const $button = $( this ).find('.noticeCheck');
+                if ( !$( e.target ).closest('.checkboxWrap').length ) {
+                    $button.focus().click();
+                }
+            });
+        }
+    
+    }
+}
+
+noticClear() {
+    const cd = this;
+    
+    cd.data.conductor.notice_info = {};
+    cd.panelChange();
+}
+
+noticList() {
+    const cd = this;
+
+    const notice = cd.info.list.notice_info,
+          status = cd.info.list.conductor_status,
+          exclusionStatusId = ['1','2'],
+          noticeLength = notice.length,
+          statusLength = status.length;
+    
+    if ( noticeLength > 0 ) {
+        let html = ``
+        + `<div class="commonBody">`
+        + `<table class="table">`
+            + `<thead class="thead">`
+                + `<tr class="tHeadTr headerTr tr">`
+                    + `<th class="tHeadTh th"><div class="ci">${getMessage.FTE02171}</div></th>`;
+        for ( let i = 0; i < statusLength; i++ ) {
+            const statusName = fn.cv( status[i].name, '', true ).replace(/\s/, '<br>'),
+                  statusId =  fn.cv( status[i].id, '');
+            
+            // 未実行（1,2）は表示しない
+            if ( exclusionStatusId.indexOf( statusId ) !== -1 ) continue;
+            
+            html += ``
+                    + `<th class="tHeadTh th noticeHeadTh"><div class="ci noticeStatusType">`
+                        + `<span class="noticeStatusBar statusColor${statusId}"></span>`
+                        + `<span class="noticeStatusName"><span class="noticeStatusNameInner">${statusName}</span></span></div></th>`;
+        }
+        
+        html += ``
+              + `</tr>`
+            + `</thead>`
+            + `<tbody class="tbody">`;
+        
+        for ( let i = 0; i < noticeLength; i++ ) {
+            const noticeName = fn.cv( notice[i].name, ''),
+                  noticeNameEscape = fn.escape( noticeName ),
+                  noticeId =  fn.cv( notice[i].id, '');
+            
+             html += ``
+                + `<tr class="tBodyTr tr">`
+                    + `<th class="tBodyTh th"><div class="ci noticeName">${noticeNameEscape}</div></th>`;
+            
+            for ( let j = 0; j < statusLength; j++ ) {
+                const noticeInfo = fn.cv( cd.data.conductor.notice_info, {}),
+                      statusName = fn.cv( status[j].name, '', true ),
+                      statusId =  fn.cv( status[j].id, ''),
+                      noticeCheckName = `check_${noticeId}`,
+                      noticeCheckId = `check_${noticeId}_${statusId}`,
+                      checkAttr = { notice: noticeNameEscape };
+                
+                // 未実行（1,2）は表示しない
+                if ( exclusionStatusId.indexOf( statusId ) !== -1 ) continue;
+                
+                // チェック状態
+                if ( noticeInfo[ noticeName ] && noticeInfo[ noticeName ].indexOf( statusId ) !== -1 ) checkAttr['checked'] = 'checked';
+                
+                html += ``
+                    + `<td class="tBodyTd td noticeStatusCheckTd popup" title="${statusName}"><div class="ci noticeStatusCheckWrap">`
+                        + fn.html.check('noticeCheck', statusId, noticeCheckName, noticeCheckId, checkAttr )
+                    + `</div></td>`;
+            }
+            
+            html += ``
+                + `</tr>`;
+        }
+        
+        html += ``    
+            + `</tbody>`
+        + `</table></div>`;
+        
+        return html;
+    }
+}
+
+noticePanelHtml( noticeList ) {
+    const cd = this;
+    
+    const conductorStatusNames = cd.info.dict.conductor_status;
+    let html = ``;
+    
+    if ( noticeList ) {
+        for ( const key in noticeList ) {
+            const name = fn.escape( key );
+            html += `<dt class="panelNoticeName">${name}</dt>`
+            + `<dd class="panelNoticeStatus">`
+                + `<ul class="panelNoticeStatusList">`;
+            for ( const id of noticeList[ key ] ) {
+                const stautusName = fn.cv( conductorStatusNames[ id ], '', true );
+                html += `<li class="panelNoticeStatusItem statusColor${id}">${stautusName}</li>`;
+            }
+            html += `</ul>`
+            + `</dd>`;
+        }
+        return `<dl class="panelNoticeList">${html}</dl>`;
+    } else {
+        return '';
+    }
 }
 
 }

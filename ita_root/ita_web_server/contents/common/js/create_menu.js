@@ -168,7 +168,7 @@ editorMainHtml( itaEditorMode ) {
                             </div>
                             <div class="editor-tab-contents">
                                 <div id="menu-editor-preview" class="editor-tab-body">
-                                    <div class="tableBody">
+                                    <div class="tableWrap">
                                         <table class="table">
                                             <thead class="thead"></tbody>
                                             <tbody class="tbody"></tbody>
@@ -213,23 +213,39 @@ panelContainerHtml( editorMode ) {
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr>
-                        <th class="panel-th">` + getMessage.FTE01012 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01012 + `</th>
+                    </tr>
+                    <tr>
                         <td class="panel-td"><span id="create-menu-name" class="panel-span"></span></td>
                     </tr>
                     <tr>
-                        <th class="panel-th">` + getMessage.FTE01013 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01013 + `</th>
+                    </tr>
+                    <tr>
                         <td class="panel-td"><span id="create-menu-name-rest" class="panel-span"></span></td>
                     </tr>
                     <tr>
-                        <th class="panel-th">` + getMessage.FTE01014 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01014 + `</th>
+                    </tr>
+                    <tr>
                         <td class="panel-td"><span id="create-menu-type" class="panel-span"></span></td>
                     </tr>
+                </tbody>
+            </table>
+            <hr class="panel-hr">
+            <table class="panel-table">
+                <tbody>
                     <tr>
                         <th class="panel-th">` + getMessage.FTE01015 + `</th>
                         <td class="panel-td"><span id="create-menu-order" class="panel-span"></span></td>
+                    </tr>
+                    <tr class="parameter-sheet">
+                        <th class="panel-th"">` + getMessage.FTE01153 + `</th>
+                        <td class="panel-td"><span id="create-menu-use-host-group" class="panel-span"></span></td>
                     </tr>
                     <tr class="parameter-sheet parameter-operation">
                         <th class="panel-th"">` + getMessage.FTE01016 + `</th>
@@ -310,40 +326,58 @@ panelContainerHtml( editorMode ) {
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01029 + `">
-                        <th class="panel-th">${getMessage.FTE01012 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01012 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01029 + `">
                         <td class="panel-td"><input id="create-menu-name" class="panel-text" type="text"></td>
                     </tr>
                     <tr title="` + getMessage.FTE01030 + `">
-                        <th class="panel-th">${getMessage.FTE01013 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01013 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01030 + `">
                         <td class="panel-td"><input id="create-menu-name-rest" class="panel-text" type="text"></td>
                     </tr>
-                </tbody>
-            </table>
-            <table class="panel-table">
-                <tbody>
                     <tr title="` + getMessage.FTE01031 + `">
-                        <th class="panel-th">` + getMessage.FTE01014 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01014 + `</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01031 + `">
                         <td class="panel-td">
                             <select id="create-menu-type" class="panel-select" disabled></select>
                         </td>
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01032 + `">
                         <th class="panel-th">${getMessage.FTE01015 + fn.html.required()}</th>
                         <td class="panel-td"><input id="create-menu-order" class="panel-number" type="number" data-min="0" data-max="2147483647"></td>
                     </tr>
-                    <tr class="parameter-sheet parameter-operation" title="` + getMessage.FTE01033 + `">
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
+                    <tr class="parameter-sheet parameter-operation panel-check-tr" title="` + getMessage.FTE01154 + `">
+                        <th class="panel-th">${getMessage.FTE01153}</th>
+                        <td class="panel-td">
+                            ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-host-group', 'create-menu-use-host-group', {disabled: 'disabled'})}
+                        </td>
+                    </tr>
+                    <tr class="parameter-sheet parameter-operation panel-check-tr" title="` + getMessage.FTE01033 + `">
                         <th class="panel-th">` + getMessage.FTE01016 + `</th>
                         <td class="panel-td">
                             ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-vertical', 'create-menu-use-vertical', {disabled: 'disabled'})}
                         </td>
                     </tr>
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
                     <tr>
                         <th class="panel-th">` + getMessage.FTE01017 + `</th>
                         <td class="panel-td" colspan="3"><span id="create-menu-last-modified" class="panel-span" data-value=""><span class="editorAutoInput">${getMessage.FTE01011}</span></span></td>
@@ -428,40 +462,58 @@ panelContainerHtml( editorMode ) {
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01029 + `">
-                        <th class="panel-th">${getMessage.FTE01012 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01012 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01029 + `">
                         <td class="panel-td" colspan="3"><input id="create-menu-name" class="panel-text" type="text"></td>
                     </tr>
                     <tr title="` + getMessage.FTE01030 + `">
-                        <th class="panel-th">${getMessage.FTE01013 + fn.html.required()}</th>
+                        <th class="panel-th panel-th-only">${getMessage.FTE01013 + fn.html.required()}</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01030 + `">
                         <td class="panel-td" colspan="3"><input id="create-menu-name-rest" class="panel-text" type="text"></td>
                     </tr>
-                </tbody>
-            </table>
-            <table class="panel-table">
-                <tbody>
                     <tr title="` + getMessage.FTE01031 + `">
-                        <th class="panel-th">` + getMessage.FTE01014 + `</th>
+                        <th class="panel-th panel-th-only">` + getMessage.FTE01014 + `</th>
+                    </tr>
+                    <tr title="` + getMessage.FTE01031 + `">
                         <td class="panel-td" colspan="3">
                             <select id="create-menu-type" class="panel-select"></select>
                         </td>
                     </tr>
                 </tbody>
             </table>
+            <hr class="panel-hr">
             <table class="panel-table">
                 <tbody>
                     <tr title="` + getMessage.FTE01032 + `">
                         <th class="panel-th">${getMessage.FTE01015 + fn.html.required()}</th>
-                        <td class="panel-td" colspan="3"><input id="create-menu-order" class="panel-number" type="number" data-min="0" data-max="2147483647"></td>
+                        <td class="panel-td"><input id="create-menu-order" class="panel-number" type="number" data-min="0" data-max="2147483647"></td>
                     </tr>
-                    <tr class="parameter-sheet parameter-operation" title="` + getMessage.FTE01033 + `">
-                        <th class="panel-th" colspan="2">` + getMessage.FTE01016 + `</th>
-                        <td class="panel-td" colspan="2">
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
+                    <tr class="parameter-sheet panel-check-tr" title="` + getMessage.FTE01154 + `">
+                        <th class="panel-th">${getMessage.FTE01153}</th>
+                        <td class="panel-td">
+                            ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-host-group', 'create-menu-use-host-group')}
+                        </td>
+                    </tr>
+                    <tr class="parameter-sheet parameter-operation panel-check-tr" title="` + getMessage.FTE01033 + `">
+                        <th class="panel-th">` + getMessage.FTE01016 + `</th>
+                        <td class="panel-td">
                             ${fn.html.checkboxText('panel-check', getMessage.FTE01034, 'create-menu-use-vertical', 'create-menu-use-vertical')}
                         </td>
                     </tr>
+                </tbody>
+            </table>
+            <table class="panel-table">
+                <tbody>
                     <tr>
                         <th class="panel-th">` + getMessage.FTE01017 + `</th>
                         <td class="panel-td" colspan="3"><span id="create-menu-last-modified" class="panel-span" data-value=""><span class="editorAutoInput">${getMessage.FTE01011}</span></span></td>
@@ -1027,22 +1079,26 @@ const getPelectPulldownListHTML = function( selectValue = '' ) {
 };
 
 //パラメータシート参照 select
-/*
-const type3PulldownListData = menuEditorArray.selectReferenceSheetType3List,
-    type3PulldownListDataLength = type3PulldownListData.length;
-let type3PulldownListHTML = '';
-for ( let i = 0; i < type3PulldownListDataLength ; i++ ) {
-    type3PulldownListHTML += '<option value="' + type3PulldownListData[i].MENU_ID + '">' + type3PulldownListData[i].MENU_NAME_PULLDOWN + '</option>';
-}
-*/
+const parameterSheetReferenceListData = menuEditorArray.parameter_sheet_reference_list,
+      parameterSheetReferenceListDataLength = parameterSheetReferenceListData.length;
+const getParameterSheetReferenceListHTML = function( selectValue = '' ) {
+    const parameterSheetReferenceListArray = [];
+    for ( let i = 0; i < parameterSheetReferenceListDataLength ; i++ ) {
+        const columnDefinitionId = parameterSheetReferenceListData[i].column_definition_id,
+              selected = ( columnDefinitionId === selectValue )? ' selected="selected"': '';
+        parameterSheetReferenceListArray.push('<option value="' + columnDefinitionId + '"' + selected + '>' + parameterSheetReferenceListData[i].select_full_name + '</option>')
+    }
+    return parameterSheetReferenceListArray.join('');
+};
 
 // 作成対象 select
 if ( menuEditorMode !== 'view') {
     const selectParamTargetData = menuEditorArray.sheet_type_list,
-        selectParamTargetDataLength = selectParamTargetData.length;
+        selectParamTargetDataLength = selectParamTargetData.length,
+        sortOrder = [0,2,1];
     let selectParamTargetHTML = '';
     for ( let i = 0; i < selectParamTargetDataLength ; i++ ) {
-        selectParamTargetHTML += '<option value="' + selectParamTargetData[i].sheet_type_id + '">' + selectParamTargetData[i].sheet_type_name + '</option>';
+        selectParamTargetHTML += '<option value="' + selectParamTargetData[sortOrder[i]].sheet_type_id + '">' + selectParamTargetData[sortOrder[i]].sheet_type_name + '</option>';
     }
     $('#create-menu-type').html( selectParamTargetHTML );
 }
@@ -1131,6 +1187,13 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                                     <div class="inner">${fn.html.icon('menuList')}</div>
                                 </button>
                             </div>
+                        </td>
+                    </tr>
+                    <!-- パラメータシート参照項目 -->
+                    <tr class="param-sheet-ref" title="${textEntities(getMessage.FTE01117,1)}">
+                        <th class="full-head"><span class="config-title">${getMessage.FTE01060 + fn.html.required()}</span></th>
+                        <td class="full-body">
+                            <select class="input config-select reference-parameter-sheet"${modeDisabled}${modeKeepData}>${getParameterSheetReferenceListHTML(sv('parameter_sheet_reference'))}</select>
                         </td>
                     </tr>
                     <!-- 最大バイト数 パスワード -->
@@ -1320,7 +1383,7 @@ const history = {
         resetSelect2( $menuTable );
         //resetDatetimepicker( $menuTable );
         resetEventPulldownDefaultValue( $menuTable );
-        resetEventPulldownParameterSheetReference( $menuTable );
+        // resetEventPulldownParameterSheetReference( $menuTable );
         updateUniqueConstraintDispData();
     },
     'redo' : function() {
@@ -1331,7 +1394,7 @@ const history = {
         resetSelect2( $menuTable );
         //resetDatetimepicker( $menuTable );
         resetEventPulldownDefaultValue( $menuTable );
-        resetEventPulldownParameterSheetReference( $menuTable );
+        // resetEventPulldownParameterSheetReference( $menuTable );
         updateUniqueConstraintDispData();
     },
     'clear' : function() {
@@ -1513,7 +1576,7 @@ const getpulldownDefaultValueList = function($item, defaultValue = ""){
       }
       */
       let selectPulldownDefaultListHTML = '<option value=""></option>'; //一つ目に空を追加
-      let defaultCheckFlg = false;console.log(defaultValue)
+      let defaultCheckFlg = false;
       for ( let key in selectDefaultValueList ) {
         if(defaultValue == key){
           selectPulldownDefaultListHTML += '<option value="' + key + '" selected>' + selectDefaultValueList[key] + '</option>';
@@ -1541,89 +1604,6 @@ const resetEventPulldownDefaultValue = function($menuTable){
     const $item = $menuTable.find('.menu-column');
     $item.each(function(){
         setEventPulldownDefaultValue($(this));
-    });
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//   パラメータシート参照の項目取得
-//
-////////////////////////////////////////////////////////////////////////////////////////////////////
-const setEventPulldownParameterSheetReference = function($item){
-    $item.on('change', '.menu-column-type-select, .type3-reference-menu', function(){
-        let typeId;
-
-        if($(this).hasClass('menu-column-type-select')){
-            typeId = $(this).val();
-        }
-
-        if($(this).hasClass('type3-reference-menu')){
-            typeId = $item.find('.menu-column-type-select').val();
-        }
-
-        //「パラメータシート参照」時のみ
-        if(typeId == 11){
-            getpulldownParameterSheetReferenceList($item, "");
-        }
-
-    });
-}
-
-/*
-const getpulldownParameterSheetReferenceList = function($item, itemId = ""){
-    let loadNowSelect = '<option value="">'+getSomeMessage("ITACREPAR_1295")+'</option>';
-    let faildSelect = '<option value="">'+getSomeMessage("ITACREPAR_1300")+'</option>';
-    $item.find('.type3-reference-item').html(loadNowSelect); //最初に読み込み中メッセージのセレクトボックスを挿入
-    const selectMenuId = $item.find('.type3-reference-menu option:selected').val();
-
-    //「選択項目」のメニューで初期値として利用可能な値のリストを作成する。
-    let selectParameterSheetReferenceList;
-    const printselectParameterSheetReferenceURL = '/common/common_printParameterSheetReference.php?menu_id=' + selectMenuId + '&user_id=' +gLoginUserID;
-    $.ajax({
-      type: 'get',
-      url: printselectParameterSheetReferenceURL,
-      dataType: 'text'
-    }).done( function( result ) {
-        if(JSON.parse( result ) == 'failed'){
-          selectParameterSheetReferenceList = null;
-          //エラーメッセージ入りセレックとボックスを挿入
-          $item.find('.type3-reference-item').html(faildSelect);
-          history.add(); //historyを更新
-        }else{
-          //選択可能な参照項目の一覧を取得し、セレクトボックスを生成
-          selectParameterSheetReferenceList = JSON.parse( result );
-          const selectParameterSheetReferenceListLength = selectParameterSheetReferenceList.length;
-          let selectParameterSheetReferenceListHTML = '<option value=""></option>'; //一つ目に空を追加
-          let referenceCheckFlg = false;
-          for ( let i = 0; i < selectParameterSheetReferenceListLength ; i++ ) {
-            if(itemId == selectParameterSheetReferenceList[i].itemId){
-              selectParameterSheetReferenceListHTML += '<option value="' + selectParameterSheetReferenceList[i].itemId + '" selected>' + selectParameterSheetReferenceList[i].itemPulldown + '</option>';
-              referenceCheckFlg = true;
-            }else{
-              selectParameterSheetReferenceListHTML += '<option value="' + selectParameterSheetReferenceList[i].itemId + '">' + selectParameterSheetReferenceList[i].itemPulldown + '</option>';
-            }
-          }
-          //選択項目を持っているが一致するレコードが無い場合、ID変換失敗(ID)の選択肢を追加。
-          if(referenceCheckFlg == false && itemId){
-            selectParameterSheetReferenceListHTML += '<option value="' + itemId + '" selected>' + getSomeMessage("ITACREPAR_1255", {0:itemId}) + '</option>';
-          }
-          $item.find('.type3-reference-item').html(selectParameterSheetReferenceListHTML);
-          history.add(); //historyを更新
-        }
-
-    }).fail( function( result ) {
-      selectParameterSheetReferenceList = null;
-      //エラーメッセージ入りセレックとボックスを挿入
-      $item.find('.type3-reference-item').html(faildSelect);
-      history.add(); //historyを更新
-    });
-}
-*/
-
-const resetEventPulldownParameterSheetReference = function($menuTable){
-    const $item = $menuTable.find('.menu-column');
-    $item.each(function(){
-        setEventPulldownParameterSheetReference($(this));
     });
 }
 
@@ -1676,8 +1656,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
                 $newColumnTarget.find('.menu-column-type-select').prop('disabled', false); //カラムタイプ
                 $newColumnTarget.find('.config-select'+'.pulldown-select').prop('disabled', false); //選択項目
                 $newColumnTarget.find('.config-text'+'.reference-item').prop('disabled', false); //参照項目
-                $newColumnTarget.find('.config-select'+'.type3-reference-menu').prop('disabled', false); //パラメータシート参照(メニュー選択)
-                $newColumnTarget.find('.config-select'+'.type3-reference-item').prop('disabled', false); //パラメータシート参照(項目選択)
+                $newColumnTarget.find('.config-select'+'.reference-parameter-sheet').prop('disabled', false); //パラメータシート参照の選択項目
                 $newColumnTarget.find('.reference-item-select').prop('disabled', false); //参照項目を選択ボタン
                 $newColumnTarget.find('.config-checkbox'+'.required').prop('disabled', false); //必須
                 $newColumnTarget.find('.required-label').removeAttr('disabled'); //必須
@@ -1690,8 +1669,6 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
             }
             //プルダウン選択の初期値を取得するイベントを設定
             setEventPulldownDefaultValue($newColumnTarget);
-            //パラメータシート参照の選択項目を取得するイベントを設定
-            setEventPulldownParameterSheetReference($newColumnTarget);
             break;
         case 'newColumnGroup':
             addColumn( $menuTable, 'group', groupCounter++ );
@@ -2249,7 +2226,7 @@ $menuEditor.on('click', '.menu-column-copy', function(){
     // プルダウン選択の初期値取得eventを再適用する
     resetEventPulldownDefaultValue( $menuTable );
     // パラメータ参照の項目取得eventを再適用する
-    resetEventPulldownParameterSheetReference( $menuTable );
+    // resetEventPulldownParameterSheetReference( $menuTable );
 
     history.add();
     previewTable();
@@ -2650,8 +2627,8 @@ const repeatRemoveConfirm = function() {
           //resetDatetimepicker( $menuTable );
           // プルダウン選択の初期値取得eventを再適用する
           resetEventPulldownDefaultValue( $menuTable );
-          // パラメータ参照の項目取得eventを再適用する
-          resetEventPulldownParameterSheetReference( $menuTable );
+          // // パラメータ参照の項目取得eventを再適用する
+          // resetEventPulldownParameterSheetReference( $menuTable );
         }
         emptyCheck();
         previewTable();
@@ -3593,6 +3570,15 @@ const createRegistrationData = function( type ){
                   createMenuJSON['column'][key]['link_maximum_bytes'] = $column.find('.link-max-byte').val();
                   createMenuJSON['column'][key]['link_default_value'] = $column.find('.link-default-value').val();
                   break;
+                case '11':
+                  createMenuJSON['column'][key]['parameter_sheet_reference'] = $column.find('.reference-parameter-sheet').val();
+                  const parameterSheetReferenceListData = menuEditorArray.parameter_sheet_reference_list,
+                  parameterSheetReferenceListDataLength = parameterSheetReferenceListData.length;
+                  for (let i = 0; i < parameterSheetReferenceListDataLength; i++ ) {
+                    if ( createMenuJSON['column'][key]['parameter_sheet_reference'] == parameterSheetReferenceListData[i].column_definition_id ) {
+                      createMenuJSON['column'][key]['parameter_sheet_reference'] = parameterSheetReferenceListData[i].select_full_name;
+                    }
+                  }
               }
             // Item end
           } else if ( $column.is('.menu-column-group') ) {
@@ -3805,7 +3791,7 @@ const setMenu = function() {
         }
 
         setEventPulldownDefaultValue( $item );
-        setEventPulldownParameterSheetReference( $item );
+        // setEventPulldownParameterSheetReference( $item );
     });
 
     history.clear();
@@ -3873,26 +3859,22 @@ const getPanelParameter = function() {
     const type = $('#create-menu-type').val();
     if ( type === '1' || type === '3') {
       // パラメータシート
-        /*
         if ( type === '1' ) {
           // ホストグループ利用有無
           const hostgroup = $('#create-menu-use-host-group').prop('checked');
           if ( hostgroup ) {
-            parameterArray['PURPOSE'] = menuEditorArray.selectParamPurpose[1]['purpose_id'];
+            parameterArray['hostgroup'] = "True";
           } else {
-            parameterArray['PURPOSE'] = menuEditorArray.selectParamPurpose[0]['purpose_id'];
+            parameterArray['hostgroup'] = "False";
           }
         } else {
-          parameterArray['PURPOSE'] = null;
+          parameterArray['hostgroup'] = null;
         }
-        */
         // 縦メニュー利用有無
         const vertical = $('#create-menu-use-vertical').prop('checked');
         if ( vertical ) {
-          //parameterArray['vertical'] = '1';
           parameterArray['vertical'] = "True";
         } else {
-          //parameterArray['VERTICAL'] = null;
           parameterArray['vertical'] = "False";
         }
         parameterArray['menu_group_for_input'] = $('#create-menu-for-input').text(); // 入力用
@@ -3997,15 +3979,13 @@ const setPanelParameter = function( setData ) {
     // パラメータシート
     if ( type === '1') {
       // ホストグループ利用有無
-      /*
-      if ( setData['menu']['PURPOSE'] === '2' ) {
+      if ( setData['menu']['hostgroup'] === '1' ) {
         if ( menuEditorMode === 'view') {
           $('#create-menu-use-host-group').text(getMessage.FTE01085);
         } else {
           $('#create-menu-use-host-group').prop('checked', true );
         }
       }
-      */
     }
     // 縦メニュー利用有無
     if ( setData['menu']['vertical'] === '1') {
@@ -4123,8 +4103,6 @@ if ( menuEditorMode === 'new' ) {
     //プルダウン選択の初期値を取得するイベントを設定
     const $newColumnTarget = $menuEditor.find('#c'+currentItemCounter);
     setEventPulldownDefaultValue($newColumnTarget);
-    //パラメータシート参照の選択項目を取得するイベントを設定
-    setEventPulldownParameterSheetReference($newColumnTarget);
 } else {
     setMenu();
 }

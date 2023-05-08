@@ -43,10 +43,8 @@ class LastUpdateUserColumn(IDColumn):
         for bk_user in return_values:
             users_list[bk_user['USER_ID']] = bk_user[usr_name_col]
 
-        user_id = g.get('USER_ID')
-        if user_id not in users_list:
-            pf_users = util.get_exastro_platform_users()
-            users_list.update(pf_users)
+        pf_users = util.get_exastro_platform_users()
+        users_list.update(pf_users)
 
         self.data_list_set_flg = True
         return users_list

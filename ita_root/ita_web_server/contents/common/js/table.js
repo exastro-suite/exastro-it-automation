@@ -1241,6 +1241,39 @@ referenceFilter() {
 }
 /*
 ##################################################
+   指定のファイルデータを返す
+##################################################
+*/
+getFileData( id, name, type ) {
+    const tb = this;
+
+    const params = tb.data.body.find(function( item ){
+        if ( tb.mode !== 'history') {
+            return String( item.parameter[ tb.idNameRest ] ) === id;
+        } else {
+            return String( item.parameter.journal_id ) === id;
+        }
+    });
+
+    let file;
+    if ( params !== undefined ) {
+        if ( tb.mode === 'diff' && type === 'beforeValue' && tb.option && tb.option.before[ id ] && tb.option.before[ id ].file[ name ]) {
+            // 編集確認画面、変更前データ
+            file = tb.option.before[ id ].file[ name ];
+        } else if ( tb.mode === 'edit' && tb.edit && tb.edit.input[ id ]) {
+            // 編集画面、入力済みのデータがある場合
+            if ( tb.edit.input[ id ].after.file ) {
+                file = tb.edit.input[ id ].after.file[ name ];
+            }
+        } else if ( params.file[ name ] !== undefined && params.file[ name ] !== null ) {
+            file = params.file[ name ];
+        }
+    }
+
+    return file;
+}
+/*
+##################################################
    Set table events
 ##################################################
 */
@@ -1260,30 +1293,10 @@ setTableEvents() {
             const $a = $( this ),
                   fileName = $a.text(),
                   id = $a.attr('data-id'),
-                  rest = $a.attr('data-rest');
+                  rest = $a.attr('data-rest'),
+                  type = $a.attr('data-type');
 
-            const params = tb.data.body.find(function( item ){
-                if ( tb.mode !== 'history') {
-                    return String( item.parameter[ tb.idNameRest ] ) === id;
-                } else {
-                    return String( item.parameter.journal_id ) === id;
-                }
-            });
-
-            let file;
-
-            if ( params !== undefined ) {
-                // 編集確認かつ入力データがない場合
-                if ( tb.mode === 'diff' && params.file[rest] === undefined ) {
-                    if ( tb.option && tb.option.before[ id ] && tb.option.before[ id ].file[ rest ] ) {
-                        file = tb.option.before[ id ].file[ rest ];
-                    }
-                } else {
-                    if ( params.file[rest] !== undefined && params.file[rest] !== null ) {
-                        file = params.file[rest];
-                    }
-                }
-            }
+            const file = tb.getFileData( id, rest, type );
 
             if ( file !== undefined && file !== null ) {
                 fn.download('base64', file, fileName );
@@ -1495,7 +1508,7 @@ setTableEvents() {
                 }
             });
         });
-
+        
         // 入力データを配列へ
         tb.$.tbody.on('change', '.input, .tableEditInputSelect', function(){
             const $input = $( this ),
@@ -3405,7 +3418,7 @@ editConfirmCellHtml( item, columnKey ) {
         }
     }
 
-    const valueCheck = function( val ) {
+    const valueCheck = function( val, data = '' ) {
         if ( columnName === 'discard' ) {
             return tb.discardMark( val );
         }
@@ -3425,7 +3438,7 @@ editConfirmCellHtml( item, columnKey ) {
             // ファイル名がリンクになっていてダウンロード可能
             case 'FileUploadColumn':
                 const id = parameter[ tb.idNameRest ];
-                return `<a href="${val}" class="tableViewDownload" data-id="${id}" data-rest="${columnName}">${val}</a>`;
+                return `<a href="${val}" class="tableViewDownload" data-type="${data}" data-id="${id}" data-rest="${columnName}">${val}</a>`;
 
             default:
                 return val;
@@ -3461,7 +3474,7 @@ editConfirmCellHtml( item, columnKey ) {
     // 基本
     if ( parameter[ columnName ] !== undefined ) {
         if ( beforeData !== undefined && type === 'update') {
-            return beforeAfter( valueCheck( fn.cv( beforeData.parameter[ columnName ], '', true ) ), valueCheck( value) );
+            return beforeAfter( valueCheck( fn.cv( beforeData.parameter[ columnName ], '', true ), 'beforeValue' ), valueCheck( value, 'afterValue')  );
         } else {
             return valueCheck( value );
         }

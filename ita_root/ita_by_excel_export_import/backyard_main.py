@@ -80,7 +80,7 @@ def backyard_main(organization_id, workspace_id):
                 # エラーログ出力
                 frame = inspect.currentframe().f_back
                 msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                g.applogger.error(msgstr)
+                g.applogger.info(msgstr)
                 # ステータスを完了(異常)に更新
                 result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                 continue
@@ -199,7 +199,7 @@ def backyard_main(organization_id, workspace_id):
                 if res == 0:
                     frame = inspect.currentframe().f_back
                     msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                    g.applogger.error(msgstr)
+                    g.applogger.info(msgstr)
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     # 一時ディレクトリ削除
@@ -313,7 +313,7 @@ def backyard_main(organization_id, workspace_id):
                     if res == 0:
                         frame = inspect.currentframe().f_back
                         msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                        g.applogger.error(msgstr)
+                        g.applogger.info(msgstr)
                         # ステータスを完了(異常)に更新
                         result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                         continue
@@ -323,7 +323,7 @@ def backyard_main(organization_id, workspace_id):
                 if res == 0:
                     frame = inspect.currentframe().f_back
                     msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                    g.applogger.error(msgstr)
+                    g.applogger.info(msgstr)
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     continue

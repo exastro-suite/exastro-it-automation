@@ -16,7 +16,7 @@ from common_libs.terraform_driver.common.Hcl2Json import HCL2JSONParse
 from common_libs.terraform_driver.common.member_vars_function import *  # noqa: F403
 import os
 import re
-import json
+# import json
 
 
 def has_changes_related_tables(objdbca, proc_loaded_row_id):
@@ -186,11 +186,12 @@ def set_module_vars_link(objdbca, TFConst):  # noqa: C901
 
                 # メンバー変数テーブルに対する処理を実行
                 g.applogger.debug(g.appmsg.get_log_message("BKY-50005"))
-                ret, msg, exist_member_vars_list = set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_member_vars_list)  # noqa: F405
+                ret, msg, exist_member_vars_list = set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_member_vars_list)  # noqa F405
                 if not ret:
                     raise Exception(msg)
 
         # Module-変数紐付テーブルから不要レコードを廃止する
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50011"))
         for record in t_mod_var_link_records:
             disuse_flag = record.get('DISUSE_FLAG')
             module_vars_link_id = record.get('MODULE_VARS_LINK_ID')
@@ -310,7 +311,8 @@ def set_movement_var_link(objdbca, TFConst):
                             msg = g.appmsg.get_log_message("BKY-50105", [])
                             raise Exception(msg)
 
-        # Module-変数紐付テーブルから不要レコードを廃止する)
+        # Movement-変数紐付テーブルから不要レコードを廃止する)
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50014"))
         for record in t_movement_var_link_records:
             disuse_flag = record.get('DISUSE_FLAG')
             mvmt_var_link_id = record.get('MVMT_VAR_LINK_ID')

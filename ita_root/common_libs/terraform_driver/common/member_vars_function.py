@@ -56,6 +56,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
             msg = g.appmsg.get_log_message("BKY-50108", [])
             raise Exception(msg)
 
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50006"))
         # データの整形(配列の作成ローカル番号)
         type_nest_dict = {}
         temp_member_data_list, child_vars_id, parent_vars_id = create_member_data(objdbca, TFConst, module_vars_link_id, child_vars_id, parent_vars_id, temp_member_data_list, type_data, default_data, type_nest_dict)  # noqa: E501
@@ -153,7 +154,9 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
 
         # メンバー変数管理への登録/更新/復活作業スタート
         primary_key_name = 'CHILD_MEMBER_VARS_ID'
+
         # 登録対象をループ
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50007"))
         for r_member_data in regist_member_data.get('regist'):
             # 登録用に「MAX_COL_SEQ」のkeyを削除する
             temp_r_member_data = r_member_data.copy()
@@ -204,6 +207,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                         raise Exception(msg)
 
         # 更新対象をループ
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50008"))
         for r_member_data in regist_member_data.get('update'):
             # 更新用に「MAX_COL_SEQ」のkeyを削除する
             temp_r_member_data = r_member_data.copy()
@@ -231,6 +235,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                         raise Exception(msg)
 
         # 復活対象をループ
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50009"))
         for r_member_data in regist_member_data.get('restore'):
             # 復活用に「MAX_COL_SEQ」のkeyを削除する
             temp_r_member_data = r_member_data.copy()
@@ -265,6 +270,7 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
                         raise Exception(msg)
 
         # スキップ対象をループ。スキップは変数ネスト管理の更新のみ。
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50010"))
         for r_member_data in regist_member_data.get('skip'):
             if int(r_member_data.get('MAX_COL_SEQ')) > 0:
                 registed_max_member_col_data = get_regist_max_member_col_data(objdbca, TFConst, r_member_data.get('CHILD_MEMBER_VARS_ID'))
@@ -406,6 +412,7 @@ def set_movement_var_member_link(objdbca, TFConst):
                         raise Exception(msg)
 
         # Module-変数紐付テーブルから不要レコードを廃止する)
+        g.applogger.debug(g.appmsg.get_log_message("BKY-50015"))
         for record in t_movement_var_member_link_records:
             disuse_flag = record.get('DISUSE_FLAG')
             mvmt_var_member_link_id = record.get('MVMT_VAR_MEMBER_LINK_ID')
@@ -463,6 +470,7 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
         # Module-変数紐付テーブル廃止レコードlistにあるIDをPARENT_VARS_ID(VARS_ID)に持つメンバー変数管理と変数ネスト管理のレコードを廃止する
         for mod_var_link_id in mod_var_link_discard_id_list:
             # メンバー変数管理テーブルから廃止対象を検索し、廃止する。
+            g.applogger.debug(g.appmsg.get_log_message("BKY-50012"))
             where_str = 'WHERE PARENT_VARS_ID = %s AND DISUSE_FLAG = %s'
             discard_target_records = objdbca.table_select(TFConst.T_VAR_MEMBER, where_str, [mod_var_link_id, 0])
             for record in discard_target_records:
@@ -480,6 +488,7 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                     raise Exception(msg)
 
             # 変数ネスト管理テーブルから廃止対象を検索し、廃止する。
+            g.applogger.debug(g.appmsg.get_log_message("BKY-50013"))
             where_str = 'WHERE VARS_ID = %s AND DISUSE_FLAG = %s'
             discard_target_records = objdbca.table_select(TFConst.T_NESTVARS_MEMBER_MAX, where_str, [mod_var_link_id, 0])
             for record in discard_target_records:
@@ -509,6 +518,7 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
 
             if discard_flag:
                 # メンバー変数管理から対象レコードを廃止
+                g.applogger.debug(g.appmsg.get_log_message("BKY-50012"))
                 child_member_vars_id = record.get('CHILD_MEMBER_VARS_ID')
                 data_list = {
                     "CHILD_MEMBER_VARS_ID": child_member_vars_id,
@@ -523,6 +533,7 @@ def discard_member_vars(objdbca, TFConst, exist_member_vars_list):
                     raise Exception(msg)
 
                 # 変数ネスト管理に廃止した対象のIDを持つレコードがあれば、こちらも廃止する
+                g.applogger.debug(g.appmsg.get_log_message("BKY-50013"))
                 registered_max_col_data = get_regist_max_module_col_data(objdbca, TFConst, record.get('child_member_vars_id'))
                 if registered_max_col_data.get('is_regist') is True and str(registered_max_col_data.get('DISUSE_FLAG')) == "0":
                     max_col_seq_id = registered_max_col_data.get('MAX_COL_SEQ_ID')

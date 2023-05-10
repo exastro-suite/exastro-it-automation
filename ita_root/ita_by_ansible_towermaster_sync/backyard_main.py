@@ -324,8 +324,7 @@ def backyard_main(organization_id, workspace_id):
             dbAccess.db_commit()
 
         except Exception as e:
-            g.applogger.error("Faild to make organization data.")
-            raise e
+            raise Exception(e)
 
         ############################################################
         # インスタンスグループ情報更新
@@ -403,8 +402,7 @@ def backyard_main(organization_id, workspace_id):
             dbAccess.db_commit()
 
         except Exception as e:
-            g.applogger.error("Faild to make instance group data.")
-            raise e
+            raise Exception(e)
 
         ############################################################
         # 該当ユーザーの組織が利用可能な実行環境情報更新
@@ -479,27 +477,22 @@ def backyard_main(organization_id, workspace_id):
             dbAccess.db_commit()
 
         except Exception as e:
-            g.applogger.error("Faild to make Execution Environment data.")
-            raise e
+            raise Exception(e)
 
     except Exception as e:
         error_flag = 1
-        g.applogger.error("Exception occurred.")
-
-        # 例外メッセージ出力
-        g.applogger.error(str(e))
-
         if dbAccess and dbAccess._is_transaction:
             # ロールバック
             dbAccess.db_rollback()
-            g.applogger.error("Rollback.")
+
+        raise Exception(e)
 
     finally:
         dbAccess = None
         restApiCaller = None
 
     if error_flag != 0:
-        g.applogger.error("Finished Procedure. [state: ERROR]")
+        g.applogger.debug("Finished Procedure. [state: ERROR]")
         return 2
 
     elif warning_flag != 0:

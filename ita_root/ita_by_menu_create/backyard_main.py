@@ -105,6 +105,11 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(debug_msg)
             main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'edit')
 
+        else:
+            # create_typeが想定外の値
+            main_func_result = False
+            msg = g.appmsg.get_log_message("BKY-20217", [menu_create_id, create_type])
+
         # メイン処理がFalseの場合、異常系処理
         if not main_func_result:
             # エラーログ出力
@@ -233,7 +238,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
 
                 # 「バンドル」が有効かつ「項目が0件」の場合はエラー判定
                 if not record_t_menu_column:
-                    msg = g.appmsg.get_log_message("BKY-20214", [])
+                    msg = g.appmsg.get_log_message("BKY-20214", [menu_create_id])
                     raise Exception(msg)
             else:
                 # パラメータシート用テーブル作成SQL
@@ -248,7 +253,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         elif sheet_type == "2":  # データシート
             # 「データシート」かつ「項目が0件」の場合はエラー判定
             if not record_t_menu_column:
-                msg = g.appmsg.get_log_message("BKY-20202", [])
+                msg = g.appmsg.get_log_message("BKY-20202", [menu_create_id])
                 raise Exception(msg)
 
             # テーブル名を生成
@@ -266,7 +271,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         elif sheet_type == "3":  # パラメータシート（オペレーションあり）
             # パラメータシート（オペレーションあり）かつ「項目が0件」の場合はエラー判定
             if not record_t_menu_column:
-                msg = g.appmsg.get_log_message("BKY-20215", [])
+                msg = g.appmsg.get_log_message("BKY-20215", [menu_create_id])
                 raise Exception(msg)
 
             # テーブル名/ビュー名を生成
@@ -286,7 +291,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             target_menu_group_list = ['MENU_GROUP_ID_INPUT', 'MENU_GROUP_ID_SUBST', 'MENU_GROUP_ID_REF']
 
         else:
-            msg = g.appmsg.get_log_message("BKY-20201", [sheet_type])
+            msg = g.appmsg.get_log_message("BKY-20201", [menu_create_id, sheet_type])
             raise Exception(msg)
 
         # 「新規作成」「初期化」の場合のみ、テーブル作成SQLを実行
@@ -323,7 +328,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                             objdbca.sql_execute(sql)
 
         # カラムグループ登録の処理に必要な形式にフォーマット
-        result, msg, dict_t_menu_column_group, target_column_group_list = _format_column_group_data(record_t_menu_column_group, record_t_menu_column)
+        result, msg, dict_t_menu_column_group, target_column_group_list = _format_column_group_data(record_t_menu_column_group, record_t_menu_column, menu_create_id)  # noqa: E501
         if not result:
             raise Exception(msg)
 
@@ -361,7 +366,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             if create_type == 'create_new':
                 debug_msg = g.appmsg.get_log_message("BKY-20010", [target_menu_group_type])
                 g.applogger.debug(debug_msg)
-                result, msg, ret_data = _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column)
+                result, msg, ret_data = _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id)  # noqa: E501
                 if not result:
                     raise Exception(msg)
 
@@ -369,7 +374,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             if create_type == 'initialize' or create_type == 'edit':
                 debug_msg = g.appmsg.get_log_message("BKY-20011", [target_menu_group_type])
                 g.applogger.debug(debug_msg)
-                result, msg, ret_data = _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column)  # noqa: E501
+                result, msg, ret_data = _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id)  # noqa: E501
                 if not result:
                     raise Exception(msg)
 
@@ -388,7 +393,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「メニュー-テーブル紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20013", [target_menu_group_type])
             g.applogger.debug(debug_msg)
-            result, msg = _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, file_upload_only_flag, create_table_name, create_view_name, sv_create_table_name, sv_create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name)  # noqa: E501
+            result, msg = _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, file_upload_only_flag, create_table_name, create_view_name, sv_create_table_name, sv_create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name, menu_create_id)  # noqa: E501
             if not result:
                 raise Exception(msg)
 
@@ -396,7 +401,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             if menu_group_col_name == "MENU_GROUP_ID_INPUT":
                 debug_msg = g.appmsg.get_log_message("BKY-20014", [target_menu_group_type])
                 g.applogger.debug(debug_msg)
-                result, msg = _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_column_group)
+                result, msg = _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_column_group, menu_create_id)
                 if not result:
                     raise Exception(msg)
 
@@ -417,7 +422,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「メニュー-カラム紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20015", [target_menu_group_type])
             g.applogger.debug(debug_msg)
-            result, msg = _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference, menu_group_col_name)  # noqa: E501
+            result, msg = _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference, menu_group_col_name, menu_create_id)  # noqa: E501
             if not result:
                 raise Exception(msg)
 
@@ -511,7 +516,7 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         # 「パラメータシートロール作成情報」から対象のレコードを取得
         record_t_menu_role = objdbca.table_select(t_menu_role, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         if not record_t_menu_role:
-            msg = g.appmsg.get_log_message("BKY-20204", [])
+            msg = g.appmsg.get_log_message("BKY-20204", [menu_create_id])
             raise Exception(msg)
 
         # 「他メニュー連携」から全てのレコードを取得
@@ -529,7 +534,7 @@ def _collect_menu_create_data(objdbca, menu_create_id):
     return True, None, record_t_menu_define, record_t_menu_column_group, record_t_menu_column, record_t_menu_unique_constraint, record_t_menu_role, record_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference  # noqa: E501
 
 
-def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column):
+def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id):
     """
         「メニュー管理」メニューのテーブルにレコードを追加する
         ARGS:
@@ -555,7 +560,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         # バリデーションチェック1: 同一のmenu_name_restが登録されている場合はエラー判定
         ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_name_rest, 0])
         if ret:
-            msg = g.appmsg.get_log_message("BKY-20205", [menu_name_rest])
+            msg = g.appmsg.get_log_message("BKY-20205", [menu_create_id, menu_name_rest])
             raise Exception(msg)
 
         # バリデーションチェック2: 同じメニューグループ内で同じmenu_name_jaかmenu_name_enが登録されている場合はエラー判定
@@ -564,7 +569,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         target_menu_group_id = record_t_menu_define.get(menu_group_col_name)
         ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_GROUP_ID = %s AND (MENU_NAME_JA = %s OR MENU_NAME_EN = %s) AND DISUSE_FLAG = %s', [target_menu_group_id, menu_name_ja, menu_name_en, 0])  # noqa: E501
         if ret:
-            msg = g.appmsg.get_log_message("BKY-20206", [])
+            msg = g.appmsg.get_log_message("BKY-20206", [menu_create_id])
             raise Exception(msg)
 
         # シートタイプ毎にソートキーを生成
@@ -603,7 +608,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
     return True, None, ret_data
 
 
-def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column):
+def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id):
     """
         「メニュー管理」の対象レコードを更新。対象が無ければレコードを新規登録する。
         ARGS:
@@ -611,6 +616,7 @@ def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, men
             record_t_menu_define: 「パラメータシート定義一覧」の対象のレコード
             menu_group_col_name: 対象メニューグループ名
             record_t_menu_column: 「パラメータシート項目作成情報」の対象のレコード一覧
+            menu_create_id: 対象の「パラメータシート定義一覧」のレコードのUUID
         RETRUN:
             result, msg, ret_data
     """
@@ -661,7 +667,7 @@ def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, men
             ret_data = objdbca.table_update(t_comn_menu, data_list, 'MENU_ID')
         else:
             # 更新対象が無い場合はレコードの新規登録
-            result, msg, ret_data = _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column)
+            result, msg, ret_data = _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id)  # noqa: E501
             if not result:
                 raise Exception(msg)
 
@@ -716,7 +722,7 @@ def _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_ro
     return True, None
 
 
-def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, file_upload_only_flag, create_table_name, create_view_name, sv_create_table_name, sv_create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name):  # noqa: E501
+def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, file_upload_only_flag, create_table_name, create_view_name, sv_create_table_name, sv_create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name, menu_create_id):  # noqa: E501, C901
     """
         「メニュー-テーブル紐付管理」メニューのテーブルにレコードを追加もしくは復活する
         ARGS:
@@ -730,6 +736,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             record_t_menu_define: 「パラメータシート定義一覧」の対象のレコード
             record_t_menu_unique_constraint: 「一意制約(複数項目)作成情報」の対象のレコード
             menu_group_col_name: 対象メニューグループ名
+            menu_create_id: パラメータシート作成の対象となる「パラメータシート定義一覧」のレコードのID
         RETRUN:
             result, msg
     """
@@ -740,7 +747,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         # バリデーションチェック1: 同一のメニューID(MENU_ID)が登録されている場合はエラー判定
         ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_uuid, 0])
         if ret:
-            msg = g.appmsg.get_log_message("BKY-20207", [menu_uuid])
+            msg = g.appmsg.get_log_message("BKY-20207", [menu_create_id, menu_uuid])
             raise Exception(msg)
 
         # 対象メニューグループで変更がある値の設定
@@ -883,13 +890,14 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
     return True, None
 
 
-def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_column_group):
+def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_column_group, menu_create_id):
     """
         「カラムグループ管理」メニューのテーブルにレコードを追加する
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             target_column_group_list: シートタイプ
             dict_t_menu_column_group: 作成した対象のテーブル名
+            menu_create_id: パラメータシート作成の対象となる「パラメータシート定義一覧」のレコードのID
         RETRUN:
             result, msg
     """
@@ -907,7 +915,7 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
             param_name_en = 'Parameter'
             ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [param_name_ja, param_name_en, 0])  # noqa: E501
             if not ret:
-                msg = g.appmsg.get_log_message("BKY-20208", [])
+                msg = g.appmsg.get_log_message("BKY-20208", [menu_create_id])
                 raise Exception(msg)
             param_col_group_id = ret[0].get('COL_GROUP_ID')
 
@@ -926,7 +934,7 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
                 pa_full_col_group_name_en = param_name_en + '/' + str(pa_column_group_data.get('full_col_group_name_en'))  # フルカラムグループ名に「Parameter/」を足した名前  # noqa: E501
                 ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [pa_full_col_group_name_ja, pa_full_col_group_name_en, 0])  # noqa: E501
                 if not ret:
-                    msg = g.appmsg.get_log_message("BKY-20210", [pa_full_col_group_name_en])
+                    msg = g.appmsg.get_log_message("BKY-20210", [menu_create_id, pa_full_col_group_name_en])
                     raise Exception(msg)
 
                 pa_target_id = ret[0].get('COL_GROUP_ID')
@@ -954,7 +962,7 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
     return True, None
 
 
-def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference, menu_group_col_name):  # noqa: E501, C901
+def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference, menu_group_col_name, menu_create_id):  # noqa: E501, C901
     """
         「メニュー-カラム紐付管理」メニューのテーブルに対し、「column_name_rest」を基準として以下の操作を行う
         1: 同一の「column_name_rest」のレコードがあれば、そのレコードの更新を行う（事前の処理で廃止状態になっているため、復活したうえで更新する）。
@@ -972,6 +980,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             record_v_menu_reference_item: 「参照項目情報」のレコード一覧
             record_v_parameter_sheet_reference: 「パラメータシート参照」の選択項目のレコード一覧
             menu_group_col_name: 対象メニューグループ名
+            menu_create_id: 対象の「パラメータシート定義一覧」のレコードのUUID
         RETRUN:
             boolean, msg
     """
@@ -1101,7 +1110,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             operation_name_en = 'Operation'
             ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [operation_name_ja, operation_name_en, 0])  # noqa: E501
             if not ret:
-                msg = g.appmsg.get_log_message("BKY-20209", [])
+                msg = g.appmsg.get_log_message("BKY-20209", [menu_create_id])
                 raise Exception(msg)
             operation_col_group_id = ret[0].get('COL_GROUP_ID')
 
@@ -1437,7 +1446,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         param_name_en = 'Parameter'
         ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [param_name_ja, param_name_en, 0])  # noqa: E501
         if not ret:
-            msg = g.appmsg.get_log_message("BKY-20208", [])
+            msg = g.appmsg.get_log_message("BKY-20208", [menu_create_id])
             raise Exception(msg)
         param_col_group_id = ret[0].get('COL_GROUP_ID')
 
@@ -1503,7 +1512,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                     reference_item_list = ast.literal_eval(reference_item)
                     set_before_function = "set_reference_value"
                     if type(reference_item_list) is not list:
-                        msg = g.appmsg.get_log_message("BKY-20212", [reference_item])
+                        msg = g.appmsg.get_log_message("BKY-20212", [menu_create_id, reference_item])
                         raise Exception(msg)
 
                     # reference_itemの中のcolumn_name_restを「_ref_X」形式に変換
@@ -1539,7 +1548,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                             column_class = "26"  # JsonPasswordIDColumn
                 if not ref_table_name or not ref_col_name:
                     # パラメータシート参照の選択項目が不正
-                    msg = g.appmsg.get_log_message("BKY-20216", [parameter_sheet_link_id])
+                    msg = g.appmsg.get_log_message("BKY-20216", [menu_create_id, parameter_sheet_link_id])
                     raise Exception(msg)
 
             # 「カラムグループ作成情報」のIDから同じフルカラムグループ名の対象を「カラムグループ管理」から探しIDを指定
@@ -2331,12 +2340,13 @@ def _check_column_validation(objdbca, menu_uuid, column_name_rest):
     return True, None, None
 
 
-def _format_column_group_data(record_t_menu_column_group, record_t_menu_column):
+def _format_column_group_data(record_t_menu_column_group, record_t_menu_column, menu_create_id):
     """
         カラムグループ登録の処理に必要な形式(idをkeyにしたdict型)にフォーマット
         ARGS:
             record_t_menu_column_group: 「カラムグループ作成情報」のレコード一覧
             record_t_menu_column: 「パラメータシート項目作成情報」のレコード一覧
+            menu_create_id: 対象の「パラメータシート定義一覧」のレコードのUUID
         RETRUN:
             boolesn,
             msg,
@@ -2379,7 +2389,7 @@ def _format_column_group_data(record_t_menu_column_group, record_t_menu_column):
                 if target:
                     pa_col_group_id = target.get('pa_col_group_id')
                 else:
-                    msg = g.appmsg.get_log_message("BKY-20213", [])
+                    msg = g.appmsg.get_log_message("BKY-20213", [menu_create_id])
                     raise Exception(msg)
 
                 if pa_col_group_id:

@@ -61,7 +61,9 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                 g.applogger.debug(debug_msg)
 
             except Exception as e:
-                g.applogger.error(e)
+                debug_msg = g.appmsg.get_log_message("BKY-40012", [])
+                g.applogger.debug(debug_msg)
+                g.applogger.debug(e)
 
             objdbca.db_transaction_end(True)
     else:
@@ -194,8 +196,8 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
 
                     except Exception as e:
                         debug_msg = g.appmsg.get_log_message("BKY-40006", [item["CONDUCTOR_CLASS_ID"], item["OPERATION_ID"], str(item["NEXT_EXECUTION_DATE"])])  # noqa: E501
-                        g.applogger.debug(debug_msg)
-                        g.applogger.error(e)
+                        g.applogger.error(debug_msg)
+                        g.applogger.debug(e)
                         objdbca.db_transaction_end(False)
                         status_id = status_ids_list["STATUS_LINKING_ERROR"]
             else:
@@ -222,7 +224,9 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                     ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")
                     objdbca.db_transaction_end(True)
             except Exception as e:
-                g.applogger.error(e)
+                debug_msg = g.appmsg.get_log_message("BKY-40012", [])
+                g.applogger.debug(debug_msg)
+                g.applogger.debug(e)
     else:
         debug_msg = g.appmsg.get_log_message("BKY-40002", [])
         g.applogger.debug(debug_msg)
@@ -258,7 +262,9 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                 ret = objdbca.table_update(table_name, data_list, "REGULARLY_ID")  # noqa: F841
                 objdbca.db_transaction_end(True)
             except Exception as e:
-                g.applogger.error(e)
+                debug_msg = g.appmsg.get_log_message("BKY-40012", [])
+                g.applogger.debug(debug_msg)
+                g.applogger.debug(e)
                 objdbca.db_transaction_end(False)
 
     # ConductorとOperationの復活チェック################

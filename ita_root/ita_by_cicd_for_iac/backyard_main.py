@@ -614,7 +614,7 @@ class ControlGit():
 
             logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
-            g.applogger.debug(FREE_LOG)
+            g.applogger.info(FREE_LOG)
 
             if self.retryCount - 1 > idx:
                 time.sleep(self.retryWaitTime)
@@ -670,7 +670,7 @@ class ControlGit():
 
                 logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
 
                 if self.retryCount - 1 > idx:
                     time.sleep(self.retryWaitTime)
@@ -725,7 +725,7 @@ class ControlGit():
 
             logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
-            g.applogger.debug(FREE_LOG)
+            g.applogger.info(FREE_LOG)
 
             if self.retryCount - 1 > idx:
                 time.sleep(self.retryWaitTime)
@@ -817,7 +817,7 @@ class ControlGit():
                 return_code = return_var.returncode
                 logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (output, return_code)
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
 
                 # リトライ中のログは表示しない
                 if self.retryCount - 1 > idx:
@@ -869,7 +869,7 @@ class ControlGit():
 
             logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
-            g.applogger.debug(FREE_LOG)
+            g.applogger.info(FREE_LOG)
 
             if self.retryCount - 1 > idx:
                 time.sleep(self.retryWaitTime)
@@ -911,7 +911,7 @@ class ControlGit():
             if return_var.returncode != 0:
                 logaddstr = "%s\nexit code:(%s)\nError retry with git command" % (return_var.stdout, return_var.returncode)
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logaddstr)
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
 
                 if self.retryCount - 1 > idx:
                     time.sleep(self.retryWaitTime)
@@ -1594,6 +1594,7 @@ class CICD_GrandChildWorkflow():
 
         except Exception as e:
             FREE_LOG = str(e)
+            # Exceptionの処理なのでログレベルはerrorにする
             g.applogger.error(FREE_LOG)
             self.DBobj.db_transaction_end(False)
 
@@ -1617,12 +1618,12 @@ class CICD_GrandChildWorkflow():
                 # データベースの更新に失敗しました
                 logstr = g.appmsg.get_api_message("MSG-90079", [self.AddMatlLinkIdStr,])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
-                g.applogger.error(FREE_LOG)
+                g.applogger.info(FREE_LOG)
 
         # 結果出力
         if self.error_flag != 0:
             FREE_LOG = g.appmsg.get_api_message("MSG-90051")
-            g.applogger.error(FREE_LOG)
+            g.applogger.debug(FREE_LOG)
 
         else:
             FREE_LOG = g.appmsg.get_api_message("MSG-90050")
@@ -1778,7 +1779,7 @@ class CICD_ChildWorkflow():
                 # Clone異常時の処理なのでログを出力してReturn
                 logstr = g.appmsg.get_api_message("MSG-90077")
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr)
-                g.applogger.error(FREE_LOG)
+                g.applogger.info(FREE_LOG)
                 return False
 
         return True
@@ -1830,6 +1831,8 @@ class CICD_ChildWorkflow():
 
         # 認証方式か判定
         AuthTypeName = self.getAuthType()
+        # 外部ソフトアクセス時のログを残す
+        g.applogger.info("Git clone start")
         ret = self.Gitobj.GitClone(AuthTypeName)
         if ret is False:
             # 該当のリモートリポジトリに紐づいている資材を資材一覧から廃止
@@ -1846,6 +1849,8 @@ class CICD_ChildWorkflow():
 
             raise CICDException(False, FREE_LOG, self.UIDisplayMsg)
 
+        # 外部ソフトアクセス時のログを残す
+        g.applogger.info("Git clone end")
         FREE_LOG = g.appmsg.get_api_message("MSG-90059", [self.RepoId, ])
         g.applogger.debug(FREE_LOG)
 
@@ -2569,7 +2574,6 @@ def getTargetRepoListRow(DBobj):
 def backyard_main(organization_id, workspace_id):
 
     g.applogger.debug("backyard_main called")
-
     error_flag = 0
     if getattr(g, 'LANGUAGE', None) is None:
         g.LANGUAGE = 'en'

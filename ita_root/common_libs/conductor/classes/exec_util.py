@@ -1807,6 +1807,7 @@ class ConductorExecuteLibs():
                 if bool(suppress_flag) is False:
                     for target in target_status:
                         if target == current_status_id:
+                            g.applogger.info("Initiating the notification sending process.")
                             response_dict = self.notice_request_call(
                                 method='POST',
                                 url=notice_url,
@@ -1814,6 +1815,7 @@ class ConductorExecuteLibs():
                                 header=header,
                                 proxySetting=proxy,
                             )
+                            g.applogger.info("Notification sending process has been completed.")
                             self.write_notice_log(conductor_instance_id, notice_name, notice_info, current_status_id, n_log_name, response_dict)
 
         except Exception as e:

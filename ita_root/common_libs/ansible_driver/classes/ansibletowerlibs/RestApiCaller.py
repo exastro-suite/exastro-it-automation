@@ -23,7 +23,25 @@ from flask import g
 
 from common_libs.common.util import ky_decrypt
 from common_libs.ansible_driver.functions.util import getAnsibleConst
+from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 
+
+def setAACRestAPITimoutVaule(objdbca):
+    g.AACRestAPITimout = None
+    # ansibleインターフェース情報取得
+    sql = "SELECT * FROM T_ANSC_IF_INFO WHERE DISUSE_FLAG='0'"
+    inforows = objdbca.sql_execute(sql, [])
+    # 件数判定はしない
+    inforow = inforows[0]
+    # RestAPIタイムアウト値確認
+    if not inforow['ANSTWR_REST_TIMEOUT']:
+        # 空の場合、デフォルト値を設定
+        g.AACRestAPITimout = 60
+    else:
+        g.AACRestAPITimout = inforow['ANSTWR_REST_TIMEOUT']
+
+def getAACRestAPITimoutVaule():
+    return g.AACRestAPITimout
 
 class RestApiCaller():
 
@@ -139,7 +157,8 @@ class RestApiCaller():
             req.set_proxy(self.proxySetting['address'], 'https')
 
         try:
-            with urllib.request.urlopen(req, context=ssl_context) as resp:
+            RestTimeout = getAACRestAPITimoutVaule()
+            with urllib.request.urlopen(req, context=ssl_context, timeout=RestTimeout) as resp:
                 status_code = resp.getcode()
                 http_response_header = resp.getheaders()
                 responseContents = resp.read().decode('utf-8')
@@ -259,7 +278,8 @@ class RestApiCaller():
 
     def apperrorloger(self, msg, stdout=True):
         if stdout is True:
-            g.applogger.error(msg)
+            # applogger.error => applogger.info
+            g.applogger.info(msg)
         self.RestResultList.append(msg)
 
     def getRestResultList(self):

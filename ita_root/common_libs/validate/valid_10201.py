@@ -10,6 +10,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from flask import g
+
+
 def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = ''
@@ -19,4 +22,8 @@ def external_valid_menu_before(objdbca, objtable, option):
     primary_key_name = "ROW_ID"
     for i in data_list:
         objdbca.table_update(table_name, i, primary_key_name, False)
+
+    # 言語：登録、更新時のユーザの言語環境を設定
+    option['entry_parameter']['parameter']['language'] = g.LANGUAGE
+
     return retBool, msg, option,

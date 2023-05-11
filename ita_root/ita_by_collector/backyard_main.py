@@ -350,9 +350,6 @@ def backyard_main(organization_id, workspace_id):
     if getattr(g, 'LANGUAGE', None) is None:
         g.LANGUAGE = 'en'
 
-    # v2.1.0 では日本語を設定する
-    setattr(g, 'LANGUAGE', 'ja')
-
     if getattr(g, 'USER_ID', None) is None:
         g.USER_ID = '20103'
 
@@ -789,65 +786,79 @@ def backyard_main(organization_id, workspace_id):
                                                     NOTICE_FLG = 2  # 2:収集エラー
 
                                                 else:
-                                                    now = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+                                                    try:
+                                                        # 言語設定を変更:パラメータシートに対する処理中のみ
+                                                        op_language = aryOperation.get('LANGUAGE')
+                                                        if op_language and op_language in ['ja', 'en']:
+                                                            setattr(g, 'LANGUAGE', op_language)
 
-                                                    # 既存のレコードを抽出
-                                                    filter_info = {}
-                                                    filter_info['discard'] = {'LIST': ['0']}
-                                                    filter_info['operation_name_select'] = {'LIST': [aryOperation['OPERATION_DATE_NAME']]}
-                                                    filter_info['host_name'] = {'LIST': [hostname]}
-                                                    if vertical_flag:
-                                                        filter_info['input_order'] = {'RANGE': {'START':input_order, 'END':input_order}}
+                                                        now = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
 
-                                                    sts, params, msg = objmenu.rest_filter(filter_info, 'inner')
+                                                        # 既存のレコードを抽出
+                                                        filter_info = {}
+                                                        filter_info['discard'] = {'LIST': ['0']}
+                                                        filter_info['operation_name_select'] = {'LIST': [aryOperation['OPERATION_DATE_NAME']]}
+                                                        filter_info['host_name'] = {'LIST': [hostname]}
+                                                        if vertical_flag:
+                                                            filter_info['input_order'] = {'RANGE': {'START':input_order, 'END':input_order}}
 
-                                                    # 既存レコードがなければ「登録」
-                                                    if len(params) <= 0 or 'parameter' not in params[0]:
-                                                        tmparr3['type'] = load_table.CMD_REGISTER
-                                                        tmparr3['parameter']['uuid'] = None
-                                                        tmparr3['parameter']['host_name'] = hostname
-                                                        tmparr3['parameter']['operation_name_select'] = aryOperation['OPERATION_DATE_NAME']
-                                                        tmparr3['parameter']['base_datetime'] = None
-                                                        tmparr3['parameter']['operation_date'] = None
-                                                        tmparr3['parameter']['last_execute_timestamp'] = None
-                                                        tmparr3['parameter']['discard'] = '0'
-                                                        tmparr3['parameter']['remarks'] = None
-                                                        tmparr3['parameter']['last_update_date_time'] = now
-                                                        tmparr3['parameter']['last_updated_user'] = g.USER_ID
+                                                        sts, params, msg = objmenu.rest_filter(filter_info, 'inner')
 
-                                                    # 既存レコードがあれば「更新」
+                                                        # 既存レコードがなければ「登録」
+                                                        if len(params) <= 0 or 'parameter' not in params[0]:
+                                                            tmparr3['type'] = load_table.CMD_REGISTER
+                                                            tmparr3['parameter']['uuid'] = None
+                                                            tmparr3['parameter']['host_name'] = hostname
+                                                            tmparr3['parameter']['operation_name_select'] = aryOperation['OPERATION_DATE_NAME']
+                                                            tmparr3['parameter']['base_datetime'] = None
+                                                            tmparr3['parameter']['operation_date'] = None
+                                                            tmparr3['parameter']['last_execute_timestamp'] = None
+                                                            tmparr3['parameter']['discard'] = '0'
+                                                            tmparr3['parameter']['remarks'] = None
+                                                            tmparr3['parameter']['last_update_date_time'] = now
+                                                            tmparr3['parameter']['last_updated_user'] = g.USER_ID
+
+                                                        # 既存レコードがあれば「更新」
+                                                        else:
+                                                            param = params[0]['parameter']
+
+                                                            tmparr3['type'] = load_table.CMD_UPDATE
+                                                            tmparr3['parameter']['uuid'] = param['uuid']
+                                                            tmparr3['parameter']['host_name'] = param['host_name']
+                                                            tmparr3['parameter']['operation_name_select'] = param['operation_name_select']
+                                                            tmparr3['parameter']['base_datetime'] = param['base_datetime']
+                                                            tmparr3['parameter']['operation_date'] = param['operation_date']
+                                                            tmparr3['parameter']['last_execute_timestamp'] = param['last_execute_timestamp']
+                                                            tmparr3['parameter']['discard'] = '0'
+                                                            tmparr3['parameter']['remarks'] = param['remarks']
+                                                            tmparr3['parameter']['last_update_date_time'] = now
+                                                            tmparr3['parameter']['last_updated_user'] = g.USER_ID
+                                                            for k, v in param.items():
+                                                                if k not in tmparr3['parameter']:
+                                                                    tmparr3['parameter'][k] = v
+
+                                                        # 登録、更新
+                                                        RESTEXEC_FLG = 1
+                                                        rec_cnt = rec_cnt + 1
+
+                                                        ret = objmenu.exec_maintenance(tmparr3, tmparr3['parameter']['uuid'], tmparr3['type'], pk_use_flg=False, auth_check=False)
+                                                        if ret[0] is True:
+                                                            dbAccess.db_commit()
+
+                                                        else:
+                                                            dbAccess.db_rollback()
+                                                            fail_cnt = fail_cnt + 1
+                                                            if len(ret) >= 3:
+                                                                g.applogger.debug(ret[2])
+                                                                collection_log = '%s\n%s' % (collection_log, ret[2]) if collection_log else ret[2]
+                                                    except Exception as e:
+                                                        g.applogger.debug(e)
+                                                        # 言語設定を変更:デフォルトへ戻す
+                                                        setattr(g, 'LANGUAGE', 'en')
+                                                        raise Exception()
                                                     else:
-                                                        param = params[0]['parameter']
-
-                                                        tmparr3['type'] = load_table.CMD_UPDATE
-                                                        tmparr3['parameter']['uuid'] = param['uuid']
-                                                        tmparr3['parameter']['host_name'] = param['host_name']
-                                                        tmparr3['parameter']['operation_name_select'] = param['operation_name_select']
-                                                        tmparr3['parameter']['base_datetime'] = param['base_datetime']
-                                                        tmparr3['parameter']['operation_date'] = param['operation_date']
-                                                        tmparr3['parameter']['last_execute_timestamp'] = param['last_execute_timestamp']
-                                                        tmparr3['parameter']['discard'] = '0'
-                                                        tmparr3['parameter']['remarks'] = param['remarks']
-                                                        tmparr3['parameter']['last_update_date_time'] = now
-                                                        tmparr3['parameter']['last_updated_user'] = g.USER_ID
-                                                        for k, v in param.items():
-                                                            if k not in tmparr3['parameter']:
-                                                                tmparr3['parameter'][k] = v
-
-                                                    # 登録、更新
-                                                    RESTEXEC_FLG = 1
-                                                    rec_cnt = rec_cnt + 1
-
-                                                    ret = objmenu.exec_maintenance(tmparr3, tmparr3['parameter']['uuid'], tmparr3['type'], pk_use_flg=False, auth_check=False)
-                                                    if ret[0] is True:
-                                                        dbAccess.db_commit()
-
-                                                    else:
-                                                        dbAccess.db_rollback()
-                                                        fail_cnt = fail_cnt + 1
-                                                        if len(ret) >= 3:
-                                                            g.applogger.debug(ret[2])
-                                                            collection_log = '%s\n%s' % (collection_log, ret[2]) if collection_log else ret[2]
+                                                        # 言語設定を変更:デフォルトへ戻す
+                                                        setattr(g, 'LANGUAGE', 'en')
 
                                             if fail_cnt > 0:
                                                 FREE_LOG = g.appmsg.get_api_message("MSG-10851", ["%s/%s" % (fail_cnt, rec_cnt), ])

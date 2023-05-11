@@ -41,6 +41,7 @@ from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.ansibletowerlibs.AnsibleTowerExecute import AnsibleTowerExecution
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
+from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import setAACRestAPITimoutVaule
 
 from libs import common_functions as cm
 
@@ -74,6 +75,9 @@ def backyard_child_main(organization_id, workspace_id):
     #     time.sleep(1)
 
     try:
+        # AAC向けRestAPIタイムアウト値設定
+        setAACRestAPITimoutVaule(wsDb)
+
         ansc_const = getAnsibleConst(driver_id)
 
         # ディレクトリを生成
@@ -406,7 +410,8 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     else:
         # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
         execute_data["FILE_INPUT"] = None
-        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
+        # applogger.error => applogger.info
+        g.applogger.info(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
 
     # 準備で異常がなければ実行にうつる
     g.applogger.debug(g.appmsg.get_log_message("MSG-10761", [execution_no]))

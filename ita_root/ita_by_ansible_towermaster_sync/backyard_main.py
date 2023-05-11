@@ -18,6 +18,7 @@ from flask import g
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import RestApiCaller
+from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import setAACRestAPITimoutVaule
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiPassThrough import AnsibleTowerRestApiPassThrough
 
 
@@ -110,6 +111,10 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.debug("db connect.")
         dbAccess = DBConnectWs()
 
+        ################################
+        # AAC向けRestAPIタイムアウト値設定
+        ################################
+        setAACRestAPITimoutVaule(dbAccess)
         ################################
         # インターフェース情報を取得する
         ################################

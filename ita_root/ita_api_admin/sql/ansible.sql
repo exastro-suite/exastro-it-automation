@@ -71,6 +71,7 @@ CREATE TABLE T_ANSC_IF_INFO
     ANSTWR_ORGANIZATION             VARCHAR(255),                               -- 組織名
     ANSTWR_AUTH_TOKEN               VARCHAR(255),                               -- 認証トークン
     ANSTWR_DEL_RUNTIME_DATA         VARCHAR(2),                                 -- 実行時データ削除
+    ANSTWR_REST_TIMEOUT             INT,                                        -- REST APIタイムアウト値(単位 秒)
     ANSIBLE_PROXY_ADDRESS           VARCHAR(255),                               -- Address
     ANSIBLE_PROXY_PORT              INT,                                        -- Port
     ANSIBLE_VAULT_PASSWORD          VARCHAR(64),                                -- Ansible-vaultパスワード
@@ -107,6 +108,7 @@ CREATE TABLE T_ANSC_IF_INFO_JNL
     ANSTWR_ORGANIZATION             VARCHAR(255),                               -- 組織名
     ANSTWR_AUTH_TOKEN               VARCHAR(255),                               -- 認証トークン
     ANSTWR_DEL_RUNTIME_DATA         VARCHAR(2),                                 -- 実行時データ削除
+    ANSTWR_REST_TIMEOUT             INT,                                        -- REST APIタイムアウト値(単位 秒)
     ANSIBLE_PROXY_ADDRESS           VARCHAR(255),                               -- Address
     ANSIBLE_PROXY_PORT              INT,                                        -- Port
     ANSIBLE_VAULT_PASSWORD          VARCHAR(64),                                -- Ansible-vaultパスワード

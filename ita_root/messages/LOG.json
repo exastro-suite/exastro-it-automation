@@ -1276,5 +1276,15 @@
     "BKY-51038": "[Process] Start RESTAPI upload module files. (Execution No.:{})",
     "BKY-51039": "[Process] Start RESTAPI create terraform run. (Execution No.:{})",
     "BKY-51040": "[Process] Start RESTAPI destroy workspace. (Execution No.:{})",
-    "BKY-51041": "[Process] End RESTAPI."
+    "BKY-51041": "[Process] End RESTAPI.",
+    "BKY-52001": "encoding of zip file failed (Execution No.:{})",
+    "BKY-52002": "making of lock file failed (Execution No.:{})",
+    "BKY-52003": "result.txt already exists(Execution No.:{})",
+    "BKY-52004": "terraform command({}) is published",
+    "BKY-52005": "Failed to create input file. (Zip Command:{})",
+    "BKY-52006": "Failed to create input file. (Zip Command:{})",
+    "BKY-52007": "[Process] Emergency stop was detected. (Execution No.:{})",
+    "BKY-52008": "Failed to copy Module file. (Module file:{}, Directory:{})",
+    "BKY-52009": "Failed to get Member variable(ID:{})",
+    "BKY-52010": "[Process] Set status as {}. (Execution No.:{})"
 }

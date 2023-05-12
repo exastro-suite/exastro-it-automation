@@ -851,8 +851,7 @@ def backyard_main(organization_id, workspace_id):
                                                             if len(ret) >= 3:
                                                                 g.applogger.debug(ret[2])
                                                                 collection_log = '%s\n%s' % (collection_log, ret[2]) if collection_log else ret[2]
-                                                    except Exception as e:
-                                                        g.applogger.debug(e)
+                                                    except Exception:
                                                         # 言語設定を変更:デフォルトへ戻す
                                                         setattr(g, 'LANGUAGE', 'en')
                                                         raise Exception()

@@ -23,14 +23,14 @@ RUN dnf install -y \
     python39 \
     python39-devel \
     sshpass \
-&&  pip3.9 install --upgrade pip setuptools \
-&&  pip3.9 install \
-    ansible \
-    pexpect \
-    pywinrm \
-    boto3 \
-    paramiko \
-    boto \
+&&  pip3.9 install --upgrade pip \
+&&  pip3.9 install --upgrade setuptools \
+&&  pip3.9 install --upgrade ansible \
+&&  pip3.9 install --upgrade pexpect \
+&&  pip3.9 install --upgrade pywinrm \
+&&  pip3.9 install --upgrade boto3 \
+&&  pip3.9 install --upgrade paramiko \
+&&  pip3.9 install --upgrade boto \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

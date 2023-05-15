@@ -20,50 +20,6 @@ from common_libs.common.util import file_encode
 from common_libs.loadtable import load_table
 
 
-# def get_interface_info(wsDb, const):
-#     """
-#     インタフェース情報を取得
-
-#     Arguments:
-#         WsDb: db instance
-#     Returns:
-#         result: bool
-#         record or err_msg:
-#     """
-#     condition = 'WHERE `DISUSE_FLAG`=0'
-#     records = wsDb.table_select(const.T_IF_INFO, condition)
-#     record_num = len(records)
-
-#     if record_num == 0:
-#         return False, "MSG-10048"
-#     elif record_num != 1:
-#         return False, "MSG-10049"
-
-#     return True, records[0]
-
-
-def get_conductor_interface_info(wsDb):
-    """
-    Conductorインタフェース情報を取得
-
-    Arguments:
-        WsDb: db instance
-    Returns:
-        result: bool
-        record or err_msg:
-    """
-    condition = 'WHERE `DISUSE_FLAG`=0'
-    records = wsDb.table_select('T_COMN_CONDUCTOR_IF_INFO', condition)
-    record_num = len(records)
-
-    if record_num == 0:
-        return False, "MSG-10065"
-    elif record_num != 1:
-        return False, "MSG-10066"
-
-    return True, records[0]
-
-
 def get_execution_process_info(wsDb, const, execution_no):
     """
     作業実行の情報を取得
@@ -80,7 +36,7 @@ def get_execution_process_info(wsDb, const, execution_no):
     records = wsDb.table_select(const.T_EXEC_STS_INST, condition, [execution_no])
 
     if len(records) == 0:
-        return False, "MSG-10047"
+        return False, g.appmsg.get_log_message("MSG-10047", [execution_no])
 
     return True, records[0]
 
@@ -136,6 +92,7 @@ def update_execution_record(wsDb, const, update_data, tmp_execution_dir=""):
 
     for column, value in update_data.items():
         execute_data[column] = value
+
     return True, execute_data
 
 
@@ -188,7 +145,7 @@ def file_upload(wsDb, const, update_data, execute_data, file_upload_column_name,
         ZipDataData = file_encode(zip_tmp_save_path)
         if ZipDataData is False:
             # エンコード失敗
-            msgstr = g.appmsg.get_api_message("499-00909", [])
+            msgstr = g.appmsg.get_api_message("BKY-52001", [execution_no])
             g.applogger.error(msgstr)
             return False, msgstr
         uploadfiles = {rest_name_config[file_upload_column_name]: ZipDataData}

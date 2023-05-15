@@ -25,6 +25,7 @@ from zc.lockfile import LockError
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException
 from common_libs.common.util import get_timestamp, ky_encrypt, ky_decrypt
+from common_libs.ci.util import log_err
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
@@ -121,8 +122,8 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     # 処理対象の作業インスタンス情報取得
     retBool, execute_data = func.get_execution_process_info(wsDb, TFCLIConst, execution_no)
     if retBool is False:
-        err_log = g.appmsg.get_log_message(execute_data, [execution_no])
-        raise Exception(err_log)
+        log_err(execute_data)
+        return False, execute_data
 
     run_mode = execute_data['RUN_MODE']
     movement_id = execute_data['MOVEMENT_ID']
@@ -132,7 +133,7 @@ def main_logic(wsDb: DBConnectWs):  # noqa: C901
     sub_value_auto_reg = SubValueAutoReg(wsDb, TFCLIConst, operation_id, movement_id, execution_no)
     result, msg = sub_value_auto_reg.set_assigned_value_from_parameter_sheet()
     if result is False:
-        g.applogger.error(msg)
+        # log_err(msg)
         return False, execute_data
 
     # 実行モードが「パラメータ確認」の場合は終了
@@ -261,7 +262,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     try:
         lock = lockfile.LockFile(exe_lock_file_path)
     except LockError:
-        g.applogger.debug('lock-error')
+        log_err(g.appmsg.get_log_message('BKY-52002', [execution_no]))
         return False, execute_data
 
     # 更新するステータスの初期値
@@ -350,7 +351,7 @@ def instance_execution(wsDb: DBConnectWs, execute_data):
     result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data, tmp_execution_dir)
     if result is True:
         wsDb.db_commit()
-        g.applogger.debug(g.appmsg.get_log_message("BKY-10004", [update_status, execution_no]))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-52010", [update_status, execution_no]))
 
     return True, execute_data
 
@@ -394,12 +395,12 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
 
     # すでに結果ファイルが存在していた（重複処理が走らなければ、ありえない)
     if init_flg is True and os.path.exists(result_file_path):
-        g.applogger.error("result.txt still exists")
+        log_err(g.appmsg.get_log_message("BKY-52003", [execution_no]))
         return TFCLIConst.STATUS_EXCEPTION, execute_data
 
     # terraformコマンドを発行
     str_command = " ".join(command)
-    g.applogger.debug(str_command)
+    g.applogger.debug(g.appmsg.get_log_message("BKY-52004", [str_command]))
     proc = subprocess.Popen(command, cwd=workspace_work_dir, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # 結果ファイルにコマンドとPIDを書き込む
@@ -505,7 +506,7 @@ def make_input_zip_file():
         # zipファイルの作成に失敗しました
         # g.applogger.debug(cp.returncode)
         # g.applogger.debug(cp.stdout)
-        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Creating InputZipFile", ""]))
+        log_err(g.appmsg.get_log_message("BKY-52005", [command]))
         return False
 
     return True
@@ -527,7 +528,7 @@ def make_result_zip_file():
         # zipファイルの作成に失敗しました
         # g.applogger.debug(cp.returncode)
         # g.applogger.debug(cp.stdout)
-        g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Creating ResultZipFile", ""]))
+        log_err(g.appmsg.get_log_message("BKY-52006", [command]))
         return False
 
     return True
@@ -578,7 +579,7 @@ def save_encrypt_statefile(execute_data):
 
         return True
     except Exception as e:
-        g.applogger.error(e)
+        log_err(e)
         return False
 
 
@@ -589,7 +590,7 @@ def is_emergency_stop(wsDb: DBConnectWs, execute_data):
         return True, execute_data
 
     # 緊急停止を検知しました
-    g.applogger.debug("[Process] Emergency stop was detected. (Execution No.:{})".format(execution_no))
+    g.applogger.debug(g.appmsg.get_log_message("BKY-52007", [execution_no]))
 
     # 結果ファイルがあれば作る
     if len(result_matter_arr) > 0:
@@ -704,7 +705,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
             if cp.returncode != 0 or cp.stderr:
                 # 対象のModuleファイルをコピーに失敗しました
                 # g.applogger.debug(cp)
-                g.applogger.error(g.appmsg.get_log_message("BKY-00004", ["Copying ModuleFile", ""]))
+                log_err(g.appmsg.get_log_message("BKY-52008", ["Copying ModuleFile", matter_file_path, workspace_work_dir]))
                 return False, execute_data
 
             # 投入ファイルのリストに追加
@@ -830,7 +831,6 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
             vars_entry = vars['VARS_ENTRY']
             vars_assign_seq = vars['ASSIGN_SEQ']
             vars_type_id = vars['TYPE_ID']
-            # vars_type_info = get_type_info(vars_type_id)
             vars_member_vars = vars['MEMBER_VARS_ID']
             vars_assign_flag = vars["VARS_ASSIGN_FLAG"]  # 代入値系管理フラグ
 
@@ -966,7 +966,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                             ids_string = json.dumps(err_id_list)
                             # error_logにメッセージを追記
                             # メンバー変数の取得に失敗しました。ID:[]
-                            g.applogger.error(ids_string)
+                            g.applogger.info(g.appmsg.get_log_message("BKY-52009", [ids_string]))
 
                         # ５．取得したデータから配列を形成
                         trg_member_vars_arr = generate_member_vars_array_for_hcl(wsDb, TFCLIConst, trg_member_vars_records)

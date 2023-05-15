@@ -1310,6 +1310,7 @@
     "BKY-52008": "Failed to copy Module file. (Module file:{}, Directory:{})",
     "BKY-52009": "Failed to get Member variable(ID:{})",
     "BKY-52010": "[Process] Set status as {}. (Execution No.:{})",
+    "BKY-52011": "Failed to get Master datas(table_name:{}, condition:{})",
     "BKY-60000": "Process {}",
     "BKY-60001": "Invalid target_dir: use [.. ] ({})",
     "BKY-60002": "target_dir:{}, target_file:{}, del_days:{}",

@@ -48,7 +48,7 @@ def backyard_main(organization_id, workspace_id):
     g.LANGUAGE = 'en'
 
     # 処理開始
-    tmp_msg = 'Process Start'
+    tmp_msg = g.appmsg.get_log_message("BKY-70000", ['Start'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # DB接続
@@ -61,18 +61,18 @@ def backyard_main(organization_id, workspace_id):
         # ツリー作成
         retBool, tree_array, hierarchy = make_tree(objdbca, hierarchy)  # noqa: F405
         if retBool is False:
-            tmp_msg = 'make_tree faild'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            tmp_msg = g.appmsg.get_log_message("BKY-70001", [])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             raise Exception()
 
         # 対象ホスト-オペレーション-ホストグループ
         tmp_hosts = [[_t['HOST_ID'], _t['OPERATION'], _t['PARENT_IDS']] for _t in tree_array if _t['OPERATION'] is not None if _t['OPERATION'] != []]
         all_ids = get_all_list(objdbca)  # noqa: F405
         tmp_target_host = [[x[0], [y for y in x[1]], [z for z in x[2]]] for x in tmp_hosts]
-        tmp_msg = 'target_host - operation, hostgroup:{}'.format(tmp_target_host)
+        tmp_msg = g.appmsg.get_log_message("BKY-70002", ['target_host - operation, hostgroup:', tmp_target_host])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_target_host = [[all_ids.get(x[0]), [all_ids.get(y) for y in x[1]], [all_ids.get(z) for z in x[2]]] for x in tmp_hosts]
-        tmp_msg = 'target_host - operation, hostgroup id->name:{}'.format(tmp_target_host)
+        tmp_msg = g.appmsg.get_log_message("BKY-70002", ['target_host - operation, hostgroup id->name:', tmp_target_host])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 処理対象メニュー取得
@@ -81,7 +81,7 @@ def backyard_main(organization_id, workspace_id):
             target_menus = result
             for target in target_menus:
                 # 対象メニュー処理開始: 入力用→代入値自動登録用
-                tmp_msg = 'target Start : {} -> {} [{}]'.format(target['INPUT_MENU_NAME_REST'], target['OUTPUT_MENU_NAME_REST'], target['ROW_ID'])
+                tmp_msg = g.appmsg.get_log_message("BKY-70003", ['Start', target['INPUT_MENU_NAME_REST'], target['OUTPUT_MENU_NAME_REST'], target['ROW_ID']])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # 分割済みフラグ
@@ -95,10 +95,9 @@ def backyard_main(organization_id, workspace_id):
 
                 # 分割済みの場合、次へ
                 if "1" == divided_flg:
-                    tmp_msg = 'target End: divided_flg is True continue : {} -> {} [{}]'.format(
-                        target['INPUT_MENU_NAME_REST'],
-                        target['OUTPUT_MENU_NAME_REST'],
-                        target['ROW_ID']
+                    tmp_msg = g.appmsg.get_log_message(
+                        "BKY-70004",
+                        [target['INPUT_MENU_NAME_REST'], target['OUTPUT_MENU_NAME_REST'], target['ROW_ID']]
                     )
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
@@ -112,13 +111,13 @@ def backyard_main(organization_id, workspace_id):
                 output_view = BaseTable(objdbca, output_view_name)  # noqa: F405
 
                 # 入力用→代入値自動登録用テーブル
-                tmp_msg = "split_table:{} input_table:{}".format(input_table_name, output_table_name)
+                tmp_msg = g.appmsg.get_log_message("BKY-70005", [input_table_name, output_table_name])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # ファイルアップロード対象取得
                 result, file_columns_info = get_file_columns_info(objdbca, input_table, output_table)  # noqa: F405
                 if result is False:
-                    tmp_msg = 'get_file_columns_info error'
+                    tmp_msg = g.appmsg.get_log_message("BKY-70006", [])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
@@ -151,35 +150,33 @@ def backyard_main(organization_id, workspace_id):
                 result, hgsp_data = split_host_grp(hgsp_config, hgsp_data)  # noqa: F405
                 if result is False:
                     # ホストグループ分解エラー、次へ
-                    tmp_msg = 'target End : split_host_grp is Error continue {} -> {} [{}]'.format(
-                        target['INPUT_MENU_NAME_REST'],
-                        target['OUTPUT_MENU_NAME_REST'],
-                        target['ROW_ID']
+                    tmp_msg = g.appmsg.get_log_message(
+                        "BKY-70007",
+                        [target['INPUT_MENU_NAME_REST'], target['OUTPUT_MENU_NAME_REST'], target['ROW_ID']]
                     )
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # 件数ログ
-                tmp_msg = 'insert_cnt:{} / update_cnt:{} / disuse_cnt:{}'.format(
-                    hgsp_data['insert_cnt'],
-                    hgsp_data['update_cnt'],
-                    hgsp_data['disuse_cnt'],
+                tmp_msg = g.appmsg.get_log_message(
+                    "BKY-70008",
+                    [hgsp_data['insert_cnt'], hgsp_data['update_cnt'], hgsp_data['disuse_cnt']]
                 )
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # 対象メニュー処理終了: 入力用→代入値自動登録用
-                tmp_msg = 'target End : {} -> {} [{}]'.format(target['INPUT_MENU_NAME_REST'], target['OUTPUT_MENU_NAME_REST'], target['ROW_ID'])
+                tmp_msg = g.appmsg.get_log_message("BKY-70003", ['End', target['INPUT_MENU_NAME_REST'], target['OUTPUT_MENU_NAME_REST'], target['ROW_ID']])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     except Exception as e:
         # 処理終了 Exception
         tmp_msg = e
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = 'Process END: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        tmp_msg = g.appmsg.get_log_message("BKY-70000", ['End: Exception'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 処理終了
-    tmp_msg = 'Process END'
+    tmp_msg = g.appmsg.get_log_message("BKY-70000", ['End'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     return retBool, result,

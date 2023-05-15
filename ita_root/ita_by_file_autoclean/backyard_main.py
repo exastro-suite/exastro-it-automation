@@ -48,7 +48,7 @@ def backyard_main(organization_id, workspace_id):
     g.LANGUAGE = 'en'
 
     # 処理開始
-    tmp_msg = 'Process Start'
+    tmp_msg = g.appmsg.get_log_message("BKY-60000", ['Start'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # DB接続
@@ -96,16 +96,16 @@ def backyard_main(organization_id, workspace_id):
                 pattern = re.compile(r"(^(.*)\.{2}(.*)$)|[ \s\t\n\r\f\v]", re.DOTALL)
                 tmp_result = pattern.findall(target_file_path)
                 if len(tmp_result) != 0:
-                    tmp_msg = "target_dir is failed: use [.. ] ({})".format(target_file_path)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60001", [target_file_path])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
-                tmp_msg = "target_dir:{}, target_file:{}, del_days:{}".format(target_dir, target_file, del_days)
+                tmp_msg = g.appmsg.get_log_message("BKY-60002", [target_dir, target_file, del_days])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # Check: 削除日数 1-有効日数
                 if isinstance(del_days, int) is False:
-                    tmp_msg = "del_days is failed ({})".format(del_days)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60003", [del_days])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
                 else:
@@ -116,43 +116,43 @@ def backyard_main(organization_id, workspace_id):
                 # Check: パス確認
                 isabs_target_dir = os.path.isabs(target_dir)  # noqa: F405
                 if isabs_target_dir is False:
-                    tmp_msg = "target_dir isabs failed  ({})".format(target_dir)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60004", [target_dir])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # Check: ディレクトリ存在確認
                 is_target_dir = os.path.isdir(target_dir)  # noqa: F405
                 if is_target_dir is False:
-                    tmp_msg = "target_dir is not exist  ({})".format(target_dir)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60005", [target_dir])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # 削除対象ディレクトリ内のファイル一覧取得
                 target_df_list = glob.glob(target_file_path)
                 for target_df in target_df_list:
-                    tmp_msg = "target: {}".format(target_df)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60006", ['target', target_df])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                tmp_msg = "target file count: {}".format(len(target_df_list))
+                tmp_msg = g.appmsg.get_log_message("BKY-60006", ['target file count', len(target_df_list)])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # 削除対象時刻
                 target_time = now_time - timedelta(days=int(del_days))
 
                 for target_path in target_df_list:
-                    tmp_msg = "target file: {}".format(target_path)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60006", ['target file', target_path])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     del_flg = False
 
                     # ファイル/ディレクトリ確認
                     is_dir_target_path = os.path.isdir(target_path)  # noqa: F405
                     is_file_target_path = os.path.isfile(target_path)  # noqa: F405
-                    tmp_msg = "is_dir_target_path: {} / is_file_target_path: {}".format(is_dir_target_path, is_file_target_path)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60007", [is_dir_target_path, is_file_target_path])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                     # 対象のタイムスタンプ取得
                     target_timestamp = datetime.fromtimestamp(os.path.getmtime(target_path))  # noqa: F405
-                    tmp_msg = "target_timestamp < target_time: {} [{} < {}]".format(target_timestamp < target_time, target_timestamp, target_time)
+                    tmp_msg = g.appmsg.get_log_message("BKY-60008", [target_timestamp < target_time, target_timestamp, target_time])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                     # ファイル/ディレクトリ削除対象判定
@@ -160,16 +160,16 @@ def backyard_main(organization_id, workspace_id):
                         # ファイル:削除対象日経過
                         if target_timestamp < target_time:
                             del_flg = True
-                        tmp_msg = "del_flg:{}".format(del_flg)
+                        tmp_msg = g.appmsg.get_log_message("BKY-60006", ['del_flg', del_flg])
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     elif is_dir_target_path is True and del_subdir_flg == "1":
                         # サブディレクトリ:削除対象日経過かつサブディレクトリ削除ON
                         if target_timestamp < target_time:
                             del_flg = True
-                        tmp_msg = "del_flg:{}".format(del_flg)
+                        tmp_msg = g.appmsg.get_log_message("BKY-60006", ['del_flg', del_flg])
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     else:
-                        tmp_msg = "else no target: continue".format()
+                        tmp_msg = g.appmsg.get_log_message("BKY-60006", ['else no target', 'continue'])
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         continue
 
@@ -180,12 +180,12 @@ def backyard_main(organization_id, workspace_id):
                             if is_file_target_path:
                                 # ファイル削除
                                 os.remove(target_path)  # noqa: F405
-                                tmp_msg = "delete successfully[file]: {}".format(target_path)
+                                tmp_msg = g.appmsg.get_log_message("BKY-60009", ['file', target_path])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             elif is_dir_target_path:
                                 # サブディレクトリ削除
                                 shutil.rmtree(target_path)
-                                tmp_msg = "delete successfully[dir]: {}".format(target_path)
+                                tmp_msg = g.appmsg.get_log_message("BKY-60009", ['dir', target_path])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             else:
                                 raise Exception()
@@ -194,39 +194,39 @@ def backyard_main(organization_id, workspace_id):
                             all_del_cnt += 1
                         except Exception as e:
                             tmp_msg = e
-                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                            tmp_msg = "faild delete target_path: {}".format(target_path)
-                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            tmp_msg = g.appmsg.get_log_message("BKY-60010", [target_path])
+                            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     else:
-                        tmp_msg = "not delete target: {}".format(target_path)
+                        tmp_msg = g.appmsg.get_log_message("BKY-60006", ['not delete target', target_path])
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         pass
 
                 # 削除件数(対象)
-                tmp_msg = "Target delete file count: {} ({} {})".format(del_cnt, target_path, target_file)
+                tmp_msg = g.appmsg.get_log_message("BKY-60011", [del_cnt, target_path, target_file])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             except Exception as e:
                 # 処理終了 Exception
                 tmp_msg = e
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                tmp_msg = "Target delete file Exception uuid:{}".format(target_uuid)
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                tmp_msg = g.appmsg.get_log_message("BKY-60012", [target_uuid])
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
 
         # 削除件数(全体)
-        tmp_msg = "All delete file count: {}".format(all_del_cnt)
+        tmp_msg = g.appmsg.get_log_message("BKY-60013", [all_del_cnt])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     except Exception as e:
         # 処理終了 Exception
         tmp_msg = e
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = 'Process END: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        tmp_msg = g.appmsg.get_log_message("BKY-60000", ['End: Exception'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 処理終了
-    tmp_msg = 'Process END'
+    tmp_msg = g.appmsg.get_log_message("BKY-60000", ['End'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     return retBool, result,

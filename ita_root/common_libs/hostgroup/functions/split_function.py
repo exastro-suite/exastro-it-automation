@@ -141,12 +141,12 @@ def get_target_menu(objdbca):
         return True, target_array
 
     except Exception as e:
-        tmp_msg = 'get_target_menu end: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        tmp_msg = g.appmsg.get_log_message("BKY-70009", ['get_target_menu'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, []
 
 
@@ -316,12 +316,12 @@ def make_tree(objdbca, hierarchy=0):
         return True, tree_array, hierarchy
 
     except Exception as e:
-        tmp_msg = 'tree_array end: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        tmp_msg = g.appmsg.get_log_message("BKY-70009", ['make_tree'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, tree_array, hierarchy
 
 
@@ -651,16 +651,16 @@ def split_host_grp(hgsp_config, hgsp_data):
         return True, hgsp_data
 
     except Exception as e:
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
 
         if tranStartFlg is True:
             # ロールバック
             result = objdbca.db_transaction_end(False)
             tmp_msg = 'db_transaction_end rollback: {}'.format(result)
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         return False, hgsp_data
 
@@ -1297,12 +1297,12 @@ def make_host_data(hgsp_config, hgsp_data):
         return True, hgsp_config, hgsp_data
 
     except Exception as e:
-        tmp_msg = 'make_host_data End: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        tmp_msg = g.appmsg.get_log_message("BKY-70009", ['make_host_data'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, hgsp_config, hgsp_data
 
 
@@ -1356,10 +1356,10 @@ def get_file_columns_info(objdbca, input_table, output_table):
         return True, result
 
     except Exception as e:
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, []
 
 
@@ -1449,24 +1449,24 @@ def copy_upload_file(copy_file_array):
 
         except Exception as e:
             tmp_msg = e
-            g.applogger.error(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             try:
                 # パス回復
                 # シンボリックリンク解除
                 if os.path.islink(copy_file['link']):
-                    tmp_msg = 'unlink: {}'.format(copy_file['link'])
+                    tmp_msg = g.appmsg.get_log_message("BKY-70010", [copy_file['link']])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     os.unlink(copy_file['link'])
 
                 # シンボリックリンク作成
-                tmp_msg = 'symlink src:{} link:{}'.format(copy_file['dest'], copy_file['link'])
+                tmp_msg = g.appmsg.get_log_message("BKY-70011", [copy_file['dest'], copy_file['link']])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 os.symlink(copy_file['old_dest'], copy_file['link'])  # noqa: F405
             except Exception as e:
                 tmp_msg = e
-                g.applogger.error(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                tmp_msg = 'path recovery failed :{}->{}'.format(copy_file['link'], copy_file['old_dest'])
-                g.applogger.error(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                tmp_msg = g.appmsg.get_log_message("BKY-70012", [copy_file['link'], copy_file['old_dest']])
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     return True
 
 

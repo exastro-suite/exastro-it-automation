@@ -147,9 +147,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         execution_no_path = uploadfiles_60103_dir + '/file_name/' + execution_no
-
         file_path = execution_no_path + '/' + file_name
-
         if os.path.isfile(file_path) is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
@@ -171,6 +169,19 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             raise AppException("499-00905", [], [])
         # インポート対象メニュー取得
         menu_name_rest_list = json_storage_item.split(',')
+
+        backupsql_dir = workspace_path + "/tmp/driver/import_menu/backup"
+        backupsql_path = backupsql_dir + '/backup.sql'
+        if not os.path.isdir(backupsql_dir):
+            os.makedirs(backupsql_dir)
+            g.applogger.debug("made backup_dir")
+        menu_id_list = backup_table(objdbca, backupsql_path, menu_name_rest_list)
+
+        backupfile_dir = workspace_path + "/tmp/driver/import_menu/uploadfiles"
+        if not os.path.isdir(backupfile_dir):
+            os.makedirs(backupfile_dir)
+            g.applogger.debug("made backupfile_dir")
+        fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list)
 
         # 環境移行にて削除したテーブル名を記憶する用
         deleted_table_list = []
@@ -291,10 +302,20 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             if history_table_flag == '1':
                 _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
 
+        if os.path.isfile(backupsql_path) is True:
+            # 正常終了時はバックアップファイルを削除する
+            os.remove(backupsql_path)
+
+        if os.path.isdir(backupfile_dir):
+            shutil.rmtree(backupfile_dir)
+
         # 正常系リターン
         return True, msg
 
     except Exception as msg:
+        restoreTables(objdbca, workspace_path)
+        restoreFiles(workspace_path, uploadfiles_dir)
+
         # コミット/トランザクション終了
         debug_msg = g.appmsg.get_log_message("BKY-20005", [])
         g.applogger.error(debug_msg)
@@ -1048,3 +1069,130 @@ def addline_msg(msg=''):
     info = inspect.getouterframes(inspect.currentframe())[1]
     msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
     return msg_line
+
+
+def backup_table(objdbca, sqldump_path, menu_name_rest_list):
+    """
+        テーブルをバックアップする
+        ARGS:
+            tableAry: バックアップするテーブル名のリスト
+        RETURN:
+            boolean
+    """
+    g.applogger.debug("backup_table start")
+
+    db_user = os.environ.get('DB_ADMIN_USER')
+    db_password = os.environ.get('DB_ADMIN_PASSWORD')
+    db_host = os.environ.get('DB_HOST')
+    db_database = objdbca._db
+
+    # REST名からmenu_idを取得
+    menu_id_sql = " SELECT `MENU_ID` FROM `T_COMN_MENU` WHERE `MENU_NAME_REST` IN %s "
+    t_comn_menu_record = objdbca.sql_execute(menu_id_sql, [menu_name_rest_list])
+    menu_id_list = []
+    for record in t_comn_menu_record:
+        menu_id = record.get('MENU_ID')
+        menu_id_list.append(menu_id)
+
+    # menu_idからtable_nameを取得
+    table_name_sql = " SELECT * FROM `T_COMN_MENU_TABLE_LINK` WHERE `MENU_ID` IN %s "
+    t_comn_menu_table_link_record = objdbca.sql_execute(table_name_sql, [menu_id_list])
+    table_name_list = []
+    for record in t_comn_menu_table_link_record:
+        table_name = record.get('TABLE_NAME')
+        table_name_list.append(table_name)
+        history_table_flag = record.get('HISTORY_TABLE_FLAG')
+        if history_table_flag == '1':
+            table_name_list.append(table_name + '_JNL')
+
+    cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", db_database]
+    cmd += table_name_list
+
+    sp_sqldump = subprocess.run(cmd, capture_output=True, text=True)
+
+    if sp_sqldump.stdout == '' and sp_sqldump.returncode != 0:
+        msg = sp_sqldump.stderr
+        log_msg_args = [msg]
+        api_msg_args = [msg]
+        raise AppException("499-00201", [log_msg_args], [api_msg_args])
+    with open(sqldump_path, 'w', encoding='utf-8') as f:
+        f.write(sp_sqldump.stdout)
+
+    g.applogger.debug("backup_table end")
+    return menu_id_list
+
+
+def restoreTables(objdbca, workspace_path):
+    # テーブルをリストアする
+
+    g.applogger.debug("restoreTables start")
+    backup_dir = workspace_path + "/tmp/driver/import_menu/backup"
+    backupsql_path = backup_dir + '/backup.sql'
+
+    if os.path.isfile(backupsql_path) is False:
+        # バックアップファイルが無い場合は処理終了
+        return
+
+    objdbca.sqlfile_execute(backupsql_path)
+
+    g.applogger.debug("restoreTables end")
+
+
+def fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list):
+    g.applogger.debug("fileBackup start")
+    for menu_id in menu_id_list:
+        menu_dir = uploadfiles_dir + '/' + menu_id
+        # ディレクトリ存在チェック
+        if os.path.isdir(menu_dir) is False:
+            continue
+
+        # ファイル一覧取得
+        resAry = []
+        for curDir, dirs, files in os.walk(menu_dir):
+            for file in files:
+                resAry.append(os.path.join(curDir, file))
+
+        # コピー
+        cmd = ["cp", "-rp", menu_dir, backupfile_dir]
+        sp_copy = subprocess.run(cmd, capture_output=True, text=True)
+
+        if sp_copy.returncode != 0:
+            msg = sp_copy.stderr
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", [log_msg_args], [api_msg_args])
+
+        # コピーできたかを確認する
+        for path in resAry:
+            if not os.path.exists(path):
+                msg = g.appmsg.get_api_message("MSG-30036")
+                log_msg_args = [msg]
+                api_msg_args = [msg]
+                raise AppException("499-00201", [log_msg_args], [api_msg_args])
+
+    g.applogger.debug("fileBackup end")
+
+
+def restoreFiles(workspace_path, uploadfiles_dir):
+    # ディレクトリとファイルをリストアする
+    g.applogger.debug("restoreFiles start")
+    backupfile_dir = workspace_path + "/tmp/driver/import_menu/uploadfiles/"
+
+    dir_info = os.listdir(backupfile_dir)
+    for dir in dir_info:
+        if os.path.isdir(uploadfiles_dir + '/' + dir):
+            # インポート途中のファイルがあると不整合を起こすので削除する
+            shutil.rmtree(uploadfiles_dir + '/' + dir)
+            os.mkdir(uploadfiles_dir + '/' + dir)
+
+        # コピー
+        cmd = ["cp", "-rp", backupfile_dir + dir, uploadfiles_dir]
+        sp_copy = subprocess.run(cmd, capture_output=True, text=True)
+
+        if sp_copy.returncode != 0:
+            msg = sp_copy.stderr
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", [log_msg_args], [api_msg_args])
+
+    g.applogger.debug("restoreFiles end")

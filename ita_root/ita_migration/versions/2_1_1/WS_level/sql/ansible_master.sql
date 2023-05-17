@@ -1,6 +1,10 @@
 -- ------------------------------------------------------------
 -- ▼TABLE MASTER UPDATE START
 -- ------------------------------------------------------------
+-- 20108　管理対象外変数一覧:　item レコード追加
+INSERT INTO T_ANSC_UNMANAGED_VARLIST (ROW_ID,VAR_NAME,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(15,'item','ansibleマジック変数','0',_____DATE_____,1);
+INSERT INTO T_ANSC_UNMANAGED_VARLIST_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,ROW_ID,VAR_NAME,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(15,_____DATE_____,'INSERT',15,'item','ansibleマジック変数','0',_____DATE_____,1);
+
 -- 20102 インターフェース情報: REST APIタイムアウト値(単位 秒)　追加
 DELETE FROM T_COMN_MENU_COLUMN_LINK     WHERE COLUMN_DEFINITION_ID in ("2010209",
                                                                        "2010210",

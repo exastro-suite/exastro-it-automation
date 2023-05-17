@@ -604,11 +604,11 @@ def is_emergency_stop(wsDb: DBConnectWs, execute_data):
         "TIME_END": get_timestamp()
     }
     if len(input_matter_arr) > 0 and not execute_data["FILE_INPUT"]:
-        is_zip = make_result_zip_file()
+        is_zip = make_input_zip_file()
         if is_zip is True:
             update_data["FILE_INPUT"] = input_zip_file_name
     elif len(result_matter_arr) > 0 and not execute_data["FILE_RESULT"]:
-        is_zip = make_input_zip_file()
+        is_zip = make_result_zip_file()
         if is_zip is True:
             update_data["FILE_RESULT"] = result_zip_file_name
 

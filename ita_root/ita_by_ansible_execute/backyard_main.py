@@ -86,6 +86,8 @@ def main_logic(common_db):
         # 現在の実行数
         crr_count = 0
         for data in execution_list:
+            g.ORGANIZATION_ID = data["ORGANIZATION_ID"]
+            g.WORKSPACE_ID = data["WORKSPACE_ID"]
             g.applogger.debug("main_logic EXECUTION_NO=" + data["EXECUTION_NO"])
             crr_count += 1
             # 実行前に同時実行数比較
@@ -114,12 +116,10 @@ def main_logic(common_db):
                     else:
                         # 最初からやり直し
                         common_db.db_rollback()
-                        common_db.db_disconnect()
                         return True
             else:
                 # 最初からやり直し
                 common_db.db_rollback()
-                common_db.db_disconnect()
                 return True
 
             wsDb = DBConnectWs(data["WORKSPACE_ID"], data["ORGANIZATION_ID"])
@@ -135,9 +135,10 @@ def main_logic(common_db):
 
             wsDb.db_disconnect()
 
+            g.ORGANIZATION_ID = None
+            g.WORKSPACE_ID = None
     except AppException as e:
         common_db.db_rollback()
-        common_db.db_disconnect()
         raise AppException(e)
 
     return True

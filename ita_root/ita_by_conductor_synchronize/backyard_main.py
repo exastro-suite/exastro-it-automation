@@ -52,7 +52,7 @@ def backyard_main(organization_id, workspace_id):
     # 言語情報  ja / en
     g.LANGUAGE = 'en'
 
-    tmp_msg = 'Process Start'
+    tmp_msg = g.appmsg.get_log_message("BKY-41000", ['Start'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # DB接続
@@ -63,7 +63,7 @@ def backyard_main(organization_id, workspace_id):
     if objcbkl.get_objmenus() is False:
         # DB切断
         objdbca.db_disconnect()
-        tmp_msg = 'ConductorExecuteBkyLibs Load Error'
+        tmp_msg = g.appmsg.get_log_message("BKY-41001", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False,
 
@@ -72,7 +72,7 @@ def backyard_main(organization_id, workspace_id):
     if tmp_result[0] is not True:
         # DB切断
         objdbca.db_disconnect()
-        tmp_msg = 'set_storage_path Error'
+        tmp_msg = g.appmsg.get_log_message("BKY-41002", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False,
     base_conductor_storage_path = objcbkl.get_conductor_storage_path()
@@ -82,7 +82,7 @@ def backyard_main(organization_id, workspace_id):
     if tmp_result[0] is not True:
         # DB切断
         objdbca.db_disconnect()
-        tmp_msg = 'get_execute_conductor_list Error'
+        tmp_msg = g.appmsg.get_log_message("BKY-41003", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False,
     target_conductor_list = tmp_result[1]
@@ -91,26 +91,26 @@ def backyard_main(organization_id, workspace_id):
     if len(target_conductor_list) == 0:
         # DB切断
         objdbca.db_disconnect()
-        tmp_msg = 'No Execute Conductor'
+        tmp_msg = g.appmsg.get_log_message("BKY-41004", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return True,
 
     # Conductor毎に繰り返し処理
     execute_conductor_cnt = 0
     for conductor_instance_id, tmp_info in target_conductor_list.items():
-        tmp_msg = 'conductor instance:{} Start'.format(conductor_instance_id)
+        tmp_msg = g.appmsg.get_log_message("BKY-41005", ['Start', conductor_instance_id])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         ci_status = tmp_info.get('status')
 
         # トランザクション開始
         objdbca.db_transaction_start()
-        tmp_msg = 'db_transaction_start'
+        tmp_msg = g.appmsg.get_log_message("BKY-41006", [])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # テーブルロック
         locktable_list = ['T_COMN_CONDUCTOR_INSTANCE', 'T_COMN_CONDUCTOR_NODE_INSTANCE']
         tmp_result = objdbca.table_lock(locktable_list)
-        tmp_msg = 'table_lock'
+        tmp_msg = g.appmsg.get_log_message("BKY-41007", [",".join(locktable_list)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # update_flg = ON
@@ -118,7 +118,7 @@ def backyard_main(organization_id, workspace_id):
         ni_update_flg = 1
 
         # Conductor instance処理_1
-        tmp_msg = 'conductor instance first run process start'
+        tmp_msg = g.appmsg.get_log_message("BKY-41008", ['Start'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         try:
             # 共有パスを生成
@@ -126,7 +126,7 @@ def backyard_main(organization_id, workspace_id):
             ci_status_id = tmp_info.get('status')
             tmp_result = objcbkl.create_data_storage_path(conductor_storage_path, ci_status_id)
             if tmp_result is False:
-                tmp_msg = 'Create storage path Error'
+                tmp_msg = g.appmsg.get_log_message("BKY-41009", [])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
 
@@ -135,35 +135,35 @@ def backyard_main(organization_id, workspace_id):
                 # Conductor instanceステータス更新
                 tmp_result = objcbkl.conductor_status_update(conductor_instance_id)
                 if tmp_result[0] is not True:
-                    tmp_msg = 'Update Conductor instance Error'
+                    tmp_msg = g.appmsg.get_log_message("BKY-41010", [])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     raise Exception()
 
         except Exception:
             ci_update_flg = 0
-            tmp_msg = 'conductor instance first run process error'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            g.applogger.error(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
+            tmp_msg = g.appmsg.get_log_message("BKY-41008", ['Failed'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
             type_, value, traceback_ = sys.exc_info()
-            msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            msg = ''.join(traceback.format_exception(type_, value, traceback_))
+            g.applogger.info(msg)
 
-        tmp_msg = 'conductor instance first run process end'
+        tmp_msg = g.appmsg.get_log_message("BKY-41008", ['End'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # Node instance処理
-        tmp_msg = 'node instance process start'
+        tmp_msg = g.appmsg.get_log_message("BKY-41011", ['Start'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         try:
             if ni_update_flg != 1 and ci_update_flg != 1:
-                tmp_msg = ' Conductor Node instance update Error'
+                tmp_msg = g.appmsg.get_log_message("BKY-41012", [])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
 
             # Node instance取得
             tmp_result = objcbkl.get_filter_node(conductor_instance_id)
             if tmp_result[0] is not True:
-                tmp_msg = 'Get Filter Node instance Error'
+                tmp_msg = g.appmsg.get_log_message("BKY-41013", [])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
             all_node_filter = tmp_result[1]
@@ -171,7 +171,7 @@ def backyard_main(organization_id, workspace_id):
             # 全 Nodeのステータス取得
             tmp_result = objcbkl.get_execute_all_node_list(conductor_instance_id)
             if tmp_result[0] is not True:
-                tmp_msg = 'Get Node instance Status Error'
+                tmp_msg = g.appmsg.get_log_message("BKY-41014", [])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
             target_all_node_list = tmp_result[1]
@@ -179,7 +179,7 @@ def backyard_main(organization_id, workspace_id):
             # Start Nodeのnode_instance_id取得
             tmp_result = objcbkl.get_start_node(conductor_instance_id)
             if tmp_result[0] is not True:
-                tmp_msg = 'Get Start Node instance Error'
+                tmp_msg = g.appmsg.get_log_message("BKY-41015", [])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
             start_node_instance_id = tmp_result[1]
@@ -190,7 +190,7 @@ def backyard_main(organization_id, workspace_id):
                 # START Node開始処理
                 tmp_result = objcbkl.execute_node_action(conductor_instance_id, start_node_instance_id, all_node_filter)
                 if tmp_result[0] is not True:
-                    tmp_msg = 'Execute Start Node instance Error'
+                    tmp_msg = g.appmsg.get_log_message("BKY-41016", [start_node_instance_id])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     raise Exception()
 
@@ -204,83 +204,85 @@ def backyard_main(organization_id, workspace_id):
                             #  Node処理
                             tmp_result = objcbkl.execute_node_action(conductor_instance_id, node_instance_id, all_node_filter)
                             if tmp_result[0] is not True:
-                                tmp_msg = 'Execute Node Error'
+                                tmp_msg = g.appmsg.get_log_message("BKY-41017", [node_instance_id])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                 raise Exception()
         except Exception as e:
             ni_update_flg = 0
-            tmp_msg = 'node instance process error'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            g.applogger.error(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
+            tmp_msg = g.appmsg.get_log_message("BKY-41011", ['Failed'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
             type_, value, traceback_ = sys.exc_info()
-            msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            msg = ''.join(traceback.format_exception(type_, value, traceback_))
+            g.applogger.info(msg)
 
         tmp_msg = 'node instance process end'
+        tmp_msg = g.appmsg.get_log_message("BKY-41011", ['End'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # Conductor instance処理_2
-        tmp_msg = 'conductor instance process start'
+        tmp_msg = g.appmsg.get_log_message("BKY-41018", ['Start'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         try:
             if ni_update_flg != 1 or ci_update_flg != 1:
-                tmp_msg = ' Conductor Node instance update Error'
+                tmp_msg = g.appmsg.get_log_message("BKY-41019", [conductor_instance_id])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
             # Conductor instanceステータス更新
             tmp_result = objcbkl.conductor_status_update(conductor_instance_id)
             if tmp_result[0] is not True:
-                tmp_msg = 'pdate Conductor instance Error'
+                tmp_msg = g.appmsg.get_log_message("BKY-41020", [conductor_instance_id])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 raise Exception()
 
         except Exception as e:
             ci_update_flg = 0
-            tmp_msg = 'conductor instance process error'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            g.applogger.error(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
+            tmp_msg = g.appmsg.get_log_message("BKY-41018", ['Failed'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
             type_, value, traceback_ = sys.exc_info()
-            msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            msg = ''.join(traceback.format_exception(type_, value, traceback_))
+            g.applogger.info(msg)
 
-        tmp_msg = 'conductor instance process end'
+        tmp_msg = g.appmsg.get_log_message("BKY-41018", ['End'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         try:
             if (ni_update_flg == 1 and ci_update_flg == 1) is True:
                 # トランザクション終了
                 objdbca.db_transaction_end(True)
-                tmp_msg = 'db_transaction_end(True)'
+                tmp_msg = g.appmsg.get_log_message("BKY-41021", ['True'])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             else:
                 retBool = False
                 # トランザクション終了
                 objdbca.db_transaction_end(False)
-                tmp_msg = 'db_transaction_end(False)'
+                tmp_msg = g.appmsg.get_log_message("BKY-41021", ['False'])
+
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         except Exception as e:
             retBool = False
             # トランザクション終了
             objdbca.db_transaction_end(False)
-            tmp_msg = 'db_transaction_end(False)'
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            g.applogger.error(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
+            tmp_msg = g.appmsg.get_log_message("BKY-41021", ['False'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))  # noqa: F405
             type_, value, traceback_ = sys.exc_info()
-            msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.error(msg)
+            msg = ''.join(traceback.format_exception(type_, value, traceback_))
+            g.applogger.info(msg)
         finally:
             execute_conductor_cnt = execute_conductor_cnt + 1
 
-        tmp_msg = 'conductor instance:{} END'.format(conductor_instance_id)
+        tmp_msg = g.appmsg.get_log_message("BKY-41005", ['End', conductor_instance_id])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # DB切断
     objdbca.db_disconnect()
 
-    tmp_msg = 'execute count :{}'.format(execute_conductor_cnt)
+    tmp_msg = g.appmsg.get_log_message("BKY-41022", [execute_conductor_cnt])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    tmp_msg = 'Process End'
+    tmp_msg = g.appmsg.get_log_message("BKY-41000", ['End'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     return retBool, result,

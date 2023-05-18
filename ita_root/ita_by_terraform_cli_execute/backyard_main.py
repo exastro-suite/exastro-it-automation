@@ -28,8 +28,6 @@ from libs import functions as func
 
 
 def backyard_main(organization_id, workspace_id):
-    # if organization_id == "company_A" and workspace_id == "prj_A":
-    #     raise AppException("999-99999")
     g.applogger.debug(g.appmsg.get_log_message("BKY-00001"))
 
     retBool = main_logic(organization_id, workspace_id)
@@ -115,12 +113,12 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
 
         # DBのステータスが実行中なのに、子プロセスが存在しない
         if is_running is False:
-            log_err(g.appmsg.get_log_message("MSG-10056", [execution_no, tf_workspace_id]))
+            g.applogger.info(g.appmsg.get_log_message("MSG-10056", [execution_no, tf_workspace_id]))
 
             # 情報を再取得して、想定外エラーにする
             result = func.get_execution_process_info(wsDb, TFCLIConst, execution_no)
             if result[0] is False:
-                log_err(g.appmsg.get_log_message(result[1], [execution_no]))
+                log_err(result[1])
                 return False
             execute_data = result[1]
 
@@ -228,7 +226,7 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
     # 処理対象レコードが0件の場合は処理終了
     if len(records) == 0:
         g.applogger.debug(g.appmsg.get_log_message("MSG-10749"))
-        return True,
+        return True
 
     # 実行順リストを作成する
     # ・並び替え（workspace混在・同一ワークスペースを含む）
@@ -266,7 +264,8 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
 
         # 並列実行数判定
         if num_of_run_instance >= num_of_parallel_exec:
-            return False, g.appmsg.get_log_message("BKY-10001")
+            g.applogger.info(g.appmsg.get_log_message("BKY-10001"))
+            return False
         num_of_run_instance = num_of_run_instance + 1
 
         # ワークスペースを配列にキャッシュ
@@ -293,9 +292,9 @@ def run_unexecuted(wsDb: DBConnectWs, organization_id, workspace_id, executed_wo
                 g.applogger.debug(g.appmsg.get_log_message("MSG-10060", [execution_no, tf_workspace_id]))
 
     if is_fail is True:
-        return False, g.appmsg.get_log_message("BKY-10001")
-
-    return True,
+        return False
+    else:
+        return True
 
 
 def run_child_process(wsDb, execute_data, organization_id, workspace_id):
@@ -313,7 +312,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     # 処理対象の作業インスタンス情報取得(再取得)
     retBool, result = func.get_execution_process_info(wsDb, TFCLIConst, execution_no)
     if retBool is False:
-        return False, g.appmsg.get_log_message(result, [execution_no])
+        return False, result
     execute_data = result
 
     # 未実行状態かを判定
@@ -331,7 +330,7 @@ def run_child_process(wsDb, execute_data, organization_id, workspace_id):
     result, execute_data = func.update_execution_record(wsDb, TFCLIConst, update_data)
     if result is True:
         wsDb.db_commit()
-        g.applogger.debug(g.appmsg.get_log_message("MSG-10730", [execution_no, tf_workspace_id]))
+        g.applogger.debug(g.appmsg.get_log_message("MSG-10730", [execution_no]))
 
     # ワークスペース毎のディレクトリを準備
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))

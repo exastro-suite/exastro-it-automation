@@ -60,6 +60,23 @@ def backyard_main(organization_id, workspace_id):
     # テーブル名
     t_menu_export_import = 'T_MENU_EXPORT_IMPORT'  # メニューエクスポート・インポート管理
 
+    # 「メニューエクスポート・インポート管理」から「実行中(ID:2)」のレコードを取得
+    ret = objdbca.table_select(t_menu_export_import, 'WHERE STATUS = %s AND DISUSE_FLAG = %s ORDER BY LAST_UPDATE_TIMESTAMP ASC', [2, 0])
+
+    # ステータス「実行中」の対象がある場合、なんらかの原因で「実行中」のまま止まってしまった対象であるため、「4:完了(異常)」に更新する。
+    for record in ret:
+        execution_no = str(record.get('EXECUTION_NO'))
+
+        # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
+        objdbca.db_transaction_start()
+        status_id = "4"
+        result, msg = _update_t_menu_export_import(objdbca, execution_no, status_id)
+        if not result:
+            # エラーログ出力
+            g.applogger.error(msg)
+            continue
+        objdbca.db_transaction_end(True)
+
     # 「メニューエクスポート・インポート管理」から「未実行(ID:1)」のレコードを取得(最終更新日時の古い順から処理)
     ret = objdbca.table_select(t_menu_export_import, 'WHERE STATUS = %s AND DISUSE_FLAG = %s ORDER BY LAST_UPDATE_TIMESTAMP ASC', [1, 0])
 

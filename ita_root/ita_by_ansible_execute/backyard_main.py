@@ -114,12 +114,10 @@ def main_logic(common_db):
                     else:
                         # 最初からやり直し
                         common_db.db_rollback()
-                        common_db.db_disconnect()
                         return True
             else:
                 # 最初からやり直し
                 common_db.db_rollback()
-                common_db.db_disconnect()
                 return True
 
             wsDb = DBConnectWs(data["WORKSPACE_ID"], data["ORGANIZATION_ID"])
@@ -137,7 +135,6 @@ def main_logic(common_db):
 
     except AppException as e:
         common_db.db_rollback()
-        common_db.db_disconnect()
         raise AppException(e)
 
     return True

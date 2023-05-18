@@ -207,7 +207,7 @@ class DBConnectCommon:
             self.__sql_debug(db_cursor)
         except pymysql.Error as e:
             last_executed = ''
-            if '_last_executed' in db_cursor:
+            if self._db_con.open is True and '_last_executed' in db_cursor:
                 last_executed = db_cursor._last_executed
             raise AppException("999-00003", [self._db, last_executed, e])
 

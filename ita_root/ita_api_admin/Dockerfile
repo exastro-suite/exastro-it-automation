@@ -40,20 +40,20 @@ RUN dnf install -y \
     langpacks-en \
     wget \
     unzip \
-&&  pip3.9 install --upgrade pip setuptools \
-&&  pip3.9 install \
-    Flask \
-    connexion \
-    six \
-    requests \
-    pyyaml \
-    pytz \
-    markdown \
-    pymysql \
-    python-dotenv \
-    chardet \
-    connexion[swagger-ui] \
-    pycryptodome \
+&&  pip3.9 install --upgrade pip \
+&&  pip3.9 install --upgrade setuptools \
+&&  pip3.9 install --upgrade Flask \
+&&  pip3.9 install --upgrade connexion \
+&&  pip3.9 install --upgrade six \
+&&  pip3.9 install --upgrade requests \
+&&  pip3.9 install --upgrade pyyaml \
+&&  pip3.9 install --upgrade pytz \
+&&  pip3.9 install --upgrade markdown \
+&&  pip3.9 install --upgrade pymysql \
+&&  pip3.9 install --upgrade python-dotenv \
+&&  pip3.9 install --upgrade chardet \
+&&  pip3.9 install --upgrade connexion[swagger-ui] \
+&&  pip3.9 install --upgrade pycryptodome \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \
@@ -79,10 +79,9 @@ RUN dnf install -y \
     diffutils \
     bind-utils \
     iputils \
-&&  pip3.9 install \
-    debugpy \
-    flake8 \
-    autopep8 \
+&&  pip3.9 install --upgrade debugpy \
+&&  pip3.9 install --upgrade flake8 \
+&&  pip3.9 install --upgrade autopep8 \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 

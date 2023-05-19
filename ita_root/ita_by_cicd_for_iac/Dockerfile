@@ -37,17 +37,17 @@ RUN dnf install -y \
     git \
     zip \
     unzip \
-&&  pip3.9 install --upgrade pip setuptools \
-&&  pip3.9 install \
-    Flask \
-    requests \
-    pyyaml \
-    pytz \
-    pymysql \
-    python-dotenv \
-    chardet \
-    pycryptodome \
-    python-hcl2 \
+&&  pip3.9 install --upgrade pip \
+&&  pip3.9 install --upgrade setuptools \
+&&  pip3.9 install --upgrade Flask \
+&&  pip3.9 install --upgrade requests \
+&&  pip3.9 install --upgrade pyyaml \
+&&  pip3.9 install --upgrade pytz \
+&&  pip3.9 install --upgrade pymysql \
+&&  pip3.9 install --upgrade python-dotenv \
+&&  pip3.9 install --upgrade chardet \
+&&  pip3.9 install --upgrade pycryptodome \
+&&  pip3.9 install --upgrade python-hcl2 \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
@@ -70,10 +70,9 @@ RUN dnf install -y \
     diffutils \
     bind-utils \
     iputils \
-&&  pip3.9 install \
-    debugpy \
-    flake8 \
-    autopep8 \
+&&  pip3.9 install --upgrade debugpy \
+&&  pip3.9 install --upgrade flake8 \
+&&  pip3.9 install --upgrade autopep8 \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 

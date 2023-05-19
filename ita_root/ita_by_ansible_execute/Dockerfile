@@ -118,4 +118,3 @@ RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
 USER $USERNAME
 
 ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]
-

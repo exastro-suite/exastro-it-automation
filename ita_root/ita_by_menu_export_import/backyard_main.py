@@ -137,8 +137,8 @@ def backyard_main(organization_id, workspace_id):
         objdbca.db_transaction_end(True)
 
     # サービススキップファイルが存在する場合は削除する
-    if os.path.exists(workspace_path + '/skip_all_service'):
-        os.remove(workspace_path + '/skip_all_service')
+    if os.path.exists(import_menu_dir + '/skip_all_service'):
+        os.remove(import_menu_dir + '/skip_all_service')
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
@@ -151,7 +151,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
 
     try:
         # サービススキップファイルを配置する
-        f = Path(workspace_path + '/skip_all_service')
+        f = Path(workspace_path + '/tmp/driver/import_menu/skip_all_service')
         f.touch()
         time.sleep(int(os.environ.get("EXECUTE_INTERVAL", 10)))
 
@@ -330,6 +330,10 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         return True, msg
 
     except Exception as msg:
+        # サービススキップファイルが存在する場合は削除する
+        if os.path.exists(workspace_path + '/tmp/driver/import_menu/skip_all_service'):
+            os.remove(workspace_path + '/tmp/driver/import_menu/skip_all_service')
+
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 

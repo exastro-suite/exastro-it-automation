@@ -41,19 +41,19 @@ RUN dnf install -y \
     git \
 &&  curl -kL https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 &&  chmod +x /usr/local/bin/kubectl \
-&&  pip3.9 install --upgrade pip setuptools \
-&&  pip3.9 install \
-    Flask \
-    requests \
-    pyyaml \
-    pytz \
-    pymysql \
-    python-dotenv \
-    chardet \
-    dictknife \
-    ansible \
-    kubernetes \
-    pycryptodome \
+&&  pip3.9 install --upgrade pip \
+&&  pip3.9 install --upgrade setuptools \
+&&  pip3.9 install --upgrade Flask \
+&&  pip3.9 install --upgrade requests \
+&&  pip3.9 install --upgrade pyyaml \
+&&  pip3.9 install --upgrade pytz \
+&&  pip3.9 install --upgrade pymysql \
+&&  pip3.9 install --upgrade python-dotenv \
+&&  pip3.9 install --upgrade chardet \
+&&  pip3.9 install --upgrade dictknife \
+&&  pip3.9 install --upgrade ansible \
+&&  pip3.9 install --upgrade kubernetes \
+&&  pip3.9 install --upgrade pycryptodome \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
@@ -79,10 +79,9 @@ RUN dnf install -y \
 &&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
 &&  curl -kL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
-&&  pip3.9 install \
-    debugpy \
-    flake8 \
-    autopep8 \
+&&  pip3.9 install --upgrade debugpy \
+&&  pip3.9 install --upgrade flake8 \
+&&  pip3.9 install --upgrade autopep8 \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
@@ -119,4 +118,3 @@ RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
 USER $USERNAME
 
 ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]
-

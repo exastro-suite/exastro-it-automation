@@ -81,7 +81,7 @@ def AnsibleTowerExecution(
             process_has_error = True
             error_flag = 1
 
-            g.applogger.error("Faild to authorize to Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
+            g.applogger.info("Faild to authorize to Ansible Automation Controller. %s" % (response_array['responseContents']['errorMessage']))
 
         workflowTplId = -1
         director = None
@@ -163,7 +163,7 @@ def AnsibleTowerExecution(
                     # メイン処理での異常フラグをON
                     process_has_error = True
                     error_flag = 1
-                    g.applogger.error("Faild to create Ansible Automation Controller environment. (exec_no: %s)" % (tgt_execution_no))
+                    g.applogger.info("Faild to create Ansible Automation Controller environment. (exec_no: %s)" % (tgt_execution_no))
 
                 else:
                     # マルチログかを取得する
@@ -182,9 +182,6 @@ def AnsibleTowerExecution(
                             if wfId == -1:
                                 process_has_error = True
                                 error_flag = 1
-                                g.applogger.error("Faild to launch workflowJob. (exec_no: %s)" % (tgt_execution_no))
-                                errorMessage = g.appmsg.get_api_message("MSG-10655")
-                                director.errorLogOut(errorMessage)
 
                             else:
                                 g.applogger.debug("execution start up complated. (exec_no: %s)" % (tgt_execution_no))
@@ -279,7 +276,7 @@ def AnsibleTowerExecution(
                     ret = director.transfer(tgt_execution_no, TowerHostList)
                     if not ret:
                         warning_flag = 1
-                        g.applogger.error("Faild to transfer the execution result file from Ansible Automation Controller. (exec_no: %s)" % (tgt_execution_no))
+                        g.applogger.info("Faild to transfer the execution result file from Ansible Automation Controller. (exec_no: %s)" % (tgt_execution_no))
 
                     else:
                         g.applogger.debug("transfer the execution result file from Ansible Automation Controller environment SUCCEEDED. (exec_no: %s)" % (tgt_execution_no))
@@ -294,7 +291,7 @@ def AnsibleTowerExecution(
                     ret = director.delete(GitObj, tgt_execution_no, TowerHostList)
                     if not ret:
                         warning_flag = 1
-                        g.applogger.error("Faild to clean up Ansible Automation Controller environment. (exec_no: %s)" % (tgt_execution_no))
+                        g.applogger.info("Faild to clean up Ansible Automation Controller environment. (exec_no: %s)" % (tgt_execution_no))
 
                     else:
                         g.applogger.debug("Clean up Ansible Automation Controller environment SUCCEEDED. (exec_no: %s)" % (tgt_execution_no))

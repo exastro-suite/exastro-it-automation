@@ -93,7 +93,7 @@ def RestResultLog(message_list):
     for message in message_list:
         if not isinstance(message, str):
             message = str(message)
-        print(message)
+        g.applogger.info(message)
 
 
 def backyard_main(organization_id, workspace_id):

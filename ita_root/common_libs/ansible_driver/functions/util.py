@@ -171,9 +171,11 @@ def to_str(bstr):
         toStr = bstr
     return toStr
 
-def get_AnsibleDriverHpTmpPath():
+def get_OSTmpPath():
     """
       /tmpバスを取得する。
+      Azuruの/storage配下はアクセス時間が遅いので、/in・/outディレクトリのアクセス以外は
+      get_OSTmpPath()を使用する。
       Arguments:
         なし
       Returns:
@@ -181,23 +183,66 @@ def get_AnsibleDriverHpTmpPath():
     """
     return "/tmp"
 
-def AnsibleFilesClean(FilesList):
+def addAnsibleCreateFilesPath(path):
     """
-      指定されたファイル・ディレクトリを削除
+      指定されたファイルをゴミ掃除ファイルリストに追加
       Arguments:
-        FilesList: ファイル・ディレクトリのリスト
+        path: ゴミ掃除ファイルリストに追加するファイル・ディレクトリ
       Returns:
         なし
     """
-    for path in FilesList:
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        elif os.path.isfile(path):
-            os.remove(path)
+    file_name = g.AnsibleCreateFilesPath
+
+    with open(file_name, 'a') as fd:
+        fd.write(path + "\n")
+        fd.close()
+
+def getAnsibleCreateFilesPath():
+    """
+      ゴミ掃除ファイルリストのファイル・ディレクトリを取得
+      Arguments:
+        path: ゴミ掃除ファイルリストに追加するファイル・ディレクトリ
+      Returns:
+        result_path_list: ゴミ掃除ファイルリスト内のァイル・ディレクトリ
+    """
+    result_path_list = []
+
+    file_name = g.AnsibleCreateFilesPath
+
+    if not os.path.isfile(file_name):
+        return result_path_list
+
+    with open(file_name, 'r') as fd:
+        for path in fd.readlines():
+            path = path.replace('\n', '')
+            result_path_list.append(path)
+        fd.close()
+
+    return result_path_list
+
+def rmAnsibleCreateFiles():
+    """
+      ゴミ掃除ファイルリストのファイル・ディレクトリ
+      Arguments:
+        なし
+      Returns:
+        なし
+    """
+    for del_path in getAnsibleCreateFilesPath():
+        if os.path.isdir(del_path):
+            shutil.rmtree(del_path)
+        elif os.path.isfile(del_path):
+            os.remove(del_path)
+
+    file_name = g.AnsibleCreateFilesPath
+    if os.path.isfile(file_name):
+      os.remove(file_name)
 
 def get_AnsibleDriverTmpPath():
     """
       Ansible用tmpバスを取得する。
+      Azuruの/storage配下はアクセス時間が遅いので、/in・/outディレクトリのアクセス以外は
+      get_OSTmpPath()を使用する。
       Arguments:
         なし
       Returns:
@@ -245,9 +290,22 @@ def getDataRelayStorageDir():
     return os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
 
 
-def getInputDataTempDir(EcecuteNo, DriverName):
+def getGitRepositorieDir():
     """
-      Ansible Gitリポジトリ用 tmpバスを取得する。
+      Ansible Gitリポジトリ作成用 作業ディレクトリ「tmp」バスを取得する。
+      Arguments:
+        なし
+      Returns:
+        Ansible Gitリポジトリ用 tmpバス
+    """
+    basePath = get_OSTmpPath() + "/git_repositorie_dir"
+
+    return basePath
+
+
+def getAnsibleTmpDir(EcecuteNo, DriverName):
+    """
+      Ansible 作業ディレクトリ「tmp」バスを取得する。
       Arguments:
         EcecuteNo: 作業番号
         DriverName: オケストレータID
@@ -255,10 +313,11 @@ def getInputDataTempDir(EcecuteNo, DriverName):
         Ansible Gitリポジトリ用 tmpバス
     """
     ary = {}
-    basePath = get_AnsibleDriverTmpPath()
+    basePath = get_OSTmpPath() + "/temporary_dir"
     ary["BASE_DIR"] = basePath
     tgtPath = basePath + "/{}_{}".format(DriverName, EcecuteNo)
     ary["DIR_NAME"] = tgtPath
+
     return ary
 
 

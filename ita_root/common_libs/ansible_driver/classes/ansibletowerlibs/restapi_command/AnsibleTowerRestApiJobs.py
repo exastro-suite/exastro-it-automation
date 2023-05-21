@@ -11,17 +11,11 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
-
-from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
+from flask import g
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiJobTemplates import AnsibleTowerRestApiJobTemplates
 
 
 class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
-
     """
     【概要】
         AnsibleTower RestApi Job系を呼ぶ クラス
@@ -98,6 +92,7 @@ class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -118,12 +113,42 @@ class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
                 return pickup_response_array_2
 
             for jobData in pickup_response_array_2['responseContents']:
-
                 response_array = cls.delete(RestApiCaller, jobData['id'])
+
                 if not response_array['success']:
                     return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # job_templateが作成されていることを確認
+        obj_id = "JobTemplateId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for jobTplData in AACCreateObjectID[obj_id]:
+            # job_templateに紐づくJob情報取得
+            query = "?job_template=%s" % (jobTplData)
+            pickup_response_array_2 = cls.getAll(RestApiCaller, query)
+            if not pickup_response_array_2['success']:
+                g.applogger.info("AnsibleTowerRestApiJobs:deleteRelatedCurrnetExecution: Faild to get job_template.")
+                g.applogger.info(pickup_response_array_2)
+                return pickup_response_array_2
+
+            for jobData in pickup_response_array_2['responseContents']:
+                response_array = cls.delete(RestApiCaller, jobData['id'])
+                if not response_array['success']:
+                    g.applogger.info("deleteRelatedCurrnetExecution: Faild to delete job.")
+                    g.applogger.info(response_array)
+                    return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
 
     @classmethod
     def getStdOut(cls, RestApiCaller, id):
@@ -164,4 +189,3 @@ class AnsibleTowerRestApiJobs(AnsibleTowerRestApiBase):
         response_array['success'] = True
 
         return response_array
-

@@ -11,11 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
+from flask import g
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
 
 
@@ -95,7 +93,7 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
                     # 必須のためNG返す
                     response_array['success'] = False
                     response_array['responseContents'] = {
-                        'errorMessage' : "Need 'scm_url'."
+                        'errorMessage': "Need 'scm_url'."
                     }
                     return response_array
             else:
@@ -107,7 +105,7 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
                     # 必須のためNG返す
                     response_array['success'] = False
                     response_array['responseContents'] = {
-                        'errorMessage' : "Need 'execution_no'."
+                        'errorMessage': "Need 'execution_no'."
                     }
                     return response_array
 
@@ -115,7 +113,7 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'scm_type'."
+                'errorMessage': "Need 'scm_type'."
             }
             return response_array
 
@@ -126,7 +124,7 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'organization'."
+                'errorMessage': "Need 'organization'."
             }
             return response_array
 
@@ -169,7 +167,7 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
         response_array['success'] = True
 
         return response_array
-
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -188,3 +186,24 @@ class AnsibleTowerRestApiProjects(AnsibleTowerRestApiBase):
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # projectが作成されていることを確認
+        obj_id = "ProjectId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for projectData in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, projectData)
+            if not response_array['success']:
+                g.applogger.info("AnsibleTowerRestApiProjects:deleteRelatedCurrnetExecution: Faild to delete project.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま

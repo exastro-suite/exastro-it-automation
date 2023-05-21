@@ -11,13 +11,12 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
+from flask import g
 
 from common_libs.common.util import ky_decrypt
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
+
 
 class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
 
@@ -81,7 +80,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
         content = {}
         response_array = {}
 
-        if  'execution_no' in param and param['execution_no'] \
+        if 'execution_no' in param and param['execution_no'] \
         and 'loopCount' in param and param['loopCount']:
             content['name'] = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
 
@@ -89,7 +88,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'execution_no' and 'loopCount'."
+                'errorMessage': "Need 'execution_no' and 'loopCount'."
             }
             return response_array
 
@@ -100,7 +99,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'organization'."
+                'errorMessage': "Need 'organization'."
             }
             return response_array
 
@@ -168,6 +167,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -186,6 +186,27 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # vault credentialが作成されていることを確認
+        obj_id = "CredentialId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for credentialData in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, credentialData)
+            if not response_array['success']:
+                g.applogger.info("deleteRelatedCurrnetExecution: Faild to delete credential.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
 
     @classmethod
     def git_post(cls, RestApiCaller, param):
@@ -203,7 +224,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'execution_no'."
+                'errorMessage': "Need 'execution_no'."
             }
             return response_array
 
@@ -214,7 +235,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'organization'."
+                'errorMessage': "Need 'organization'."
             }
             return response_array
 
@@ -226,7 +247,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'username'."
+                'errorMessage': "Need 'username'."
             }
             return response_array
 
@@ -237,7 +258,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'ssh_key_data'."
+                'errorMessage': "Need 'ssh_key_data'."
             }
             return response_array
 
@@ -279,7 +300,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'execution_no'."
+                'errorMessage': "Need 'execution_no'."
             }
             return response_array
 
@@ -290,7 +311,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'organization'."
+                'errorMessage': "Need 'organization'."
             }
             return response_array
 
@@ -302,7 +323,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'vault_password'."
+                'errorMessage': "Need 'vault_password'."
             }
             return response_array
 
@@ -325,6 +346,7 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteVault(cls, RestApiCaller, execution_no):
 
@@ -338,11 +360,33 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
             return pickup_response_array
 
         for credentialData in pickup_response_array['responseContents']:
+
             response_array = cls.delete(RestApiCaller, credentialData['id'])
             if not response_array['success']:
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteVault(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # vault credentialが作成されていることを確認
+        obj_id = "VaultCredentialId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for credentialData in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, credentialData)
+            if not response_array['success']:
+                g.applogger.info("AnsibleTowerRestApiCredentials:deleteRelatedCurrnetExecution: Faild to delete vault credential.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
 
     @classmethod
     def deleteGit(cls, RestApiCaller, execution_no):
@@ -362,4 +406,3 @@ class AnsibleTowerRestApiCredentials(AnsibleTowerRestApiBase):
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
-

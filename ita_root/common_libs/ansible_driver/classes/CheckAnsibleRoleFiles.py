@@ -33,8 +33,9 @@ from common_libs.ansible_driver.classes.ansible_common_libs import AnsibleCommon
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
 from common_libs.ansible_driver.classes.AnsibleMakeMessage import AnsibleMakeMessage
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
-from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath, getFileupLoadColumnPath
-from common_libs.ansible_driver.functions.util import get_AnsibleDriverHpTmpPath, AnsibleFilesClean
+from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath
+from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
 #################################################################################
 # rolesディレクトリ解析
@@ -4337,9 +4338,8 @@ class VarStructAnalysisFileAccess():
         roleObj = CheckAnsibleRoleFiles(self.lv_objMTS)
 
         # ロールパッケージファイル(ZIP)の解凍先
-        # outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverTmpPath(), os.getpid())
         # /storageは遅いので/tmpに変更
-        outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_AnsibleDriverHpTmpPath(), os.getpid())
+        outdir = "%s/LegacyRoleZipFileUpload_%s" % (get_OSTmpPath(), os.getpid())
 
         def_vars_list = {}
         err_vars_list = {}
@@ -4351,8 +4351,8 @@ class VarStructAnalysisFileAccess():
         comb_err_vars_list = {}
         role_name_list = {}
 
-        # 例外等が発生した場合でもディレクトリを削除するようにする為、ディレクトリ名を退避
-        g.AnsibleCreateFiles.append(outdir)
+        # /tmpに作成したファイルはゴミ掃除リストに追加
+        addAnsibleCreateFilesPath(outdir)
 
         # ロールパッケージファイル(ZIP)の解凍
         if roleObj.ZipextractTo(strTempFileFullname, outdir) == False:
@@ -4392,7 +4392,6 @@ class VarStructAnalysisFileAccess():
                     arryErrMsg = roleObj.getlasterror()
                     strErrMsg = arryErrMsg[0]
 
-            # zipファイルがからの場合、ディレクトリが作成されない
             is_dir = os.path.isdir(outdir)
             if is_dir is True:
                 shutil.rmtree(outdir)

@@ -132,8 +132,6 @@ class DockerMode(AnsibleAgent):
         """
         コンテナが実行中か確認する
         """
-        # print("method: is_container_running")
-
         # docker-compose -p project ps
         project_name = self.get_unique_name(execution_no)
         docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json"]
@@ -286,8 +284,6 @@ class KubernetesMode(AnsibleAgent):
         """
         コンテナ(Pod)が実行中か確認する
         """
-        # print("method: is_container_running")
-
         # runningのものが一つだけ存在しているか確認
         return_code, status, errmsg = self._check_status(execution_no)
         g.applogger.debug("Container Status=" + status)
@@ -333,8 +329,6 @@ class KubernetesMode(AnsibleAgent):
         """
         コンテナ(Pod)のステータスを確認する
         """
-        # print("method: _check_status")
-
         # create command string
         unique_name = self.get_unique_name(execution_no)
         unique_name = re.sub(r'_', '-', unique_name).lower()
@@ -349,6 +343,7 @@ class KubernetesMode(AnsibleAgent):
             result_obj = json.loads(cp.stdout)
             status = result_obj['status']['phase']
         except Exception as e:
+            # Exceptionなのでapplogger.errorで出力
             g.applogger.error(str(e))
             g.applogger.error("stdout:\n%s" % cp.stdout.decode('utf-8'))
 

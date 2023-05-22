@@ -36,8 +36,11 @@ from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansible_execute import AnsibleExecute
 from common_libs.ansible_driver.classes.SubValueAutoReg import SubValueAutoReg
 from common_libs.ansible_driver.classes.CreateAnsibleExecFiles import CreateAnsibleExecFiles
-from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, get_AnsibleDriverTmpPath, getDataRelayStorageDir
+from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, getDataRelayStorageDir
 from common_libs.ansible_driver.functions.util import getAnsibleConst
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
+from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
+from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
 from common_libs.ansible_driver.functions.ansibletowerlibs.AnsibleTowerExecute import AnsibleTowerExecution
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
@@ -70,9 +73,8 @@ def backyard_child_main(organization_id, workspace_id):
 
     # db instance
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
-
-    # while True:
-    #     time.sleep(1)
+    # /tmpに作成したファイル・ディレクトリパスを保存するファイル名
+    g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
 
     try:
         # AAC向けRestAPIタイムアウト値設定
@@ -103,7 +105,7 @@ def backyard_child_main(organization_id, workspace_id):
             g.applogger.debug(g.appmsg.get_log_message("MSG-10721", [execution_no]))
         else:
             if len(result) == 2:
-                log_err("main_logic:" + str(result[1]))
+                g.applogger.info("main_logic:" + str(result[1]))
             g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
     except AppException as e:
         # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
@@ -138,6 +140,10 @@ def backyard_child_main(organization_id, workspace_id):
             g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
         raise Exception(e)
+
+    finally:
+        # /tmpをゴミ掃除
+        rmAnsibleCreateFiles()
 
 
 def update_status_error(wsDb: DBConnectWs, ansConstObj, execution_no):
@@ -246,7 +252,9 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
 
     wsDb.db_transaction_start()
     if execute_data['FILE_INPUT']:
-        zip_tmp_save_path = get_AnsibleDriverTmpPath() + "/" + execute_data['FILE_INPUT']
+        zip_tmp_save_path = get_OSTmpPath() + "/" + execute_data['FILE_INPUT']
+        # /tmpに作成したファイルはゴミ掃除リストに追加
+        addAnsibleCreateFilesPath(zip_tmp_save_path)
     else:
         zip_tmp_save_path = ''
     result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, 'FILE_INPUT', zip_tmp_save_path)
@@ -285,7 +293,9 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
             # 処理対象の作業インスタンスのステータス更新
             wsDb.db_transaction_start()
             if clone_execute_data['FILE_RESULT']:
-                zip_tmp_save_path = get_AnsibleDriverTmpPath() + "/" + clone_execute_data['FILE_RESULT']
+                zip_tmp_save_path = get_OSTmpPath() + "/" + clone_execute_data['FILE_RESULT']
+                # /tmpに作成したファイルはゴミ掃除リストに追加
+                addAnsibleCreateFilesPath(zip_tmp_save_path)
             else:
                 zip_tmp_save_path = ''
 
@@ -1214,10 +1224,14 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
         # ----ZIPファイルを作成する
         zip_file_name = zip_file_pfx + execution_no + '.zip'
         # 圧縮先
-        zip_temp_save_dir = get_AnsibleDriverTmpPath()
+        zip_temp_save_dir = get_OSTmpPath()
+        zip_temp_save_path = zip_temp_save_dir + "/" + zip_file_name
+        # ゴミ掃除リストに追加
+        addAnsibleCreateFilesPath(zip_temp_save_path)
 
         # OSコマンドでzip圧縮する
         tmp_str_command = "cd " + shlex.quote(zip_data_source_dir) + "; zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
+
         os.system(tmp_str_command)
 
         # zipファイルの存在を確認
@@ -1226,7 +1240,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
             err_msg = g.appmsg.get_log_message("MSG-10252", [zip_type, zip_temp_save_path])
             False, err_msg, zip_file_name, zip_temp_save_dir
 
-        # [処理]結果ディレクトリを圧縮(圧縮ファイル:{})
+        # 処理]{}ディレクトリを圧縮(圧縮ファイル:{})
         g.applogger.debug(g.appmsg.get_log_message("MSG-10783", [zip_type, os.path.basename(zip_temp_save_path)]))
     return True, err_msg, zip_file_name
 

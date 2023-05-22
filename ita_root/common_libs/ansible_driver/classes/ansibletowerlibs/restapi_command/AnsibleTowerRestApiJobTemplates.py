@@ -11,13 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
-import json
+from flask import g
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnscConst
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
 
 
@@ -90,47 +86,47 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
         content = {}
         response_array = {}
 
-        if  'execution_no' in param and param['execution_no'] \
+        if 'execution_no' in param and param['execution_no'] \
         and 'loopCount' in param and param['loopCount']:
             content['name'] = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
 
         else:
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'execution_no' and 'loopCount'."
+                'errorMessage': "Need 'execution_no' and 'loopCount'."
             }
             return response_array
 
-        if  'inventory' in param and param['inventory']:
+        if 'inventory' in param and param['inventory']:
             content['inventory'] = param['inventory']
 
         else:
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'inventory'."
+                'errorMessage': "Need 'inventory'."
             }
             return response_array
 
-        if  'project' in param and param['project']:
+        if 'project' in param and param['project']:
             content['project'] = param['project']
 
         else:
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'project'."
+                'errorMessage': "Need 'project'."
             }
             return response_array
 
-        if  'playbook' in param and param['playbook']:
+        if 'playbook' in param and param['playbook']:
             content['playbook'] = param['playbook']
 
         else:
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'playbook'."
+                'errorMessage': "Need 'playbook'."
             }
             return response_array
 
@@ -182,6 +178,7 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -195,12 +192,32 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
             return pickup_response_array
 
         for jobTplData in pickup_response_array['responseContents']:
-
             response_array = cls.delete(RestApiCaller, jobTplData['id'])
             if not response_array['success']:
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # job templateが作成されていることを確認
+        obj_id = "JobTemplateId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for jobTplData in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, jobTplData)
+            if not response_array['success']:
+                g.applogger.info("AnsibleTowerRestApiJobTemplates:deleteRelatedCurrnetExecution: Faild to delete job template.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
 
     @classmethod
     def launch(cls, RestApiCaller, param):
@@ -209,14 +226,13 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
         # 汎用性は検討していない
 
         # content生成
-        content = {}
         response_array = {}
 
         if 'jobTplId' not in param or not param['jobTplId']:
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'job_template id'."
+                'errorMessage': "Need 'job_template id'."
             }
             return response_array
 
@@ -240,8 +256,6 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
     # ---- Ansible Tower Version (Ver3.6)
     @classmethod
     def postCredentialsAdd(cls, RestApiCaller, jobTplId, credentialiId):
-
-        OrchestratorSubId_dir = RestApiCaller.getOrchestratorSubId_dir()
 
         # content生成
         content = {}
@@ -267,6 +281,3 @@ class AnsibleTowerRestApiJobTemplates(AnsibleTowerRestApiBase):
 
         return response_array
     # Ansible Tower Version (Ver3.6) ----
-
-
-

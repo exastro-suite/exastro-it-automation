@@ -11,15 +11,18 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from flask import g
 import os
 import base64
-from flask import g
+import inspect
+
 from common_libs.ansible_driver.functions.commn_vars_used_list_update import CommnVarsUsedListUpdate, CommnVarsUsedListDisuseSet
-from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath
 from common_libs.ansible_driver.classes.CheckAnsibleRoleFiles import VarStructAnalysisFileAccess
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
 from common_libs.ansible_driver.functions.var_struct_analysis import chkRolePackageVarNameLength
-from common_libs.ansible_driver.functions.util import get_AnsibleDriverHpTmpPath, AnsibleFilesClean
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
+from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
+from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
 from common_libs.common.exception import AppException
 
 def external_valid_menu_after(objDBCA, objtable, option):
@@ -35,6 +38,9 @@ def external_valid_menu_after(objDBCA, objtable, option):
         msg :エラーメッセージ
         option :受け取ったもの
     """
+    # /tmpに作成したファイル・ディレクトリパスを保存するファイル名
+    g.AnsibleCreateFilesPath = "{}/{}_{}".format(get_OSTmpPath(), os.path.basename(inspect.currentframe().f_code.co_filename), os.getpid())
+
     retBool = True
     retStrBody = ""
     zip_data = None
@@ -42,8 +48,6 @@ def external_valid_menu_after(objDBCA, objtable, option):
     role_package_name = ""
     PkeyID = option['uuid']
 
-    # 999
-    g.AnsibleCreateFiles = []
     zipFileName = "{}/20403_zip_format_role_package_file_{}.zip"
     if option["cmd_type"] == "Register":
         zip_data = option["entry_parameter"]["file"]["zip_format_role_package_file"]
@@ -56,19 +60,17 @@ def external_valid_menu_after(objDBCA, objtable, option):
         # ロールパッケージの変更判定
         if zip_data:
             # zipファイルを生成
-            # zip_file_path = zipFileName.format(get_AnsibleDriverTmpPath(), os.getpid())
             # /storageは遅いので/tmpに変更
-            zip_file_path = zipFileName.format(get_AnsibleDriverHpTmpPath(), os.getpid())
+            zip_file_path = zipFileName.format(get_OSTmpPath(), os.getpid())
+            # /tmpに作成したファイルはゴミ掃除リストに追加
+            addAnsibleCreateFilesPath(zip_file_path)
             fd = open(zip_file_path, "wb")
-            # 例外等が発生した場合でもファイル名を削除するようにする為、ファイル名を退避
-            g.AnsibleCreateFiles.append(zip_file_path)
             fd.write(base64.b64decode(zip_data))
             fd.close()
         else:
             if option["cmd_type"] in ("Register", "Update"):
                 errormsg = g.appmsg.get_api_message("MSG-10256")
-                # 不要なファイル・ディレクトリを削除
-                AnsibleFilesClean(g.AnsibleCreateFiles)
+                # /tmpをゴミ掃除 rmAnsibleCreateFiles()はfinallyでcall
                 return False, errormsg, option
 
         def_vars_list = {}
@@ -128,15 +130,13 @@ def external_valid_menu_after(objDBCA, objtable, option):
                 Role_name_list = retAry[10]
 
                 if retBool is False:
-                    # 不要なファイル・ディレクトリを削除
-                    AnsibleFilesClean(g.AnsibleCreateFiles)
+                    # /tmpをゴミ掃除 rmAnsibleCreateFiles()はfinallyでcall
                     return retBool, retStrBody, option
 
                 # 変数名の文字数確認
                 retBool, retStrBody = chkRolePackageVarNameLength(def_vars_list, def_array_vars_list)
                 if retBool is False:
-                    # 不要なファイル・ディレクトリを削除
-                    AnsibleFilesClean(g.AnsibleCreateFiles)
+                    # /tmpをゴミ掃除 rmAnsibleCreateFiles()はfinallyでcall
                     return retBool, retStrBody, option
 
                 if retBool is True:
@@ -159,8 +159,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
                         retBool = retAry[0]
                         retStrBody = retAry[1]
                         if retBool is False:
-                            # 不要なファイル・ディレクトリを削除
-                            AnsibleFilesClean(g.AnsibleCreateFiles)
+                            # /tmpをゴミ掃除 rmAnsibleCreateFiles()はfinallyでcall
                             return retBool, retStrBody, option
 
         if option["cmd_type"] == "Discard" or option["cmd_type"] == "Restore":
@@ -171,8 +170,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
             retBool = retAry[0]
             retStrBody = retAry[1]
             if retBool is False:
-                # 不要なファイル・ディレクトリを削除
-                AnsibleFilesClean(g.AnsibleCreateFiles)
+                # /tmpをゴミ掃除 rmAnsibleCreateFiles()はfinallyでcall
                 return retBool, retStrBody, option
 
         table_name = "T_COMN_PROC_LOADED_LIST"
@@ -180,12 +178,11 @@ def external_valid_menu_after(objDBCA, objtable, option):
         primary_key_name = "ROW_ID"
         objDBCA.table_update(table_name, data_list, primary_key_name, False)
 
-        # 不要なファイル・ディレクトリを削除
-        AnsibleFilesClean(g.AnsibleCreateFiles)
         return retBool, retStrBody, option
     except AppException as e:
         raise AppException(e)
     except Exception as e:
         raise Exception(e)
     finally:
-        AnsibleFilesClean(g.AnsibleCreateFiles)
+        # /tmpをゴミ掃除
+        rmAnsibleCreateFiles()

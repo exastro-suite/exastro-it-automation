@@ -77,7 +77,7 @@ class SubValueAutoReg():
                 if not ret:
                     # 代入値管理テーブルへのレコード登録に失敗
                     log_msg = g.appmsg.get_log_message("MSG-81002", [])
-                    g.applogger.error(log_msg)
+                    g.applogger.info(log_msg)
                     msg = g.appmsg.get_api_message("MSG-81002", [])
                     result = False
                     break
@@ -86,6 +86,7 @@ class SubValueAutoReg():
             self.ws_db.db_transaction_end(True)
 
         except Exception as e:
+            # Exceptionの処理なのでログレベルはerrorにする
             g.applogger.error(str(e))
             result = False
             msg = e
@@ -209,7 +210,7 @@ class SubValueAutoReg():
             # 「インターフェース情報」レコードが1つではない場合エラー
             if not len(t_if_info_records) == 1:
                 log_msg = g.appmsg.get_log_message("MSG-81001", [])
-                g.applogger.error(log_msg)
+                g.applogger.info(log_msg)
                 msg = g.appmsg.get_api_message("MSG-81001", [])
                 result = False
             else:
@@ -241,6 +242,7 @@ class SubValueAutoReg():
                 column_data = v_terf_column_list_record[0]
 
         except Exception as e:
+            # Exceptionの処理なのでログレベルはerrorにする
             g.applogger.error(str(e))
             result = False
 
@@ -309,6 +311,7 @@ class SubValueAutoReg():
                 register_flag = False
 
         except Exception as e:
+            # Exceptionの処理なのでログレベルはerrorにする
             g.applogger.error(str(e))
             result = False
             vars_entry = None
@@ -351,6 +354,7 @@ class SubValueAutoReg():
                 register_flag = False
 
         except Exception as e:
+            # Exceptionの処理なのでログレベルはerrorにする
             g.applogger.error(str(e))
             result = False
             vars_entry = None

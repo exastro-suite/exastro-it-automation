@@ -26,7 +26,6 @@ from backyard_child_main import backyard_child_main as main_logic
 def main():
     # コマンドラインから引数を受け取る["自身のファイル名", "organization_id", "workspace_id"]
     args = sys.argv
-    # print(args)
     organization_id = args[1]
     workspace_id = args[2]
 

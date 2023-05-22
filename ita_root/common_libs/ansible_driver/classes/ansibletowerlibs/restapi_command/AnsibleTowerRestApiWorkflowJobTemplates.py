@@ -11,12 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
-import json
+from flask import g
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
 
 
@@ -136,6 +133,7 @@ class AnsibleTowerRestApiWorkflowJobTemplates(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -149,12 +147,32 @@ class AnsibleTowerRestApiWorkflowJobTemplates(AnsibleTowerRestApiBase):
             return pickup_response_array
 
         for wfJobTplData in pickup_response_array['responseContents']:
-
             response_array = cls.delete(RestApiCaller, wfJobTplData['id'])
             if not response_array['success']:
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # workfrow job templateが作成されていることを確認
+        obj_id = "WorkflowJobTemplateId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for wfJobTplData in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, wfJobTplData)
+            if not response_array['success']:
+                g.applogger.info("AnsibleTowerRestApiWorkflowJobTemplates:deleteRelatedCurrnetExecution: Faild to delete workfrow job template.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
 
     @classmethod
     def launch(cls, RestApiCaller, param):

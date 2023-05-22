@@ -457,6 +457,14 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             result, msg = _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest)
             if not result:
                 raise Exception(msg)
+        else:
+            # ホストグループ利用無しの場合、ホストグループ分割対象の対象確認、廃止
+            # 「分割対象メニュー」「登録対象メニュー」の「MENU_NAME_REST」
+            split_menu_name_rest = record_t_menu_define.get('MENU_NAME_REST')
+            register_menu_name_rest = record_t_menu_define.get('MENU_NAME_REST') + "_subst"
+            result, msg = _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest, 1)
+            if not result:
+                raise Exception(msg)
 
         # 正常系リターン
         return True, msg
@@ -2619,14 +2627,14 @@ def _check_file_upload_column(record_t_menu_column):
     return file_upload_only_flag
 
 
-def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest):
+def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest, discard=0):
     """
         「ホストグループ分割対象」メニューのテーブルにレコードを追加、更新
         ARGS:
             objdbca: DB接クラス DBConnectWs()
             split_menu_name_rest: 分割対象メニュー
             register_menu_name_rest: 登録対象メニュー
-
+            discard: 廃止フラグ
         RETRUN:
             result, msg
     """
@@ -2656,27 +2664,44 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
                 [split_target_menu_ids.get('split'), split_target_menu_ids.get('register'), 0]
             )
             if ret:
-                # 対象の DIVIDED_FLG を '0' で更新
+                # 対象の DIVIDED_FLG を '0' で更新 or 対象廃止
                 split_target_id = ret[0].get('ROW_ID')
                 divided_flg = ret[0].get('DIVIDED_FLG')
-                if divided_flg != "0":
+                if divided_flg != "0" or discard == 1:
                     data_list = {
                         'ROW_ID': split_target_id,
                         'DIVIDED_FLG': '0',
-                        'DISUSE_FLAG': '0',
+                        'DISUSE_FLAG': discard,
                         'LAST_UPDATE_USER': g.get('USER_ID')
                     }
                     objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
             else:
-                # 「分割対象メニュー」*「登録対象メニュー」で DIVIDED_FLG を '0' で登録
-                data_list = {
-                    'INPUT_MENU_ID': split_target_menu_ids.get('split'),
-                    'OUTPUT_MENU_ID': split_target_menu_ids.get('register'),
-                    'DIVIDED_FLG': '0',
-                    'DISUSE_FLAG': '0',
-                    'LAST_UPDATE_USER': g.get('USER_ID')
-                }
-                objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name, False)
+                # 「ホストグループ分割対象」から対象のレコードを取得:廃止済み
+                ret = objdbca.table_select(
+                    t_hgsp_split_target,
+                    'WHERE INPUT_MENU_ID = %s AND OUTPUT_MENU_ID = %s AND DISUSE_FLAG = %s',
+                    [split_target_menu_ids.get('split'), split_target_menu_ids.get('register'), 1]
+                )
+                # 廃止済みありの場合、更新。
+                if ret and discard == 0:
+                    split_target_id = ret[0].get('ROW_ID')
+                    data_list = {
+                        'ROW_ID': split_target_id,
+                        'DIVIDED_FLG': '0',
+                        'DISUSE_FLAG': discard,
+                        'LAST_UPDATE_USER': g.get('USER_ID')
+                    }
+                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
+                elif discard == 0:
+                    # 「分割対象メニュー」*「登録対象メニュー」で DIVIDED_FLG を '0' で登録
+                    data_list = {
+                        'INPUT_MENU_ID': split_target_menu_ids.get('split'),
+                        'OUTPUT_MENU_ID': split_target_menu_ids.get('register'),
+                        'DIVIDED_FLG': '0',
+                        'DISUSE_FLAG': '0',
+                        'LAST_UPDATE_USER': g.get('USER_ID')
+                    }
+                    objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name, False)
 
     except Exception as msg:
         return False, msg

@@ -1,5 +1,5 @@
 [
     ["workspace.sql", "workspace_master.sql"],
     ["menu_create.sql"],
-    ["hostgroup_master.sql"]
+    ["hostgroup.sql", "hostgroup_master.sql"]
 ]

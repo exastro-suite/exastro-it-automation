@@ -405,7 +405,9 @@ class ExecuteDirector():
                 endlog = "[Trace]  gitlab project delete done."
                 g.applogger.info(startlog)  # 外部アプリへの処理開始・終了ログ
 
+                g.applogger.info("[Trace] gitlab delete project start. project_id:{}".format(str(project_id)))   # 外部アプリへの処理開始・終了ログ
                 GitObj.delete_project(project_id)
+                g.applogger.info("[Trace] gitlab delete project done.")
 
                 g.applogger.info(endlog)
         except Exception as e:
@@ -2299,7 +2301,9 @@ class ExecuteDirector():
 
         # GitLab にプロジェクトを作成
         try:
+            g.applogger.info("[Trace] gitlab create project start. project_name:{}".format(str(proj_name)))   # 外部アプリへの処理開始・終了ログ
             response = GitObj.create_project(proj_name)
+            g.applogger.info("[Trace] gitlab create project done.")
 
             # gitlab プロジェクトID退避
             if 'id' in response:

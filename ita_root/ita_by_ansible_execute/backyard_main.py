@@ -221,7 +221,11 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             # 「オーガナイゼーション毎の処理中件数」/ 「オーガナイゼーションの同時実行数のLimit値
             for rec2 in exec_count_records:
                 if rec["ORGANIZATION_ID"] == rec2["ORGANIZATION_ID"]:
-                    organization_priority = rec2["EXEC_COUNT"] // org_execution_limit[rec2["ORGANIZATION_ID"]]
+                    # 0除算対応
+                    if org_execution_limit[rec2["ORGANIZATION_ID"]] == 0:
+                        organization_priority = rec2["EXEC_COUNT"]
+                    else:
+                        organization_priority = rec2["EXEC_COUNT"] // org_execution_limit[rec2["ORGANIZATION_ID"]]
 
             if rec["TIME_BOOK"] is None:
                 time_book = rec["TIME_REGISTER"]

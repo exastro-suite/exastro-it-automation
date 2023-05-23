@@ -1,5 +1,6 @@
 [
     ["workspace.sql", "workspace_master.sql"],
     ["menu_create.sql"],
-    ["hostgroup.sql", "hostgroup_master.sql"]
+    ["hostgroup.sql", "hostgroup_master.sql"],
+    ["compare.sql", "compare_master.sql"]
 ]

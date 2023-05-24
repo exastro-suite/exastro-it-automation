@@ -1237,7 +1237,7 @@ class CICD_GrandChildWorkflow():
             objmenu = load_table.loadTable(self.DBobj, obj_make_param.menu_name)
             result = objmenu.exec_maintenance(req_param, uuid, editType, pk_use_flg=False, auth_check=False)
             if result[0] is False:
-                return False, NoUpdateFlg
+                return result, NoUpdateFlg
 
         return True, NoUpdateFlg
 
@@ -1486,6 +1486,7 @@ class CICD_GrandChildWorkflow():
             }
 
             LogStr = ErrorMsgHeder[row['MATL_TYPE_ROW_ID']] if row['MATL_TYPE_ROW_ID'] in ErrorMsgHeder else ""
+            ret = ret[2] if len(ret) >= 3 else ret
             FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, LogStr, ret)
             UIMatlSyncMsg = "%s\n%s" % (LogStr, ret)
             UIDelvMsg = "def"
@@ -2496,6 +2497,7 @@ class CICD_ChildWorkflow():
             RepoListSyncStatusUpdate_Flg = True
 
             # 資材紐付管理に登録されている資材を展開
+            self.DBobj.db_transaction_start()
             ret = self.MatlLinkExecute(MargeExeFlg)
             if ret is not True:
                 self.error_flag = 1
@@ -2503,6 +2505,7 @@ class CICD_ChildWorkflow():
                 logstr = g.appmsg.get_api_message("MSG-90094")
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                 raise Exception(FREE_LOG)
+            self.DBobj.db_transaction_end(True)
 
         except CICDException as e:
             self.DBobj.db_transaction_end(False)

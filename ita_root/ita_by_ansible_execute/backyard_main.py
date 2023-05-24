@@ -26,6 +26,7 @@ from flask import g
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import get_timestamp, get_all_execution_limit, get_org_execution_limit
 from common_libs.ci.util import log_err
+from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles, get_OSTmpPath
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
@@ -129,7 +130,7 @@ def main_logic(common_db):
             result = run_unexecuted(wsDb, data["EXECUTION_NO"], data["ORGANIZATION_ID"], data["WORKSPACE_ID"])
             g.applogger.debug("END run_unexecuted")
             if result[0] is False:
-                g.applogger.error(result[1])
+                g.applogger.info(result[1])
                 wsDb.db_disconnect()
                 return False
 
@@ -220,7 +221,12 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             # 「オーガナイゼーション毎の処理中件数」/ 「オーガナイゼーションの同時実行数のLimit値
             for rec2 in exec_count_records:
                 if rec["ORGANIZATION_ID"] == rec2["ORGANIZATION_ID"]:
-                    organization_priority = rec2["EXEC_COUNT"] // org_execution_limit[rec2["ORGANIZATION_ID"]]
+                    # 0除算対応
+                    if org_execution_limit[rec2["ORGANIZATION_ID"]] == 0:
+                        organization_priority = rec2["EXEC_COUNT"]
+                    else:
+                        organization_priority = rec2["EXEC_COUNT"] // org_execution_limit[rec2["ORGANIZATION_ID"]]
+
             if rec["TIME_BOOK"] is None:
                 time_book = rec["TIME_REGISTER"]
             else:
@@ -245,7 +251,6 @@ def execute_control(common_db, all_execution_limit, org_execution_limit):
             # organizationに実行中の処理があるか確認
             if rec["ORGANIZATION_ID"] not in org_exec_count_list:
                 org_exec_count_list[rec["ORGANIZATION_ID"]] = 0
-
     return execution_list, all_exec_count, org_exec_count_list, records
 
 
@@ -306,12 +311,18 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
 
         # DBのステータスが実行中なのに、子プロセスが存在しない
         if is_running is False:
-            log_err(g.appmsg.get_log_message("MSG-10056", [driver_name, execution_no]))
+            g.applogger.info(g.appmsg.get_log_message("MSG-10056", [driver_name, execution_no]))
+
+            # 子プロで/tmpに作成したファイル・ディレクトリパスを保存するファイル名
+            g.AnsibleCreateFilesPath = "{}/Ansible_{}".format(get_OSTmpPath(), execution_no)
+
+            # /tmpをゴミ掃除
+            rmAnsibleCreateFiles()
 
             # 情報を再取得して、想定外エラーにする
             result = cm.get_execution_process_info(wsDb, ansc_const, execution_no)
             if result[0] is False:
-                log_err(g.appmsg.get_log_message(result[1], [execution_no]))
+                g.applogger.info(g.appmsg.get_log_message(result[1], [execution_no]))
                 wsDb.db_disconnect()
                 return False
             execute_data = result[1]
@@ -339,11 +350,11 @@ def child_process_exist_check(common_db, target_shema, ansibleAg):
             if result[0] is True:
                 result = ansibleAg.container_kill(ansc_const, execution_no)
                 if result[0] is False:
-                    log_err(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
+                    g.applogger.info(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
             else:
                 result = ansibleAg.container_clean(ansc_const, execution_no)
                 if result[0] is False:
-                    log_err(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
+                    g.applogger.info(g.appmsg.get_log_message("BKY-10007", [result[1], execution_no]))
 
         wsDb.db_disconnect()
 

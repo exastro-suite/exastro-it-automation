@@ -69,6 +69,11 @@ def backyard_main(organization_id, workspace_id):
 
         # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
         objdbca.db_transaction_start()
+
+        # バックアップファイルが存在する場合はリストア処理を実行する
+        restoreTables(objdbca, workspace_path)
+        restoreFiles(workspace_path, uploadfiles_dir)
+
         status_id = "4"
         result, msg = _update_t_menu_export_import(objdbca, execution_no, status_id)
         if not result:
@@ -135,10 +140,6 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.error(msg)
             continue
         objdbca.db_transaction_end(True)
-
-    # サービススキップファイルが存在する場合は削除する
-    if os.path.exists(import_menu_dir + '/skip_all_service'):
-        os.remove(import_menu_dir + '/skip_all_service')
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
@@ -330,10 +331,6 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         return True, msg
 
     except Exception as msg:
-        # サービススキップファイルが存在する場合は削除する
-        if os.path.exists(workspace_path + '/tmp/driver/import_menu/skip_all_service'):
-            os.remove(workspace_path + '/tmp/driver/import_menu/skip_all_service')
-
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 
@@ -344,6 +341,11 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
 
         # 異常系リターン
         return False, msg
+
+    finally:
+        # サービススキップファイルが存在する場合は削除する
+        if os.path.exists(workspace_path + '/tmp/driver/import_menu/skip_all_service'):
+            os.remove(workspace_path + '/tmp/driver/import_menu/skip_all_service')
 
 
 def _dp_preparation(objdbca, workspace_id, menu_name_rest_list, execution_no_path, deleted_table_list):
@@ -1156,6 +1158,10 @@ def restoreTables(objdbca, workspace_path):
 
     objdbca.sqlfile_execute(backupsql_path)
 
+    if os.path.isfile(backupsql_path) is True:
+        # リストア終了時にバックアップファイルを削除する
+        os.remove(backupsql_path)
+
     g.applogger.debug("restoreTables end")
 
 
@@ -1199,6 +1205,9 @@ def restoreFiles(workspace_path, uploadfiles_dir):
     g.applogger.debug("restoreFiles start")
     backupfile_dir = workspace_path + "/tmp/driver/import_menu/uploadfiles/"
 
+    if os.path.isdir(backupfile_dir) is False:
+        return
+
     dir_info = os.listdir(backupfile_dir)
     for dir in dir_info:
         if os.path.isdir(uploadfiles_dir + '/' + dir):
@@ -1215,5 +1224,8 @@ def restoreFiles(workspace_path, uploadfiles_dir):
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException("499-00201", [log_msg_args], [api_msg_args])
+
+    # リストア終了時にバックアップ用フォルダを削除する
+    shutil.rmtree(backupfile_dir)
 
     g.applogger.debug("restoreFiles end")

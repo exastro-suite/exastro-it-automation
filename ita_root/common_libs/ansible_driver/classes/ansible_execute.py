@@ -227,7 +227,9 @@ class AnsibleExecute():
         else:
             ansibleAg = KubernetesMode()
 
+        g.applogger.info("[Trace] container_start_up start.")
         result = ansibleAg.container_start_up(ansConstObj, execute_no, conductor_instance_no, str_shell_command)
+        g.applogger.info("[Trace] container_start_up done.")
         if result[0] is True:
             g.applogger.debug(result[1])
             return True
@@ -295,7 +297,6 @@ class AnsibleExecute():
                 retStatus = "3"
         else:
             # ansible-playbookコマンド実行結果ファイルより結果を取得
-            # print(strResultFileName)
             if os.path.isfile(strResultFileName):
                 # ansible-playbookコマンド実行結果ファイルより結果取得
                 strStatus = ""

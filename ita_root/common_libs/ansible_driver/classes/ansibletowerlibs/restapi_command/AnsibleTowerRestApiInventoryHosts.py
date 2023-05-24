@@ -11,13 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
+from flask import g
 
-from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
-from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiInventories import AnsibleTowerRestApiInventories
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiHosts import AnsibleTowerRestApiHosts
 
 
@@ -81,25 +77,25 @@ class AnsibleTowerRestApiInventoryHosts(AnsibleTowerRestApiBase):
         if 'inventoryId' not in param or not param['inventoryId']:
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'inventory id'."
+                'errorMessage': "Need 'inventory id'."
             }
             return response_array
 
         # content生成
         content = {}
 
-        if  'name' in param and param['name']:
+        if 'name' in param and param['name']:
             content['name'] = param['name']
 
         else:
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'name'."
+                'errorMessage': "Need 'name'."
             }
             return response_array
 
-        if  'variables' in param and param['variables']:
+        if 'variables' in param and param['variables']:
             content['variables'] = param['variables']
 
         # REST APIアクセス
@@ -139,6 +135,7 @@ class AnsibleTowerRestApiInventoryHosts(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -166,3 +163,25 @@ class AnsibleTowerRestApiInventoryHosts(AnsibleTowerRestApiBase):
                     return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # inventory hostが作成されていることを確認
+        obj_id = "InventoryHostId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for inventoryHostData in AACCreateObjectID[obj_id]:
+            response_array = AnsibleTowerRestApiHosts.delete(RestApiCaller, inventoryHostData)
+            if not response_array['success']:
+                # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+                g.applogger.info("AnsibleTowerRestApiInventoryHosts:deleteRelatedCurrnetExecution Faild to delete inventory host.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま

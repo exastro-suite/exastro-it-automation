@@ -216,10 +216,11 @@ from common_libs.ansible_driver.functions.util import getFileContentUploadDirPat
 from common_libs.ansible_driver.functions.util import getTemplateContentUploadDirPath
 from common_libs.ansible_driver.functions.util import getDeviceListSSHPrivateKeyUploadDirPath
 from common_libs.ansible_driver.functions.util import getDeviceListServerCertificateUploadDirPath
-from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
+from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath
 from common_libs.ansible_driver.functions.util import getDataRelayStorageDir
-from common_libs.ansible_driver.functions.util import getInputDataTempDir
+from common_libs.ansible_driver.functions.util import getAnsibleTmpDir
 from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.util import getPioneerDialogUploadDirPath
 from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath
@@ -299,7 +300,7 @@ class CreateAnsibleExecFiles():
         self.lv_Ansible_pioneer_template_hosts_vars_Dir = ""
         self.lv_Ansible_in_original_dialog_files_Dir = ""
         self.lv_Ansible_temporary_files_Dir = ""
-        self.lv_GitRepo_temporary_DirAry = ""
+        self.lv_AnsibleTmpDirAry = ""
         self.lv_Playbook_child_playbooks_Dir = ""
         self.lv_Hostvarsfile_template_file_Dir = ""
         self.lv_winrm_id = ""
@@ -416,8 +417,14 @@ class CreateAnsibleExecFiles():
         # AAC Projectディレクトリパス取得
         self.setTowerProjectDirPath()
 
-        # Gitリポジトリ用ディレクトリ取得
-        self.lv_GitRepo_temporary_DirAry = getInputDataTempDir(in_exec_no, self.AnscObj.vg_OrchestratorSubId_dir)
+        # 作成用一時ディレクトリ取得
+        self.lv_AnsibleTmpDirAry = getAnsibleTmpDir(in_exec_no, self.AnscObj.vg_OrchestratorSubId_dir)
+        # self.lv_AnsibleTmpDirAry["BASE_DIR"]をaddAnsibleCreateFilesPathでゴミ掃除リストに追加はここでは不要
+        dir_name = self.lv_AnsibleTmpDirAry["BASE_DIR"]
+        # 作成用一時ディレクトリ作成
+        if os.path.isdir(dir_name) is False:
+            os.mkdir(dir_name)
+        os.chmod(dir_name, 0o777)
 
     def getAnsibleWorkingDirectories(self, in_oct_id, in_execno):
         """
@@ -575,7 +582,7 @@ class CreateAnsibleExecFiles():
 
         # Gitリポジトリ作業用 ディレクトリバス
         # /{storage}/{organization_id}/{workspace_id}/tmp/driver/ansible/legacy_0000040099/__ita_out_dir__
-        path = "{}/{}".format(self.lv_GitRepo_temporary_DirAry["DIR_NAME"], self.LC_ITA_OUT_DIR)
+        path = "{}/{}".format(self.lv_AnsibleTmpDirAry["DIR_NAME"], self.LC_ITA_OUT_DIR)
         self.setTowerProjectsScpPath(self.AnscObj.DF_GITREPO_OUT_PATH, path)
 
         # ユーザー公開用データリレイストレージパス
@@ -603,7 +610,7 @@ class CreateAnsibleExecFiles():
                 self.setTowerProjectsScpPath(self.AnscObj.DF_SCP_CONDUCTOR_ITA_PATH, ita_conductor_instance_Dir)
 
                 # Gitリポジトリ作業用 ディレクトリバス
-                path = "{}/{}/{}".format(self.lv_GitRepo_temporary_DirAry["DIR_NAME"], self.LC_ITA_TMP_DIR, self.LC_ITA_CONDUCTOR_DIR)
+                path = "{}/{}/{}".format(self.lv_AnsibleTmpDirAry["DIR_NAME"], self.LC_ITA_TMP_DIR, self.LC_ITA_CONDUCTOR_DIR)
                 self.setTowerProjectsScpPath(self.AnscObj.DF_GITREPO_CONDUCTOR_PATH, path)
         else:
             self.lv_conductor_instance_Dir = self.lv_user_out_Dir
@@ -989,7 +996,7 @@ class CreateAnsibleExecFiles():
         self.setTowerProjectsScpPath(self.AnscObj.DF_SCP_TMP_ITA_PATH, self.getAnsible_tmp_Dir())
 
         # Gitリポジトリ作業用 ディレクトリバス
-        path = "{}/{}".format(self.lv_GitRepo_temporary_DirAry["DIR_NAME"], self.LC_ITA_TMP_DIR)
+        path = "{}/{}".format(self.lv_AnsibleTmpDirAry["DIR_NAME"], self.LC_ITA_TMP_DIR)
         self.setTowerProjectsScpPath(self.AnscObj.DF_GITREPO_TMP_PATH, path)
 
         # Tower用のconductorディレクトリ生成
@@ -1527,7 +1534,9 @@ class CreateAnsibleExecFiles():
             True/False, mt_yaml_array, mt_yamlParse_error
         """
         mt_yaml_array = in_string.split("\n")
-        tmpFile = "{}/yamlParse_{}".format(get_AnsibleDriverTmpPath(), os.getpid())
+        tmpFile = "{}/yamlParse_{}".format(get_OSTmpPath(), os.getpid())
+        # /tmpに作成したファイルはゴミ掃除リストに追加
+        addAnsibleCreateFilesPath(tmpFile)
         fd = open(tmpFile, 'w')
         fd.write(in_string)
         fd.close()
@@ -2225,7 +2234,7 @@ class CreateAnsibleExecFiles():
         f = open(logfile, "a")
         f.write(errorMsg + "\n")
         f.close()
-        g.applogger.error(logmsg)
+        g.applogger.debug(logmsg)
 
     def getDBHostList(self, in_execute_no, in_pattern_id, in_operation_id, mt_hostlist, mt_hostostypelist, mt_hostinfolist, in_winrm_id):
         """

@@ -11,11 +11,8 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
+from flask import g
 
-from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiWorkflowJobTemplates import AnsibleTowerRestApiWorkflowJobTemplates
 
@@ -78,36 +75,36 @@ class AnsibleTowerRestApiWorkflowJobTemplateNodes(AnsibleTowerRestApiBase):
         content = {}
         response_array = {}
 
-        if  'execution_no' in param and param['execution_no'] \
+        if 'execution_no' in param and param['execution_no'] \
         and 'loopCount' in param and param['loopCount']:
             content['name'] = cls.createName(cls.IDENTIFIED_NAME_PREFIX, param['execution_no'], param['loopCount'])
 
         else:
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'execution_no' and 'loopCount'."
+                'errorMessage': "Need 'execution_no' and 'loopCount'."
             }
             return response_array
 
-        if  'workflowTplId' in param and param['workflowTplId']:
+        if 'workflowTplId' in param and param['workflowTplId']:
             content['workflow_job_template'] = param['workflowTplId']
 
         else:
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'workflow_job_tmplate Id'."
+                'errorMessage': "Need 'workflow_job_tmplate Id'."
             }
             return response_array
 
-        if  'jobtplId' in param and param['jobtplId']:
+        if 'jobtplId' in param and param['jobtplId']:
             content['unified_job_template'] = param['jobtplId']
 
         else:
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'job_template Id'."
+                'errorMessage': "Need 'job_template Id'."
             }
             return response_array
 
@@ -148,6 +145,7 @@ class AnsibleTowerRestApiWorkflowJobTemplateNodes(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -190,4 +188,24 @@ class AnsibleTowerRestApiWorkflowJobTemplateNodes(AnsibleTowerRestApiBase):
                 return response_array
 
         return pickup_response_array_2  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
 
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # workfrow job_template nodeが作成されていることを確認
+        obj_id = "WorkflowJobTemplateNodeId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for wfJobTplNode in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, wfJobTplNode)
+            if not response_array['success']:
+                g.applogger.info("AnsibleTowerRestApiWorkflowJobTemplateNodes:deleteRelatedCurrnetExecution: Faild to delete workfrow job template node.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま

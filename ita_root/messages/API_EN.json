@@ -1469,6 +1469,7 @@
     "MSG-80022": "Failed to identify the variable type of \"Movement name: Variable name: Member variable\".",
     "MSG-80023": "The specified \"Movement name: Variable name: Member variable\" must be entered in \"Substitution order\".",
     "MSG-80024": "The specified \"Movement name: Variable name: Member variable\" cannot be entered in  \"Substitution order\".",
+    "MSG-80025": "Variable name must be 128 bytes or less. (Variable name: {})",
     "MSG-81001": "Interface information is invalid.",
     "MSG-81002": "Failed to register the record to the Substitution value list.",
     "MSG-82001": "Interface information is invalid.",

@@ -25,6 +25,7 @@ from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
 from common_libs.common.exception import AppException
+from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 
 
 def external_valid_menu_after(objDBCA, objtable, option):
@@ -110,27 +111,46 @@ def external_valid_menu_after(objDBCA, objtable, option):
                 vars_line_array = []
                 local_vars = []
 
-                wsra = WrappedStringReplaceAdmin()
+                size_error_vars = []
+                wsra = WrappedStringReplaceAdmin(objDBCA)
                 vars_array = []
-                _, vars_line_array = wsra.SimpleFillterVerSearch("GBL_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
+                _, vars_line_array = wsra.SimpleFillterVerSearch(AnscConst.DF_HOST_VAR_HED, playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
                 for v in vars_array:
+                    if len(str(v)) > 255:
+                        size_error_vars.append(v)
+
+                vars_array = []
+                _, vars_line_array = wsra.SimpleFillterVerSearch(AnscConst.DF_HOST_GBL_HED, playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
+                for v in vars_array:
+                    if len(str(v)) > 255:
+                        size_error_vars.append(v)
                     VarsAry['1'][v] = 0
 
                 vars_array = []
-                _, vars_line_array = wsra.SimpleFillterVerSearch("CPF_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
+                _, vars_line_array = wsra.SimpleFillterVerSearch(AnscConst.DF_HOST_CPF_HED, playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
                 for v in vars_array:
+                    if len(str(v)) > 255:
+                        size_error_vars.append(v)
                     VarsAry['2'][v] = 0
 
                 vars_array = []
-                _, vars_line_array = wsra.SimpleFillterVerSearch("TPF_", playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
+                _, vars_line_array = wsra.SimpleFillterVerSearch(AnscConst.DF_HOST_TPF_HED, playbook_data_decoded, vars_line_array, vars_array, local_vars, False)
                 for v in vars_array:
+                    if len(str(v)) > 255:
+                        size_error_vars.append(v)
                     VarsAry['3'][v] = 0
 
-                # 変数登録
-                ret, msg_tmp = CommnVarsUsedListUpdate(objDBCA, option, pkey, '1', VarsAry)
-                if ret is False:
+                # 255バイト以上の変数が使用されている場合
+                if len(size_error_vars) > 0:
                     retBool = False
-                    msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+                    msg = g.appmsg.get_api_message("MSG-10901", [str(size_error_vars)])
+
+                if retBool is True:
+                    # 変数登録
+                    ret, msg_tmp = CommnVarsUsedListUpdate(objDBCA, option, pkey, '1', VarsAry)
+                    if ret is False:
+                        retBool = False
+                        msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
         if retBool is True:
             # バックヤード起動フラグ設定

@@ -1068,6 +1068,7 @@
     "MSG-60014": " ",
     "MSG-60027": "The item selected in the target item is not the {} item selected in the comparison target. Check the target items.",
     "MSG-70001": "The parent-child relationship of the selected host group is looping.",
+    "MSG-80025": "Variable name must be 128 bytes or less. (Variable name: {})",
     "MSG-81001": "Interface information is invalid.",
     "MSG-81002": "Failed to register the record to the Substitution value list.",
     "MSG-82001": "Interface information is invalid.",

@@ -11,6 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+from flask import g
 import hcl2
 import json
 import re
@@ -47,7 +48,7 @@ class HCL2JSONParse():
 
         return result
 
-    def executeParse(self):
+    def executeParse(self, valid_check=False):  # noqa: C901
         """
         hcl -> jsonパーサーを実行する
         Arguments:
@@ -87,6 +88,13 @@ class HCL2JSONParse():
                     block_variable = variable
                     block_default = block.get('default')
                     type_str = block.get('type')
+
+                    # block_variable(変数名)のバリデーションチェック（ファイル登録時のみ処理を通る）
+                    if valid_check is True:
+                        # 変数名が128byte以上の場合はバリデーションエラー
+                        if len(block_variable.encode()) > 128:
+                            msg = g.appmsg.get_api_message("MSG-80025", [block_variable])
+                            raise Exception(msg)
 
                     # type_strがNoneではない場合は整形処理を通す
                     if type_str:

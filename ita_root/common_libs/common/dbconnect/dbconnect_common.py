@@ -572,7 +572,8 @@ class DBConnectCommon:
             'DB_ADMIN_USER': g.db_connect_info.get('ORGDB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': g.db_connect_info.get('ORGDB_ADMIN_PASSWORD'),
             'DB_DATABASE': g.db_connect_info.get('ORGDB_DATABASE'),
-            'INITIAL_DATA_ANSIBLE_IF': g.db_connect_info.get('INITIAL_DATA_ANSIBLE_IF')
+            'INITIAL_DATA_ANSIBLE_IF': g.db_connect_info.get('INITIAL_DATA_ANSIBLE_IF'),
+            'NO_INSTALL_DRIVER': g.db_connect_info.get('NO_INSTALL_DRIVER')
         }
 
 

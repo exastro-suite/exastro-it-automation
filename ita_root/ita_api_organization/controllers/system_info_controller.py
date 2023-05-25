@@ -35,6 +35,6 @@ def get_ita_version(organization_id, workspace_id):  # noqa: E501
     common_db = DBConnectCommon()  # noqa: F405
 
     # バージョン情報を取得
-    data = system_info.collect_ita_version(common_db)
+    data = system_info.collect_ita_version(common_db, organization_id)
 
     return data,

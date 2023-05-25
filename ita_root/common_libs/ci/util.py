@@ -219,6 +219,10 @@ def allow_proc(organization_id, workspace_id):
 
     for file_path in file_list:
         if os.path.isfile(file_path) is True:
+            if file_path == import_menu_skip_file_path and g.SERVICE_NAME == "ita-by-menu-export-import":
+                # ふぁいるが存在した場合でもそれがインポート時のスキップファイル 且つ 自分がメニューエクスポートインポートサービスの場合
+                # バックヤードを動かしたいのでallowed = Falseにはさせない
+                continue
             g.applogger.debug("Skip proc. org:{}, ws:{}, file:{}".format(organization_id, workspace_id, file_path))
             allowed = False
 

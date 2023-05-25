@@ -19,6 +19,7 @@ organization_create
 from flask import g
 import os
 import shutil
+import json
 
 from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *
@@ -41,6 +42,30 @@ def organization_create(body, organization_id):  # noqa: E501
 
     :rtype: InlineResponse200
     """
+
+    # Bodyのチェック
+    driver_list = [
+        'terraform_cloud_ep',
+        'terraform_cli',
+        'ci_cd'
+    ]
+
+    no_install_driver = None
+    if body is not None and len(body) > 0:
+        no_install_driver_flg = False
+        for key, value in body.items():
+            if key != "no_install_driver":
+                return '', "Body is invalid.", "499-00003", 499
+
+            no_install_driver_flg = True
+            for driver in value:
+                if driver not in driver_list:
+                    return '', "Value of key[no_install_driver] is invalid.", "499-00004", 499
+
+        if no_install_driver_flg is False:
+            return '', "Body is invalid.", "499-00003", 499
+        no_install_driver = json.dumps(body['no_install_driver'])
+
     common_db = DBConnectCommon()  # noqa: F405
     connect_info = common_db.get_orgdb_connect_info(organization_id)
     if connect_info:
@@ -71,6 +96,8 @@ def organization_create(body, organization_id):  # noqa: E501
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
+        if no_install_driver is not None:
+            data['NO_INSTALL_DRIVER'] = no_install_driver
 
         g.db_connect_info = {}
         g.db_connect_info["ORGDB_HOST"] = data['DB_HOST']

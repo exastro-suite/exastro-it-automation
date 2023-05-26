@@ -1851,7 +1851,7 @@ class loadTable():
                                     else:
                                         col_val = None
                             else:
-                                if mode not in ['input']:
+                                if mode not in ['input', 'export'] and force_export is False:
                                     tmp_exec = objcolumn.convert_value_output(jsonval)
                                     if tmp_exec[0] is True:
                                         jsonval = tmp_exec[2]

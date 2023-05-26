@@ -47,7 +47,7 @@ def collect_ita_version(objdbca, organization_id):
     org_info = objdbca.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `ORGANIZATION_ID`=%s AND `DISUSE_FLAG`=%s", [organization_id, '0'])
     no_install_driver = org_info[0].get('NO_INSTALL_DRIVER')
 
-    if no_install_driver is None and len(no_install_driver) > 0:
+    if no_install_driver is None or len(no_install_driver) == 0:
         no_install_driver_list = []
     else:
         no_install_driver_list = json.loads(no_install_driver)

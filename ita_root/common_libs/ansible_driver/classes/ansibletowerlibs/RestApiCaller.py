@@ -158,7 +158,7 @@ class RestApiCaller():
 
             try:
                 RestTimeout = getAACRestAPITimoutVaule()
-                startlog = "[Trace] ansible automation controller rest api request start. (URl:{} method:{})".format(url, method)
+                startlog = "[Trace] ansible automation controller rest api request start. (url:{} method:{})".format(url, method)
                 endlog = "[Trace] ansible automation controller rest api request done."
                 g.applogger.info(startlog)     # 外部アプリへの処理開始・終了ログ
                 with urllib.request.urlopen(req, context=ssl_context, timeout=RestTimeout) as resp:

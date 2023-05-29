@@ -53,6 +53,27 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        description: "（任意項目）インストールしないドライバを選択する。"
+        required: false
+        content:
+          application/json:
+            schema:
+              nullable: true
+              type: object
+              properties:
+                no_install_driver:
+                  type: array
+                  items:
+                    description: "terraform_cloud_ep: Terraform-Cloud/EPドライバ,
+                    <br/>terraform_cli: Terraform-CLIドライバ,
+                    <br/>ci_cd: CI/CD for IaC
+                    "
+                    type: "string"
+                    enum:
+                     - "terraform_cloud_ep"
+                     - "terraform_cli"
+                     - "ci_cd"
       responses:
         '200':
           description: Success

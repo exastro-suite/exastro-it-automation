@@ -162,7 +162,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         json_storage_item = str(record.get('JSON_STORAGE_ITEM'))
 
         tmp_msg = "Target record data: {}, {}, {}, {}".format(execution_no, file_name, dp_mode, json_storage_item)
-        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         execution_no_path = uploadfiles_60103_dir + '/file_name/' + execution_no
         file_path = execution_no_path + '/' + file_name
@@ -226,7 +226,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             history_table_flag = param.get('history_table_flag')
 
             tmp_msg = "Target import record data: {}, {}, {}, {}".format(menu_id, table_name, view_name, history_table_flag)
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             menu_name_rest = ''
             for menu_data_record in t_comn_menu_data_json:
@@ -243,13 +243,13 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             # 環境移行モードの場合、既存のデータは全て削除してからデータをインポートする
             if dp_mode == '1':
                 tmp_msg = "check information_schema.tables START: {}".format(table_name)
-                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 chk_table_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
                 chk_table_rtn = objdbca.sql_execute(chk_table_sql, [table_name])
 
                 tmp_msg = "check information_schema.tables END: {}".format(table_name)
-                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 if len(chk_table_rtn) != 0:
                     # uploadfiles配下のデータを削除する
                     if os.path.isdir(uploadfiles_dir + '/' + menu_id):
@@ -261,25 +261,25 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
 
                 if table_name not in deleted_table_list:
                     tmp_msg = "DROP and CREATE TABLE START: {}".format(db_data_path)
-                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                     # テーブルを作成
                     objdbca.sqlfile_execute(db_data_path)
 
                     tmp_msg = "DROP and CREATE TABLE END: {}".format(db_data_path)
-                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                     deleted_table_list.append(table_name)
                     if os.path.isfile(jnl_db_data_path):
                         tmp_msg = "DROP and CREATE JNL START: {}".format(jnl_db_data_path)
-                        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                         # 履歴テーブルを作成
                         objdbca.sqlfile_execute(jnl_db_data_path)
                         deleted_table_list.append(table_name + '_JNL')
 
                         tmp_msg = "DROP and CREATE JNL END: {}".format(jnl_db_data_path)
-                        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 if view_name:
                     if table_name.startswith('T_CMDB'):
@@ -288,33 +288,33 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                             tmp_table_list.append(view_name)
 
                             tmp_msg = "check information_schema.views START: {}".format(view_name)
-                            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                             chk_view_sql = " SELECT TABLE_NAME FROM information_schema.views WHERE `TABLE_NAME` = %s "
                             chk_view_rtn = objdbca.sql_execute(chk_view_sql, [view_name])
 
                             tmp_msg = "check information_schema.views END: {}".format(view_name)
-                            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             if len(chk_view_rtn) != 0:
                                 tmp_msg = "DROP VIEW START: {}".format(view_name)
-                                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                                 drop_view_sql = "DROP VIEW IF EXISTS `{}`".format(view_name)
                                 objdbca.sql_execute(drop_view_sql, [])
 
                                 tmp_msg = "DROP VIEW END: {}".format(view_name)
-                                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                             # DBデータファイル読み込み
                             view_data_path = execution_no_path + '/' + view_name
                             if os.path.isfile(view_data_path):
                                 tmp_msg = "CREATE VIEW START: {}".format(view_data_path)
-                                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                                 objdbca.sqlfile_execute(view_data_path)
 
                                 tmp_msg = "CREATE VIEW END: {}".format(view_data_path)
-                                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             objmenu = _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
             if history_table_flag == '1':
@@ -514,7 +514,7 @@ def _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, men
         }
 
         tmp_msg = "Target register data: {}".format(parameters)
-        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # トランザクション開始
         debug_msg = g.appmsg.get_log_message("BKY-20004", [])
@@ -707,7 +707,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         abolished_type = json_storage_item.get('abolished_type')
         specified_time = json_storage_item.get('specified_timestamp')
         tmp_msg = "Target record data: {}, {}, {}, {}, {}".format(execution_no, json_storage_item, mode, abolished_type, specified_time)
-        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         dir_name = 'ita_exportdata_' + datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         dir_path = export_menu_dir + '/' + dir_name
@@ -1167,6 +1167,12 @@ def restoreTables(objdbca, workspace_path):
 
 def fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list):
     g.applogger.debug("fileBackup start")
+
+    menu_id_list_str = ",".join(menu_id_list)
+    menu_id_list_path = backupfile_dir + '/BACKUP_MENU_ID_LIST'
+    with open(menu_id_list_path, "w") as f:
+        f.write(menu_id_list_str)
+
     for menu_id in menu_id_list:
         menu_dir = uploadfiles_dir + '/' + menu_id
         # ディレクトリ存在チェック
@@ -1208,12 +1214,25 @@ def restoreFiles(workspace_path, uploadfiles_dir):
     if os.path.isdir(backupfile_dir) is False:
         return
 
-    dir_info = os.listdir(backupfile_dir)
-    for dir in dir_info:
+    if os.path.isfile(backupfile_dir + '/BACKUP_MENU_ID_LIST') is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+    # バックアップ対象メニュー取得
+    backup_menu_id_list = Path(backupfile_dir + '/BACKUP_MENU_ID_LIST').read_text(encoding='utf-8')
+    backup_menu_id_list = backup_menu_id_list.split(',')
+
+
+    for dir in backup_menu_id_list:
         if os.path.isdir(uploadfiles_dir + '/' + dir):
             # インポート途中のファイルがあると不整合を起こすので削除する
             shutil.rmtree(uploadfiles_dir + '/' + dir)
-            os.mkdir(uploadfiles_dir + '/' + dir)
+            if os.path.isdir(backupfile_dir + '/' + dir):
+                os.mkdir(uploadfiles_dir + '/' + dir)
+            else:
+                continue
+        elif os.path.isdir(backupfile_dir + '/' + dir) is False:
+            # バックアップにもuploadfilesにも対象メニューのディレクトリが存在しない場合はcontinue
+            continue
 
         # コピー
         cmd = ["cp", "-rp", backupfile_dir + dir, uploadfiles_dir]

@@ -59,6 +59,11 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         return '', "ALREADY EXISTS", "499-00001", 499
 
     inistial_data_ansible_if = org_db.get_inistial_data_ansible_if()
+    no_install_driver_tmp = org_db.get_no_install_driver()
+    if no_install_driver_tmp is None or len(no_install_driver_tmp) == 0:
+        no_install_driver = []
+    else:
+        no_install_driver = json.loads(no_install_driver_tmp)
 
     # make storage directory for workspace
     strage_path = os.environ.get('STORAGEPATH')
@@ -134,6 +139,13 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
             dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
 
+            # インストールしないドライバに指定されているSQLは実行しない
+            if (sql_files[0] == 'terraform_common.sql' and 'terraform_cloud_ep' in no_install_driver and 'terraform_cli' in no_install_driver) or \
+                    (sql_files[0] == 'terraform_cloud_ep.sql' and 'terraform_cloud_ep' in no_install_driver) or \
+                    (sql_files[0] == 'terraform_cli.sql' and 'terraform_cli' in no_install_driver) or \
+                    (sql_files[0] == 'cicd.sql' and 'ci_cd' in no_install_driver):
+                continue
+
             # create table of workspace-db
             ws_db.sqlfile_execute(ddl_file)
             g.applogger.debug("executed " + ddl_file)
@@ -168,6 +180,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ws_db.db_commit()
 
         # 同時実行数制御用のVIEW作成
+        ws_db.db_transaction_start()
         view_sql = "CREATE VIEW V_ANSL_EXEC_STS_INST2 AS "
         view_sql += "SELECT %s as ORGANIZATION_ID, %s as WORKSPACE_ID, %s as WORKSPACE_DB, 'V_ANSL_EXEC_STS_INST2' AS VIEW_NAME, EXECUTE_HOST_NAME, "
         view_sql += "'Legacy' as DRIVER_NAME, 'L' as DRIVER_ID, EXECUTION_NO, STATUS_ID, TIME_BOOK, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, TIME_REGISTER "

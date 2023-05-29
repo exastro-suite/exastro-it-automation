@@ -112,8 +112,10 @@ def __migration_main(version):
         worker.migrate()
         g.applogger.info("[Trace] End BASE migrate.")
 
-    org_id_list = util.get_organization_ids()
-    for organization_id in org_id_list:
+    org_list = util.get_organization_ids()
+    for organization_data in org_list:
+        organization_id = organization_data[0]
+        no_install_driver = organization_data[1]
 
         # ORG level の処理
         resource_dir_path = os.path.join(version_dir_path, "ORG_level")
@@ -134,7 +136,7 @@ def __migration_main(version):
             if os.path.isdir(resource_dir_path):
                 ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
                 work_dir_path = os.path.join(g.STORAGEPATH, organization_id, workspace_id)
-                ws_worker = Migration(resource_dir_path, work_dir_path, ws_db)
+                ws_worker = Migration(resource_dir_path, work_dir_path, ws_db, no_install_driver)
 
                 g.applogger.info("[Trace] Begin WS migrate.")
                 ws_worker.migrate()

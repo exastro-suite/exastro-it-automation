@@ -170,7 +170,7 @@ def get_organization_ids():
     common_db = DBConnectCommon()  # noqa: F405
     organization_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", "WHERE `DISUSE_FLAG`=0 ORDER BY `LAST_UPDATE_TIMESTAMP`")
 
-    return_dict = [x['ORGANIZATION_ID'] for x in organization_info_list]
+    return_dict = [[x['ORGANIZATION_ID'], x['NO_INSTALL_DRIVER']] for x in organization_info_list]
 
     return return_dict
 

@@ -139,6 +139,18 @@ def external_valid_menu_after(objDBCA, objtable, option):
                     # /tmpをゴミ掃除 rmAnsibleCreateFiles()はfinallyでcall
                     return retBool, retStrBody, option
 
+                size_error_vars = []
+                for VarID, VarNameList in save_vars_array.items():
+                    for VarName, dummy in VarNameList.items():
+                        if len(str(VarName)) > 255:
+                            size_error_vars.append(VarName)
+
+                if len(size_error_vars) > 0:
+                    retBool = False
+                    retStrBody = g.appmsg.get_api_message("MSG-10901", [str(size_error_vars)])
+                    # /tmpをゴミ掃除 rmAnsibleCreateFiles()はfinallyでcall
+                    return retBool, retStrBody, option
+
                 if retBool is True:
                     # 変数構造解析結果を退避
                     JsonStr = JsonObj.VarStructAnalJsonDumps(def_vars_list,

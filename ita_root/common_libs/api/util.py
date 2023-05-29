@@ -103,7 +103,10 @@ def app_exception_response(e, exception_log_need=False):
 
     # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
     if is_db_disuse() is False or exception_log_need is True:
-        g.applogger.info("[ts={}][error] {}".format(api_timestamp, log_msg))
+        if status_code == 500:
+            g.applogger.error("[ts={}][error] {}".format(api_timestamp, log_msg))
+        else:
+            g.applogger.info("[ts={}][error] {}".format(api_timestamp, log_msg))
 
     return make_response(None, api_msg, result_code, status_code)
 
@@ -125,7 +128,7 @@ def exception_response(e, exception_log_need=False):
     is_arg = False
     while is_arg is False:
         if isinstance(args[0], AppException):
-            return app_exception_response(args[0])
+            return app_exception_response(args[0], exception_log_need)
         elif isinstance(args[0], Exception):
             args = args[0].args
         else:

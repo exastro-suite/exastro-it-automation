@@ -71,7 +71,9 @@ class GitLabAgent:
         }
         data_json = json.dumps(data)
 
-        g.applogger.debug('gitlab api request: url={}:{}, headers={}, params={}, data={}'.format(method, resource, headers, get_params, data_json))
+        g.applogger.info('[Trace] gitlab api request start. (url:{} method:{})'.format(method, url)) # 外部アプリへの処理開始・終了ログ
+
+        g.applogger.debug('gitlab api request: url={}:{}, headers={}, params={}, data={}'.format(method, url, headers, get_params, data_json))
         response = eval('requests.{}'.format(method.lower()))(url, headers=headers, params=get_params, data=data_json)
 
         if response.headers.get('Content-Type') == 'application/json':
@@ -79,24 +81,29 @@ class GitLabAgent:
                 res = response.json()
 
                 if "error" in res:
-                    err_msg = "{}:{} -> {}:{}".format(method, resource, response.status_code, res)
+                    err_msg = "{}:{} -> {}:{}".format(method, url, response.status_code, res)
                     raise AppException("999-00004", [err_msg])
                 else:
-                    g.applogger.debug('gitlab api response: url={}:{} -> {}:{}'.format(method, resource, response.status_code, res))
+                    g.applogger.info('[Trace] gitlab api request done.') # 外部アプリへの処理開始・終了ログ
+
+                    g.applogger.debug('gitlab api response: url={}:{} -> {}:{}'.format(method, url, response.status_code, res))
                     if as_row is True:
                         return response
+
                     return res
             else:
-                err_msg = "{}:{} -> {}:{}".format(method, resource, response.status_code, response.text)
+                err_msg = "{}:{} -> {}:{}".format(method, url, response.status_code, response.text)
                 raise AppException("999-00004", [err_msg])
         else:
             if 200 <= response.status_code < 400:
-                g.applogger.debug('gitlab api response: url={}:{} -> {}:{}'.format(method, resource, response.status_code, response.text))
+                g.applogger.info('[Trace] gitlab api request done.') # 外部アプリへの処理開始・終了ログ
+
+                g.applogger.debug('gitlab api response: url={}:{} -> {}:{}'.format(method, url, response.status_code, response.text))
                 if as_row is True:
                     return response
                 return True
             else:
-                err_msg = "{}:{} -> {}:{}".format(method, resource, response.status_code, response.text)
+                err_msg = "{}:{} -> {}:{}".format(method, url, response.status_code, response.text)
                 raise AppException("999-00004", [err_msg])
 
     def get_http_repo_url(self, project_name):

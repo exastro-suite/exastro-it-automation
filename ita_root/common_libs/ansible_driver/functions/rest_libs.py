@@ -25,7 +25,7 @@ from common_libs.ansible_driver.classes.ansible_execute import AnsibleExecute
 from common_libs.common.util import file_encode, get_exastro_platform_users
 from common_libs.ansible_driver.functions.util import *
 from common_libs.ansible_driver.functions.util import getMovementAnsibleCnfUploadDirPath
-from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import RestApiCaller
+from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import RestApiCaller, setAACRestAPITimoutVaule
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiWorkflowJobs import AnsibleTowerRestApiWorkflowJobs
 
 
@@ -311,6 +311,9 @@ def execution_scram(objdbca, driver_id, execution_no):
                 # Ansible Automation Controllerホスト一覧にホストが未登録
                 raise AppException("499-00913", [execution_no], [execution_no])
             towerrow = towerrows[0]
+
+            # RestAPIのタイマ値設定
+            setAACRestAPITimoutVaule(objdbca)
 
             # Tower緊急停止
             objTower = RestApiCaller(inforow["ANSTWR_PROTOCOL"],

@@ -210,6 +210,8 @@ getMessage = ( function() {
         'FTE00172' : "Mode",
         'FTE00173' : "Theme",
         'FTE00174' : "ITA original variable",
+        'FTE00175' : "Edit",
+        'FTE00176' : "Preview",
 
         // Create parameter sheet
         'FTE01001' : "Item",

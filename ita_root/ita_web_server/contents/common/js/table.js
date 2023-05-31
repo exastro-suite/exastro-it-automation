@@ -3111,7 +3111,9 @@ viewCellHtml( item, columnKey, journal ) {
             const id = ( tb.mode !== 'history')? parameter[ tb.idNameRest ]: parameter.journal_id;
             if ( file[ columnName ] !== null ) {
                 const fileHtml = [`<a href="${value}" class="tableViewDownload" data-id="${id}" data-rest="${columnName}">${value}</a>`];
-                if ( ['text', 'image'].indexOf( fn.fileTypeCheck( value ) ) !== -1 ) fileHtml.push(`<button class="button filePreview popup" title="プレビュー">${fn.html.icon('search')}</button>`);
+                if ( ['text', 'image'].indexOf( fn.fileTypeCheck( value ) ) !== -1 ) {
+                    fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
+                }
                 return checkJournal( fileHtml.join('') );
             } else {
                 return checkJournal( value );

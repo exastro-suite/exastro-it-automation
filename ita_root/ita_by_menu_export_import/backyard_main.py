@@ -17,6 +17,7 @@ import datetime
 import tarfile
 from flask import g
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import ky_encrypt
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.exception import AppException  # noqa: F401
@@ -1166,8 +1167,22 @@ def restoreTables(objdbca, workspace_path):
 
 
 def fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list):
+    # backupfile_dir : workspace_path + "/tmp/driver/import_menu/uploadfiles"
+    # uploadfiles_dir : workspace_path + "/uploadfiles"
     g.applogger.debug("fileBackup start")
 
+    # uploadfiles配下のディレクトリ一覧を記憶しておく
+    files = os.listdir(uploadfiles_dir)
+    dir_list = []
+    for f in files:
+        if os.path.isdir(os.path.join(uploadfiles_dir, f)):
+            dir_list.append(f)
+    dir_list_str = ",".join(dir_list)
+    dir_list_path = backupfile_dir + '/UPLOADFILES_DIR_LIST'
+    with open(dir_list_path, "w") as f:
+        f.write(dir_list_str)
+
+    # インポート対象メニューのMENU_IDリスト
     menu_id_list_str = ",".join(menu_id_list)
     menu_id_list_path = backupfile_dir + '/BACKUP_MENU_ID_LIST'
     with open(menu_id_list_path, "w") as f:
@@ -1207,6 +1222,7 @@ def fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list):
 
 
 def restoreFiles(workspace_path, uploadfiles_dir):
+    # uploadfiles_dir : workspace_path + "/uploadfiles"
     # ディレクトリとファイルをリストアする
     g.applogger.debug("restoreFiles start")
     backupfile_dir = workspace_path + "/tmp/driver/import_menu/uploadfiles/"
@@ -1214,13 +1230,26 @@ def restoreFiles(workspace_path, uploadfiles_dir):
     if os.path.isdir(backupfile_dir) is False:
         return
 
+    # インポート前にuploadfiles配下にあったディレクトリ一覧
+    if os.path.isfile(backupfile_dir + '/UPLOADFILES_DIR_LIST') is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+    # バックアップ対象メニュー取得
+    uploadfiles_dir_list = Path(backupfile_dir + '/UPLOADFILES_DIR_LIST').read_text(encoding='utf-8')
+    uploadfiles_dir_list = uploadfiles_dir_list.split(',')
+
+    # インポート前のuploadfiles配下に無いディレクトリは削除する
+    files = os.listdir(uploadfiles_dir)
+    for f in files:
+        if f not in uploadfiles_dir_list:
+            shutil.rmtree(uploadfiles_dir + '/' + f)
+
     if os.path.isfile(backupfile_dir + '/BACKUP_MENU_ID_LIST') is False:
         # 対象ファイルなし
         raise AppException("499-00905", [], [])
     # バックアップ対象メニュー取得
     backup_menu_id_list = Path(backupfile_dir + '/BACKUP_MENU_ID_LIST').read_text(encoding='utf-8')
     backup_menu_id_list = backup_menu_id_list.split(',')
-
 
     for dir in backup_menu_id_list:
         if os.path.isdir(uploadfiles_dir + '/' + dir):

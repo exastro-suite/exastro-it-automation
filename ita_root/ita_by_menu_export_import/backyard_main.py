@@ -202,6 +202,13 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             g.applogger.debug("made backupfile_dir")
         fileBackup(backupfile_dir, uploadfiles_dir, menu_id_list)
 
+        if dp_mode == '1':
+            for menu_id in menu_id_list:
+                menu_dir = uploadfiles_dir + '/' + menu_id
+                # ディレクトリ存在チェック
+                if os.path.isdir(menu_dir) is True:
+                    shutil.rmtree(menu_dir)
+
         # 環境移行にて削除したテーブル名を記憶する用
         deleted_table_list = []
 

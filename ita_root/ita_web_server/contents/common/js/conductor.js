@@ -230,14 +230,26 @@ headerHtml() {
             + `<button class="${buttonClass.join(' ')}" ${attr.join(' ')}>${item.title}</button>`
         + `</li>`);
     }
+
+    const subItem = [];
+    // グリッドにスナップ
+    if ( cd.mode === 'edit'  || cd.mode === 'update') {
+      const checked = ( cd.data && cd.data.conductor && cd.data.conductor.grid_snap === true )? {'checked':'checked'}: {};
+      subItem.push(`<li class="editor-menu-item">`
+          + fn.html.checkboxText('conductor-grid-snap-check', 'gridSnap', 'conductor-grid-snap-check', 'conductor-grid-snap-check', checked, getMessage.FTE02173 )
+      + `</li>`);
+    }   
     
     return `
     <div class="editor-header-main-menu">
-        <ul class="editor-menu-list conductor-header-menu1">
+        <ul class="editor-menu-list">
             ${mainItem.join('')}
         </ul>
     </div>
     <div class="editor-header-sub-menu">
+        <ul class="editor-menu-list">
+            ${subItem.join('')}
+        </ul>
     </div>`;
 }
 /*
@@ -269,7 +281,7 @@ operationExplanation() {
     
     const $container = cd.$.display.find('.editor-explanation-container');
     
-    const openFlag = fn.storage.get('conductorExplanation');
+    const openFlag = fn.storage.get('conductorExplanation', 'local', false );
     if ( openFlag === false ) $container.addClass('explanationOpen');
     
     const explanationListHtml = function( title, body ) {
@@ -532,7 +544,10 @@ setInitialConductorData() {
             'conductor_name': null,
             'last_update_date_time': null,
             'note': null,
-            'notice_info': {}
+            'notice_info': {},
+            'grid_snap': true,
+            'movement_width': 'auto',
+            'movement_white_space': 'wrap'
         }
     };
 }
@@ -887,6 +902,16 @@ initEvents() {
     if ( cd.mode === 'confirmation') {
         cd.confirmationEvents();
     }
+
+    // --------------------------------------------------
+    // エディタオプション
+    // --------------------------------------------------
+    
+    cd.$.header.on('change', '#conductor-grid-snap-check', function(){
+        if ( cd.mode === 'edit' || cd.mode === 'update') {
+            cd.data.conductor.grid_snap = $( this ).prop('checked');
+        }
+    });
     
     // --------------------------------------------------
     // 操作説明
@@ -895,9 +920,9 @@ initEvents() {
         const $container = cd.$.display.find('.editor-explanation-container');
         $container.toggleClass('explanationOpen');
         if ( $container.is('.explanationOpen') ) {
-            fn.storage.remove('conductorExplanation');
+            fn.storage.remove('conductorExplanation', 'local', false );
         } else {
-            fn.storage.set('conductorExplanation', true );
+            fn.storage.set('conductorExplanation', true, 'local', false );
         }
     });
     
@@ -1313,6 +1338,13 @@ canvasPosition( positionX, positionY, scaling, duration ) {
     } else {
         cd.$.canvas.removeAttr('data-scale');
     }
+
+    // 備考の大きさをスケールに合わせて調整する
+    if ( !$( cd.createId('note-scale') ).length ) {
+        cd.$.editor.append(`<style id="${cd.createId('note-scale', false )}"></style>`);
+    }
+    const noteScale = ( scaling < 1 )? 1 / scaling: 1;
+    $( cd.createId('note-scale') ).html(`${cd.createId('editor')} .node > .node-note{transform: translateX(-50%) scale(${noteScale});}`)
     
     cd.editor.canvasPt.x = positionX;
     cd.editor.canvasPt.y = positionY;
@@ -1413,6 +1445,7 @@ canvasScaling( zoomType, positionX, positionY ){
           positionX = Math.round( cd.editor.canvasPt.x - commonX - adjustX );
           positionY = Math.round( cd.editor.canvasPt.y - commonY - adjustY );
       }
+      if ( cd.setting.debug === true ) window.console.log(`SCALE: ${scaling}`);
       cd.canvasPosition( positionX, positionY, scaling, 0 );
     }
 }
@@ -1924,13 +1957,17 @@ initNode() {
 
             // 要素の追加を待つ
             $node.ready(function() {
+                $node.addClass('drag current');
 
                 let nodeDragTop = $node.height() / 2,
                     nodeDragLeft = 72;
+                
+                const defaultPositionX = Math.round( e.pageX - cd.$.window.scrollLeft() - nodeDragLeft );
+                const defaultPositionY = Math.round( e.pageY - cd.$.window.scrollTop() - nodeDragTop );
 
-                $node.addClass('drag current').css({
-                    'left' : Math.round( e.pageX - cd.$.window.scrollLeft() - nodeDragLeft ),
-                    'top' : Math.round( e.pageY - cd.$.window.scrollTop() - nodeDragTop ),
+                $node.css({
+                    'left' : defaultPositionX,
+                    'top' : defaultPositionY,
                     'transform-origin' : nodeDragLeft + 'px 50%'
                 }).show();
                 
@@ -1941,15 +1978,56 @@ initNode() {
                 if ( branchNode.indexOf( addNodeType ) !== -1 ) {
                     cd.branchLine( nodeID, 'drop');
                 }
+
+                // アートボードの位置
+                const artBordPsitionX = ( cd.editor.artBoardPt.x * cd.editor.scaling ) + cd.editor.area.l + cd.editor.canvasPt.x,
+                      artBordPsitionY = ( cd.editor.artBoardPt.y * cd.editor.scaling ) + cd.editor.area.t + cd.editor.canvasPt.y;
                 
+                // ノードの位置
+                let nodeX, nodeY;
+
                 cd.$.window.on({
                     'mousemove.dragNode': function( e ){
-                        const moveX = Math.round( ( e.pageX - mouseDownPositionX ) ),
-                              moveY = Math.round( ( e.pageY - mouseDownPositionY ) );
                         if ( cd.$.area.is('.hover') ) {
-                            $node.css('transform', 'translate3d(' + moveX + 'px,' + moveY + 'px,0) scale(' + cd.editor.scaling + ')');
+                            // アートボード上の座標
+                            nodeX = Math.round( ( e.pageX - artBordPsitionX - nodeDragLeft ) / cd.editor.scaling );
+                            nodeY = Math.round( ( e.pageY - artBordPsitionY - nodeDragTop ) / cd.editor.scaling );
+
+                            // グリッドにスナップ
+                            if ( cd.data.conductor.grid_snap ) {
+                              const num = 50;
+                              nodeX = Math.round( nodeX / num ) * num;
+                              nodeY = Math.round( nodeY / num ) * num;
+
+                              // Yセンター調整
+                              nodeDragTop = $node.height() / 2
+                              nodeY = nodeY - ( nodeDragTop - ( Math.round( nodeDragTop / num ) * num ) );
+                            }
+
+                            if ( !$node.closest('.art-board').length ) {
+                                $node.appendTo( cd.$.artBoard ).css({
+                                    transform: 'none',
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: 0
+                                });
+                            }
+                            $node.css({
+                                transform: `translate3d(${nodeX}px,${nodeY}px,0) scale(1)`
+                            });
                         } else {
-                            $node.css('transform', 'translate3d(' + moveX + 'px,' + moveY + 'px,0) scale(1)');
+                            const moveX = Math.round( ( e.pageX - mouseDownPositionX ) ),
+                                  moveY = Math.round( ( e.pageY - mouseDownPositionY ) );
+                            if ( $node.closest('.art-board').length ) {
+                                $node.appendTo( cd.$.editor ).css({
+                                    left: defaultPositionX,
+                                    top: defaultPositionY,
+                                    position: 'fixed'
+                                });
+                            }
+                            $node.css({
+                              transform: `translate3d(${moveX}px,${moveY}px,0) scale(1)`
+                            });
                         }
                     },
                     'mouseup.dragNode': function( e ){
@@ -1959,18 +2037,8 @@ initNode() {
 
                         // Canvasの上にいるか
                         if ( cd.$.area.is('.hover') ) {
-
                           // Node を アートボードにセットする
-                          nodeDragTop = nodeDragTop * cd.editor.scaling;
-                          nodeDragLeft = nodeDragLeft * cd.editor.scaling;
-
-                          const artBordPsitionX = ( cd.editor.artBoardPt.x * cd.editor.scaling ) + cd.editor.area.l + cd.editor.canvasPt.x,
-                                artBordPsitionY = ( cd.editor.artBoardPt.y * cd.editor.scaling ) + cd.editor.area.t + cd.editor.canvasPt.y;
-                          let nodeX = Math.round( ( e.pageX - artBordPsitionX - nodeDragLeft ) / cd.editor.scaling ),
-                              nodeY = Math.round( ( e.pageY - artBordPsitionY - nodeDragTop ) / cd.editor.scaling );
-
-                          $node.appendTo( cd.$.artBoard ).removeClass('drag current').css('opacity', 'inherit');
-
+                          $node.removeClass('drag current').css('opacity', 'inherit');;
                           cd.nodeSet( $node, nodeX, nodeY );
 
                           cd.nodeDeselect();
@@ -2008,13 +2076,38 @@ initNode() {
         'mouseenter' : function(){ $( this ).addClass('hover'); },
         'mouseleave' : function(){ $( this ).removeClass('hover'); }
     },'.node-terminal');
-    
+
+    // --------------------------------------------------
+    // ノードホバー
+    // --------------------------------------------------
+    let nodeHoverTimerId;
+    cd.$.area.on({
+        'mouseenter': function( e ){
+            if ( e.buttons !== 1 ) {
+                const $hoverNode = $( this );
+                nodeHoverTimerId = setTimeout( function(){
+                    $hoverNode.addClass('hover-node');
+                    if ( cd.editor.scaling < 1 ) {
+                      $hoverNode.css('transform', `scale(${1 / cd.editor.scaling})`);
+                    }
+                    $hoverNode.find('.resultPopup').trigger('hoverScale');
+                }, 300 );
+            }
+        },
+        'mouseleave': function(){
+          clearTimeout( nodeHoverTimerId );
+          cd.$.artBoard.find('.hover-node').css('transform', `scale(1)`).removeClass('hover-node');
+        }
+    },'.node');
+
     // --------------------------------------------------
     // キャンバスマウスダウン処理（ノードの移動、結線、複数選択）
     // --------------------------------------------------
     cd.$.area.on('mousedown', function( e ){
         if ( e.buttons === 1 ) {
-            
+            // 拡大ノードがあれば解除
+            cd.$.artBoard.find('.hover-node').css('transform', `scale(1)`).removeClass('hover-node');
+
             // Skipチェックボックス
             if ( $( e.target ).closest('.node-skip').length && cd.mode !== 'confirmation') {
                 cd.nodeDeselect();
@@ -2147,9 +2240,23 @@ initNode() {
           };
 
           // 移動座標をセット
-          const scaleMoveSet = function() {
+          const scaleMoveSet = function( nodeID ) {
               scaleMoveX = Math.round( ( moveX + scrollX ) / cd.editor.scaling );
               scaleMoveY = Math.round( ( moveY + scrollY ) / cd.editor.scaling );
+
+              if ( nodeID && cd.data.conductor.grid_snap ) {
+                  // グリッドに合わせる
+                  const num = 50;
+                  scaleMoveX = Math.round( scaleMoveX / num ) * num;
+                  scaleMoveY = Math.round( scaleMoveY / num ) * num;
+
+                  // 元の位置からの調整
+                  scaleMoveX = scaleMoveX - ( cd.data[ nodeID ].x - ( Math.round( cd.data[ nodeID ].x / num ) * num ) );
+                  scaleMoveY = scaleMoveY - ( cd.data[ nodeID ].y - ( Math.round( cd.data[ nodeID ].y / num ) * num ) );
+
+                  // Yセンター調整
+                  scaleMoveY = scaleMoveY - ( cd.data[ nodeID ].h / 2 - ( Math.round( cd.data[ nodeID ].h / 2 / num ) * num ) );
+              }
           };
 
           // ノードの上でマウスダウン
@@ -2322,7 +2429,7 @@ initNode() {
 
                 if ( event === 'mousemove') {
 
-                  scaleMoveSet();
+                  scaleMoveSet( nodeID );
 
                   // 選択ノードをすべて仮移動
                   cd.$.area.find('.node.selected')
@@ -2735,6 +2842,7 @@ createNode( nodeID ) {
 
     let nodeCircle, nodeType, nodeName;
     if ( nodeData.type === 'movement') {
+        nodeClass.push('movement');
         nodeName = cd.getMovementName( nodeData.movement_id );
         
         if ( cd.mode !== 'confirmation') {
@@ -4303,6 +4411,34 @@ panelConductorHtml() {
     
     const autoInput = `<span class="editorAutoInput">${getMessage.FTE02143}</span>`;
     
+    const movementWidthSelect = ( cd.data && cd.data.conductor )? cd.data.conductor.movement_width: undefined;
+    const movementWidthOptions = {
+      '0': getMessage.FTE02177,
+      '148': getMessage.FTE02178,
+      '200': '200',
+      '240': '240',
+      '280': '280',
+      '320': '320',
+      '360': '360',
+      '400': '400'
+    };
+
+    const movementWhiteSpace = ( cd.data && cd.data.conductor )? cd.data.conductor.movement_white_space: undefined;
+    const movementWhiteSpaceOptions = {
+      'wrap': getMessage.FTE02179,
+      'nowrap': getMessage.FTE02180
+    };
+
+    const getOptionHtml = function( options, select ) {
+        const optionHtml = [];
+        for ( const option in options ) {
+            const attr = [];
+            if ( select === option ) attr.push('selected');
+            optionHtml.push(`<option value="${option}" ${attr.join(' ')}>${options[option]}</option>`);
+        }
+        return optionHtml.join('');
+    }
+
     const html = `
     <div class="panel-group">
         <div class="panel-group-title">${getMessage.FTE02067}</div>
@@ -4349,6 +4485,30 @@ panelConductorHtml() {
             <li class="panel-button-group-item"><button class="panel-button panel-select-button" data-type="clearNotice">` + getMessage.FTE02076 + `</button></li>
         </ul>`: ``}
     </div>
+    ${( cd.mode === 'edit' || cd.mode === 'update')?
+    `<div class="panel-group">
+        <div class="panel-group-title">${getMessage.FTE02174}</div>
+        <table class="panel-table">
+            <tbody>
+                <tr>
+                    <th class="panel-th">${getMessage.FTE02175}</th>
+                    <td class="panel-td">
+                        <select class="panel-select conductor-movement-width">
+                            ${getOptionHtml( movementWidthOptions, movementWidthSelect )}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="panel-th">${getMessage.FTE02176}</th>
+                    <td class="panel-td">
+                        <select class="panel-select conductor-movement-name-wrap">
+                        ${getOptionHtml( movementWhiteSpaceOptions, movementWhiteSpace )}
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>`: ``}
     ${cd.panelTextareaHtml( note )}`;
     
     return cd.panelCommon('Condcutor', html );
@@ -5661,6 +5821,76 @@ panelEvents() {
         cd.executeCheckJump( $( this ) );
     });
     
+    // Movement幅設定
+    cd.$.conductorParameter.on('change', '.conductor-movement-width', function() {
+        const value = $( this ).val();
+        cd.data.conductor.movement_width = value;
+        cd.setMovementWidth( value, true );        
+    });
+
+    // Movement折り返し設定
+    cd.$.conductorParameter.on('change', '.conductor-movement-name-wrap', function() {
+        const value = $( this ).val();
+        cd.data.conductor.movement_white_space = value;
+        cd.setMovementWhiteSpace( value, true );        
+    });
+}
+/*
+##################################################
+  Movementの幅を固定
+##################################################
+*/
+setMovementWidth( width, movementUpdateFlag = false ) {
+    const cd = this;
+
+    // 148の場合は名称とタイプを消すクラスを付与
+    if ( width === '148') {
+        cd.$.editor.addClass('conductor-movement-width-circle');
+    } else {
+        cd.$.editor.removeClass('conductor-movement-width-circle');
+    }
+
+    const inOutWidht = 66;
+    if ( width !== '0') {
+      width = ( Number( width ) - inOutWidht ) + 'px';
+    } else {
+      width = 'auto';
+    }
+    if ( !$( cd.createId('conductor-movement-style') ).length ) {
+        cd.$.editor.append(`<style id="${cd.createId('conductor-movement-style', false )}"></style>`);
+    }
+    cd.$.editor.find( cd.createId('conductor-movement-style') ).html(`.movement .node-body{width:${width}}`);
+
+    if ( movementUpdateFlag ) {
+        // Movement全ての線を調整
+        cd.$.editor.find('.node.movement').each(function(){
+            const $node = $( this );
+            cd.nodeSet( $node );
+            cd.connectEdgeUpdate( $node.attr('data-id') );
+        });
+    }
+}
+/*
+##################################################
+  Movement名称の折り返しを設定
+##################################################
+*/
+setMovementWhiteSpace( value, movementUpdateFlag = false ) {
+    const cd = this;
+    if (value === 'wrap') {
+        cd.$.editor.removeClass('conductor-movement-white-spaee-nowrap');
+    } else {
+        cd.$.editor.addClass('conductor-movement-white-spaee-nowrap');
+    }
+
+    if ( movementUpdateFlag ) {
+        // Movement全ての線を調整
+        cd.$.editor.find('.node.movement').each(function(){
+            const $node = $( this );
+            cd.nodeSet( $node );
+            cd.connectEdgeUpdate( $node.attr('data-id') );
+        });
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -6256,6 +6486,11 @@ loadConductor( loadConductorData ) {
         cd.original = $.extend( true, {}, loadConductorData );
     }
 
+    if ( cd.data.conductor ) {
+        cd.setMovementWhiteSpace( cd.data.conductor.movement_white_space );
+        cd.setMovementWidth( cd.data.conductor.movement_width );
+    }
+
     if ( cd.setting.debug === true ) {
         window.console.group('Get conductor data');
         window.console.log( cd.data );
@@ -6297,8 +6532,8 @@ conductorStatusPopup( $target, id ) {
   let $popup;
   
   // 各ノード個別の作業状況確認ポップアップ追加
-  if ( $( cd.createId(  popupID ) ).length ) {
-    $popup = $( cd.createId(  popupID ) );
+  if ( $('#' + popupID ).length ) {
+    $popup = $('#' + popupID );
   } else {
     $popup = $('<div/>').attr('id', popupID ).addClass('conductorStatusPopup')
       .text(getMessage.FTE02128).css('display','none');
@@ -6308,9 +6543,13 @@ conductorStatusPopup( $target, id ) {
   }
   
   // ノードの状態で表示・非表示を切り替える
+  console.log( $target.is('.node-jump') );
+  console.log( $target.closest('.node').text() );
   if ( $target.is('.node-jump') ) {
+    console.log('visible')
     $popup.css('visibility','visible');
   } else {
+    console.log('hidden')
     $popup.css('visibility','hidden');
   }
   
@@ -6323,13 +6562,21 @@ conductorStatusPopup( $target, id ) {
 
         // 位置更新
         const updatePosition = function() {
-          const mpx = $this.offset().left + ( ( $this.outerWidth() / 2 ) * cd.editor.scaling ),
+          
+          let scale = $this.closest('.node').css('transform');
+          if ( scale !== 'none') {
+            scale = Number( scale.replace(/matrix\((.+)\)/,'$1').split(', ')[0] );
+          } else {
+            scale = 1;
+          }
+          
+          const mpx = $this.offset().left + ( ( $this.outerWidth() * scale / 2 ) * cd.editor.scaling ),
                 mpy = $this.offset().top - ( 4 * cd.editor.scaling )
           $popup.css({ left: mpx, top: mpy });
         };
         updatePosition();
         // マウスムーブとスクロールでも位置を更新する
-        $this.on('mousemove', updatePosition )
+        $this.on('mousemove hoverScale', updatePosition )
           .on('wheel', function(){
           setTimeout( function(){ updatePosition(); }, 1 );
         });
@@ -6388,7 +6635,7 @@ executeCheckJump( $element ) {
             const menu = $element.attr('data-menu'),
                   execution_no = $element.attr('data-id');
             if ( menu && execution_no ) {
-                fn.modalIframe( menu + '&execution_no=' + execution_no, getMessage.FTE02128 );
+                fn.modalIframe( menu + '&execution_no=' + execution_no, getMessage.FTE02128, { width: '960px'} );
             }
         } break;
         // 

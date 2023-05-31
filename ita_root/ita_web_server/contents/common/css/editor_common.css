@@ -277,6 +277,11 @@ border-color: rgba( 0,0,0,.3 );
 color: #EEE;
 outline: none;
 }
+.conductor-grid-snap-check ~ .checkboxTextLabel {
+min-height: 22px;
+font-size: 12px;
+color: #EEE;
+}
 /* Footer */
 .editor-footer .editor-menu-button {
 min-width: 100px;

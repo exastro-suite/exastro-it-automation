@@ -2470,7 +2470,7 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
         # 「メニュー管理」から対象のレコードを特定し、listに格納
         target_menu_id_list = []
         for name in menu_name_rest_list:
-            ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [name, 0])
+            ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s', [name])
             if ret:
                 target_menu_id_list.append(ret[0].get('MENU_ID'))
 

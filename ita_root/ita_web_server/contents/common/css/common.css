@@ -55,6 +55,19 @@ img{max-width:100%;vertical-align: top;}
 	color: #D87900;
 }
 
+.darkmode .link:link,
+.darkmode .link:visited,
+.darkmode .tableViewDownload:link,
+.darkmode .tableViewDownload:visited {
+	color: #4D8FE4;
+}
+.darkmode .link:hover,
+.darkmode .link:active,
+.darkmode .tableViewDownload:hover,
+.darkmode .tableViewDownload:active {
+	color: #E09433;
+}
+
 /* input common */
 .input {
 display: block;
@@ -598,6 +611,7 @@ flex: 1 1 auto;
 }
 .inputPasswordToggle,
 .inputPasswordDeleteToggle,
+.inputFileEdit,
 .inputFileClear {
 flex: 0 0 36px;
 padding-left: 4px;
@@ -608,12 +622,14 @@ display: none;
 }
 .inputPasswordToggleButton,
 .inputPasswordDeleteToggleButton,
+.inputFileEditButton,
 .inputFileClearButton {
 display: block;
 width: 32px;
 }
 .inputPasswordToggleButton > .inner,
 .inputPasswordDeleteToggleButton > .inner,
+.inputFileEditButton > .inner,
 .inputFileClearButton > .inner {
 padding: 0;
 text-overflow: inherit;
@@ -622,6 +638,7 @@ font-size: 16px;
 }
 .inputPasswordToggleButton .icon,
 .inputPasswordDeleteToggleButton .icon,
+.inputFileEditButton .icon,
 .inputFileClearButton .icon {
 margin: 0;
 }
@@ -666,6 +683,46 @@ color: #D00;
 min-width: 120px; min-height: 24px;
 margin-bottom: 2px;
 line-height: 22px;
+}
+/* ファイルプレビュー */
+.fileEditor {
+background-color: #F0F0F0;
+}
+.darkmode .fileEditor {
+background-color: #35393E;
+}
+.editorBody.ace-chrome {
+background-color: #F8F8F8;
+}
+.filePreview {
+height: auto;
+margin-left: 8px;
+border-radius: 4px;
+line-height: normal;
+}
+.darkmode .filePreview {
+color: #DDD;
+}
+.filePreview:hover {
+color: #D87900;
+}
+.editorImageBody {
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 32px;
+background-image: linear-gradient( 45deg, rgba(0,0,0,.05) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.05) 75%),
+linear-gradient( 45deg, rgba(0,0,0,.05) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.05) 75%);
+background-size: 32px 32px;
+background-position: 0 0, 16px 16px;
+}
+.editorImageBody > .editorImage {
+max-width: 100%;
+max-height: 100%;
+}
+/* Ace editor autocomplate popup */
+.ace_editor.ace_autocomplete {
+width: 640px;
 }
 
 /* 必須 */
@@ -3341,6 +3398,46 @@ opacity: .5;
 
 /*
 ##################################################
+   File editor
+##################################################
+*/
+.fileEditor {
+display: flex;
+flex-direction: column;
+height: 100%; 
+}
+.fileEditor > div {
+min-height: 0;
+}
+.editorHeader {
+flex: 0 0 auto;
+padding: 8px;
+}
+.editorHeader .commonInputTitle {
+display: flex;
+align-items: center;
+}
+.editorHeader .commonInputTd {
+padding-left: 4px;
+}
+/*
+.editorFileName {
+background-color: #000!important;
+border-color: #111;
+color: #DDD;
+}
+.editorFileName:focus {
+background-color:#001633;
+border-color:#0070FF;
+}
+*/
+
+.editorBody {
+flex: 1 1 auto;
+}
+
+/*
+##################################################
   Operation menu
 ##################################################
 */
@@ -3350,14 +3447,14 @@ display: flex;
 flex-wrap: wrap;
 column-gap: 32px;
 width: 100%;
-padding: 0 4px;
+padding: 4px;
 }
 .operationMenuList {
 flex: 0 0 auto;
 display: inline-flex;
 gap: 16px;
 max-width: 100%;
-height: 48px;
+height: 40px;
 min-width: 0;
 padding-bottom: 4px;
 }

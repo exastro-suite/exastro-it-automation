@@ -621,3 +621,5 @@ services:
     depends_on:
       ita-mariadb:
         condition: service_healthy
+      platform-migration-2:
+        condition: service_completed_successfully

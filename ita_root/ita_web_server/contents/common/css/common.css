@@ -889,7 +889,7 @@ flex: 0 0 240px;
 border-right: 1px solid rgba(0,0,0,.3);
 }
 .userInfoContainer {
-overflow: hidden;
+overflow: auto;
 display: none;
 flex-direction: column;
 position: absolute;
@@ -909,6 +909,12 @@ display: flex;
 .userInfoBlock {
 overflow: auto;
 border-bottom: 1px solid var(--black20);
+}
+.userInfoWorkspace {
+min-height: 72px;
+}
+.userInfoRole {
+min-height: 69px;
 }
 .userInfoBlock:last-child {
 border-bottom: none;

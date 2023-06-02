@@ -1621,6 +1621,8 @@ class CICD_GrandChildWorkflow():
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
                 g.applogger.info(FREE_LOG)
 
+            self.DBobj.db_transaction_end(True)
+
         # 結果出力
         if self.error_flag != 0:
             FREE_LOG = g.appmsg.get_api_message("MSG-90051")

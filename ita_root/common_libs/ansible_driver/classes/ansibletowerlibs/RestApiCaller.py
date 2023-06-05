@@ -24,7 +24,7 @@ from flask import g
 from common_libs.common.util import ky_decrypt
 from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
-
+from socket import timeout
 
 def setAACRestAPITimoutVaule(objdbca):
     g.AACRestAPITimout = None
@@ -142,6 +142,7 @@ class RestApiCaller():
         print_url = "URL: %s\n" % (url)
         # RESTAPI失敗時は３回までリトライ
         for t in range(3):
+            timeout_chk = False
             self.RestResultList = []
             ################################
             # RestCall
@@ -173,7 +174,7 @@ class RestApiCaller():
             except urllib.error.HTTPError as e:
                 # 返却用のArrayを編集
                 response_array['statusCode'] = -2
-                response_array['responseContents'] = {"errorMessage":"HTTP access error "}
+                response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
                 print_Except = \
                     "Except HTTPError\n" \
@@ -182,6 +183,19 @@ class RestApiCaller():
                     "http response headers: %s\n" \
                     "http response body: %s" \
                     % (e.code, e.reason, e.headers, e.read().decode())
+                self.apperrorloger(self.backtrace())
+                self.apperrorloger(print_url)
+                self.apperrorloger(print_HttpContext)
+                self.apperrorloger(print_Except)
+
+            # reference https://stackoverflow.com/questions/8763451/how-to-handle-urllibs-timeout-in-python-3
+            except timeout as e:
+                timeout_chk = True
+                # 返却用のArrayを編集
+                response_array['statusCode'] = -2
+                response_array['responseContents'] = {"errorMessage": "HTTP access tiomeout "}
+
+                print_Except = "Except timeout (%s)\n" % (str(e))
                 self.apperrorloger(self.backtrace())
                 self.apperrorloger(print_url)
                 self.apperrorloger(print_HttpContext)
@@ -265,6 +279,9 @@ class RestApiCaller():
                         self.apperrorloger(print_HttpResponsHeader)
                         self.apperrorloger(print_ResponseContents)
 
+            # timeoutした場合、リトライしない
+            if timeout_chk:
+                break
             # ステータスコードがが200～399ではない場合はリトライ
             if response_array['statusCode'] < 200 or response_array['statusCode'] >= 400:
                 time.sleep(1)

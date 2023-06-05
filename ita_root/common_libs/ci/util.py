@@ -196,7 +196,6 @@ def wrapper_job_all_org(main_logic, loop_count=500):
         # job for organization
         try:
             g.applogger.debug(f"wrapper_job_all_org loop=[{count}]")
-            # autocommit=falseの場合に、ループ中にorganizationが更新されても、最新データが取得できないバグへの対策
             common_db = DBConnectCommon()  # noqa: F405
 
             # set applogger.set_level: default:INFO / Use ITA_DB config value

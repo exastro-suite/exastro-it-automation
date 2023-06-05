@@ -95,6 +95,7 @@ def before_request_handler():
         g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = orgdb_connect_info.get('DB_ADMIN_PASSWORD')
         g.db_connect_info['ORGDB_DATABASE'] = orgdb_connect_info.get('DB_DATABASE')
         g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = orgdb_connect_info.get('INITIAL_DATA_ANSIBLE_IF')
+        g.db_connect_info['NO_INSTALL_DRIVER'] = orgdb_connect_info.get('NO_INSTALL_DRIVER')
         # gitlab connect info
         g.gitlab_connect_info = {}
         g.gitlab_connect_info['GITLAB_USER'] = orgdb_connect_info.get('GITLAB_USER')

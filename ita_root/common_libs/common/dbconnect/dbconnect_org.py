@@ -52,6 +52,7 @@ class DBConnectOrg(DBConnectCommon):
         self._db_passwd = connect_info.get('DB_PASSWORD')
         self._db = connect_info.get('DB_DATABASE')
         self._inistial_data_ansible_if = connect_info.get('INITIAL_DATA_ANSIBLE_IF')
+        self._no_install_driver = connect_info.get('NO_INSTALL_DRIVER')
 
         # connect database
         self.db_connect()
@@ -97,6 +98,12 @@ class DBConnectOrg(DBConnectCommon):
         get inistial_data_ansible_if
         """
         return self._inistial_data_ansible_if
+
+    def get_no_install_driver(self):
+        """
+        get inistial_data_ansible_if
+        """
+        return self._no_install_driver
 
 
 class DBConnectOrgRoot(DBConnectOrg):

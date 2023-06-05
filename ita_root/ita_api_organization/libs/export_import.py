@@ -1466,7 +1466,7 @@ def _check_dp_info(objdbca, menu, dp_info_file):
 
     abolished_type_name = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
-    if dp_mode != 2:
+    if dp_mode != '2':
         specified_time = None
 
     result_data = {

@@ -30,7 +30,7 @@ class Migration:
         db_conn: DBConnectCommon
     """
 
-    def __init__(self, resource_dir_path, work_dir_path, db_conn):
+    def __init__(self, resource_dir_path, work_dir_path, db_conn, no_install_driver=None):
         """
         constructor
 
@@ -42,6 +42,7 @@ class Migration:
         self._resource_dir_path = resource_dir_path
         self._work_dir_path = work_dir_path
         self._db_conn = db_conn
+        self._no_install_driver = no_install_driver
 
     def migrate(self):
         """
@@ -95,11 +96,32 @@ class Migration:
         with open(config_file_path, "r") as config_str:
             file_list = json.load(config_str)
 
+        if self._no_install_driver is None or len(self._no_install_driver) == 0:
+            no_install_driver = []
+        else:
+            no_install_driver = json.loads(self._no_install_driver)
+
         last_update_timestamp = str(get_timestamp())
         for sql_files in file_list:
 
             ddl_file = os.path.join(sql_dir, sql_files[0])
             dml_file = os.path.join(sql_dir, sql_files[1])
+
+            # インストールしないドライバに指定されているSQLは実行しない
+            if (sql_files[0] == 'terraform_common.sql' and 'terraform_cloud_ep' in no_install_driver and 'terraform_cli' in no_install_driver) or \
+                    (sql_files[1] == 'terraform_common_master.sql' and 'terraform_cloud_ep' in no_install_driver and 'terraform_cli' in no_install_driver) or \
+                    (sql_files[0] == 'terraform_cloud_ep.sql' and 'terraform_cloud_ep' in no_install_driver) or \
+                    (sql_files[1] == 'terraform_cloud_ep_master.sql' and 'terraform_cloud_ep' in no_install_driver) or \
+                    (sql_files[0] == 'terraform_cli.sql' and 'terraform_cli' in no_install_driver) or \
+                    (sql_files[1] == 'terraform_cli_master.sql' and 'terraform_cli' in no_install_driver) or \
+                    (sql_files[0] == 'cicd.sql' and 'ci_cd' in no_install_driver) or \
+                    (sql_files[1] == 'cicd_master.sql' and 'ci_cd' in no_install_driver):
+
+                if sql_files[0] is not None and len(sql_files[0]) > 0:
+                    g.applogger.info(f"[Trace] SKIP SQL FILE=[{sql_files[0]}] BECAUSE DRIVER IS NOT INSTALLED.")
+                if sql_files[1] is not None:
+                    g.applogger.info(f"[Trace] SKIP SQL FILE=[{sql_files[1]}] BECAUSE DRIVER IS NOT INSTALLED.")
+                continue
 
             if os.path.isfile(ddl_file):
                 # DDLファイルの実行

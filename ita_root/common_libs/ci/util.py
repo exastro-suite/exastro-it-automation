@@ -18,6 +18,7 @@ from flask import g
 import os
 import time
 import traceback
+import json
 
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
@@ -30,6 +31,9 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
     '''
     common_db = DBConnectCommon()  # noqa: F405
     g.applogger.debug("ITA_DB is connected")
+
+    # service_name
+    service_name = os.environ.get("SERVICE_NAME")
 
     # 子プロセスで使われているか否か
     is_child_ps = False if organization_id is None else True
@@ -62,6 +66,25 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             # set log environ format
             g.applogger.set_env_message()
 
+            # check no install driver
+            service_list = {'terraform_cloud_ep': ['ita-by-terraform-cloud-ep-vars-listup', 'ita-by-terraform-cloud-ep-execute'],
+                            'terraform_cli': ['ita-by-terraform-cli-vars-listup', 'ita-by-terraform-cli-execute'],
+                            'ci_cd': ['ita-by-cicd-for-iac']
+                            }
+
+            no_install_driver_tmp = organization_info.get('NO_INSTALL_DRIVER')
+            if no_install_driver_tmp is not None and no_install_driver_tmp:
+                no_install_driver = json.loads(no_install_driver_tmp)
+                skip_flg = False
+                for value in no_install_driver:
+                    if value in service_list.keys() and service_name in service_list[value]:
+                        skip_flg = True
+                        break
+
+                if skip_flg is True:
+                    g.applogger.debug(f"Skip organization[{organization_id}] because [{value}] is not installed].")
+                    continue
+
             # database connect info
             g.db_connect_info = {}
             g.db_connect_info['ORGDB_HOST'] = organization_info.get('DB_HOST')
@@ -72,6 +95,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
             g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
             g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = organization_info.get('INITIAL_DATA_ANSIBLE_IF')
+            g.db_connect_info['NO_INSTALL_DRIVER'] = organization_info.get('NO_INSTALL_DRIVER')
             # gitlab connect info
             g.gitlab_connect_info = {}
             g.gitlab_connect_info['GITLAB_USER'] = organization_info['GITLAB_USER']
@@ -219,6 +243,10 @@ def allow_proc(organization_id, workspace_id):
 
     for file_path in file_list:
         if os.path.isfile(file_path) is True:
+            if file_path == import_menu_skip_file_path and g.SERVICE_NAME == "ita-by-menu-export-import":
+                # ファイルが存在する場合でもそれがインポート時のスキップファイル 且つ 自分がメニューエクスポートインポートサービスの場合
+                # バックヤードを動かしたいのでallowed = Falseにはさせない
+                continue
             g.applogger.debug("Skip proc. org:{}, ws:{}, file:{}".format(organization_id, workspace_id, file_path))
             allowed = False
 

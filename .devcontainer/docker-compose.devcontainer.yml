@@ -719,9 +719,6 @@ services:
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
   ita-migration:
-    depends_on:
-      platform-migration-2:
-        condition: service_completed_successfully
     build:
       target: develop_build
     volumes:

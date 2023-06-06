@@ -216,6 +216,10 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
         sub_value_auto_reg.get_data_from_parameter_sheet(execute_data["OPERATION_ID"], execute_data["MOVEMENT_ID"], execution_no)
     except ValidationException as e:
         raise ValidationException(e)
+    except AppException as e:
+        raise AppException(e)
+    except Exception as e:
+        raise Exception(e)
 
     # 実行モードが「パラメータ確認」の場合は終了
     if run_mode == ansc_const.CHK_PARA:

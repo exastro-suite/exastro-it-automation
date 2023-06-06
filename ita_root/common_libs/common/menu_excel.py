@@ -2262,6 +2262,11 @@ def execute_excel_maintenance(
     if menu_name[:31] not in sheets_name_list:
         # このメニューの編集用Excelファイルではありません。
         status_code = '499-00402'
+
+        # バックヤード処理用
+        if backyard_exec is True:
+            return status_code
+
         raise AppException(status_code)     # noqa: F405
 
     ret = objdbca.table_select(

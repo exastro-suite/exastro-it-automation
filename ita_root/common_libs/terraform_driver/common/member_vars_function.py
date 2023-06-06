@@ -1096,6 +1096,8 @@ def search_child_member_vars_value_in_default(objdbca, TFConst, trg_default_key_
     """
     # 変数定義
     default = None
+    if not default_data:
+        return default
     temp_default_data = default_data.copy()
     temp_trg_default_key_list = trg_default_key_list.copy()
 

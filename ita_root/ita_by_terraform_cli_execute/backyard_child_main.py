@@ -481,7 +481,7 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
 def make_kvs_str_row(key, value, type_id):
     str_row = ''
 
-    if (type_id == '' or type_id == '1' or type_id == '18') or not value:
+    if (type_id is None or type_id == '' or type_id == '1' or type_id == '18') or not value:
         str_row = '{} = "{}"'.format(key, value)
     else:
         str_row = '{} = {}'.format(key, value)

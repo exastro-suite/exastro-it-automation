@@ -5859,11 +5859,11 @@ setMovementWidth( width, movementUpdateFlag = false ) {
     if ( !$( cd.createId('conductor-movement-style') ).length ) {
         cd.$.editor.append(`<style id="${cd.createId('conductor-movement-style', false )}"></style>`);
     }
-    cd.$.editor.find( cd.createId('conductor-movement-style') ).html(`.movement .node-body{width:${width}}`);
+    cd.$.editor.find( cd.createId('conductor-movement-style') ).html(`.movement .node-body,.conductor-call .node-body{width:${width}}`);
 
     if ( movementUpdateFlag ) {
         // Movement全ての線を調整
-        cd.$.editor.find('.node.movement').each(function(){
+        cd.$.editor.find('.node.movement, .node.conductor-call').each(function(){
             const $node = $( this );
             cd.nodeSet( $node );
             cd.connectEdgeUpdate( $node.attr('data-id') );
@@ -5885,7 +5885,7 @@ setMovementWhiteSpace( value, movementUpdateFlag = false ) {
 
     if ( movementUpdateFlag ) {
         // Movement全ての線を調整
-        cd.$.editor.find('.node.movement').each(function(){
+        cd.$.editor.find('.node.movement, .node.conductor-call').each(function(){
             const $node = $( this );
             cd.nodeSet( $node );
             cd.connectEdgeUpdate( $node.attr('data-id') );

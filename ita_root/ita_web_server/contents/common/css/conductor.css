@@ -307,7 +307,9 @@ white-space: nowrap!important;
 text-overflow: ellipsis!important;
 }
 .conductor-movement-width-circle .movement .node-name span,
-.conductor-movement-width-circle .movement .node-type span {
+.conductor-movement-width-circle .movement .node-type span,
+.conductor-movement-width-circle .conductor-call .node-name span,
+.conductor-movement-width-circle .conductor-call .node-type span {
 display: none;
 }
 .node-type,

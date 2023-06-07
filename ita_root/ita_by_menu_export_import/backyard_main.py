@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import time
 import inspect
+import re
 
 
 def backyard_main(organization_id, workspace_id):
@@ -881,7 +882,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         for table_name in table_name_list:
             sqldump_path = dir_path + '/' + table_name + '.sql'
 
-            cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", db_database, "--no-data", table_name]
+            cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", "--set-gtid-purged=OFF", db_database, "--no-data", table_name]
             # 時刻指定の場合、DROP TABLE文を追加しないようオプションを追加
             if mode == '2':
                 cmd.append("--skip-add-drop-table")
@@ -894,7 +895,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                 api_msg_args = [msg]
                 raise AppException("499-00201", [log_msg_args], [api_msg_args])
 
-            sqldump_result = sp_sqldump.stdout
+            sqldump_result = re.sub(r'DEFINER[ ]*=[ ]*[^*]*\*/', r'*/', sp_sqldump.stdout)
             with open(sqldump_path, 'w', encoding='utf-8') as f:
                 if mode == '2':
                     # 時刻指定の場合、dump結果を一部編集する

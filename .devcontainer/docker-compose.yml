@@ -14,7 +14,6 @@ services:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8000
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -39,7 +38,6 @@ services:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8079
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -70,14 +68,19 @@ services:
     ports:
       - "0.0.0.0:80:80"
   ita-mariadb:
-    build:
-      dockerfile: ./ita_root/ita_mariadb/Dockerfile
-      context: ../.
+    # image: mariadb:10.4.8
+    image: mariadb
+    healthcheck:
+      test: mysqladmin ping --silent && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;'
+      interval: 3s
+      retries: 200
     volumes:
       - ../.volumes/ita-mariadb/data:/var/lib/mysql
+      - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     environment:
       - TZ=Asia/Tokyo
       - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       # - MARIADB_DATABASE=${MARIADB_DATABASE}
       # - MARIADB_USER=${MARIADB_USER}
       # - MARIADB_PASSWORD=${MARIADB_PASSWORD}
@@ -97,7 +100,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -133,7 +135,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -160,7 +161,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -187,7 +187,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -214,7 +213,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -241,7 +239,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -268,7 +265,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -295,7 +291,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -322,7 +317,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -349,7 +343,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -376,7 +369,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -403,7 +395,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -430,7 +421,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -457,7 +447,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -484,7 +473,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -511,7 +499,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -538,7 +525,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -565,7 +551,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -592,7 +577,6 @@ services:
       environment:
         - TZ=Asia/Tokyo
         - ENCRYPT_KEY=${ENCRYPT_KEY}
-        - LOG_LEVEL=${LOG_LEVEL}
         - DB_HOST=${DB_HOST}
         - DB_PORT=${DB_PORT}
         - DB_DATABASE=${DB_DATABASE}
@@ -620,7 +604,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - LOG_LEVEL=${LOG_LEVEL}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_DATABASE=${DB_DATABASE}
@@ -635,3 +618,8 @@ services:
       - ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT=${ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT}
       - ORG_ANSIBLE_EXECUTION_LIMIT_MAX=${ORG_ANSIBLE_EXECUTION_LIMIT_MAX}
       - ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION=${ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION}
+    depends_on:
+      ita-mariadb:
+        condition: service_healthy
+      platform-migration-2:
+        condition: service_completed_successfully

@@ -520,6 +520,19 @@ clipboard: {
 },
 /*
 ##################################################
+   ファイル名のチェック
+##################################################
+*/
+fileNameCheck( fileName ) {
+    // \ / : * ? " > < |
+    if ( fileName && cmn.typeof( fileName ) === 'string' ) {
+        return fileName.replace(/\\|\/|:|\*|\?|\"|>|<\|/g,'_');
+    } else {
+        return '';
+    }
+},
+/*
+##################################################
    ダウンロード
 ##################################################
 */
@@ -569,6 +582,8 @@ download: function( type, data, fileName = 'noname') {
     }
 
     const a = document.createElement('a');
+
+    fileName = cmn.fileNameCheck( fileName );
 
     a.href = url;
     a.download = fileName;
@@ -706,9 +721,9 @@ storage: {
             storage.length !== 0;
         }
     },
-    'set': function( key, value, type ) {
+    'set': function( key, value, type, keyFlag = true ) {
         if ( type === undefined ) type = 'local';
-        key = cmn.createStorageKey( key );
+        if ( keyFlag ) key = cmn.createStorageKey( key );
         const storage = ( type === 'local')? localStorage: ( type === 'session')? sessionStorage: undefined;
         if ( storage !== undefined ) {
             try {
@@ -721,9 +736,9 @@ storage: {
             return false;
         }
     },
-    'get': function( key, type ) {
+    'get': function( key, type, keyFlag = true ) {
         if ( type === undefined ) type = 'local';
-        key = cmn.createStorageKey( key );
+        if ( keyFlag ) key = cmn.createStorageKey( key );
         const storage = ( type === 'local')? localStorage: ( type === 'session')? sessionStorage: undefined;
         if ( storage !== undefined ) {
             if ( storage.getItem( key ) !== null  ) {
@@ -1780,6 +1795,9 @@ html: {
         + `<div class="inputFileBody">`
                 + cmn.html.button( value, className, attrs )
         + `</div>`
+        + `<div class="inputFileEdit">`
+            + cmn.html.button( cmn.html.icon('edit'), 'itaButton inputFileEditButton popup', Object.assign( attrs, { action: 'positive', title: getMessage.FTE00175 }))
+        + `</div>`
         + `<div class="inputFileClear">`
             + cmn.html.button( cmn.html.icon('clear'), 'itaButton inputFileClearButton popup', { action: 'restore', title: getMessage.FTE00076 })
         + `</div>`;
@@ -2558,9 +2576,13 @@ modalIframe: function( menu, title, option = {}){
                 modal.close();
             }
         };
+
+        let width = '100%';
+        if ( option.width ) width = option.width;
+
         const modalConfig = {
             mode: 'modeless',
-            width: '100%',
+            width: width,
             height: '100%',
             header: {
                 title: title
@@ -2954,6 +2976,366 @@ uiSetting() {
             uiSettingInstance.show();
         }
     });
+},
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  テキストエディター
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+##################################################
+   BASE64をテキストにデコード
+##################################################
+*/
+base64Decode( base64Text, charset = 'utf-8') {
+    return fetch(`data:text/plain;charset=${charset};base64,${base64Text}`).then(function( result ) {
+        return result.text();
+    });
+},
+/*
+##################################################
+   BASE64をテキストにデコード
+##################################################
+*/
+base64Encode( text ) {
+    return new Promise(function( resolve ){
+        const reader = new FileReader();
+        reader.onload = function(){
+            resolve( reader.result.split(';base64,')[1] );
+        };
+        reader.readAsDataURL( new Blob([text]) );
+    });
+},
+/*
+##################################################
+   ファイルタイプ拡張子
+##################################################
+*/
+fileTypeCheck( fileName ) {
+    const extension = cmn.cv( fileName.split('.').pop(), '');
+
+    const fileTypes = {
+        image: ['gif','jpe','jpg','jpeg','png','svg','webp','bmp','ico'],
+        text: ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2'],
+    }
+
+    for ( const fileType in fileTypes ) {
+        if ( fileTypes[fileType].indexOf( extension ) !== -1 ) {
+            return fileType;
+        }
+    }
+    return false;
+},
+/*
+##################################################
+   画像ファイルのMIMEタイプ
+##################################################
+*/
+imageMimeTypeCheck( fileName ) {
+    const extension = cmn.cv( fileName.split('.').pop(), '');
+
+    const fileTypes = {
+        'png': ['png'],
+        'jpeg': ['jpe','jpg','jpeg'],
+        'gif': ['gif'],
+        'vnd.microsoft.icon': ['ico'],
+        'webp': ['webp'],
+        'svg+xml': ['svg'],
+    }
+
+    for ( const mimeType in fileTypes ) {
+        if ( fileTypes[mimeType].indexOf( extension ) !== -1 ) {
+            return mimeType;
+        }
+    }
+    return '';
+},
+/*
+##################################################
+   Aceエディターモードチェック
+##################################################
+*/
+fileModeCheck( fileName ) {
+    const extension = cmn.cv( fileName.split('.').pop(), '');
+
+    const fileTypes = {
+        yaml: ['yaml','yml'],
+        terraform: ['hc', 'hcl', 'sentinel', 'tf'],
+        python: ['j2','py'],
+        json: ['json'],
+        text: ['txt'],
+    };
+
+    for ( const fileType in fileTypes ) {
+        if ( fileTypes[fileType].indexOf( extension ) !== -1 ) {
+            return fileType;
+        }
+    }
+    return 'text';
+},
+/*
+##################################################
+   ITA独自変数一覧
+##################################################
+*/
+itaOriginalVariable() {
+    return [
+        '__loginprotocol__',
+        '__loginpassword__',
+        '__inventory_hostname__',
+        '__workflowdir__',
+        '__conductor_workflowdir__',
+        '__operation__',
+        '__parameters_dir_for_epc__',
+        '__parameters_file_dir_for_epc__',
+        '__parameter_dir__',
+        '__parameters_file_dir__',
+        '__movement_status_filepath__',
+        '__conductor_id__',
+        '__dnshostname__',
+        '__ipaddress__'
+    ];
+},
+/*
+##################################################
+   Aceエディター
+##################################################
+*/
+fileEditor( base64Text, fileName, mode = 'edit') {
+    return new Promise( function( resolve, reject ){
+        const fileType = cmn.fileTypeCheck( fileName );
+        let fileMode = cmn.fileModeCheck( fileName );
+    
+        // モーダル設定
+        const height = ( mode === 'edit' && fileType === false )? 'auto': '100%';
+        const config = {
+            position: 'center',
+            width: '960px',
+            height: height,
+            header: {
+                title: cmn.cv( fileName, '', true ),
+            },
+            footer: {
+                button: {}
+            }
+        };
+        // モーダルボタン
+        const funcs = {};
+
+        // 編集モード
+        if ( mode === 'edit') {
+            config.footer.button.update = { text: getMessage.FTE00168, action: 'positive', width: '160px'};
+            funcs.update = function() {
+                fileName = modal.$.dbody.find('.editorFileName').val();
+                modal.close();
+                modal = null;
+
+                resolve({
+                    name: fileName,
+                    base64: base64Text
+                });
+            };
+        }
+        
+        config.footer.button.download = { text: getMessage.FTE00169, action: 'restore', width: '88px'};
+        config.footer.button.close = { text: getMessage.FTE00170, action: 'normal', width: '88px'};
+        funcs.close = function() {
+            modal.close();
+            modal = null;
+        };             
+        
+        const modeSelectList = {
+            text: 'Text(txt)',
+            yaml: 'YAML(yaml,yml)',
+            terraform: 'Terraform(tf,hc,hcl,sentinel)',
+            json: 'JSON(json)',
+            python: 'Python(py,j2)'
+        };
+
+        const themeSelectList = {
+            chrome: 'Bright',
+            monokai: 'Dark'
+        };
+
+        const modalHtmlSelect = function() {
+            let html = ``;
+
+            const nameInputTr = `<tr class="commonInputTr">`
+                + `<th class="commonInputTh">`
+                    + `<div class="commonInputTitle">${getMessage.FTE00171}</div>`
+                + `</th><td class="commonInputTd" colspan="3">`
+                    + cmn.html.inputText('editorFileName', '', 'editorFileName')
+                + `</td>`
+            + `</tr>`;
+
+            const modeSelectTr = `<tr class="commonInputTr">`
+                + `<th class="commonInputTh">`
+                    + `<div class="commonInputTitle">${getMessage.FTE00172}</div>`
+                + `</th><td class="commonInputTd">`
+                    + cmn.html.select( modeSelectList, 'editorModeSelect', '', 'editorModeSelect')
+                + `</td>`
+                + `<th class="commonInputTh">`
+                    + `<div class="commonInputTitle">${getMessage.FTE00173}</div>`
+                + `</th><td class="commonInputTd">`
+                    + cmn.html.select( themeSelectList, 'editorThemeSelect', '', 'editorThemeSelect')
+                + `</td>`
+            + `</tr>`;
+
+            if ( mode === 'edit') {
+                html += `<div class="editorHeader"><table class="commonInputTable">${nameInputTr}`;
+                if ( fileType === 'text') {
+                    html += modeSelectTr;
+                }                
+                html += `</table></div>`;
+            } else if ( fileType === 'text') {
+                html += `<div class="editorHeader"><table class="commonInputTable">${modeSelectTr}</table></div>`;
+            }
+
+            if ( fileType === 'text') {
+                html += `<div id="aceEditor" class="editorBody"></div>`;
+            } else if ( fileType === 'image') {
+                html += `<div class="editorImageBody editorBody"><img class="editorImage"></div>`;
+            }
+            return `<div class="fileEditor">${html}</div>`;
+        };
+
+        let modal = new Dialog( config, funcs );
+
+        if ( fileType === 'text') {
+            cmn.base64Decode( base64Text ).then(function( text ){
+                modal.open( modalHtmlSelect() );
+                if ( mode === 'edit') {
+                    modal.$.dbody.find('.editorFileName').val( fileName );
+                }
+                modal.$.dbody.find('.editorBody').text( text );
+
+                // Ace editor
+                const storageTheme = fn.storage.get('editorTheme', 'local', false ),
+                      aceTheme = ( storageTheme )? storageTheme: ( $('body').is('.darkmode') )? 'monokai': 'chrome';
+
+                const langTools = ace.require('ace/ext/language_tools');
+
+                const aceEditor = ace.edit('aceEditor', {
+                    theme: `ace/theme/${aceTheme}`,
+                    mode: `ace/mode/${fileMode}`,
+                    displayIndentGuides: true,
+                    fontSize: '14px',
+                    minLines: 2,
+                    showPrintMargin: false,
+                    readOnly: ( mode !== 'edit' ),
+                    wrapBehavioursEnabled: false,
+                    enableBasicAutocompletion: true,
+                    enableLiveAutocompletion: true
+                });
+                modal.$.dbody.find('.ace_scrollbar').addClass('commonScroll');
+
+                // Ace editor mode
+                modal.$.dbody.find('.editorModeSelect').val( modeSelectList[fileMode] ).on('change', function() {
+                    const value = $( this ).val();
+                    for ( const mode in modeSelectList ) {
+                        if ( modeSelectList[ mode ] === value ) {
+                            fileMode = mode;
+                            aceEditor.session.setMode(`ace/mode/${mode}`);
+                            break;
+                        }
+                    }
+                });
+
+                // Ace editor theme
+                modal.$.dbody.find('.editorThemeSelect').val( themeSelectList[aceTheme] ).on('change', function() {
+                    const value = $( this ).val();
+                    for ( const theme in themeSelectList ) {
+                        if ( themeSelectList[ theme ] === value ) {
+                            aceEditor.setTheme(`ace/theme/${theme}`);
+                            fn.storage.set('editorTheme', theme, 'local', false );
+                            break;
+                        }
+                    }
+                });
+
+                // 端で折り返す
+                aceEditor.session.setUseWrapMode( true );
+
+                // ITA独自変数
+                const rhymeCompleter = {
+                    getCompletions: function( editor, session, pos, prefix, callback ) {
+                        callback( null, cmn.itaOriginalVariable().map(function( val ){
+                            return { value: val, meta: getMessage.FTE00174 };
+                        }));
+                    }
+                };
+                langTools.addCompleter(rhymeCompleter);
+
+                // ダウンロード
+                modal.btnFn.download = function() {
+                    const value = aceEditor.getValue();
+
+                    cmn.base64Encode( value ).then(function( base64 ){
+                        fileName = modal.$.dbody.find('.editorFileName').val();
+                        cmn.download('base64', base64, fileName );
+                    });
+                };
+
+                // 変更時
+                aceEditor.session.on('change', function(){
+                    // yamlチェック
+                    if ( fileMode === 'yaml') {
+                        const value = aceEditor.getValue(),
+                              session = aceEditor.getSession();
+                        try {
+                            const result = jsyaml.load( value );
+                            session.setAnnotations([]);
+                        } catch( error ) {
+                            session.setAnnotations([{
+                                row: error.mark.line,
+                                column: error.mark.column,
+                                text: error.reason,
+                                type: "error"
+                            }]);
+                        }
+                    }
+                });
+
+                // 更新
+                modal.btnFn.update = function() {
+                    const value = aceEditor.getValue();
+        
+                    cmn.base64Encode( value ).then(function( base64 ){
+                        fileName = modal.$.dbody.find('.editorFileName').val();
+                        modal.close();
+                        modal = null;
+    
+                        resolve({
+                            name: fileName,
+                            base64: base64
+                        });
+                    });
+                };
+            });
+        } else if ( fileType === 'image') {
+            // ダウンロード
+            modal.btnFn.download = function() {
+                cmn.download('base64', base64Text, fileName );
+            };
+
+            modal.open( modalHtmlSelect() );
+            if ( mode === 'edit') {
+                modal.$.dbody.find('.editorFileName').val( fileName );
+            }
+
+            const mime = cmn.imageMimeTypeCheck( fileName ),
+                    src = `data:image/${mime};base64,${base64Text}`;
+            modal.$.dbody.find('.editorImage').attr('src', src );
+        } else {
+            modal.open( modalHtmlSelect() );
+            if ( mode === 'edit') {
+                modal.$.dbody.find('.editorFileName').val( fileName );
+            }
+        }
+    });
+    
 },
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

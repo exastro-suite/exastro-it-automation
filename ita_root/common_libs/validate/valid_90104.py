@@ -12,7 +12,7 @@
 # limitations under the License.
 from flask import g
 from common_libs.terraform_driver.common.Hcl2Json import HCL2JSONParse
-from common_libs.terraform_driver.cli.Const import Const as TFCLIEPConst
+# from common_libs.terraform_driver.cli.Const import Const as TFCLIEPConst
 import re
 import base64
 import os
@@ -53,7 +53,7 @@ def external_valid_menu_before(objdbca, objtable, option):
 
                 # tfファイルパース処理を実行する。
                 hcl2json = HCL2JSONParse(filepath_tmp)
-                hcl2json.executeParse()
+                hcl2json.executeParse(True)
                 result = hcl2json.getParseResult()
                 if result.get('res') is False:
                     # パースに失敗した場合、バリデーションエラーとする

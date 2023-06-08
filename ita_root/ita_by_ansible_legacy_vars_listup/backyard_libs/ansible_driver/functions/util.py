@@ -51,15 +51,18 @@ def extract_variable_for_movement(mov_records, mov_matl_lnk_records, playbook_va
             mov_vars_dict[movement_id] |= playbook_vars_dict[playbook_matter_id]
 
     for movement_id, vars_set in mov_vars_dict.items():
-        # Movementの追加オプションの変数の追加
-        ans_exec_options = mov_records[movement_id]['ANS_PLAYBOOK_HED_DEF']
 
-        var_heder_id = AnscConst.DF_HOST_VAR_HED  # VAR変数
-        vars_line_array = []  # [{行番号:変数名}, ...]
-        is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(var_heder_id, ans_exec_options, [], [], [])  # noqa: E501
-        for mov_var in vars_line_array:
-            for line_no, var_name in mov_var.items():  # forで回すが要素は1つしかない
-                vars_set.add(var_name)
+        # Movementが廃止されていないことを確認
+        if movement_id in mov_records:
+            # Movementの追加オプションの変数の追加
+            ans_exec_options = mov_records[movement_id]['ANS_PLAYBOOK_HED_DEF']
+
+            var_heder_id = AnscConst.DF_HOST_VAR_HED  # VAR変数
+            vars_line_array = []  # [{行番号:変数名}, ...]
+            is_success, vars_line_array = var_extractor.SimpleFillterVerSearch(var_heder_id, ans_exec_options, [], [], [])  # noqa: E501
+            for mov_var in vars_line_array:
+                for line_no, var_name in mov_var.items():  # forで回すが要素は1つしかない
+                    vars_set.add(var_name)
 
         mov_vars_dict[movement_id] = vars_set
 

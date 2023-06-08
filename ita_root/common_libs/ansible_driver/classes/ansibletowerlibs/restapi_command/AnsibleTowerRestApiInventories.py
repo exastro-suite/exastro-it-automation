@@ -11,11 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import os
-import inspect
+from flask import g
 
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
-from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.AnsibleTowerRestApiBase import AnsibleTowerRestApiBase
 
 
@@ -83,7 +81,7 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
         content = {}
         response_array = {}
 
-        if  'execution_no' in param and param['execution_no'] \
+        if 'execution_no' in param and param['execution_no'] \
         and 'loopCount' in param and param['loopCount']:
             content['name'] = cls.IDENTIFIED_NAME_PREFIX % (OrchestratorSubId_dir, FuncCommonLib.addPadding(param['execution_no']), FuncCommonLib.addPadding(param['loopCount']))
 
@@ -91,7 +89,7 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'execution_no' and 'loopCount'."
+                'errorMessage': "Need 'execution_no' and 'loopCount'."
             }
             return response_array
 
@@ -102,7 +100,7 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
             # 必須のためNG返す
             response_array['success'] = False
             response_array['responseContents'] = {
-                'errorMessage' : "Need 'organization'."
+                'errorMessage': "Need 'organization'."
             }
             return response_array
 
@@ -161,6 +159,7 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
 
         return response_array
 
+    """
     @classmethod
     def deleteRelatedCurrnetExecution(cls, RestApiCaller, execution_no):
 
@@ -179,3 +178,25 @@ class AnsibleTowerRestApiInventories(AnsibleTowerRestApiBase):
                 return response_array
 
         return pickup_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま
+    """
+
+    @classmethod
+    def deleteRelatedCurrnetExecution(cls, RestApiCaller, AACCreateObjectID):
+
+        result_response_array = {}
+        result_response_array['success'] = True
+
+        # inventoryが作成されていることを確認
+        obj_id = "InventoryId"
+        if obj_id not in AACCreateObjectID:
+            return result_response_array
+
+        for inventoryData in AACCreateObjectID[obj_id]:
+            response_array = cls.delete(RestApiCaller, inventoryData)
+            if not response_array['success']:
+                # ゴミ掃除時のエラーは作業実行のエラーログは出力しない
+                g.applogger.info("AnsibleTowerRestApiInventories:deleteRelatedCurrnetExecution Faild to delete inventory.")
+                g.applogger.info(response_array)
+                return response_array
+
+        return result_response_array  # データ不足しているが、後続の処理はsuccessしか確認しないためこのまま

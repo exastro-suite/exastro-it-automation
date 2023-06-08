@@ -18,12 +18,30 @@ import urllib
 import ssl
 import re
 import inspect
-
+import time
 from flask import g
 
 from common_libs.common.util import ky_decrypt
 from common_libs.ansible_driver.functions.util import getAnsibleConst
+from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
+from socket import timeout
 
+def setAACRestAPITimoutVaule(objdbca):
+    g.AACRestAPITimout = None
+    # ansibleインターフェース情報取得
+    sql = "SELECT * FROM T_ANSC_IF_INFO WHERE DISUSE_FLAG='0'"
+    inforows = objdbca.sql_execute(sql, [])
+    # 件数判定はしない
+    inforow = inforows[0]
+    # RestAPIタイムアウト値確認
+    if not inforow['ANSTWR_REST_TIMEOUT']:
+        # 空の場合、デフォルト値を設定
+        g.AACRestAPITimout = 60
+    else:
+        g.AACRestAPITimout = inforow['ANSTWR_REST_TIMEOUT']
+
+def getAACRestAPITimoutVaule():
+    return g.AACRestAPITimout
 
 class RestApiCaller():
 
@@ -66,8 +84,6 @@ class RestApiCaller():
         httpContext = {}
         headers = {}
         ssl_context = None
-
-        self.RestResultList = []
 
         response_array = {}
 
@@ -124,83 +140,137 @@ class RestApiCaller():
 
         print_HttpContext = 'http context\n%s' % (httpContext)
         print_url = "URL: %s\n" % (url)
+        # RESTAPI失敗時は３回までリトライ
+        for t in range(3):
+            timeout_chk = False
+            self.RestResultList = []
+            ################################
+            # RestCall
+            ################################
+            http_response_header = None
+            data = None
+            if 'content' in httpContext['http']:
+                data = httpContext['http']['content']
 
-        ################################
-        # RestCall
-        ################################
-        http_response_header = None
-        data = None
-        if 'content' in httpContext['http']:
-            data = httpContext['http']['content']
+            req = urllib.request.Request(url, data=data, headers=headers, method=method)
+            if 'address' in self.proxySetting and self.proxySetting['address']:
+                req.set_proxy(self.proxySetting['address'], 'http')
+                req.set_proxy(self.proxySetting['address'], 'https')
 
-        req = urllib.request.Request(url, data=data, headers=headers, method=method)
-        if 'address' in self.proxySetting and self.proxySetting['address']:
-            req.set_proxy(self.proxySetting['address'], 'http')
-            req.set_proxy(self.proxySetting['address'], 'https')
+            try:
+                RestTimeout = getAACRestAPITimoutVaule()
+                startlog = "[Trace] ansible automation controller rest api request start. (url:{} method:{})".format(url, method)
+                endlog = "[Trace] ansible automation controller rest api request done."
+                g.applogger.info(startlog)     # 外部アプリへの処理開始・終了ログ
+                with urllib.request.urlopen(req, context=ssl_context, timeout=RestTimeout) as resp:
+                    g.applogger.info(endlog)
+                    status_code = resp.getcode()
+                    http_response_header = resp.getheaders()
+                    responseContents = resp.read().decode('utf-8')
 
-        try:
-            with urllib.request.urlopen(req, context=ssl_context) as resp:
-                status_code = resp.getcode()
-                http_response_header = resp.getheaders()
-                responseContents = resp.read().decode('utf-8')
+                    print_HttpStatusCode = "http ststus code: %s" % (str(status_code))
+                    print_HttpResponsHeader = "http response header\n%s" % (str(http_response_header))
+                    print_ResponseContents = "http response contents\n%s" % (str(responseContents))
+            except urllib.error.HTTPError as e:
+                # 返却用のArrayを編集
+                response_array['statusCode'] = -2
+                response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
-                print_HttpStatusCode = "http ststus code: %s" % (str(status_code))
-                print_HttpResponsHeader = "http response header\n%s" % (str(http_response_header))
-                print_ResponseContents = "http response contents\n%s" % (str(responseContents))
-        except urllib.error.HTTPError as e:
-            # 返却用のArrayを編集
-            response_array['statusCode'] = -2
-            response_array['responseContents'] = {"errorMessage":"HTTP access error "}
+                print_Except = \
+                    "Except HTTPError\n" \
+                    "http status code: %s\n" \
+                    "http response contents: %s\n" \
+                    "http response headers: %s\n" \
+                    "http response body: %s" \
+                    % (e.code, e.reason, e.headers, e.read().decode())
+                self.apperrorloger(self.backtrace())
+                self.apperrorloger(print_url)
+                self.apperrorloger(print_HttpContext)
+                self.apperrorloger(print_Except)
 
-            print_Except = \
-                "Except HTTPError\n" \
-                "http status code: %s\n" \
-                "http response contents: %s\n" \
-                "http response headers: %s\n" \
-                "http response body: %s" \
-                % (e.code, e.reason, e.headers, e.read().decode())
-            self.apperrorloger(self.backtrace())
-            self.apperrorloger(print_url)
-            self.apperrorloger(print_HttpContext)
-            self.apperrorloger(print_Except)
+            # reference https://stackoverflow.com/questions/8763451/how-to-handle-urllibs-timeout-in-python-3
+            except timeout as e:
+                timeout_chk = True
+                # 返却用のArrayを編集
+                response_array['statusCode'] = -2
+                response_array['responseContents'] = {"errorMessage": "HTTP access tiomeout "}
 
-        except urllib.error.URLError as e:
-            # 返却用のArrayを編集
-            response_array['statusCode'] = -2
-            response_array['responseContents'] = {"errorMessage":"HTTP access error "}
+                print_Except = "Except timeout (%s)\n" % (str(e))
+                self.apperrorloger(self.backtrace())
+                self.apperrorloger(print_url)
+                self.apperrorloger(print_HttpContext)
+                self.apperrorloger(print_Except)
 
-            print_Except = "Except URLError\nhttp response contents: %s" % (e.reason)
-            self.apperrorloger(self.backtrace())
-            self.apperrorloger(print_url)
-            self.apperrorloger(print_HttpContext)
-            self.apperrorloger(print_Except)
-
-        else:
-            response_array = {}
-            if not isinstance(http_response_header, list):
+            except urllib.error.URLError as e:
                 # 返却用のArrayを編集
                 response_array['statusCode'] = -2
                 response_array['responseContents'] = {"errorMessage":"HTTP access error "}
 
+                print_Except = "Except URLError\nhttp response contents: %s" % (e.reason)
                 self.apperrorloger(self.backtrace())
                 self.apperrorloger(print_url)
                 self.apperrorloger(print_HttpContext)
-                self.apperrorloger(print_HttpStatusCode)
-                self.apperrorloger(print_HttpResponsHeader)
-                self.apperrorloger(print_ResponseContents)
+                self.apperrorloger(print_Except)
 
             else:
-                # 通信結果を判定
-                if len(http_response_header) > 0:
-                    print_HttpResponsHeader = "http response header\n"
-                    for t in http_response_header:
-                        print_HttpResponsHeader += '%s: %s\n' % (t[0], t[1])
-
+                response_array = {}
+                if not isinstance(http_response_header, list):
                     # 返却用のArrayを編集
-                    response_array['statusCode'] = status_code
-                    if status_code < 200 or status_code >= 400:
-                        response_array['responseHeaders'] = http_response_header
-                        response_array['responseContents'] = {"errorMessage":responseContents}
+                    response_array['statusCode'] = -2
+                    response_array['responseContents'] = {"errorMessage":"HTTP access error "}
+
+                    self.apperrorloger(self.backtrace())
+                    self.apperrorloger(print_url)
+                    self.apperrorloger(print_HttpContext)
+                    self.apperrorloger(print_HttpStatusCode)
+                    self.apperrorloger(print_HttpResponsHeader)
+                    self.apperrorloger(print_ResponseContents)
+
+                else:
+                    # 通信結果を判定
+                    if len(http_response_header) > 0:
+                        print_HttpResponsHeader = "http response header\n"
+                        for t in http_response_header:
+                            print_HttpResponsHeader += '%s: %s\n' % (t[0], t[1])
+
+                        # 返却用のArrayを編集
+                        response_array['statusCode'] = status_code
+                        if status_code < 200 or status_code >= 400:
+                            response_array['responseHeaders'] = http_response_header
+                            response_array['responseContents'] = {"errorMessage":responseContents}
+
+                            self.apperrorloger(self.backtrace())
+                            self.apperrorloger(print_url)
+                            self.apperrorloger(print_HttpContext)
+                            self.apperrorloger(print_HttpStatusCode)
+                            self.apperrorloger(print_HttpResponsHeader)
+                            self.apperrorloger(print_ResponseContents)
+
+                        else:
+                            response_array['responseHeaders'] = http_response_header
+                            response_array['responseContents'] = responseContents
+                            for arrHeader in response_array['responseHeaders']:
+                                if re.search('^\s*Content-Type$', arrHeader[0]):
+                                    if re.search('\s*application\/json', arrHeader[1]):
+                                        try:
+                                            response_array['responseContents'] = json.loads(responseContents)
+
+                                        except json.JSONDecodeError as e:
+                                            response_array['responseContents'] = None
+
+                            # 正常時
+                            self.apperrorloger(self.backtrace(), False)
+                            self.apperrorloger(print_url, False)
+                            self.apperrorloger(print_HttpContext, False)
+                            self.apperrorloger(print_HttpStatusCode, False)
+                            self.apperrorloger(print_HttpResponsHeader, False)
+                            self.apperrorloger(print_ResponseContents, False)
+                    else:
+                        print_HttpResponsHeader = "http response header\n%s" % (http_response_header)
+
+                        # 返却用のArrayを編集
+                        response_array['statusCode'] = -2
+                        response_array['responseContents'] = {"errorMessage":"HTTP Socket Timeout"}
 
                         self.apperrorloger(self.backtrace())
                         self.apperrorloger(print_url)
@@ -209,38 +279,15 @@ class RestApiCaller():
                         self.apperrorloger(print_HttpResponsHeader)
                         self.apperrorloger(print_ResponseContents)
 
-                    else:
-                        response_array['responseHeaders'] = http_response_header
-                        response_array['responseContents'] = responseContents
-                        for arrHeader in response_array['responseHeaders']:
-                            if re.search('^\s*Content-Type$', arrHeader[0]):
-                                if re.search('\s*application\/json', arrHeader[1]):
-                                    try:
-                                        response_array['responseContents'] = json.loads(responseContents)
-
-                                    except json.JSONDecodeError as e:
-                                        response_array['responseContents'] = None
-
-                        # 正常時
-                        self.apperrorloger(self.backtrace(), False)
-                        self.apperrorloger(print_url, False)
-                        self.apperrorloger(print_HttpContext, False)
-                        self.apperrorloger(print_HttpStatusCode, False)
-                        self.apperrorloger(print_HttpResponsHeader, False)
-                        self.apperrorloger(print_ResponseContents, False)
-                else:
-                    print_HttpResponsHeader = "http response header\n%s" % (http_response_header)
-
-                    # 返却用のArrayを編集
-                    response_array['statusCode'] = -2
-                    response_array['responseContents'] = {"errorMessage":"HTTP Socket Timeout"}
-
-                    self.apperrorloger(self.backtrace())
-                    self.apperrorloger(print_url)
-                    self.apperrorloger(print_HttpContext)
-                    self.apperrorloger(print_HttpStatusCode)
-                    self.apperrorloger(print_HttpResponsHeader)
-                    self.apperrorloger(print_ResponseContents)
+            # timeoutした場合、リトライしない
+            if timeout_chk:
+                break
+            # ステータスコードがが200～399ではない場合はリトライ
+            if response_array['statusCode'] < 200 or response_array['statusCode'] >= 400:
+                time.sleep(1)
+                continue
+            else:
+                break
 
         return response_array
 
@@ -259,7 +306,8 @@ class RestApiCaller():
 
     def apperrorloger(self, msg, stdout=True):
         if stdout is True:
-            g.applogger.error(msg)
+            # applogger.error => applogger.info
+            g.applogger.info(msg)
         self.RestResultList.append(msg)
 
     def getRestResultList(self):

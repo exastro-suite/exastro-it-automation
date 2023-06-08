@@ -154,28 +154,18 @@ class RestApiCaller():
                 else:
                     response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
-                print_Except = \
-                    "Except HTTPError\n" \
-                    "http status code: %s\n" \
-                    "http response contents: %s\n" \
-                    "http response headers: %s\n" \
-                    "http response body: %s" \
-                    % (e.code, e.reason, e.headers, e.read().decode())
-                self.apperrorloger(self.backtrace())
-                self.apperrorloger(print_url)
-                self.apperrorloger(print_HttpContext)
-                self.apperrorloger(print_Except)
+                # ログ出力
+                self.appinfologer(print_url)
+                self.appinfologer(print_HttpContext)
 
             except urllib.error.URLError as e:
                 # 返却用のArrayを編集
                 response_array['statusCode'] = -2
                 response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
-                print_Except = "Except URLError\nhttp response contents: %s" % (e.reason)
-                self.apperrorloger(self.backtrace())
-                self.apperrorloger(print_url)
-                self.apperrorloger(print_HttpContext)
-                self.apperrorloger(print_Except)
+                # ログ出力
+                self.appinfologer(print_url)
+                self.appinfologer(print_HttpContext)
 
             else:
                 response_array = {}
@@ -184,6 +174,7 @@ class RestApiCaller():
                     response_array['statusCode'] = -2
                     response_array['responseContents'] = {"errorMessage": "HTTP access error "}
 
+                    # ログ出力
                     self.apperrorloger(self.backtrace())
                     self.apperrorloger(print_url)
                     self.apperrorloger(print_HttpContext)
@@ -204,6 +195,7 @@ class RestApiCaller():
                             response_array['responseHeaders'] = http_response_header
                             response_array['responseContents'] = {"errorMessage": responseContents}
 
+                            # ログ出力
                             self.apperrorloger(self.backtrace())
                             self.apperrorloger(print_url)
                             self.apperrorloger(print_HttpContext)
@@ -212,6 +204,7 @@ class RestApiCaller():
                             self.apperrorloger(print_ResponseContents)
 
                         else:
+                            # 正常時
                             response_array['responseHeaders'] = http_response_header
                             response_array['responseContents'] = responseContents
                             for arrHeader in response_array['responseHeaders']:
@@ -223,13 +216,6 @@ class RestApiCaller():
                                         except json.JSONDecodeError as e:  # noqa: F841
                                             response_array['responseContents'] = None
 
-                            # 正常時
-                            self.apperrorloger(self.backtrace(), False)
-                            self.apperrorloger(print_url, False)
-                            self.apperrorloger(print_HttpContext, False)
-                            self.apperrorloger(print_HttpStatusCode, False)
-                            self.apperrorloger(print_HttpResponsHeader, False)
-                            self.apperrorloger(print_ResponseContents, False)
                     else:
                         print_HttpResponsHeader = "http response header\n%s" % (http_response_header)
 
@@ -237,6 +223,7 @@ class RestApiCaller():
                         response_array['statusCode'] = -2
                         response_array['responseContents'] = {"errorMessage": "HTTP Socket Timeout"}
 
+                        # ログ出力
                         self.apperrorloger(self.backtrace())
                         self.apperrorloger(print_url)
                         self.apperrorloger(print_HttpContext)
@@ -333,6 +320,11 @@ class RestApiCaller():
     def apperrorloger(self, msg, stdout=True):
         if stdout is True:
             g.applogger.error(msg)
+        self.RestResultList.append(msg)
+
+    def appinfologer(self, msg, stdout=True):
+        if stdout is True:
+            g.applogger.info(msg)
         self.RestResultList.append(msg)
 
     def getRestResultList(self):

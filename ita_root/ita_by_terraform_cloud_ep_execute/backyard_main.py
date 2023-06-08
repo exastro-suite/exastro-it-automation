@@ -190,7 +190,7 @@ def instance_execute(objdbca):
             else:
                 # 実行種別が不正
                 log_msg = g.appmsg.get_log_message("MSG-00027", [execution_no])
-                g.applogger.error(log_msg)
+                g.applogger.info(log_msg)
                 raise Exception()
 
             # トランザクション終了

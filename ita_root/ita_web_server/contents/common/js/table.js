@@ -975,7 +975,7 @@ filterHtml( filterHeaderFlag = true ) {
 
     for ( const key of keys ) {
         const column = info[ key ],
-              name = column.col_name,
+              name = tb.id + '_' + column.col_name,
               rest = column.column_name_rest,
               type = column.column_type;
 
@@ -1083,10 +1083,10 @@ filterHtml( filterHeaderFlag = true ) {
                 case 'number':
                     cellHtml.push(`<div class="filterInputFromToNumber">`
                         + `<div class="filterInputFromNumberWrap">`
-                            + fn.html.inputNumber(['filterInput', 'filterFromNumber'], initValue.start, name, { type: 'fromNumber', rest: rest, placeholder: 'From' })
+                            + fn.html.inputNumber(['filterInput', 'filterFromNumber'], initValue.start, name + '_from', { type: 'fromNumber', rest: rest, placeholder: 'From' })
                         + `</div>`
                         + `<div class="filterInputToNumberWrap">`
-                            + fn.html.inputNumber(['filterInput', 'filterToNumber'], initValue.end, name, { type: 'toNumber', rest: rest, placeholder: 'To' })
+                            + fn.html.inputNumber(['filterInput', 'filterToNumber'], initValue.end, name + '_to', { type: 'toNumber', rest: rest, placeholder: 'To' })
                         + `</div>`
                     + `</div>`);
                 break;
@@ -1094,10 +1094,10 @@ filterHtml( filterHeaderFlag = true ) {
                 case 'fromToDateTime':
                     cellHtml.push(`<div class="filterInputFromToDate">`
                         + `<div class="filterInputFromDateWrap">`
-                            + fn.html.inputText(['filterInput', 'filterFromDate'], initValue.start, name, { type: 'fromDate', rest: rest, placeholder: 'From' })
+                            + fn.html.inputText(['filterInput', 'filterFromDate'], initValue.start, name + '_from', { type: 'fromDate', rest: rest, placeholder: 'From' })
                         + `</div>`
                         + `<div class="filterInputToDateWrap">`
-                            + fn.html.inputText(['filterInput', 'filterToDate'], initValue.end, name, { type: 'toDate', rest: rest, placeholder: 'To' })
+                            + fn.html.inputText(['filterInput', 'filterToDate'], initValue.end, name + '_to', { type: 'toDate', rest: rest, placeholder: 'To' })
                         + `</div>`
                         + `<div class="filterInputDateCalendar">`
                             + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'filterInputDatePicker'], { type: 'dateTime', rest: rest, action: 'normal'})
@@ -1114,10 +1114,10 @@ filterHtml( filterHeaderFlag = true ) {
                 case 'fromToDate':
                     cellHtml.push(`<div class="filterInputFromToDate">`
                         + `<div class="filterInputFromDateWrap">`
-                            + fn.html.inputText(['filterInput', 'filterFromDate'], initValue.start, name, { type: 'fromDate', rest: rest, placeholder: 'From' })
+                            + fn.html.inputText(['filterInput', 'filterFromDate'], initValue.start, name + '_from', { type: 'fromDate', rest: rest, placeholder: 'From' })
                         + `</div>`
                         + `<div class="filterInputToDateWrap">`
-                            + fn.html.inputText(['filterInput', 'filterToDate'], initValue.end, name, { type: 'toDate', rest: rest, placeholder: 'To' })
+                            + fn.html.inputText(['filterInput', 'filterToDate'], initValue.end, name + '_to', { type: 'toDate', rest: rest, placeholder: 'To' })
                         + `</div>`
                         + `<div class="filterInputDateCalendar">`
                             + fn.html.button('<span class="icon icon-cal"></span>', ['itaButton', 'filterInputDatePicker'], { type: 'date', rest: rest, action: 'normal'})
@@ -1241,6 +1241,39 @@ referenceFilter() {
 }
 /*
 ##################################################
+   指定のファイルデータを返す
+##################################################
+*/
+getFileData( id, name, type ) {
+    const tb = this;
+
+    const params = tb.data.body.find(function( item ){
+        if ( tb.mode !== 'history') {
+            return String( item.parameter[ tb.idNameRest ] ) === id;
+        } else {
+            return String( item.parameter.journal_id ) === id;
+        }
+    });
+
+    let file;
+    if ( params !== undefined ) {
+        if ( tb.mode === 'diff' && type === 'beforeValue' && tb.option && tb.option.before[ id ] && tb.option.before[ id ].file[ name ]) {
+            // 編集確認画面、変更前データ
+            file = tb.option.before[ id ].file[ name ];
+        } else if ( tb.mode === 'edit' && tb.edit && tb.edit.input[ id ]) {
+            // 編集画面、入力済みのデータがある場合
+            if ( tb.edit.input[ id ].after.file ) {
+                file = tb.edit.input[ id ].after.file[ name ];
+            }
+        } else if ( params.file[ name ] !== undefined && params.file[ name ] !== null ) {
+            file = params.file[ name ];
+        }
+    }
+
+    return file;
+}
+/*
+##################################################
    Set table events
 ##################################################
 */
@@ -1260,34 +1293,28 @@ setTableEvents() {
             const $a = $( this ),
                   fileName = $a.text(),
                   id = $a.attr('data-id'),
-                  rest = $a.attr('data-rest');
+                  rest = $a.attr('data-rest'),
+                  type = $a.attr('data-type');
 
-            const params = tb.data.body.find(function( item ){
-                if ( tb.mode !== 'history') {
-                    return String( item.parameter[ tb.idNameRest ] ) === id;
-                } else {
-                    return String( item.parameter.journal_id ) === id;
-                }
-            });
-
-            let file;
-
-            if ( params !== undefined ) {
-                // 編集確認かつ入力データがない場合
-                if ( tb.mode === 'diff' && params.file[rest] === undefined ) {
-                    if ( tb.option && tb.option.before[ id ] && tb.option.before[ id ].file[ rest ] ) {
-                        file = tb.option.before[ id ].file[ rest ];
-                    }
-                } else {
-                    if ( params.file[rest] !== undefined && params.file[rest] !== null ) {
-                        file = params.file[rest];
-                    }
-                }
-            }
+            const file = tb.getFileData( id, rest, type );
 
             if ( file !== undefined && file !== null ) {
                 fn.download('base64', file, fileName );
             }
+        });
+
+        // ファイルプレビュー
+        tb.$.tbody.on('click', '.filePreview', function(e){
+            const $link = $( this ).prev(),
+                id = $link.attr('data-id'),
+                key = $link.attr('data-rest'),
+                fileName = $link.text(),
+                type = $link.attr('data-type');
+            
+            let file = tb.getFileData( id, key, type );
+            if ( !file ) file = '';
+            
+            fn.fileEditor( file, fileName, 'pureview');
         });
     }
     /*
@@ -1493,6 +1520,32 @@ setTableEvents() {
                 if ( error !== 'cancel') {
                     alert( error );
                 }
+            });
+        });
+
+        // ファイル編集
+        tb.$.tbody.on('click', '.inputFileEditButton', function(e){
+            const $button = $( this ),
+                id = $button.attr('data-id'),
+                key = $button.attr('data-key'),
+                $fileBox = $button.closest('.inputFileEdit').prev().find('.tableEditSelectFile');
+            
+            let file = tb.getFileData( id, key ),
+                fileName = $fileBox.text();
+            if ( !file ) file = '';
+            if ( !fileName ) fileName = 'noname.txt';
+
+            fn.fileEditor( file, fileName ).then(function( result ){
+                const changeFlag = tb.setInputFile( result.name, result.base64, id, key, tb.data.body );
+
+                $fileBox.find('.inner').text( result.name );
+                if ( changeFlag ) {
+                    $fileBox.addClass('tableEditChange');
+                } else {
+                    $fileBox.removeClass('tableEditChange');
+                }
+            }).catch(function(){
+
             });
         });
 
@@ -3057,7 +3110,11 @@ viewCellHtml( item, columnKey, journal ) {
         case 'FileUploadColumn': {
             const id = ( tb.mode !== 'history')? parameter[ tb.idNameRest ]: parameter.journal_id;
             if ( file[ columnName ] !== null ) {
-                return checkJournal(`<a href="${value}" class="tableViewDownload" data-id="${id}" data-rest="${columnName}">${value}</a>`);
+                const fileHtml = [`<a href="${value}" class="tableViewDownload" data-id="${id}" data-rest="${columnName}">${value}</a>`];
+                if ( ['text', 'image'].indexOf( fn.fileTypeCheck( value ) ) !== -1 ) {
+                    fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
+                }
+                return checkJournal( fileHtml.join('') );
             } else {
                 return checkJournal( value );
             }
@@ -3405,7 +3462,7 @@ editConfirmCellHtml( item, columnKey ) {
         }
     }
 
-    const valueCheck = function( val ) {
+    const valueCheck = function( val, data = '' ) {
         if ( columnName === 'discard' ) {
             return tb.discardMark( val );
         }
@@ -3425,7 +3482,13 @@ editConfirmCellHtml( item, columnKey ) {
             // ファイル名がリンクになっていてダウンロード可能
             case 'FileUploadColumn':
                 const id = parameter[ tb.idNameRest ];
-                return `<a href="${val}" class="tableViewDownload" data-id="${id}" data-rest="${columnName}">${val}</a>`;
+                if ( val !== '') {
+                    const fileHtml = [`<a href="${val}" class="tableViewDownload" data-type="${data}" data-id="${id}" data-rest="${columnName}">${val}</a>`];
+                    if ( ['text', 'image'].indexOf( fn.fileTypeCheck( val ) ) !== -1 ) fileHtml.push(`<button class="button filePreview popup" title="プレビュー">${fn.html.icon('search')}</button>`);
+                    return fileHtml.join('');
+                } else {
+                    return '';
+                }
 
             default:
                 return val;
@@ -3461,7 +3524,7 @@ editConfirmCellHtml( item, columnKey ) {
     // 基本
     if ( parameter[ columnName ] !== undefined ) {
         if ( beforeData !== undefined && type === 'update') {
-            return beforeAfter( valueCheck( fn.cv( beforeData.parameter[ columnName ], '', true ) ), valueCheck( value) );
+            return beforeAfter( valueCheck( fn.cv( beforeData.parameter[ columnName ], '', true ), 'beforeValue' ), valueCheck( value, 'afterValue')  );
         } else {
             return valueCheck( value );
         }

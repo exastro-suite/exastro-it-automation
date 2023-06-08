@@ -19,7 +19,7 @@ from common_libs.loadtable import *  # noqa: F403
 from flask import g  # noqa: F401
 from libs.organization_common import check_auth_menu  # noqa: F401
 from common_libs.api import check_request_body_key  # noqa: F401
-from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
+# from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
 
@@ -281,7 +281,7 @@ def get_workspace_list(objdbca):
                     terraform_version = attributes['terraform-version']
                     # 返却値を作成
                     ita_workspace_data_target = ita_workspace_data.get(tf_workspace_name)
-                    workspace_data = {'tf_organization_name':tf_organization_name, 'tf_workspace_name':tf_workspace_name, 'terraform_version': terraform_version}
+                    workspace_data = {'tf_organization_name': tf_organization_name, 'tf_workspace_name': tf_workspace_name, 'terraform_version': terraform_version}  # noqa: E501
                     # ITAに登録済みかどうかを判定する
                     if ita_workspace_data_target:
                         if ita_workspace_data_target.get('tf_organization_name') == tf_organization_name:
@@ -794,7 +794,7 @@ def get_policy_list(objdbca):
                 policy_links = data.get('links')
                 name = policy_attributest.get('name')
                 download = policy_links.get('download')
-                policy_detail = {'tf_organization_name':tf_organization_name, 'policy_name': name}
+                policy_detail = {'tf_organization_name': tf_organization_name, 'policy_name': name}
                 if name in ita_policy_list:
                     policy_detail['ita_registered'] = True
                     policy_detail['download_path'] = download
@@ -1173,64 +1173,3 @@ def policy_set_remove_workspace(objdbca, tf_organization_name, policy_set_name, 
         raise AppException("499-01102", [error_message], [error_message])  # noqa: F405
 
     return return_data
-
-
-# def get_intarface_info_data(objdbca):
-#     """
-#         インターフェース情報からRESTAPIに利用する登録値を取得する
-#         ARGS:
-#             objdbca:DB接クラス  DBConnectWs()
-#         RETRUN:
-#             return_data
-#     """
-#     table_name = "T_TERE_IF_INFO"
-#     ret = objdbca.table_select(table_name, 'WHERE DISUSE_FLAG = %s', [0])
-#     if not ret:
-#         # インターフェース情報にレコードが無い場合はエラー
-#         return False, None
-
-#     protocol = ret[0].get('TERRAFORM_PROTOCOL')
-#     hostname = ret[0].get('TERRAFORM_HOSTNAME')
-#     port = ret[0].get('TERRAFORM_PORT')
-#     user_token = ret[0].get('TERRAFORM_TOKEN')
-#     proxy_address = ret[0].get('TERRAFORM_PROXY_ADDRESS')
-#     proxy_port = ret[0].get('TERRAFORM_PROXY_PORT')
-
-#     return_data = {
-#         'protocol': protocol,
-#         'hostname': hostname,
-#         'port_no': port,
-#         'user_token': user_token,
-#         'proxy_address': proxy_address,
-#         'proxy_port': proxy_port
-#     }
-
-#     return True, return_data
-
-
-# def call_restapi_class(interface_info_data):
-#     """
-#         Terraform用RESTAPIクラスを呼び出す
-#         ARGS:
-#             interface_info_data: インターフェース情報
-#         RETRUN:
-#             return_data
-#     """
-#     protocol = interface_info_data.get('protocol')
-#     hostname = interface_info_data.get('hostname')
-#     port_no = interface_info_data.get('port_no')
-#     encrypted_user_token = interface_info_data.get('user_token')
-#     proxy_address = interface_info_data.get('proxy_address')
-#     proxy_port = interface_info_data.get('proxy_port')
-#     proxy_setting = {'address': proxy_address, "port": proxy_port}
-
-#     # RESTAPI Call Class呼び出し
-#     restApiCaller = RestApiCaller(protocol, hostname, port_no, encrypted_user_token, proxy_setting)
-
-#     # トークンをセット
-#     response_array = restApiCaller.authorize()
-#     if not response_array['success']:
-#         # システムエラー
-#         return False, None
-
-#     return True, restApiCaller

@@ -11,7 +11,7 @@ from common_libs.common import *
 """
 
 
-class AnsibleVault: 
+class AnsibleVault:
     """
       ansible vault関連クラス
     """
@@ -24,7 +24,9 @@ class AnsibleVault:
             ansible-vaultパスワードファイルパス
         """
         if ansiblePlaybookVaultPath is False:
-            VaultPasswordFilePath = "{}/.vault_{}".format(get_AnsibleDriverTmpPath(), os.getpid())
+            VaultPasswordFilePath = "{}/.vault_{}".format(get_OSTmpPath(), os.getpid())
+            # /tmpに作成したファイルはゴミ掃除リストに追加
+            addAnsibleCreateFilesPath(VaultPasswordFilePath)
         else:
             VaultPasswordFilePath = "{}/.tmp/.tmpkey".format(ansiblePlaybookVaultPath)
         return VaultPasswordFilePath
@@ -73,7 +75,9 @@ class AnsibleVault:
 
         strExecshellTemplateName = "{}/{}".format(get_AnsibleDriverShellPath(), "ky_ansible_vault_command_shell_template.sh")
 
-        strExecshellName = "{}/ansible_vault_execute_shell_{}.sh".format(get_AnsibleDriverTmpPath(), os.getpid())
+        strExecshellName = "{}/ansible_vault_execute_shell_{}.sh".format(get_OSTmpPath(), os.getpid())
+        # /tmpに作成したファイルはゴミ掃除リストに追加
+        addAnsibleCreateFilesPath(strExecshellName)
 
         if engine_virtualenv_path:
             virtualenv_flg = "__define__"
@@ -86,8 +90,10 @@ class AnsibleVault:
         value = value.replace("\r\n", "\n")
 
         # ansibel-vault パスワードファイル生成
-        vault_value_file = "{}/ansible_vault_value_{}".format(get_AnsibleDriverTmpPath(), os.getpid())
-        
+        vault_value_file = "{}/ansible_vault_value_{}".format(get_OSTmpPath(), os.getpid())
+        # /tmpに作成したファイルはゴミ掃除リストに追加
+        addAnsibleCreateFilesPath(vault_value_file)
+
         fd = open(vault_value_file, 'w')
         fd.write(value)
         fd.close()
@@ -122,7 +128,7 @@ class AnsibleVault:
             cmd = "{} {}".format(strExecshellName, virtualenv_flg)
         # text=Trueはpython3.6にないので未使用
         ret = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    
+
         # 一時ファイル削除
         os.remove(vault_value_file)
         os.remove(strExecshellName)
@@ -137,8 +143,8 @@ class AnsibleVault:
         else:
             # 暗号化文字列取得
             output = to_str(ret.stdout)
-            arry_list = output.split("\n") 
-        
+            arry_list = output.split("\n")
+
             # 暗号化文字列加工
             for line in arry_list:
                 if line.strip() == 0:

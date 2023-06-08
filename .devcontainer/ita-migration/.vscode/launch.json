@@ -48,8 +48,7 @@
         "request": "launch",
         "program": "/exastro/migration_main.py",
         "env": {
-            "FLASK_APP": "/exastro/migration_main.py",
-            "LOG_LEVEL": "DEBUG"
+            "FLASK_APP": "/exastro/migration_main.py"
         },
         "cwd": "/exastro",
         "pathMappings": [

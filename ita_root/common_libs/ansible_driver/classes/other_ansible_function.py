@@ -29,10 +29,10 @@ class OtherAnsibleFunction():
     def chkSubstitutionValueListRecodedifference(BefInfo, AftInfo):
         """
         代入値管理・パラメータシートの具体値判定
-        
+
         Arguments:
             BefInfo:
-            AftInfo: 
+            AftInfo:
 
         returns:
             diff:
@@ -42,26 +42,26 @@ class OtherAnsibleFunction():
         diff = False
         befFileDel = False
         AftFileCpy = False
-        
+
         if AftInfo['COL_CLASS'] == 'FileUploadColumn' and AftInfo['REG_TYPE'] == 'Value':
             AftInfo['VARS_ENTRY_FILE'] = AftInfo['VARS_ENTRY']
             AftInfo['VARS_ENTRY'] = ""
         else:
             AftInfo['VARS_ENTRY_FILE'] = ""
-        
+
         if BefInfo['SENSITIVE_FLAG'] != AftInfo['SENSITIVE_FLAG'] or \
             BefInfo['VARS_ENTRY_FILE'] != AftInfo['VARS_ENTRY_FILE'] or \
             BefInfo['VARS_ENTRY_FILE_MD5'] != AftInfo['COL_FILEUPLOAD_MD5'] or \
             BefInfo['VARS_ENTRY'] != AftInfo['VARS_ENTRY']:
                 diff = True
-        
+
         if diff == 1:
             # 代入値管理の具体値がファイルの場合
             if BefInfo['VARS_ENTRY_FILE'] != AftInfo['VARS_ENTRY_FILE'] or \
                 BefInfo['VARS_ENTRY_FILE_MD5'] != AftInfo['COL_FILEUPLOAD_MD5']:
                     if BefInfo['VARS_ENTRY_FILE'] != "":
                         befFileDel = True
-        
+
             # パラメータシートの具体値がファイルの場合
             if BefInfo['VARS_ENTRY_FILE'] != AftInfo['VARS_ENTRY_FILE'] or \
                 BefInfo['VARS_ENTRY_FILE_MD5'] != AftInfo['COL_FILEUPLOAD_MD5']:
@@ -74,57 +74,57 @@ class OtherAnsibleFunction():
         retBool = False
         boolSystemErrorFlag = False
         retStrBody = g.appmsg.get_api_message("ITAANSIBLEH-ERR-55294")
-        
+
         strModeId = ""
         if "TCA_PRESERVED" in arrayVariant:
             if "TCA_ACTION" in arrayVariant["TCA_PRESERVED"]:
                 aryTcaAction = arrayVariant["TCA_PRESERVED"]["TCA_ACTION"]
                 strModeId = aryTcaAction["ACTION_MODE"]
-        
+
         modeValue_sub = ""
         if strModeId == "DTUP_singleRecDelete":
             modeValue_sub = arrayVariant["TCA_PRESERVED"]["TCA_ACTION"]["ACTION_SUB_MODE"]
-        
+
         if arrayVariant['edit_target_row']['VARS_ENTRY']:
             BefVarsEntry = arrayVariant['edit_target_row']['VARS_ENTRY']
         else:
             BefVarsEntry = None
-        
+
         if arrayVariant['edit_target_row']['VARS_ENTRY_FILE']:
             BefVarsEntryFile = arrayVariant['edit_target_row']['VARS_ENTRY_FILE']
         else:
             BefVarsEntryFile = None
-        
+
         if arrayVariant['edit_target_row']['SENSITIVE_FLAG']:
             BefSensitiveFlag = arrayVariant['edit_target_row']['SENSITIVE_FLAG']
         else:
             BefSensitiveFlag = None
-        
+
         if "VARS_ENTRY" in arrayRegData:
             AftVarsEntry = arrayRegData['VARS_ENTRY']
         else:
             AftVarsEntry = None
-        
+
         if "VARS_ENTRY_FILE" in arrayRegData:
             AftVarsEntryFile = arrayRegData['VARS_ENTRY_FILE']
         else:
             AftVarsEntryFile = None
-        
+
         if "SENSITIVE_FLAG" in arrayRegData:
             AftSensitiveFlag = arrayRegData['SENSITIVE_FLAG']
         else:
             AftSensitiveFlag = None
-        
+
         if UpLoadFile in arrayRegData:
             AftUpLoadFile = arrayRegData[UpLoadFile]
         else:
             AftUpLoadFile = None
-        
+
         if DelFlag in arrayRegData:
             AftDelFlag = arrayRegData[DelFlag]
         else:
             AftDelFlag = None
-        
+
         # Excelからの場合、該当レコードの具体値にファイルがアップロードされているか確認
         if ordMode == 1:
             if strModeId == "DTUP_singleRecUpdate" or \
@@ -133,17 +133,17 @@ class OtherAnsibleFunction():
                     Pkey = arrayVariant['edit_target_row']['ASSIGN_ID']
                 else:
                     Pkey = None
-                
+
                 query = "SELECT "
                 query += "TBL_A.VARS_ENTRY_FILE "
                 query += "FROM "
                 query += tgtTableName + " TBL_A "
                 query += "WHERE "
                 query += "TBL_A.ASSIGN_ID = %ASSIGN_ID "
-                
+
                 aryForBind = {}
                 aryForBind['ASSIGN_ID'] = Pkey
-                
+
                 data_list = WS_DB.sql_execute(query, aryForBind)
 
                 for data in data_list:
@@ -152,7 +152,7 @@ class OtherAnsibleFunction():
                         retBool = True
                         boolSystemErrorFlag = True
                         return retBool, boolSystemErrorFlag, retStrBody
-        
+
         # 0:[ブラウザからの新規登録
         # 1:[EXCEL]からの新規登録
         # 2:[CSV]からの新規登録
@@ -175,7 +175,7 @@ class OtherAnsibleFunction():
                             FileSet = True
                     else:
                         FileSet = True
-                
+
                 # 具体値が設定されているか判定
                 if AftVarsEntry == "":
                     # SENSITIVE設定がONか判定
@@ -194,10 +194,10 @@ class OtherAnsibleFunction():
                         StrSet = False
                 else:
                     StrSet = True
-                
+
                 if FileSet == 1 and StrSet == 1:
                     return retBool, boolSystemErrorFlag, retStrBody
-            
+
             elif strModeId == "DTUP_singleRecDelete":
                 if modeValue_sub == "off":
                     if BefVarsEntry != "" and BefVarsEntryFile != "":
@@ -207,7 +207,7 @@ class OtherAnsibleFunction():
             if strModeId == "DTUP_singleRecRegister":
                 if AftVarsEntry != "" and AftVarsEntryFile != "":
                     return retBool, boolSystemErrorFlag, retStrBody
-            
+
             if strModeId == "DTUP_singleRecUpdate":
                 FileSet = False
                 StrSet = False
@@ -224,7 +224,7 @@ class OtherAnsibleFunction():
                             FileSet = True
                     else:
                         FileSet = True
-                
+
                 # 具体値が設定されているか判定
                 if AftVarsEntry == "":
                     # SENSITIVE設定がONか判定
@@ -243,10 +243,10 @@ class OtherAnsibleFunction():
                         StrSet = False
                 else:
                     StrSet = True
-                
+
                 if FileSet == 1 and StrSet == 1:
                     return retBool, boolSystemErrorFlag, retStrBody
-            
+
             if strModeId == "DTUP_singleRecDelete":
                 if modeValue_sub == "off" and BefVarsEntry != "":
                     retStrBody = g.appmsg.get_api_message("ITAANSIBLEH-ERR-55295")
@@ -254,13 +254,13 @@ class OtherAnsibleFunction():
         else:
             frame = inspect.currentframe().f_back
             retStrBody = "Illegal value for ModeType. file:" + (__file__) + " line:" + str(frame.f_lineno)
-            g.applogger.error(retStrBody)
+            g.applogger.info(retStrBody)
             retBool = False
             boolSystemErrorFlag = True
             retStrBody = ""
             return retBool, boolSystemErrorFlag, retStrBody
-        
+
         retBool = True
         boolSystemErrorFlag = False
-        retStrBody = "" 
+        retStrBody = ""
         return retBool, boolSystemErrorFlag, retStrBody

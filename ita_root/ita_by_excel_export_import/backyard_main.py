@@ -80,7 +80,7 @@ def backyard_main(organization_id, workspace_id):
                 # エラーログ出力
                 frame = inspect.currentframe().f_back
                 msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                g.applogger.error(msgstr)
+                g.applogger.info(msgstr)
                 # ステータスを完了(異常)に更新
                 result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                 continue
@@ -199,7 +199,7 @@ def backyard_main(organization_id, workspace_id):
                 if res == 0:
                     frame = inspect.currentframe().f_back
                     msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                    g.applogger.error(msgstr)
+                    g.applogger.info(msgstr)
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     # 一時ディレクトリ削除
@@ -282,6 +282,7 @@ def backyard_main(organization_id, workspace_id):
                     msg += g.appmsg.get_api_message("MSG-30028", [fileName])
                     msg += "\n"
                     idx = 0
+                    file_err_msg = ""
                     msg_result = []
                     msg_result.append(g.appmsg.get_api_message('MSG-30004'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30005'))
@@ -289,20 +290,30 @@ def backyard_main(organization_id, workspace_id):
                     msg_result.append(g.appmsg.get_api_message('MSG-30006'))
                     msg_result.append(g.appmsg.get_api_message('MSG-30034'))
                     if "登録" not in aryRetBody and "Register" not in aryRetBody:
-                        # バリデーションエラー時はエラー内容しか返ってこないので、各処理を0件で登録
-                        tmp_result = aryRetBody
-                        aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: len(aryRetBody)}
+                        if type(aryRetBody) is str and aryRetBody == "499-00402":
+                            # 編集用エクセルファイルでないファイルをインポートしたときのエラー
+                            file_err_msg = g.appmsg.get_api_message("499-00402")
+                            aryRetBody = {}
+                        else:
+                            # バリデーションエラー時はエラー内容しか返ってこないので、各処理を0件で登録
+                            tmp_result = aryRetBody
+                            aryRetBody = {msg_result[0]: 0, msg_result[1]: 0, msg_result[2]: 0, msg_result[3]: 0, msg_result[4]: len(aryRetBody)}
                     else:
                         aryRetBody[msg_result[4]] = 0
 
-                    for name, ct in aryRetBody.items():
-                        msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
-                        idx += 1
+                    if len(aryRetBody) > 0:
+                        for name, ct in aryRetBody.items():
+                            msg += msg_result[idx] + ":    " + str(ct) + strErrCountExplainTail + "\n"
+                            idx += 1
 
-                    if aryRetBody[msg_result[4]] != 0:
-                        for value in tmp_result.values():
-                            for key, err_msg in value.items():
-                                msg += str(key) + ": " + str(err_msg) + "\n"
+                        if aryRetBody[msg_result[4]] != 0:
+                            for value in tmp_result.values():
+                                for key, err_msg in value.items():
+                                    msg += str(key) + ": " + str(err_msg) + "\n"
+                    else:
+                        msg += "\n"
+                        msg += file_err_msg
+
                     msg += "\n"
 
                     util.dumpResultMsg(msg, taskId, RESULT_PATH)
@@ -313,7 +324,7 @@ def backyard_main(organization_id, workspace_id):
                     if res == 0:
                         frame = inspect.currentframe().f_back
                         msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                        g.applogger.error(msgstr)
+                        g.applogger.info(msgstr)
                         # ステータスを完了(異常)に更新
                         result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                         continue
@@ -323,7 +334,7 @@ def backyard_main(organization_id, workspace_id):
                 if res == 0:
                     frame = inspect.currentframe().f_back
                     msgstr = g.appmsg.get_api_message("MSG-30023", ["T_BULK_EXCEL_EXPORT_IMPORT", os.path.basename(__file__), str(frame.f_lineno)])
-                    g.applogger.error(msgstr)
+                    g.applogger.info(msgstr)
                     # ステータスを完了(異常)に更新
                     result, msg = util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)
                     continue

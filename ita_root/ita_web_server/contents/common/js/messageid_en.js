@@ -203,6 +203,15 @@ getMessage = ( function() {
         'FTE00165' : "Seconds",
         'FTE00166' : "Filter validation error",
         'FTE00167' : "Plan confirmation",
+        'FTE00168' : "Update",
+        'FTE00169' : "Download",
+        'FTE00170' : "Close",
+        'FTE00171' : "Name",
+        'FTE00172' : "Mode",
+        'FTE00173' : "Theme",
+        'FTE00174' : "ITA original variable",
+        'FTE00175' : "Edit",
+        'FTE00176' : "Preview",
 
         // Create parameter sheet
         'FTE01001' : "Item",
@@ -533,6 +542,14 @@ getMessage = ( function() {
         'FTE02170' : "Cancel",
         'FTE02171' : "Notice Name",
         'FTE02172' : "Notice",
+        'FTE02173' : "Snap to grid",
+        'FTE02174' : "Movement common display settings",
+        'FTE02175' : "Width",
+        'FTE02176' : "Wrap name",
+        'FTE02177' : "Auto",
+        'FTE02178' : "Circle only",
+        'FTE02179' : "Wrap",
+        'FTE02180' : "Ellipsis",
 
         // Execution
         'FTE05001' : "Execution No.",

@@ -204,11 +204,11 @@ class DBConnectCommon:
 
         try:
             db_cursor.execute(sql, bind_value_list)
-            self.__sql_debug(db_cursor)
+            self.__sql_debug(db_cursor, sql, bind_value_list)
         except pymysql.Error as e:
-            last_executed = ''
-            if '_last_executed' in db_cursor:
-                last_executed = db_cursor._last_executed
+            last_executed = sql % (bind_value_list)
+            if self._db_con.open is True and db_cursor is not None and db_cursor._executed is not None:
+                last_executed = db_cursor._executed
             raise AppException("999-00003", [self._db, last_executed, e])
 
         data_list = list(db_cursor.fetchall())  # counter plan for 0 data
@@ -216,7 +216,7 @@ class DBConnectCommon:
 
         return data_list
 
-    def __sql_debug(self, db_cursor):
+    def __sql_debug(self, db_cursor, sql, bind_value_list=[]):
         """
         print last_execute_sql
 
@@ -226,8 +226,10 @@ class DBConnectCommon:
         if os.environ.get("DEBUUG_SQL") != "1":
             return
 
-        if '_last_executed' in db_cursor:
-            print(db_cursor._last_executed)
+        last_executed = sql % (bind_value_list)
+        if self._db_con.open is True and db_cursor is not None and db_cursor._executed is not None:
+            last_executed = db_cursor._executed
+        print(last_executed)
 
     def table_columns_get(self, table_name):
         """
@@ -570,7 +572,8 @@ class DBConnectCommon:
             'DB_ADMIN_USER': g.db_connect_info.get('ORGDB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': g.db_connect_info.get('ORGDB_ADMIN_PASSWORD'),
             'DB_DATABASE': g.db_connect_info.get('ORGDB_DATABASE'),
-            'INITIAL_DATA_ANSIBLE_IF': g.db_connect_info.get('INITIAL_DATA_ANSIBLE_IF')
+            'INITIAL_DATA_ANSIBLE_IF': g.db_connect_info.get('INITIAL_DATA_ANSIBLE_IF'),
+            'NO_INSTALL_DRIVER': g.db_connect_info.get('NO_INSTALL_DRIVER')
         }
 
 
@@ -592,7 +595,6 @@ class DBConnectCommonRoot(DBConnectCommon):
 
         # connect database
         self.db_connect()
-
 
     def db_connect(self):
         """

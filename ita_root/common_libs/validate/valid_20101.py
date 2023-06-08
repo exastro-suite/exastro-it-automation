@@ -12,12 +12,16 @@
 # limitations under the License.
 from flask import g
 import os
+import inspect
 
 from common_libs.ansible_driver.classes.menu_required_check import AuthTypeParameterRequiredCheck
 from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
-from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.functions.util import getSpecialColumnVaule
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
+from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
+from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles
+from common_libs.common.exception import AppException
 
 def external_valid_menu_before(objdbca, objtable, option):
     """
@@ -31,6 +35,9 @@ def external_valid_menu_before(objdbca, objtable, option):
         msg :エラーメッセージ
         option :受け取ったもの
     """
+    # /tmpに作成したファイル・ディレクトリパスを保存するファイル名
+    g.AnsibleCreateFilesPath = "{}/{}_{}".format(get_OSTmpPath(), os.path.basename(inspect.currentframe().f_code.co_filename), os.getpid())
+
     retBool = True
     msg = ''
     ret_str_body = ''
@@ -178,18 +185,27 @@ def external_valid_menu_before(objdbca, objtable, option):
     if in_string is None:
         in_string = ""
 
-    # YAMLcheck処理
-    tmpFile = "{}/InventryFileAddOptionYamlParse_{}".format(get_AnsibleDriverTmpPath(), os.getpid())
-    with open(tmpFile, "w") as fd:
-        fd.write(in_string)
-    obj = YamlParse()
-    ret = obj.Parse(tmpFile)
-    os.remove(tmpFile)
-    if ret is False:
-        retBool = False
-        if len(msg) != 0:
-            msg += "\n"
-        error_detail = obj.GetLastError()
-        msg += g.appmsg.get_api_message("MSG-10887", [error_detail])
-
-    return retBool, msg, option
+    try:
+        # YAMLcheck処理
+        tmpFile = "{}/InventryFileAddOptionYamlParse_{}".format(get_OSTmpPath(), os.getpid())
+        # /tmpに作成したファイルはゴミ掃除リストに追加
+        addAnsibleCreateFilesPath(tmpFile)
+        with open(tmpFile, "w") as fd:
+            fd.write(in_string)
+        obj = YamlParse()
+        ret = obj.Parse(tmpFile)
+        os.remove(tmpFile)
+        if ret is False:
+            retBool = False
+            if len(msg) != 0:
+                msg += "\n"
+            error_detail = obj.GetLastError()
+            msg += g.appmsg.get_api_message("MSG-10887", [error_detail])
+        return retBool, msg, option
+    except AppException as e:
+        raise AppException(e)
+    except Exception as e:
+        raise Exception(e)
+    finally:
+        # /tmpをゴミ掃除
+        rmAnsibleCreateFiles()

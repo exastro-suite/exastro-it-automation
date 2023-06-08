@@ -76,7 +76,7 @@ def get_target_menu(objdbca):
 
         # メニュー・テーブル紐付テーブルを検索:SQL実行
         menu_table_link_table = MenuTableLinkTable(objdbca)  # noqa: F405
-        sql = menu_table_link_table.create_sselect("WHERE DISUSE_FLAG = '0'")
+        sql = menu_table_link_table.create_sselect("WHERE DISUSE_FLAG = '0' AND HOSTGROUP = '1' ")
         result = menu_table_link_table.select_table(sql)
         if result is False:
             tmp_msg = 'select table error MenuTableLinkTable'
@@ -107,6 +107,10 @@ def get_target_menu(objdbca):
 
             input_menu_name_rest = [tmt.get("MENU_NAME_REST") for tmt in menu_list_array if tmt.get("MENU_ID") == split_target['INPUT_MENU_ID']]
             output_menu_name_rest = [tmt.get("MENU_NAME_REST") for tmt in menu_list_array if tmt.get("MENU_ID") == split_target['OUTPUT_MENU_ID']]
+
+            # メニュー廃止済みの場合はスキップ
+            if len(input_menu_name_rest) == 0 or len(output_menu_name_rest) == 0:
+                continue
 
             # 縦メニュー
             if input_vertical[0] == '1' and output_vertical[0] == '1':
@@ -141,12 +145,12 @@ def get_target_menu(objdbca):
         return True, target_array
 
     except Exception as e:
-        tmp_msg = 'get_target_menu end: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        tmp_msg = g.appmsg.get_log_message("BKY-70009", ['get_target_menu'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, []
 
 
@@ -168,7 +172,20 @@ def make_tree(objdbca, hierarchy=0):
 
         # ホストグループ親子紐付テーブルを検索:SQL実行
         hostLinkListTable = HostLinkListTable(objdbca)  # noqa: F405
-        sql = hostLinkListTable.create_sselect("WHERE DISUSE_FLAG = '0'")
+        # sql = hostLinkListTable.create_sselect("WHERE DISUSE_FLAG = '0'")
+        sql = textwrap.dedent("""
+            SELECT
+                `TAB_A`.*
+            FROM
+                `T_HGSP_HOST_LINK_LIST` `TAB_A`
+            LEFT JOIN `T_HGSP_HOSTGROUP_LIST` `TAB_B`
+                ON ( `TAB_A`.`PA_HOSTGROUP` = `TAB_B`.`ROW_ID` )
+            LEFT JOIN `T_HGSP_HOSTGROUP_LIST` `TAB_C`
+                ON ( `TAB_A`.`CH_HOSTGROUP` = `TAB_C`.`ROW_ID` )
+            WHERE `TAB_A`.DISUSE_FLAG = '0'
+            AND `TAB_B`.`DISUSE_FLAG` = '0'
+            AND `TAB_C`.`DISUSE_FLAG` = '0'
+        """).format().strip()
         result = hostLinkListTable.select_table(sql)
         if result is False:
             tmp_msg = 'select table error HostLinkListTable'
@@ -316,12 +333,12 @@ def make_tree(objdbca, hierarchy=0):
         return True, tree_array, hierarchy
 
     except Exception as e:
-        tmp_msg = 'tree_array end: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        tmp_msg = g.appmsg.get_log_message("BKY-70009", ['make_tree'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, tree_array, hierarchy
 
 
@@ -497,11 +514,11 @@ def split_host_grp(hgsp_config, hgsp_data):
         # 対象ホスト、ホストグループ-オペレーション
         tmp_msg = "target hostgroup-operation"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array]
+        tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array if _t['HOST_ID'] in hgsp_config['alllist']]
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_msg = "target hostgroup-operation id->name"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array]
+        tmp_msg = [[hgsp_config['alllist'][_t['HOST_ID']], _t['OPERATION_NAME']] for _t in input_data_array if _t['HOST_ID'] in hgsp_config['alllist']]
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # オペレーションID毎にホストデータ作成(基準日時->オペレーション名:昇順)
@@ -572,7 +589,7 @@ def split_host_grp(hgsp_config, hgsp_data):
         for output_data in output_data_array:
             # 分割データにある場合は廃止しない
             hold_key = create_hold_key(vertical_flg, output_data.get('HOST_ID'), output_data.get('OPERATION_ID'), output_data.get('INPUT_ORDER'))
-            if hold_key in hold_host_id:
+            if hold_key in hold_host_id and output_data.get('HOST_ID') not in host_group_id_list:
                 tmp_msg = 'not discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
@@ -651,16 +668,16 @@ def split_host_grp(hgsp_config, hgsp_data):
         return True, hgsp_data
 
     except Exception as e:
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
 
         if tranStartFlg is True:
             # ロールバック
             result = objdbca.db_transaction_end(False)
             tmp_msg = 'db_transaction_end rollback: {}'.format(result)
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         return False, hgsp_data
 
@@ -1120,12 +1137,13 @@ def make_host_data(hgsp_config, hgsp_data):
                     if host_data['DATA']['HOST_ID'] == parent_id \
                             or host_data['DATA']['HOST_ID'] in tree_array[match_parent_kykey_idx]['ALL_PARENT_IDS'] is not False:
 
-                        # if "" == host_data['OPERATION'][parent_id_Key] \
-                        #         or host_data['DATA']['OPERATION_ID'] in host_data['OPERATION']:
-                        #     opematch_flg = True
-                        if len(host_data['OPERATION']) >= parent_id_Key \
-                                or host_data['DATA']['OPERATION_ID'] in host_data['OPERATION']:
-                            opematch_flg = True
+                        if len(host_data['OPERATION']) >= parent_id_Key:
+                            if host_data['OPERATION'][parent_id_Key] is None:
+                                opematch_flg = True
+                            elif host_data['DATA']['OPERATION_ID'] in host_data['OPERATION']:
+                                opematch_flg = True
+                            else:
+                                pass
 
             if opematch_flg is False:
                 continue
@@ -1229,7 +1247,8 @@ def make_host_data(hgsp_config, hgsp_data):
 
             if match_flg is False:
                 if host_data['DATA'].get('OPERATION_ID') not in host_data['OPERATION']:
-                    continue
+                    if None not in host_data['OPERATION']:
+                        continue
 
                 # 保有しているホストIDを退避しておく
                 hold_key = create_hold_key(
@@ -1297,12 +1316,12 @@ def make_host_data(hgsp_config, hgsp_data):
         return True, hgsp_config, hgsp_data
 
     except Exception as e:
-        tmp_msg = 'make_host_data End: Exception'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        tmp_msg = g.appmsg.get_log_message("BKY-70009", ['make_host_data'])
+        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, hgsp_config, hgsp_data
 
 
@@ -1356,10 +1375,10 @@ def get_file_columns_info(objdbca, input_table, output_table):
         return True, result
 
     except Exception as e:
-        g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.error(msg)
+        g.applogger.info(msg)
         return False, []
 
 
@@ -1449,31 +1468,31 @@ def copy_upload_file(copy_file_array):
 
         except Exception as e:
             tmp_msg = e
-            g.applogger.error(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             try:
                 # パス回復
                 # シンボリックリンク解除
                 if os.path.islink(copy_file['link']):
-                    tmp_msg = 'unlink: {}'.format(copy_file['link'])
+                    tmp_msg = g.appmsg.get_log_message("BKY-70010", [copy_file['link']])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     os.unlink(copy_file['link'])
 
                 # シンボリックリンク作成
-                tmp_msg = 'symlink src:{} link:{}'.format(copy_file['dest'], copy_file['link'])
+                tmp_msg = g.appmsg.get_log_message("BKY-70011", [copy_file['dest'], copy_file['link']])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 os.symlink(copy_file['old_dest'], copy_file['link'])  # noqa: F405
             except Exception as e:
                 tmp_msg = e
-                g.applogger.error(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                tmp_msg = 'path recovery failed :{}->{}'.format(copy_file['link'], copy_file['old_dest'])
-                g.applogger.error(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                tmp_msg = g.appmsg.get_log_message("BKY-70012", [copy_file['link'], copy_file['old_dest']])
+                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     return True
 
 
 # ホストグループ分割対象のフラグ更新:全メニュー DIVIDED_FLG 1->0
 def reset_split_target_flg(objdbca):
     """
-    update_split_target_flg: ホストグループ分割対象のフラグ更新:全メニュー DIVIDED_FLG 1->0
+    reset_split_target_flg: ホストグループ分割対象のフラグ更新:全メニュー DIVIDED_FLG 1->0
     Args:
         objdbca:
     Returns:
@@ -1492,10 +1511,10 @@ def reset_split_target_flg(objdbca):
     return True
 
 
-# ホストグループ分割対象のフラグ更新:対象メニュー DIVIDED_FLG 1->0
+# ホストグループ分割対象のフラグ更新:対象メニュー DIVIDED_FLG
 def update_split_target_flg(objdbca, target_row_id, divided_flg):
     """
-    update_split_target_flg: ホストグループ分割対象のフラグ更新:対象メニュー DIVIDED_FLG 1->0
+    update_split_target_flg: ホストグループ分割対象のフラグ更新:対象メニュー DIVIDED_FLG
     Args:
         objdbca:
         target_row_id:

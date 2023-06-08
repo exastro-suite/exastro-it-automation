@@ -12,6 +12,7 @@
 # limitations under the License.
 #
 # from flask import g
+from common_libs.common.exception import AppException
 import json
 import re
 import copy
@@ -27,8 +28,8 @@ def get_type_info(wsDb, TFConst, type_id):
     if len(rows) > 0:
         type_info = rows[0]
     else:
-        # 異常
-        pass
+        # Failed to get Master datas(table_name:{}, condition:{})
+        raise AppException("BKY-52011", [TFConst.T_TYPE_MASTER, condition])
 
     return type_info
 

@@ -1,11 +1,11 @@
 import os
 import re
 from flask import g
-
-from common_libs.ansible_driver.functions.util import get_AnsibleDriverTmpPath
 from common_libs.ansible_driver.classes.CheckAnsibleRoleFiles import YAMLFileAnalysis
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.VarStructAnalJsonConvClass import VarStructAnalJsonConv
+from common_libs.ansible_driver.functions.util import get_OSTmpPath
+from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 
 
 def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, var_struct_string, vars_list, array_vars_list, LCA_vars_use, array_vars_use, GBL_vars_info, var_val_list):
@@ -21,7 +21,10 @@ def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, va
     LCA_vars_use = False
     array_vars_use = False
     # 変数定義を一時ファイルに保存
-    tmp_file_name = "{}/TemplateVarList_{}.yaml".format(get_AnsibleDriverTmpPath(), os.getpid())
+    tmp_file_name = "{}/TemplateVarList_{}.yaml".format(get_OSTmpPath(), os.getpid())
+    # /tmpに作成したファイルはゴミ掃除リストに追加
+    addAnsibleCreateFilesPath(tmp_file_name)
+
     fd = open(tmp_file_name, 'w')
     fd.write(var_struct_string)
     fd.close()

@@ -182,11 +182,24 @@ class MainFunctions():
             if len(MenuTblLinkLists) == 0:
                 # メニュー・テーブル紐付にメニューが未登録です。 (メニュー:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100019", [DelList["MENU_NAME"]])
-                g.applogger.error(FREE_LOG)
+                g.applogger.debug(FREE_LOG)
                 self.warning_flag = True
                 continue
 
             MenuTblLinkList = MenuTblLinkLists[0]
+
+            # テーブル名を取得　該当テーブル(view定義がある場合は、View)定義にOPERATION_IDのカラムがあるか確認
+            tgt_table = MenuTblLinkList["TABLE_NAME"]
+            if MenuTblLinkList["VIEW_NAME"]:
+                tgt_table = MenuTblLinkList["VIEW_NAME"]
+            table_columns = self.ws_db.table_columns_get(tgt_table)
+            if self.operation_id_column_name not in table_columns[0]:
+                # メニュー・テーブル紐付にメニューが未登録です。 (メニュー:{})
+                FREE_LOG = g.appmsg.get_api_message("MSG-100014", [DelList["MENU_NAME"]])
+                g.applogger.debug(FREE_LOG)
+                self.warning_flag = True
+                continue
+
             tbl_info['HISTORY_TABLE_FLAG'] = MenuTblLinkList['HISTORY_TABLE_FLAG']
             tbl_info['FILE_UPLOAD_COLUMNS'] = []
             if DelList['DATA_STORAGE_PATH']:
@@ -199,7 +212,7 @@ class MainFunctions():
             if len(MenuColLinkLists) == 0:
                 # メニュー・カラム紐付にカラム情報が未登録です。(メニュー:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
-                g.applogger.error(FREE_LOG)
+                g.applogger.debug(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -217,7 +230,7 @@ class MainFunctions():
             if MenuTblLinkList['PK_COLUMN_NAME_REST'] not in RestNameConfig:
                 # メニュー・カラム紐付にカラム情報が未登録です。(メニュー:{})
                 FREE_LOG = g.appmsg.get_api_message("MSG-100018", [DelList["MENU_NAME"]])
-                g.applogger.error(FREE_LOG)
+                g.applogger.debug(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -227,7 +240,7 @@ class MainFunctions():
             if self.is_int(tbl_info['LG_DAYS']) is False:
                 # オペレーション削除管理の項番[{}]：論理削除日数[{}]が妥当ではありません。
                 FREE_LOG = g.appmsg.get_api_message("MSG-100012", [DelList["ROW_ID"], DelList["LG_DAYS"]])
-                g.applogger.error(FREE_LOG)
+                g.applogger.debug(FREE_LOG)
                 self.warning_flag = True
                 continue
 
@@ -237,15 +250,7 @@ class MainFunctions():
             if self.is_int(tbl_info['PH_DAYS']) is False:
                 # オペレーション削除管理の項番[{}]：物理削除日数[{}]が妥当ではありません。
                 FREE_LOG = g.appmsg.get_api_message("MSG-100013", [DelList["ROW_ID"], DelList["PH_DAYS"]])
-                g.applogger.error(FREE_LOG)
-                self.warning_flag = True
-                continue
-
-            # 廃止までの日数と物理削除までの日数の妥当性チェック
-            if tbl_info['LG_DAYS'] >= tbl_info['PH_DAYS']:
-                # オペレーション削除管理の項番[{}]：（論理削除日数[{}]＞＝物理削除日数[{}]）になっています。
-                FREE_LOG = g.appmsg.get_api_message("MSG-100014", [DelList["ROW_ID"], DelList["LG_DAYS"], DelList["PH_DAYS"]])
-                g.applogger.error(FREE_LOG)
+                g.applogger.debug(FREE_LOG)
                 self.warning_flag = True
                 continue
 

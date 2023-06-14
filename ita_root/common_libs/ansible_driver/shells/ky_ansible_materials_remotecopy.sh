@@ -32,6 +32,7 @@
 #    RAS_FILE_PASSWD: 鍵認証ファイル パスフレーズ
 #                     パスフレーズなし: undefine
 #    BASE_DIR:        ita-rootパス
+#    PORT:            PORT番号
 #  <<exit code>>
 #    0:   正常
 #    他:　異常
@@ -51,6 +52,7 @@ do
     export RAS_FILE=${KEY_FILE_PATH}
     export RAS_FILE_PASSWD=${LINE[7]}
     export BASE_DIR=${LINE[8]}
+    export PORT=${LINE[9]}
     break
 done < ${FILE}
 ## 鍵認証ファイル パスフレーズが設定されている場合にssh-agentにパスフレーズ登録

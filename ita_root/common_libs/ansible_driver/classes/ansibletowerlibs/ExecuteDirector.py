@@ -615,7 +615,7 @@ class ExecuteDirector():
             src_path = srcBasePath
             dest_path = self.getMaterialsTransferDestinationPath("ExastroPath", execution_no)
             info = (
-                "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n"
+                "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n"
             ) % (
                 credential['host_name'],
                 credential['auth_type'],
@@ -626,7 +626,8 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 os.environ.get("PYTHONPATH", "/exastro"),
-                "ITA"
+                "ITA",
+                credential['ssh_port_str']
             )
 
             try:
@@ -739,14 +740,15 @@ class ExecuteDirector():
             if os.path.isfile(tmp_TowerInfo_File):
                 os.unlink(tmp_TowerInfo_File)
 
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
                 credential['password'],
                 credential['ssh_key_file'],
                 dest_path, credential['ssh_key_file_pass'],
-                root_dir_path
+                root_dir_path,
+                credential['ssh_port_str']
             )
 
             try:
@@ -809,7 +811,7 @@ class ExecuteDirector():
             if AnscConst.DF_SCP_CONDUCTOR_ITA_PATH in self.vg_TowerProjectsScpPathArray:
                 src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_CONDUCTOR_TOWER_PATH]
                 dest_path = os.path.dirname(self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_CONDUCTOR_ITA_PATH])
-                info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+                info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                     credential['host_name'],
                     credential['auth_type'],
                     credential['username'],
@@ -819,7 +821,8 @@ class ExecuteDirector():
                     dest_path,
                     credential['ssh_key_file_pass'],
                     root_dir_path,
-                    "TOWER"
+                    "TOWER",
+                    credential['ssh_port_str']
                 )
 
                 try:
@@ -859,7 +862,7 @@ class ExecuteDirector():
             ########################################################################################################
             src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH] + "/*";
             dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_ITA_PATH]
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
@@ -869,7 +872,8 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 root_dir_path,
-                "TOWER"
+                "TOWER",
+                credential['ssh_port_str']
             )
 
             try:
@@ -910,7 +914,7 @@ class ExecuteDirector():
             ########################################################################################################
             src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_TOWER_PATH]
             dest_path = os.path.dirname(self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_ITA_PATH])
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
@@ -920,7 +924,8 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 root_dir_path,
-                "TOWER"
+                "TOWER",
+                credential['ssh_port_str']
             )
 
             try:
@@ -960,7 +965,7 @@ class ExecuteDirector():
             ########################################################################################################
             src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_FILE_TOWER_PATH]
             dest_path = os.path.dirname(self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_FILE_ITA_PATH])
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
@@ -970,7 +975,8 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 root_dir_path,
-                "TOWER"
+                "TOWER",
+                credential['ssh_port_str']
             )
 
             try:
@@ -1025,6 +1031,12 @@ class ExecuteDirector():
 
         chkobj = AuthTypeParameterRequiredCheck()
         for row in rows:
+            # sshポート番号のデフォルト値設定
+            if not row['ANSTWR_PORT']:
+                ssh_port_str = "22"
+            else:
+                ssh_port_str = str(row['ANSTWR_PORT'])
+
             if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] == 1:
                 node_type = AnscConst.DF_EXECUTE_NODE
 
@@ -1097,7 +1109,8 @@ class ExecuteDirector():
                 "password": password,
                 "ssh_key_file": sshKeyFile,
                 "ssh_key_file_pass": sshKeyFilePass,
-                "node_type": node_type
+                "node_type": node_type,
+                "ssh_port_str": ssh_port_str
             }
 
             TowerHostList.append(credential)

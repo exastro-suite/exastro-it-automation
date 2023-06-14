@@ -26,9 +26,10 @@
 #    PASSWD:          パスワード
 #    KEY_FILE_PATH:   鍵認証ファイル
 #    DEST_PATH:       ファイル転送先パス
+#    PORT:            ポート番号
 #  <<exit code>>
 #    0:   正常
-#    他:　異常 
+#    他:　異常
 ######################################################################
 set HOST             $env(HOST)
 set TYPE             $env(TYPE)
@@ -36,12 +37,13 @@ set USER             $env(USER)
 set PASSWD           $env(PASSWD)
 set KEY_FILE_PATH    " "
 set DEST_PATH        $env(DEST_PATH)
+set PORT             $env(PORT)
 if { ${TYPE} == "key" } {
    set KEY_FILE_PATH    $env(KEY_FILE_PATH)
 }
 set timeout 120
 if { ${TYPE} == "pass" } {
-    spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${USER}@${HOST} /bin/rm -rf ${DEST_PATH}
+    spawn ssh -p ${PORT} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${USER}@${HOST} /bin/rm -rf ${DEST_PATH}
     expect "assword:" {
         send "${PASSWD}\n"
         exp_continue
@@ -62,7 +64,7 @@ if { ${TYPE} == "pass" } {
        exit ${STATUS}
     }
 } elseif { ${TYPE} == "key" } {
-    spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${KEY_FILE_PATH} ${USER}@${HOST} /bin/rm -rf ${DEST_PATH}
+    spawn ssh -p ${PORT} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${KEY_FILE_PATH} ${USER}@${HOST} /bin/rm -rf ${DEST_PATH}
     expect "assword:" {
         exit 201
     } "(yes/no)?" {
@@ -82,7 +84,7 @@ if { ${TYPE} == "pass" } {
     }
 }
 if { ${TYPE} == "none" } {
-    spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${USER}@${HOST} /bin/rm -rf ${DEST_PATH}
+    spawn ssh -p ${PORT} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${USER}@${HOST} /bin/rm -rf ${DEST_PATH}
     expect "password:" {
         exit 201
     } "(yes/no)?" {

@@ -1164,7 +1164,8 @@ def backup_table(objdbca, sqldump_path, menu_name_rest_list):
         if history_table_flag == '1':
             table_name_list.append(table_name + '_JNL')
 
-    cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", db_database]
+    cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", "--set-gtid-purged=OFF", db_database]
+
     cmd += table_name_list
 
     sp_sqldump = subprocess.run(cmd, capture_output=True, text=True)
@@ -1174,8 +1175,10 @@ def backup_table(objdbca, sqldump_path, menu_name_rest_list):
         log_msg_args = [msg]
         api_msg_args = [msg]
         raise AppException("499-00201", [log_msg_args], [api_msg_args])
+
+    sqldump_result = re.sub(r'DEFINER[ ]*=[ ]*[^*]*\*/', r'*/', sp_sqldump.stdout)
     with open(sqldump_path, 'w', encoding='utf-8') as f:
-        f.write(sp_sqldump.stdout)
+        f.write(sqldump_result)
 
     g.applogger.debug("backup_table end")
     return menu_id_list

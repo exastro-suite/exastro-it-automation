@@ -274,12 +274,14 @@ def execute_menu_bulk_export(objdbca, menu, body):
         if objmenu.get_objtable() is False:
             log_msg_args = ["not menu or table"]
             api_msg_args = ["not menu or table"]
-            raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+            raise AppException("401-00001", log_msg_args, api_msg_args)  # noqa: F405
 
         body_specified_time = None
         body_mode = body.get('mode')
         body_abolished_type = body.get('abolished_type')
         if body_mode == '2':
+            if body.get('specified_timestamp') == '':
+                raise AppException("499-01501")  # noqa: F405
             body_specified_time = body.get('specified_timestamp')
 
         # 『ステータスマスタ』テーブルから対象のデータを取得
@@ -353,10 +355,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
     except Exception as e:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
-
-        result_code = e.args[0]
-        msg_args = e.args[1]
-        return False, result_code, msg_args, None
+        raise e
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')

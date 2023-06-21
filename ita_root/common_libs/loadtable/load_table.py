@@ -113,7 +113,7 @@ class loadTable():
 
     """
 
-    def __init__(self, objdbca='', menu='', dp_mode=False):
+    def __init__(self, objdbca='', menu=''):
         # コンストラクタ
         # メニューID
         self.menu = menu
@@ -147,7 +147,6 @@ class loadTable():
         self.column_list = ''
 
         # メニュー関連情報
-        self.dp_mode = dp_mode
         self.objtable = {}
         if self.menu is not None:
             self.objtable = self.get_menu_info()
@@ -366,12 +365,9 @@ class loadTable():
             SELECT * FROM `T_COMN_MENU_TABLE_LINK` `TAB_A`
             LEFT JOIN `T_COMN_MENU` `TAB_B` ON ( `TAB_A`.`MENU_ID` = `TAB_B`.`MENU_ID` )
             WHERE `TAB_B`.`MENU_NAME_REST` = %s
+            AND `TAB_A`.`DISUSE_FLAG` <> 1
+            AND `TAB_B`.`DISUSE_FLAG` <> 1
         """).format(menu=self.menu).strip()
-        if self.dp_mode is False:
-            query_str += textwrap.dedent("""
-                AND `TAB_A`.`DISUSE_FLAG` <> 1
-                AND `TAB_B`.`DISUSE_FLAG` <> 1
-            """).strip()
         tmp_menu_info = self.objdbca.sql_execute(query_str, [self.menu])
         if len(tmp_menu_info) == 0:
             status_code = '401-00003'
@@ -391,12 +387,9 @@ class loadTable():
             FROM `T_COMN_MENU_COLUMN_LINK` `TAB_A`
             LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_B` ON ( `TAB_A`.`COLUMN_CLASS` = `TAB_B`.`COLUMN_CLASS_ID` )
             WHERE `MENU_ID` = '{menu_id}'
+            AND `TAB_A`.`DISUSE_FLAG` <> 1
+            AND `TAB_B`.`DISUSE_FLAG` <> 1
         """).format(menu_id=menu_id).strip()
-        if self.dp_mode is False:
-            query_str += textwrap.dedent("""
-                AND `TAB_A`.`DISUSE_FLAG` <> 1
-                AND `TAB_B`.`DISUSE_FLAG` <> 1
-            """).strip()
         tmp_cols_info = self.objdbca.sql_execute(query_str)
         if len(tmp_cols_info) == 0:
             status_code = '401-00003'
@@ -1562,6 +1555,7 @@ class loadTable():
 
             for rest_key in list(entry_parameter.keys()):
                 if self.chk_restkey(rest_key) is not True:
+                    retBool = False
                     status_code = 'MSG-00026'
                     msg_args = [rest_key]
                     msg = g.appmsg.get_api_message(status_code, msg_args)
@@ -2538,12 +2532,12 @@ class loadTable():
                             if isinstance(bindkeys, str):
                                 bindkey = bindkeys
                                 tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                if filter_query.get('bindvalue').get(bindkey):
+                                if filter_query.get('bindvalue').get(bindkey) is not None:
                                     bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             elif isinstance(bindkeys, list):
                                 for bindkey in bindkeys:
                                     tmp_where_str = tmp_where_str.replace(bindkey, '%s')
-                                    if filter_query.get('bindvalue').get(bindkey):
+                                    if filter_query.get('bindvalue').get(bindkey) is not None:
                                         bind_value_list.append(filter_query.get('bindvalue').get(bindkey))
                             where_str = where_str + tmp_where_str
 

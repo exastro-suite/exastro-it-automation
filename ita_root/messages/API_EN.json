@@ -103,7 +103,7 @@
     "499-01304": "Failed to import excel.",
     "499-01305": "There are no importable menus.",
     "499-01401": "Service name and log level are invalid. ({}:{})",
-    "499-01501": "If the mode is time specification, specify the time.",
+    "499-01501": "If the mode is time specification, specify the correct time.",
     "999-00001": "System Error",
     "999-00002": "System Error",
     "999-00003": "System Error",

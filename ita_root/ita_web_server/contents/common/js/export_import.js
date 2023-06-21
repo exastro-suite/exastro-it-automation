@@ -441,7 +441,11 @@ exportEvents() {
                     const filter = { execution_no: { NORMAL: result.execution_no } };
                     window.location.href = `?menu=${manage}&filter=${fn.filterEncode( filter )}`;
                 }).catch(function( error ){
-                    alert( error );
+                    if ( fn.typeof( error ) === 'object' && error.message ) {
+                        alert( error.message );
+                    } else {
+                        alert( error )
+                    }
                     process.close();
                     process = null;
                 });

@@ -280,7 +280,11 @@ def execute_menu_bulk_export(objdbca, menu, body):
         body_mode = body.get('mode')
         body_abolished_type = body.get('abolished_type')
         if body_mode == '2':
-            if body.get('specified_timestamp') == '':
+            # 日付のフォーマットチェック
+            chk_date = body.get('specified_timestamp')
+            try:
+                chk_date = datetime.datetime.strptime(chk_date, '%Y/%m/%d %H:%M')
+            except Exception:
                 raise AppException("499-01501")  # noqa: F405
             body_specified_time = body.get('specified_timestamp')
 

@@ -98,6 +98,7 @@
     "499-01207": "The target Remote repository file is not registered. (File link item number:{} Remote repository file item number:{})",
     "499-01208": "The target Remote repository is not registered. (File link item number:{} Remote repository item number:{})",
     "499-01401": "Service name and log level are invalid. ({}:{})",
+    "499-01501": "If the mode is time specification, specify the time.",
     "999-00001": "[Database Error] Database({}) connect infomation is not found",
     "999-00002": "[Database Error] Database({}) : {}",
     "999-00003": "[Database Error] Database({}) SQL:{}, {}",

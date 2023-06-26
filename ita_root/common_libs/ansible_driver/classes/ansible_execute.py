@@ -87,7 +87,7 @@ class AnsibleExecute():
             execute_user:      実行ユーザー
                                空白(2.0以降用)
             ansible_path:      ansibleインストールパス:
-                               T_ANSC_IF_INFO.ANSIBLE_CORE_PATH
+                               /usr/local/bin固定
             vault_password:    vaultパスワード:
                                T_ANSC_IF_INFO.ANSIBLE_VAULT_PASSWORD
             run_mode:          実行種別:

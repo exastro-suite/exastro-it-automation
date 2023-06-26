@@ -324,6 +324,37 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                             tmp_msg = "CREATE VIEW END: {}".format(view_data_path)
                             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+                        if history_table_flag == '1':
+                            view_name_jnl = view_name + '_JNL'
+                            tmp_msg = "check information_schema.views START: {}".format(view_name_jnl)
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                            chk_view_sql = " SELECT TABLE_NAME FROM information_schema.views WHERE `TABLE_NAME` = %s "
+                            chk_view_rtn = objdbca.sql_execute(chk_view_sql, [view_name_jnl])
+
+                            tmp_msg = "check information_schema.views END: {}".format(view_name_jnl)
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            if len(chk_view_rtn) != 0:
+                                tmp_msg = "DROP VIEW START: {}".format(view_name_jnl)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                                drop_view_sql = "DROP VIEW IF EXISTS `{}`".format(view_name_jnl)
+                                objdbca.sql_execute(drop_view_sql, [])
+
+                                tmp_msg = "DROP VIEW END: {}".format(view_name_jnl)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                            # DBデータファイル読み込み
+                            view_data_path = execution_no_path + '/' + view_name_jnl
+                            if os.path.isfile(view_data_path):
+                                tmp_msg = "CREATE VIEW START: {}".format(view_data_path)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                                objdbca.sqlfile_execute(view_data_path)
+
+                                tmp_msg = "CREATE VIEW END: {}".format(view_data_path)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
             objmenu = _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
             if history_table_flag == '1':
                 _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
@@ -858,6 +889,10 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             table_definition_id_list.append(record.get('TABLE_DEFINITION_ID'))
             table_name = record.get('TABLE_NAME')
             table_name_list.append(table_name)
+            history_table_flag = record.get('HISTORY_TABLE_FLAG')
+            if history_table_flag == '1':
+                table_name_list.append(table_name + '_JNL')
+
             if table_name.startswith('T_CMDB'):
                 view_name = record.get('VIEW_NAME')
                 if view_name is not None:
@@ -871,9 +906,19 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                     view_data_path = dir_path + '/' + view_name
                     with open(view_data_path, "w") as f:
                         f.write(create_view_str)
-            history_table_flag = record.get('HISTORY_TABLE_FLAG')
-            if history_table_flag == '1':
-                table_name_list.append(table_name + '_JNL')
+
+                if history_table_flag == '1':
+                    view_name_jnl = view_name + '_JNL'
+                    show_create_sql = 'SHOW CREATE VIEW `%s` ' % (view_name_jnl)
+                    rec = objdbca.sql_execute(show_create_sql, [])
+                    create_view_str = rec[0]['Create View']
+                    # Create文から余計な文言を切り取る
+                    end_pos = create_view_str.find(' VIEW ')
+                    create_view_str = create_view_str[:6] + create_view_str[end_pos:]
+                    create_view_str = create_view_str.replace('CREATE VIEW', 'CREATE OR REPLACE VIEW')
+                    view_data_path = dir_path + '/' + view_name_jnl
+                    with open(view_data_path, "w") as f:
+                        f.write(create_view_str)
 
         db_user = os.environ.get('DB_ADMIN_USER')
         db_password = os.environ.get('DB_ADMIN_PASSWORD')

@@ -4464,7 +4464,8 @@ class CreateAnsibleExecFiles():
                 if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
                     self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
-                retAry = obj.Vault(self.lv_ans_if_info['ANSIBLE_CORE_PATH'],
+                # AnsibleのPATHは固定
+                retAry = obj.Vault("/usr/local/bin",
                                    self.getAnsibleExecuteUser(),
                                    VaultPasswordFilePath,
                                    in_pass,
@@ -4523,7 +4524,8 @@ class CreateAnsibleExecFiles():
                 if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
                     self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
-                retAry = obj.Vault(self.lv_ans_if_info['ANSIBLE_CORE_PATH'],
+                # AnsibleのPATHは固定
+                retAry = obj.Vault("/usr/local/bin",
                                    self.getAnsibleExecuteUser(),
                                    VaultPasswordFilePath,
                                    in_pass,

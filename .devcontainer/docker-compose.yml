@@ -68,8 +68,7 @@ services:
     ports:
       - "0.0.0.0:80:80"
   ita-mariadb:
-    # image: mariadb:10.4.8
-    image: mariadb
+    image: mariadb:10.4.8
     healthcheck:
       test: mysqladmin ping --silent && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;'
       interval: 3s
@@ -79,8 +78,9 @@ services:
       - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     environment:
       - TZ=Asia/Tokyo
-      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
-      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=password
+      # - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      # - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
       # - MARIADB_DATABASE=${MARIADB_DATABASE}
       # - MARIADB_USER=${MARIADB_USER}
       # - MARIADB_PASSWORD=${MARIADB_PASSWORD}

@@ -434,7 +434,8 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
         ansible_execute = AnsibleExecute()
         if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
             ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
-        retBool = ansible_execute.execute_construct(ansc_const, execution_no, conductor_instance_no, "", "", ans_if_info['ANSIBLE_CORE_PATH'], ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
+        # AnsibleのPATHは固定
+        retBool = ansible_execute.execute_construct(ansc_const, execution_no, conductor_instance_no, "", "", "/usr/local/bin", ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
 
         if retBool is True:
             execute_data["STATUS_ID"] = ansc_const.PROCESSING

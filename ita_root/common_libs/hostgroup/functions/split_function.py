@@ -751,27 +751,7 @@ def make_host_data(hgsp_config, hgsp_data):
             for tree_data in tree_array:
                 tree_data_key = tree_array.index(tree_data)
                 parent_ids_list = copy.deepcopy(tree_array[tree_data_key]['PARENT_IDS'])
-                operation_list = copy.deepcopy(tree_array[tree_data_key]['OPERATION'])
-                # 該当以外削除:OPERATION-PARENT_ID
-                if operation_list is None:
-                    pass
-                elif len(operation_list) != 0:
-                    parent_ids = []
-                    operation = []
-                    p_idx = 0
-                    for tmp_opid in operation_list:
-                        tmp_parent_id = parent_ids_list[p_idx]
-                        if tmp_opid == target_opid:
-                            operation.append(tmp_opid)
-                            parent_ids.append(tmp_parent_id)
-                        p_idx += 1
-                if len(parent_ids) != 0 and len(parent_ids) != 0:
-                    parent_ids_list = parent_ids
-                    operation_list = operation
-
-                tree_array[tree_data_key]['PARENT_IDS'] = copy.deepcopy(parent_ids_list)
                 tree_array[tree_data_key]['ALL_PARENT_IDS'] = copy.deepcopy(parent_ids_list)
-                tree_array[tree_data_key]['OPERATION'] = copy.deepcopy(operation_list)
                 if sameid_data.get('HOST_ID') == tree_data.get('HOST_ID'):
                     treematch_flg = True
                     tree_array[tree_data_key]['DATA'] = copy.deepcopy(sameid_data)

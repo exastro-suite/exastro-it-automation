@@ -69,12 +69,12 @@ def backyard_main(organization_id, workspace_id):
     for record in ret:
         execution_no = str(record.get('EXECUTION_NO'))
 
-        # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
-        objdbca.db_transaction_start()
-
         # バックアップファイルが存在する場合はリストア処理を実行する
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
+
+        # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
+        objdbca.db_transaction_start()
 
         status_id = "4"
         result, msg = _update_t_menu_export_import(objdbca, execution_no, status_id)
@@ -324,6 +324,37 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
                             tmp_msg = "CREATE VIEW END: {}".format(view_data_path)
                             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+                        if history_table_flag == '1':
+                            view_name_jnl = view_name + '_JNL'
+                            tmp_msg = "check information_schema.views START: {}".format(view_name_jnl)
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                            chk_view_sql = " SELECT TABLE_NAME FROM information_schema.views WHERE `TABLE_NAME` = %s "
+                            chk_view_rtn = objdbca.sql_execute(chk_view_sql, [view_name_jnl])
+
+                            tmp_msg = "check information_schema.views END: {}".format(view_name_jnl)
+                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            if len(chk_view_rtn) != 0:
+                                tmp_msg = "DROP VIEW START: {}".format(view_name_jnl)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                                drop_view_sql = "DROP VIEW IF EXISTS `{}`".format(view_name_jnl)
+                                objdbca.sql_execute(drop_view_sql, [])
+
+                                tmp_msg = "DROP VIEW END: {}".format(view_name_jnl)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                            # DBデータファイル読み込み
+                            view_data_path = execution_no_path + '/' + view_name_jnl
+                            if os.path.isfile(view_data_path):
+                                tmp_msg = "CREATE VIEW START: {}".format(view_data_path)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                                objdbca.sqlfile_execute(view_data_path)
+
+                                tmp_msg = "CREATE VIEW END: {}".format(view_data_path)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
             objmenu = _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
             if history_table_flag == '1':
                 _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
@@ -465,7 +496,7 @@ def _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, men
         export_workspace_id = Path(execution_no_path + '/WORKSPACE_ID').read_text(encoding='utf-8')
 
     # データを登録する
-    objmenu = load_table.loadTable(objdbca, menu_name_rest, dp_mode=True)   # noqa: F405
+    objmenu = load_table.loadTable(objdbca, menu_name_rest)   # noqa: F405
     pk = objmenu.get_primary_key()
 
     # パスワードカラムを取得する
@@ -477,6 +508,11 @@ def _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, men
             # pass_col_name = record['COL_NAME']
             pass_col_name_rest = record['COLUMN_NAME_REST']
             pass_column_list.append(pass_col_name_rest)
+
+    # トランザクション開始
+    debug_msg = g.appmsg.get_log_message("BKY-20004", [])
+    g.applogger.debug(debug_msg)
+    objdbca.db_transaction_start()
 
     for json_record in json_sql_data:
         file_param = json_record['file']
@@ -526,11 +562,7 @@ def _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, men
         tmp_msg = "Target register data: {}".format(parameters)
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        # トランザクション開始
-        debug_msg = g.appmsg.get_log_message("BKY-20004", [])
-        g.applogger.debug(debug_msg)
-        objdbca.db_transaction_start()
-
+        objmenu.reset_message()
         if param_type == 'Register':
             exec_result = objmenu.exec_maintenance(parameters, pk_value, "", True, False, True, False, True)  # noqa: E999
             if not exec_result[0]:
@@ -545,10 +577,10 @@ def _register_data(objdbca, workspace_id, execution_no_path, menu_name_rest, men
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
                 raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-        # コミット/トランザクション終了
-        debug_msg = g.appmsg.get_log_message("BKY-20005", [])
-        g.applogger.debug(debug_msg)
-        objdbca.db_transaction_end(True)
+    # コミット/トランザクション終了
+    debug_msg = g.appmsg.get_log_message("BKY-20005", [])
+    g.applogger.debug(debug_msg)
+    objdbca.db_transaction_end(True)
 
     return objmenu
 
@@ -568,8 +600,13 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
 
     # データを登録する
     if objmenu is None:
-        objmenu = load_table.loadTable(objdbca, menu_name_rest, dp_mode=True)   # noqa: F405
+        objmenu = load_table.loadTable(objdbca, menu_name_rest)   # noqa: F405
     pk = objmenu.get_primary_key()
+
+    # トランザクション開始
+    debug_msg = g.appmsg.get_log_message("BKY-20004", [])
+    g.applogger.debug(debug_msg)
+    objdbca.db_transaction_start()
 
     for json_record in json_sql_data:
         param = json_record['parameter']
@@ -599,20 +636,15 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
 
         colname_parameter = objmenu.convert_restkey_colname(param, [])
 
-        # トランザクション開始
-        debug_msg = g.appmsg.get_log_message("BKY-20004", [])
-        g.applogger.debug(debug_msg)
-        objdbca.db_transaction_start()
-
         if param_type == 'Register':
             result = objdbca.table_insert(table_name, colname_parameter, pk)
         elif param_type == 'Update':
             result = objdbca.table_update(table_name, colname_parameter, pk)
 
-        # コミット/トランザクション終了
-        debug_msg = g.appmsg.get_log_message("BKY-20005", [])
-        g.applogger.debug(debug_msg)
-        objdbca.db_transaction_end(True)
+    # コミット/トランザクション終了
+    debug_msg = g.appmsg.get_log_message("BKY-20005", [])
+    g.applogger.debug(debug_msg)
+    objdbca.db_transaction_end(True)
 
 
 def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name):
@@ -788,7 +820,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             filter_parameter = {}
         elif mode == '1' and abolished_type == '2':
             # 環境移行/廃止を含まない
-            filter_parameter = {"discard": {"LIST": ["0"]}}
+            filter_parameter = {"discard": {'NORMAL': '0'}}
             filter_parameter_jnl = {"DISUSE_FLAG": "0"}
         elif mode == '2' and abolished_type == '1':
             # 時刻指定/廃止を含む
@@ -796,12 +828,12 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             filter_parameter_jnl = {"LAST_UPDATE_TIMESTAMP": specified_time}
         elif mode == '2' and abolished_type == '2':
             # 時刻指定/廃止を含まない
-            filter_parameter = {"discard": {"LIST": ["0"]}, "last_update_date_time": {"RANGE": {'START': specified_time}}}
+            filter_parameter = {"discard": {'NORMAL': '0'}, "last_update_date_time": {"RANGE": {'START': specified_time}}}
             filter_parameter_jnl = {"DISUSE_FLAG": "0", "LAST_UPDATE_TIMESTAMP": specified_time}
 
         for menu in menu_list:
             DB_path = dir_path + '/' + menu
-            objmenu = load_table.loadTable(objdbca, menu, dp_mode=True)   # noqa: F405
+            objmenu = load_table.loadTable(objdbca, menu)   # noqa: F405
 
             if menu == 'movement_list_ansible_legacy':
                 filter_parameter["orchestrator"] = {"LIST": ['Ansible Legacy']}
@@ -857,6 +889,10 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             table_definition_id_list.append(record.get('TABLE_DEFINITION_ID'))
             table_name = record.get('TABLE_NAME')
             table_name_list.append(table_name)
+            history_table_flag = record.get('HISTORY_TABLE_FLAG')
+            if history_table_flag == '1':
+                table_name_list.append(table_name + '_JNL')
+
             if table_name.startswith('T_CMDB'):
                 view_name = record.get('VIEW_NAME')
                 if view_name is not None:
@@ -870,9 +906,19 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                     view_data_path = dir_path + '/' + view_name
                     with open(view_data_path, "w") as f:
                         f.write(create_view_str)
-            history_table_flag = record.get('HISTORY_TABLE_FLAG')
-            if history_table_flag == '1':
-                table_name_list.append(table_name + '_JNL')
+
+                if history_table_flag == '1':
+                    view_name_jnl = view_name + '_JNL'
+                    show_create_sql = 'SHOW CREATE VIEW `%s` ' % (view_name_jnl)
+                    rec = objdbca.sql_execute(show_create_sql, [])
+                    create_view_str = rec[0]['Create View']
+                    # Create文から余計な文言を切り取る
+                    end_pos = create_view_str.find(' VIEW ')
+                    create_view_str = create_view_str[:6] + create_view_str[end_pos:]
+                    create_view_str = create_view_str.replace('CREATE VIEW', 'CREATE OR REPLACE VIEW')
+                    view_data_path = dir_path + '/' + view_name_jnl
+                    with open(view_data_path, "w") as f:
+                        f.write(create_view_str)
 
         db_user = os.environ.get('DB_ADMIN_USER')
         db_password = os.environ.get('DB_ADMIN_PASSWORD')
@@ -1057,7 +1103,7 @@ def _create_objmenu(objdbca, menu_name_rest_list, target_menu):
     objmenu = None
     for menu_name_rest in menu_name_rest_list:
         if menu_name_rest == target_menu:
-            objmenu = load_table.loadTable(objdbca, target_menu, dp_mode=True)
+            objmenu = load_table.loadTable(objdbca, target_menu)
             break
     return objmenu
 
@@ -1164,7 +1210,8 @@ def backup_table(objdbca, sqldump_path, menu_name_rest_list):
         if history_table_flag == '1':
             table_name_list.append(table_name + '_JNL')
 
-    cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", db_database]
+    cmd = ["mysqldump", "--single-transaction", "--opt", "-u", db_user, "-p" + db_password, "-h", db_host, "--skip-column-statistics", "--set-gtid-purged=OFF", db_database]
+
     cmd += table_name_list
 
     sp_sqldump = subprocess.run(cmd, capture_output=True, text=True)
@@ -1174,8 +1221,10 @@ def backup_table(objdbca, sqldump_path, menu_name_rest_list):
         log_msg_args = [msg]
         api_msg_args = [msg]
         raise AppException("499-00201", [log_msg_args], [api_msg_args])
+
+    sqldump_result = re.sub(r'DEFINER[ ]*=[ ]*[^*]*\*/', r'*/', sp_sqldump.stdout)
     with open(sqldump_path, 'w', encoding='utf-8') as f:
-        f.write(sp_sqldump.stdout)
+        f.write(sqldump_result)
 
     g.applogger.debug("backup_table end")
     return menu_id_list

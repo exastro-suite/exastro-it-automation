@@ -93,6 +93,8 @@ def organization_create(body, organization_id):  # noqa: E501
             'DB_DATABASE': org_db_name,
             'DB_ADMIN_USER': os.environ.get('DB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': ky_encrypt(os.environ.get('DB_ADMIN_PASSWORD')),
+            'MONGODB_ADMIN_USER': os.environ.get('MONGODB_ADMIN_USER'),
+            'MONGODB_ADMIN_PASSWORD': ky_encrypt(os.environ.get('MONGODB_ADMIN_PASSWORD')),
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }

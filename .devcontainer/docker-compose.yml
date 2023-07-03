@@ -47,7 +47,7 @@ services:
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER}
-      - MONGODBDB_ADMIN_PASSWORD=${MONGODBDB_ADMIN_PASSWORD}
+      - MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}
       - GITLAB_PROTOCOL=${GITLAB_PROTOCOL:-http}
       - GITLAB_HOST=${GITLAB_HOST}
       - GITLAB_PORT=${GITLAB_PORT}
@@ -648,7 +648,7 @@ services:
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - MONGODB_ADMIN_USER=${MONGODB_ADMIN_USER}
-      - MONGODBDB_ADMIN_PASSWORD=${MONGODBDB_ADMIN_PASSWORD}
+      - MONGODB_ADMIN_PASSWORD=${MONGODB_ADMIN_PASSWORD}
     profiles:
       - exastro-it-automation-event-driven
       - ita-by-event-driven
@@ -656,19 +656,19 @@ services:
   ita-mongodb:
     image: mongo
     # healthcheck:
-    #   test:
+    #   test: ""
     #   interval: 3s
     #   retries: 200
     volumes:
-      - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
+      # - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
       # - ../ita_root/ita-mongodb/initdb.d:/docker-entrypoint-initdb.d
       # - ../ita_root/ita_mongodb/logs:/root/logs
       - ../.volumes/ita-mongodb/data:/data/db
-    entrypoint: ["mongod", "--config", "/etc/mongo/mongod.conf"]
+    # entrypoint: ["mongod", "--config", "/etc/mongo/mongod.conf"]
     environment:
       - TZ=Asia/Tokyo
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-root}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-pass}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     ports:
       - "0.0.0.0:27017:27017"
     profiles:

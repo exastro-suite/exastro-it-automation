@@ -1045,7 +1045,7 @@ class CICD_GrandChildWorkflow():
             return str(e), outRolesDir, zipFileName
         """
 
-        cmd = "cd %s;zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
+        cmd = "cd %s && zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
         ret = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if ret.returncode != 0:
             ret = ret.stdout

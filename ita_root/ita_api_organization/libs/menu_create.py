@@ -557,6 +557,15 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
         RETRUN:
             result_data
     """
+    # テーブル名
+    t_menu_define = 'T_MENU_DEFINE'
+    t_menu_column = 'T_MENU_COLUMN'
+    t_menu_column_group = 'T_MENU_COLUMN_GROUP'
+    t_menu_unique_constraint = 'T_MENU_UNIQUE_CONSTRAINT'
+    t_menu_role = 'T_MENU_ROLE'
+    t_menu_other_link = 'T_MENU_OTHER_LINK'
+    t_menu_reference_item = 'T_MENU_REFERENCE_ITEM'
+
     # 変数定義
     user_id = g.get('USER_ID')
 
@@ -569,6 +578,9 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
     try:
         # トランザクション開始
         objdbca.db_transaction_start()
+
+        # 更新対象テーブルをロック
+        objdbca.table_lock([t_menu_define, t_menu_column, t_menu_column_group, t_menu_role, t_menu_unique_constraint, t_menu_other_link, t_menu_reference_item])
 
         # 登録前バリデーションチェック
         retbool, result_code, msg_args = _check_before_registar_validate(objdbca, menu_data, column_data_list)
@@ -652,8 +664,11 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
     # テーブル名
     t_menu_define = 'T_MENU_DEFINE'
     t_menu_column = 'T_MENU_COLUMN'
+    t_menu_column_group = 'T_MENU_COLUMN_GROUP'
     t_menu_unique_constraint = 'T_MENU_UNIQUE_CONSTRAINT'
     t_menu_role = 'T_MENU_ROLE'
+    t_menu_other_link = 'T_MENU_OTHER_LINK'
+    t_menu_reference_item = 'T_MENU_REFERENCE_ITEM'
 
     # 変数定義
     user_id = g.get('USER_ID')
@@ -667,6 +682,9 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
     try:
         # トランザクション開始
         objdbca.db_transaction_start()
+
+        # 更新対象テーブルをロック
+        objdbca.table_lock([t_menu_define, t_menu_column, t_menu_column_group, t_menu_role, t_menu_unique_constraint, t_menu_other_link, t_menu_reference_item])
 
         # 登録前バリデーションチェック
         retbool, result_code, msg_args = _check_before_registar_validate(objdbca, menu_data, column_data_list)

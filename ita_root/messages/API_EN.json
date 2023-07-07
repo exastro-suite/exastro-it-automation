@@ -390,7 +390,7 @@
     "MSG-10246": "Protocol in the device list is blank. ITA proprietary variable cannot be used in the inventory file addition option. (ITA proprietary variable:{} host:{})",
     "MSG-10250": "Create {}file directory has failed. (DIR.:{} msg:{})",
     "MSG-10251": "Change the permissions of {}file directory has failed. (DIR.:{} msg:{})",
-    "MSG-10252": "Compress {} directory has failed. (Zip file.:{})",
+    "MSG-10252": "Compress {} directory has failed. (Command.:{} Error details:{})",
     "MSG-10253": "Failed to create history file. (Zip file:{})",
     "MSG-10254": "Failed to create history file. (Zip file:{} msg:{})",
     "MSG-10255": "Failed to create history file. (Zip file:{})",

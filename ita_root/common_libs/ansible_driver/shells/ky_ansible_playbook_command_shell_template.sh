@@ -47,6 +47,8 @@ if [ "${SSHAGENT_EXEC}" = "RUN" ]; then
   while read LINE
   do
     LINE=($LINE)
+    # printf -v  HOST "%q" "${LINE[0]}"
+    # printf -v  RAS_FILE "%q" "${LINE[1]}"
     export HOST=${LINE[0]}
     export RAS_FILE=${LINE[1]}
     export RAS_FILE_PASSWD=${LINE[2]}

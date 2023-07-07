@@ -14,6 +14,8 @@
 from flask import g
 import os
 import shutil
+import shlex
+
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
@@ -351,3 +353,17 @@ def getSpecialColumnVaule(column_rest_name, option):
     if column_rest_name in option["entry_parameter"]["parameter"]:
         str_token = option["entry_parameter"]["parameter"][column_rest_name]
     return str_token
+
+def loacl_quote(arg):
+    """
+      パラメータ文字列をパラメータ毎に分割し、コーテーションで囲む
+      Arguments:
+        arg:  パラメータ文字列
+      Returns:
+        加工された、パラメータ文字列
+    """
+    result_arg = ""
+    list = shlex.split(arg)
+    for item in list:
+        result_arg += shlex.quote(item) + " "
+    return result_arg

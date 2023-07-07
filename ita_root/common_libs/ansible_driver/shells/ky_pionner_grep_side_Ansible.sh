@@ -29,25 +29,25 @@
 ######################################################################
 STDOUT='/tmp/ita_stdout.'$$
 STDERR='/tmp/ita_stderr.'$$
-GREPCMD='/tmp/ita_grepcommand'
-/bin/rm -f $GREPCMD
 # 引数からgrepコマンドを生成
 grep_cmd=''
 for idx in `seq 2 ${#}`
 do
    if [ $idx -eq 2 ]; then
       #先頭の検索文字列の場合にgrepコマンドを生成
-      grep_cmd='grep '${2}' '$1
-      echo "{{"$grep_cmd"}}\n" >> $GREPCMD
+      # パラメータのエスケープ処理
+      printf -v GREP_FILE "%q" "${1}"
+      printf -v ARG "%q" "${2}"
+      grep_cmd=grep' '${ARG}' '${GREP_FILE}
    else
-      #先頭以降の検索文字列の場合にパイプでgrepコマンドを結合
-      grep_cmd=$grep_cmd' |grep '${2}
-      echo "{{"$grep_cmd"}}" >> $GREPCMD
+      # 先頭以降の検索文字列の場合にパイプでgrepコマンドを結合
+      # パラメータのエスケープ処理
+      printf -v ARG "&q" "${2}"
+      grep_cmd=$grep_cmd' '|grep ${ARG}
    fi
    shift
 done
 grep_cmd=${grep_cmd}' | wc -l >'${STDOUT}' 2>'${STDERR}
-echo "{{"${grep_cmd}"}}" > $GREPCMD
 eval ${grep_cmd}
 RET=$?
 # grepコマンドが実行出来なかった場合

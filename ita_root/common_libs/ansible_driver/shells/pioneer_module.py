@@ -93,6 +93,7 @@ from collections import defaultdict
 from collections import OrderedDict
 import binascii
 import codecs
+import shlex
 
 from ansible.module_utils.basic import *
 
@@ -266,16 +267,17 @@ def main():
       append_param = ""
 
     if ssh_key_file != "__undefinesymbol__" and protocol == "ssh":
-      append_param = append_param + " -o 'IdentityFile=\"" + ssh_key_file + "\"' "
+      append_param = append_param + " -i " + shlex.quote(ssh_key_file) + " "
 
     # EXTRA_ARGS(SSH/TELNET)が設定されているか判定
     if extra_args != "__undefinesymbol__":
+      extra_args = loacl_quote(extra_args)
       append_param = append_param  + " " + extra_args
 
     if user_name == "__undefinesymbol__":
-      exec_cmd = protocol + " " + host_name + " " + append_param
+      exec_cmd = protocol + " " + shlex.quote(host_name) + " " + append_param
     else:
-      exec_cmd = protocol + " " + host_name + " -l " + user_name  + " " + append_param
+      exec_cmd = protocol + " " + shlex.quote(host_name) + " -l " + shlex.quote(user_name)  + " " + append_param
     exec_name = 'remote login:[' + exec_cmd + ']'
 
     private_log_output(log_file_name,host_name,exec_name)
@@ -443,8 +445,11 @@ def main():
           elif 'parameter' == cmd:
             idx = 0
             max = len(input[cmd])
+            parameter_cmd_list = []
             while idx < max:
               parameter_cmd = parameter_cmd + input[cmd][idx] + ' '
+              parameter_value = password_replace(vault_vars_def,input[cmd][idx])
+              parameter_cmd_list.append(shlex.quote(parameter_value))
               idx = idx + 1
           elif 'shell' == cmd:
             shell_cmd = str(input[cmd])
@@ -532,8 +537,8 @@ def main():
             private_log_output(log_file_name,host_name,logstr)
             exec_log_output(logstr)
 
-            def_shell_cmd="sh " + pass_rep_shell_cmd + " " + pass_rep_stdout_file + " " + str(pass_rep_parameter_cmd)
-            shell_ret = subprocess.call(def_shell_cmd, shell=True)
+            def_shell_cmd = ["sh ", shlex.quote(pass_rep_shell_cmd), shlex.quote(pass_rep_stdout_file)] + parameter_cmd_list
+            shell_ret = subprocess.run(def_shell_cmd, shell=True)
           except:
             import sys
             import traceback
@@ -557,8 +562,10 @@ def main():
             private_log_output(log_file_name,host_name,logstr)
             exec_log_output(logstr)
 
-            def_shell_cmd="sh " + shell_name + " " + pass_rep_stdout_file + " " + str(pass_rep_parameter_cmd)
-            shell_ret = subprocess.call(def_shell_cmd, shell=True)
+            def_shell_cmd = ["sh ", shlex.quote(shell_name), shlex.quote(pass_rep_stdout_file)] + parameter_cmd_list
+            shell_ret = subprocess.run(def_shell_cmd, shell=True)
+            if os.path.isfile(pass_rep_stdout_file):
+                os.remove(pass_rep_stdout_file)
           except:
             import sys
             import traceback
@@ -573,7 +580,7 @@ def main():
             private_fail_json(obj=module,msg=host_name + ':' + logstr,exec_log=exec_log)
 
         # shell result check
-        if shell_ret == 0:
+        if shell_ret.returncode == 0:
           # shell result log output
           logstr = 'execute result OK'
           private_log_output(log_file_name,host_name,logstr)
@@ -596,7 +603,7 @@ def main():
 
         else:
           # shell result log output
-          logstr='execute result NG exit code=(' + str(shell_ret) + ')'
+          logstr='execute result NG exit code=(' + str(shell_ret.returncode) + ')'
           private_log_output(log_file_name,host_name,logstr)
           exec_log_output(logstr)
 
@@ -4503,5 +4510,13 @@ def execute_when_log(when_name,log_file_name,host_name,logstr):
   logstr = execute_when_log_str % (when_name,logstr)
   # exec_log_output(logstr)
   # private_log_output(log_file_name,host_name,logstr)
+
+def loacl_quote(arg):
+    # パラメータ文字列をパラメータ毎に分割し、コーテーションで囲む
+    result_arg = ""
+    list = shlex.split(arg)
+    for item in list:
+        result_arg += shlex.quote(item) + " "
+    return result_arg
 
 main()

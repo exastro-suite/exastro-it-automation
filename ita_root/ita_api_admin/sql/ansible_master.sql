@@ -689,8 +689,6 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 　ssh秘密鍵ファイルのアップロードが必須です。
 ・鍵認証(パスフレーズあり)
 　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
-・鍵認証(鍵交換済み)
-　ssh秘密鍵ファイルのアップロードは必要ありません。
 ・パスワード認証(winrm)
 　必要に応じてWinRM接続情報を入力します。
 尚、パスワード認証(winrm)以外の認証方式の場合、機器側に以下の設定が必要です。
@@ -701,8 +699,6 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
  Uploading the ssh private key file is required.
 -Key authentication (with passphrase)
  You must upload the ssh private key file and enter the passphrase.
--Key authentication (key exchanged)
- No upload of ssh private key file is required.
 -Password authentication (winrm)
  Enter the WinRM connection information as required.
 For authentication methods other than password authentication (winrm), the following settings are required on the device side.
@@ -714,8 +710,6 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 　ssh秘密鍵ファイルのアップロードが必須です。
 ・鍵認証(パスフレーズあり)
 　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
-・鍵認証(鍵交換済み)
-　ssh秘密鍵ファイルのアップロードは必要ありません。
 ・パスワード認証(winrm)
 　必要に応じてWinRM接続情報を入力します。
 尚、パスワード認証(winrm)以外の認証方式の場合、機器側に以下の設定が必要です。
@@ -726,8 +720,6 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
  Uploading the ssh private key file is required.
 -Key authentication (with passphrase)
  You must upload the ssh private key file and enter the passphrase.
--Key authentication (key exchanged)
- No upload of ssh private key file is required.
 -Password authentication (winrm)
  Enter the WinRM connection information as required.
 For authentication methods other than password authentication (winrm), the following settings are required on the device side.
@@ -1208,34 +1200,26 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 ・鍵認証(パスフレーズなし)
 　ssh秘密鍵ファイルのアップロードが必須です。
 ・鍵認証(パスフレーズあり)
-　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
-・鍵認証(鍵交換済み)
-　ssh秘密鍵ファイルのアップロードは必要ありません。','Select the authentication method when connecting to Ansible Automation Controller with ssh.
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。','Select the authentication method when connecting to Ansible Automation Controller with ssh.
 -Password authentication
  Select ● in the login password management and enter the login password.
 -Key authentication (no passphrase)
  Uploading the ssh private key file is required.
 -Key authentication (with passphrase)
- You must upload the ssh private key file and enter the passphrase.
--Key authentication (key exchanged)
- No upload of ssh private key file is required.',NULL,'0',_____DATE_____,1);
+ You must upload the ssh private key file and enter the passphrase.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2010303,_____DATE_____,'INSERT','2010303','20103','認証方式','Authentication method','authentication_method',NULL,'7',30,'V_ANSC_TWR_LOGIN_AUTH_TYPE','LOGIN_AUTH_TYPE_ID','LOGIN_AUTH_TYPE_NAME',NULL,'1',NULL,NULL,NULL,NULL,'ANSTWR_LOGIN_AUTH_TYPE',NULL,'0','1','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'sshでAnsible Automation Controllerに接続する場合の認証方式を選択します。
 ・パスワード認証
 　ユーザとパスワードの入力が必須です。
 ・鍵認証(パスフレーズなし)
 　ssh秘密鍵ファイルのアップロードが必須です。
 ・鍵認証(パスフレーズあり)
-　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
-・鍵認証(鍵交換済み)
-　ssh秘密鍵ファイルのアップロードは必要ありません。','Select the authentication method when connecting to Ansible Automation Controller with ssh.
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。','Select the authentication method when connecting to Ansible Automation Controller with ssh.
 -Password authentication
  Select ● in the login password management and enter the login password.
 -Key authentication (no passphrase)
  Uploading the ssh private key file is required.
 -Key authentication (with passphrase)
- You must upload the ssh private key file and enter the passphrase.
--Key authentication (key exchanged)
- No upload of ssh private key file is required.',NULL,'0',_____DATE_____,1);
+ You must upload the ssh private key file and enter the passphrase.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010304','20103','ユーザ','User','user',NULL,'1',40,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_LOGIN_USER',NULL,'0','1','1','0','1','1','0',NULL,'{
 "min_length": 0,
 "max_length": 255
@@ -1278,8 +1262,8 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "int_min": 0,
 "int_max": 65535
 }',NULL,NULL,NULL,'Ansible Automation Controllerにsshで接続するポート番号のデフォルト(22)です。デフォルト以外のポートを使用したい場合、ポート番号を入力します。','The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number.',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010309','20103','isolatedTower','isolated Tower','isolated_tower',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
-INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2010309,_____DATE_____,'INSERT','2010309','20103','isolatedTower','isolated Tower','isolated_tower',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010309','20103','Execution node','Execution node','execution_node',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2010309,_____DATE_____,'INSERT','2010309','20103','Execution node','Execution node','execution_node',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010310','20103','備考','Remarks','remarks',NULL,'12',100,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'NOTE',NULL,'0','1','1','0','0','1','0',NULL,'{
 "min_length": 0,
 "max_length": 4000
@@ -1388,7 +1372,8 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "min_length": 0,
 "max_length": 4000
 }',NULL,NULL,NULL,'テンプレート素材で使用している変数の構造をYAML形式で定義します。
-変数の構造は以下の３種類で定義可能です。
+変数の構造は以下の4種類で定義可能です。
+変数の具体値は使用しないので省略可能です。
 ・変数名に対して具体値を１つ定義できる変数
     例
       sample:
@@ -1399,8 +1384,14 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
     例
       sample:
         name:
-        value:','Define the structure of the variable used in Template file in YAML format.
-The structure of variables can be defined by the following three types.
+        value:
+・グローバル変数
+    例
+      GBL_sample:
+　※クルーバル変数管理に変数の登録が必要です。
+また、テンプレート素材でITA独自変数を使用できますが、変数定義に記載する必要はありません。','Define the structure of the variable used in Template file in YAML format.
+The structure of variables can be defined by the following four types.
+Since the concrete value of the variable is not used, it can be omitted.
 ・Variable that can define one specific value for variable name.
     exp)
       sample:
@@ -1411,12 +1402,18 @@ The structure of variables can be defined by the following three types.
     exp)
       sample:
         name:
-        value:',NULL,'0',_____DATE_____,1);
+        value:"
+・Global variables
+    exp)
+       GBL_sample:
+*Registration of variables is required for global variable management.
+Also, ITA-specific variables can be used in template materials, but they do not need to be listed in the variable definition.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2010604,_____DATE_____,'INSERT','2010604','20106','変数定義','Variable definition','variable_definition',NULL,'2',40,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'VARS_LIST',NULL,'0','1','1','0','0','1','0',NULL,'{
 "min_length": 0,
 "max_length": 4000
 }',NULL,NULL,NULL,'テンプレート素材で使用している変数の構造をYAML形式で定義します。
-変数の構造は以下の３種類で定義可能です。
+変数の構造は以下の4種類で定義可能です。
+変数の具体値は使用しないので省略可能です。
 ・変数名に対して具体値を１つ定義できる変数
     例
       sample:
@@ -1427,8 +1424,14 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
     例
       sample:
         name:
-        value:','Define the structure of the variable used in Template file in YAML format.
-The structure of variables can be defined by the following three types.
+        value:
+・グローバル変数
+    例
+      GBL_sample:
+　※クルーバル変数管理に変数の登録が必要です。
+また、テンプレート素材でITA独自変数を使用できますが、変数定義に記載する必要はありません。','Define the structure of the variable used in Template file in YAML format.
+The structure of variables can be defined by the following four types.
+Since the concrete value of the variable is not used, it can be omitted.
 ・Variable that can define one specific value for variable name.
     exp)
       sample:
@@ -1439,7 +1442,12 @@ The structure of variables can be defined by the following three types.
     exp)
       sample:
         name:
-        value:',NULL,'0',_____DATE_____,1);
+        value:"
+・Global variables
+    exp)
+       GBL_sample:
+*Registration of variables is required for global variable management.
+Also, ITA-specific variables can be used in template materials, but they do not need to be listed in the variable definition.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010605','20106','変数定義解析結果','Variable definition analysis result','variable_definition_analysis_result',NULL,'2',50,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'VAR_STRUCT_ANAL_JSON_STRING',NULL,'0','2','0','0','0','1','0',NULL,'{
 "min_length": 0,
 "max_length": 4294967296
@@ -4342,7 +4350,7 @@ INSERT INTO T_ANSC_LOGIN_AUTH_TYPE (LOGIN_AUTH_TYPE_ID,LOGIN_AUTH_TYPE_NAME_JA,L
 
 INSERT INTO T_ANSC_LOGIN_AUTH_TYPE (LOGIN_AUTH_TYPE_ID,LOGIN_AUTH_TYPE_NAME_JA,LOGIN_AUTH_TYPE_NAME_EN,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2','パスワード認証','Password authentication',1,NULL,'0',_____DATE_____,1);
 
-INSERT INTO T_ANSC_LOGIN_AUTH_TYPE (LOGIN_AUTH_TYPE_ID,LOGIN_AUTH_TYPE_NAME_JA,LOGIN_AUTH_TYPE_NAME_EN,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('3','鍵認証(鍵交換済み)','Key authentication (key exchanged)',4,NULL,'0',_____DATE_____,1);
+INSERT INTO T_ANSC_LOGIN_AUTH_TYPE (LOGIN_AUTH_TYPE_ID,LOGIN_AUTH_TYPE_NAME_JA,LOGIN_AUTH_TYPE_NAME_EN,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('3','鍵認証(鍵交換済み)','Key authentication (key exchanged)',4,NULL,'1',_____DATE_____,1);
 
 INSERT INTO T_ANSC_LOGIN_AUTH_TYPE (LOGIN_AUTH_TYPE_ID,LOGIN_AUTH_TYPE_NAME_JA,LOGIN_AUTH_TYPE_NAME_EN,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('4','鍵認証(パスフレーズあり)','Key authentication (with passphrase)',3,NULL,'0',_____DATE_____,1);
 

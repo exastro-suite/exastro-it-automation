@@ -22,7 +22,8 @@ import shutil
 import json
 
 from common_libs.api import api_filter_admin
-from common_libs.common.dbconnect import *
+from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectRoot
 from common_libs.common.util import ky_encrypt
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
@@ -30,10 +31,10 @@ from common_libs.api import app_exception_response, exception_response
 
 
 @api_filter_admin
-def organization_create(body, organization_id):  # noqa: E501
+def organization_create(body, organization_id):
     """organization_create
 
-    Organizationを作成する # noqa: E501
+    Organizationを作成する
 
     :param body:
     :type body: dict | bytes
@@ -93,8 +94,8 @@ def organization_create(body, organization_id):  # noqa: E501
             'DB_DATABASE': org_db_name,
             'DB_ADMIN_USER': os.environ.get('DB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': ky_encrypt(os.environ.get('DB_ADMIN_PASSWORD')),
-            'MONGODB_ADMIN_USER': os.environ.get('MONGODB_ADMIN_USER'),
-            'MONGODB_ADMIN_PASSWORD': ky_encrypt(os.environ.get('MONGODB_ADMIN_PASSWORD')),
+            'MONGO_HOST': os.environ.get('MONGO_HOST'),
+            'MONGO_PORT': int(os.environ.get('MONGO_PORT')),
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
@@ -109,10 +110,13 @@ def organization_create(body, organization_id):  # noqa: E501
         g.db_connect_info["ORGDB_ADMIN_USER"] = data['DB_ADMIN_USER']
         g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = data['DB_ADMIN_PASSWORD']
         g.db_connect_info["ORGDB_DATABASE"] = data['DB_DATABASE']
+        g.db_connect_info["ORGMONGO_HOST"] = data['MONGO_HOST']
+        g.db_connect_info["ORGMONGO_PORT"] = str(data['MONGO_PORT'])
+
         org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
-        # create workspace-databse
+        # create organization-databse
         org_root_db.database_create(org_db_name)
-        # create workspace-user and grant user privileges
+        # create organization-user and grant user privileges
         org_root_db.user_create(username, user_password, org_db_name)
         g.applogger.debug("created db and db-user")
 
@@ -179,16 +183,18 @@ def organization_delete(organization_id):  # noqa: E501
     g.db_connect_info["ORGDB_ADMIN_USER"] = connect_info['DB_ADMIN_USER']
     g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = connect_info['DB_ADMIN_PASSWORD']
     g.db_connect_info["ORGDB_DATABASE"] = connect_info["DB_DATABASE"]
+    g.db_connect_info["ORGMONGO_HOST"] = connect_info['MONGO_HOST']
+    g.db_connect_info["ORGMONGO_PORT"] = str(connect_info['MONGO_PORT'])
 
     # get ws-db connect infomation
-    org_db = DBConnectOrg(organization_id)
+    org_db = DBConnectOrg(organization_id)  # noqa: F405
 
     # get workspace info
     workspace_data_list = []
     workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
 
     # org-db root user connect
-    org_root_db = DBConnectOrgRoot(organization_id)
+    org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
 
     try:
         # OrganizationとWorkspaceが削除されている場合のエラーログ抑止する為、廃止してからデータベース削除
@@ -218,10 +224,14 @@ def organization_delete(organization_id):  # noqa: E501
         if os.path.isdir(organization_dir):
             shutil.rmtree(organization_dir)
 
+        root_mongo = MONGOConnectRoot()
         for workspace_data in workspace_data_list:
             # drop ws-db and ws-db-user
             org_root_db.database_drop(workspace_data['DB_DATABASE'])
-            org_root_db.user_drop(workspace_data['DB_USER'])
+            org_root_db.user_drop(workspace_data['DB_USER'], workspace_data['DB_DATABASE'])
+            # drop ws-mongodb and ws-mongodb-user
+            root_mongo.drop_database(workspace_data['MONGO_DATABASE'])
+            root_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
 
         # drop org-db and org-db-user
         org_root_db.database_drop(connect_info['DB_DATABASE'])

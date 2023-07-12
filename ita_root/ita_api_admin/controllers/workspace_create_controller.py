@@ -25,6 +25,7 @@ import time
 from pathlib import Path
 
 from common_libs.api import api_filter_admin, check_request_body_key
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectRoot
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
 from libs.admin_common import initial_settings_ansible
@@ -88,16 +89,25 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         g.applogger.debug("set initial material")
 
         # make workspace-db connect infomation
-        ws_db_name, username, user_password = org_db.userinfo_generate("ITA_WS")
+        ws_db_name, db_username, db_user_password = org_db.userinfo_generate("ITA_WS")
         connect_info = org_db.get_connect_info()
+
+        # make workspace-mongo connect infomation
+        root_mongo = MONGOConnectRoot()
+        ws_mongo_name, mongo_username, mongo_user_password = root_mongo.userinfo_generate("ITA_WS")
 
         data = {
             'WORKSPACE_ID': workspace_id,
             'DB_HOST': connect_info['DB_HOST'],
             'DB_PORT': int(connect_info['DB_PORT']),
-            'DB_USER': username,
-            'DB_PASSWORD': ky_encrypt(user_password),
+            'DB_USER': db_username,
+            'DB_PASSWORD': ky_encrypt(db_user_password),
             'DB_DATABASE': ws_db_name,
+            'MONGO_HOST': connect_info['MONGO_HOST'],
+            'MONGO_PORT': connect_info['MONGO_PORT'],
+            'MONGO_USER': mongo_username,
+            'MONGO_PASSWORD': ky_encrypt(mongo_user_password),
+            'MONGO_DATABASE': ws_mongo_name,
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
@@ -106,8 +116,16 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # create workspace-databse
         org_root_db.database_create(ws_db_name)
         # create workspace-user and grant user privileges
-        org_root_db.user_create(username, user_password, ws_db_name)
-        # print(username, user_password)
+        org_root_db.user_create(db_username, db_user_password, ws_db_name)
+        # print(db_username, db_user_password)
+
+        # create workspace-mongodb-user
+        root_mongo.create_user(
+            mongo_username,
+            mongo_user_password,
+            ws_mongo_name
+        )
+
         g.applogger.debug("created db and db-user")
 
         # connect workspace-db
@@ -117,6 +135,12 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         g.db_connect_info["WSDB_USER"] = data["DB_USER"]
         g.db_connect_info["WSDB_PASSWORD"] = data["DB_PASSWORD"]
         g.db_connect_info["WSDB_DATABASE"] = data["DB_DATABASE"]
+        g.db_connect_info["WSMONGO_HOST"] = data['MONGO_HOST']
+        g.db_connect_info["WSMONGO_PORT"] = str(data['MONGO_PORT'])
+        g.db_connect_info["WSMONGO_USER"] = data['MONGO_USER']
+        g.db_connect_info["WSMONGO_PASSWORD"] = data['MONGO_PASSWORD']
+        g.db_connect_info["WSMONGO_DATABASE"] = data['MONGO_DATABASE']
+
         ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
 
         sql_list = [
@@ -221,7 +245,12 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
         if 'org_root_db' in locals():
             org_root_db.database_drop(ws_db_name)
-            org_root_db.user_drop(username)
+            org_root_db.user_drop(db_username)
+
+        if 'root_mongo' in locals():
+            root_mongo = MONGOConnectRoot()
+            root_mongo.drop_database(ws_mongo_name)
+            root_mongo.drop_user(mongo_username, ws_mongo_name)
 
         raise Exception(e)
 
@@ -275,10 +304,14 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
             shutil.rmtree(workspace_dir)
 
         # drop ws-db and ws-db-user
-        org_root_db = DBConnectOrgRoot(organization_id)
+        org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
         org_root_db.database_drop(connect_info['DB_DATABASE'])
         org_root_db.user_drop(connect_info['DB_USER'])
         org_root_db.db_disconnect()
+
+        root_mongo = MONGOConnectRoot()
+        root_mongo.drop_database(connect_info['MONGO_DATABASE'])
+        root_mongo.drop_user(connect_info['MONGO_USER'], connect_info['MONGO_DATABASE'])
 
     except AppException as e:
         # スキップファイルが存在する場合は削除する

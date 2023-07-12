@@ -1463,6 +1463,9 @@ html: {
         if ( option.minWidth ) {
             html.push(`<span class="buttonMinWidth" style="width:${option.minWidth}"></span>`);
         }
+        if ( option.width ) {
+            attr.push(`style="width:${option.width}"`)
+        }
 
         attr.push(`class="${className.join(' ')}"`);
         return `<button ${attr.join(' ')}><span class="inner">${html.join('')}</span></button>`;
@@ -1664,12 +1667,12 @@ html: {
             + `<label for="${id}" class="radioLabel"></label>`
         + `</div>`;
     },
-    radioText: function( className, value, name, id, attrs = {}, text ) {
+    radioText: function( className, value, name, id, attrs = {}, text, typeClass = 'defaultRadioTextWrap') {
         const attr = inputCommon( value, name, attrs, id );
         attr.push(`class="${classNameCheck( className, 'radioText').join(' ')}"`);
 
         return ``
-        + `<div class="radioTextWrap">`
+        + `<div class="radioTextWrap ${typeClass}">`
             + `<input type="radio" ${attr.join(' ')}>`
             + `<label for="${id}" class="radioTextLabel"><span class="radioTextMark"></span><span class="radioTextText">${( text )? text: value}</span></label>`
         + `</div>`;
@@ -1867,6 +1870,22 @@ html: {
             itemHtml.push(`<div class="operationMenuMessage">`
             + `<span class="operationMenuMessageIcon">${cmn.html.icon( messageIcon )}</span>`
             + `<span class="operationMenuMessageText">${item.message.text}</span></div>`)
+        }
+
+        // Radio list
+        if ( item.radio ) {
+            const title = item.radio.title;
+            
+            const listHtml = [];
+            for ( const key in item.radio.list ) {
+                const checked = ( key === item.radio.checked )? {checked: 'checked'}: {};console.log(checked)
+                listHtml.push(`<li class="operationMenuRadioItem">`
+                + cmn.html.radioText('operationMenuRadio ' + item.radio.className, key, item.radio.name, 'operationMenuRadio_' + key, checked, item.radio.list[ key ], 'narrowRadioTextWrap')
+                + `</li>`);
+            }
+            itemHtml.push(`<div class="operationMenuRadioWrap">`
+            + `<div class="operationMenuRadioTitle">${title}</div>`
+            + `<ul class="operationMenuRadioList">${listHtml.join('')}</ul></div>`)
         }
 
         return `<li ${itemAttrs.join(' ')}>${itemHtml.join('')}</li>`;
@@ -2241,18 +2260,20 @@ textareaAdjustment: function() {
 ##################################################
   選択用モーダル
   config: {
-      title: モーダルタイトル、ボタンテキスト
+      title: モーダルタイトル
       selectNameKey: 選択で返す名称Key
       info: Table構造info URL
       infoData: Table構造infoが取得済みの場合はこちらに
       filter: Filter URL
       filterPulldown: Filter pulldown URL
       sub: infoに複数のTable構造がある場合のKey
+      option: テーブル用オプション
+      select: 選択状態の変更値
   }
 ##################################################
 */
 selectModalOpen: function( modalId, title, menu, config ) {
-    return new Promise(function( resolve, reject ){
+    return new Promise(function( resolve ){
         const modalFuncs = {
             ok: function() {
                 modalInstance[ modalId ].modal.hide();
@@ -2272,6 +2293,14 @@ selectModalOpen: function( modalId, title, menu, config ) {
             });
         } else {
             modalInstance[ modalId ].modal.show();
+            // 外部で選択状況を更新した場合
+            if ( config.select ) {
+                modalInstance[ modalId ].table.select.select = config.select;
+                modalInstance[ modalId ].table.setTbody();
+                
+                const checkFlag = ( config.select.length === 0 );
+                modalInstance[ modalId ].modal.buttonPositiveDisabled( checkFlag );
+            }
             modalInstance[ modalId ].modal.btnFn = modalFuncs;
         }
     });
@@ -2287,7 +2316,7 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
     return new Promise(function( resolve, reject ) {
         const modalConfig = {
             mode: 'modeless',
-            width: 'auto',
+            width: ( selectConfig.width )? selectConfig.width: 'auto',
             position: 'center',
             visibility: false,
             header: {
@@ -2315,17 +2344,21 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
             if ( selectConfig.selectOtherKeys ) params.selectOtherKeys = selectConfig.selectOtherKeys;
             if ( selectConfig.selectType ) params.selectType = selectConfig.selectType;
 
+            let option = {};
+            if ( selectConfig.option ) option = selectConfig.option;
+
             // 取得したinfoのSubキー確認
             if ( selectConfig.sub ) info = info[ selectConfig.sub ];
 
             const tableId = `${modalId}_${menu.toUpperCase()}${( selectConfig.sub )? `_${selectConfig.sub}`: ``}`,
-                  table = new DataTable( tableId, 'select', info, params );
+                  table = new DataTable( tableId, 'select', info, params, option );
+            if ( selectConfig.select ) table.select.select = selectConfig.select;
             modal.setBody( table.setup() );
 
             // 選択チェック
             table.$.container.on(`${table.id}selectChange`, function(){
                 if ( table.select.select.length ) {
-                    modal.buttonPositiveDisabled( false);
+                    modal.buttonPositiveDisabled( false );
                 } else {
                     modal.buttonPositiveDisabled( true );
                 }
@@ -3273,7 +3306,9 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                     const value = aceEditor.getValue();
 
                     cmn.base64Encode( value ).then(function( base64 ){
-                        fileName = modal.$.dbody.find('.editorFileName').val();
+                        if ( mode === 'edit') {
+                            fileName = modal.$.dbody.find('.editorFileName').val();
+                        }
                         cmn.download('base64', base64, fileName );
                     });
                 };
@@ -3317,6 +3352,9 @@ fileEditor( base64Text, fileName, mode = 'edit') {
         } else if ( fileType === 'image') {
             // ダウンロード
             modal.btnFn.download = function() {
+                if ( mode === 'edit') {
+                    fileName = modal.$.dbody.find('.editorFileName').val();
+                }
                 cmn.download('base64', base64Text, fileName );
             };
 

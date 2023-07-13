@@ -168,9 +168,9 @@ class MONGOConnectRoot():
             db_name, user_name, user_password: tuple
         """
         db_name = prefix + "_" + str(self._uuid_create()).upper()
-        # mysql>=5.7はユーザ名32文字まで
-        # 利用可能文字 https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
-        db_user_name = prefix + "_" + generate_secrets(10, "")
+
+        # 利用可能文字は？
+        db_user_name = prefix + "_" + generate_secrets(20, "-_$+")
         db_user_password = self.password_generate()
 
         return db_name, db_user_name, db_user_password
@@ -185,8 +185,8 @@ class MONGOConnectRoot():
             password string: str
         """
         length = 16
-        mysql_available_symbol = ""
-        password = generate_secrets(length, mysql_available_symbol)
+        available_symbol = "-_$+"
+        password = generate_secrets(length, available_symbol)
 
         return password
 
@@ -228,29 +228,3 @@ class MONGOConnectWs(MONGOConnectRoot):
 
         # connect database
         self.connect()
-
-    def connect(self):
-        """
-        connect database
-
-        Returns:
-            is success:(bool)
-        """
-        if self._client is not None:
-            return True
-
-        try:
-            host = 'mongodb://{}:{}@{}/{}'.format(self._db_user, ky_decrypt(self._db_passwd), self._host, self._db_name)
-            self._client = MongoClient(host, self._port)
-        except PyMongoError as mongo_err:
-            if mongo_err.timeout:
-                raise AppException("999-00002", [self._db, mongo_err])
-            else:
-                raise AppException("999-00002", [self._db, mongo_err])
-
-        if self._client is None:
-            raise AppException("999-00002", [self._db_name, "cannot access. connect info may be incorrect"])
-
-        self._db = self._client[self._db_name]
-
-        return True

@@ -1027,6 +1027,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             "parameter": {
                 "file_name": kym_name,
                 "last_update_date_time": last_update_taimestamp.strftime('%Y/%m/%d %H:%M:%S.%f'),
+                "discard": "0"
             },
             "type": "Update"
         }
@@ -1039,7 +1040,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         g.applogger.debug(debug_msg)
         objdbca.db_transaction_start()
 
-        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)  # noqa: E999
+        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, False, True)  # noqa: E999
 
         # コミット/トランザクション終了
         debug_msg = g.appmsg.get_log_message("BKY-20005", [])

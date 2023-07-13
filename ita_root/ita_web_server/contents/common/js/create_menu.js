@@ -1685,25 +1685,44 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
             history.redo();
             break;
         case 'registration':
+            $button.prop('disabled', true );
             fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01136 ).then(function( flag ){
-                if ( flag ) createRegistrationData('create_new');
+                if ( flag ) {
+                  createRegistrationData('create_new').catch(function(){
+                    $button.prop('disabled', false );
+                  });
+                }
             });
             break;
         case 'update-initialize':
+            $button.prop('disabled', true );
             //メニュー作成状態が「未作成」の場合、windowメッセージを変更
             if(menuEditorArray['menu_info']['menu']['menu_create_done_status_id'] == 1){
                 fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01136 ).then(function( flag ){
-                    if ( flag ) createRegistrationData('create_new');
+                    if ( flag ) {
+                      createRegistrationData('create_new').catch(function(){
+                        $button.prop('disabled', false );
+                      });
+                    }
                 });
             }else{
                 fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01137 ).then(function( flag ){
-                    if ( flag ) createRegistrationData('initialize');
+                    if ( flag ) {
+                      createRegistrationData('initialize').catch(function(){
+                        $button.prop('disabled', false );
+                      });
+                    }
                 });
             }
             break;
         case 'update':
+          $button.prop('disabled', true );
             fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01138 ).then(function( flag ){
-                if ( flag ) createRegistrationData('edit');
+                if ( flag ) {
+                  createRegistrationData('edit').catch(function(){
+                    $button.prop('disabled', false );
+                  });
+                }
             });
             break;
         case 'management':
@@ -3423,6 +3442,7 @@ const updateUniqueConstraintDispData = function(){
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 const createRegistrationData = function( type ){
 
+  return new Promise(function( resolve, reject ){
     let createMenuJSON = {
       'menu'   : {},
       'group'  : {},
@@ -3628,6 +3648,9 @@ const createRegistrationData = function( type ){
     // 解析スタート
     tableAnalysis( $menuTable, 0 );
 
+    // 進行中モーダル
+    let process = fn.processingModal('');
+
     fn.fetch('/create/define/execute/', null, 'POST', createMenuJSON ).then(function(result){
       let id  = result['history_id'];
       let string = getMessage.FTE01140;
@@ -3641,15 +3664,24 @@ const createRegistrationData = function( type ){
           workspace_id = splitstr[3],
           menu_name_rest = result['menu_name_rest'],
           menu = getParam('menu');
+          process.close();
+          process = null;
+          resolve();
+
           window.location.href = '/' + organization_id + '/workspaces/' + workspace_id + '/ita/?menu=' + menu + '&menu_name_rest=' + menu_name_rest + '&history_id=' + id;
       });
 
     }).catch(function( error ){
-      let message = errorFormat(error.message);
-      menuEditorLog.clear();
-      menuEditorLog.set( 'error', message );
-      window.alert(getMessage.FTE01141);
+        let message = errorFormat(error.message);
+        menuEditorLog.clear();
+        menuEditorLog.set( 'error', message );
+        window.alert(getMessage.FTE01141);
+        process.close();
+        process = null;
+        reject();
     });
+
+  });
 };
 
 const errorFormat = function( error ) {

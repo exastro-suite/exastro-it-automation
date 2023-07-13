@@ -33,6 +33,7 @@ class DataTable {
       diff: 結果確認（差分あり）
       select: 選択
       execute: 選択して実行
+      parameter: パラメータ集
 ##################################################
 */
 constructor( tableId, mode, info, params, option = {}) {
@@ -42,6 +43,14 @@ constructor( tableId, mode, info, params, option = {}) {
     tb.initMode = mode;
     tb.info = info;
     tb.params = params;
+
+    // 選択データ
+    tb.select = {
+        view: [],
+        edit: [],
+        select: [],
+        execute: []
+    };
 
     // 特殊表示用データ
     tb.option = option;
@@ -136,11 +145,27 @@ tableStructuralData() {
     };
 
     const check = function( key ) {
-        const hideItem = tb.getTableSettingValue('hideItem');
-        if ( hideItem.length ) {
-            return ( hideItem.indexOf( key ) === -1 );
+        if ( tb.mode === 'parameter') {
+            // パラメータ以外は非表示にする
+            const hideItem = [
+                'uuid', 'input_order', 'discard', 'host_name', 'operation_name_disp',
+                'base_datetime', 'operation_date', 'last_execute_timestamp',
+                'remarks', 'last_update_date_time', 'last_updated_user'
+            ];
+            // input_orderがある場合はバンドルメニューとする
+            if ( tb.info.column_info[key] ) {
+                if ( tb.info.column_info[key].column_name_rest === 'input_order') tb.menuMode = 'bundle';
+                return hideItem.indexOf( tb.info.column_info[key].column_name_rest ) === -1;
+            } else {
+                return true;
+            }
         } else {
-            return true;
+            const hideItem = tb.getTableSettingValue('hideItem');
+            if ( hideItem.length ) {
+                return ( hideItem.indexOf( key ) === -1 );
+            } else {
+                return true;
+            }
         }
     };
 
@@ -246,39 +271,62 @@ setHeaderHierarchy() {
 }
 /*
 ##################################################
+   Main html
+##################################################
+*/
+mainHtml() {
+    const tb = this;
+
+    tb.option.sheetType = fn.cv( tb.option.sheetType, 'standard');
+    if ( tb.mode !== 'parameter') {
+        return `<div id="${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
+            + `<div class="tableHeader">`
+            + `</div>`
+            + `<div class="tableBody">`
+                + `<div class="tableFilter"></div>`
+                + `<div class="tableWrap">`
+                    + `<div class="tableBorder">`
+                        + `<table class="table mainTable"></table>`
+                    + `</div>`
+                + `</div>`
+                + `<div class="tableMessage"></div>`
+            + `</div>`
+            + `<div class="tableFooter">${tb.footerHtml()}</div>`
+            + `<div class="tableErrorMessage"></div>`
+            + `<div class="tableLoading"></div>`
+            + `<style class="tableStyle"></style>`
+            + `<style class="tableCustomStyle"></style>`
+        + `</div>`
+    } else {
+        return ``
+            + `<div class="parameterBlockTableBody">`
+                + `<div id="${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
+                    + `<div class="tableBody">`
+                        + `<div class="tableWrap">`
+                            + `<div class="tableBorder">`
+                                + `<table class="table mainTable"></table>`
+                            + `</div>`
+                        + `</div>`
+                    + `</div>`
+                    + `<div class="tableMessage"></div>`
+                + `</div>`
+                + `<div class="tableLoading"></div>`
+                + `<style class="tableStyle"></style>`
+            + `</div>`;
+    }
+}
+/*
+##################################################
    Setup
 ##################################################
 */
 setup() {
     const tb = this;
 
-    const html = `
-    <div id="${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">
-        <div class="tableHeader">
-        </div>
-        <div class="tableBody">
-            <div class="tableFilter"></div>
-            <div class="tableWrap">
-                <div class="tableBorder">
-                    <table class="table mainTable">
-                    </table>
-                </div>
-            </div>
-            <div class="tableMessage"></div>
-        </div>
-        <div class="tableFooter">
-            ${tb.footerHtml()}
-        </div>
-        <div class="tableErrorMessage"></div>
-        <div class="tableLoading"></div>
-        <style class="tableStyle"></style>
-        <style class="tableCustomStyle"></style>
-    </div>`;
-
     // jQueryオブジェクトキャッシュ
     tb.$ = {};
     tb.$.window = $( window );
-    tb.$.container = $( html );
+    tb.$.container = $( tb.mainHtml() );
     tb.$.header = tb.$.container.find('.tableHeader');
     tb.$.body = tb.$.container.find('.tableBody');
     tb.$.filter = tb.$.container.find('.tableFilter');
@@ -298,7 +346,7 @@ setup() {
 
     // テーブル表示モード "input" or "view"
     // カラム（column_input or colum_view）
-    const tableViewModeList = ['view', 'select', 'execute', 'history'];
+    const tableViewModeList = ['view', 'select', 'execute', 'history', 'parameter'];
     if ( tableViewModeList.indexOf( tb.mode ) !== -1 ) {
         tb.tableMode = 'view';
     } else {
@@ -324,31 +372,28 @@ setup() {
     tb.setPagingEvent(); // イベント
 
     // 1頁に表示する数
-    const onePageNum = fn.storage.get('onePageNum');
-    if ( onePageNum ) {
-        tb.paging.onePageNum = onePageNum;
+    if ( tb.mode !== 'parameter') {
+        const onePageNum = fn.storage.get('onePageNum', 'local', false );
+        if ( onePageNum ) {
+            tb.paging.onePageNum = onePageNum;
+        } else {
+            tb.paging.onePageNum = 25;
+        }
     } else {
-        tb.paging.onePageNum = 25;
+        tb.paging.onePageNum = 1000;
     }
 
     // ソート
     tb.sort = [];
 
-    // 選択データ
-    tb.select = {
-        view: [],
-        edit: [],
-        select: [],
-        execute: []
-    };
-
     // ドライバータイプ
-    if ( tb.params.menuNameRest.match('_ansible_') ) {
-        tb.driver = 'ansible';
-    } else if ( tb.params.menuNameRest.match('_terraform_') ) {
-        tb.driver = 'terraform';
-    } else {
-        tb.driver = null;
+    tb.driver = null;
+    if ( tb.params && fn.typeof( tb.params.menuNameRest ) === 'string') {
+        if (  tb.params.menuNameRest.match('_ansible_') ) {
+            tb.driver = 'ansible';
+        } else if (  tb.params && tb.params.menuNameRest.match('_terraform_') ) {
+            tb.driver = 'terraform';
+        }
     }
 
     // 編集データ
@@ -379,6 +424,8 @@ setup() {
         case 'view': case 'edit':
             tb.workStart('table', 0 );
         break;
+        case 'parameter':
+            tb.workStart('table', 0 );
         case 'select': case 'execute':
             tb.flag.initFilter = true;
             tb.flag.countSkip = true;
@@ -427,20 +474,27 @@ setTable( mode ) {
     tb.$.table.attr('table-mode', tb.tableMode );
 
     // フィルター位置
-    if ( tb.getTableSettingValue('direction') === 'horizontal' || tb.getTableSettingValue('filter') === 'out') {
-        tb.$.table.html( tb.commonTableHtml( false ) );
-        if ( tb.mode !== 'edit') {
-            tb.$.filter.html( tb.filterTableHtml() );
-            tb.$.body.addClass('tableFilterOut');
+    if ( tb.mode !== 'parameter') {
+        if ( tb.getTableSettingValue('direction') === 'horizontal' || tb.getTableSettingValue('filter') === 'out') {
+            tb.$.table.html( tb.commonTableHtml( false ) );
+            if ( tb.mode !== 'edit') {
+                tb.$.filter.html( tb.filterTableHtml() );
+                tb.$.body.addClass('tableFilterOut');
+            } else {
+                tb.$.filter.empty();
+                tb.$.body.removeClass('tableFilterOut');
+            }
         } else {
+            tb.$.table.html( tb.commonTableHtml( true ) );
             tb.$.filter.empty();
             tb.$.body.removeClass('tableFilterOut');
         }
     } else {
-        tb.$.table.html( tb.commonTableHtml( true ) );
-        tb.$.filter.empty();
-        tb.$.body.removeClass('tableFilterOut');
+        tb.$.table.html( tb.commonTableHtml( false ) );
     }
+
+    tb.$.thead = tb.$.container.find('.thead');
+    tb.$.tbody = tb.$.container.find('.tbody');
 
     // 項目メニュー表示
     if ( tb.getTableSettingValue('menu') === 'show') {
@@ -448,21 +502,23 @@ setTable( mode ) {
     } else {
         tb.$.body.removeClass('tableItemMenuShow');
     }
-
+    
+    if ( tb.mode !== 'parameter') {
+        tb.$.thead.find('.filterInputDiscard').select2({
+            width: '120px',
+            minimumResultsForSearch: 5
+        });
+        tb.setInitSort();
+    }
+    
     // 縦・横
     if ( tb.getTableSettingValue('direction') === 'horizontal') {
         tb.$.body.addClass('tableHorizontal');
+        tb.$.body.removeClass('tableVertical');
     } else {
+        tb.$.body.addClass('tableVertical');
         tb.$.body.removeClass('tableHorizontal');
     }
-
-    tb.$.thead = tb.$.container.find('.thead');
-    tb.$.tbody = tb.$.container.find('.tbody');
-    tb.$.thead.find('.filterInputDiscard').select2({
-        width: '120px',
-        minimumResultsForSearch: 5
-    });
-    tb.setInitSort();
 
     // Table headerメニュー
     switch ( tb.mode ) {
@@ -478,6 +534,10 @@ setTable( mode ) {
                     ]
                 };
                 if ( tb.mode === 'select') {
+                    if ( tb.option.data ) {
+                        // フィルターボタンを削除
+                        menuList.Sub.shift(-1);
+                    }
                     menuList.Main.push({ message: { text: getMessage.FTE00004 }});
                 }
                 if ( tb.mode === 'execute') {
@@ -508,7 +568,7 @@ setTable( mode ) {
             tb.$.header.find('.itaButton').on('click', function(){
                 if ( !tb.checkWork ) {
                     const $button = $( this ),
-                          type = $button.attr('data-type');
+                        type = $button.attr('data-type');
                     switch ( type ) {
                         // フィルタ開閉
                         case 'filterToggle':
@@ -543,22 +603,26 @@ setTable( mode ) {
                 }
             });
             // tbody表示
-            if ( tb.flag.initFilter ) {
-                if ( tb.data.body ) {
-                    // データがセット済みの場合は表示
-                    tb.setTbody();
-                } else {
-                    // 初期フィルタ設定（プルダウン検索）
-                    if ( tb.option.initSetFilter ) {
-                        tb.filterSelectParamsOpen( tb.option.initSetFilter ).then( function(){
-                            tb.requestTbody();
-                        });
+            if ( !tb.option.data ) {
+                if ( tb.flag.initFilter ) {
+                    if ( tb.data.body ) {
+                        // データがセット済みの場合は表示
+                        tb.setTbody();
                     } else {
-                        tb.requestTbody();
+                        // 初期フィルタ設定（プルダウン検索）
+                        if ( tb.option.initSetFilter ) {
+                            tb.filterSelectParamsOpen( tb.option.initSetFilter ).then( function(){
+                                tb.requestTbody();
+                            });
+                        } else {
+                            tb.requestTbody();
+                        }
                     }
+                } else {
+                    tb.setInitFilterStandBy();
                 }
             } else {
-                tb.setInitFilterStandBy();
+                tb.workerPost('normal', tb.option.data );
             }
         } break;
         case 'edit': {
@@ -726,6 +790,9 @@ setTable( mode ) {
                 }
             });
         } break;
+        case 'parameter': {
+            tb.requestTbody();
+        } break;
     }
 
     // テーブル設定 カスタムCSS
@@ -815,6 +882,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
 
             // Group
             if ( type === 'g') {
+                if ( tb.mode === 'parameter' && i === 0 ) continue;
                 if ( tb.structural.column_group_info[ columnKey ] === undefined ) continue;
                 const group = groupInfo[ columnKey ],
                       name = fn.cv( group.column_group_name, '', true ),
@@ -885,32 +953,24 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
             }
 
         }
+        // オペレーション or ホストの追加
+        if ( tb.mode === 'parameter' && i === 1 ) {
+            if ( tb.menuMode === 'bundle') {
+                html[i] = fn.html.cell( '代入順序', 'tHeadTh', 'th', rowLength, 1 ) + html[i];
+            }
+            html[i] = fn.html.cell( '', 'parameterTheadTh tHeadTh tHeadLeftSticky', 'th', rowLength, 1 ) + html[i];
+        }
         html[i] = fn.html.row( html[i], ['tHeadTr', 'headerTr']);
     }
 
     // フィルター入力欄
     if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
-        if ( tb.option.sheetType !== 'reference') {
+        if ( tb.option.sheetType !== 'reference' && !tb.option.data ) {
             if ( filterFlag === true ) html.push( tb.filterHtml( filterHeaderFlag ) );
         }
     }
 
     return html.join('');
-
-    if ( mode === 'filter') {
-        return ``
-        + `<table class="table">`
-            + `<thead class="thead">`
-            +
-            + `</thead>`
-        + `</table>`;
-    } else {
-        return ``
-        + `<thead class="thead">`
-            + html.join('')
-        + `</thead>`
-        + `<tbody class="tbody"></tbody>`;
-    }
 }
 /*
 ##################################################
@@ -1879,13 +1939,28 @@ setTableEvents() {
                       id = $check.val(),
                       checkMode = ( tb.mode === 'edit')? 'edit': ( tb.mode === 'select')? 'select': 'view';
 
-
                 if ( tb.mode === 'select') {
                     if ( checked ) {
-                        tb.select[tb.mode].push({
-                            id: id,
-                            name: $check.attr('data-selectname')
-                        });
+                        if ( fn.typeof( tb.params.selectNameKey ) !== 'array') {
+                            tb.select[tb.mode].push({
+                                id: id,
+                                name: $check.attr('data-selectname')
+                            });
+                        } else {
+                            const checkItem = {
+                                id: id,
+                                parameter: {}
+                            };
+                            const findData = tb.data.body.find(function( data ){
+                                return String( data.parameter[ tb.idNameRest ] ) === String( id );
+                            });
+                            if ( findData ) {
+                                for ( const key of tb.params.selectNameKey ) {
+                                    checkItem.parameter[ key ] = findData.parameter[ key ];
+                                }
+                            }
+                            tb.select[tb.mode].push( checkItem );
+                        }
                     } else {
                         const index = tb.select[tb.mode].findIndex(function(obj){ return obj.id === id });
                         if ( index !== -1 ) {
@@ -2370,7 +2445,27 @@ filterSelectParamsOpen( filterParams ) {
 requestTbody() {
     const tb = this;
 
-    tb.filterParams = tb.getFilterParameter();
+    if ( tb.mode !== 'parameter') {
+        tb.filterParams = tb.getFilterParameter();
+    } else {
+        tb.filterParams = {
+            discard: {
+                NORMAL: '0'
+            },
+            host_name: {
+                LIST: tb.option.parameterHostList
+            }
+        };
+        if ( tb.option.parameterMode === 'host') {
+            tb.filterParams.host_name = {
+                LIST: tb.option.parameterHostList
+            }
+        } else {
+            tb.filterParams.operation_name_disp = {
+                LIST: tb.option.parameterOperationList
+            }
+        }
+    }
 
     if ( tb.flag.countSkip ) {
         // 件数を確認しない
@@ -2633,13 +2728,15 @@ setTbody() {
         tb.$.container.removeClass('historyStandBy');
     }
 
+    const nodataHtml = `<div class="noDataMessage">`
+    + fn.html.icon('stop')
+    + getMessage.FTE00054
+    + `</div>`;
+
     // 表示するものがない
     if ( tb.mode !== 'edit' && tb.data.body.length === 0 ) {
         tb.$.container.addClass('noData');
-        tb.$.message.html(`<div class="noDataMessage">`
-        + fn.html.icon('stop')
-        + getMessage.FTE00054
-        + `</div>`);
+        tb.$.message.html( nodataHtml );
     } else {
         tb.$.container.removeClass('noData');
         if ( tb.mode === 'view' && tb.flag.update ) {
@@ -2650,8 +2747,19 @@ setTbody() {
         }
     }
 
-    tb.$.tbody.html( tb.tbodyHtml() );
-    tb.updateFooterStatus();
+    if ( tb.mode !== 'parameter') {
+        tb.$.tbody.html( tb.tbodyHtml() );
+        tb.updateFooterStatus();
+    } else {
+        const body = tb.parameterBody();
+        if ( body !== '') {
+            tb.$.container.removeClass('noData');
+            tb.$.tbody.html( tb.parameterBody() );
+        } else {
+            tb.$.container.addClass('noData');
+            tb.$.message.html( nodataHtml );
+        }
+    }
     tb.$.body.scrollTop(0);
     tb.workEnd();
 
@@ -2851,7 +2959,9 @@ tbodyHtml() {
             // selectモード
             if ( tb.mode === 'select' || tb.mode === 'execute') {
                 rowClassName.push('tBodyTrRowSelect');
-                attrs.selectname = fn.cv( rowParameter[ tb.params.selectNameKey ], '', true );
+                if ( tb.params.selectNameKey && fn.typeof( tb.params.selectNameKey ) !== 'array') {
+                    attrs.selectname = fn.cv( rowParameter[ tb.params.selectNameKey ], '', true );
+                }
                 if ( tb.params.selectOtherKeys ) {
                     const selectParams = {};
                     for ( const selectKey of tb.params.selectOtherKeys ) {
@@ -2939,7 +3049,7 @@ cellHtml( item, columnKey, journal ) {
           columnType = columnInfo.column_type;
 
     // 一部のモードではボタンカラムを表示しない
-    const buttonColumnHide = ['select',  'history'];
+    const buttonColumnHide = ['select', 'history'];
     if ( columnInfo.column_type === 'ButtonColumn' && buttonColumnHide.indexOf( tb.mode ) !== -1 ) {
         return '';
     }
@@ -2961,7 +3071,7 @@ cellHtml( item, columnKey, journal ) {
     className.push( cellClass );
 
     switch ( tb.mode ) {
-        case 'view':
+        case 'view': case 'parameter':
             if ( columnInfo.column_type === 'ButtonColumn') {
                 className.push('tBodyTdButton');
             }
@@ -3690,7 +3800,7 @@ setPagingEvent() {
             tb.$.footer.find('.pagingOnePageNumSelectNumber').text( selectNo );
             $list.removeClass('pagingOnePageOpen');
             tb.workerPost('page');
-            fn.storage.set('onePageNum', selectNo );
+            fn.storage.set('onePageNum', selectNo, 'local', false );
         }
     });
 
@@ -4366,27 +4476,37 @@ getTableSettingValue( key ) {
 
     const data = tb.tableSetting;
     tb.checkTableSettingValue();
-
+    
     // 個別か共通か
-    if ( key !== 'color' && key !== 'hideItem') {
-        if ( !data.individual[ tb.tableMode ].check[ key ] || data.individual[ tb.tableMode ].check[ key ] === 'common') {
-            return data.general[ tb.tableMode ].check[ key ];
+    if ( tb.mode !== 'parameter') {
+        if ( key !== 'color' && key !== 'hideItem') {
+            if ( !data.individual[ tb.tableMode ].check[ key ] || data.individual[ tb.tableMode ].check[ key ] === 'common') {
+                return data.general[ tb.tableMode ].check[ key ];
+            } else {
+                return data.individual[ tb.tableMode ].check[ key ];
+            }
+        } else if( key === 'hideItem') {
+            if ( data.individual[ tb.tableMode ].hideItem ) {
+                return data.individual[ tb.tableMode ].hideItem;
+            } else {
+                return [];
+            }
         } else {
-            return data.individual[ tb.tableMode ].check[ key ];
-        }
-    } else if( key === 'hideItem') {
-        if ( data.individual[ tb.tableMode ].hideItem ) {
-            return data.individual[ tb.tableMode ].hideItem;
-        } else {
-            return [];
+            if ( data.individual[ tb.tableMode ].check.color === 'custom') {
+                return data.individual[ tb.tableMode ].color;
+            } else if ( data.general[ tb.tableMode ].check.color === 'custom') {
+                return data.general[ tb.tableMode ].color;
+            } else {
+                return null;
+            }
         }
     } else {
-        if ( data.individual[ tb.tableMode ].check.color === 'custom') {
-             return data.individual[ tb.tableMode ].color;
-        } else if ( data.general[ tb.tableMode ].check.color === 'custom') {
-            return data.general[ tb.tableMode ].color;
-        } else {
-            return null;
+        if ( key === 'direction') {
+            if ( tb.option.parameterDirection ) {
+                return tb.option.parameterDirection;
+            } else {
+                return 'vertical';
+            }
         }
     }
 }
@@ -4560,31 +4680,33 @@ tableSettingOpen() {
                 + `</div>`;
 
             if ( tb.mode === 'view' || tb.mode === 'select' || tb.mode === 'execute') {
-                tableSettingHtml += ``
-                + `<div class="commonTitle">${getMessage.FTE00094}</div>`
-                + `<div class="commonBody">`
-                    + `<p class="commonParagraph">`
-                        + getMessage.FTE00102
-                    + `</p>`
-                    + `<ul class="commonRadioList">`
-                        + `${( target === 'individual')?
-                            `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'common', id + 'tableFilterPosition', id + 'tableFilterPositionCommon', checkStatus( target, 'filter', 'common'), getMessage.FTE00105 )}</li>`: ``}`
-                        + `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'in', id + 'tableFilterPosition', id + 'tableFilterPositionIn', checkStatus( target, 'filter', 'in'), getMessage.FTE00095 )}</li>`
-                        + `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'out', id + 'tableFilterPosition', id + 'tableFilterPositionOut', checkStatus( target, 'filter', 'out'), getMessage.FTE00096 )}</li>`
-                    + `</ul>`
-                + `</div>`
-                + `<div class="commonTitle">${getMessage.FTE00097}</div>`
-                + `<div class="commonBody">`
-                    + `<p class="commonParagraph">`
-                        + getMessage.FTE00103
-                    + `</p>`
-                    + `<ul class="commonRadioList">`
-                        + `${( target === 'individual')?
-                            `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'common', id + 'tableItemMenu', id + 'tableItemMenuCommon', checkStatus( target, 'menu', 'common'), getMessage.FTE00105 )}</li>`: ``}`
-                        + `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'hide', id + 'tableItemMenu', id + 'tableItemMenuHide', checkStatus( target, 'menu', 'hide'), getMessage.FTE00098 )}</li>`
-                        + `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'show', id + 'tableItemMenu', id + 'tableItemMenuShow', checkStatus( target, 'menu', 'show'), getMessage.FTE00099 )}</li>`
-                    + `</ul>`
-                + `</div>`;
+                if ( !tb.option.data ) {
+                    tableSettingHtml += ``
+                    + `<div class="commonTitle">${getMessage.FTE00094}</div>`
+                    + `<div class="commonBody">`
+                        + `<p class="commonParagraph">`
+                            + getMessage.FTE00102
+                        + `</p>`
+                        + `<ul class="commonRadioList">`
+                            + `${( target === 'individual')?
+                                `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'common', id + 'tableFilterPosition', id + 'tableFilterPositionCommon', checkStatus( target, 'filter', 'common'), getMessage.FTE00105 )}</li>`: ``}`
+                            + `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'in', id + 'tableFilterPosition', id + 'tableFilterPositionIn', checkStatus( target, 'filter', 'in'), getMessage.FTE00095 )}</li>`
+                            + `<li class="commonRadioItem">${fn.html.radioText('ts_filter', 'out', id + 'tableFilterPosition', id + 'tableFilterPositionOut', checkStatus( target, 'filter', 'out'), getMessage.FTE00096 )}</li>`
+                        + `</ul>`
+                    + `</div>`
+                    + `<div class="commonTitle">${getMessage.FTE00097}</div>`
+                    + `<div class="commonBody">`
+                        + `<p class="commonParagraph">`
+                            + getMessage.FTE00103
+                        + `</p>`
+                        + `<ul class="commonRadioList">`
+                            + `${( target === 'individual')?
+                                `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'common', id + 'tableItemMenu', id + 'tableItemMenuCommon', checkStatus( target, 'menu', 'common'), getMessage.FTE00105 )}</li>`: ``}`
+                            + `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'hide', id + 'tableItemMenu', id + 'tableItemMenuHide', checkStatus( target, 'menu', 'hide'), getMessage.FTE00098 )}</li>`
+                            + `<li class="commonRadioItem">${fn.html.radioText('ts_menu', 'show', id + 'tableItemMenu', id + 'tableItemMenuShow', checkStatus( target, 'menu', 'show'), getMessage.FTE00099 )}</li>`
+                        + `</ul>`
+                    + `</div>`;
+                }
             }
 
             if ( tb.mode === 'edit') {
@@ -4938,6 +5060,95 @@ restApi( buttonText, method, endpoint, body, option = {}) {
             }
         });
     });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   パラメーター集
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+##################################################
+   parameter table html
+##################################################
+*/
+parameterTableHtml() {
+    const tb = this;
+
+    return ``
+    + `<thead class="thead">`
+    + `</thead>`
+    + `<tbody class="tbody"></tbody>`;
+}
+/*
+##################################################
+   tbody
+##################################################
+*/
+parameterBody() {
+    const tb = this,
+    list = tb.data.body;
+
+    const html = [];
+
+    list.sort(function( a, b ){
+        a = String( fn.cv( a.parameter.input_order, 0 ) );
+        b = String( fn.cv( b.parameter.input_order, 0 ) );
+        return a.localeCompare( b );
+    });
+
+    const listName = ( tb.option.parameterMode === 'host')? 'parameterOperationList': 'parameterHostList',
+          nameKey = ( tb.option.parameterMode === 'host')? 'operation_name_disp': 'host_name';
+
+    const length = tb.option[ listName ].length;
+    for ( let i = 0; i < length; i++ ) {
+        const parameter = tb.option[ listName ][i];
+
+        const rows = [];
+        let rowspan = 0;
+
+        for ( const item of list ) {
+            if ( item.parameter[ nameKey ] === parameter ) {
+                const rowHtml = [];
+                if ( tb.menuMode === 'bundle') {
+                    rowHtml.push( fn.html.cell( item.parameter.input_order, 'tBodyTd', 'td') );
+                }
+                for ( const columnKey of tb.data.columnKeys ) {
+                    rowHtml.push( tb.cellHtml( item, columnKey ) );
+                }
+                rows.push( rowHtml );
+                rowspan++;
+            }
+        }
+
+        // 登録がない場合空行を追加する
+        if ( !rows[0] ) {
+            const rowHtml = [];
+            const cell = fn.html.cell('', 'parameterBlankTd tBodyTd', 'td');
+            if ( tb.menuMode === 'bundle') {
+                rowHtml.push( cell );
+            }
+            for ( const columnKey of tb.data.columnKeys ) {
+                rowHtml.push( cell );
+            }
+            rows.push( rowHtml );
+            rowspan++;
+        }
+
+        // オペレーションタイトル
+        const parameterClass = ['parameterTh', 'tBodyLeftSticky', 'tBodyTh', 'parameterMainTh' + i ];
+        if ( i === length - 1 ) parameterClass.push('parameterLast')
+        rows[0].unshift( fn.html.cell( parameter, parameterClass.join(' '), 'th', rowspan ) );
+
+        const rowsLength = rows.length;        
+        for ( let j = 0; j < rowsLength; j++ ) {
+            const rowClass = ['tBodyTr'];
+            if ( j === rowsLength - 1 ) rowClass.push('parameterSeparateTr')
+            html.push( fn.html.row( rows[j].join(''), rowClass.join(' ')) );
+        }
+    }
+    return html.join('');
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

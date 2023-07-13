@@ -515,7 +515,7 @@ sideMenuBody( title, icon, list, panel, searchFlag = true ) {
             ${list}
         </ul>
     </nav>
-    ${( searchFlag )? ui.serachBlock(): ''}`;
+    ${( searchFlag )? ui.serachBlock( icon ): ''}`;
 }
 /*
 ##################################################
@@ -685,11 +685,12 @@ menuHistory(){
    Search menu
 ##################################################
 */
-serachBlock() {
+serachBlock( icon ) {
+    icon = fn.cv( icon, 'menu');
     return `
     <div class="menuSearch">
         <span class="icon icon-search"></span>
-        <input class="menuSearchText" data-search="menuMain" placeholder="${getMessage.FTE10007}">
+        <input class="menuSearchText" name="menuSearchText_${icon}" data-search="menuMain" placeholder="${getMessage.FTE10007}">
         <button class="menuSearchClear"><span class="icon icon-cross"></span></button>
     </div>`;
 }
@@ -778,7 +779,7 @@ setMenu() {
 
     fn.fetch( urls ).then(function( result ){
         // ユーザ情報に変更があれば更新
-        if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) ) {
+        if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) || !mn.rest.user ) {
             mn.rest.user = result[0];
             mn.headerMenu();
 
@@ -789,7 +790,7 @@ setMenu() {
 
         // 画面設定
         const uiStrageSetting = fn.storage.get('ui_setting'),
-              uiSetting = ( mn.rest.user.web_table_settings && mn.rest.user.web_table_settings.ui )? mn.rest.user.web_table_settings.ui: {};
+            uiSetting = ( mn.rest.user && mn.rest.user.web_table_settings && mn.rest.user.web_table_settings.ui )? mn.rest.user.web_table_settings.ui: {};
         if ( JSON.stringify( uiStrageSetting ) !== JSON.stringify( uiSetting ) ) {
             fn.storage.set('ui_setting', uiSetting );
             fn.setUiSetting();
@@ -888,6 +889,10 @@ sheetType() {
             case '24':
                 mn.$.content.addClass('tabContent');
                 mn.terraformManagement();
+            break;
+            // 25 : パラメータ集
+            case '25':
+                mn.parameterCollection();
             break;
         }
     }
@@ -1673,6 +1678,35 @@ terraformManagement() {
     fn.loadAssets( assets ).then(function(){
         const terraform =  new TerraformManagement( mn.params.menuNameRest );
         terraform.setup();
+
+        mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   パラメータ集
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+parameterCollection() {
+    const mn = this;
+
+    const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
+    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );
+    mn.setCommonEvents();
+
+    const assets = [
+        { type: 'js', url: '/_/ita/js/parameter_collection.js'},
+        { type: 'css', url: '/_/ita/css/parameter_collection.css'},
+    ];
+
+    fn.loadAssets( assets ).then(function(){
+        const params = mn.params;
+        params.user = mn.rest.user;
+
+        const pc = new ParameterCollection( mn.params.menuNameRest, params );
+        pc.setup();
 
         mn.onReady();
     });

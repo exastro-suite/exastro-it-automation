@@ -656,7 +656,7 @@ services:
       - ita-by-event-driven
 
   ita-mongodb:
-    image: mongo
+    image: mongo:6.0.7
     # healthcheck:
     #   test: ""
     #   interval: 3s

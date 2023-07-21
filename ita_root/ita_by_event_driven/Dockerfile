@@ -46,6 +46,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade chardet \
 &&  pip3.9 install --upgrade pycryptodome \
 &&  pip3.9 install --upgrade pymongo \
+&&  pip3.9 install --upgrade jmespath \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

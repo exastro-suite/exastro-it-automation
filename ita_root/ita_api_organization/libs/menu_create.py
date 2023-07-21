@@ -19,6 +19,7 @@ from common_libs.loadtable import *  # noqa: F403
 from flask import g
 from libs.organization_common import check_auth_menu  # noqa: F401
 from common_libs.api import check_request_body_key
+from common_libs.common.util import get_iso_datetime
 
 
 def collect_menu_create_data(objdbca):
@@ -2142,3 +2143,339 @@ def collect_parent_sord_order(column_info_data, column_group_parent_of_child, ke
             continue
 
     return columns
+
+
+def collect_parameter_list(objdbca):
+    """
+        パラメータシートの一覧を取得する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            パラメータシートの一覧
+    """
+    # 変数定義
+    t_comn_menu = 'T_COMN_MENU'
+    t_comn_menu_group = 'T_COMN_MENU_GROUP'
+    t_comn_role_menu_link = 'T_COMN_ROLE_MENU_LINK'
+    t_comn_menu_table_link = 'T_COMN_MENU_TABLE_LINK'
+    t_menu_table_link = 'T_MENU_TABLE_LINK'
+    lang = g.LANGUAGE
+
+    operation_ary = []
+    host_ary = []
+    hostgroup_ary = []
+    parameter_sheet_ary = []
+
+    # パラメータシートの一覧取得
+    where = 'WHERE  DISUSE_FLAG=%s AND SHEET_TYPE IN (%s, %s, %s) AND SUBSTITUTION_VALUE_LINK_FLAG = %s'
+    parameter = ['0', '1', '3', '4', '0']
+    ret = objdbca.table_select(t_comn_menu_table_link, where, parameter)
+
+    if ret:
+        for record in ret:
+            # ロールが「メンテンス可」または「閲覧のみ」のメニューのみ取得
+            role_id_list = g.get('ROLES')
+            menu_id = record.get('MENU_ID')
+            vertical = record.get('VERTICAL')
+            sheet_type = record.get('SHEET_TYPE')
+            hostgroup = record.get('HOSTGROUP')
+
+            where = 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s AND ROLE_ID IN %s'
+            parameter = [0, menu_id, role_id_list]
+            ret2 = objdbca.table_select(t_comn_role_menu_link, where, parameter)
+
+            if ret2:
+                for record2 in ret2:
+                    privilege = record2.get('PRIVILEGE')
+                table_name = record.get('TABLE_NAME')
+                ret3 = objdbca.table_select(table_name, 'WHERE  DISUSE_FLAG=%s', ['0'])
+                if ret3:
+                    for record3 in ret3:
+                        # パラメーターシート情報取得
+                        ret_menu = objdbca.table_select(t_comn_menu, 'WHERE  DISUSE_FLAG=%s AND MENU_ID=%s', ['0', menu_id])
+                        if ret_menu:
+                            for record_menu in ret_menu:
+                                where = 'WHERE  DISUSE_FLAG=%s AND TABLE_NAME=%s'
+                                ret_menu2 = objdbca.table_select(t_menu_table_link, where, ['0', table_name])
+                                if ret_menu2:
+                                    for record_menu2 in ret_menu2:
+                                        where = 'WHERE  DISUSE_FLAG=%s AND MENU_ID=%s AND MENU_GROUP_ID=%s'
+                                        ret_menu3 = objdbca.table_select(t_comn_menu, where, ['0', record_menu2.get('MENU_ID'), '503'])
+                                        if ret_menu3:
+                                            for record_menu3 in ret_menu3:
+                                                menu_id2 = record_menu3.get('MENU_ID')
+                                                menu_name2 = record_menu3.get('MENU_NAME_' + lang.upper())
+                                                menu_name_rest2 = record_menu3.get('MENU_NAME_REST')
+                                                menu_group_id2 = record_menu3.get('MENU_GROUP_ID')
+                                # hostgroupの場合、代入値自動登録用のメニュー情報、それ以外は入力用のメニュー情報
+                                if hostgroup == '1':
+                                    menu_id = menu_id2
+                                    menu_name = menu_name2
+                                    menu_name_rest = menu_name_rest2
+                                    menu_group_id = menu_group_id2
+                                else:
+                                    menu_name = record_menu.get('MENU_NAME_' + lang.upper())
+                                    menu_name_rest = record_menu.get('MENU_NAME_REST')
+                                    menu_group_id = record_menu.get('MENU_GROUP_ID')
+
+                                if hostgroup == '1':
+                                    hg_menu_name_rest = record_menu.get('MENU_NAME_REST')
+                                else:
+                                    hg_menu_name_rest = ""
+
+                            ret_group = objdbca.table_select(t_comn_menu_group, 'WHERE  DISUSE_FLAG=%s AND MENU_GROUP_ID=%s', ['0', menu_group_id])
+                            if ret_group:
+                                for record_group in ret_group:
+                                    tmp_dict = {
+                                        'menu_id': menu_id,
+                                        'menu_group_name': record_group.get('MENU_GROUP_NAME_' + lang.upper()),
+                                        'menu_name': menu_name,
+                                        'menu_name_rest': menu_name_rest,
+                                        'privilege': privilege,
+                                        'vertical': vertical,
+                                        'sheet_type': sheet_type,
+                                        'hostgroup': hostgroup,
+                                        'hg_menu_name_rest': hg_menu_name_rest
+                                    }
+                                    parameter_sheet_ary.append(tmp_dict)
+
+                        host_id = record3.get('HOST_ID')
+                        operation_id = record3.get('OPERATION_ID')
+                        # オペレーション情報取得
+                        sql = "SELECT * FROM V_COMN_OPERATION WHERE DISUSE_FLAG=%s AND OPERATION_ID=%s"
+                        ret_operation = objdbca.sql_execute(sql, ['0', operation_id])
+                        if ret_operation:
+                            for record_operation in ret_operation:
+                                tmp_dict = {
+                                    'operation_id': operation_id,
+                                    'operation_name': record_operation.get('OPERATION_NAME'),
+                                    'scheduled_date_for_execution': record_operation.get('OPERATION_DATE'),
+                                    'last_run_date': record_operation.get('LAST_EXECUTE_TIMESTAMP')
+                                }
+                                operation_ary.append(tmp_dict)
+
+                        # ホストグループ情報取得
+                        sql = "SELECT * FROM T_HGSP_HOSTGROUP_LIST WHERE DISUSE_FLAG=%s AND ROW_ID=%s"
+                        ret_hostgroup = objdbca.sql_execute(sql, ['0', host_id])
+                        if ret_hostgroup:
+                            for record_hostgroup in ret_hostgroup:
+                                hostgroup_id = record_hostgroup.get('ROW_ID')
+                                tmp_dict = {
+                                    'hostgroup_id': hostgroup_id,
+                                    'hostgroup_name': record_hostgroup.get('HOSTGROUP_NAME')
+                                }
+                                hostgroup_ary.append(tmp_dict)
+
+                                sql = "SELECT * FROM T_HGSP_HOST_LINK WHERE DISUSE_FLAG=%s AND HOSTGROUP_NAME=%s"
+                                ret_hostgroup_link = objdbca.sql_execute(sql, ['0', hostgroup_id])
+                                if ret_hostgroup_link:
+                                    for record_hostgroup_link in ret_hostgroup_link:
+                                        # ホスト情報取得(ホストグループに属する場合)
+                                        host_id = record_hostgroup_link.get('HOSTNAME')
+                                        sql = "SELECT * FROM T_ANSC_DEVICE WHERE DISUSE_FLAG=%s AND SYSTEM_ID=%s"
+                                        ret_host = objdbca.sql_execute(sql, ['0', host_id])
+                                        if ret_host:
+                                            for record_host in ret_host:
+                                                tmp_dict = {
+                                                    'managed_system_item_number': host_id,
+                                                    'host_name': record_host.get('HOST_NAME'),
+                                                    'host_dns_name': record_host.get('HOST_DNS_NAME'),
+                                                    'ip_address': record_host.get('IP_ADDRESS')
+                                                }
+                                                host_ary.append(tmp_dict)
+                        else:
+                            # ホスト情報取得(ホストグループに属さない場合)
+                            sql = "SELECT * FROM T_ANSC_DEVICE WHERE DISUSE_FLAG=%s AND SYSTEM_ID=%s"
+                            ret_host = objdbca.sql_execute(sql, ['0', host_id])
+                            if ret_host:
+                                for record_host in ret_host:
+                                    tmp_dict = {
+                                        'managed_system_item_number': host_id,
+                                        'host_name': record_host.get('HOST_NAME'),
+                                        'host_dns_name': record_host.get('HOST_DNS_NAME'),
+                                        'ip_address': record_host.get('IP_ADDRESS')
+                                    }
+                                    host_ary.append(tmp_dict)
+
+        parameter_collection_list = {
+            'operation': operation_ary,
+            'host': host_ary,
+            'hostgroup': hostgroup_ary,
+            'parameter_sheet': parameter_sheet_ary
+        }
+
+    return parameter_collection_list
+
+
+def collect_filter_terms(objdbca):
+    """
+        パラメータシートの検索条件を取得する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            column_list
+    """
+
+    # 変数定義
+    t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
+
+    # パラメータ集の検索条件を取得する
+    ret = objdbca.table_select(t_menu_collection_filter_data, 'WHERE  DISUSE_FLAG=%s', ['0'])
+
+    filter_list = []
+    if ret:
+        for record in ret:
+            tmp_dict = {
+                'uuid': record.get('UUID'),
+                'filter_name': record.get('FILTER_NAME'),
+                'filter_json': record.get('FILTER_JSON')
+            }
+            filter_list.append(tmp_dict)
+
+    return filter_list
+
+
+def update_filter_terms(objdbca, parameter):
+    """
+        パラメータシートの検索条件を登録・更新する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            column_list
+    """
+
+    try:
+        # トランザクション開始
+        objdbca.db_transaction_start()
+
+        # 変数定義
+        t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
+
+        # パラメータのチェック
+        required_key = []
+        if 'uuid' not in parameter:
+            required_key.append('uuid')
+        if 'filter_name' not in parameter:
+            required_key.append('filter_name')
+        if 'filter_json' not in parameter:
+            required_key.append('filter_json')
+
+        # 登録
+        result = {}
+        if parameter['uuid'] == '':
+            data_list = {
+                "FILTER_NAME": parameter['filter_name'],
+                "FILTER_JSON": parameter['filter_json'],
+                "DISUSE_FLAG": "0",
+                "LAST_UPDATE_USER": g.get('USER_ID'),
+            }
+            ret_data = objdbca.table_insert(t_menu_collection_filter_data, data_list, 'UUID', False)
+
+            if not ret_data:
+                status_code = 'MSG-20258'
+                msg_args = [",".join('uuid')]
+                msg = g.appmsg.get_api_message(status_code, [msg_args])
+                raise Exception("499-00201", [msg])
+            else:
+                api_timestamp = str(get_iso_datetime())
+                result = {
+                    "result": '000-00000',
+                    "data": {
+                        "Discard": '0',
+                        "Register": '1',
+                        "Restore": '0',
+                        "Update": '0'
+                    },
+                    "message": 'SUCCESS',
+                    "ts": api_timestamp
+                }
+        # 更新
+        else:
+            data_list = {
+                "UUID": parameter['uuid'],
+                "FILTER_NAME": parameter['filter_name'],
+                "FILTER_JSON": parameter['filter_json'],
+                "DISUSE_FLAG": "0",
+                "LAST_UPDATE_USER": g.get('USER_ID'),
+            }
+            ret_data = objdbca.table_update(t_menu_collection_filter_data, data_list, 'UUID', False)
+
+            if not ret_data:
+                status_code = 'MSG-20258'
+                msg_args = [",".join('uuid')]
+                msg = g.appmsg.get_api_message(status_code, [msg_args])
+                raise Exception("499-00201", [msg])
+            else:
+                api_timestamp = str(get_iso_datetime())
+                result = {
+                    "result": '000-00000',
+                    "data": {
+                        "Discard": '0',
+                        "Register": '0',
+                        "Restore": '0',
+                        "Update": '1'
+                    },
+                    "message": 'SUCCESS',
+                    "ts": api_timestamp
+                }
+
+        # トランザクション終了
+        objdbca.db_transaction_end(True)
+
+    except Exception as e:
+        result_code = e.args[0]
+        msg_args = e.args[1]
+        return False, result_code, msg_args, None
+
+    return result
+
+
+def delete_filter_terms(objdbca, uuid):
+    """
+        パラメータシートの検索条件を取得する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            column_list
+    """
+
+    try:
+        # トランザクション開始
+        objdbca.db_transaction_start()
+
+        # 変数定義
+        t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
+
+        # 削除
+        parameter = {'UUID': uuid, 'DISUSE_FLAG': '1'}
+        ret_data = objdbca.table_update(t_menu_collection_filter_data, parameter, 'UUID', False)
+
+        result = {}
+        if not ret_data:
+            status_code = 'MSG-20258'
+            msg_args = [",".join('uuid')]
+            msg = g.appmsg.get_api_message(status_code, [msg_args])
+            raise Exception("499-00201", [msg])
+        else:
+            api_timestamp = str(get_iso_datetime())
+            result = {
+                "result": '000-00000',
+                "data": {
+                    "Discard": '1',
+                    "Register": '0',
+                    "Restore": '0',
+                    "Update": '0'
+                },
+                "message": 'SUCCESS',
+                "ts": api_timestamp
+            }
+
+        # トランザクション終了
+        objdbca.db_transaction_end(True)
+
+    except Exception as e:
+        result_code = e.args[0]
+        msg_args = e.args[1]
+        return False, result_code, msg_args, None
+
+    return result

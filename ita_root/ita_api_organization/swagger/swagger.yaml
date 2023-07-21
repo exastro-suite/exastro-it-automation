@@ -1602,6 +1602,191 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/:
+    get:
+      tags:
+      - Menu Create
+      description: パラメータシートの一覧を取得する
+      operationId: get_parameter_collection
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_13'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/:
+    get:
+      tags:
+      - Menu Create
+      description: パラメータ集の検索条件を取得する
+      operationId: get_parameter_collection_filter_terms_get
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_14'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+    post:
+      tags:
+      - Menu Create
+      description: パラメータ集の検索条件を取得する
+      operationId: get_parameter_collection_filter_terms_update
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 検索条件を登録・更新する
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_14'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/{uuid}:
+    delete:
+      tags:
+      - Menu Create
+      description: パラメータ集の検索条件を削除する
+      operationId: get_parameter_collection_filter_terms_delete
+      parameters:
+      - name: organization_id
+        in: path
+        description: organizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: uuid
+        in: path
+        description: uuid
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_15'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_create_controller
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/conductor/class/info/:
     get:
       tags:
@@ -1639,7 +1824,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_13'
+                $ref: '#/components/schemas/inline_response_200_16'
         "401":
           description: Unauthorized
           content:
@@ -1871,7 +2056,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_14'
+                $ref: '#/components/schemas/inline_response_200_17'
         "401":
           description: Unauthorized
           content:
@@ -2053,7 +2238,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_13'
+                $ref: '#/components/schemas/inline_response_200_16'
         "401":
           description: Unauthorized
           content:
@@ -2227,7 +2412,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_13'
+                $ref: '#/components/schemas/inline_response_200_16'
         "401":
           description: Unauthorized
           content:
@@ -2286,7 +2471,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_15'
+                $ref: '#/components/schemas/inline_response_200_18'
         "401":
           description: Unauthorized
           content:
@@ -2545,7 +2730,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_16'
+                $ref: '#/components/schemas/inline_response_200_19'
         "401":
           description: Unauthorized
           content:
@@ -2604,7 +2789,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_17'
+                $ref: '#/components/schemas/inline_response_200_20'
         "401":
           description: Unauthorized
           content:
@@ -2660,7 +2845,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_18'
+                $ref: '#/components/schemas/inline_response_200_21'
         "401":
           description: Unauthorized
           content:
@@ -2718,7 +2903,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_18'
+                $ref: '#/components/schemas/inline_response_200_21'
         "401":
           description: Unauthorized
           content:
@@ -2774,7 +2959,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_18'
+                $ref: '#/components/schemas/inline_response_200_21'
         "401":
           description: Unauthorized
           content:
@@ -2830,7 +3015,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_18'
+                $ref: '#/components/schemas/inline_response_200_21'
         "401":
           description: Unauthorized
           content:
@@ -3058,7 +3243,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_19'
+                $ref: '#/components/schemas/inline_response_200_22'
         "401":
           description: Unauthorized
           content:
@@ -3665,7 +3850,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_20'
+                $ref: '#/components/schemas/inline_response_200_23'
         "401":
           description: Unauthorized
           content:
@@ -3908,7 +4093,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_21'
+                $ref: '#/components/schemas/inline_response_200_24'
         "401":
           description: Unauthorized
           content:
@@ -5685,7 +5870,7 @@ components:
           type: string
       example:
         result: 000-00000
-        data: 0.80082819046101150206595775671303272247314453125
+        data: 0.8008281904610115
         message: message
     filter_count_body:
       properties:
@@ -5920,7 +6105,64 @@ components:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_13_data'
+          type: array
+          example:
+            operation: []
+            host: []
+            hostgroup: []
+            parameter_sheet: []
+          items: {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          operation: []
+          host: []
+          hostgroup: []
+          parameter_sheet: []
+        message: message
+    inline_response_200_14:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example:
+            uuid: xxx
+            filter_name: xxx
+            filter_json: xxx
+          items: {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          uuid: xxx
+          filter_name: xxx
+          filter_json: xxx
+        message: message
+    inline_response_200_15:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        message:
+          type: string
+      example:
+        result: 000-00000
+        message: message
+    inline_response_200_16:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_16_data'
         message:
           type: string
       example:
@@ -5965,14 +6207,14 @@ components:
             - id: string
               name: string
         message: message
-    inline_response_200_14:
+    inline_response_200_17:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_14_data'
+          $ref: '#/components/schemas/inline_response_200_17_data'
         message:
           type: string
       example:
@@ -6064,14 +6306,14 @@ components:
         conductor_data:
           type: object
       description: 作業実行するConductorの構成情報
-    inline_response_200_15:
+    inline_response_200_18:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_15_data'
+          $ref: '#/components/schemas/inline_response_200_18_data'
         message:
           type: string
       example:
@@ -6108,14 +6350,14 @@ components:
             conductor_instance_id: ConductorインスタンスID
           conductor_class: {}
         message: message
-    inline_response_200_16:
+    inline_response_200_19:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_16_data'
+          $ref: '#/components/schemas/inline_response_200_19_data'
         message:
           type: string
       example:
@@ -6124,14 +6366,14 @@ components:
           file_name: "InputData_Conductor_{conductor_instance_id}.zip"
           file_data: All movement input data zip base64 string
         message: message
-    inline_response_200_17:
+    inline_response_200_20:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_17_data'
+          $ref: '#/components/schemas/inline_response_200_20_data'
         message:
           type: string
       example:
@@ -6151,7 +6393,7 @@ components:
           type: string
           example: YYYY/MM/DD hh:mm
       description: 作業実行するDriverの構成情報
-    inline_response_200_18:
+    inline_response_200_21:
       type: object
       properties:
         result:
@@ -6196,14 +6438,14 @@ components:
         tf_workspace_name:
           type: string
       description: 作業実行するDriverの構成情報
-    inline_response_200_19:
+    inline_response_200_22:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_19_data'
+          $ref: '#/components/schemas/inline_response_200_22_data'
         message:
           type: string
       example:
@@ -6312,14 +6554,14 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
-    inline_response_200_20:
+    inline_response_200_23:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_20_data'
+          $ref: '#/components/schemas/inline_response_200_23_data'
         message:
           type: string
       example:
@@ -6430,14 +6672,14 @@ components:
           items:
             example: host_name
       description: 比較条件を設定
-    inline_response_200_21:
+    inline_response_200_24:
       type: object
       properties:
         result:
           type: string
           example: 000-00000
         data:
-          $ref: '#/components/schemas/inline_response_200_21_data'
+          $ref: '#/components/schemas/inline_response_200_24_data'
         message:
           type: string
       example:
@@ -6804,7 +7046,7 @@ components:
             id: "10109"
             menu_name: メニュー9
             menu_name_rest: menu_9
-    inline_response_200_13_data:
+    inline_response_200_16_data:
       type: object
       properties:
         list:
@@ -6850,7 +7092,7 @@ components:
           conductors:
           - id: string
             name: string
-    inline_response_200_14_data:
+    inline_response_200_17_data:
       type: object
       properties:
         conductor_list:
@@ -6925,7 +7167,7 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
-    inline_response_200_15_data:
+    inline_response_200_18_data:
       type: object
       properties:
         conductor_class:
@@ -6965,7 +7207,7 @@ components:
           remarks: 備考
           conductor_instance_id: ConductorインスタンスID
         conductor_class: {}
-    inline_response_200_16_data:
+    inline_response_200_19_data:
       type: object
       properties:
         file_name:
@@ -6977,7 +7219,7 @@ components:
       example:
         file_name: "InputData_Conductor_{conductor_instance_id}.zip"
         file_data: All movement input data zip base64 string
-    inline_response_200_17_data:
+    inline_response_200_20_data:
       type: object
       properties:
         file_name:
@@ -6989,7 +7231,7 @@ components:
       example:
         file_name: "ResultData_Conductor_{conductor_instance_id}.zip"
         file_data: All movement result data zip base64 string
-    inline_response_200_19_data:
+    inline_response_200_22_data:
       type: object
       properties:
         movement_list:
@@ -7064,7 +7306,7 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
-    inline_response_200_20_data:
+    inline_response_200_23_data:
       type: object
       properties:
         compare_list:
@@ -7139,7 +7381,7 @@ components:
               column_type: 0
               column_group_name: column_group_name
               ref_sort_conditions: ref_sort_conditions
-    inline_response_200_21_data:
+    inline_response_200_24_data:
       type: object
       properties:
         file_name:

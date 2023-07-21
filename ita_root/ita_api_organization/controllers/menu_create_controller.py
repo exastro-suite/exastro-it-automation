@@ -299,6 +299,7 @@ def get_reference_item(organization_id, workspace_id, menu, column):  # noqa: E5
     return data,
 
 
+@api_filter
 def get_parameter_collection(organization_id, workspace_id):  # noqa: E501
     """get_parameter_collection
 
@@ -323,6 +324,7 @@ def get_parameter_collection(organization_id, workspace_id):  # noqa: E501
     return data,
 
 
+@api_filter
 def get_parameter_collection_filter_terms_get(organization_id, workspace_id):
     """get_parameter_collection_filter_terms_get
 
@@ -348,6 +350,7 @@ def get_parameter_collection_filter_terms_get(organization_id, workspace_id):
     return data,
 
 
+@api_filter
 def get_parameter_collection_filter_terms_update(organization_id, workspace_id, body):
     """get_parameter_collection_filter_terms_get
 
@@ -381,6 +384,7 @@ def get_parameter_collection_filter_terms_update(organization_id, workspace_id, 
     return data,
 
 
+@api_filter
 def get_parameter_collection_filter_terms_delete(organization_id, workspace_id, uuid):
     """get_parameter_collection_filter_terms_get
 

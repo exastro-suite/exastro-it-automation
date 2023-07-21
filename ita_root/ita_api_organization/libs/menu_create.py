@@ -2376,17 +2376,11 @@ def update_filter_terms(objdbca, parameter):
                 msg = g.appmsg.get_api_message(status_code, [msg_args])
                 raise Exception("499-00201", [msg])
             else:
-                api_timestamp = str(get_iso_datetime())
                 result = {
-                    "result": '000-00000',
-                    "data": {
-                        "Discard": '0',
-                        "Register": '1',
-                        "Restore": '0',
-                        "Update": '0'
-                    },
-                    "message": 'SUCCESS',
-                    "ts": api_timestamp
+                    "Discard": '0',
+                    "Register": '1',
+                    "Restore": '0',
+                    "Update": '0'
                 }
         # 更新
         else:
@@ -2405,17 +2399,11 @@ def update_filter_terms(objdbca, parameter):
                 msg = g.appmsg.get_api_message(status_code, [msg_args])
                 raise Exception("499-00201", [msg])
             else:
-                api_timestamp = str(get_iso_datetime())
                 result = {
-                    "result": '000-00000',
-                    "data": {
-                        "Discard": '0',
-                        "Register": '0',
-                        "Restore": '0',
-                        "Update": '1'
-                    },
-                    "message": 'SUCCESS',
-                    "ts": api_timestamp
+                    "Discard": '0',
+                    "Register": '0',
+                    "Restore": '0',
+                    "Update": '1'
                 }
 
         # トランザクション終了
@@ -2456,17 +2444,11 @@ def delete_filter_terms(objdbca, uuid):
             msg = g.appmsg.get_api_message(status_code, [msg_args])
             raise Exception("499-00201", [msg])
         else:
-            api_timestamp = str(get_iso_datetime())
             result = {
-                "result": '000-00000',
-                "data": {
-                    "Discard": '1',
-                    "Register": '0',
-                    "Restore": '0',
-                    "Update": '0'
-                },
-                "message": 'SUCCESS',
-                "ts": api_timestamp
+                "Discard": '1',
+                "Register": '0',
+                "Restore": '0',
+                "Update": '0'
             }
 
         # トランザクション終了

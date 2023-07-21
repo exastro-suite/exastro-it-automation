@@ -2165,6 +2165,7 @@ def collect_parameter_list(objdbca):
     host_ary = []
     hostgroup_ary = []
     parameter_sheet_ary = []
+    parameter_collection_list = {}
 
     # パラメータシートの一覧取得
     where = 'WHERE  DISUSE_FLAG=%s AND SHEET_TYPE IN (%s, %s, %s) AND SUBSTITUTION_VALUE_LINK_FLAG = %s'
@@ -2297,12 +2298,10 @@ def collect_parameter_list(objdbca):
                                     }
                                     host_ary.append(tmp_dict)
 
-        parameter_collection_list = {
-            'operation': operation_ary,
-            'host': host_ary,
-            'hostgroup': hostgroup_ary,
-            'parameter_sheet': parameter_sheet_ary
-        }
+        parameter_collection_list['operation'] = operation_ary
+        parameter_collection_list['host'] = host_ary
+        parameter_collection_list['hostgroup'] = hostgroup_ary
+        parameter_collection_list['parameter_sheet'] = parameter_sheet_ary
 
     return parameter_collection_list
 

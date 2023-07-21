@@ -297,3 +297,110 @@ def get_reference_item(organization_id, workspace_id, menu, column):  # noqa: E5
     data = menu_create_lib.collect_pulldown_reference_item(objdbca, menu, column)
 
     return data,
+
+
+def get_parameter_collection(organization_id, workspace_id):  # noqa: E501
+    """get_parameter_collection
+
+    パラメータシートの一覧を取得する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # パラメータシートの一覧を取得する
+    data = menu_create_lib.collect_parameter_list(objdbca)
+
+    return data,
+
+
+def get_parameter_collection_filter_terms_get(organization_id, workspace_id):
+    """get_parameter_collection_filter_terms_get
+
+    パラメータシートの検索条件を取得する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # パラメータシートの検索条件を取得する
+    data = menu_create_lib.collect_filter_terms(objdbca)
+
+    return data,
+
+
+def get_parameter_collection_filter_terms_update(organization_id, workspace_id, body):
+    """get_parameter_collection_filter_terms_get
+
+    パラメータシートの検索条件を登録・更新する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
+    parameter = {}
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        parameter = body
+
+    # パラメータシートの検索条件を取得する
+    data = menu_create_lib.update_filter_terms(objdbca, parameter)
+
+    return data,
+
+
+def get_parameter_collection_filter_terms_delete(organization_id, workspace_id, uuid):
+    """get_parameter_collection_filter_terms_get
+
+    パラメータシートの検索条件を削除する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # パラメータシートの検索条件を取得する
+    data = menu_create_lib.delete_filter_terms(objdbca, uuid)
+
+    return data,

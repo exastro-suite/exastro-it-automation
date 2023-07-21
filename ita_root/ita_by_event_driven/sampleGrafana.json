@@ -1,0 +1,56 @@
+[
+    {
+        "id": 1,
+        "dashboardId": 2,
+        "panelId": 3,
+        "name": "High CPU Usage",
+        "state": "alerting",
+        "newStateDate": "2023-07-07T12:34:56Z",
+        "evalDate": "2023-07-07T12:34:56Z",
+        "evalData": {
+            "evalMatches": [
+                {
+                    "metric": "cpu_usage",
+                    "tags": {},
+                    "value": 95
+                }
+            ]
+        },
+        "executionError": "",
+        "url": "http://localhost:3000/d/xyXYxyXzZ/high-cpu-usage"
+    },
+    {
+        "id": 2,
+        "dashboardId": 4,
+        "panelId": 5,
+        "name": "Low Disk Space",
+        "state": "ok",
+        "newStateDate": "2023-07-07T12:34:56Z",
+        "evalDate": "2023-07-07T12:34:56Z",
+        "evalData": {
+            "evalMatches": [
+                {
+                    "metric": "disk_space",
+                    "tags": {},
+                    "value": 20
+                }
+            ]
+        },
+        "executionError": "",
+        "url": "http://localhost:3000/d/xyXYxyXzZ/low-disk-space"
+    },
+    {
+        "id": 3,
+        "dashboardId": 6,
+        "panelId": 7,
+        "name": "High Memory Usage",
+        "state": "no_data",
+        "newStateDate": "2023-07-07T12:34:56Z",
+        "evalDate": "2023-07-07T12:34:56Z",
+        "evalData": {
+            "evalMatches": []
+        },
+        "executionError": "No data returned from query",
+        "url": "http://localhost:3000/d/xyXYxyXzZ/high-memory-usage"
+    }
+]

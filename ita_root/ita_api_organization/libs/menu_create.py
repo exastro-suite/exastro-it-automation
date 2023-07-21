@@ -14,12 +14,12 @@
 
 import json
 import ast
+import datetime
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from flask import g
 from libs.organization_common import check_auth_menu  # noqa: F401
 from common_libs.api import check_request_body_key
-from common_libs.common.util import get_iso_datetime
 
 
 def collect_menu_create_data(objdbca):
@@ -2247,10 +2247,11 @@ def collect_parameter_list(objdbca):
                         ret_operation = objdbca.sql_execute(sql, ['0', operation_id])
                         if ret_operation:
                             for record_operation in ret_operation:
+                                operation_date = record_operation.get('OPERATION_DATE').strftime('%Y/%m/%d %H:%M:%S')
                                 tmp_dict = {
                                     'operation_id': operation_id,
                                     'operation_name': record_operation.get('OPERATION_NAME'),
-                                    'scheduled_date_for_execution': record_operation.get('OPERATION_DATE'),
+                                    'scheduled_date_for_execution': operation_date,
                                     'last_run_date': record_operation.get('LAST_EXECUTE_TIMESTAMP')
                                 }
                                 operation_ary.append(tmp_dict)

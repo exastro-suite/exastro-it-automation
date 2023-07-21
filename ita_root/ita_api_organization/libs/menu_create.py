@@ -14,7 +14,6 @@
 
 import json
 import ast
-import datetime
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from flask import g

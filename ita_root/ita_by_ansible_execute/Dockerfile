@@ -41,6 +41,9 @@ RUN dnf install -y \
     git \
 &&  curl -kL https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 &&  chmod +x /usr/local/bin/kubectl \
+&&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
+&&  curl -kL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
+&&  chmod +x /usr/local/bin/docker-compose \
 &&  pip3.9 install --upgrade pip \
 &&  pip3.9 install --upgrade setuptools \
 &&  pip3.9 install --upgrade Flask \
@@ -76,13 +79,10 @@ RUN dnf install -y \
     diffutils \
     bind-utils \
     iputils \
-&&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
-&&  curl -kL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
-&&  chmod +x /usr/local/bin/docker-compose \
 &&  pip3.9 install --upgrade debugpy \
 &&  pip3.9 install --upgrade flake8 \
 &&  pip3.9 install --upgrade autopep8 \
-&&  usermod -G wheel $USERNAME \
+&&  usermod -aG wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 USER $USERNAME
@@ -106,6 +106,7 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
+USER $USERNAME
 WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_by_ansible_execute/ $APP_PATH/

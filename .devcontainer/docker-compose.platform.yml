@@ -60,6 +60,10 @@ services:
     ports:
       - "0.0.0.0:38000:38000"
       - "0.0.0.0:38001:38001"
+    networks:
+      - exastro
+      - default
+
   keycloak:
     image: exastro/keycloak:${PLATFORM_VERSION:-latest}
     healthcheck:
@@ -83,11 +87,14 @@ services:
     depends_on:
       platform-migration-1:
         condition: service_completed_successfully
+    networks:
+      - exastro
+      - default
 
   platform-db:
     image: mariadb:10.4.8
     healthcheck:
-      test: mysqladmin ping --silent && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;'
+      test: (mysqladmin ping --silent -u root -p$${MYSQL_ROOT_PASSWORD} && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;') || exit 1
       interval: 3s
       retries: 200
     volumes:
@@ -98,6 +105,9 @@ services:
       - MYSQL_ROOT_PASSWORD=password
     ports:
       - "0.0.0.0:3307:3306"
+    networks:
+      - exastro
+      - default
 
   platform-api:
     user: 1000:1000
@@ -121,6 +131,9 @@ services:
       - DB_ADMIN_USER=root
       - DB_ADMIN_PASSWORD=password
       - ENCRYPT_KEY=${ENCRYPT_KEY}
+    networks:
+      - exastro
+      - default
 
   platform-web:
     user: 1000:1000
@@ -128,6 +141,9 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=80
+    networks:
+      - exastro
+      - default
 
   platform-migration-1:
     user: 1000:1000
@@ -147,6 +163,9 @@ services:
       - KEYCLOAK_DB_PASSWORD=password
       # - TIMEOUT_SECONDS_CONNECT_DB=600
       # - TIMEOUT_SECONDS_KEYCLOAK_START=600
+    networks:
+      - exastro
+      - default
 
   platform-migration-2:
     user: 1000:1000
@@ -175,3 +194,10 @@ services:
     depends_on:
       platform-migration-1:
         condition: service_completed_successfully
+    networks:
+      - exastro
+      - default
+
+networks:
+  exastro:
+    name: "exastro_${NETWORK_ID}"

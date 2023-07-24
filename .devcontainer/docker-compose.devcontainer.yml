@@ -110,8 +110,6 @@ services:
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
-      # kube or docker
-      - ../ita_root/ita_by_ansible_execute/config/kubernetes/admin.conf:/home/app_user/.kube/config:cached
       - /var/run/docker.sock:/var/run/docker.sock:cached
       - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions

@@ -62,7 +62,8 @@ def main_logic(organization_id, workspace_id):
             "monitoring_tool_id": "1",
             "api_url": "sampleZabbixTrigger.json",
             "is_list": 1,
-            "list_key": "result"
+            "list_key": "result",
+            "ttl": 300
         },
         {
             "gathering_event_id": "c3c3c3",
@@ -70,7 +71,8 @@ def main_logic(organization_id, workspace_id):
             "monitoring_tool_id": "2",
             "api_url": "samplePrometheus.json",
             "is_list": 1,
-            "list_key": "data.alerts"
+            "list_key": "data.alerts",
+            "ttl": 200
         },
         {
             "gathering_event_id": "b2b2b2",
@@ -78,13 +80,17 @@ def main_logic(organization_id, workspace_id):
             "monitoring_tool_id": "3",
             "api_url": "sampleGrafana.json",
             "is_list": 1,
-            "list_key": None
+            "list_key": None,
+            "ttl": 180
         },
     ]
 
     wsMong = MONGOConnectWs()
-    event_collection = wsMong.collection("event_collection")
+    objdbca = DBConnectWs(workspace_id)
     g.applogger.debug("mongodb-ws can connet")
+
+    # 生データ保存用コレクション
+    event_collection = wsMong.collection("event_collection")
 
     # jsonのパス表記をpython用に変換する
     def convert_path(dict_data, key_string):
@@ -97,27 +103,36 @@ def main_logic(organization_id, workspace_id):
         return with_path
 
     events = []
+
     for setting in gathering_event_settings:
+        tmp_polling_interval = 10  # 仮のポーリング間隔
         # APIの呼び出し（実際は専用モジュールみたいなものを使用?）
         with open(setting["api_url"]) as f:
             json_data = json.load(f)
+            fetched_time = datetime.datetime.now()
             # レスポンスがリスト形式ではない場合はそのまま保存する
             if setting["is_list"] == 0:
-                json_data["monitoring_tool_id"] = setting["monitoring_tool_id"]
-                json_data["gathering_event_id"] = setting["gathering_event_id"]
-                json_data["gathering_event_name"] = setting["gathering_event_name"]
-                json_data["fetch_time"] = datetime.datetime.now()
-                event_collection.insert_one(json_data)
+                event = {}
+                event["ita_event"] = json_data
+                event["ita_gathering_event_id"] = setting["gathering_event_id"]
+                event["ita_fetched_time"] = fetched_time.timestamp()
+                event["ita_start_time"] = fetched_time
+                event["ita_start_time"] = (fetched_time + datetime.timedelta(seconds=tmp_polling_interval)).timestamp()
+                event["ita_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["ttl"])).timestamp()
+                events.append(event)
             # レスポンスがリスト形式の場合、1つずつ保存
             else:
                 json_data = convert_path(json_data, setting["list_key"])
                 for data in json_data:
-                    data["monitoring_tool_id"] = setting["monitoring_tool_id"]
-                    data["gathering_event_id"] = setting["gathering_event_id"]
-                    data["gathering_event_name"] = setting["gathering_event_name"]
-                    data["fetch_time"] = datetime.datetime.now()
-                    # event_collection.insert_one(data)
-                    events.append(data)
+                    event = {}
+                    event["ita_event"] = data
+                    event["ita_gathering_event_id"] = setting["gathering_event_id"]
+                    event["ita_fetched_time"] = fetched_time.timestamp()
+                    event["ita_start_time"] = (fetched_time + datetime.timedelta(seconds=tmp_polling_interval)).timestamp()
+                    event["ita_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["ttl"])).timestamp()
+                    events.append(event)
+    print(events)
+    # event_collection.insert_many(events)
 
     ######################################################
     # ラベリング
@@ -132,8 +147,8 @@ def main_logic(organization_id, workspace_id):
             "target_key": "lastchange",
             "target_value": "1684972724",
             "compare_method_id": "1",
-            "ita_status_key": "aaa",
-            "ita_status_value": "AAA",
+            "ita_label_key": "aaa",
+            "ita_label_value": "AAA",
         },
         {
             "labeling_id": "yyy",
@@ -142,35 +157,25 @@ def main_logic(organization_id, workspace_id):
             "target_key": "evalData.evalMatches[0].metric",
             "target_value": "cpu_usage",
             "compare_method_id": "1",
-            "ita_status_key": "bbb",
-            "ita_status_value": "BBB"
+            "ita_label_key": "bbb",
+            "ita_label_value": "BBB"
         },
         {
             "labeling_id": "zzz",
-            "label_name": "ディスク残量小",
+            "label_name": "高CPU使用率",
             "gathering_event_id": "b2b2b2",
-            "target_key": "evalData.evalMatches[0].metric",
-            "target_value": "disk_space",
-            "compare_method_id": "1",
-            "ita_status_key": "ccc",
-            "ita_status_value": "CCC"
+            "target_key": "name",
+            "target_value": "High CPU Usage",
+            "compare_method_id": "7",
+            "ita_label_key": "ccc",
+            "ita_label_value": "CCC"
         },
     ]
 
-    # ラベルデータ用コレクション設定
+    # ラベルデータ保存用コレクション
     labeled_event_collection = wsMong.collection("labeled_event_collection")
 
-    # フィルター用クエリ作成
-    def create_mongodb_query(jsonpath, value, operator="$eq"):
-        if "[]" in jsonpath:
-            jsonpath = jsonpath.replace("[]", "")
-            query = {jsonpath: {"$elemMatch": {operator: value}}}
-        else:
-            jsonpath = jsonpath.replace("[", ".").replace("]", "")
-            query = {jsonpath: {operator: value}}
-        return query
-
-    # ドット区切りで辞書を指定
+    # ドット区切りで辞書を指定して値を取得
     def get_value_from_jsonpath(jsonpath, data):
         value = jmespath.search(jsonpath, data)
         return value
@@ -182,60 +187,37 @@ def main_logic(organization_id, workspace_id):
         "4": operator.le,
         "5": operator.gt,
         "6": operator.ge,
-        "7": "正規表現"
+        "7": "Regular expression"
     }
 
-    def compare_value(compare_method_id, comparative, referent):
+    # target_value比較用
+    def compare_values(compare_method_id, comparative, referent):
         key_list = list(compare_operator.keys())
         if compare_method_id in key_list:
             if compare_method_id == "7":
                 regex_pattern = re.compile(referent)
-                result = regex_pattern.search(comparative)
+                result = regex_pattern.search(str(comparative))
             else:
                 compare = compare_operator[compare_method_id]
                 result = compare(comparative, referent)
         return result
 
-    tmp_label_dict = {}
     for event in events:
+        event["ita_labeling_ids"] = []
+        event["ita_labels"] = {}
+        # ラベリング設定に該当するデータにはラベルを貼る
         for setting in tmp_labeling_settings:
-            if setting["ita_status_value"] is False:
-                setting["ita_status_value"] = setting["target_value"]
-            target_value = get_value_from_jsonpath(setting["target_key"], event)
-            if compare_value(setting["compare_method_id"], target_value, setting["target_value"]):
-                gathering_event_id = setting["gathering_event_id"]
-                if gathering_event_id in tmp_label_dict:
-                    tmp_label_dict[gathering_event_id][setting["ita_status_key"]] = setting["ita_status_value"]
-                    tmp_label_dict[gathering_event_id]["labeling_setting_ids"].append(setting["labeling_id"])
-                    tmp_label_dict[gathering_event_id]["events"].append(event)
-                else:
-                    tmp_labeled_data = {
-                        "labeling_setting_ids": [setting["labeling_id"]],
-                        "gathering_event_id": gathering_event_id,
-                        "events": [event],
-                        "evaluated": 0,
-                        setting["ita_status_key"]: setting["ita_status_value"]
-                    }
-                    tmp_label_dict[gathering_event_id] = tmp_labeled_data
+            if setting["ita_label_value"] is False:
+                setting["ita_label_value"] = setting["target_value"]
+            target_value = get_value_from_jsonpath(setting["target_key"], event["ita_event"])
+            if compare_values(setting["compare_method_id"], target_value, setting["target_value"]):
+                event["ita_evaluated"] = 0
+                event["ita_labels"][setting["ita_label_key"]] = setting["ita_label_value"]
+                event["ita_labeling_ids"].append(setting["labeling_id"])
 
-    for labeled_data in list(tmp_label_dict.values()):
-        labeled_event_collection.insert_one(labeled_data)
-
-    # events = event_collection.find()
-    # labeled_data = {
-    #     "labeling_setting_ids": [],
-    #     "events": [],
-    #     "evaluated": 0
-    # }
-    # for event in events:
-    #     for setting in tmp_labeling_settings:
-    #         if setting["ita_status_value"] is False:
-    #             setting["ita_status_value"] = setting["target_value"]
-    #         target_value = get_value_from_jsonpath(setting["target_key"], event)
-    #         if compare_value(setting["compare_method_id"], target_value, setting["target_value"]):
-    #             labeled_data[setting["ita_status_key"]] = setting["ita_status_value"]
-    #             labeled_data["labeling_setting_ids"].append(setting["labeling_id"])
-    #             labeled_data["events"].append(event)
-    # labeled_event_collection.insert_one(labeled_data)
+    # ラベルされていないものは除外
+    labeled_events = [item for item in events if item["ita_labels"] != {}]
+    print(labeled_events)
+    # labeled_event_collection.insert_many(labeled_events)
 
     return True

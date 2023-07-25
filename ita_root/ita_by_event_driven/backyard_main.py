@@ -117,6 +117,8 @@ def main_logic(organization_id, workspace_id):
                 event["ita_gathering_event_id"] = setting["gathering_event_id"]
                 event["ita_fetched_time"] = fetched_time.timestamp()
                 event["ita_start_time"] = fetched_time
+                event["ita_start_time"] = (fetched_time + datetime.timedelta(seconds=tmp_polling_interval)).timestamp()
+                event["ita_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["ttl"])).timestamp()
                 events.append(event)
             # レスポンスがリスト形式の場合、1つずつ保存
             else:

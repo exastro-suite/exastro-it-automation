@@ -24,7 +24,7 @@ ENV USER_ID=90101
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
-ENV SERVICE_NAME=ita-by-event-driven
+ENV SERVICE_NAME=ita-by-event-relay-conclusion
 
 RUN dnf install -y \
     gcc \
@@ -46,7 +46,6 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade chardet \
 &&  pip3.9 install --upgrade pycryptodome \
 &&  pip3.9 install --upgrade pymongo \
-&&  pip3.9 install --upgrade jmespath \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
@@ -81,7 +80,7 @@ RUN mkdir ~/.config \
 
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_event_driven/ $APP_PATH/
+COPY ./ita_root/ita_by_event_relay_conclusion/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
@@ -97,7 +96,7 @@ ARG APP_PATH
 USER $USERNAME
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_event_driven/ $APP_PATH/
+COPY ./ita_root/ita_by_event_relay_conclusion/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/

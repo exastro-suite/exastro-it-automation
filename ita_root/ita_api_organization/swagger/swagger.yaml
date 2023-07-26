@@ -575,6 +575,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/menu_maintenance_body'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_FORM'
       responses:
         "200":
           description: Success
@@ -638,7 +641,10 @@ paths:
         content:
           application/json:
             schema:
-              description: 更新する値を設定。廃止/復活は廃止フラグを更新することで実施。
+              $ref: '#/components/schemas/maintenance_uuid_body'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_FORM'
       responses:
         "200":
           description: Success
@@ -698,6 +704,9 @@ paths:
               description: 登録/更新/廃止/復活するidとレコードの値を設定
               items:
                 $ref: '#/components/schemas/MAINTENANCE_PARAMETERS'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_ALL_FORM'
       responses:
         "200":
           description: Success
@@ -911,6 +920,9 @@ paths:
           application/json:
             schema:
               description: 検索条件を設定
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/excel_maintenance_body'
       responses:
         "200":
           description: Success
@@ -1691,7 +1703,7 @@ paths:
     post:
       tags:
       - Menu Create
-      description: パラメータ集の検索条件を取得する
+      description: パラメータ集の検索条件を登録・更新する
       operationId: get_parameter_collection_filter_terms_update
       parameters:
       - name: organization_id
@@ -1722,7 +1734,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_14'
+                $ref: '#/components/schemas/inline_response_200_15'
         "401":
           description: Unauthorized
           content:
@@ -3507,6 +3519,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/import_upload_body'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MENU_UPLOAD_FORM'
       responses:
         "200":
           description: Success
@@ -3694,6 +3709,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/bulk_upload_body'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EXCEL_BULK_UPLOAD_FORM'
       responses:
         "200":
           description: Success
@@ -5506,6 +5524,33 @@ components:
         type:
           type: string
           example: Register/Update
+    MAINTENANCE_FORM:
+      type: object
+      properties:
+        json_parameters:
+          type: string
+          description: parameter:リクエストとtype:実行種別(登録/更新/廃止/復活)を指定。 parameter下では、項目名と値をkey-value形式で指定。
+          example: "{\"parameter\":{\"rest_key_name\":\"string\"},\"file\":{\"rest_key_name\"\
+            :\"base64 encode file\"}}"
+        rest_key_name:
+          type: array
+          description: rest_key_name:parametersのファイルアップロードの対象を指定。
+          items:
+            type: string
+            format: binary
+    MAINTENANCE_ALL_FORM:
+      type: object
+      properties:
+        json_parameters:
+          type: string
+          description: parameter:リクエストとtype:実行種別(登録/更新/廃止/復活)をlist構造で指定。 parameter下では、項目名と値をkey-value形式で指定。
+          example: "[{\"rest_key_name\":\"string\",\"type\":\"Register/Update\"}]"
+        xxx.rest_key_name:
+          type: array
+          description: xxx:parametersのlist番号を指定。 rest_key_name:parametersのファイルアップロードの対象を指定。
+          items:
+            type: string
+            format: binary
     CONDUCTOR_INFO_LIST:
       type: object
       properties:
@@ -5695,6 +5740,20 @@ components:
           jump:
             menu_id: メニューID
             execution_id: 作業ID
+    MENU_UPLOAD_FORM:
+      type: object
+      properties:
+        file:
+          type: string
+          description: インポート対象のkymファイルを指定。
+          format: binary
+    EXCEL_BULK_UPLOAD_FORM:
+      type: object
+      properties:
+        zipfile:
+          type: string
+          description: インポート対象をまとめたzipファイルを指定。
+          format: binary
     inline_response_200:
       type: object
       properties:
@@ -5927,6 +5986,13 @@ components:
         result: 000-00000
         data: {}
         message: message
+    maintenance_uuid_body:
+      properties:
+        parameter:
+          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
+        file:
+          $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
+      description: 更新する値を設定。廃止/復活は廃止フラグを更新することで実施。
     inline_response_200_7:
       type: object
       properties:
@@ -5946,6 +6012,14 @@ components:
             PAGE_NO: 0
             UNIQUE_VAL: {}
         message: message
+    excel_maintenance_body:
+      type: object
+      properties:
+        excel:
+          type: string
+          description: excelファイルアップロードの対象を指定。
+          format: binary
+      description: 検索条件を設定
     inline_response_200_8:
       type: object
       properties:
@@ -7408,4 +7482,3 @@ components:
       description: Value converted from ID/Password in base64
       scheme: basic
       x-basicInfoFunc: swagger_server.controllers.authorization_controller.check_BasicAuth
-

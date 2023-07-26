@@ -161,7 +161,7 @@ def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: 
 
 
 @api_filter
-def post_excel_maintenance(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwargs):  # noqa: E501
     """post_excel_maintenance
 
     Excelでレコードを登録/更新/廃止/復活する # noqa: E501
@@ -199,9 +199,13 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None):  # n
     check_request_body()
 
     excel_data = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        excel_data = check_request_body_key(body, 'excel')  # keyが無かったら400-00002エラー
+    retBool, excel_data = menu_excel.create_upload_parameters(connexion.request)
+    if retBool is False:
+        status_code = "400-00003"
+        request_content_type = connexion.request.content_type.lower()
+        log_msg_args = [request_content_type]
+        api_msg_args = [request_content_type]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     # メニューのカラム情報を取得
     result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data)

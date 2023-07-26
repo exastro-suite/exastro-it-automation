@@ -626,7 +626,9 @@ paths:
                   $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
                 file:
                   $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
-
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_FORM'
       responses:
         '200':
           description: Success
@@ -692,6 +694,14 @@ paths:
           application/json:
             schema:
               description: 更新する値を設定。廃止/復活は廃止フラグを更新することで実施。
+              properties:
+                parameter:
+                  $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
+                file:
+                  $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_FORM'
       responses:
         '200':
           description: Success
@@ -754,6 +764,9 @@ paths:
               items: {
                 $ref: '#/components/schemas/MAINTENANCE_PARAMETERS',
               }
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_ALL_FORM'
       responses:
         '200':
           description: Success
@@ -986,6 +999,16 @@ paths:
           application/json:
             schema:
               description: 検索条件を設定
+          multipart/form-data:
+            schema:
+              description: 検索条件を設定
+              type: object
+              properties:
+                excel:
+                  description:
+                    excelファイルアップロードの対象を指定。
+                  type: string
+                  format: binary
       responses:
         '200':
           description: Success
@@ -3939,6 +3962,9 @@ paths:
               properties:
                 rest_key_name:
                   $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MENU_UPLOAD_FORM'
       responses:
         '200':
           description: Success
@@ -4183,6 +4209,9 @@ paths:
               properties:
                 rest_key_name:
                   $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EXCEL_BULK_UPLOAD_FORM'
       responses:
         '200':
           description: Success
@@ -6140,6 +6169,47 @@ components:
           type: string
           example: Register/Update
 
+    MAINTENANCE_FORM:
+      type: object
+      properties:
+        json_parameters:
+          type: string
+          description:
+            parameter:リクエストとtype:実行種別(登録/更新/廃止/復活)を指定。
+            parameter下では、項目名と値をkey-value形式で指定。
+          example:
+            parameter:
+              rest_key_name: "string"
+            file:
+              rest_key_name: "base64 encode file"
+        rest_key_name:
+          description:
+            rest_key_name:parametersのファイルアップロードの対象を指定。
+          type: array
+          items:
+            type: string
+            format: binary
+
+    MAINTENANCE_ALL_FORM:
+      type: object
+      properties:
+        json_parameters:
+          type: string
+          description:
+            parameter:リクエストとtype:実行種別(登録/更新/廃止/復活)をlist構造で指定。
+            parameter下では、項目名と値をkey-value形式で指定。
+          example:
+            - parameter:
+              rest_key_name: string
+              type: Register/Update
+        xxx.rest_key_name:
+          description:
+            xxx:parametersのlist番号を指定。
+            rest_key_name:parametersのファイルアップロードの対象を指定。
+          type: array
+          items:
+            type: string
+            format: binary
     CONDUCTOR_INFO_LIST:
       type: object
       properties:
@@ -6323,6 +6393,22 @@ components:
                 "menu_id": メニューID,
                 "execution_id": 作業ID
               }
+
+    MENU_UPLOAD_FORM:
+      type: object
+      properties:
+        file:
+          description: インポート対象のkymファイルを指定。
+          type: string
+          format: binary
+
+    EXCEL_BULK_UPLOAD_FORM:
+      type: object
+      properties:
+        zipfile:
+          description: インポート対象をまとめたzipファイルを指定。
+          type: string
+          format: binary
 
   securitySchemes:
     BearerAuth:

@@ -50,6 +50,8 @@ def main_logic(organization_id, workspace_id):
     g.applogger.debug("organization_id=" + organization_id)
     g.applogger.debug("workspace_id=" + workspace_id)
 
+    wsDb = DBConnectWs(workspace_id)
+
     ######################################################
     # イベント収集
     ######################################################
@@ -86,7 +88,6 @@ def main_logic(organization_id, workspace_id):
     ]
 
     wsMong = MONGOConnectWs()
-    objdbca = DBConnectWs(workspace_id)
     g.applogger.debug("mongodb-ws can connet")
 
     # 生データ保存用コレクション
@@ -102,7 +103,7 @@ def main_logic(organization_id, workspace_id):
             with_path = with_path[key]
         return with_path
 
-    events = []
+    events = []  # ラベル付きの保存用データ
 
     for setting in gathering_event_settings:
         tmp_polling_interval = 10  # 仮のポーリング間隔

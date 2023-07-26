@@ -750,28 +750,28 @@ services:
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 
-  ita-by-event-driven:
+  ita-by-event-relay-collection:
     build:
       target: develop_build
     volumes:
       - ..:/workspace:cached
-      - ../ita_root/common_libs:/workspace/ita_root/ita_by_event_driven/common_libs:cached
-      - ../ita_root/messages:/workspace/ita_root/ita_by_event_driven/messages:cached
-      - ../ita_root/backyard:/workspace/ita_root/ita_by_event_driven/backyard:cached
-      - ../ita_root/ita_by_event_driven:/exastro:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_event_relay_collection/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_event_relay_collection/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_event_relay_collection/backyard:cached
+      - ../ita_root/ita_by_event_relay_collection:/exastro:cached
       - ../ita_root/common_libs:/exastro/common_libs:cached
       - ../ita_root/messages:/exastro/messages:cached
       - ../ita_root/backyard:/exastro/backyard:cached
       - ~/.netrc:/home/app_user/.netrc
       - ~/.gitconfig:/home/app_user/.gitconfig
-      - ./ita-by-event-driven/.vscode/launch.json:/workspace/.vscode/launch.json
+      - ./ita-by-event-relay-collection/.vscode/launch.json:/workspace/.vscode/launch.json
       - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
-      - ../.vscode_extensions/ita-by-event-driven/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
-      - ../.vscode_extensions/ita-by-event-driven/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - ../.vscode_extensions/ita-by-event-relay-collection/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-event-relay-collection/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
@@ -783,6 +783,38 @@ services:
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
+  ita-by-event-relay-conclusion:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_event_relay_conclusion/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_event_relay_conclusion/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_event_relay_conclusion/backyard:cached
+      - ../ita_root/ita_by_event_relay_conclusion:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-event-relay-conclusion/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.volumes/storage:/storage
+      - ../.vscode_extensions/ita-by-event-relay-conclusion/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-event-relay-conclusion/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
   # mongo-express:
   #   image: mongo-express

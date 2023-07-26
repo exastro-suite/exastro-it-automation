@@ -42,4 +42,4 @@ COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/ansible.cfg /etc
 
 USER $USERNAME
 
-CMD ["ansible-playbook"]
+ENTRYPOINT ["sh"]

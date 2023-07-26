@@ -112,7 +112,8 @@ class DockerMode(AnsibleAgent):
                 host_mount_path_driver=host_mount_path_driver,
                 container_mount_path_driver=container_mount_path_driver,
                 host_mount_path_conductor=host_mount_path_conductor,
-                container_mount_path_conductor=container_mount_path_conductor
+                container_mount_path_conductor=container_mount_path_conductor,
+                network_id=os.getenv('NETWORK_ID', "")
             ))
 
         # create command string

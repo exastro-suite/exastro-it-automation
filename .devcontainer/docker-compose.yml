@@ -132,6 +132,7 @@ services:
       - ANSIBLE_AGENT_IMAGE_TAG=${ANSIBLE_AGENT_IMAGE_TAG}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+      - NETWORK_ID=${NETWORK_ID}
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-execute

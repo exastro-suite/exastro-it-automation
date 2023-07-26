@@ -221,11 +221,23 @@ def check_request_body():
     '''
     check wheter request_body is json_format or not
     '''
-    if request.content_type == "application/json":
-        try:
-            request.get_json()
-        except Exception:
-            raise AppException("400-00002", ["json_format"], ["json_format"])
+    if request.content_type:
+        request_content_type = request.content_type.lower()
+        if request_content_type == "application/json":
+            try:
+                request.get_json()
+            except Exception:
+                raise AppException("400-00002", ["json_format"], ["json_format"])
+        elif "application/x-www-form-urlencoded" == request_content_type:
+            if request.form:
+                pass
+            else:
+                raise AppException("400-00003", request_content_type, request_content_type)
+        elif "multipart/form-data" in request.content_type:
+            if (request.form or request.files):
+                pass
+            else:
+                raise AppException("400-00003", request_content_type, request_content_type)
 
 
 def check_request_body_key(body, key):

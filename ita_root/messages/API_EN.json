@@ -3,6 +3,7 @@
     "000-00001": "Setting completed",
     "400-00001": "Request-Header Paramater({}) is Invalid",
     "400-00002": "Request-Body Paramater({}) is Invalid",
+    "400-00003": "Request-Body Paramater is Invalid (Content-Type: {})",
     "401-00001": "You do not have access privileges to the target menu. (menu: {})",
     "401-00002": "You do not have permission to operate {} on the target menu. (menu: {})",
     "401-00003": "The linking setting of the target menu is invalid. (menu: {})",

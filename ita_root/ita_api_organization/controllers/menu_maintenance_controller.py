@@ -25,7 +25,7 @@ from libs import menu_maintenance
 
 
 @api_filter
-def maintenance_register(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def maintenance_register(organization_id, workspace_id, menu, body=None, **kwargs):  # noqa: E501
     """maintenance_register
 
     レコードを登録する # noqa: E501
@@ -36,7 +36,7 @@ def maintenance_register(organization_id, workspace_id, menu, body=None):  # noq
     :type workspace_id: str
     :param menu: メニュー名
     :type menu: str
-    :param body: 
+    :param body:
     :type body: dict | bytes
 
     :rtype: InlineResponse2005
@@ -44,7 +44,7 @@ def maintenance_register(organization_id, workspace_id, menu, body=None):  # noq
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
-    
+
     # メニューの存在確認
     check_menu_info(menu, objdbca)
 
@@ -63,17 +63,20 @@ def maintenance_register(organization_id, workspace_id, menu, body=None):  # noq
     cmd_type = 'Register'
     target_uuid = ''
     parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
-        parameter.setdefault('type', cmd_type)
-
+    retBool, parameter = menu_maintenance.create_maintenance_parameters(connexion.request, cmd_type)
+    if retBool is False:
+        status_code = "400-00003"
+        request_content_type = connexion.request.content_type.lower()
+        log_msg_args = [request_content_type]
+        api_msg_args = [request_content_type]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+    parameter.setdefault('type', cmd_type)
     result_data = menu_maintenance.rest_maintenance(objdbca, menu, parameter, target_uuid)
     return result_data,
 
 
 @api_filter
-def maintenance_update(organization_id, workspace_id, menu, uuid, body=None):  # noqa: E501
+def maintenance_update(organization_id, workspace_id, menu, uuid, body=None, **kwargs):  # noqa: E501
     """maintenance_update
 
     レコードを更新/廃止/復活する # noqa: E501
@@ -86,7 +89,7 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None):  #
     :type menu: str
     :param uuid: 対象のUUID
     :type uuid: str
-    :param body: 
+    :param body:
     :type body: dict | bytes
 
     :rtype: InlineResponse2005
@@ -113,10 +116,13 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None):  #
     cmd_type = 'Update'
     target_uuid = uuid
     parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
-        parameter.setdefault('type', cmd_type)
+    retBool, parameter = menu_maintenance.create_maintenance_parameters(connexion.request, cmd_type)
+    if retBool is False:
+        status_code = "400-00003"
+        request_content_type = connexion.request.content_type.lower()
+        log_msg_args = [request_content_type]
+        api_msg_args = [request_content_type]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     result_data = menu_maintenance.rest_maintenance(objdbca, menu, parameter, target_uuid)
     return result_data,

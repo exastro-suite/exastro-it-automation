@@ -2237,7 +2237,17 @@ def collect_parameter_list(objdbca):
                                         'hostgroup': hostgroup,
                                         'hg_menu_name_rest': hg_menu_name_rest
                                     }
-                                    parameter_sheet_ary.append(tmp_dict)
+                                    # 重複チェック
+                                    duplication_flg = True
+                                    if len(parameter_sheet_ary) > 0:
+                                        for value in parameter_sheet_ary:
+                                            if value['menu_id'] == menu_id:
+                                                duplication_flg = False
+                                                break
+                                        if duplication_flg is True:
+                                            parameter_sheet_ary.append(tmp_dict)
+                                    else:
+                                        parameter_sheet_ary.append(tmp_dict)
 
                         host_id = record3.get('HOST_ID')
                         operation_id = record3.get('OPERATION_ID')
@@ -2253,7 +2263,17 @@ def collect_parameter_list(objdbca):
                                     'scheduled_date_for_execution': operation_date,
                                     'last_run_date': record_operation.get('LAST_EXECUTE_TIMESTAMP')
                                 }
-                                operation_ary.append(tmp_dict)
+                                # 重複チェック
+                                duplication_flg = True
+                                if len(operation_ary) > 0:
+                                    for value in operation_ary:
+                                        if value['operation_id'] == operation_id:
+                                            duplication_flg = False
+                                            break
+                                    if duplication_flg is True:
+                                        operation_ary.append(tmp_dict)
+                                else:
+                                    operation_ary.append(tmp_dict)
 
                         # ホストグループ情報取得
                         sql = "SELECT * FROM T_HGSP_HOSTGROUP_LIST WHERE DISUSE_FLAG=%s AND ROW_ID=%s"
@@ -2265,7 +2285,17 @@ def collect_parameter_list(objdbca):
                                     'hostgroup_id': hostgroup_id,
                                     'hostgroup_name': record_hostgroup.get('HOSTGROUP_NAME')
                                 }
-                                hostgroup_ary.append(tmp_dict)
+                                # 重複チェック
+                                duplication_flg = True
+                                if len(hostgroup_ary) > 0:
+                                    for value in hostgroup_ary:
+                                        if value['hostgroup_id'] == hostgroup_id:
+                                            duplication_flg = False
+                                            break
+                                    if duplication_flg is True:
+                                        hostgroup_ary.append(tmp_dict)
+                                else:
+                                    hostgroup_ary.append(tmp_dict)
 
                                 sql = "SELECT * FROM T_HGSP_HOST_LINK WHERE DISUSE_FLAG=%s AND HOSTGROUP_NAME=%s"
                                 ret_hostgroup_link = objdbca.sql_execute(sql, ['0', hostgroup_id])
@@ -2283,7 +2313,17 @@ def collect_parameter_list(objdbca):
                                                     'host_dns_name': record_host.get('HOST_DNS_NAME'),
                                                     'ip_address': record_host.get('IP_ADDRESS')
                                                 }
-                                                host_ary.append(tmp_dict)
+                                                # 重複チェック
+                                                duplication_flg = True
+                                                if len(host_ary) > 0:
+                                                    for value in host_ary:
+                                                        if value['managed_system_item_number'] == host_id:
+                                                            duplication_flg = False
+                                                            break
+                                                    if duplication_flg is True:
+                                                        host_ary.append(tmp_dict)
+                                                else:
+                                                    host_ary.append(tmp_dict)
                         else:
                             # ホスト情報取得(ホストグループに属さない場合)
                             sql = "SELECT * FROM T_ANSC_DEVICE WHERE DISUSE_FLAG=%s AND SYSTEM_ID=%s"
@@ -2296,7 +2336,17 @@ def collect_parameter_list(objdbca):
                                         'host_dns_name': record_host.get('HOST_DNS_NAME'),
                                         'ip_address': record_host.get('IP_ADDRESS')
                                     }
-                                    host_ary.append(tmp_dict)
+                                    # 重複チェック
+                                    duplication_flg = True
+                                    if len(host_ary) > 0:
+                                        for value in host_ary:
+                                            if value['managed_system_item_number'] == host_id:
+                                                duplication_flg = False
+                                                break
+                                        if duplication_flg is True:
+                                            host_ary.append(tmp_dict)
+                                    else:
+                                        host_ary.append(tmp_dict)
 
         parameter_collection_list['operation'] = operation_ary
         parameter_collection_list['host'] = host_ary

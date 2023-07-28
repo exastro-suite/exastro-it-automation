@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import connexion
-from flask import jsonify
+from flask import jsonify, g
 import sys
 
 sys.path.append('../../')
@@ -41,6 +41,10 @@ def maintenance_register(organization_id, workspace_id, menu, body=None, **kwarg
 
     :rtype: InlineResponse2005
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00001"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -94,6 +98,10 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None, **k
 
     :rtype: InlineResponse2005
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00001"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405

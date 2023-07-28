@@ -37,6 +37,10 @@ tags:
     description: 初期データ設定(Ansible)
   - name: LogLevel Settings
     description: ログレベル設定
+  - name: Maintenance Mode Setting
+    description: メンテナンスモード設定
+  - name: Backyard Execute Check
+    description: バックヤード実行状態一括取得
 
 paths:
   /api/organizations/{organization_id}/ita/:
@@ -665,6 +669,170 @@ paths:
                   result:
                     type: string
                     example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/ita/maintenance-mode-setting/:
+    get:
+      tags:
+        - Maintenance Mode Setting
+      description: メンテナンスモード設定状態を取得する
+      operationId: getMaintenanceModeSetting
+      x-openapi-router-controller: controllers.maintenance_mode_setting_controller
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    properties:
+                      BACKYARD_EXECUTE_STOP:
+                        type: object
+                        properties:
+                          setting_value:
+                            type: string
+                            example: "0"
+                          last_update_user:
+                            type: string
+                            example: "user_name"
+                          last_update_timestamp:
+                            type: string
+                            example: "YYYY-MM-DD hh:mm:ss.xxxxxx"
+                      DATA_UPDATE_STOP:
+                        type: object
+                        properties:
+                          setting_value:
+                            type: string
+                            example: "0"
+                          last_update_user:
+                            type: string
+                            example: "user_name"
+                          last_update_timestamp:
+                            type: string
+                            example: "YYYY-MM-DD hh:mm:ss.xxxxxx"
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+    patch:
+      tags:
+        - Maintenance Mode Setting
+      description: メンテナンスモードの設定状態を更新する
+      operationId: patchMaintenanceModeSetting
+      x-openapi-router-controller: controllers.maintenance_mode_setting_controller
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                BACKYARD_EXECUTE_STOP:
+                  type: string
+                  example: "1"
+                DATA_UPDATE_STOP:
+                  type: string
+                  example: "1"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/ita/backyard-execute-check/:
+    get:
+      tags:
+        - Backyard Execute Check
+      description: すべてのバックヤードの実行状態を一括取得する
+      operationId: getBackyardExecuteCheck
+      x-openapi-router-controller: controllers.backyard_execute_check_controller
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    properties:
+                      (organization_name):
+                        type: object
+                        properties:
+                          (workspace_name):
+                            type: object
+                            properties:
+                              (backyard_container_name):
+                                type: array
+                                items:
+                                  type: "object"
+                                  properties:
+                                    id:
+                                      type: string
+                                      example: "(uuid)"
+                                    status_id:
+                                      type: string
+                                      example: "1"
+                                    status_name:
+                                      type: string
+                                      example: "未実行"
+                                    last_update_timestamp:
+                                      type: string
+                                      example: "YYYY-MM-DD hh:mm:ss.xxxxxx"
                   message:
                     type: string
         '401':

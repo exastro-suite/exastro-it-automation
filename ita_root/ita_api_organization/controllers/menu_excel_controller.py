@@ -17,7 +17,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body, check_request_body_key
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from common_libs.common import menu_excel
-
+from flask import g
 
 
 @api_filter
@@ -177,6 +177,11 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
 
     :rtype: InlineResponse2004
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00001"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 

@@ -68,6 +68,20 @@ def before_request_handler():
             g.LANGUAGE = language
             g.appmsg.set_lang(language)
             g.applogger.debug("LANGUAGE({}) is set".format(language))
+
+        # set maintenance mode value
+        common_db = DBConnectCommon()  # noqa: F405
+        try:
+            where_str = "WHERE `DISUSE_FLAG`='0'"
+            maintenance_mode_list = common_db.table_select("T_COMN_MAINTENANCE_MODE", where_str)
+            if maintenance_mode_list:
+                g.maintenance_mode = {}
+                for maintenande_mode in maintenance_mode_list:
+                    g.maintenance_mode[maintenande_mode.get('MODE_NAME')] = maintenande_mode.get('SETTING_VALUE')
+        except Exception:
+            g.maintenance_mode = {}
+        common_db.db_disconnect()
+
     except AppException as e:
         # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
         return app_exception_response(e)
@@ -421,3 +435,262 @@ def loglevel_settings_container(common_db, parameter):
     common_db.db_disconnect()
 
     return result_data,
+
+
+def maintenance_mode_update(common_db, parameter):
+    """
+        maintenance_mode_update
+    Args:
+        common_db : DBConnectCommon()
+        parameter : { MODE_NAME: SETTING_VALUE }
+    Returns:
+        Boolean, msg
+    """
+    ret = True
+    # set user_id
+    user_id = request.headers.get("User-Id")
+    # set table info
+    table_name = "T_COMN_MAINTENANCE_MODE"
+    primary_key_name = "MAINTENANCE_ID"
+
+    # transaction start
+    common_db.db_transaction_start()
+
+    for mode_name, setting_value in parameter.items():
+        # mode_nameが一致するレコードを検索し、MAINTENANCE_IDを取得する
+        where_str = "WHERE `MODE_NAME`='{}'".format(mode_name)
+        target_system_record = common_db.table_select(table_name, where_str)
+        if not target_system_record:
+            common_db.db_transaction_end(False)
+            msg_args = [mode_name]
+            raise AppException("499-01601", msg_args, msg_args)
+        maintenance_id = target_system_record[0].get('MAINTENANCE_ID')
+
+        # 対象のMAINTENANCEに対して、設定するSETTING_VALUEの値のバリデーションチェックを実施する
+        valid_check = setting_value_valid(mode_name, str(setting_value))
+        if not valid_check:
+            common_db.db_transaction_end(False)
+            msg_args = [mode_name, str(setting_value)]
+            raise AppException("499-01602", msg_args, msg_args)
+
+        # 対象のMAINTENANCE_IDに対してSETTING_VALUEを更新
+        data_list = {}
+        data_list['MAINTENANCE_ID'] = maintenance_id
+        data_list['SETTING_VALUE'] = str(setting_value)
+        data_list['LAST_UPDATE_USER'] = user_id
+        common_db.table_update(table_name, data_list, primary_key_name, is_register_history=False)
+
+    # transaction end:commit
+    common_db.db_transaction_end(True)
+    common_db.db_disconnect()
+
+    return ret
+
+
+def setting_value_valid(mode_name, setting_value):
+    """
+        setting_value_valid
+        system_setting_updateで更新するsetting_valueの値のバリデーションチェックを行う
+    Args:
+        mode_name : MODE_NAMEの値
+        setting_value : SETTING_VALUEに更新する値
+    Returns:
+        Boolean
+    """
+    # MODE_NAMEが「BACKYARD_EXECUTE_STOP」「DATA_UPDATE_STOP」はsetting_valueは"0"か"1"のみ許容する。（現状の対象はそれのみ）
+    pattern = r'[0-1]'
+    match = re.findall(pattern, str(setting_value))
+    if not match:
+        return False
+
+    return True
+
+
+def get_backyard_execute_status_list():
+    """
+        get_backyard_execute_status_list
+    Args:
+    Returns:
+        Boolean, backyard_execute_status_list(dict)
+    """
+    try:
+        common_db = DBConnectCommon()  # noqa: F405
+
+        # set language
+        language = request.headers.get("Language")
+        if not language:
+            language = os.environ.get("DEFAULT_LANGUAGE")
+
+        # set return value
+        all_exec_count = 0
+        backyard_execute_status_list = {}
+
+        # チェック対象の一覧。テーブル名、カラム名、ステータスID等。
+        backyard_check_list = [
+            {
+                "container_name": "ita-by-ansible-execute",
+                "table_name": "V_ANSC_EXEC_STS_INST",
+                "primary_key": "EXECUTION_NO",
+                "column_name": "STATUS_ID",
+                "target_status_list": ["2", "3", "4"],  # 2:準備中, 3:実行中, 4:実行中(遅延)
+                "status_name_table": "T_ANSC_EXEC_STATUS",
+                "status_name_id_column": "EXEC_STATUS_ID",
+                "status_name_column": "EXEC_STATUS_NAME",
+                "add_count": True
+            },
+            {
+                "container_name": "ita-by-conductor-synchronize",
+                "table_name": "T_COMN_CONDUCTOR_INSTANCE",
+                "primary_key": "CONDUCTOR_INSTANCE_ID",
+                "column_name": "STATUS_ID",
+                "target_status_list": ["3", "4", "5"],  # 3:実行中, 4:実行中(遅延), 5:一時停止
+                "status_name_table": "T_COMN_CONDUCTOR_STATUS",
+                "status_name_id_column": "STATUS_ID",
+                "status_name_column": "STATUS_NAME",
+                "add_count": False  # Conductorはexecute_countに加算をしない。
+            },
+            {
+                "container_name": "ita-by-excel-export-import",
+                "table_name": "T_BULK_EXCEL_EXPORT_IMPORT",
+                "primary_key": "EXECUTION_NO",
+                "column_name": "STATUS",
+                "target_status_list": ["2"],  # 2:実行中
+                "status_name_table": "T_DP_STATUS_MASTER",
+                "status_name_id_column": "ROW_ID",
+                "status_name_column": "TASK_STATUS_NAME",
+                "add_count": True
+            },
+            {
+                "container_name": "ita-by-menu-export-import",
+                "table_name": "T_MENU_EXPORT_IMPORT",
+                "primary_key": "EXECUTION_NO",
+                "column_name": "STATUS",
+                "target_status_list": ["2"],  # 2:実行中
+                "status_name_table": "T_DP_STATUS_MASTER",
+                "status_name_id_column": "ROW_ID",
+                "status_name_column": "TASK_STATUS_NAME",
+                "add_count": True
+            },
+            {
+                "container_name": "ita-by-menu-create",
+                "table_name": "T_MENU_CREATE_HISTORY",
+                "primary_key": "HISTORY_ID",
+                "column_name": "STATUS_ID",
+                "target_status_list": ["2"],  # 2:実行中
+                "status_name_table": "T_MENU_CREATE_STATUS",
+                "status_name_id_column": "STATUS_ID",
+                "status_name_column": "STATUS_NAME",
+                "add_count": True
+            },
+            {
+                "container_name": "ita-by-terraform-cli-execute",
+                "table_name": "T_TERC_EXEC_STS_INST",
+                "primary_key": "EXECUTION_NO",
+                "column_name": "STATUS_ID",
+                "target_status_list": ["2", "3", "4"],  # 2:準備中, 3:実行中, 4:実行中(遅延)
+                "status_name_table": "T_TERF_EXEC_STATUS",
+                "status_name_id_column": "EXEC_STATUS_ID",
+                "status_name_column": "EXEC_STATUS_NAME",
+                "add_count": True
+            },
+            {
+                "container_name": "ita-by-terraform-cloud-ep-execute",
+                "table_name": "T_TERE_EXEC_STS_INST",
+                "primary_key": "EXECUTION_NO",
+                "column_name": "STATUS_ID",
+                "target_status_list": ["2", "3", "4"],  # 2:準備中, 3:実行中, 4:実行中(遅延)
+                "status_name_table": "T_TERF_EXEC_STATUS",
+                "status_name_id_column": "EXEC_STATUS_ID",
+                "status_name_column": "EXEC_STATUS_NAME",
+                "add_count": True
+            }
+        ]
+
+        # Organizationの一覧を取得
+        organization_list = []
+        where_str = "WHERE `DISUSE_FLAG`='0'"
+        t_comn_organization_db_info_records = common_db.table_select('T_COMN_ORGANIZATION_DB_INFO', where_str)
+        for record in t_comn_organization_db_info_records:
+            organization_data = {'organization_id': record.get('ORGANIZATION_ID'), 'db_database': record.get('DB_DATABASE')}
+            organization_list.append(organization_data)
+
+        # Organizationの一覧でループスタート
+        for org_data in organization_list:
+            org_id = org_data.get('organization_id')
+            org_db = DBConnectOrg(org_id)  # noqa: F405
+            organization_exec_count = 0
+
+            # 返却値にorganization_idでkeyを作成
+            backyard_execute_status_list[org_id] = {}
+
+            # Workspaceの一覧を取得
+            workspace_list = []
+            where_str = "WHERE `DISUSE_FLAG`='0'"
+            t_comn_workspace_db_info_rocords = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", where_str)  # noqa: E501
+            for record in t_comn_workspace_db_info_rocords:
+                workspace_data = {'workspace_id': record.get('WORKSPACE_ID'), 'db_database': record.get('DB_DATABASE')}
+                workspace_list.append(workspace_data)
+
+            # Workspaceの一覧でループスタート
+            for ws_data in workspace_list:
+                ws_id = ws_data.get('workspace_id')
+                ws_db = DBConnectWs(ws_id, org_id)  # noqa: F405
+                workspace_exec_count = 0
+
+                # 返却値にworkspace_idでkeyを作成
+                backyard_execute_status_list[org_id][ws_id] = {}
+
+                for backyard_data in backyard_check_list:
+                    # 返却値にbackyardコンテナ名でkeyを作成
+                    container_name = backyard_data.get('container_name')
+                    backyard_execute_status_list[org_id][ws_id][container_name] = []
+
+                    # ステータスIDと名称を取得
+                    status_name_data = {}
+                    status_name_table = backyard_data.get('status_name_table')
+                    status_name_table_records = ws_db.table_select(status_name_table)
+                    for status_name_record in status_name_table_records:
+                        status_id = status_name_record.get(backyard_data.get('status_name_id_column'))
+                        status_name_data[status_id] = status_name_record.get(backyard_data.get('status_name_column') + '_' + language.upper())
+
+                    # バックヤード実行管理テーブルから完了形以外のレコードを取得
+                    table_name = backyard_data.get('table_name')
+                    column_name = backyard_data.get('column_name')
+                    status_list_str = ','.join(backyard_data.get('target_status_list'))
+                    where_str = "WHERE `DISUSE_FLAG`='0' AND {} IN ({})".format(column_name, status_list_str)
+                    backyard_execute_table_records = ws_db.table_select(table_name, where_str)
+
+                    # バックヤード実行管理テーブルのレコードからデータを形成
+                    for execute_record in backyard_execute_table_records:
+                        primary_key = backyard_data.get('primary_key')
+                        id = execute_record.get(primary_key)
+                        status_id = execute_record.get(column_name)
+                        status_name = status_name_data.get(status_id)
+                        last_update_timestamp = execute_record.get('LAST_UPDATE_TIMESTAMP')
+                        execute_data = {'id': id, 'status_id': status_id, 'status_name': status_name, 'last_update_timestamp': last_update_timestamp}
+                        backyard_execute_status_list[org_id][ws_id][container_name].append(execute_data)
+
+                        # Workspace単位の実行中対象数を加算
+                        if backyard_data.get('add_count') is True:
+                            workspace_exec_count += 1
+
+                # Workspace単位の実行中対象数を格納
+                backyard_execute_status_list[org_id][ws_id]['execute_count'] = workspace_exec_count
+
+                # Organization単位の実行中対象数を加算
+                organization_exec_count += workspace_exec_count
+
+            # Organization単位の実行中対象数を格納
+            backyard_execute_status_list[org_id]['execute_count'] = organization_exec_count
+
+            # 全体の実行中対象数を加算
+            all_exec_count += organization_exec_count
+
+        # 全体の実行中対象数を格納
+        backyard_execute_status_list['execute_count'] = all_exec_count
+
+        return backyard_execute_status_list
+
+    except Exception as e:
+        # catch - other all error
+        return exception_response(e, True)

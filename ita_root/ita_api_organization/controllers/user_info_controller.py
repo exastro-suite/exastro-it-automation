@@ -16,6 +16,7 @@ import connexion
 from common_libs.common import *  # noqa: F403
 from libs import user_info
 from common_libs.api import api_filter
+from flask import g
 
 
 @api_filter
@@ -99,6 +100,11 @@ def post_table_settings(organization_id, workspace_id, body=None):  # noqa: E501
 
     :rtype: InlineResponse20011
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00002"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -150,6 +156,11 @@ def post_widget_settings(organization_id, workspace_id, body=None):  # noqa: E50
 
     :rtype: InlineResponse20011
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00003"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 

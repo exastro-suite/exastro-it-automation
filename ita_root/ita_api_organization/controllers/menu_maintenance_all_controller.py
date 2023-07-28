@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import connexion
-from flask import jsonify
+from flask import jsonify, g
 import sys
 import base64
 import json
@@ -46,6 +46,11 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
     # if connexion.request.is_json:
     #    body = object.from_dict(connexion.request.get_json())  # noqa: E501
     # return 'do some magic!'
+
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00001"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405

@@ -17,6 +17,8 @@ from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body, check_request_body_key
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import export_import
+from flask import g
+
 
 @api_filter
 def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa: E501
@@ -33,6 +35,11 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00016"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -74,6 +81,11 @@ def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00017"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -115,6 +127,11 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00014"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -163,6 +180,11 @@ def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00015"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -236,6 +258,10 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs): 
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00017"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -312,6 +338,11 @@ def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00015"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 

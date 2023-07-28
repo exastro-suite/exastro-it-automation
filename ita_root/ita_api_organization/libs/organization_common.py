@@ -81,6 +81,17 @@ def before_request_handler():
         common_db = DBConnectCommon()  # noqa: F405
         g.applogger.debug("ITA_DB is connected")
 
+        # set maintenance mode value
+        try:
+            where_str = "WHERE `DISUSE_FLAG`='0'"
+            maintenance_mode_list = common_db.table_select("T_COMN_MAINTENANCE_MODE", where_str)
+            if maintenance_mode_list:
+                g.maintenance_mode = {}
+                for maintenande_mode in maintenance_mode_list:
+                    g.maintenance_mode[maintenande_mode.get('MODE_NAME')] = maintenande_mode.get('SETTING_VALUE')
+        except Exception:
+            g.maintenance_mode = {}
+
         orgdb_connect_info = common_db.get_orgdb_connect_info(organization_id)
         common_db.db_disconnect()
         if orgdb_connect_info is False:

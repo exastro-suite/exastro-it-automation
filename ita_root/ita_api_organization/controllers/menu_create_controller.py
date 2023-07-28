@@ -17,6 +17,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import menu_create as menu_create_lib
+from flask import g
 
 
 @api_filter
@@ -34,6 +35,10 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
 
     :rtype: InlineResponse20011
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -76,6 +81,11 @@ def execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
 
     :rtype: InlineResponse20011
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -363,6 +373,10 @@ def get_parameter_collection_filter_terms_update(organization_id, workspace_id, 
 
     :rtype: InlineResponse2001
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00020"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -397,6 +411,10 @@ def get_parameter_collection_filter_terms_delete(organization_id, workspace_id, 
 
     :rtype: InlineResponse2001
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+        status_code = "498-00021"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405

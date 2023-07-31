@@ -167,6 +167,7 @@ def make_tree(objdbca, hierarchy=0):
             hierarchy: int
     """
     try:
+        tree_array = []
         tmp_msg = 'make_tree start'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -757,7 +758,7 @@ def make_host_data(hgsp_config, hgsp_data):
                     tree_array[tree_data_key]['DATA'] = copy.deepcopy(sameid_data)
                     tree_array[tree_data_key]['DATA_HIERARCHY'] = copy.deepcopy(tree_array[tree_data_key]['HIERARCHY'])
                     # アップロードファイルがあるか確認
-                    data_json = json.loads(sameid_data.get("DATA_JSON"))
+                    data_json = get_json_loads(sameid_data.get("DATA_JSON"))
                     row_id = sameid_data.get('ROW_ID')
                     for rest_key, file_name in data_json.items():
                         if rest_key in file_columns_info['target_rest_name']:
@@ -827,8 +828,8 @@ def make_host_data(hgsp_config, hgsp_data):
                 # アップロードファイルの比較
                 for rest_key in file_columns_info['target_rest_name']:
                     alone_id = alone_data['ROW_ID']
-                    alone_data_json = json.loads(alone_data.get("DATA_JSON"))
-                    output_data_json = json.loads(output_data.get("DATA_JSON"))
+                    alone_data_json = get_json_loads(alone_data.get("DATA_JSON"))
+                    output_data_json = get_json_loads(output_data.get("DATA_JSON"))
                     alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
                     output_file_name = output_data_json.get(rest_key) if rest_key in output_data_json else None
                     input_file_data = None
@@ -976,8 +977,8 @@ def make_host_data(hgsp_config, hgsp_data):
                                     parent_data = copy.copy(tree_array[parent_key]['DATA'][tmp_column_name])
                                     child_data = copy.copy(tree_array[tree_data_child_key]['DATA'][tmp_column_name])
                                     if tmp_column_name == "DATA_JSON":
-                                        parent_data_json = json.loads(parent_data)
-                                        child_data_json = json.loads(child_data)
+                                        parent_data_json = get_json_loads(parent_data)
+                                        child_data_json = get_json_loads(child_data)
                                         base_data_json = dict((x, y) for x, y in sorted(output_table.objmenu.get_json_cols_base().items()))
                                         for rest_name in base_data_json.keys():
                                             # 空文字の扱いを統一してNoneとして扱う  "" '' -> None
@@ -1048,14 +1049,14 @@ def make_host_data(hgsp_config, hgsp_data):
                                                 # 子のデータの優先順位が親のデータの優先順位より小さい場合
                                                 if child_priority < parent_priority:
                                                     # 親のデータ利用:None場合、子のデータ使用
-                                                    if parent_val is not None:
+                                                    if parent_data is not None:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
                                                     else:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
                                                     chgFlg = True
                                                 else:
                                                     # 子のデータ利用:Noneの場合、親のデータ使用
-                                                    if child_val is not None:
+                                                    if child_data is not None:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
                                                     else:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
@@ -1118,9 +1119,8 @@ def make_host_data(hgsp_config, hgsp_data):
                             or host_data['DATA']['HOST_ID'] in tree_array[match_parent_kykey_idx]['ALL_PARENT_IDS'] is not False:
 
                         if len(host_data['OPERATION']) >= parent_id_Key:
-                            if host_data['OPERATION'][parent_id_Key] is None:
-                                opematch_flg = True
-                            elif host_data['DATA']['OPERATION_ID'] in host_data['OPERATION']:
+                            if host_data['OPERATION'][parent_id_Key] is None \
+                                    or host_data['OPERATION'][parent_id_Key] == host_data['DATA']['OPERATION_ID']:
                                 opematch_flg = True
                             else:
                                 pass
@@ -1171,8 +1171,8 @@ def make_host_data(hgsp_config, hgsp_data):
                 # アップロードファイルの比較
                 for rest_key in file_columns_info['target_rest_name']:
                     host_id = host_data['DATA']['ROW_ID']
-                    alone_data_json = json.loads(host_data['DATA'].get("DATA_JSON"))
-                    output_data_json = json.loads(output_data.get("DATA_JSON"))
+                    alone_data_json = get_json_loads(host_data['DATA'].get("DATA_JSON"))
+                    output_data_json = get_json_loads(output_data.get("DATA_JSON"))
                     alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
                     output_file_name = output_data_json.get(rest_key) if rest_key in output_data_json else None
                     input_file_data = None
@@ -1376,7 +1376,7 @@ def chk_file_file_columns(file_columns_info, output_table, input_data, target_da
         copy_file_array
     """
     for rest_key in file_columns_info['target_rest_name']:
-        alone_data_json = json.loads(target_data.get("DATA_JSON"))
+        alone_data_json = get_json_loads(target_data.get("DATA_JSON"))
         alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
         if alone_file_name:
             input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, input_data['ROW_ID'], None, False)
@@ -1670,7 +1670,7 @@ def id_conv(data, iddict={}, mode='dict'):
     for _k, _v in iddict.items():
         xxxx = xxxx.replace(_k, _v)
     if mode == 'dict':
-        xxxx = json.loads(xxxx)
+        xxxx = get_json_loads(xxxx)
     return xxxx
 
 
@@ -1705,3 +1705,18 @@ def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
         return '{}'.format(dt)
     else:
         return dt
+
+
+def get_json_loads(data, return_val={}):
+    """
+    get_json_loads:
+    Args:
+        data (str):
+        return_val (optional): return type. Defaults to 'dict'.
+    Returns:
+        json.loads(data) or return_val()
+    """
+    try:
+        return json.loads(data)
+    except:  # noqa: E722
+        return return_val

@@ -2352,6 +2352,9 @@ def execute_excel_maintenance(
     parameter = []
     dict_param = {}
 
+    # 対象項目数確認用
+    cnt_column_order = len(column_order) - 1
+
     # i:対象行の分だけループ
     if excel_data:
         for row_i in range(len(excel_data)):
@@ -2360,6 +2363,9 @@ def execute_excel_maintenance(
             parameter[row_i]["file"] = file_param
             # j:項目数の分だけループ
             for col_j in range(len(excel_data[0])):
+                # 入力対象枠外は処理しない
+                if col_j > cnt_column_order:
+                    break
                 if process_type[row_i] == msg_reg:
                     if column_order[col_j] in register_list:
                         continue

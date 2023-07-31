@@ -38,13 +38,12 @@ constructor() {
 
     // jQuery cache
     ui.$ = {};
-    ui.$.window = $( window ),
     ui.$.body = $('body'),
     ui.$.container = $('#container');
     ui.$.header = $('#header');
     ui.$.menu = $('#menu');
     ui.$.content = $('#content');
-
+    
     // Common parameter
     ui.params = fn.getCommonParams();
     ui.params.menuNameRest = fn.getParams().menu;
@@ -229,13 +228,13 @@ setSideMenuEvents() {
             + `</div></div>`);
 
             ui.$.container.append( $html );
-            ui.$.window.on('mousedown.groupSub', function( e ){
+            $( window ).on('mousedown.groupSub', function( e ){
                 if ( !$( e.target ).closest('.menuGroupSub, .subGroupMenuOpen').length ) {
                     ui.$.menu.find('.subGroupMenuOpen').removeClass('subGroupMenuOpen');
                     $html.animate({ left: '-100%'}, 300, function(){
                         $( this ).remove();
                     });
-                    ui.$.window.off('mousedown.groupSub');
+                    $( this ).off('mousedown.groupSub');
                 }
             });
         }
@@ -501,7 +500,7 @@ sideMenuBody( title, icon, list, panel, searchFlag = true ) {
 
     const iconImage = ui.getPanelImage( title, icon, panel );
 
-    return `
+    let html = `
     <div class="menuTitle">
         <div class="menuTitleIcon">
             ${iconImage}
@@ -516,6 +515,16 @@ sideMenuBody( title, icon, list, panel, searchFlag = true ) {
         </ul>
     </nav>
     ${( searchFlag )? ui.serachBlock( icon ): ''}`;
+
+    // サブメニューコンテンツ
+    if ( searchFlag && panel && ui.params.menuNameRest === 'parameter_collection') {
+        html = `<div class="menuPageMain">`
+            + html
+        + `</div>`
+        + `<div class="menuPageContent"><div class="pageContentLoading"></div></div>`;
+    }
+
+    return html;
 }
 /*
 ##################################################

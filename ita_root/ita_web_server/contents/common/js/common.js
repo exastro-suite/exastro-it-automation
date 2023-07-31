@@ -1875,10 +1875,10 @@ html: {
         // Radio list
         if ( item.radio ) {
             const title = item.radio.title;
-            
+
             const listHtml = [];
             for ( const key in item.radio.list ) {
-                const checked = ( key === item.radio.checked )? {checked: 'checked'}: {};console.log(checked)
+                const checked = ( key === item.radio.checked )? {checked: 'checked'}: {};
                 listHtml.push(`<li class="operationMenuRadioItem">`
                 + cmn.html.radioText('operationMenuRadio ' + item.radio.className, key, item.radio.name, 'operationMenuRadio_' + key, checked, item.radio.list[ key ], 'narrowRadioTextWrap')
                 + `</li>`);
@@ -2297,7 +2297,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
             if ( config.select ) {
                 modalInstance[ modalId ].table.select.select = config.select;
                 modalInstance[ modalId ].table.setTbody();
-                
+
                 const checkFlag = ( config.select.length === 0 );
                 modalInstance[ modalId ].modal.buttonPositiveDisabled( checkFlag );
             }
@@ -2595,13 +2595,22 @@ jsonStringify: function( json ) {
     }
 },
 
+jsonParse: function( json ) {
+    try {
+        return JSON.parse( json );
+    } catch( error ) {
+        return {};
+    }
+},
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   iframeモーダル
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-modalIframe: function( menu, title, option = {}){
+modalIframe: function( menu, title, option){
+    if ( !option ) option = {};
     if ( !modalInstance[ menu ] ) {
         const modalFuncs = {
             cancel: function() {
@@ -3140,7 +3149,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
     return new Promise( function( resolve, reject ){
         const fileType = cmn.fileTypeCheck( fileName );
         let fileMode = cmn.fileModeCheck( fileName );
-    
+
         // モーダル設定
         const height = ( mode === 'edit' && fileType === false )? 'auto': '100%';
         const config = {
@@ -3171,14 +3180,14 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                 });
             };
         }
-        
+
         config.footer.button.download = { text: getMessage.FTE00169, action: 'restore', width: '88px'};
         config.footer.button.close = { text: getMessage.FTE00170, action: 'normal', width: '88px'};
         funcs.close = function() {
             modal.close();
             modal = null;
-        };             
-        
+        };
+
         const modeSelectList = {
             text: 'Text(txt)',
             yaml: 'YAML(yaml,yml)',
@@ -3220,7 +3229,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                 html += `<div class="editorHeader"><table class="commonInputTable">${nameInputTr}`;
                 if ( fileType === 'text') {
                     html += modeSelectTr;
-                }                
+                }
                 html += `</table></div>`;
             } else if ( fileType === 'text') {
                 html += `<div class="editorHeader"><table class="commonInputTable">${modeSelectTr}</table></div>`;
@@ -3336,12 +3345,12 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                 // 更新
                 modal.btnFn.update = function() {
                     const value = aceEditor.getValue();
-        
+
                     cmn.base64Encode( value ).then(function( base64 ){
                         fileName = modal.$.dbody.find('.editorFileName').val();
                         modal.close();
                         modal = null;
-    
+
                         resolve({
                             name: fileName,
                             base64: base64
@@ -3373,7 +3382,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
             }
         }
     });
-    
+
 },
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

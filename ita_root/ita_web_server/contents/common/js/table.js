@@ -152,9 +152,8 @@ tableStructuralData() {
                 'base_datetime', 'operation_date', 'last_execute_timestamp',
                 'remarks', 'last_update_date_time', 'last_updated_user'
             ];
-            // input_orderがある場合はバンドルメニューとする
+            
             if ( tb.info.column_info[key] ) {
-                if ( tb.info.column_info[key].column_name_rest === 'input_order') tb.menuMode = 'bundle';
                 return hideItem.indexOf( tb.info.column_info[key].column_name_rest ) === -1;
             } else {
                 return true;
@@ -220,7 +219,7 @@ setHeaderHierarchy() {
 
     const hierarchy = function( columns, row ){
         if ( fn.typeof( columns ) !== 'array') return;
-        if ( !tb.data.hierarchy[ row ] ) tb.data.hierarchy[ row ] = [];    
+        if ( !tb.data.hierarchy[ row ] ) tb.data.hierarchy[ row ] = [];
         for ( const columnKey of columns ) {
             const type = columnKey.slice( 0, 1 );
             if ( type === 'g') {
@@ -329,6 +328,7 @@ setup() {
     tb.$.container = $( tb.mainHtml() );
     tb.$.header = tb.$.container.find('.tableHeader');
     tb.$.body = tb.$.container.find('.tableBody');
+    tb.$.wrap = tb.$.container.find('.tableWrap');
     tb.$.filter = tb.$.container.find('.tableFilter');
     tb.$.footer = tb.$.container.find('.tableFooter');
     tb.$.table = tb.$.container.find('.table');
@@ -380,7 +380,8 @@ setup() {
             tb.paging.onePageNum = 25;
         }
     } else {
-        tb.paging.onePageNum = 1000;
+        tb.paging.onePageNum = 10000;
+        if ( tb.option.parameterBundle === '1') tb.menuMode = 'bundle';
     }
 
     // ソート
@@ -502,7 +503,7 @@ setTable( mode ) {
     } else {
         tb.$.body.removeClass('tableItemMenuShow');
     }
-    
+
     if ( tb.mode !== 'parameter') {
         tb.$.thead.find('.filterInputDiscard').select2({
             width: '120px',
@@ -510,7 +511,7 @@ setTable( mode ) {
         });
         tb.setInitSort();
     }
-    
+
     // 縦・横
     if ( tb.getTableSettingValue('direction') === 'horizontal') {
         tb.$.body.addClass('tableHorizontal');
@@ -956,7 +957,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
         // オペレーション or ホストの追加
         if ( tb.mode === 'parameter' && i === 1 ) {
             if ( tb.menuMode === 'bundle') {
-                html[i] = fn.html.cell( '代入順序', 'tHeadTh', 'th', rowLength, 1 ) + html[i];
+                html[i] = fn.html.cell( getMessage.FTE11047, 'tHeadTh', 'th', rowLength, 1 ) + html[i];
             }
             html[i] = fn.html.cell( '', 'parameterTheadTh tHeadTh tHeadLeftSticky', 'th', rowLength, 1 ) + html[i];
         }
@@ -1370,10 +1371,10 @@ setTableEvents() {
                 key = $link.attr('data-rest'),
                 fileName = $link.text(),
                 type = $link.attr('data-type');
-            
+
             let file = tb.getFileData( id, key, type );
             if ( !file ) file = '';
-            
+
             fn.fileEditor( file, fileName, 'pureview');
         });
     }
@@ -1589,7 +1590,7 @@ setTableEvents() {
                 id = $button.attr('data-id'),
                 key = $button.attr('data-key'),
                 $fileBox = $button.closest('.inputFileEdit').prev().find('.tableEditSelectFile');
-            
+
             let file = tb.getFileData( id, key ),
                 fileName = $fileBox.text();
             if ( !file ) file = '';
@@ -1722,6 +1723,20 @@ setTableEvents() {
             }
         });
 
+        // select2が隠れている場合スクロールで調整する
+        const select2ScrollCheck = function( $element ) {
+            const
+            width = $element.closest('.ci').width(),
+            left = $element.closest('.ci').offset().left,
+            wrapLeft = tb.$.wrap.offset().left,
+            wrapWidth = tb.$.wrap.width(),
+            wrapScroll = tb.$.wrap.scrollLeft();
+
+            if ( left - wrapLeft + width > wrapWidth - wrapScroll ) {
+                tb.$.wrap.scrollLeft( ( left - wrapLeft + width ) - ( wrapWidth - wrapScroll ) );
+            }
+        };
+
         // select欄クリック時にselect2を適用する
         tb.$.tbody.on('click', '.tableEditInputSelectValue', function(){
             const $value = $( this ),
@@ -1730,6 +1745,7 @@ setTableEvents() {
 
             if ( $value.is('.tableEditInputSelectValueDisabled') ) return false;
 
+            select2ScrollCheck( $select );
             $value.remove();
 
             $select.select2({
@@ -1740,10 +1756,25 @@ setTableEvents() {
             $select.change();
         });
 
+        // select2が開いているときはスクロールさせない
+        tb.$.wrap.on({
+            'select2:opening': function(){
+                $( this ).on('wheel.select2Scroll', function( e ){
+                    e.preventDefault();
+                });
+            },
+            'select2:closing': function(){
+                $( this ).off('wheel.select2Scroll');
+            }
+        });
+
         // select欄フォーカス時にselect2を適用する
         tb.$.tbody.on('focus.select2', '.tableEditInputSelect', function(){
-            const $select = $( this );
+            const $select = $( this );           
+
             if ( !$select.is('.select2-hidden-accessible') ) {
+                select2ScrollCheck( $select );
+
                 const $value = $select.prev('.tableEditInputSelectValue'),
                       width = $value.outerWidth();
 
@@ -1942,10 +1973,16 @@ setTableEvents() {
                 if ( tb.mode === 'select') {
                     if ( checked ) {
                         if ( fn.typeof( tb.params.selectNameKey ) !== 'array') {
-                            tb.select[tb.mode].push({
-                                id: id,
-                                name: $check.attr('data-selectname')
-                            });
+                            const selectName = $check.attr('data-selectname');
+                            if ( selectName ) {
+                                const item = {
+                                    id: id,
+                                    name: selectName
+                                };
+                                tb.select[tb.mode].push( item );
+                            } else {
+                                tb.select[tb.mode].push( id );
+                            }
                         } else {
                             const checkItem = {
                                 id: id,
@@ -1962,9 +1999,16 @@ setTableEvents() {
                             tb.select[tb.mode].push( checkItem );
                         }
                     } else {
-                        const index = tb.select[tb.mode].findIndex(function(obj){ return obj.id === id });
-                        if ( index !== -1 ) {
-                            tb.select[ checkMode ].splice( index, 1 );
+                        if ( fn.typeof( tb.select[tb.mode] ) === 'object') {
+                            const index = tb.select[tb.mode].findIndex(function(obj){ return obj.id === id });
+                            if ( index !== -1 ) {
+                                tb.select[ checkMode ].splice( index, 1 );
+                            }
+                        } else {
+                            const index = tb.select[tb.mode].indexOf( id );
+                            if ( index !== -1 ) {
+                                tb.select[ checkMode ].splice( index, 1 );
+                            }
                         }
                     }
                 } else {
@@ -2396,7 +2440,7 @@ filterSelectParamsOpen( filterParams ) {
 
         // フィルタリストの作成
         for ( const rest in filterParams ) {
-            if ( filterParams[ rest ].LIST ) {
+            if ( filterParams[ rest ].LIST && rest in tb.data.restNames ) {
                 filterRestUrls.push(`${tb.rest.filterPulldown}${rest}/`);
                 filterKeys.push( rest );
                 filterList[ rest ] = filterParams[ rest ].LIST;
@@ -2448,21 +2492,35 @@ requestTbody() {
     if ( tb.mode !== 'parameter') {
         tb.filterParams = tb.getFilterParameter();
     } else {
+        // パラメータ集フィルタ設定
         tb.filterParams = {
             discard: {
                 NORMAL: '0'
-            },
-            host_name: {
-                LIST: tb.option.parameterHostList
             }
         };
         if ( tb.option.parameterMode === 'host') {
-            tb.filterParams.host_name = {
-                LIST: tb.option.parameterHostList
+            // ホスト指定でオペレーションのみの場合はIDに-1を入れて表示しない
+            if ( tb.option.parameterHostList &&
+            (
+                ( tb.option.parameterHostList.length && tb.option.parameterSheetType === '3') ||
+                ( tb.option.parameterHostList.length === 0 && tb.option.parameterSheetType !== '3')
+            ) ) {
+                tb.filterParams.uuid = {
+                    NORMAL: '-1'
+                }
+            } else {
+                tb.filterParams.host_name = {
+                    LIST: tb.option.parameterHostList
+                }
             }
-        } else {
+        } else if ( tb.option.parameterMode === 'operation') {
             tb.filterParams.operation_name_disp = {
                 LIST: tb.option.parameterOperationList
+            }
+            if ( tb.option.parameterSheetType !== '3') {
+                tb.filterParams.host_name = {
+                    LIST: tb.option.parameterHostList
+                }   
             }
         }
     }
@@ -2939,17 +2997,23 @@ tbodyHtml() {
         if ( tb.discardCheck( rowId ) === '1') {
             rowClassName.push('tBodyTrDiscard');
         }
-
+        
         // モード別列
         const rowCheckInput = function( type = 'check') {
             // チェック状態
             const attrs = {};
             if ( tb.mode === 'select' || tb.mode === 'execute') {
-                const selectId = tb.select[ tb.mode ].find(function( item ){
-                    return item.id === rowId;
-                });
-                if ( selectId ) {
-                    attrs['checked'] = 'checked';
+                if ( fn.typeof( tb.select[ tb.mode ] ) === 'object') {
+                    const selectId = tb.select[ tb.mode ].find(function( item ){
+                        return item.id === rowId;
+                    });
+                    if ( selectId ) {
+                        attrs['checked'] = 'checked';
+                    }
+                } else {
+                    if ( tb.select[ tb.mode ].indexOf( rowId ) !== -1 ) {
+                        attrs['checked'] = 'checked';
+                    }
                 }
             } else {
                 if ( tb.select[ tb.mode ].indexOf( rowId ) !== -1 ) {
@@ -3245,6 +3309,23 @@ viewCellHtml( item, columnKey, journal ) {
                 }
             } else {
                 return checkJournal( value );
+            }
+        
+        // パラメータ集用
+        case 'ParameterCollectionSheetType':
+            if ( value === '1') {
+                return getMessage.FTE11041;
+            } else if ( value === '3') {
+                return getMessage.FTE11042;
+            } else {
+                return '';
+            }
+        
+        case 'ParameterCollectionUse':
+            if ( value === '1') {
+                return getMessage.FTE11043;
+            } else {
+                return '';
             }
 
         // 不明
@@ -3594,7 +3675,7 @@ editConfirmCellHtml( item, columnKey ) {
                 const id = parameter[ tb.idNameRest ];
                 if ( val !== '') {
                     const fileHtml = [`<a href="${val}" class="tableViewDownload" data-type="${data}" data-id="${id}" data-rest="${columnName}">${val}</a>`];
-                    if ( ['text', 'image'].indexOf( fn.fileTypeCheck( val ) ) !== -1 ) fileHtml.push(`<button class="button filePreview popup" title="プレビュー">${fn.html.icon('search')}</button>`);
+                    if ( ['text', 'image'].indexOf( fn.fileTypeCheck( val ) ) !== -1 ) fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
                     return fileHtml.join('');
                 } else {
                     return '';
@@ -4225,7 +4306,6 @@ execute( type ) {
                 window.location.href = `?menu=check_operation_status_${tb.params.operationType}&execution_no=${result.execution_no}`;
             }).catch(function( error ){
                 if ( error.message ) alert( error.message );
-            }).then(function(){
                 tb.workEnd();
             });
         } else {
@@ -4476,7 +4556,7 @@ getTableSettingValue( key ) {
 
     const data = tb.tableSetting;
     tb.checkTableSettingValue();
-    
+
     // 個別か共通か
     if ( tb.mode !== 'parameter') {
         if ( key !== 'color' && key !== 'hideItem') {
@@ -5100,16 +5180,20 @@ parameterBody() {
 
     const listName = ( tb.option.parameterMode === 'host')? 'parameterOperationList': 'parameterHostList',
           nameKey = ( tb.option.parameterMode === 'host')? 'operation_name_disp': 'host_name';
-
+console.log(tb.option[ listName ])
     const length = tb.option[ listName ].length;
     for ( let i = 0; i < length; i++ ) {
+        // オペレーション名 or ホスト名
         const parameter = tb.option[ listName ][i];
 
         const rows = [];
         let rowspan = 0;
 
         for ( const item of list ) {
-            if ( item.parameter[ nameKey ] === parameter ) {
+            if (
+                ( item.parameter[ nameKey ] === parameter ) ||
+                ( tb.option.parameterSheetType === '3' && tb.option.parameterMode === 'operation' && i + 1 === length )
+            ) {
                 const rowHtml = [];
                 if ( tb.menuMode === 'bundle') {
                     rowHtml.push( fn.html.cell( item.parameter.input_order, 'tBodyTd', 'td') );
@@ -5141,7 +5225,7 @@ parameterBody() {
         if ( i === length - 1 ) parameterClass.push('parameterLast')
         rows[0].unshift( fn.html.cell( parameter, parameterClass.join(' '), 'th', rowspan ) );
 
-        const rowsLength = rows.length;        
+        const rowsLength = rows.length;
         for ( let j = 0; j < rowsLength; j++ ) {
             const rowClass = ['tBodyTr'];
             if ( j === rowsLength - 1 ) rowClass.push('parameterSeparateTr')

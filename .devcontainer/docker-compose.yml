@@ -10,6 +10,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8000
@@ -26,7 +28,6 @@ services:
       - PLATFORM_API_PORT=8000
     networks:
       - exastro
-      - default
 
   ita-api-admin:
     user: 1000:1000
@@ -38,6 +39,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8079
@@ -58,7 +61,6 @@ services:
       - PLATFORM_API_PORT=8000
     networks:
       - exastro
-      - default
 
   ita-web-server:
     user: 1000:1000
@@ -77,7 +79,6 @@ services:
       - "0.0.0.0:80:80"
     networks:
       - exastro
-      - default
 
   ita-mariadb:
     image: mariadb:10.4.8
@@ -100,18 +101,20 @@ services:
       - "0.0.0.0:3306:3306"
     networks:
       - exastro
-      - default
 
   ita-by-ansible-execute:
     user: 1000:${HOST_DOCKER_GID:-1000}
     build:
-      dockerfile: ./ita_root/ita_by_ansible_execute/Dockerfile
+      dockerfile: ./ita_root/ita_by_ansible_execute/Dockerfile_onpremises
       context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -138,7 +141,6 @@ services:
       - ita-by-ansible-execute
     networks:
       - exastro
-      - default
 
   ita-by-ansible-legacy-role-vars-listup:
     user: 1000:1000
@@ -150,6 +152,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -167,7 +171,6 @@ services:
       - ita-by-ansible-legacy-role-vars-listup
     networks:
       - exastro
-      - default
 
   ita-by-ansible-legacy-vars-listup:
     user: 1000:1000
@@ -179,6 +182,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -196,7 +201,6 @@ services:
       - ita-by-ansible-legacy-vars-listup
     networks:
       - exastro
-      - default
 
   ita-by-ansible-pioneer-vars-listup:
     user: 1000:1000
@@ -208,6 +212,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -225,7 +231,6 @@ services:
       - ita-by-ansible-pioneer-vars-listup
     networks:
       - exastro
-      - default
 
   ita-by-ansible-towermaster-sync:
     user: 1000:1000
@@ -237,6 +242,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -254,7 +261,6 @@ services:
       - ita-by-ansible-towermaster-sync
     networks:
       - exastro
-      - default
 
   ita-by-collector:
     user: 1000:1000
@@ -266,6 +272,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -283,7 +291,6 @@ services:
       - ita-by-collector
     networks:
       - exastro
-      - default
 
   ita-by-conductor-synchronize:
     user: 1000:1000
@@ -295,6 +302,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -312,7 +321,6 @@ services:
       - ita-by-conductor-synchronize
     networks:
       - exastro
-      - default
 
   ita-by-conductor-regularly:
     user: 1000:1000
@@ -324,6 +332,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -341,7 +351,6 @@ services:
       - ita-by-conductor-regularly
     networks:
       - exastro
-      - default
 
   ita-by-menu-create:
     user: 1000:1000
@@ -353,6 +362,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -370,7 +381,6 @@ services:
       - ita-by-menu-create
     networks:
       - exastro
-      - default
 
   ita-by-menu-export-import:
     user: 1000:1000
@@ -382,6 +392,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -399,7 +411,6 @@ services:
       - ita-by-menu-export-import
     networks:
       - exastro
-      - default
 
   ita-by-excel-export-import:
     user: 1000:1000
@@ -411,6 +422,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -428,7 +441,6 @@ services:
       - ita-by-excel-export-import
     networks:
       - exastro
-      - default
 
   ita-by-terraform-cloud-ep-execute:
     user: 1000:1000
@@ -440,6 +452,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -457,7 +471,6 @@ services:
       - ita-by-terraform-cloud-ep-execute
     networks:
       - exastro
-      - default
 
   ita-by-terraform-cloud-ep-vars-listup:
     user: 1000:1000
@@ -469,6 +482,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -486,7 +501,6 @@ services:
       - ita-by-terraform-cloud-ep-vars-listup
     networks:
       - exastro
-      - default
 
   ita-by-terraform-cli-execute:
     user: 1000:1000
@@ -498,6 +512,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -515,7 +531,6 @@ services:
       - ita-by-terraform-cli-execute
     networks:
       - exastro
-      - default
 
   ita-by-terraform-cli-vars-listup:
     user: 1000:1000
@@ -527,6 +542,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -544,7 +561,6 @@ services:
       - ita-by-terraform-cli-vars-listup
     networks:
       - exastro
-      - default
 
   ita-by-hostgroup-split:
     user: 1000:1000
@@ -556,6 +572,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -573,7 +591,6 @@ services:
       - ita-by-hostgroup-split
     networks:
       - exastro
-      - default
 
   ita-by-cicd-for-iac:
     user: 1000:1000
@@ -585,6 +602,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -602,7 +621,6 @@ services:
       - ita-by-cicd-for-iac
     networks:
       - exastro
-      - default
 
   ita-by-execinstance-dataautoclean:
     user: 1000:1000
@@ -614,6 +632,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -631,7 +651,6 @@ services:
       - ita-by-execinstance-dataautoclean
     networks:
       - exastro
-      - default
 
   ita-by-file-autoclean:
     user: 1000:1000
@@ -643,6 +662,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -660,7 +681,6 @@ services:
       - ita-by-file-autoclean
     networks:
       - exastro
-      - default
 
   ita-migration:
     user: 1000:1000
@@ -673,6 +693,8 @@ services:
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
     command: python3 /exastro/migration_main.py
+    volumes:
+      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -697,7 +719,14 @@ services:
         condition: service_completed_successfully
     networks:
       - exastro
-      - default
+
+volumes:
+  vol-ita-storage:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ${PWD}/../../.volumes/storage
 
 networks:
   exastro:

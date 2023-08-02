@@ -2404,6 +2404,13 @@ def update_filter_terms(objdbca, parameter):
     # 変数定義
     t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
 
+    if 'uuid' not in parameter:
+        msg_args = ['uuid']
+        msg = g.appmsg.get_api_message('MSG-00024', [msg_args])
+        log_msg_args = [msg]
+        api_msg_args = [msg]
+        raise AppException("499-00201", log_msg_args, api_msg_args)
+
     # 登録
     result = {}
     if parameter['uuid'] == '':
@@ -2519,8 +2526,29 @@ def validate_check(parameter, edit, objdbca):
     # 変数定義
     t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
 
-    # 登録または更新
-    if edit == 'register' or edit == 'update':
+    # 登録
+    if edit == 'register':
+        # 必須項目チェック
+        required_key = []
+        if 'filter_name' not in parameter:
+            required_key.append('filter_name')
+        if 'filter_json' not in parameter:
+            required_key.append('filter_json')
+
+        if len(required_key) > 0:
+            msg_args = [",".join(required_key)]
+            msg = g.appmsg.get_api_message('MSG-00024', [msg_args])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+        # 検索条件名チェック
+        if parameter['filter_name'] == '':
+            msg = g.appmsg.get_api_message('MSG-20259', [])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
         # 文字列長チェック
         if len(parameter['uuid']) > 40:
             msg = g.appmsg.get_api_message('MSG-00008', [40, len(parameter['uuid'])])
@@ -2543,30 +2571,6 @@ def validate_check(parameter, edit, objdbca):
             api_msg_args = [msg]
             raise AppException("499-00201", log_msg_args, api_msg_args)
 
-    # 登録
-    if edit == 'register':
-        # 必須項目チェック
-        required_key = []
-        if 'uuid' not in parameter:
-            required_key.append('uuid')
-        if 'filter_name' not in parameter:
-            required_key.append('filter_name')
-        if 'filter_json' not in parameter:
-            required_key.append('filter_json')
-
-        if len(required_key) > 0:
-            msg_args = [",".join(required_key)]
-            msg = g.appmsg.get_api_message('MSG-00024', [msg_args])
-            log_msg_args = [msg]
-            api_msg_args = [msg]
-            raise AppException("499-00201", log_msg_args, api_msg_args)
-
-        if parameter['filter_name'] == '':
-            msg = g.appmsg.get_api_message('MSG-20259', [])
-            log_msg_args = [msg]
-            api_msg_args = [msg]
-            raise AppException("499-00201", log_msg_args, api_msg_args)
-
         # 重複チェック
         where = 'WHERE DISUSE_FLAG=%s AND FILTER_NAME=%s '
         ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['0', parameter['filter_name']])
@@ -2575,11 +2579,10 @@ def validate_check(parameter, edit, objdbca):
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException("499-00201", log_msg_args, api_msg_args)
+
     elif edit == 'update':
         # 必須項目チェック
         required_key = []
-        if 'uuid' not in parameter:
-            required_key.append('uuid')
         if 'filter_name' not in parameter:
             required_key.append('filter_name')
         if 'filter_json' not in parameter:
@@ -2590,6 +2593,35 @@ def validate_check(parameter, edit, objdbca):
         if len(required_key) > 0:
             msg_args = [",".join(required_key)]
             msg = g.appmsg.get_api_message('MSG-00024', [msg_args])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+        # 検索条件名チェック
+        if parameter['filter_name'] == '':
+            msg = g.appmsg.get_api_message('MSG-20259', [])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+        # 文字列長チェック
+        if len(parameter['uuid']) > 40:
+            msg = g.appmsg.get_api_message('MSG-00008', [40, len(parameter['uuid'])])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+        if len(parameter['filter_name']) > 255:
+            msg = g.appmsg.get_api_message('MSG-00008', [255, len(parameter['uuid'])])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+        # json形式チェック
+        try:
+            if not parameter['filter_json'] == '':
+                json.loads(parameter['filter_json'])
+        except Exception:
+            msg = g.appmsg.get_api_message("MSG-20261")
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException("499-00201", log_msg_args, api_msg_args)

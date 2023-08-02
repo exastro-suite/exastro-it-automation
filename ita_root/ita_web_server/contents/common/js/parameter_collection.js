@@ -84,7 +84,7 @@ setup() {
       } else {
          const message = ``
          + `<div class="commonMessage">`
-            + `<div class="commonMessageInner">${fn.html.icon('circle_info')}表示できるパラメータがありません。</div>`
+            + `<div class="commonMessageInner">${fn.html.icon('circle_info')}${getMessage.FTE11048}</div>`
          + `</div>`;
          pc.$.content.html( message );
          $('#menu').find('.menuPageContent').html('');

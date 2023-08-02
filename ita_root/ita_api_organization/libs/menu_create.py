@@ -2644,18 +2644,6 @@ def validate_check(parameter, edit, objdbca):
                     raise AppException("499-00201", log_msg_args, api_msg_args)
 
     elif edit == 'delete':
-        # 必須項目チェック
-        required_key = []
-        if 'last_update_date_time' not in parameter:
-            required_key.append('last_update_date_time')
-
-        if len(required_key) > 0:
-            msg_args = [",".join(required_key)]
-            msg = g.appmsg.get_api_message('MSG-00024', [msg_args])
-            log_msg_args = [msg]
-            api_msg_args = [msg]
-            raise AppException("499-00201", log_msg_args, api_msg_args)
-
         # uuidチェック
         where = 'WHERE UUID=%s '
         ret_data = objdbca.table_select(t_menu_collection_filter_data, where, [parameter['uuid']])

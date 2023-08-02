@@ -10,8 +10,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8000
@@ -26,6 +24,8 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
     networks:
       - exastro
 
@@ -39,8 +39,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - LISTEN_PORT=8079
@@ -59,6 +57,8 @@ services:
       - GITLAB_ROOT_TOKEN=${GITLAB_ROOT_TOKEN}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
     networks:
       - exastro
 
@@ -86,9 +86,6 @@ services:
       test: (mysqladmin ping --silent -u root -p$${MYSQL_ROOT_PASSWORD} && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;') || exit 1
       interval: 3s
       retries: 200
-    volumes:
-      - ../.volumes/ita-mariadb/data:/var/lib/mysql
-      - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     environment:
       - TZ=Asia/Tokyo
       - MYSQL_ROOT_PASSWORD=password
@@ -99,6 +96,9 @@ services:
       # - MARIADB_PASSWORD=${MARIADB_PASSWORD}
     ports:
       - "0.0.0.0:3306:3306"
+    volumes:
+      - ../.volumes/ita-mariadb/data:/var/lib/mysql
+      - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     networks:
       - exastro
 
@@ -112,9 +112,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:cached
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -136,11 +133,14 @@ services:
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
       - NETWORK_ID=${NETWORK_ID}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-execute
-    networks:
-      - exastro
 
   ita-by-ansible-legacy-role-vars-listup:
     user: 1000:1000
@@ -152,8 +152,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -166,11 +164,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-role-vars-listup
-    networks:
-      - exastro
 
   ita-by-ansible-legacy-vars-listup:
     user: 1000:1000
@@ -182,8 +182,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -196,11 +194,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-vars-listup
-    networks:
-      - exastro
 
   ita-by-ansible-pioneer-vars-listup:
     user: 1000:1000
@@ -212,8 +212,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -226,11 +224,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-pioneer-vars-listup
-    networks:
-      - exastro
 
   ita-by-ansible-towermaster-sync:
     user: 1000:1000
@@ -242,8 +242,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -256,11 +254,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-towermaster-sync
-    networks:
-      - exastro
 
   ita-by-collector:
     user: 1000:1000
@@ -272,8 +272,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -286,11 +284,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-collector
-    networks:
-      - exastro
 
   ita-by-conductor-synchronize:
     user: 1000:1000
@@ -302,8 +302,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -316,11 +314,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-synchronize
-    networks:
-      - exastro
 
   ita-by-conductor-regularly:
     user: 1000:1000
@@ -332,8 +332,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -346,11 +344,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-regularly
-    networks:
-      - exastro
 
   ita-by-menu-create:
     user: 1000:1000
@@ -362,8 +362,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -376,11 +374,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-create
-    networks:
-      - exastro
 
   ita-by-menu-export-import:
     user: 1000:1000
@@ -392,8 +392,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -406,11 +404,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-export-import
-    networks:
-      - exastro
 
   ita-by-excel-export-import:
     user: 1000:1000
@@ -422,8 +422,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -436,11 +434,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-excel-export-import
-    networks:
-      - exastro
 
   ita-by-terraform-cloud-ep-execute:
     user: 1000:1000
@@ -452,8 +452,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -466,11 +464,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-execute
-    networks:
-      - exastro
 
   ita-by-terraform-cloud-ep-vars-listup:
     user: 1000:1000
@@ -482,8 +482,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -496,11 +494,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-vars-listup
-    networks:
-      - exastro
 
   ita-by-terraform-cli-execute:
     user: 1000:1000
@@ -512,8 +512,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -526,11 +524,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-execute
-    networks:
-      - exastro
 
   ita-by-terraform-cli-vars-listup:
     user: 1000:1000
@@ -542,8 +542,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -556,11 +554,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-vars-listup
-    networks:
-      - exastro
 
   ita-by-hostgroup-split:
     user: 1000:1000
@@ -572,8 +572,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -586,11 +584,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-hostgroup-split
-    networks:
-      - exastro
 
   ita-by-cicd-for-iac:
     user: 1000:1000
@@ -602,8 +602,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -616,11 +614,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-cicd-for-iac
-    networks:
-      - exastro
 
   ita-by-execinstance-dataautoclean:
     user: 1000:1000
@@ -632,8 +632,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -646,11 +644,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-execinstance-dataautoclean
-    networks:
-      - exastro
 
   ita-by-file-autoclean:
     user: 1000:1000
@@ -662,8 +662,6 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -676,11 +674,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-file-autoclean
-    networks:
-      - exastro
 
   ita-migration:
     user: 1000:1000
@@ -693,8 +693,6 @@ services:
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
     command: python3 /exastro/migration_main.py
-    volumes:
-      - vol-ita-storage:/storage
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -712,13 +710,15 @@ services:
       - ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT=${ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT}
       - ORG_ANSIBLE_EXECUTION_LIMIT_MAX=${ORG_ANSIBLE_EXECUTION_LIMIT_MAX}
       - ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION=${ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION}
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     depends_on:
       ita-mariadb:
         condition: service_healthy
       platform-migration-2:
         condition: service_completed_successfully
-    networks:
-      - exastro
 
 volumes:
   vol-ita-storage:

@@ -83,9 +83,18 @@ services:
     command:
       # 開発モードで起動
       - start-dev --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+    networks:
+      - exastro
     depends_on:
       platform-migration-1:
         condition: service_completed_successfully
+
+  platform-web:
+    user: 1000:1000
+    image: exastro/exastro-platform-web:${PLATFORM_VERSION:-latest}
+    environment:
+      - TZ=Asia/Tokyo
+      - LISTEN_PORT=80
     networks:
       - exastro
 
@@ -128,15 +137,6 @@ services:
       - DB_ADMIN_USER=root
       - DB_ADMIN_PASSWORD=password
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-    networks:
-      - exastro
-
-  platform-web:
-    user: 1000:1000
-    image: exastro/exastro-platform-web:${PLATFORM_VERSION:-latest}
-    environment:
-      - TZ=Asia/Tokyo
-      - LISTEN_PORT=80
     networks:
       - exastro
 
@@ -185,11 +185,11 @@ services:
       # - TIMEOUT_SECONDS_CONNECT_DB=600
       # - TIMEOUT_SECONDS_KEYCLOAK_START=600
       - ENCRYPT_KEY=${ENCRYPT_KEY}
+    networks:
+      - exastro
     depends_on:
       platform-migration-1:
         condition: service_completed_successfully
-    networks:
-      - exastro
 
 networks:
   exastro:

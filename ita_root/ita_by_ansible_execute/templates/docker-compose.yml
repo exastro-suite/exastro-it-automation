@@ -27,7 +27,6 @@ services:
       - EXEC_DIR={{ container_mount_path_driver }}
     networks:
       - exastro
-      - default
 
 networks:
   exastro:

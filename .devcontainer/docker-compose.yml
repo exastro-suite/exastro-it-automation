@@ -24,9 +24,10 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
     networks:
       - exastro
-      - default
 
   ita-api-admin:
     user: 1000:1000
@@ -56,9 +57,10 @@ services:
       - GITLAB_ROOT_TOKEN=${GITLAB_ROOT_TOKEN}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
     networks:
       - exastro
-      - default
 
   ita-web-server:
     user: 1000:1000
@@ -77,7 +79,6 @@ services:
       - "0.0.0.0:80:80"
     networks:
       - exastro
-      - default
 
   ita-mariadb:
     image: mariadb:10.4.8
@@ -85,9 +86,6 @@ services:
       test: (mysqladmin ping --silent -u root -p$${MYSQL_ROOT_PASSWORD} && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;') || exit 1
       interval: 3s
       retries: 200
-    volumes:
-      - ../.volumes/ita-mariadb/data:/var/lib/mysql
-      - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     environment:
       - TZ=Asia/Tokyo
       - MYSQL_ROOT_PASSWORD=password
@@ -98,14 +96,16 @@ services:
       # - MARIADB_PASSWORD=${MARIADB_PASSWORD}
     ports:
       - "0.0.0.0:3306:3306"
+    volumes:
+      - ../.volumes/ita-mariadb/data:/var/lib/mysql
+      - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     networks:
       - exastro
-      - default
 
   ita-by-ansible-execute:
     user: 1000:${HOST_DOCKER_GID:-1000}
     build:
-      dockerfile: ./ita_root/ita_by_ansible_execute/Dockerfile
+      dockerfile: ./ita_root/ita_by_ansible_execute/Dockerfile_onpremises
       context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
@@ -133,12 +133,14 @@ services:
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
       - NETWORK_ID=${NETWORK_ID}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-execute
-    networks:
-      - exastro
-      - default
 
   ita-by-ansible-legacy-role-vars-listup:
     user: 1000:1000
@@ -162,12 +164,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-role-vars-listup
-    networks:
-      - exastro
-      - default
 
   ita-by-ansible-legacy-vars-listup:
     user: 1000:1000
@@ -191,12 +194,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-vars-listup
-    networks:
-      - exastro
-      - default
 
   ita-by-ansible-pioneer-vars-listup:
     user: 1000:1000
@@ -220,12 +224,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-pioneer-vars-listup
-    networks:
-      - exastro
-      - default
 
   ita-by-ansible-towermaster-sync:
     user: 1000:1000
@@ -249,12 +254,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-towermaster-sync
-    networks:
-      - exastro
-      - default
 
   ita-by-collector:
     user: 1000:1000
@@ -278,12 +284,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-collector
-    networks:
-      - exastro
-      - default
 
   ita-by-conductor-synchronize:
     user: 1000:1000
@@ -307,12 +314,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-synchronize
-    networks:
-      - exastro
-      - default
 
   ita-by-conductor-regularly:
     user: 1000:1000
@@ -336,12 +344,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-regularly
-    networks:
-      - exastro
-      - default
 
   ita-by-menu-create:
     user: 1000:1000
@@ -365,12 +374,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-create
-    networks:
-      - exastro
-      - default
 
   ita-by-menu-export-import:
     user: 1000:1000
@@ -394,12 +404,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-export-import
-    networks:
-      - exastro
-      - default
 
   ita-by-excel-export-import:
     user: 1000:1000
@@ -423,12 +434,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-excel-export-import
-    networks:
-      - exastro
-      - default
 
   ita-by-terraform-cloud-ep-execute:
     user: 1000:1000
@@ -452,12 +464,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-execute
-    networks:
-      - exastro
-      - default
 
   ita-by-terraform-cloud-ep-vars-listup:
     user: 1000:1000
@@ -481,12 +494,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-vars-listup
-    networks:
-      - exastro
-      - default
 
   ita-by-terraform-cli-execute:
     user: 1000:1000
@@ -510,12 +524,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-execute
-    networks:
-      - exastro
-      - default
 
   ita-by-terraform-cli-vars-listup:
     user: 1000:1000
@@ -539,12 +554,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-vars-listup
-    networks:
-      - exastro
-      - default
 
   ita-by-hostgroup-split:
     user: 1000:1000
@@ -568,12 +584,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-hostgroup-split
-    networks:
-      - exastro
-      - default
 
   ita-by-cicd-for-iac:
     user: 1000:1000
@@ -597,12 +614,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-cicd-for-iac
-    networks:
-      - exastro
-      - default
 
   ita-by-execinstance-dataautoclean:
     user: 1000:1000
@@ -626,12 +644,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-execinstance-dataautoclean
-    networks:
-      - exastro
-      - default
 
   ita-by-file-autoclean:
     user: 1000:1000
@@ -655,12 +674,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     profiles:
       - exastro-it-automation-backyard
       - ita-by-file-autoclean
-    networks:
-      - exastro
-      - default
 
   ita-migration:
     user: 1000:1000
@@ -690,14 +710,23 @@ services:
       - ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT=${ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT}
       - ORG_ANSIBLE_EXECUTION_LIMIT_MAX=${ORG_ANSIBLE_EXECUTION_LIMIT_MAX}
       - ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION=${ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION}
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     depends_on:
       ita-mariadb:
         condition: service_healthy
       platform-migration-2:
         condition: service_completed_successfully
-    networks:
-      - exastro
-      - default
+
+volumes:
+  vol-ita-storage:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ${PWD}/../../.volumes/storage
 
 networks:
   exastro:

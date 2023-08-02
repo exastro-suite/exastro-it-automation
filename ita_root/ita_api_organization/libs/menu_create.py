@@ -14,6 +14,7 @@
 
 import json
 import ast
+import datetime
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from flask import g
@@ -2344,7 +2345,7 @@ def collect_parameter_list(objdbca):
                                                 duplication_flg = False
                                                 break
                                         if duplication_flg is True:
-                                            host_ary.append(tmp_dict)
+                                            aaaw2host_ary.append(tmp_dict)
                                     else:
                                         host_ary.append(tmp_dict)
 
@@ -2374,10 +2375,14 @@ def collect_filter_terms(objdbca):
     filter_list = []
     if ret:
         for record in ret:
+            # 最終更新日時のフォーマット
+            last_update_date_time = record.get('LAST_UPDATE_TIMESTAMP')
+            last_update_date_time = last_update_date_time.strftime('%Y/%m/%d %H:%M:%S.%f')
             tmp_dict = {
                 'uuid': record.get('UUID'),
                 'filter_name': record.get('FILTER_NAME'),
-                'filter_json': record.get('FILTER_JSON')
+                'filter_json': record.get('FILTER_JSON'),
+                'last_update_date_time': last_update_date_time
             }
             filter_list.append(tmp_dict)
 
@@ -2393,14 +2398,130 @@ def update_filter_terms(objdbca, parameter):
             column_list
     """
 
-    try:
-        # トランザクション開始
-        objdbca.db_transaction_start()
+    # トランザクション開始
+    objdbca.db_transaction_start()
 
-        # 変数定義
-        t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
+    # 変数定義
+    t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
 
-        # パラメータのチェック
+    # 登録
+    result = {}
+    if parameter['uuid'] == '':
+        # バリデーションチェック
+        validate_check(parameter, 'register', objdbca)
+
+        data_list = {
+            "FILTER_NAME": parameter['filter_name'],
+            "FILTER_JSON": parameter['filter_json'],
+            "DISUSE_FLAG": "0",
+            "LAST_UPDATE_USER": g.get('USER_ID'),
+        }
+        ret_data = objdbca.table_insert(t_menu_collection_filter_data, data_list, 'UUID', False)
+
+        if not ret_data:
+            status_code = 'MSG-20258'
+            msg = g.appmsg.get_api_message(status_code, [])
+            raise Exception("499-00201", [msg])
+        else:
+            result = {
+                "Discard": '0',
+                "Register": '1',
+                "Restore": '0',
+                "Update": '0'
+            }
+    # 更新
+    else:
+        # バリデーションチェック
+        validate_check(parameter, 'update', objdbca)
+
+        data_list = {
+            "UUID": parameter['uuid'],
+            "FILTER_NAME": parameter['filter_name'],
+            "FILTER_JSON": parameter['filter_json'],
+            "DISUSE_FLAG": "0",
+            "LAST_UPDATE_USER": g.get('USER_ID'),
+        }
+        ret_data = objdbca.table_update(t_menu_collection_filter_data, data_list, 'UUID', False)
+
+        if not ret_data:
+            status_code = 'MSG-20258'
+            msg_args = [",".join('uuid')]
+            msg = g.appmsg.get_api_message(status_code, [msg_args])
+            raise Exception("499-00201", [msg])
+        else:
+            result = {
+                "Discard": '0',
+                "Register": '0',
+                "Restore": '0',
+                "Update": '1'
+            }
+
+    # トランザクション終了
+    objdbca.db_transaction_end(True)
+
+    return result
+
+
+def delete_filter_terms(objdbca, uuid):
+    """
+        パラメータシートの検索条件を削除する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            result
+    """
+
+    # トランザクション開始
+    objdbca.db_transaction_start()
+
+    # 変数定義
+    t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
+
+    # バリデーションチェック
+    parameter = {'uuid': uuid}
+    validate_check(parameter, 'delete', objdbca)
+
+    # 削除
+    parameter = {'UUID': uuid, 'DISUSE_FLAG': '1'}
+    ret_data = objdbca.table_update(t_menu_collection_filter_data, parameter, 'UUID', False)
+
+    result = {}
+    if not ret_data:
+        status_code = 'MSG-20258'
+        msg_args = [",".join('uuid')]
+        msg = g.appmsg.get_api_message(status_code, [msg_args])
+        raise Exception("499-00201", [msg])
+    else:
+        result = {
+            "Discard": '1',
+            "Register": '0',
+            "Restore": '0',
+            "Update": '0'
+        }
+
+    # トランザクション終了
+    objdbca.db_transaction_end(True)
+
+    return result
+
+
+def validate_check(parameter, edit, objdbca):
+    """
+        パラメータシートの検索条件を削除する
+        ARGS:
+            parameter:パラメーター
+            parameter:更新種別
+            objdbca:DB接クラス  DBConnectWs()
+        RETRUN:
+            バリデーション結果
+    """
+
+    # 変数定義
+    t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
+
+    # 登録または更新
+    if edit == 'register' or edit == 'update':
+        # 必須項目チェック
         required_key = []
         if 'uuid' not in parameter:
             required_key.append('uuid')
@@ -2409,104 +2530,129 @@ def update_filter_terms(objdbca, parameter):
         if 'filter_json' not in parameter:
             required_key.append('filter_json')
 
-        # 登録
-        result = {}
-        if parameter['uuid'] == '':
-            data_list = {
-                "FILTER_NAME": parameter['filter_name'],
-                "FILTER_JSON": parameter['filter_json'],
-                "DISUSE_FLAG": "0",
-                "LAST_UPDATE_USER": g.get('USER_ID'),
-            }
-            ret_data = objdbca.table_insert(t_menu_collection_filter_data, data_list, 'UUID', False)
+        if len(required_key) > 0:
+            msg_args = [",".join(required_key)]
+            msg = g.appmsg.get_api_message('MSG-00024', [msg_args])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
 
-            if not ret_data:
-                status_code = 'MSG-20258'
-                msg_args = [",".join('uuid')]
-                msg = g.appmsg.get_api_message(status_code, [msg_args])
-                raise Exception("499-00201", [msg])
-            else:
-                result = {
-                    "Discard": '0',
-                    "Register": '1',
-                    "Restore": '0',
-                    "Update": '0'
-                }
-        # 更新
-        else:
-            data_list = {
-                "UUID": parameter['uuid'],
-                "FILTER_NAME": parameter['filter_name'],
-                "FILTER_JSON": parameter['filter_json'],
-                "DISUSE_FLAG": "0",
-                "LAST_UPDATE_USER": g.get('USER_ID'),
-            }
-            ret_data = objdbca.table_update(t_menu_collection_filter_data, data_list, 'UUID', False)
+        # 文字列長チェック
+        if len(parameter['uuid']) > 40:
+            msg = g.appmsg.get_api_message('MSG-00008', [40, len(parameter['uuid'])])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+        if len(parameter['filter_name']) > 255:
+            msg = g.appmsg.get_api_message('MSG-00008', [255, len(parameter['uuid'])])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
 
-            if not ret_data:
-                status_code = 'MSG-20258'
-                msg_args = [",".join('uuid')]
-                msg = g.appmsg.get_api_message(status_code, [msg_args])
-                raise Exception("499-00201", [msg])
-            else:
-                result = {
-                    "Discard": '0',
-                    "Register": '0',
-                    "Restore": '0',
-                    "Update": '1'
-                }
+        # json形式チェック
+        try:
+            if not parameter['filter_json'] == '':
+                json.loads(parameter['filter_json'])
+        except Exception:
+            msg = g.appmsg.get_api_message("MSG-20261")
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
 
-        # トランザクション終了
-        objdbca.db_transaction_end(True)
+    # 登録
+    if edit == 'register':
+        if parameter['filter_name'] == '':
+            msg = g.appmsg.get_api_message('MSG-20259', [])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
 
-    except Exception as e:
-        result_code = e.args[0]
-        msg_args = e.args[1]
-        return False, result_code, msg_args, None
-
-    return result
-
-
-def delete_filter_terms(objdbca, uuid):
-    """
-        パラメータシートの検索条件を取得する
-        ARGS:
-            objdbca:DB接クラス  DBConnectWs()
-        RETRUN:
-            column_list
-    """
-
-    try:
-        # トランザクション開始
-        objdbca.db_transaction_start()
-
-        # 変数定義
-        t_menu_collection_filter_data = 'T_MENU_COLLECTION_FILTER_DATA'
-
-        # 削除
-        parameter = {'UUID': uuid, 'DISUSE_FLAG': '1'}
-        ret_data = objdbca.table_update(t_menu_collection_filter_data, parameter, 'UUID', False)
-
-        result = {}
+        # 重複チェック
+        where = 'WHERE DISUSE_FLAG=%s AND FILTER_NAME=%s '
+        ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['0', parameter['filter_name']])
+        if ret_data:
+            msg = g.appmsg.get_api_message('MSG-20260', [])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+    elif edit == 'update':
+        # uuidチェック
+        where = 'WHERE UUID=%s '
+        ret_data = objdbca.table_select(t_menu_collection_filter_data, where, [parameter['uuid']])
         if not ret_data:
-            status_code = 'MSG-20258'
-            msg_args = [",".join('uuid')]
-            msg = g.appmsg.get_api_message(status_code, [msg_args])
-            raise Exception("499-00201", [msg])
+            msg = g.appmsg.get_api_message('MSG-00007', [parameter['uuid']])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+        # 重複チェック
+        where = 'WHERE DISUSE_FLAG=%s AND FILTER_NAME=%s '
+        ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['0', parameter['filter_name']])
+        if ret_data:
+            msg = g.appmsg.get_api_message('MSG-20260', [])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+        # 廃止レコードチェック
+        where = 'WHERE DISUSE_FLAG=%s AND UUID=%s '
+        ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['1', parameter['uuid']])
+        if ret_data:
+            msg = g.appmsg.get_api_message('MSG-00023', [parameter['uuid']])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
+
+        # 追い越しチェック
+        # where = 'WHERE DISUSE_FLAG=%s AND UUID=%s '
+        # ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['0', parameter['uuid']])
+        # if ret_data:
+        #     for records in ret_data:
+        #         last_update_timestamp = records.get('LAST_UPDATE_TIMESTAMP')
+        #         lastupdatetime_current2 = str(last_update_timestamp).replace('-', '/')
+        #         lastupdatetime_current2 = datetime.datetime.strptime(lastupdatetime_current2, '%Y/%m/%d %H:%M:%S.%f')
+
+        #         if lastupdatetime_current != lastupdatetime_current2:
+        #             msg = g.appmsg.get_api_message('MSG-00005', [parameter['uuid']])
+        #             log_msg_args = [msg]
+        #             api_msg_args = [msg]
+        #             raise AppException("499-00201", log_msg_args, api_msg_args)
+    elif edit == 'delete':
+        # uuidチェック
+        where = 'WHERE UUID=%s '
+        ret_data = objdbca.table_select(t_menu_collection_filter_data, where, [parameter['uuid']])
+        if not ret_data:
+            msg = g.appmsg.get_api_message('MSG-00007', [parameter['uuid']])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
         else:
-            result = {
-                "Discard": '1',
-                "Register": '0',
-                "Restore": '0',
-                "Update": '0'
-            }
+            for record in ret_data:
+                # 追い越しチェック用
+                last_update_timestamp = record.get('LAST_UPDATE_TIMESTAMP')
+                lastupdatetime_current = str(last_update_timestamp).replace('-', '/')
+                lastupdatetime_current = datetime.datetime.strptime(lastupdatetime_current, '%Y/%m/%d %H:%M:%S.%f')
 
-        # トランザクション終了
-        objdbca.db_transaction_end(True)
+        # 廃止レコードチェック
+        where = 'WHERE DISUSE_FLAG=%s AND UUID=%s '
+        ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['1', parameter['uuid']])
+        if ret_data:
+            msg = g.appmsg.get_api_message('MSG-00023', [parameter['uuid']])
+            log_msg_args = [msg]
+            api_msg_args = [msg]
+            raise AppException("499-00201", log_msg_args, api_msg_args)
 
-    except Exception as e:
-        result_code = e.args[0]
-        msg_args = e.args[1]
-        return False, result_code, msg_args, None
+        # 追い越しチェック
+        # where = 'WHERE DISUSE_FLAG=%s AND UUID=%s '
+        # ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['0', parameter['uuid']])
+        # if ret_data:
+        #     for records in ret_data:
+        #         last_update_timestamp = records.get('LAST_UPDATE_TIMESTAMP')
+        #         lastupdatetime_current2 = str(last_update_timestamp).replace('-', '/')
+        #         lastupdatetime_current2 = datetime.datetime.strptime(lastupdatetime_current2, '%Y/%m/%d %H:%M:%S.%f')
 
-    return result
+        #         if lastupdatetime_current != lastupdatetime_current2:
+        #             msg = g.appmsg.get_api_message('MSG-00005', [parameter['uuid']])
+        #             log_msg_args = [msg]
+        #             api_msg_args = [msg]
+        #             raise AppException("499-00201", log_msg_args, api_msg_args)

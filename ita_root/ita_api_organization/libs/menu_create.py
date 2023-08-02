@@ -2664,12 +2664,6 @@ def validate_check(parameter, edit, objdbca):
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException("499-00201", log_msg_args, api_msg_args)
-        else:
-            for record in ret_data:
-                # 追い越しチェック用
-                last_update_timestamp = record.get('LAST_UPDATE_TIMESTAMP')
-                lastupdatetime_current = str(last_update_timestamp).replace('-', '/')
-                lastupdatetime_current = datetime.datetime.strptime(lastupdatetime_current, '%Y/%m/%d %H:%M:%S.%f')
 
         # 廃止レコードチェック
         where = 'WHERE DISUSE_FLAG=%s AND UUID=%s '
@@ -2679,33 +2673,3 @@ def validate_check(parameter, edit, objdbca):
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException("499-00201", log_msg_args, api_msg_args)
-
-        # 追い越しチェック
-        lastupdatetime_parameter = parameter['last_update_date_time']
-        if lastupdatetime_parameter == '':
-            msg = g.appmsg.get_api_message('MSG-00028', [lastupdatetime_parameter])
-            log_msg_args = [msg]
-            api_msg_args = [msg]
-            raise AppException("499-00201", log_msg_args, api_msg_args)
-
-        try:
-            lastupdatetime_parameter = datetime.datetime.strptime(lastupdatetime_parameter, '%Y/%m/%d %H:%M:%S.%f')
-        except Exception:
-            msg = g.appmsg.get_api_message('MSG-00028', [lastupdatetime_parameter])
-            log_msg_args = [msg]
-            api_msg_args = [msg]
-            raise AppException("499-00201", log_msg_args, api_msg_args)
-
-        where = 'WHERE DISUSE_FLAG=%s AND UUID=%s '
-        ret_data = objdbca.table_select(t_menu_collection_filter_data, where, ['0', parameter['uuid']])
-        if ret_data:
-            for records in ret_data:
-                last_update_timestamp = records.get('LAST_UPDATE_TIMESTAMP')
-                lastupdatetime_current = str(last_update_timestamp).replace('-', '/')
-                lastupdatetime_current = datetime.datetime.strptime(lastupdatetime_current, '%Y/%m/%d %H:%M:%S.%f')
-
-                if lastupdatetime_current != lastupdatetime_parameter:
-                    msg = g.appmsg.get_api_message('MSG-00005', [parameter['uuid']])
-                    log_msg_args = [msg]
-                    api_msg_args = [msg]
-                    raise AppException("499-00201", log_msg_args, api_msg_args)

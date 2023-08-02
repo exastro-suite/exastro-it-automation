@@ -1374,7 +1374,7 @@ dataDownload() {
 fileRegister( $button, type ) {
     const mn = this;
 
-    const fileType = ( type === 'excel')? 'base64': 'json',
+    const fileType = ( type === 'excel')? 'file': 'json',
           fileMime = ( type === 'excel')? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'application/json',
           restUrl = ( type === 'excel')? `excel/maintenance/`: `maintenance/all/`;
 
@@ -1383,7 +1383,6 @@ fileRegister( $button, type ) {
 
     // ファイル選択
     fn.fileSelect( fileType, null, fileMime ).then(function( selectFile ){
-        const postData = ( type === 'excel')? { excel: selectFile.base64 }: selectFile.json;
 
         // 登録するか確認する
         const buttons = {
@@ -1395,21 +1394,26 @@ fileRegister( $button, type ) {
         table.tbody.push([ getMessage.FTE10027, selectFile.name ]);
         table.tbody.push([ getMessage.FTE10028, selectFile.size.toLocaleString() + ' byte']);
 
+        let postData, option = {};
         if ( fileType === 'json') {
             try {
                 table.tbody.push([ getMessage.FTE10029, selectFile.json.length.toLocaleString() ]);
             } catch( e ) {
                 throw new Error( getMessage.FTE10021 );
             }
+            postData = selectFile.json;
+        } else {
+            postData = new FormData();
+            postData.append('excel', selectFile );
+            option.multipart = true;
         }
 
         fn.alert( getMessage.FTE00083, fn.html.table( table, 'fileSelectTable', 1 ), 'confirm', buttons ).then( function( flag ){
             if ( flag ) {
-
                 const processing = fn.processingModal( getMessage.FTE00084 );
 
                 // POST（登録）
-                fn.fetch(`/menu/${mn.params.menuNameRest}/${restUrl}`, null, 'POST', postData ).then(function( result ){
+                fn.fetch(`/menu/${mn.params.menuNameRest}/${restUrl}`, null, 'POST', postData, option ).then(function( result ){
                     // 登録成功
                     fn.resultModal( result ).then(function(){
                         mn.contentTabOpen('#dataList');

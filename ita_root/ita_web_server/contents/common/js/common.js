@@ -183,7 +183,7 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
    データ読み込み
 ##################################################
 */
-fetch: function( url, token, method = 'GET', json, option = {} ) {
+fetch: function( url, token, method = 'GET', data, option = {} ) {
 
     if ( !token ) {
         token = CommonAuth.getToken();
@@ -200,22 +200,31 @@ fetch: function( url, token, method = 'GET', json, option = {} ) {
                 return;
             }
 
-            if ( windowFlag ) u = cmn.getRestApiUrl( u );
+            if ( windowFlag ) u = cmn.getRestApiUrl( u );            
 
             const init = {
                 method: method,
                 headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
+                    Authorization: `Bearer ${token}`
                 },
                 signal: controller.signal
             };
 
-            if ( ( method === 'POST' || method === 'PATCH' ) && json !== undefined ) {
-                try {
-                    init.body = JSON.stringify( json );
-                } catch ( e ) {
-                    reject( e );
+            // Content-Type ※マルチパートの場合は指定しない
+            if ( !option.multipart ) {
+                init.headers['Content-Type'] = 'application/json';
+            }
+
+            // body
+            if ( ( method === 'POST' || method === 'PATCH' ) && data !== undefined ) {
+                if ( !option.multipart ) {
+                    try {
+                        init.body = JSON.stringify( data );
+                    } catch ( e ) {
+                        reject( e );
+                    }
+                } else {
+                    init.body = data;
                 }
             }
 
@@ -639,9 +648,7 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
                     reject( reader.error );
                 };
             } else if ( type === 'file') {
-                const formData = new FormData();
-                formData.append('file', file );
-                resolve( formData );
+                resolve( file );
             } else if ( type === 'json') {
                 reader.readAsText( file );
 
@@ -2767,7 +2774,7 @@ modalConductor: function( menu, mode, conductorId, option ) {
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-setUiSetting() {
+setUiSetting: function() {
     const uiSettingData = cmn.storage.get('ui_setting');
     // テーマ
     if ( uiSettingData && uiSettingData.theme ) {
@@ -2783,7 +2790,7 @@ setUiSetting() {
     }
 },
 
-setTheme( theme ) {
+setTheme: function( theme ) {
     const $theme = $('#thema'),
           src = `/_/ita/thema/${theme}.css`;
     $theme.attr('href', src );
@@ -2796,7 +2803,7 @@ setTheme( theme ) {
     }
 },
 
-setFilter( filterList ) {
+setFilter: function( filterList ) {
     const style = [];
     for ( const type in filterList ) {
         const value = filterList[ type ];
@@ -2813,7 +2820,7 @@ setFilter( filterList ) {
     $('body').css('filter', style.join(' ') );
 },
 
-uiSetting() {
+uiSetting: function() {
     return new Promise(function( resolve ){
         const funcs = {
             ok: function(){
@@ -3028,20 +3035,20 @@ uiSetting() {
 
 /*
 ##################################################
-   BASE64をテキストにデコード
+   BASE64をテキストに変換
 ##################################################
 */
-base64Decode( base64Text, charset = 'utf-8') {
+base64Decode: function( base64Text, charset = 'utf-8') {
     return fetch(`data:text/plain;charset=${charset};base64,${base64Text}`).then(function( result ) {
         return result.text();
     });
 },
 /*
 ##################################################
-   BASE64をテキストにデコード
+   テキストをBASE64に変換
 ##################################################
 */
-base64Encode( text ) {
+base64Encode: function( text ) {
     return new Promise(function( resolve ){
         const reader = new FileReader();
         reader.onload = function(){
@@ -3052,10 +3059,62 @@ base64Encode( text ) {
 },
 /*
 ##################################################
+   ファイルをテキストに変換
+##################################################
+*/
+fileToText: function( file ) {
+    return new Promise(function( resolve ){
+        const reader = new FileReader();
+        reader.onload = function(){
+            resolve( reader.result );
+        };
+        reader.readAsText( file );
+    });
+},
+/*
+##################################################
+   ファイルをBASE64に変換
+##################################################
+*/
+fileToBase64: function( file ) {
+    return new Promise(function( resolve ){
+        const reader = new FileReader();
+        reader.onload = function(){
+            resolve( reader.result.split(';base64,')[1] );
+        };
+        reader.readAsDataURL( file );
+    });
+},
+/*
+##################################################
+   テキストをファイルに変換
+##################################################
+*/
+textToFile: function( text, fileName ) {
+    return new File([text], fileName, { type: 'text/plain'} );
+},
+/*
+##################################################
+   BASE64をファイルに変換
+##################################################
+*/
+base64ToFile: function( base64, fileName ) {
+    const
+    bin = atob( base64.replace(/^.*,/, '')),
+    length = bin.length,
+    buffer = new Uint8Array( length );
+
+    for (let i = 0; i < length; i++) {
+        buffer[i] = bin.charCodeAt(i);
+    }
+    return  new File([buffer.buffer], fileName );
+},
+/*
+##################################################
    ファイルタイプ拡張子
 ##################################################
 */
-fileTypeCheck( fileName ) {
+fileTypeCheck: function( fileName ) {
     const extension = cmn.cv( fileName.split('.').pop(), '');
 
     const fileTypes = {
@@ -3075,7 +3134,7 @@ fileTypeCheck( fileName ) {
    画像ファイルのMIMEタイプ
 ##################################################
 */
-imageMimeTypeCheck( fileName ) {
+imageMimeTypeCheck: function( fileName ) {
     const extension = cmn.cv( fileName.split('.').pop(), '');
 
     const fileTypes = {
@@ -3099,7 +3158,7 @@ imageMimeTypeCheck( fileName ) {
    Aceエディターモードチェック
 ##################################################
 */
-fileModeCheck( fileName ) {
+fileModeCheck: function( fileName ) {
     const extension = cmn.cv( fileName.split('.').pop(), '');
 
     const fileTypes = {
@@ -3122,7 +3181,7 @@ fileModeCheck( fileName ) {
    ITA独自変数一覧
 ##################################################
 */
-itaOriginalVariable() {
+itaOriginalVariable: function() {
     return [
         '__loginprotocol__',
         '__loginpassword__',
@@ -3142,11 +3201,53 @@ itaOriginalVariable() {
 },
 /*
 ##################################################
+   ファイル or BASE64をテキストに変換
+##################################################
+*/
+fileOrBase64ToText: function( data ) {
+    return new Promise(function( resolve ){
+        if ( cmn.typeof( data ) === 'file') {
+            cmn.fileToText( data ).then(function( result ){
+                resolve( result );
+            }).catch(function( error ){
+                resolve('');
+            });
+        } else if ( data === '') {
+            resolve('');
+        } else {
+            cmn.base64Decode( data ).then(function( result ){
+                resolve( result );
+            }).catch(function( error ){
+                resolve('');
+            });
+        }
+    });
+},
+/*
+##################################################
+   ファイル or BASE64をチェックしBASE64を返す
+##################################################
+*/
+fileOrBase64ToBase64: function( data ) {
+    return new Promise(function( resolve ){
+        if ( cmn.typeof( data ) === 'file') {
+            cmn.fileToBase64( data ).then(function( result ){
+                resolve( result );
+            }).catch(function( error ){
+                resolve('');
+            });
+        } else {
+            resolve( data );
+        }
+    });
+},
+/*
+##################################################
    Aceエディター
 ##################################################
 */
-fileEditor( base64Text, fileName, mode = 'edit') {
-    return new Promise( function( resolve, reject ){
+fileEditor( fileData, fileName, mode = 'edit') {
+    return new Promise( function( resolve ){
         const fileType = cmn.fileTypeCheck( fileName );
         let fileMode = cmn.fileModeCheck( fileName );
 
@@ -3169,16 +3270,6 @@ fileEditor( base64Text, fileName, mode = 'edit') {
         // 編集モード
         if ( mode === 'edit') {
             config.footer.button.update = { text: getMessage.FTE00168, action: 'positive', width: '160px'};
-            funcs.update = function() {
-                fileName = modal.$.dbody.find('.editorFileName').val();
-                modal.close();
-                modal = null;
-
-                resolve({
-                    name: fileName,
-                    base64: base64Text
-                });
-            };
         }
 
         config.footer.button.download = { text: getMessage.FTE00169, action: 'restore', width: '88px'};
@@ -3186,6 +3277,8 @@ fileEditor( base64Text, fileName, mode = 'edit') {
         funcs.close = function() {
             modal.close();
             modal = null;
+
+            resolve( null );
         };
 
         const modeSelectList = {
@@ -3246,7 +3339,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
         let modal = new Dialog( config, funcs );
 
         if ( fileType === 'text') {
-            cmn.base64Decode( base64Text ).then(function( text ){
+            cmn.fileOrBase64ToText( fileData ).then(function( text ){
                 modal.open( modalHtmlSelect() );
                 if ( mode === 'edit') {
                     modal.$.dbody.find('.editorFileName').val( fileName );
@@ -3346,45 +3439,56 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                 modal.btnFn.update = function() {
                     const value = aceEditor.getValue();
 
-                    cmn.base64Encode( value ).then(function( base64 ){
+                    fileName = modal.$.dbody.find('.editorFileName').val();
+                    modal.close();
+                    modal = null;
+
+                    resolve({
+                        name: fileName,
+                        file: cmn.textToFile( value, fileName )
+                    });
+                };
+            });
+        } else {
+            cmn.fileOrBase64ToBase64( fileData ).then(function( base64 ){
+                // ダウンロード
+                modal.btnFn.download = function() {
+                    if ( mode === 'edit') {
+                        fileName = modal.$.dbody.find('.editorFileName').val();
+                    }
+                    cmn.download('base64', base64, fileName );
+                };
+
+                modal.open( modalHtmlSelect() );
+                if ( mode === 'edit') {
+                    modal.$.dbody.find('.editorFileName').val( fileName );
+
+                    // 更新
+                    modal.btnFn.update = function() {
                         fileName = modal.$.dbody.find('.editorFileName').val();
                         modal.close();
                         modal = null;
 
                         resolve({
                             name: fileName,
-                            base64: base64
+                            file: cmn.base64ToFile( base64, fileName )
                         });
-                    });
-                };
-            });
-        } else if ( fileType === 'image') {
-            // ダウンロード
-            modal.btnFn.download = function() {
-                if ( mode === 'edit') {
-                    fileName = modal.$.dbody.find('.editorFileName').val();
+                    };
                 }
-                cmn.download('base64', base64Text, fileName );
-            };
 
-            modal.open( modalHtmlSelect() );
-            if ( mode === 'edit') {
-                modal.$.dbody.find('.editorFileName').val( fileName );
-            }
+                // imageの場合画像をセットする
+                if ( fileType === 'image') {
+                    const
+                    mime = cmn.imageMimeTypeCheck( fileName ),
+                    src = `data:image/${mime};base64,${base64}`;
 
-            const mime = cmn.imageMimeTypeCheck( fileName ),
-                    src = `data:image/${mime};base64,${base64Text}`;
-            modal.$.dbody.find('.editorImage').attr('src', src );
-        } else {
-            modal.open( modalHtmlSelect() );
-            if ( mode === 'edit') {
-                modal.$.dbody.find('.editorFileName').val( fileName );
-            }
+                    modal.$.dbody.find('.editorImage').attr('src', src );
+                }
+            });
         }
     });
 
 },
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   画面フルスクリーン
@@ -3396,7 +3500,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
 ##################################################
 */
 // フルスクリーンチェック
-fullScreenCheck() {
+fullScreenCheck: function() {
     if (
         ( document.fullScreenElement !== undefined && document.fullScreenElement === null ) ||
         ( document.msFullscreenElement !== undefined && document.msFullscreenElement === null ) ||
@@ -3409,7 +3513,7 @@ fullScreenCheck() {
     }
 },
 // フルスクリーン切り替え
-fullScreen( elem ) {
+fullScreen: function( elem ) {
     if ( elem === undefined ) elem = document.body;
 
     if ( !this.fullScreenCheck() ) {
@@ -3440,7 +3544,7 @@ fullScreen( elem ) {
    タブ
 ##################################################
 */
-commonTab( $target ) {
+commonTab: function( $target ) {
     $target.find('.commonTabItem').eq(0).add( $target.find('.commonTabSection').eq(0) ).addClass('open');
 
     $target.find('.commonTabItem').on('click', function(){

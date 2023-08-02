@@ -1321,11 +1321,9 @@ getFileData( id, name, type ) {
         if ( tb.mode === 'diff' && type === 'beforeValue' && tb.option && tb.option.before[ id ] && tb.option.before[ id ].file[ name ]) {
             // 編集確認画面、変更前データ
             file = tb.option.before[ id ].file[ name ];
-        } else if ( tb.mode === 'edit' && tb.edit && tb.edit.input[ id ]) {
+        } else if ( tb.mode === 'edit' && tb.edit && tb.edit.input[ id ] && tb.edit.input[ id ].after.file[ name ]) {
             // 編集画面、入力済みのデータがある場合
-            if ( tb.edit.input[ id ].after.file ) {
-                file = tb.edit.input[ id ].after.file[ name ];
-            }
+            file = tb.edit.input[ id ].after.file[ name ];
         } else if ( params.file[ name ] !== undefined && params.file[ name ] !== null ) {
             file = params.file[ name ];
         }
@@ -1366,16 +1364,29 @@ setTableEvents() {
 
         // ファイルプレビュー
         tb.$.tbody.on('click', '.filePreview', function(e){
-            const $link = $( this ).prev(),
-                id = $link.attr('data-id'),
-                key = $link.attr('data-rest'),
-                fileName = $link.text(),
-                type = $link.attr('data-type');
+            if ( tb.modalFlag ) {
+                e.preventDefault();
+                return false;
+            }
+
+            const
+            $button = $( this ),
+            $link = $( this ).prev(),
+            id = $link.attr('data-id'),
+            key = $link.attr('data-rest'),
+            fileName = $link.text(),
+            type = $link.attr('data-type');
+
+            $button.prop('disabled', true );
+            tb.modalFlag = true;
 
             let file = tb.getFileData( id, key, type );
             if ( !file ) file = '';
 
-            fn.fileEditor( file, fileName, 'pureview');
+            fn.fileEditor( file, fileName, 'preview').then(function(){
+                $button.prop('disabled', false );
+                tb.modalFlag = false;
+            });
         });
     }
     /*
@@ -1561,15 +1572,23 @@ setTableEvents() {
     */
     if ( tb.mode === 'edit') {
         // ファイル選択
-        tb.$.tbody.on('click', '.tableEditSelectFile', function(){
-            const $button = $( this ),
-                  id = $button.attr('data-id'),
-                  key = $button.attr('data-key'),
-                  maxSize = $button.attr('data-upload-max-size');
+        tb.$.tbody.on('click', '.tableEditSelectFile', function(e){
+            if ( tb.modalFlag ) {
+                e.preventDefault();
+                return false;
+            }
 
-            fn.fileSelect('base64', maxSize ).then(function( result ){
+            const
+            $button = $( this ),
+            id = $button.attr('data-id'),
+            key = $button.attr('data-key'),
+            maxSize = $button.attr('data-upload-max-size');
+            
+            $button.prop('disabled', true );
 
-                const changeFlag = tb.setInputFile( result.name, result.base64, id, key, tb.data.body );
+            fn.fileSelect('file', maxSize ).then(function( result ){
+
+                const changeFlag = tb.setInputFile( result.name, result, id, key, tb.data.body );
 
                 $button.find('.inner').text( result.name );
                 if ( changeFlag ) {
@@ -1581,15 +1600,26 @@ setTableEvents() {
                 if ( error !== 'cancel') {
                     alert( error );
                 }
+            }).then(function(){
+                $button.prop('disabled', false );
             });
         });
 
         // ファイル編集
         tb.$.tbody.on('click', '.inputFileEditButton', function(e){
-            const $button = $( this ),
-                id = $button.attr('data-id'),
-                key = $button.attr('data-key'),
-                $fileBox = $button.closest('.inputFileEdit').prev().find('.tableEditSelectFile');
+            if ( tb.modalFlag ) {
+                e.preventDefault();
+                return false;
+            }
+
+            const
+            $button = $( this ),
+            id = $button.attr('data-id'),
+            key = $button.attr('data-key'),
+            $fileBox = $button.closest('.inputFileEdit').prev().find('.tableEditSelectFile');
+
+            $button.prop('disabled', true );
+            tb.modalFlag = true;
 
             let file = tb.getFileData( id, key ),
                 fileName = $fileBox.text();
@@ -1597,16 +1627,19 @@ setTableEvents() {
             if ( !fileName ) fileName = 'noname.txt';
 
             fn.fileEditor( file, fileName ).then(function( result ){
-                const changeFlag = tb.setInputFile( result.name, result.base64, id, key, tb.data.body );
+                if ( result !== null ) {
+                    const changeFlag = tb.setInputFile( result.name, result.file, id, key, tb.data.body );
 
-                $fileBox.find('.inner').text( result.name );
-                if ( changeFlag ) {
-                    $fileBox.addClass('tableEditChange');
-                } else {
-                    $fileBox.removeClass('tableEditChange');
+                    $fileBox.find('.inner').text( result.name );
+                    if ( changeFlag ) {
+                        $fileBox.addClass('tableEditChange');
+                    } else {
+                        $fileBox.removeClass('tableEditChange');
+                    }
                 }
-            }).catch(function(){
 
+                $button.prop('disabled', false );
+                tb.modalFlag = false;
             });
         });
 
@@ -1670,7 +1703,12 @@ setTableEvents() {
         });
 
         // パスワード削除ボタン
-        tb.$.tbody.on('click', '.inputPasswordDeleteToggleButton', function(){
+        tb.$.tbody.on('click', '.inputPasswordDeleteToggleButton', function(e){
+            if ( tb.modalFlag ) {
+                e.preventDefault();
+                return false;
+            }
+
             const $button = $( this ),
                   $wrap = $button.closest('.inputPasswordWrap'),
                   $input = $wrap.find('.inputPassword'),
@@ -1706,7 +1744,12 @@ setTableEvents() {
         });
 
         // ファイル選択クリア
-        tb.$.tbody.on('click', '.inputFileClearButton', function(){
+        tb.$.tbody.on('click', '.inputFileClearButton', function(e){
+            if ( tb.modalFlag ) {
+                e.preventDefault();
+                return false;
+            }
+
             const $button = $( this ),
                   $wrap = $button.closest('.inputFileWrap'),
                   $input = $wrap.find('.inputFile'),
@@ -2182,24 +2225,25 @@ setInputData( value, id, rest, beforeData ) {
    入力ファイル
 ##################################################
 */
-setInputFile( fileName, fileBase64, id, rest, beforeData ) {
+setInputFile( fileName, fileData, id, rest, beforeData ) {
     const tb = this;
 
     tb.checkNewInputDataSet( id, beforeData );
 
     // 変更があれば追加、なければ削除
-    const beforeFileName = tb.edit.input[id]['before'].parameter[rest],
-          beforeFile = tb.edit.input[id]['before'].file[rest];
+    const beforeFileName = tb.edit.input[id]['before'].parameter[rest];
+
     let changeFlag = false;
-    if ( beforeFile !== fileBase64 || beforeFileName !== fileName ) {
-        tb.edit.input[id]['after'].file[rest] = fileBase64;
+    if ( fileData !== undefined || beforeFileName !== fileName ) {
+        tb.edit.input[id]['after'].file[rest] = fileData;
         tb.edit.input[id]['after'].parameter[rest] = fileName;
         changeFlag = true;
     } else {
         if ( tb.edit.input[id]['after'].parameter[rest] !== undefined ) {
-             delete tb.edit.input[id]['after'].parameter[rest];
+            delete tb.edit.input[id]['after'].parameter[rest];
         }
-    }
+        
+    }    
 
     tb.checkNewInputDataDelete( id );
 
@@ -4102,10 +4146,20 @@ reflectEdits() {
         }
     };
 
-    const modalTable = new DataTable('DT', 'diff', tb.info, tb.params, diffData ),
-          modal = new Dialog( config );
+    let
+    modalTable = new DataTable('DT', 'diff', tb.info, tb.params, diffData ),
+    modal = new Dialog( config );
 
     modal.open( modalTable.setup() );
+
+    // カラムキー
+    tb.data.regiColumnKeys = modalTable.data.columnKeys;
+
+    const end = function(){
+        modalTable.worker.terminate();
+        modal = null;
+        modalTable = null;
+    };
 
     // メニューボタン
     modalTable.$.header.find('.itaButton ').on('click', function(){
@@ -4118,18 +4172,21 @@ reflectEdits() {
                     modalTable.workStart('table', 0 );
                     tb.editOk.call( tb ).then(function( result ){
                         modal.close().then( function(){
+                            end();
                             fn.resultModal( result ).then(function(){
                                 tb.changeViewMode.call( tb );
                             });
                         });
                     }).catch(function( result ){
                         modal.close().then( function(){
+                            end();
                             tb.editError( result );
                         });
                     });
                 break;
                 case 'tableCancel':
                     modal.close();
+                    end();
                 break;
                 case 'tableChangeValue':
                     modalTable.$.container.toggleClass('tableShowChangeValue');
@@ -4168,7 +4225,7 @@ editOk() {
 
             tb.data.editOrder.push( itemId );
 
-            for ( const columnKey of tb.data.columnKeys ) {
+            for ( const columnKey of tb.data.regiColumnKeys ) {
                 const columnNameRest = info[ columnKey ].column_name_rest,
                       columnType = info[ columnKey ].column_type;
 
@@ -4195,7 +4252,11 @@ editOk() {
                         // File
                         case 'FileUploadColumn':
                             itemData.parameter[ columnNameRest ] = setData('parameter');
-                            itemData.file[ columnNameRest ] = setData('file');
+
+                            const fileAfterValue = item.after.parameter[ columnNameRest ];
+                            if ( fileAfterValue !== undefined && fileAfterValue !== '') {
+                                itemData.file[ columnNameRest ] = setData('file');
+                            }
                         break;
                         case 'FileUploadEncryptColumn': {
                             const fileAfterValue = item.after.parameter[ columnNameRest ];
@@ -4241,8 +4302,34 @@ editOk() {
         }
     }
 
+    // パラメータとファイルを分ける
+    const
+    formData = new FormData(),
+    editDataParam = [],
+    paramLength = editData.length;
+
+    for ( let i = 0; i < paramLength; i++ ) {
+        const item = editData[i];
+        // パラメータ
+        editDataParam.push({
+            parameter: item.parameter,
+            type: item.type
+        });
+
+        // ファイルをFormDataに追加
+        // Parameter No. + . + Rest Name Key
+        for ( const key in item.file ) {
+            if ( item.parameter[ key ] !== undefined && item.parameter[ key ] !== null ) {
+                formData.append(`${i}.${key}`, item.file[ key ] );
+            }
+        }
+    }
+
+    // パラメータをFormDataに追加
+    formData.append('json_parameters', fn.jsonStringify( editDataParam ) );
+
     return new Promise(function( resolve, reject ){
-        fn.fetch( tb.rest.maintenance, null, 'POST', editData )
+        fn.fetch( tb.rest.maintenance, null, 'POST', formData, { multipart: true } )
             .then(function( result ){
                 resolve( result );
             })
@@ -5180,7 +5267,7 @@ parameterBody() {
 
     const listName = ( tb.option.parameterMode === 'host')? 'parameterOperationList': 'parameterHostList',
           nameKey = ( tb.option.parameterMode === 'host')? 'operation_name_disp': 'host_name';
-console.log(tb.option[ listName ])
+
     const length = tb.option[ listName ].length;
     for ( let i = 0; i < length; i++ ) {
         // オペレーション名 or ホスト名

@@ -2345,7 +2345,7 @@ def collect_parameter_list(objdbca):
                                                 duplication_flg = False
                                                 break
                                         if duplication_flg is True:
-                                            aaaw2host_ary.append(tmp_dict)
+                                            host_ary.append(tmp_dict)
                                     else:
                                         host_ary.append(tmp_dict)
 

@@ -618,26 +618,13 @@ fileSelect() {
           fileRest = ( ex.type === 'excelImport')? '/excel/bulk/upload/': `/menu/import/upload/`;
     
     
-    fn.fileSelect('base64', null, fileExt ).then(function( selectFile ){
-        const postData = ( ex.type === 'excelImport')?
-            // エクセルインポート
-            { 
-                zipfile: {
-                    name: selectFile.name,
-                    base64: selectFile.base64
-                }
-            }:
-            // メニューインポート
-            {
-                file: {
-                    name: selectFile.name,
-                    base64: selectFile.base64
-                }
-            };
+    fn.fileSelect('file', null, fileExt ).then(function( selectFile ){
+
+        const postData = new FormData();
+        postData.append( selectFile.name, selectFile );
         
         let process = fn.processingModal( getMessage. FTE07036 );
-        
-        fn.fetch( fileRest, null, 'POST', postData ).then(function( result ){
+        fn.fetch( fileRest, null, 'POST', postData, { multipart: true }).then(function( result ){
                         
             // インポートデータ
             ex.importData = result;

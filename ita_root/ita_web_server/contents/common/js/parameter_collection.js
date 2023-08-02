@@ -67,16 +67,28 @@ setup() {
    fn.fetch( urls ).then(function( result ){
       pc.info = result[0];
       pc.preset = result[1];
-      pc.$.content.removeClass('nowLoading').html( pc.mainHtml() );
-      pc.$.param = pc.$.content.find('.parameterMain');
+      pc.$.content.removeClass('nowLoading');
 
-      pc.presetInit();
-      pc.setMenuButtonEvents();
-      pc.setSelectEvents();
-      pc.operationTimelineEvents();
+      // オペレーションの登録があるか
+      if ( pc.info.operation ) {
+         pc.$.content.html( pc.mainHtml() );
+         pc.$.param = pc.$.content.find('.parameterMain');
 
-      pc.updateHostList();
-      pc.updateParameterList();
+         pc.presetInit();
+         pc.setMenuButtonEvents();
+         pc.setSelectEvents();
+         pc.operationTimelineEvents();
+
+         pc.updateHostList();
+         pc.updateParameterList();
+      } else {
+         const message = ``
+         + `<div class="commonMessage">`
+            + `<div class="commonMessageInner">${fn.html.icon('circle_info')}${getMessage.FTE11048}</div>`
+         + `</div>`;
+         pc.$.content.html( message );
+         $('#menu').find('.menuPageContent').html('');
+      }
    });
 
 }
@@ -556,6 +568,14 @@ settingOpen() {
 */
 operationTimeLineHtml() {
    const pc = this;
+
+   if ( !pc.info.operation ) {
+      return ``
+      + `<div class="operationTimeline">`
+         + `<div class="commonMessage">`
+         + `</div>`
+      + `</div>`;
+   }
 
    const list = pc.info.operation.sort(function( a, b ){
       a = ( a.last_run_date )? a.last_run_date: a.scheduled_date_for_execution;
@@ -1482,10 +1502,10 @@ setPresetEvents() {
 
       switch( type ) {
          case 'update': 
-            if ( target ) pc.presetSave( target.filter_name, id );
+            if ( target ) pc.presetSave( target.filter_name, id, target.last_update_date_time );
             break;
          case 'rename':
-            if ( target ) pc.presetSaveOpen( target.filter_name, id );
+            if ( target ) pc.presetSaveOpen( target.filter_name, id, target.last_update_date_time );
             break;
          case 'delete':
             pc.presetDelete( id );
@@ -1533,8 +1553,11 @@ presetDelete( uuid ) {
             resolve();
          });
       }).catch(function( error ){
-         window.console.error( error );
-         alert( error );
+         if ( error.message ) {
+            alert( error.message );
+         } else {
+            window.console.error( error );
+         }
          process.close();
          process = null;
          pc.presetStandby = false;
@@ -1547,14 +1570,15 @@ presetDelete( uuid ) {
    プリセット保存
 ##################################################
 */
-presetSave( name = '', uuid = '') {
+presetSave( name = '', uuid = '', date = '') {
    const pc = this;
 
-   return new Promise(function( resolve ){
+   return new Promise(function( resolve, reject ){
       const data = {
          uuid: uuid,
          filter_name: name,
-         filter_json: fn.jsonStringify( pc.select )
+         filter_json: fn.jsonStringify( pc.select ),
+         last_update_date_time: date
       };
       let process = fn.processingModal( getMessage.FTE11021 );
       pc.presetStandby = true;
@@ -1568,12 +1592,15 @@ presetSave( name = '', uuid = '') {
             resolve();
          });
       }).catch(function( error ){
-         window.console.error( error );
-         alert( error );
+         if ( error.message ) {
+            alert( error.message );
+         } else {
+            window.console.error( error ); 
+         }
          process.close();
          process = null;
          pc.presetStandby = false;
-         resolve();
+         reject();
       });
    });
 }
@@ -1582,7 +1609,7 @@ presetSave( name = '', uuid = '') {
    プリセット保存モーダル
 ##################################################
 */
-presetSaveOpen( name = '', uuid = '') {
+presetSaveOpen( name = '', uuid = '', date = '') {
    const pc = this;
 
    if ( pc.tableLoading ) return false;
@@ -1607,12 +1634,12 @@ presetSaveOpen( name = '', uuid = '') {
 
       const funcs = {
          ok: function(){
-            modal.close();
-            modal = null;
-
-            // 新規保存
-            pc.presetSave( $input.val(), uuid ).then(function(){
+            pc.presetSave( $input.val(), uuid, date ).then(function(){
+               modal.close();
+               modal = null;
                resolve();
+            }).catch(function(){
+
             });
          },
          cancel: function(){

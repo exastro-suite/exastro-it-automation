@@ -922,7 +922,8 @@ getMessage = ( function() {
         'FTE11043': 'Use',
         'FTE11044': 'Host selection',
         'FTE11045': ' operations',
-        'FTE11047': 'Input order'
+        'FTE11047': 'Input order',
+        'FTE11048': 'No parameters to display.'
     };
 
     return message;

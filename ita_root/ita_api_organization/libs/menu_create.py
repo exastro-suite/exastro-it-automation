@@ -427,35 +427,39 @@ def collect_pulldown_initial_value(objdbca, menu_name_rest, column_name_rest):
     lang = g.get('LANGUAGE')
     initial_value_dict = {}
 
-    # 「他メニュー連携」から対象のレコード一覧を取得
-    ret = objdbca.table_select(v_menu_other_link, 'WHERE MENU_NAME_REST = %s AND REF_COL_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_name_rest, column_name_rest, 0])  # noqa: E501
-    if not ret:
-        log_msg_args = [menu_name_rest, column_name_rest]
-        api_msg_args = [menu_name_rest, column_name_rest]
-        raise AppException("499-00010", log_msg_args, api_msg_args)  # noqa: F405
+    try:
+        # 「他メニュー連携」から対象のレコード一覧を取得
+        ret = objdbca.table_select(v_menu_other_link, 'WHERE MENU_NAME_REST = %s AND REF_COL_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_name_rest, column_name_rest, 0])  # noqa: E501
+        if not ret:
+            log_msg_args = [menu_name_rest, column_name_rest]
+            api_msg_args = [menu_name_rest, column_name_rest]
+            raise AppException("499-00010", log_msg_args, api_msg_args)  # noqa: F405
 
-    ref_table_name = ret[0].get('REF_TABLE_NAME')
-    ref_pkey_name = ret[0].get('REF_PKEY_NAME')
-    ref_col_name = ret[0].get('REF_COL_NAME')
-    ref_multi_lang = ret[0].get('REF_MULTI_LANG')
-    ref_col_name_rest = ret[0].get('REF_COL_NAME_REST')
-    menu_create_flag = ret[0].get('MENU_CREATE_FLAG')
+        ref_table_name = ret[0].get('REF_TABLE_NAME')
+        ref_pkey_name = ret[0].get('REF_PKEY_NAME')
+        ref_col_name = ret[0].get('REF_COL_NAME')
+        ref_multi_lang = ret[0].get('REF_MULTI_LANG')
+        ref_col_name_rest = ret[0].get('REF_COL_NAME_REST')
+        menu_create_flag = ret[0].get('MENU_CREATE_FLAG')
 
-    # 「プルダウン選択」の対象テーブルからレコード一覧を取得
-    ret = objdbca.table_select(ref_table_name, 'WHERE DISUSE_FLAG = %s', [0])
-    for record in ret:
-        key = record.get(ref_pkey_name)
-        if str(ref_multi_lang) == "1":
-            value = record.get(ref_col_name + "_" + lang.upper())
-        else:
-            value = record.get(ref_col_name)
+        # 「プルダウン選択」の対象テーブルからレコード一覧を取得
+        ret = objdbca.table_select(ref_table_name, 'WHERE DISUSE_FLAG = %s', [0])
+        for record in ret:
+            key = record.get(ref_pkey_name)
+            if str(ref_multi_lang) == "1":
+                value = record.get(ref_col_name + "_" + lang.upper())
+            else:
+                value = record.get(ref_col_name)
 
-        # パラメータシート作成機能で作ったメニューの場合、値がJSON形式なので取り出す。
-        if str(menu_create_flag) == "1":
-            value_dict = ast.literal_eval(value)
-            value = value_dict.get(ref_col_name_rest)
-        if value:
-            initial_value_dict[key] = value
+            # パラメータシート作成機能で作ったメニューの場合、値がJSON形式なので取り出す。
+            if str(menu_create_flag) == "1":
+                value_dict = json.loads(value)
+                value = value_dict.get(ref_col_name_rest)
+            if value:
+                initial_value_dict[key] = value
+
+    except Exception:
+        initial_value_dict = {}
 
     return initial_value_dict
 
@@ -477,26 +481,29 @@ def collect_pulldown_reference_item(objdbca, menu_name_rest, column_name_rest):
     # 変数定義
     lang = g.get('LANGUAGE')
     reference_item_list = []
+    try:
+        # 「他メニュー連携」から対象のレコード一覧を取得
+        ret = objdbca.table_select(v_menu_other_link, 'WHERE MENU_NAME_REST = %s AND REF_COL_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_name_rest, column_name_rest, 0])  # noqa: E501
+        if not ret:
+            log_msg_args = [menu_name_rest, column_name_rest]
+            api_msg_args = [menu_name_rest, column_name_rest]
+            raise AppException("499-00010", log_msg_args, api_msg_args)  # noqa: F405
 
-    # 「他メニュー連携」から対象のレコード一覧を取得
-    ret = objdbca.table_select(v_menu_other_link, 'WHERE MENU_NAME_REST = %s AND REF_COL_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_name_rest, column_name_rest, 0])  # noqa: E501
-    if not ret:
-        log_msg_args = [menu_name_rest, column_name_rest]
-        api_msg_args = [menu_name_rest, column_name_rest]
-        raise AppException("499-00010", log_msg_args, api_msg_args)  # noqa: F405
+        # LINK_IDを特定
+        link_id = ret[0].get('LINK_ID')
 
-    # LINK_IDを特定
-    link_id = ret[0].get('LINK_ID')
+        # 「参照項目情報」からLINK_IDに紐づくレコードを取得
+        ret = objdbca.table_select(v_menu_reference_item, 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [link_id, 0])
+        if ret:
+            for record in ret:
+                reference_id = record.get('REFERENCE_ID')
+                column_name = record.get('COLUMN_NAME_' + lang.upper())
+                column_name_rest = record.get('COLUMN_NAME_REST')
+                add_dict = {'reference_id': reference_id, 'column_name': column_name, 'column_name_rest': column_name_rest}
+                reference_item_list.append(add_dict)
 
-    # 「参照項目情報」からLINK_IDに紐づくレコードを取得
-    ret = objdbca.table_select(v_menu_reference_item, 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s ORDER BY DISP_SEQ ASC', [link_id, 0])
-    if ret:
-        for record in ret:
-            reference_id = record.get('REFERENCE_ID')
-            column_name = record.get('COLUMN_NAME_' + lang.upper())
-            column_name_rest = record.get('COLUMN_NAME_REST')
-            add_dict = {'reference_id': reference_id, 'column_name': column_name, 'column_name_rest': column_name_rest}
-            reference_item_list.append(add_dict)
+    except Exception:
+        reference_item_list = []
 
     return reference_item_list
 

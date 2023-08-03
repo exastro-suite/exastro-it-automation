@@ -18,8 +18,8 @@ from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.common.util import get_timestamp, get_all_execution_limit, get_org_execution_limit
 from common_libs.ci.util import log_err
+from common_libs.common.event_relay import *
 import datetime
-import json
 import re
 import jmespath
 import operator
@@ -50,41 +50,67 @@ def main_logic(organization_id, workspace_id):
     g.applogger.debug("organization_id=" + organization_id)
     g.applogger.debug("workspace_id=" + workspace_id)
 
-    wsDb = DBConnectWs(workspace_id)
+    # wsDb = DBConnectWs(workspace_id)
 
     ######################################################
     # イベント収集
     ######################################################
 
+    auth_method = {
+        "1": BasicAuthAPIClient,  # noqa: F405
+        "2": BearerAuthAPIClient,  # noqa: F405
+        "3": ShareKeyLiteAuthAPIClient  # noqa: F405
+    }
+
+    def get_auth_client(setting):
+        auth_class = auth_method[setting["authentication_method_id"]]
+        return auth_class(setting)
+
     # 仮のイベント収集設定
+    tmp_header = '{"Content-Type": "application/json"}'
     gathering_event_settings = [
         {
             "gathering_event_id": "a1a1a1",
-            "gathering_event_name": "Zabbix Trigger",
-            "monitoring_tool_id": "1",
-            "api_url": "sampleZabbixTrigger.json",
-            "is_list": 1,
+            "gathering_event_name": "Zabbix Host",
+            "authentication_method_id": "2",
+            "request_method": "POST",
+            "api_url": "",
+            "header": tmp_header,
+            "proxy": None,
+            "auth_token": "",
+            "username": None,
+            "password": None,
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "host.get",
+                "params": {},
+                "id": 1
+            },
+            "is_list": "1",
             "list_key": "result",
             "ttl": 300
         },
         {
-            "gathering_event_id": "c3c3c3",
-            "gathering_event_name": "Prometheus Alert",
-            "monitoring_tool_id": "2",
-            "api_url": "samplePrometheus.json",
-            "is_list": 1,
-            "list_key": "data.alerts",
-            "ttl": 200
-        },
-        {
-            "gathering_event_id": "b2b2b2",
-            "gathering_event_name": "Grafana Alerting",
-            "monitoring_tool_id": "3",
-            "api_url": "sampleGrafana.json",
-            "is_list": 1,
-            "list_key": None,
-            "ttl": 180
-        },
+            "gathering_event_id": "b1b1b1",
+            "gathering_event_name": "Zabbix Problem",
+            "authentication_method_id": "2",
+            "request_method": "POST",
+            "api_url": "",
+            "header": tmp_header,
+            "proxy": None,
+            "auth_token": "",
+            "username": None,
+            "password": None,
+            "parameter": {
+                "jsonrpc": "2.0",
+                "method": "problem.get",
+                "params": {},
+                "id": 1
+            },
+            "is_list": "1",
+            "list_key": "result",
+            "ttl": 300
+        }
     ]
 
     wsMong = MONGOConnectWs()
@@ -103,27 +129,35 @@ def main_logic(organization_id, workspace_id):
             with_path = with_path[key]
         return with_path
 
+    # ドット区切りで辞書を指定して値を取得
+    def get_value_from_jsonpath(jsonpath, data):
+        value = jmespath.search(jsonpath, data)
+        return value
+
     events = []  # ラベル付きの保存用データ
 
     for setting in gathering_event_settings:
         tmp_polling_interval = 10  # 仮のポーリング間隔
         # APIの呼び出し（実際は専用モジュールみたいなものを使用?）
-        with open(setting["api_url"]) as f:
-            json_data = json.load(f)
-            fetched_time = datetime.datetime.now()
-            # レスポンスがリスト形式ではない場合はそのまま保存する
-            if setting["is_list"] == 0:
-                event = {}
-                event["ita_event"] = json_data
-                event["ita_gathering_event_id"] = setting["gathering_event_id"]
-                event["ita_fetched_time"] = fetched_time.timestamp()
-                event["ita_start_time"] = fetched_time
-                event["ita_start_time"] = (fetched_time + datetime.timedelta(seconds=tmp_polling_interval)).timestamp()
-                event["ita_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["ttl"])).timestamp()
-                events.append(event)
-            # レスポンスがリスト形式の場合、1つずつ保存
+        api_client = get_auth_client(setting)
+        json_data = api_client.call_api(setting["parameter"])
+        fetched_time = datetime.datetime.now()
+        # レスポンスがリスト形式ではない場合はそのまま保存する
+        if setting["is_list"] == 0:
+            event = {}
+            event["ita_event"] = json_data
+            event["ita_gathering_event_id"] = setting["gathering_event_id"]
+            event["ita_fetched_time"] = fetched_time.timestamp()
+            event["ita_start_time"] = (fetched_time + datetime.timedelta(seconds=tmp_polling_interval)).timestamp()
+            event["ita_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["ttl"])).timestamp()
+            events.append(event)
+        # レスポンスがリスト形式の場合、1つずつ保存
+        else:
+            json_data = get_value_from_jsonpath(setting["list_key"], json_data)
+            if json_data is None:
+                print("target_key does not exist")
+                pass
             else:
-                json_data = convert_path(json_data, setting["list_key"])
                 for data in json_data:
                     event = {}
                     event["ita_event"] = data
@@ -143,43 +177,28 @@ def main_logic(organization_id, workspace_id):
     tmp_labeling_settings = [
         {
             "labeling_id": "xxx",
-            "label_name": "DB障害",
+            "label_name": "ラベル設定1",
             "gathering_event_id": "a1a1a1",
-            "target_key": "lastchange",
-            "target_value": "1684972724",
+            "target_key": "host",
+            "target_value": "target-support",
             "compare_method_id": "1",
-            "ita_label_key": "aaa",
-            "ita_label_value": "AAA",
+            "ita_label_key": "ラベルキー1",
+            "ita_label_value": "ラベル値1",
         },
         {
-            "labeling_id": "yyy",
-            "label_name": "高CPU使用率",
-            "gathering_event_id": "b2b2b2",
-            "target_key": "evalData.evalMatches[0].metric",
-            "target_value": "cpu_usage",
-            "compare_method_id": "1",
-            "ita_label_key": "bbb",
-            "ita_label_value": "BBB"
-        },
-        {
-            "labeling_id": "zzz",
-            "label_name": "高CPU使用率",
-            "gathering_event_id": "b2b2b2",
+            "labeling_id": "xxx",
+            "label_name": "ラベル設定2",
+            "gathering_event_id": "b1b1b1",
             "target_key": "name",
-            "target_value": "High CPU Usage",
+            "target_value": "disk use rate",
             "compare_method_id": "7",
-            "ita_label_key": "ccc",
-            "ita_label_value": "CCC"
-        },
+            "ita_label_key": "ラベルキー2",
+            "ita_label_value": "ラベル値2",
+        }
     ]
 
     # ラベルデータ保存用コレクション
     labeled_event_collection = wsMong.collection("labeled_event_collection")
-
-    # ドット区切りで辞書を指定して値を取得
-    def get_value_from_jsonpath(jsonpath, data):
-        value = jmespath.search(jsonpath, data)
-        return value
 
     compare_operator = {
         "1": operator.eq,
@@ -192,7 +211,7 @@ def main_logic(organization_id, workspace_id):
     }
 
     # target_value比較用
-    def compare_values(compare_method_id, comparative, referent):
+    def compare_values(compare_method_id="1", comparative=None, referent=None):
         key_list = list(compare_operator.keys())
         if compare_method_id in key_list:
             if compare_method_id == "7":

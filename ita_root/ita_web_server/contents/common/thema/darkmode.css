@@ -567,7 +567,7 @@ background-color: var(--rowColor)!important;
 }
 .differenceTr > .tBodyTh,
 .differenceTr > .tBodyTd {
-background-color: #var(--rowDiscardColor)!important;
+background-color: var(--rowDiscardColor)!important;
 }
 
 
@@ -718,4 +718,16 @@ background-color: rgba(0,0,0,.2);
 
 .schedulePeriodRadioList {
 border-bottom-color: var(--black75);
+}
+
+.operationMenuRadioWrap {
+    background-color: rgba( 0,0,0,.2 );
+    border-color: #000;
+    color: #DDD;
+}
+.operationMenuRadioTitle {
+    background-image: linear-gradient( var(--mainColor90), var(--mainColor95) );
+    border-color: #000;
+    box-shadow: none;
+    color: #DDD;
 }

@@ -70,7 +70,7 @@ setup() {
       pc.$.content.removeClass('nowLoading');
 
       // オペレーションの登録があるか
-      if ( pc.info.operation ) {
+      if ( fn.typeof( pc.info.operation ) === 'array' && pc.info.operation.length > 0 ) {
          pc.$.content.html( pc.mainHtml() );
          pc.$.param = pc.$.content.find('.parameterMain');
 
@@ -348,18 +348,35 @@ setMenuButtonEvents() {
       setTimeout( function(){pc.parameterSetButtonCheck()},1);
    });
 
-   // パラメータメニュ
+   // パラメータメニュー
    pc.$.param.on('click', '.parameterMenuButton', function(){
       const
       $button = $( this ),
       type = $button.attr('data-type');
 
       switch( type ) {
-         case 'print':
+         case 'print': {
+            const
+            darkmodeFlag = ( pc.$.body.is('.darkmode') )? true: false,
+            $thema = $('#thema'),
+            themaHref = $thema.attr('href');
+
+            // テーマ：ダークモードの場合一旦解除する
+            if ( darkmodeFlag ) {
+               pc.$.body.removeClass('darkmode');
+               $thema.attr('href', '');
+            }
             pc.$.body.addClass('parameterPrint');
+
             window.print();
+
+            if ( darkmodeFlag ) {
+               pc.$.body.addClass('darkmode');
+               $thema.attr('href', themaHref );
+            }
             pc.$.body.removeClass('parameterPrint');
-            break;
+
+            } break;
       }
 
    });

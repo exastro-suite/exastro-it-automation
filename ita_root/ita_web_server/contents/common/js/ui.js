@@ -930,10 +930,11 @@ headerMenu( readyFlag = true ) {
             $userInfo.removeClass('open');
         } else {
             $userInfo.addClass('open');
-            mn.$.window.on('pointerdown.userInfo', function( e ){
+            const $window = $( window );
+            $window.on('pointerdown.userInfo', function( e ){
                 if ( !$( e.target ).closest('.userInfomation, .modalOverlay').length ) {
                     $userInfo.removeClass('open');
-                    mn.$.window.off('pointerdown.userInfo');
+                    $window.off('pointerdown.userInfo');
                 }
             });
         }

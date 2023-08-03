@@ -2042,16 +2042,15 @@ setTableEvents() {
                             tb.select[tb.mode].push( checkItem );
                         }
                     } else {
-                        if ( fn.typeof( tb.select[tb.mode] ) === 'object') {
-                            const index = tb.select[tb.mode].findIndex(function(obj){ return obj.id === id });
-                            if ( index !== -1 ) {
-                                tb.select[ checkMode ].splice( index, 1 );
+                        const index = tb.select[tb.mode].findIndex(function( item ){
+                            if ( fn.typeof( item ) === 'object') {
+                                return item.id === id;
+                            } else {
+                                return item === id;
                             }
-                        } else {
-                            const index = tb.select[tb.mode].indexOf( id );
-                            if ( index !== -1 ) {
-                                tb.select[ checkMode ].splice( index, 1 );
-                            }
+                        });
+                        if ( index !== -1 ) {
+                            tb.select[ checkMode ].splice( index, 1 );
                         }
                     }
                 } else {

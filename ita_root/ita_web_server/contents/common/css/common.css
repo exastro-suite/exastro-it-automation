@@ -5238,7 +5238,7 @@ box-shadow: 0 0 8px rgba( 0,0,0,.3 );
 }
 /*
 ##################################################
-  UI fonts
+  Loading
 ##################################################
 */
 .nowLoading {
@@ -5269,6 +5269,13 @@ animation: nowLoading .5s linear infinite;
 }
 @keyframes nowLoading {
 to { background-position: 32px 0; }
+}
+.darkmode .dashboard-loading::after,
+.darkmode .nowLoading::after {
+background-color: #444;
+box-shadow: 0 0 4px rgba( 0,0,0,.5 ) inset,
+          0 0 8px rgba( 0,0,0,.2 ),
+          0 0 0 2px #666;
 }
 /*
 ##################################################

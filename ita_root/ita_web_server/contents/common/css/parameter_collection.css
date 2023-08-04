@@ -735,3 +735,78 @@ height: auto!important;
 background-color: transparent!important;
 background-image: none!important;
 }
+
+/* Darkmode */
+.darkmode .operationTimeline {
+background-color: rgba(0,0,0,.2);
+}
+.darkmode .operationTimeLineDateInner {
+color: #AAA;
+}
+.darkmode .operationTimeLineDateTd {
+border-color: rgba(0,0,0,.25);
+}
+.darkmode .operationTimelineOperationName {
+background-color: #111;
+color: #CCC;
+}
+.darkmode .operationTimelineOperationBlock {
+background-color: #222;
+}
+.darkmode .operationTimelineOperationItem,
+.darkmode .operationTimelineOperationBlockItem {
+background-color: #111;
+}
+.darkmode .operationTimelineOperationName {
+background-color: #2E3136;
+color: #CCC;
+}
+.darkmode .mainTargetType {
+color: #CCC;
+}
+.darkmode .mainTarget {
+background-color: #313439;
+border-bottom-color: #282B30;
+}
+.darkmode .mainTargetName {
+color: var(--mainColor10);
+}
+.darkmode .parameterMenuList,
+.darkmode .parameterMenuItem {
+border-color: rgba(0,0,0,.5);
+}
+.darkmode .parameterMenuButton {
+color: #CCC;
+}
+.darkmode .parameterMenuButton:hover {
+background-color: rgba(0,0,0,.2);
+}
+.darkmode .parameterBlock {
+background-color: rgba(0,0,0,.1);
+}
+.darkmode .parameterBlockName {
+color: #CCC;
+}
+.darkmode .parameterBlockName::before {
+background-color: #33373C;
+}
+.darkmode .parameterArea .tableWrap {
+background-color: rgba(0,0,0,.1);
+}
+.darkmode .parameterArea .tBodyTd,
+.darkmode .parameterArea .tBodyTr:hover > .tBodyTd {
+background-color: var(--rowEvenColor)!important;
+}
+.darkmode .parameterArea .parameterTh,
+.darkmode .parameterArea .tBodyTr:hover .parameterTh {
+background-color: var(--mainColor85)!important;
+}
+.darkmode .parameterArea .parameterBlankTd,
+.darkmode .parameterArea .tBodyTr:hover > .parameterBlankTd {
+background-color: #333!important;
+}
+.darkmode .parameterArea .parameterTheadTh {
+background-color: #2E3136;
+background-image: none;
+box-shadow: none;
+}

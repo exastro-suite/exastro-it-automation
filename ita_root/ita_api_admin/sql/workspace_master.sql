@@ -163,7 +163,7 @@ INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_
 ・Maintenance of menu (view/register/update/discard/restore)
 ・View of role associated with menu(cannot maintain)
 ・Association with role of menu
-・View of contents file associated to the menu(cannot maintain)','0','1','0','0','0','1','1','1','1','0',NULL,'[["menu_group_name","menu_name_ja"],["menu_group_name","menu_name_en"]]',NULL,NULL,NULL,'0',_____DATE_____,1);
+・View of contents file associated to the menu(cannot maintain)','0','1','0','0','0','1','1','1','1','0',NULL,'[["menu_group_name","menu_name_ja"],["menu_group_name","menu_name_en"]]','external_valid_menu_before',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,HOSTGROUP,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(10103,_____DATE_____,'INSERT','10103','10103','T_COMN_MENU',NULL,'menu_id','下記の機能を提供しています。
 ・メニューのメンテナンス(閲覧/登録/更新/廃止)
 ・メニューが紐付いているロールの閲覧(メンテナンスはできません。)
@@ -172,7 +172,7 @@ INSERT INTO T_COMN_MENU_TABLE_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOUR
 ・Maintenance of menu (view/register/update/discard/restore)
 ・View of role associated with menu(cannot maintain)
 ・Association with role of menu
-・View of contents file associated to the menu(cannot maintain)','0','1','0','0','0','1','1','1','1','0',NULL,'[["menu_group_name","menu_name_ja"],["menu_group_name","menu_name_en"]]',NULL,NULL,NULL,'0',_____DATE_____,1);
+・View of contents file associated to the menu(cannot maintain)','0','1','0','0','0','1','1','1','1','0',NULL,'[["menu_group_name","menu_name_ja"],["menu_group_name","menu_name_en"]]','external_valid_menu_before',NULL,NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_TABLE_LINK (TABLE_DEFINITION_ID,MENU_ID,TABLE_NAME,VIEW_NAME,PK_COLUMN_NAME_REST,MENU_INFO_JA,MENU_INFO_EN,SHEET_TYPE,HISTORY_TABLE_FLAG,INHERIT,HOSTGROUP,VERTICAL,ROW_INSERT_FLAG,ROW_UPDATE_FLAG,ROW_DISUSE_FLAG,ROW_REUSE_FLAG,SUBSTITUTION_VALUE_LINK_FLAG,LOCK_TABLE,UNIQUE_CONSTRAINT,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('10104','10104','T_COMN_ROLE_MENU_LINK',NULL,'uuid','下記の機能を提供しています。
 ・ロールとメニューの紐付(閲覧/登録/更新/廃止)','The following functions are provided.
 ・Role-Menu link list (view/register/update/discard/restore)','0','1','0','0','0','1','1','1','1','0',NULL,'[["role_name","menu_name"]]',NULL,NULL,NULL,'0',_____DATE_____,1);

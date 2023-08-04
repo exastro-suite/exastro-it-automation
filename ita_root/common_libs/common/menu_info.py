@@ -300,7 +300,8 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     info_data = {
         'menu_info': menu_info_data,
         'column_info': column_info_data,
-        'column_group_info': column_group_info_data
+        'column_group_info': column_group_info_data,
+        'custom_menu': {},
     }
 
     return info_data
@@ -916,23 +917,12 @@ def convert_to_base64(file_path):
             else:
                 fileAry.append(value)
 
-    if len(fileAry) == 0:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        shutil.rmtree(file_path)
-
-    # 必須ファイルの確認
-    errFlg = True
-    for value in fileAry:
-        if 'main.html' == value:
-            errFlg = False
-
     custom_file_list = {}
-    if errFlg is False:
-        for file in fileAry:
-            ret = file_encode(file_path + '/' + file)
-            custom_file_list[file] = ret
-    else:
-        raise AppException("499-00307", [], [])
+    for file in fileAry:
+        ret = file_encode(file_path + '/' + file)
+        custom_file_list[file] = ret
+
+    if os.path.exists(file_path):
+        shutil.rmtree(file_path)
 
     return custom_file_list

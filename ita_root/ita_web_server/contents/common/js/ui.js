@@ -43,7 +43,7 @@ constructor() {
     ui.$.header = $('#header');
     ui.$.menu = $('#menu');
     ui.$.content = $('#content');
-    
+
     // Common parameter
     ui.params = fn.getCommonParams();
     ui.params.menuNameRest = fn.getParams().menu;
@@ -1346,7 +1346,7 @@ dataDownload() {
     if ( mn.flag.insert ) {
         list.push({ title: getMessage.FTE10015, description: getMessage.FTE10016, type: 'newDwonloadExcel'});
     }
-    
+
     if ( mn.flag.history ) {
         list.push({ title: getMessage.FTE10023, description: getMessage.FTE10024, type: 'allHistoryDwonloadExcel'});
     }
@@ -1746,9 +1746,10 @@ customMenu() {
     fn.loadAssets( assets ).then(function(){
         customMenu( mn.info ).then(function( $iframe ){
             mn.$.content.html( $iframe );
-            mn.onReady();
         }).catch(function(){
-            alert( getMessage.FTE12001 );
+            // alert( getMessage.FTE12001 );
+        }).then(function(){
+            mn.onReady();
         });
     });
 }

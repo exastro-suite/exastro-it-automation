@@ -55,6 +55,12 @@ setRestApiUrls() {
 setup() {
     const cp = this;
 
+    cp.$ = {};
+    cp.$.content = $('#content').find('.sectionBody');
+
+    // ローディング表示
+    cp.$.content.addClass('nowLoading');
+
     fn.fetch( [ cp.rest.info, cp.rest.list ] ).then(function( result ){
         cp.info = result[0];
         cp.list = result[1];
@@ -71,15 +77,12 @@ setup() {
 init() {
     const cp = this;
 
-    cp.$ = {};
-    cp.$.content = $('#content').find('.sectionBody');
-
     cp.compareData = {
         compare: '',
         host: []
     };
 
-    cp.$.content.html( cp.compareHtml() );
+    cp.$.content.removeClass('nowLoading').html( cp.compareHtml() );
 
     cp.$.setting = cp.$.content.find('.compareSetting');
     cp.$.host = cp.$.content.find('.compareHost');
@@ -248,11 +251,11 @@ compareSettingHtml( info ) {
 hostHtml( hostList ) {
     const cp = this;
 
+    cp.compareData.host = [];
+
     if ( !hostList.length ) {
         return cp.compareHostMessageHtml();
     }
-
-    cp.compareData.host = [];
 
     const html = ['<ul class="compareHostList">'];
     for ( const host of hostList ) {
@@ -310,6 +313,7 @@ compareEvents() {
                     if ( result ) {
                         cp.$.host.html( cp.hostHtml( result ) );
                         cp.$.result.html( cp.compareResultMessageHtml() );
+                        cp.$.host.removeClass('compareExecuteHost');
                         cp.compareButtonCheck();
                     }
                 });
@@ -317,7 +321,9 @@ compareEvents() {
             case 'compare': {
                 $button.prop('disabled', true );
                 cp.getCompareSettingData();
+                cp.$.result.addClass('nowLoading').empty();
                 fn.fetch( cp.rest.compare, null, 'POST', cp.compareData ).then(function( result ){
+                    cp.$.result.removeClass('nowLoading');
                     cp.setCompareResult( result );
                 }).catch(function( error ){
                     console.error( error );
@@ -390,6 +396,7 @@ selectModalOpen( type ) {
             selectConfig.filter = `/menu/${cp.menu}/compare/execute/filter/device_list/`;
             selectConfig.filterPulldown = `/menu/${cp.menu}/compare/execute/filter/device_list/search/candidates/`;
             selectConfig.selectType = 'multi';
+            selectConfig.unselected = true;
         } else {
             title = getMessage.FTE06001;
             selectConfig.infoData = cp.list.compare_list;
@@ -428,7 +435,7 @@ setCompareResult( info ) {
 
     let html = '';
 
-    const hostList = info.config.target_host_list,
+    const hostList = cp.compareData.host,
           cols = info.config.target_column_info;
 
     let comapreCount = 0;
@@ -437,7 +444,7 @@ setCompareResult( info ) {
 
     for ( const host of hostList ) {
         const hostName = fn.escape( host ),
-              compareData = info.compare_data[ host ];
+              compareData = ( info.compare_data )? info.compare_data[ host ]: null;
         if ( compareData ) {
             const compareFlag = fn.cv( info.compare_diff_flg[ host ], false );
             comapreCount++;
@@ -522,7 +529,7 @@ setCompareResult( info ) {
     + '</div>');
 
     if ( comapreCount > 0 ) {
-          cp.$.host.find('.compareExecuteItem').eq( 0 ).click();
+        cp.$.host.find('.compareExecuteItem').eq( 0 ).click();
     }
 
     // ファイル比較

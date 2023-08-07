@@ -935,7 +935,7 @@ headerMenu( readyFlag = true ) {
         } else {
             $userInfo.addClass('open');
             const $window = $( window );
-            $window.on('pointerdown.userInfo', function( e ){console.log('!')
+            $window.on('pointerdown.userInfo', function( e ){
                 if ( !$( e.target ).closest('.userInfomation, .modalOverlay').length ) {
                     $userInfo.removeClass('open');
                     $window.off('pointerdown.userInfo');

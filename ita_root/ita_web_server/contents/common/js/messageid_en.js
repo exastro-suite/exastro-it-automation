@@ -923,7 +923,11 @@ getMessage = ( function() {
         'FTE11044': 'Host selection',
         'FTE11045': ' operations',
         'FTE11047': 'Input order',
-        'FTE11048': 'No parameters to display.'
+        'FTE11048': 'No parameters to display.',
+
+        // Custom menu
+        'FTE12001': 'Failed to display custom menu.',
+
     };
 
     return message;

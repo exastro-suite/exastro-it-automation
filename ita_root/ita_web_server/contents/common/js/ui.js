@@ -903,6 +903,10 @@ sheetType() {
             case '25':
                 mn.parameterCollection();
             break;
+            // 99 : 独自メニュー
+            case '99':
+                mn.customMenu();
+            break;
         }
     }
 }
@@ -931,7 +935,7 @@ headerMenu( readyFlag = true ) {
         } else {
             $userInfo.addClass('open');
             const $window = $( window );
-            $window.on('pointerdown.userInfo', function( e ){
+            $window.on('pointerdown.userInfo', function( e ){console.log('!')
                 if ( !$( e.target ).closest('.userInfomation, .modalOverlay').length ) {
                     $userInfo.removeClass('open');
                     $window.off('pointerdown.userInfo');
@@ -1723,6 +1727,29 @@ parameterCollection() {
         pc.setup();
 
         mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   独自メニュー
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+customMenu() {
+    const mn = this;
+
+    const assets = [
+        { type: 'js', url: '/_/ita/js/custom_menu.js'}
+    ];
+
+    fn.loadAssets( assets ).then(function(){
+        customMenu( mn.info ).then(function( $iframe ){
+            mn.$.content.html( $iframe );
+            mn.onReady();
+        }).catch(function(){
+            alert( getMessage.FTE12001 );
+        });
     });
 }
 

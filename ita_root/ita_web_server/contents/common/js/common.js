@@ -53,10 +53,22 @@ const fn = ( function() {
     };
     const windowFlag = windowCheck();
 
+    // CommonAuth check
+    const commonAuthCheck = function() {
+        try {
+            CommonAuth;
+            return true;
+        } catch( e ) {
+            return false;
+        }
+    };
+    const cmmonAuthFlag = commonAuthCheck();
+
+
     // iframeフラグ
     const iframeFlag = windowFlag? ( window.parent !== window ): false;
 
-    const organization_id = ( windowFlag )? CommonAuth.getRealm(): null,
+    const organization_id = ( windowFlag && cmmonAuthFlag )? CommonAuth.getRealm(): null,
           workspace_id =  ( windowFlag )? window.location.pathname.split('/')[3]: null;
 
     const typeofValue = function( value ) {
@@ -186,7 +198,7 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
 fetch: function( url, token, method = 'GET', data, option = {} ) {
 
     if ( !token ) {
-        token = CommonAuth.getToken();
+        token = ( cmmonAuthFlag )? CommonAuth.getToken(): null;
     }
 
     let errorCount = 0;
@@ -2275,7 +2287,8 @@ textareaAdjustment: function() {
       filterPulldown: Filter pulldown URL
       sub: infoに複数のTable構造がある場合のKey
       option: テーブル用オプション
-      select: 選択状態の変更値
+      select: 選択状態の変更値,
+      unselected: ture, 未選択も可にする
   }
 ##################################################
 */
@@ -2363,13 +2376,15 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
             modal.setBody( table.setup() );
 
             // 選択チェック
-            table.$.container.on(`${table.id}selectChange`, function(){
-                if ( table.select.select.length ) {
-                    modal.buttonPositiveDisabled( false );
-                } else {
-                    modal.buttonPositiveDisabled( true );
-                }
-            });
+            if ( !selectConfig.unselected ) {
+                table.$.container.on(`${table.id}selectChange`, function(){
+                    if ( table.select.select.length ) {
+                        modal.buttonPositiveDisabled( false );
+                    } else {
+                        modal.buttonPositiveDisabled( true );
+                    }
+                });
+            }
 
             // 初期表示の場合は読み込み完了後に表示
             $( window ).one( tableId + '__tableReady', function(){
@@ -2377,6 +2392,10 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
                 modal.hide();
                 modal.$.dialog.removeClass('hiddenDialog');
                 modal.show();
+
+                if ( selectConfig.unselected && table.data.count > 0 ) {
+                    modal.buttonPositiveDisabled( false );
+                }
             });
 
             resolve({
@@ -3120,6 +3139,8 @@ fileTypeCheck: function( fileName ) {
     const fileTypes = {
         image: ['gif','jpe','jpg','jpeg','png','svg','webp','bmp','ico'],
         text: ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2'],
+        style: ['css'],
+        script: ['js']
     }
 
     for ( const fileType in fileTypes ) {

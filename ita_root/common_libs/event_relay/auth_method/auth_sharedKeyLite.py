@@ -1,8 +1,8 @@
-from common_libs.common.event_relay.api_client_common import APIClientCommon
+from common_libs.event_relay.api_client_common import APIClientCommon
 from datetime import datetime
 
 
-class ShareKeyLiteAuthAPIClient(APIClientCommon):
+class SharedKeyLiteAuthAPIClient(APIClientCommon):
     def __init__(self, auth_settings=None):
         super().__init__(auth_settings)
 

@@ -19,7 +19,6 @@ import json
 
 class APIClientCommon:
     def __init__(self, event_settings):
-
         self.request_method = event_settings["request_method"]
         self.url = event_settings["api_url"]
         self.headers = json.loads(event_settings["header"])
@@ -32,6 +31,8 @@ class APIClientCommon:
         self.password = event_settings["password"]
 
     def call_api(self, parameter):
+        result = True
+        API_response = None
         self.parameter = parameter  # APIのパラメータ
         try:
             response = requests.request(
@@ -44,9 +45,13 @@ class APIClientCommon:
             )
             # ステータス400系500系は例外へ
             response.raise_for_status()
-            return response.json()
+            API_response = response.json()
+
         except requests.exceptions.HTTPError as e:
             http_error = f"HTTP Error: {e}"
             error_message = f"Error Message: {e.response.text}"
             print(http_error)
             print(error_message)
+            result = False
+
+        return result, API_response

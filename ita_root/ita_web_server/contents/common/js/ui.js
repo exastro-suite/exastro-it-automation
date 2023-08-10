@@ -1399,18 +1399,20 @@ fileRegister( $button, type ) {
         table.tbody.push([ getMessage.FTE10027, selectFile.name ]);
         table.tbody.push([ getMessage.FTE10028, selectFile.size.toLocaleString() + ' byte']);
 
-        let postData, option = {};
+        let postData;
+        const option = {
+            multipart: true
+        };
         if ( fileType === 'json') {
             try {
                 table.tbody.push([ getMessage.FTE10029, selectFile.json.length.toLocaleString() ]);
             } catch( e ) {
                 throw new Error( getMessage.FTE10021 );
             }
-            postData = selectFile.json;
+            postData = mn.jsonToFormData( selectFile.json );
         } else {
             postData = new FormData();
             postData.append('excel', selectFile );
-            option.multipart = true;
         }
 
         fn.alert( getMessage.FTE00083, fn.html.table( table, 'fileSelectTable', 1 ), 'confirm', buttons ).then( function( flag ){
@@ -1443,6 +1445,47 @@ fileRegister( $button, type ) {
         }
         fn.disabledTimer( $button, false, 0 );
     });
+}
+/*
+##################################################
+   一括登録JSONをFormDataに変換
+##################################################
+*/
+jsonToFormData( json ) {
+    // パラメータとファイルを分ける
+    const
+    formData = new FormData(),
+    parameters = [],
+    paramLength = json.length;
+
+    for ( let i = 0; i < paramLength; i++ ) {
+        const item = json[i];
+        // パラメータ
+        parameters.push({
+            parameter: item.parameter,
+            type: item.type
+        });
+
+        // ファイルをFormDataに追加
+        // Parameter No. + . + Rest Name Key
+        for ( const key in item.file ) {
+            if ( item.parameter[ key ] !== undefined && item.parameter[ key ] !== null ) {
+                const
+                fileName = item.parameter[ key ],
+                base64 = item.file[ key ];
+
+                if ( fn.typeof( base64 ) === 'string') {
+                    const file = fn.base64ToFile( item.file[ key ], fileName );
+                    formData.append(`${i}.${key}`, file );
+                }
+            }
+        }
+    }
+
+    // パラメータをFormDataに追加
+    formData.append('json_parameters', fn.jsonStringify( parameters ) );
+
+    return formData;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1715,6 +1758,7 @@ parameterCollection() {
     mn.setCommonEvents();
 
     const assets = [
+        { type: 'js', url: '/_/ita/lib/exceljs/exceljs.js'},
         { type: 'js', url: '/_/ita/js/parameter_collection.js'},
         { type: 'css', url: '/_/ita/css/parameter_collection.css'},
     ];

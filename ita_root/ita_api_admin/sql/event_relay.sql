@@ -252,6 +252,97 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_PROGRESS_JNL
 
 
 
+-- アクション定義
+CREATE TABLE T_EVRL_ACTION
+(
+    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
+    CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ACTION_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_EVRL_ACTION_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
+    CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- アクション履歴
+CREATE TABLE T_EVRL_ACTION_LOG
+(
+    ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
+    CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
+    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
+    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名称
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    EXECUTION_USER                  VARCHAR(255),                               -- 作業実行ユーザー
+    TIME_REGISTER                   DATETIME(6),                                -- 登録日時
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ACTION_LOG_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_EVRL_ACTION_LOG_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
+    CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
+    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
+    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名称
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    EXECUTION_USER                  VARCHAR(255),                               -- 作業実行ユーザー
+    TIME_REGISTER                   DATETIME(6),                                -- 登録日時
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- アクションステータスマスタ
+CREATE TABLE T_EVRL_ACTION_STATUS
+(
+    ACTION_STASTUS_ID               VARCHAR(2),                                 -- アクションステータスID
+    ACTION_STASTUS_NAME_JA          VARCHAR(255),                               -- アクションステータス名（ja）
+    ACTION_STASTUS_NAME_EN          VARCHAR(255),                               -- アクションステータス名（en）
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ACTION_STASTUS_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- インデックス
 CREATE INDEX IND_T_EVRL_CONNECTION_METHOD_01 ON T_EVRL_CONNECTION_METHOD(DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_EVENT_COLLECTION_SETTINGS_01 ON T_EVRL_EVENT_COLLECTION_SETTINGS(DISUSE_FLAG);
@@ -262,6 +353,9 @@ CREATE INDEX IND_T_EVRL_LABEL_KEY_FIXED_01 ON T_EVRL_LABEL_KEY_FIXED(DISUSE_FLAG
 CREATE INDEX IND_T_EVRL_LABEL_KEY_INPUT_01 ON T_EVRL_LABEL_KEY_INPUT(DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_LABEL_KEY_CONCLUSION_01 ON T_EVRL_LABEL_KEY_CONCLUSION(DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_EVENT_COLLECTION_PROGRESS_01 ON T_EVRL_EVENT_COLLECTION_PROGRESS(DISUSE_FLAG);
+CREATE INDEX IND_T_EVRL_ACTION_01 ON T_EVRL_ACTION (DISUSE_FLAG);
+CREATE INDEX IND_T_EVRL_ACTION_LOG_01 ON T_EVRL_ACTION_LOG (DISUSE_FLAG);
+CREATE INDEX IND_T_EVRL_ACTION_STATUS_01 ON T_EVRL_ACTION_STATUS (DISUSE_FLAG);
 
 
 

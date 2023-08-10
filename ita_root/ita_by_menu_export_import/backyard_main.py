@@ -907,18 +907,18 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                     with open(view_data_path, "w") as f:
                         f.write(create_view_str)
 
-                if history_table_flag == '1':
-                    view_name_jnl = view_name + '_JNL'
-                    show_create_sql = 'SHOW CREATE VIEW `%s` ' % (view_name_jnl)
-                    rec = objdbca.sql_execute(show_create_sql, [])
-                    create_view_str = rec[0]['Create View']
-                    # Create文から余計な文言を切り取る
-                    end_pos = create_view_str.find(' VIEW ')
-                    create_view_str = create_view_str[:6] + create_view_str[end_pos:]
-                    create_view_str = create_view_str.replace('CREATE VIEW', 'CREATE OR REPLACE VIEW')
-                    view_data_path = dir_path + '/' + view_name_jnl
-                    with open(view_data_path, "w") as f:
-                        f.write(create_view_str)
+                    if history_table_flag == '1':
+                        view_name_jnl = view_name + '_JNL'
+                        show_create_sql = 'SHOW CREATE VIEW `%s` ' % (view_name_jnl)
+                        rec = objdbca.sql_execute(show_create_sql, [])
+                        create_view_str = rec[0]['Create View']
+                        # Create文から余計な文言を切り取る
+                        end_pos = create_view_str.find(' VIEW ')
+                        create_view_str = create_view_str[:6] + create_view_str[end_pos:]
+                        create_view_str = create_view_str.replace('CREATE VIEW', 'CREATE OR REPLACE VIEW')
+                        view_data_path = dir_path + '/' + view_name_jnl
+                        with open(view_data_path, "w") as f:
+                            f.write(create_view_str)
 
         db_user = os.environ.get('DB_ADMIN_USER')
         db_password = os.environ.get('DB_ADMIN_PASSWORD')

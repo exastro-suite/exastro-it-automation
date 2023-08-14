@@ -23,6 +23,7 @@ from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
+from common_libs.common.util import get_maintenance_mode_setting
 from common_libs.api import set_api_timestamp, get_api_timestamp, app_exception_response, exception_response, check_request_body
 from common_libs.ci.util import set_service_loglevel
 
@@ -82,15 +83,7 @@ def before_request_handler():
         g.applogger.debug("ITA_DB is connected")
 
         # set maintenance mode value
-        try:
-            where_str = "WHERE `DISUSE_FLAG`='0'"
-            maintenance_mode_list = common_db.table_select("T_COMN_MAINTENANCE_MODE", where_str)
-            if maintenance_mode_list:
-                g.maintenance_mode = {}
-                for maintenande_mode in maintenance_mode_list:
-                    g.maintenance_mode[maintenande_mode.get('MODE_NAME')] = maintenande_mode.get('SETTING_VALUE')
-        except Exception:
-            g.maintenance_mode = {}
+        g.maintenance_mode = get_maintenance_mode_setting()
 
         orgdb_connect_info = common_db.get_orgdb_connect_info(organization_id)
         common_db.db_disconnect()

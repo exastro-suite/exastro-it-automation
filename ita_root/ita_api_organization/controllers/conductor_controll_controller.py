@@ -111,7 +111,7 @@ def post_conductor_data(organization_id, workspace_id, menu, body=None):  # noqa
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00005"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -157,7 +157,7 @@ def patch_conductor_data(organization_id, workspace_id, menu, conductor_class_id
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00005"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -402,7 +402,7 @@ def post_conductor_excecute(organization_id, workspace_id, menu, body=None):  # 
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00006"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -518,7 +518,7 @@ def patch_conductor_cancel(organization_id, workspace_id, menu, conductor_instan
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00007"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -561,7 +561,7 @@ def patch_conductor_relese(organization_id, workspace_id, menu, conductor_instan
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00009"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -602,7 +602,7 @@ def patch_conductor_scram(organization_id, workspace_id, menu, conductor_instanc
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00008"
         raise AppException(status_code, [], [])  # noqa: F405
 

@@ -36,7 +36,7 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00004"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -82,7 +82,7 @@ def execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00004"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -374,7 +374,7 @@ def get_parameter_collection_filter_terms_update(organization_id, workspace_id, 
     :rtype: InlineResponse2001
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00020"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -412,7 +412,7 @@ def get_parameter_collection_filter_terms_delete(organization_id, workspace_id, 
     :rtype: InlineResponse2001
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00021"
         raise AppException(status_code, [], [])  # noqa: F405
 

@@ -685,3 +685,33 @@ def put_uploadfiles(config_file_path, src_dir, dest_dir):
 if __name__ == '__main__':
     # print(generate_secrets())
     pass
+
+
+def get_maintenance_mode_setting():
+    """
+    メンテナンスモードの状態を取得する
+
+    Returns:
+        maintenance_mode
+    """
+    host_name = os.environ.get('PLATFORM_API_HOST')
+    port = os.environ.get('PLATFORM_API_PORT')
+
+    header_para = {
+        "Content-Type": "application/json",
+        "User-Id": "dummy",
+    }
+
+    # API呼出
+    api_url = "http://{}:{}/internal-api/platform/maintenance-mode-setting".format(host_name, port)
+    request_response = requests.get(api_url, headers=header_para)
+
+    response_data = json.loads(request_response.text)
+
+    if request_response.status_code != 200:
+        raise AppException('999-00005', [api_url, response_data])
+
+    # メンテナンスモードの設定値を取得
+    maintenance_mode = response_data.get('data')
+
+    return maintenance_mode

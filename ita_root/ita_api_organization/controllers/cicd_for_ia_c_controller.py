@@ -37,7 +37,7 @@ def post_cicd_for_iac_resume_filelink(organization_id, workspace_id, uuid, body=
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00019"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -147,7 +147,7 @@ def post_cicd_for_iac_resume_repository(organization_id, workspace_id, uuid, bod
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00019"
         raise AppException(status_code, [], [])  # noqa: F405
 

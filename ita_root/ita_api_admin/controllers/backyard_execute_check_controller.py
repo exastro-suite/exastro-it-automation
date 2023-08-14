@@ -15,12 +15,7 @@
 controller
 backyard_execute_check_controller
 """
-from flask import g
-import json
-
 from common_libs.api import api_filter_admin
-from common_libs.common.exception import AppException
-from common_libs.common.dbconnect import *  # noqa: F403
 from libs.admin_common import get_backyard_execute_status_list
 
 
@@ -31,7 +26,7 @@ def get_backyard_execute_check():  # noqa: E501
     すべてのバックヤードの実行状態を一括取得する # noqa: E501
 
 
-    :rtype: InlineResponse2005
+    :rtype: InlineResponse2004
     """
     backyard_execute_status_list = get_backyard_execute_status_list()
     return_data = backyard_execute_status_list

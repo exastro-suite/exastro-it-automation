@@ -48,7 +48,7 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
     # return 'do some magic!'
 
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00001"
         raise AppException(status_code, [], [])  # noqa: F405
 

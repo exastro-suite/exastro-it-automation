@@ -101,7 +101,7 @@ def post_table_settings(organization_id, workspace_id, body=None):  # noqa: E501
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00002"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -157,7 +157,7 @@ def post_widget_settings(organization_id, workspace_id, body=None):  # noqa: E50
     :rtype: InlineResponse20011
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00003"
         raise AppException(status_code, [], [])  # noqa: F405
 

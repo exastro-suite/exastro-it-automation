@@ -35,8 +35,6 @@ tags:
   description: 初期データ設定(Ansible)
 - name: LogLevel Settings
   description: ログレベル設定
-- name: Maintenance Mode Setting
-  description: メンテナンスモード設定
 - name: Backyard Execute Check
   description: バックヤード実行状態一括取得
 paths:
@@ -365,64 +363,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.loglevel_settings_controller
-  /api/ita/maintenance-mode-setting/:
-    get:
-      tags:
-      - Maintenance Mode Setting
-      description: メンテナンスモード設定状態を取得する
-      operationId: get_maintenance_mode_setting
-      parameters: []
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200_4'
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-        "500":
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.maintenance_mode_setting_controller
-    patch:
-      tags:
-      - Maintenance Mode Setting
-      description: メンテナンスモードの設定状態を更新する
-      operationId: patch_maintenance_mode_setting
-      parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ita_maintenancemodesetting_body'
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/inline_response_200'
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-        "500":
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.maintenance_mode_setting_controller
   /api/ita/backyard-execute-check/:
     get:
       tags:
@@ -436,7 +376,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/inline_response_200_5'
+                $ref: '#/components/schemas/inline_response_200_4'
         "401":
           description: Unauthorized
           content:
@@ -843,34 +783,6 @@ components:
       example:
         result: 000-00000
         data:
-          DATA_UPDATE_STOP: null
-          BACKYARD_EXECUTE_STOP:
-            last_update_user: user_name
-            last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
-            setting_value: "0"
-        message: message
-    ita_maintenancemodesetting_body:
-      type: object
-      properties:
-        BACKYARD_EXECUTE_STOP:
-          type: string
-          example: "1"
-        DATA_UPDATE_STOP:
-          type: string
-          example: "1"
-    inline_response_200_5:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: '#/components/schemas/inline_response_200_5_data'
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
           (organization_name):
             (workspace_name):
               (backyard_container_name):
@@ -939,35 +851,7 @@ components:
       example:
         service_name_1: INFO/DEBUG
         service_name_2: INFO/DEBUG
-    inline_response_200_4_data_BACKYARD_EXECUTE_STOP:
-      type: object
-      properties:
-        setting_value:
-          type: string
-          example: "0"
-        last_update_user:
-          type: string
-          example: user_name
-        last_update_timestamp:
-          type: string
-          example: YYYY-MM-DD hh:mm:ss.xxxxxx
-      example:
-        last_update_user: user_name
-        last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
-        setting_value: "0"
-    inline_response_200_4_data:
-      properties:
-        BACKYARD_EXECUTE_STOP:
-          $ref: '#/components/schemas/inline_response_200_4_data_BACKYARD_EXECUTE_STOP'
-        DATA_UPDATE_STOP:
-          $ref: '#/components/schemas/inline_response_200_4_data_BACKYARD_EXECUTE_STOP'
-      example:
-        DATA_UPDATE_STOP: null
-        BACKYARD_EXECUTE_STOP:
-          last_update_user: user_name
-          last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
-          setting_value: "0"
-    inline_response_200_5_data_organization_name_workspace_name_backyard_container_name:
+    inline_response_200_4_data_organization_name_workspace_name_backyard_container_name:
       type: object
       properties:
         id:
@@ -987,13 +871,13 @@ components:
         last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
         status_name: 未実行
         id: (uuid)
-    inline_response_200_5_data_organization_name_workspace_name:
+    inline_response_200_4_data_organization_name_workspace_name:
       type: object
       properties:
         (backyard_container_name):
           type: array
           items:
-            $ref: '#/components/schemas/inline_response_200_5_data_organization_name_workspace_name_backyard_container_name'
+            $ref: '#/components/schemas/inline_response_200_4_data_organization_name_workspace_name_backyard_container_name'
       example:
         (backyard_container_name):
         - status_id: "1"
@@ -1004,11 +888,11 @@ components:
           last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
           status_name: 未実行
           id: (uuid)
-    inline_response_200_5_data_organization_name:
+    inline_response_200_4_data_organization_name:
       type: object
       properties:
         (workspace_name):
-          $ref: '#/components/schemas/inline_response_200_5_data_organization_name_workspace_name'
+          $ref: '#/components/schemas/inline_response_200_4_data_organization_name_workspace_name'
       example:
         (workspace_name):
           (backyard_container_name):
@@ -1020,10 +904,10 @@ components:
             last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
             status_name: 未実行
             id: (uuid)
-    inline_response_200_5_data:
+    inline_response_200_4_data:
       properties:
         (organization_name):
-          $ref: '#/components/schemas/inline_response_200_5_data_organization_name'
+          $ref: '#/components/schemas/inline_response_200_4_data_organization_name'
       example:
         (organization_name):
           (workspace_name):

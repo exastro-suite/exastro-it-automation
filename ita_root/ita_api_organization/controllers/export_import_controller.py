@@ -36,7 +36,7 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
     :rtype: InlineResponse200
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00016"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -82,7 +82,7 @@ def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa
     :rtype: InlineResponse200
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00017"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -128,7 +128,7 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
     :rtype: InlineResponse200
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00014"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -181,7 +181,7 @@ def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501
     :rtype: InlineResponse200
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00015"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -259,7 +259,7 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs): 
     :rtype: InlineResponse200
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00017"
         raise AppException(status_code, [], [])  # noqa: F405
 
@@ -339,7 +339,7 @@ def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):
     :rtype: InlineResponse200
     """
     # メンテナンスモードのチェック
-    if g.maintenance_mode.get('DATA_UPDATE_STOP') == '1':
+    if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00015"
         raise AppException(status_code, [], [])  # noqa: F405
 

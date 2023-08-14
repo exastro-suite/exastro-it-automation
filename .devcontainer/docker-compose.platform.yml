@@ -11,7 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-version: '3.1'
+version: '3.7'
 services:
   platform-auth:
     user: 1000:1000
@@ -60,6 +60,9 @@ services:
     ports:
       - "0.0.0.0:38000:38000"
       - "0.0.0.0:38001:38001"
+    networks:
+      - exastro
+
   keycloak:
     image: exastro/keycloak:${PLATFORM_VERSION:-latest}
     healthcheck:
@@ -80,14 +83,25 @@ services:
     command:
       # 開発モードで起動
       - start-dev --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+    networks:
+      - exastro
     depends_on:
       platform-migration-1:
         condition: service_completed_successfully
 
+  platform-web:
+    user: 1000:1000
+    image: exastro/exastro-platform-web:${PLATFORM_VERSION:-latest}
+    environment:
+      - TZ=Asia/Tokyo
+      - LISTEN_PORT=80
+    networks:
+      - exastro
+
   platform-db:
     image: mariadb:10.4.8
     healthcheck:
-      test: mysqladmin ping --silent && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;'
+      test: (mysqladmin ping --silent -u root -p$${MYSQL_ROOT_PASSWORD} && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;') || exit 1
       interval: 3s
       retries: 200
     volumes:
@@ -98,6 +112,8 @@ services:
       - MYSQL_ROOT_PASSWORD=password
     ports:
       - "0.0.0.0:3307:3306"
+    networks:
+      - exastro
 
   platform-api:
     user: 1000:1000
@@ -121,13 +137,8 @@ services:
       - DB_ADMIN_USER=root
       - DB_ADMIN_PASSWORD=password
       - ENCRYPT_KEY=${ENCRYPT_KEY}
-
-  platform-web:
-    user: 1000:1000
-    image: exastro/exastro-platform-web:${PLATFORM_VERSION:-latest}
-    environment:
-      - TZ=Asia/Tokyo
-      - LISTEN_PORT=80
+    networks:
+      - exastro
 
   platform-migration-1:
     user: 1000:1000
@@ -147,6 +158,8 @@ services:
       - KEYCLOAK_DB_PASSWORD=password
       # - TIMEOUT_SECONDS_CONNECT_DB=600
       # - TIMEOUT_SECONDS_KEYCLOAK_START=600
+    networks:
+      - exastro
 
   platform-migration-2:
     user: 1000:1000
@@ -172,6 +185,12 @@ services:
       # - TIMEOUT_SECONDS_CONNECT_DB=600
       # - TIMEOUT_SECONDS_KEYCLOAK_START=600
       - ENCRYPT_KEY=${ENCRYPT_KEY}
+    networks:
+      - exastro
     depends_on:
       platform-migration-1:
         condition: service_completed_successfully
+
+networks:
+  exastro:
+    name: "exastro_${NETWORK_ID}"

@@ -15,6 +15,7 @@
 from flask import g
 import datetime
 import jmespath
+import json
 from common_libs.event_relay import *
 
 
@@ -32,7 +33,7 @@ def collect_event(mariaDB, mongoDB):
     }
 
     def get_auth_client(setting):
-        auth_class = auth_method[setting["authentication_method_id"]]
+        auth_class = auth_method[setting["CONNECTION_METHOD_ID"]]
         return auth_class(setting)
 
     # ドット区切りの文字列でで辞書を指定して値を取得
@@ -40,102 +41,63 @@ def collect_event(mariaDB, mongoDB):
         value = jmespath.search(jsonpath, data)
         return value
 
-    # 仮のイベント収集設定
-    tmp_header = '{"Content-Type": "application/json"}'
-    gathering_event_settings = [
-        {
-            "event_collection_settings_id": "a1a1a1",
-            "gathering_event_name": "Zabbix Host",
-            "authentication_method_id": "2",
-            "request_method": "POST",
-            "api_url": "",
-            "header": tmp_header,
-            "proxy": None,
-            "auth_token": "",
-            "username": None,
-            "password": None,
-            "parameter": {
-                "jsonrpc": "2.0",
-                "method": "host.get",
-                "params": {},
-                "id": 1
-            },
-            "RESPONSE_LIST_FLAG": "1",
-            "list_key": "result",
-            "ttl": 300
-        },
-        {
-            "event_collection_settings_id": "b1b1b1",
-            "gathering_event_name": "Zabbix Problem",
-            "authentication_method_id": "2",
-            "request_method": "POST",
-            "api_url": "",
-            "header": tmp_header,
-            "proxy": None,
-            "auth_token": "",
-            "username": None,
-            "password": None,
-            "parameter": {
-                "jsonrpc": "2.0",
-                "method": "problem.get",
-                "params": {},
-                "id": 1
-            },
-            "RESPONSE_LIST_FLAG": "1",
-            "list_key": "result",
-            "ttl": 300
-        }
-    ]
-
+    wsMariaDB = mariaDB
     wsMongoDB = mongoDB
     g.applogger.debug("mongodb-ws can connet")
+
+    event_settings = wsMariaDB.table_select(
+        "T_EVRL_EVENT_COLLECTION_SETTINGS",
+        "WHERE DISUSE_FLAG=%s",
+        ["0"]
+    )
+    print(event_settings)
 
     # 生データ保存用コレクション
     event_collection = wsMongoDB.collection("event_collection")
 
-    for setting in gathering_event_settings:
+    fetched_time = datetime.datetime.now()
+    for setting in event_settings:
         try:
             # APIの呼び出し
             api_client = get_auth_client(setting)
-            call_result, json_data = api_client.call_api(setting["parameter"])
-            fetched_time = datetime.datetime.now()
+            call_result, json_data = api_client.call_api(json.loads(setting["PARAMETER"]))
             if call_result is False:
-                debug_msg = f"failed to fetch api. setting_id: {setting['event_collection_settings_id']}"
+                debug_msg = f"failed to fetch api. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
                 print(debug_msg)
                 raise Exception
 
             # 設定で指定したキーの値を取得
-            json_data = get_value_from_jsonpath(setting["list_key"], json_data)
+            json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
             if json_data is None:
-                debug_msg = f"RESPONSE_KEY does not exist. setting_id: {setting['event_collection_settings_id']}"
+                debug_msg = f"RESPONSE_KEY does not exist. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
                 print(debug_msg)
                 raise Exception
 
             # RESPONSE_KEYの値がリスト形式ではない場合、そのまま保存する
             if setting["RESPONSE_LIST_FLAG"] == 0:
                 event = json_data
-                event["_exastro_event_collection_settings_id"] = setting["event_collection_settings_id"]
+                event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
                 event["_exastro_fetched_time"] = fetched_time.timestamp()
-                event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["ttl"])).timestamp()
+                event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
                 events.append(event)
 
             # RESPONSE_KEYの値がリスト形式の場合、1つずつ保存
             else:
                 # 値がリスト形式かチェック
                 if isinstance(json_data, list) is False:
-                    debug_msg = f"the value of RESPONSE_KEY is not array type. setting_id: {setting['event_collection_settings_id']}"
+                    debug_msg = f"the value of RESPONSE_KEY is not array type. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
                     print(debug_msg)
                     raise Exception
                 for data in json_data:
                     event = data
-                    event["_exastro_event_collection_settings_id"] = setting["event_collection_settings_id"]
+                    event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
                     event["_exastro_fetched_time"] = fetched_time.timestamp()
-                    event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["ttl"])).timestamp()
+                    event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
                     events.append(event)
 
         except Exception as e:
-            # import traceback
-            # print(traceback.format_exc())
+            import traceback
+            print(traceback.format_exc())
             print(debug_msg)
             print(e)
 
@@ -147,6 +109,6 @@ def collect_event(mariaDB, mongoDB):
     except Exception as e:
         print(e)
 
-    # print(events)
-    # print(len(events))
+    print(events)
+    print(len(events))
     return events

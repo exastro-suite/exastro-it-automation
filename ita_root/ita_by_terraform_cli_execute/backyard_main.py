@@ -20,7 +20,7 @@ from datetime import datetime
 
 from flask import g
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.common.util import get_timestamp
+from common_libs.common.util import get_timestamp, get_maintenance_mode_setting
 from common_libs.ci.util import log_err
 
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
@@ -57,6 +57,18 @@ def main_logic(organization_id, workspace_id):
         if worksapce_id in executed_worksapce_id_list:
             continue
         executed_worksapce_id_list.append(worksapce_id)
+
+    # メンテナンスモード「backyard_execute_stop」が有効(1)の場合は処理を終了する。
+    try:
+        maintenance_mode = get_maintenance_mode_setting()
+        # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['backyard_execute_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+            return True
+    except Exception:
+        # エラーログ出力
+        g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+        return False
 
     # 未実行（実行待ち）の作業を実行
     retBool = run_unexecuted(wsDb, organization_id, workspace_id, executed_worksapce_id_list)

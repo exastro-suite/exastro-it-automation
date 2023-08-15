@@ -19,16 +19,18 @@ import json
 
 class APIClientCommon:
     def __init__(self, event_settings):
-        self.request_method = event_settings["request_method"]
-        self.url = event_settings["api_url"]
-        self.headers = json.loads(event_settings["header"])
+        self.request_method = event_settings["REQUEST_METHOD"]
+        self.url = event_settings["API_URL"]
+        self.headers = json.loads(event_settings["REQUEST_HEADER"])
         self.proxy = {
-            "http": event_settings["proxy"],
-            "https": event_settings["proxy"]
+            "http": event_settings["PROXY"],
+            "https": event_settings["PROXY"]
         }
-        self.auth_token = event_settings["auth_token"]
-        self.username = event_settings["username"]
-        self.password = event_settings["password"]
+        self.auth_token = event_settings["AUTH_TOKEN"]
+        self.username = event_settings["USERNAME"]
+        self.password = event_settings["PASSWORD"]
+        self.access_key_id = event_settings["ACCESS_KEY_ID"]
+        self.secret_access_key = event_settings["SECRET_ACCESS_KEY"]
 
     def call_api(self, parameter):
         result = True

@@ -134,10 +134,13 @@ services:
       - PLATFORM_API_PORT=8000
       - NETWORK_ID=${NETWORK_ID}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:cached
+      - ${HOST_DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock:cached
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-execute
@@ -168,6 +171,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-role-vars-listup
@@ -198,6 +204,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-vars-listup
@@ -228,6 +237,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-pioneer-vars-listup
@@ -258,6 +270,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-towermaster-sync
@@ -288,6 +303,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-collector
@@ -318,6 +336,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-synchronize
@@ -348,6 +369,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-regularly
@@ -378,6 +402,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-create
@@ -408,6 +435,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-export-import
@@ -438,6 +468,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-excel-export-import
@@ -468,6 +501,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-execute
@@ -498,6 +534,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-vars-listup
@@ -528,6 +567,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-execute
@@ -558,6 +600,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-vars-listup
@@ -588,6 +633,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-hostgroup-split
@@ -618,6 +666,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-cicd-for-iac
@@ -648,6 +699,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-execinstance-dataautoclean
@@ -678,6 +732,9 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-file-autoclean

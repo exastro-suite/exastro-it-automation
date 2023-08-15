@@ -1507,59 +1507,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/create/execute/:
-    post:
-      tags:
-        - Menu Create
-      description: パラメータシート作成実行
-      operationId: executeMenuCreate
-      x-openapi-router-controller: controllers.menu_create_controller
-      parameters:
-        - name: organization_id
-          in: path
-          description: OrganizationID
-          required: true
-          schema:
-            type: string
-        - name: workspace_id
-          in: path
-          description: WorkspaceID
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              description: 作成対象のパラメータシート定義一覧IDを指定(複数指定可)
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  result:
-                    type: string
-                    example: 000-00000
-                  data:
-                    type: boolean
-                  message:
-                    type: string
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/execute/:
     post:
       tags:

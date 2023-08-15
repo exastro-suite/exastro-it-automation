@@ -508,19 +508,6 @@ def collect_pulldown_reference_item(objdbca, menu_name_rest, column_name_rest):
     return reference_item_list
 
 
-def menu_create_execute(objdbca, exec_target):
-    """
-        パラメータシート作成の実行
-        ARGS:
-            objdbca:DB接クラス  DBConnectWs()
-            exec_target: パラメータシート作成の実行対象
-        RETRUN:
-            result_data
-    """
-
-    return {"aaa": "bbb"}
-
-
 def menu_create_define(objdbca, create_param):
     """
         パラメータシート定義および作成の実行

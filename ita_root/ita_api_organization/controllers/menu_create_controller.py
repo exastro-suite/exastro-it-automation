@@ -67,52 +67,6 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
 
 
 @api_filter
-def execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
-    """execute_menu_create
-
-    パラメータシート作成実行 # noqa: E501
-
-    :param organization_id: OrganizationID
-    :type organization_id: str
-    :param workspace_id: WorkspaceID
-    :type workspace_id: str
-    :param body:
-    :type body: dict | bytes
-
-    :rtype: InlineResponse20011
-    """
-    # メンテナンスモードのチェック
-    if g.maintenance_mode.get('data_update_stop') == '1':
-        status_code = "498-00004"
-        raise AppException(status_code, [], [])  # noqa: F405
-
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
-
-    # メニューの存在確認
-    menu = 'menu_creation_execution'
-    check_menu_info(menu, objdbca)
-
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['19']
-    check_sheet_type(menu, sheet_type_list, objdbca)
-
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
-
-    # bodyのjson形式チェック
-    check_request_body()
-
-    exec_target = {"create_new": {}, "initialize": {}, "edit": {}}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        exec_target = body
-
-    result_data = menu_create_lib.menu_create_execute(objdbca, exec_target)
-    return result_data,
-
-
-@api_filter
 def get_exist_menu_create_data(organization_id, workspace_id, menu_create):  # noqa: E501
     """get_exist_menu_create_data
 

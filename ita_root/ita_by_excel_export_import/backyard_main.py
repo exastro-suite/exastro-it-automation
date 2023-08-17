@@ -22,6 +22,7 @@ from flask import g
 # from common_libs.common.exception import AppException
 from common_libs.common import *  # noqa: F403
 from common_libs.common import menu_excel
+from common_libs.common.util import get_maintenance_mode_setting
 import util
 
 
@@ -51,6 +52,18 @@ def backyard_main(organization_id, workspace_id):
     try:
         # DB接続
         objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+        # メンテナンスモード「backyard_execute_stop」が有効(1)の場合は処理を終了する。
+        try:
+            maintenance_mode = get_maintenance_mode_setting()
+            # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+            if str(maintenance_mode['backyard_execute_stop']) == "1":
+                g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+                return
+        except Exception:
+            # エラーログ出力
+            g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+            return
 
         # 未実行のレコードを取得する
         ret = objdbca.table_select("T_BULK_EXCEL_EXPORT_IMPORT", 'WHERE STATUS = %s AND DISUSE_FLAG = %s', [1, 0])

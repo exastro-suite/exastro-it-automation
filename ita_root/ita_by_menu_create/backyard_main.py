@@ -17,6 +17,7 @@ import ast
 from flask import g
 # from common_libs.common.exception import AppException
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import get_maintenance_mode_setting
 
 
 def backyard_main(organization_id, workspace_id):
@@ -56,6 +57,18 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.error(msg)
             continue
         objdbca.db_transaction_end(True)
+
+    # メンテナンスモード「backyard_execute_stop」が有効(1)の場合は処理を終了する。
+    try:
+        maintenance_mode = get_maintenance_mode_setting()
+        # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['backyard_execute_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+            return
+    except Exception:
+        # エラーログ出力
+        g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+        return
 
     # 「パラメータシート作成履歴」から「未実行(ID:1)」のレコードを取得
     ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [1, 0])

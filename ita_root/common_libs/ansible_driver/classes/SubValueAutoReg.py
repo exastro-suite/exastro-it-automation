@@ -1008,7 +1008,13 @@ class SubValueAutoReg():
                                                     idx += 1
                                                     continue
                                                 else:
-                                                    col_val = parameter[col_data['COLUMN_NAME_REST']]
+                                                    # 項目が削除されていないか確認
+                                                    exit_flag = False
+                                                    if col_data['COLUMN_NAME_REST'] in parameter:
+                                                        col_val = parameter[col_data['COLUMN_NAME_REST']]
+                                                    else:
+                                                        exit_flag = True
+                                                        continue
 
                                                 # TPF/CPF変数カラム判定
                                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
@@ -1017,6 +1023,9 @@ class SubValueAutoReg():
                                                             col_val = "'{{ " + col_val + " }}'"
                                                         else:
                                                             continue
+                                    # 項目が削除されていないか確認
+                                    if exit_flag is True:
+                                        continue
 
                                     # オブジェクト解放
                                     del objmenu
@@ -1055,7 +1064,11 @@ class SubValueAutoReg():
                                     idx += 1
                                     continue
                                 else:
-                                    col_val = parameter[col_data['COLUMN_NAME_REST']]
+                                    # 項目が削除されていないか確認
+                                    if col_data['COLUMN_NAME_REST'] in parameter:
+                                        col_val = parameter[col_data['COLUMN_NAME_REST']]
+                                    else:
+                                        continue
 
                                 # TPF/CPF変数カラム判定
                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:

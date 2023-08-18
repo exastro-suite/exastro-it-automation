@@ -489,9 +489,11 @@ class Column():
 
         if cmd_type != "Discard":
             # バリデーション必須
-            result_1 = self.is_valid_required(val, option)
-            if result_1[0] is not True:
-                return result_1
+            # 「復活(Restore)」かつ「PasswordColumn(ID:8)」の場合は必須チェックを行わない
+            if not (cmd_type == "Restore" and str(self.get_objcol().get('COLUMN_CLASS')) == "8"):
+                result_1 = self.is_valid_required(val, option)
+                if result_1[0] is not True:
+                    return result_1
 
             # バリデーション一意 DBアクセス
             result_2 = self.get_uniqued()

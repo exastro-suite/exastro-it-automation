@@ -218,10 +218,12 @@ def organization_delete(organization_id):  # noqa: E501
 
         for workspace_data in workspace_data_list:
             # drop ws-db and ws-db-user
+            org_root_db.connection_kill(workspace_data['DB_DATABASE'], workspace_data['DB_USER'])
             org_root_db.database_drop(workspace_data['DB_DATABASE'])
             org_root_db.user_drop(workspace_data['DB_USER'])
 
         # drop org-db and org-db-user
+        org_root_db.connection_kill(connect_info['DB_DATABASE'], connect_info['DB_USER'])
         org_root_db.database_drop(connect_info['DB_DATABASE'])
         org_root_db.user_drop(connect_info['DB_USER'])
 

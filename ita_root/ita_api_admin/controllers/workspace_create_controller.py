@@ -265,20 +265,22 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         strage_path = os.environ.get('STORAGEPATH')
         workspace_dir = strage_path + "/".join([organization_id, workspace_id]) + "/"
 
-        # サービススキップファイルを配置する
-        f = Path(workspace_dir + '/skip_all_service_for_ws_del')
-        f.touch()
-        time.sleep(3)
+        if os.path.isdir(workspace_dir):
+            # サービススキップファイルを配置する
+            f = Path(workspace_dir + '/skip_all_service_for_ws_del')
+            f.touch()
+            time.sleep(3)
+
+        # drop ws-db and ws-db-user
+        org_root_db = DBConnectOrgRoot(organization_id)
+        org_root_db.connection_kill(connect_info['DB_DATABASE'], connect_info['DB_USER'])
+        org_root_db.database_drop(connect_info['DB_DATABASE'])
+        org_root_db.user_drop(connect_info['DB_USER'])
+        org_root_db.db_disconnect()
 
         # delete storage directory for workspace
         if os.path.isdir(workspace_dir):
             shutil.rmtree(workspace_dir)
-
-        # drop ws-db and ws-db-user
-        org_root_db = DBConnectOrgRoot(organization_id)
-        org_root_db.database_drop(connect_info['DB_DATABASE'])
-        org_root_db.user_drop(connect_info['DB_USER'])
-        org_root_db.db_disconnect()
 
     except AppException as e:
         # スキップファイルが存在する場合は削除する

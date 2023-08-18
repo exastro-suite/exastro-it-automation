@@ -203,3 +203,19 @@ class DBConnectOrgRoot(DBConnectOrg):
         """
         sql = "DROP USER IF EXISTS '{}'@'%'".format(user_name)
         self.sql_execute(sql)
+
+    def connection_kill(self, db_name, user_name):
+        """
+        kill connection
+        """
+        # DBとユーザを指定して、すべてのコネクションを削除する
+        sql = "SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB=%s AND USER=%s"
+        proccess_list = self.sql_execute(sql, [db_name, user_name])
+
+        for proccess in proccess_list:
+            sql = "KILL CONNECTION %s"
+            try:
+                proccess_list = self.sql_execute(sql, [proccess['ID']])
+            except Exception:
+                # プロセスが無くなっている場合はエラーになるので、エラーは無視する
+                pass

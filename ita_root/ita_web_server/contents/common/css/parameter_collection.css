@@ -482,6 +482,10 @@ cursor: pointer;
 .parameterMenuButton:hover {
 background-color: rgba(0,0,0,.05);
 }
+.parameterMenuButton:disabled {
+opacity: .3;
+cursor: no-drop;
+}
 
 /* Parameter area table */
 .parameterArea .noData .tableBody  {

@@ -377,8 +377,15 @@ setMenuButtonEvents() {
             pc.$.body.removeClass('parameterPrint');
 
             } break;
+         case 'excel':
+            $button.prop('disabled', true );
+            pc.outputExcel().then(function(){
+               $button.prop('disabled', false );
+            }).catch(function(){
+               alert( getMessage.FTE11050 );
+            });
+            break;
       }
-
    });
 }
 /*
@@ -1299,6 +1306,7 @@ setParameterTables() {
          + `<div class="parameterMenu">`
             + `<ul class="parameterMenuList">`
                + `<li class="parameterMenuItem"><button class="parameterMenuButton" data-type="print">${getMessage.FTE11018}</button></li>`
+               + `<li class="parameterMenuItem"><button class="parameterMenuButton" data-type="excel">${getMessage.FTE11049}</button></li>`
             + `</ul>`
          + `</div>`
          + `<div class="parameterArea">${html.join('')}</div>`
@@ -1326,6 +1334,10 @@ setParameterTables() {
                pc.table[pc.tableCount] = new DataTable('ST_' + tableParams.menuNameRest, 'parameter', result[i], tableParams, tableOption );
                pc.$.content.find('.parameterBlockBody').eq(i).html( pc.table[pc.tableCount].setup() );
                pc.tableCount++;
+
+               // 最大項目数
+
+               // 最大
             }
 
             // パラメータ編集モーダルを開く
@@ -1437,13 +1449,12 @@ tableItemWidthAlign() {
    const pc = this;
 
    if ( pc.select.tableDirection === 'horizontal') {
-      const select = ( pc.select.mode === 'host')? pc.select.operation: pc.select.host,
-            selectLength = ( pc.select.mode === 'host')? select.length: ( select )? select.length * 2: 0;
-
       const width = {thead:[]};
+      let selectLength;
       for ( const table of pc.table ) {
          width.thead.push( table.$.thead.outerWidth() );
-
+         
+         selectLength = table.$.tbody.find('.parameterTh').length;
          for ( let i = 0; i < selectLength; i++ ) {
             const target = `parameterMainTh${i}`;
             if ( !width[target] ) width[target] = [];
@@ -1800,6 +1811,243 @@ presetHtml() {
          + `</div>`
       + `</div>`
    + `</div>`;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   Excel出力
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+outputExcel() {
+   const pc = this;
+
+   return new Promise(function( resolve, reject ){
+      try {
+         // ExcelJS ワークブック作成
+         const workbook = new ExcelJS.Workbook();
+
+         // セル幅調整値（エクセルのセル幅）
+         const cellWidthRatio = 0.125;
+
+         pc.$.param.find('.parameterBlock').each(function(){
+            const $block = $( this );
+
+            // シート作成
+            const sheetName = $block.find('.parameterBlockName').text().substring( 0, 31 );
+            const worksheet = workbook.addWorksheet( sheetName );
+
+            const rowsLength = $block.find('.table').find('.tr').length;
+
+            // 行情報作成
+            const rows = [], merges = [], headers = [], groups = [],
+            subHeaders = [], blanks = [], width = [], values = [], sepalateValues = [];
+
+            // classでセルを判定（タイプごとにスタイルを分ける）
+            const setStylePosition = function( $cell, row, col ) {
+               if ( $cell.is('.parameterTh')) subHeaders.push([ row, col ]);
+               if ( $cell.is('.tHeadTh')) {
+                  if ( $cell.is('.tHeadGroup') ) {
+                     groups.push([ row, col ]);
+                  } else if ( !$cell.is('.parameterTheadTh') ) {
+                     headers.push([ row, col ]);
+                  }
+               }
+               if ( $cell.is('.tBodyTd')) {
+                  if ( $cell.is('.parameterBlankTd')) {
+                     blanks.push([ row, col ]);
+                  } else if ( $cell.parent('.tBodyTr').is('.parameterSeparateTr') ) {
+                     sepalateValues.push([ row, col ]);
+                  } else {
+                     values.push([ row, col ]);
+                  }
+               }
+            };
+
+            // 幅をセット
+            const setWidth = function( width ) {
+               return { width: Math.floor( width * cellWidthRatio * 10 ) / 10 };
+            };
+
+            let maxRow = 0, maxCol = 0;
+
+            $block.find('.tr').each(function( r ){
+               let startCol = 1, startRow = 1, endCol = 1, endRow = 1;
+               let colNum = 0, rowNum = 0;
+
+               $( this ).find('.th,.td').each(function( c ){
+                  const $cell = $( this ), text = $cell.text();
+
+                  // 縦横で別処理
+                  if ( pc.select.tableDirection === 'vertical') {
+                     // 縦 --------------------------------------------------
+                     const
+                     row = r,
+                     rowspan = ( $cell.attr('rowspan') )? Number( $cell.attr('rowspan') ): 1,
+                     colspan = ( $cell.attr('colspan') )? Number( $cell.attr('colspan') ): 1;
+
+                     if ( maxRow < r ) maxRow = r;
+                     if ( maxCol < c ) maxCol = c;
+
+                     for ( let i = 0; i < rowspan; i++ ) {
+                        for ( let j = 0; j < colspan; j++ ) {
+                           if ( !rows[ row + i ] ) rows[ row + i ] = [];
+                           while ( rows[ row + i ][ colNum + j ] !== undefined ) {
+                              colNum++;
+                           }
+                           if ( i === 0 && j === 0 ) {
+                              rows[ row + i ][ colNum + j ] = text;
+                              startCol = endCol = colNum + j + 1;
+                              startRow = endRow = row + i + 1;
+                              setStylePosition( $cell, startRow, startCol );
+                              if ( colspan === 1 ) width[ colNum + j ] = setWidth( $cell.outerWidth() );
+                           } else {
+                              rows[ row + i ][ colNum + j ] = '';
+                              endCol = colNum + j + 1;
+                              endRow = row + i + 1;
+                           }
+                        }
+                     }
+                     colNum += colspan;
+                  } else {
+                     // 横 --------------------------------------------------
+                     const
+                     col = r,
+                     colspan = ( $cell.attr('rowspan') )? Number( $cell.attr('rowspan') ): 1,
+                     rowspan = ( $cell.attr('colspan') )? Number( $cell.attr('colspan') ): 1;
+
+                     if ( maxRow < c ) maxRow = c;
+                     if ( maxCol < r ) maxCol = r;
+
+                     for ( let i = 0; i < rowspan; i++ ) {
+                        if ( !rows[ i + rowNum ] ) rows[ i + rowNum ] = [];
+                        while ( rows[ i + rowNum ][ col ] !== undefined ) {
+                           rowNum++;
+                        }
+                        for ( let j = 0; j < colspan; j++ ) {
+                           if ( i === 0 && j === 0 ) {
+                              rows[ i + rowNum ][ col + j ] = text;
+                              startCol = endCol = col + j + 1;
+                              startRow = endRow = rowNum + i + 1;
+                              setStylePosition( $cell, startRow, startCol );
+                              if ( colspan === 1 ) width[ col + j ] = setWidth( $cell.outerWidth() );
+                           } else {
+                              rows[ i + rowNum ][ col + j ] = '';
+                              endCol = col + j + 1;
+                              endRow = rowNum + i + 1;
+                           }
+                        }
+                     }
+                     rowNum += rowspan;
+                  }
+                  if ( startRow !== endRow || startCol !== endCol ) {
+                     merges.push([ startRow, startCol, endRow, endCol ]);
+                  }
+               });
+            });
+
+            // 行追加
+            const addrowLength = rows.length;
+            for ( let i = 0; i < addrowLength; i++ ) {
+               worksheet.addRow( rows[i] );
+            }
+
+            // セル結合
+            const mergeLength = merges.length;
+            for ( let i = 0; i < mergeLength; i++ ) {
+               worksheet.mergeCells( merges[i][0], merges[i][1], merges[i][2], merges[i][3] );
+            }
+
+            // スタイル
+            const setStyle = function( row, col, color, bgColor, horizontal, type ) {
+               const cell = worksheet.getCell( row, col );
+               cell.fill = {
+                  type: 'pattern',
+                  pattern: 'solid',
+                  fgColor: { argb: 'FF' + bgColor }
+               };
+               cell.font = {
+                  color: { argb: 'FF' + color },
+                  size: '9'
+               };
+               cell.alignment = {
+                  vertical: 'middle', horizontal: horizontal
+               };
+
+               const border = {};
+               if ( type === undefined ) {
+                  border.top = {style:'thin'};
+                  border.left = {style:'thin'};
+                  border.bottom = {style:'thin'};
+                  border.right = {style:'thin'};
+               } else if ( type === 'value') {
+                  border.bottom = {style:'dotted'};
+                  border.right = {style:'hair'};
+               } else if ( type === 'sepalateValue') {
+                  border.bottom = {style:'dotted'};
+                  border.right = {style:'thin'};
+               }
+               cell.border = border;
+            };
+
+            for ( const cell of headers ) {
+               setStyle( cell[0], cell[1], 'FFFFFF', '4D6B91', ( pc.select.tableDirection === 'vertical' )? 'center': 'right');
+            }
+
+            for ( const cell of groups ) {
+               setStyle( cell[0], cell[1], 'FFFFFF', '335581', 'left');
+            }
+
+            for ( const cell of subHeaders ) {
+               setStyle( cell[0], cell[1], '002B62', 'E5EAEF', ( pc.select.tableDirection === 'vertical' )? 'left': 'center');
+            }
+
+            for ( const cell of blanks ) {
+               setStyle( cell[0], cell[1], '000000', 'F2F2F2', 'left', 'sepalateValue');
+            }
+
+            for ( const cell of values ) {
+               setStyle( cell[0], cell[1], '000000', 'FFFFFF', 'left', 'value');
+            }
+
+            for ( const cell of sepalateValues ) {
+               setStyle( cell[0], cell[1], '000000', 'FFFFFF', 'left', 'sepalateValue');
+            }
+
+            // 最終行のボーダーを直線に変更
+            for ( let i = 1; i <= maxCol + 1; i++ ) {
+               worksheet.getCell( maxRow + 1, i ).border.bottom = { style: 'thin'};
+            }
+
+            // 幅
+            worksheet.columns = width;
+            
+         });
+
+         workbook.xlsx.writeBuffer().then(function( uint8Array ){
+            const targetName = pc.$.param.find('.mainTargetName').text();
+            let fileName = 'parameter_' + targetName;
+
+            if ( fn.typeof( pc.select.parameter ) === 'array' && pc.select.parameter.length ) {
+               const parameterNames = [];
+               for ( const id of pc.select.parameter ) {
+                  const data = pc.info.parameter_sheet.find(function( parameter ){
+                     return parameter.menu_id === id;
+                  });
+                  parameterNames.push( data.menu_name );
+               }
+               fileName += `(${parameterNames.join('_')})`;
+            }
+            fileName = fileName.replace(/\s+/g, '-');
+            fileName = fileName.substring( 0, 200 );
+            fn.download('exceljs', uint8Array, fileName );
+            
+            setTimeout( function(){ resolve(); }, 1000 );
+         });
+      } catch ( error ) {
+         reject();
+      }
+   });
 }
 
 }

@@ -924,6 +924,8 @@ getMessage = ( function() {
         'FTE11045': ' operations',
         'FTE11047': 'Input order',
         'FTE11048': 'No parameters to display.',
+        'FTE11049': 'Excel download',
+        'FTE11050': 'Excel download failed.',
 
         // Custom menu
         'FTE12001': 'Failed to display custom menu.',

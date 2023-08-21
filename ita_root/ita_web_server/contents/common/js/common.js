@@ -597,6 +597,15 @@ download: function( type, data, fileName = 'noname') {
                 url = 'data:;base64,' + data;
             } break;
 
+            // Exceljs
+            case 'exceljs': {
+                const blob = new Blob([ data ], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                fileName += '.xlsx';
+                url = URL.createObjectURL( blob );
+            } break;
+
         }
     } catch ( e ) {
         window.console.error( e );

@@ -836,6 +836,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
     // モード別列
     const headRowspan = rowLength + 1;
     if ( filterHeaderFlag ) {
+        html[0] = '';
         switch ( tb.mode ) {
             case 'view': {
                 if ( tb.flag.update ) {
@@ -875,7 +876,6 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
 
     for ( let i = rowLength; i >= 0 ; i-- ) {
         if ( !html[i] ) html[i] = '';
-
         for ( const columnKey of hierarchy[i] ) {
             if ( !groupColspan[ columnKey ] ) groupColspan[ columnKey ] = {};
 
@@ -961,7 +961,10 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
             }
             html[i] = fn.html.cell( '', 'parameterTheadTh tHeadTh tHeadLeftSticky', 'th', rowLength, 1 ) + html[i];
         }
-        html[i] = fn.html.row( html[i], ['tHeadTr', 'headerTr']);
+        // 行追加
+        if ( html[i] !== '') {
+            html[i] = fn.html.row( html[i], ['tHeadTr', 'headerTr']);
+        }
     }
 
     // フィルター入力欄

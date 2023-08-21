@@ -1758,7 +1758,7 @@ parameterCollection() {
     mn.setCommonEvents();
 
     const assets = [
-        //{ type: 'js', url: '/_/ita/lib/exceljs/exceljs.js'},
+        { type: 'js', url: '/_/ita/lib/exceljs/exceljs.js'},
         { type: 'js', url: '/_/ita/js/parameter_collection.js'},
         { type: 'css', url: '/_/ita/css/parameter_collection.css'},
     ];

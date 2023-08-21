@@ -5108,6 +5108,9 @@ left: 0;
 left: auto;
 top: 0;
 }
+.tableVertical .parameterTheadTh {
+border-top: none!important;
+}
 .tableHorizontal .tableWrap .tHeadTr:first-child .tHeadTh,
 .tableHorizontal .tableWrap .tHeadTr:first-child .tHeadBlank,
 .tableHorizontal .tableWrap .tBodyTr:first-child .tBodyTh,

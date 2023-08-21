@@ -1334,10 +1334,6 @@ setParameterTables() {
                pc.table[pc.tableCount] = new DataTable('ST_' + tableParams.menuNameRest, 'parameter', result[i], tableParams, tableOption );
                pc.$.content.find('.parameterBlockBody').eq(i).html( pc.table[pc.tableCount].setup() );
                pc.tableCount++;
-
-               // 最大項目数
-
-               // 最大
             }
 
             // パラメータ編集モーダルを開く

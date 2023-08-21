@@ -244,3 +244,9 @@ The minimum value is 1, the maximum value can be changed within the Management c
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_OPTION = NULL , DESCRIPTION_JA = "対象の変数もしくはメンバー変数配下のメンバー変数が繰り返される数。
 最小値は1、最大値は「管理コンソール/システム設定」内で設定変更可能。" , DESCRIPTION_EN = "The number of times the target variable or a member variable under the member variable is repeated.
 The minimum value is 1, the maximum value can be changed within the Management console/System setting." , LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2040605";
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = "Ansible Automation Controllerにsshで接続するポート番号のデフォルト(22)です。デフォルト以外のポートを使用したい場合、ポート番号を入力します。" ,
+DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." , 
+LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2010308";
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = "Ansible Automation Controllerにsshで接続するポート番号のデフォルト(22)です。デフォルト以外のポートを使用したい場合、ポート番号を入力します。" ,
+DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." , 
+LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2010308";

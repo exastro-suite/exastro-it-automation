@@ -1194,6 +1194,7 @@
     "BKY-20017": "Start register records to \"Other menu link\". (target menu group type: {})",
     "BKY-20018": "Start register records to \"Reference item info\". (target menu group type: {})",
     "BKY-20019": "Parameter sheet creation main processing is started. (menu_create_id: {}, type: {})",
+    "BKY-20020": "Start updating view for parameter sheet. (View name:{}, {})",
     "BKY-20201": "Invalid sheet type ID. (menu_create_id: {}, sheet_type_id: {})",
     "BKY-20202": "A menu with 0 items cannot be created when the sheet type is \"Datasheet\". (menu_create_id: {})",
     "BKY-20203": "Target ID does not exist in \"Parameter sheet definition list. \" (menu_create_id: {})",

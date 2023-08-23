@@ -1821,7 +1821,7 @@ setTableEvents() {
 
         // select2が開いているときはスクロールさせない
         tb.$.tbody.on({
-            'select2:opening': function( e ){console.log('!')
+            'select2:opening': function( e ){
                 select2ScrollCheck( $( e.target ) );
                 $( this ).closest('.tableWrap').on('wheel.select2Scroll', function(){
                     e.preventDefault();

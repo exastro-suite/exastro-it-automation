@@ -256,8 +256,9 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                         errorCount++;
 
                         switch ( response.status ) {
-                            //バリデーションエラーは呼び出し元に返す
-                            case 499:
+                            // 呼び出し元に返す
+                            case 498: // メンテナンス中
+                            case 499: // バリデーションエラー
                                 response.json().then(function( result ){
                                     reject( result );
                                 }).catch(function( e ) {

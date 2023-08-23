@@ -273,13 +273,19 @@ setMenuButtonEvents() {
             type = $button.attr('data-type');
       switch( type ) {
          case 'setting':
-            pc.settingOpen();
+            $button.prop('disabled', true );
+            pc.settingOpen().then(function(){
+               $button.prop('disabled', false );
+            });
             break;
          case 'operationToggle':
             pc.$.content.toggleClass('operationTimelineHide');
             break;
          case 'preset':
-            pc.presetSaveOpen();
+            $button.prop('disabled', true );
+            pc.presetSaveOpen().then(function(){
+               $button.prop('disabled', false );
+            });
             break;
       }
    });
@@ -1524,15 +1530,28 @@ setPresetEvents() {
          return pr.uuid === id;
       });
 
+      $button.prop('disabled', true );
       switch( type ) {
          case 'update': 
-            if ( target ) pc.presetSave( target.filter_name, id, target.last_update_date_time );
+            if ( target ) {
+               pc.presetSave( target.filter_name, id, target.last_update_date_time ).then(function(){
+                  $button.prop('disabled', false );
+               }).catch(function(){
+                  $button.prop('disabled', false );
+               });
+            }
             break;
          case 'rename':
-            if ( target ) pc.presetSaveOpen( target.filter_name, id, target.last_update_date_time );
+            if ( target ) {
+               pc.presetSaveOpen( target.filter_name, id, target.last_update_date_time ).then(function(){
+                  $button.prop('disabled', false );
+               });
+            }
             break;
          case 'delete':
-            pc.presetDelete( id );
+            pc.presetDelete( id ).then(function(){
+               $button.prop('disabled', false );
+            });
             break;
       }
    });
@@ -1658,12 +1677,13 @@ presetSaveOpen( name = '', uuid = '', date = '') {
 
       const funcs = {
          ok: function(){
+            modal.buttonPositiveDisabled( true );
             pc.presetSave( $input.val(), uuid, date ).then(function(){
                modal.close();
                modal = null;
                resolve();
             }).catch(function(){
-
+               modal.buttonPositiveDisabled( false );
             });
          },
          cancel: function(){

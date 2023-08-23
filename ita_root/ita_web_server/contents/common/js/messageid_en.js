@@ -875,6 +875,8 @@ getMessage = ( function() {
         'FTE10092': 'Update failed',
         'FTE10093': 'Update failed. Please try again after reloading.',
         'FTE10094': 'Filter reset',
+        'FTE10095': 'Due to maintenance, the newly registered Conductor and each driver work execution, Parameter sheet create, Menu export/import, Bulk excel export/import will not be executed.',
+        'FTE10096': 'Due to maintenance, data cannot be registered/updated/deleted. In addition, it is not possible to execute the work of Conductor and each driver, Parameter sheet create, Menu export/import, and Bulk excel export/import.',
 
         // Parameter collection
         'FTE11001': 'Parameter mode',

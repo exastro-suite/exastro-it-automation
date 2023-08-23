@@ -323,12 +323,20 @@ compareEvents() {
                 cp.getCompareSettingData();
                 cp.$.result.addClass('nowLoading').empty();
                 fn.fetch( cp.rest.compare, null, 'POST', cp.compareData ).then(function( result ){
-                    cp.$.result.removeClass('nowLoading');
                     cp.setCompareResult( result );
                 }).catch(function( error ){
-                    console.error( error );
-                    alert( getMessage.FTE06021);
+                    if ( fn.typeof( error ) === 'object') {
+                        if ( fn.typeof( error.message ) === 'string') {
+                            alert( error.message );
+                        } else {
+                            alert( getMessage.FTE06021 );
+                        }
+                    } else {
+                        alert( getMessage.FTE06021 );
+                    }
+                    cp.$.result.html( cp.compareResultMessageHtml() );
                 }).then(function(){
+                    cp.$.result.removeClass('nowLoading');
                     $button.prop('disabled', false );
                 });
             } break;
@@ -339,8 +347,15 @@ compareEvents() {
                     const fileName = fn.cv( result.file_name, '');
                     fn.download('base64', result.file_data, fileName );
                 }).catch(function( error ){
-                    console.error( error );
-                    alert( getMessage.FTE06033 );
+                    if ( fn.typeof( error ) === 'object') {
+                        if ( fn.typeof( error.message ) === 'string') {
+                            alert( error.message );
+                        } else {
+                            alert( getMessage.FTE06033 );
+                        }
+                    } else {
+                        alert( getMessage.FTE06033 );
+                    }
                 }).then(function(){
                     $button.prop('disabled', false );
                 });
@@ -540,6 +555,7 @@ setCompareResult( info ) {
 
         const fileDiffData = info.compare_data[ host ]._file_compare_execute_info[ name ];
 
+        $button.prop('disabled', true );
         fn.fetch(`/menu/${cp.menu}/compare/execute/file/`, null, 'POST', fileDiffData.parameter ).then(function(result){
             const config = {
                 className: 'diffModal',
@@ -551,7 +567,7 @@ setCompareResult( info ) {
                 width: '1600px',
                 footer: {
                     button: {
-                        close: { text: getMessage.FTE06031, action: 'normal'},
+                        cancel: { text: getMessage.FTE06031, action: 'normal'},
                         print: { text: getMessage.FTE06034, action: 'normal'}
                     }
                 }
@@ -559,9 +575,14 @@ setCompareResult( info ) {
             const func = {
                 print: function(){
                     modal.printBody();
+                },
+                cancel: function(){
+                    $button.prop('disabled', false );
+                    modal.close();
+                    modal = null;
                 }
             };
-            const modal = new Dialog( config, func );
+            let modal = new Dialog( config, func );
 
             const diffHtml = Diff2Html.html( result.unified_diff.diff_result, {
               drawFileList: false,
@@ -569,6 +590,15 @@ setCompareResult( info ) {
               outputFormat: 'side-by-side',
             });
             modal.open( diffHtml );
+        }).catch(function( error ){
+            if ( fn.typeof( error ) === 'object') {
+                if ( fn.typeof( error.message ) === 'string') {
+                    alert( error.message );
+                }
+            } else {
+                window.console.error( error );
+            }
+            $button.prop('disabled', false );
         });
     });
 }

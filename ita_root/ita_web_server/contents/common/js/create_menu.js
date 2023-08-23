@@ -1691,6 +1691,8 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
                   createRegistrationData('create_new').catch(function(){
                     $button.prop('disabled', false );
                   });
+                } else {
+                  $button.prop('disabled', false );
                 }
             });
             break;
@@ -1703,6 +1705,8 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
                       createRegistrationData('create_new').catch(function(){
                         $button.prop('disabled', false );
                       });
+                    } else {
+                      $button.prop('disabled', false );
                     }
                 });
             }else{
@@ -1711,6 +1715,8 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
                       createRegistrationData('initialize').catch(function(){
                         $button.prop('disabled', false );
                       });
+                    } else {
+                      $button.prop('disabled', false );
                     }
                 });
             }
@@ -1722,6 +1728,8 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
                   createRegistrationData('edit').catch(function(){
                     $button.prop('disabled', false );
                   });
+                } else {
+                  $button.prop('disabled', false );
                 }
             });
             break;
@@ -3672,10 +3680,16 @@ const createRegistrationData = function( type ){
       });
 
     }).catch(function( error ){
-        let message = errorFormat(error.message);
-        menuEditorLog.clear();
-        menuEditorLog.set( 'error', message );
-        window.alert(getMessage.FTE01141);
+        if ( fn.typeof( error ) === 'object') {
+            if ( error.result === '498-00004') {
+                if ( fn.typeof( error.message ) === 'string') window.alert( error.message );
+            } else {
+                let message = errorFormat(error.message);
+                menuEditorLog.clear();
+                menuEditorLog.set('error', message );
+                window.alert(getMessage.FTE01141);
+            }
+        }
         process.close();
         process = null;
         reject();

@@ -92,6 +92,7 @@ init() {
                 ui.rest.user = ui.storageUser;
 
                 ui.setSideMenu();
+                ui.maintenanceMode();
                 ui.headerMenu( false );
             });
         }
@@ -768,6 +769,28 @@ topicPath() {
     document.title = title.join(' / ');
 }
 
+/*
+##################################################
+   メンテナンスモード
+##################################################
+*/
+maintenanceMode() {
+    const ui = this;
+
+    if ( ui.rest.user.maintenance_mode ) {
+        if ( ui.rest.user.maintenance_mode.data_update_stop === '1') {
+            ui.$.container.addClass('inMaintenanceMode');
+            ui.$.container.find('.modeMessageText').text( getMessage.FTE10096 );
+        } else if ( ui.rest.user.maintenance_mode.backyard_execute_stop === '1') {
+            ui.$.container.addClass('inMaintenanceMode');
+            ui.$.container.find('.modeMessageText').text( getMessage.FTE10095 );
+        } else {
+            ui.$.container.removeClass('inMaintenanceMode');
+            ui.$.container.find('.modeMessageText').empty()
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   メニュー（コンテンツ）
@@ -791,6 +814,7 @@ setMenu() {
         if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) || !mn.rest.user ) {
             mn.rest.user = result[0];
             mn.headerMenu();
+            mn.maintenanceMode();
 
             fn.storage.set('restUser', mn.rest.user, 'session');
         } else {
@@ -1427,8 +1451,14 @@ fileRegister( $button, type ) {
                         mn.mainTable.changeViewMode();
                     });
                 }).catch(function( error ){
-                    // 登録失敗
-                    fn.errorModal( error, mn.title, mn.info );
+                    if ( fn.typeof( error ) === 'object') {
+                        if ( error.result === '498-00001') {
+                            if ( fn.typeof( error.message ) === 'string') window.alert( error.message );
+                        } else {
+                            // 登録失敗
+                            fn.errorModal( error, mn.title, mn.info );
+                        }
+                    }
                 }).then(function(){
                     // ボタンを戻す
                     fn.disabledTimer( $button, false, 1000 );

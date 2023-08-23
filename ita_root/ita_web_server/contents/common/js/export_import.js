@@ -595,12 +595,17 @@ importEvents() {
         const $button = $( this ),
               type = $button.attr('data-type');
         
+        $button.prop('disabled', true );
         switch ( type ) {
             case 'fileSelect':
-                ex.fileSelect();
+                ex.fileSelect().then(function(){
+                    $button.prop('disabled', false );
+                });
             break;
             case 'import':
-                ex.importModal();
+                ex.importModal().then(function(){
+                    $button.prop('disabled', false );
+                });
             break;
         }
         
@@ -614,60 +619,60 @@ importEvents() {
 fileSelect() {
     const ex = this;
     
-    const fileExt = ( ex.type === 'excelImport')? '.zip': '.kym',
-          fileRest = ( ex.type === 'excelImport')? '/excel/bulk/upload/': `/menu/import/upload/`;
-    
-    
-    fn.fileSelect('file', null, fileExt ).then(function( selectFile ){
+    return new Promise(function( resolve ){
+        const fileExt = ( ex.type === 'excelImport')? '.zip': '.kym',
+            fileRest = ( ex.type === 'excelImport')? '/excel/bulk/upload/': `/menu/import/upload/`;
+        
+        
+        fn.fileSelect('file', null, fileExt ).then(function( selectFile ){
 
-        const postData = new FormData();
-        postData.append( selectFile.name, selectFile );
-        
-        let process = fn.processingModal( getMessage. FTE07036 );
-        fn.fetch( fileRest, null, 'POST', postData, { multipart: true }).then(function( result ){
-                        
-            // インポートデータ
-            ex.importData = result;
+            const postData = new FormData();
+            postData.append( selectFile.name, selectFile );
             
-            let listHtml = '';
-            if ( ex.type === 'excelImport') {
-                const importList = ex.createMenuGroupList( ex.changeExcelImportList( ex.importData.import_list, ex.importData.umimport_list ) );
-                listHtml += ex.menuGroupHtml( importList );
-            } else {
-                const importList = ex.createMenuGroupList( ex.importData.import_list.menu_groups );
-                listHtml += ex.menuGroupHtml( importList );
-            }
-            
-            ex.$.importBody.html(
-                ex.importSettingHtml()
-                + '<div class="exportImportSelect">'
-                    + '<div class="commonTitle">'
-                        + getMessage.FTE07022
-                    + '</div>'
-                    + listHtml
-                +  '</div>');
-            
-            ex.commonEvents();            
+            let process = fn.processingModal( getMessage. FTE07036 );
+            fn.fetch( fileRest, null, 'POST', postData, { multipart: true }).then(function( result ){
+                            
+                // インポートデータ
+                ex.importData = result;
+                
+                let listHtml = '';
+                if ( ex.type === 'excelImport') {
+                    const importList = ex.createMenuGroupList( ex.changeExcelImportList( ex.importData.import_list, ex.importData.umimport_list ) );
+                    listHtml += ex.menuGroupHtml( importList );
+                } else {
+                    const importList = ex.createMenuGroupList( ex.importData.import_list.menu_groups );
+                    listHtml += ex.menuGroupHtml( importList );
+                }
+                
+                ex.$.importBody.html(
+                    ex.importSettingHtml()
+                    + '<div class="exportImportSelect">'
+                        + '<div class="commonTitle">'
+                            + getMessage.FTE07022
+                        + '</div>'
+                        + listHtml
+                    +  '</div>');
+                
+                ex.commonEvents();            
+            }).catch(function( error ){
+                window.console.error( error );
+                if ( error.message ) {
+                    alert( error.message );
+                } else {
+                    alert( getMessage.FTE07023 );
+                }
+                ex.$.importBody.html( ex.initBodyHtml() );
+            }).then(function(){
+                process.close();
+                process = null;
+                
+                ex.importButtonCheck();
+                resolve();
+            });
         }).catch(function( error ){
-            window.console.error( error );
-            if ( error.message ) {
-                alert( error.message );
-            } else {
-                alert( getMessage.FTE07023 );
-            }
-            ex.$.importBody.html( ex.initBodyHtml() );
-        }).then(function(){
-            process.close();
-            process = null;
-            
-            ex.importButtonCheck();
+            resolve();
         });
-    }).catch(function( error ){
-        if ( error !== 'cancel') {
-        
-        }
     });
-    
 }
 /*
 ##################################################
@@ -778,94 +783,106 @@ importButtonCheck() {
 importModal() {
     const ex = this;
     
-    // Importリスト作成
-    const restData = {};
-    
-    let fileName = '',
-        menuCount = 0;
-    
-    if ( ex.type === 'excelImport') {
-        // Excel インポート
-        const menu = {};
-        ex.$.content.find('.exportImportCheckItem:checked').each(function(){
-            const $item = $( this ),
-                  value = $item.val(),
-                  group = $item.attr('data-menuGroup');
-            
-            if ( !menu[ group ] ) menu[ group ] = [];
-            menu[ group ].push( value );
-            menuCount++;
-        });
-        restData.menu = menu;
-        restData.upload_id = ex.importData.upload_id;
-        restData.data_portability_upload_file_name = ex.importData.data_portability_upload_file_name;
-        fileName = ex.importData.data_portability_upload_file_name;
-    } else {
-        // Menu インポート
-        const menu = [];
-        ex.$.content.find('.exportImportCheckItem:checked').each(function(){
-            menu.push( $( this ).val() );
-            menuCount++;
-        });
-        restData.menu = menu;
-        restData.upload_id = ex.importData.upload_id;
-        restData.file_name = ex.importData.file_name;
-        fileName = ex.importData.file_name;
-    }
-    
-    // 確認HTML
-    let html = ``
-    + `<div class="commonSection">`
-        + `<div class="commonTitle">${getMessage.FTE07021}</div>`
-        + `<div class="commonBody">`
-            + `<p class="commonParagraph">${getMessage.FTE07029}</p>`
-            + `<table class="commonTable">`
-                + `<tbody class="commonTbody">`
-                    + `<tr class="commonTr">`
-                        + `<th class="commonTh">${getMessage.FTE07028}</th>`
-                        + `<td class="commonTd">${fn.escape( fileName )}</td>`
-                    + `</tr>`
-                    + `<tr class="commonTr">`
-                        + `<th class="commonTh">${getMessage.FTE07006}</th>`
-                        + `<td class="commonTd">${menuCount}</td>`
-                    + `</tr>`;
-    if ( ex.type === 'menuImport') {
-        html += ``
-                    + `<tr class="commonTr">`
-                        + `<th class="commonTh">${getMessage.FTE07007}</th>`
-                        + `<td class="commonTd">${ex.exportModeText( ex.importData.mode )}</td>`
-                    + `</tr>`
-                    + `${( ex.importData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd"></td></tr>`: ``}`
-                    + `<tr class="commonTr">`
-                        + `<th class="commonTh">${getMessage.FTE07009}</th>`
-                        + `<td class="commonTd">${ex.exportDiscardText( ex.importData.abolished_type )}</td>`
-                    + `</tr>`;
-    }
-    html += ``
-                + `</tbody>`
-            + `</table>`
-        + `</div>`
-    + `</div>`;
-    
-    // インポート確認
-    fn.alert( getMessage.FTE07030, html, 'common', {
-        ok: { text: getMessage.FTE07031, action: 'default', style: 'width:160px', className: 'dialogPositive'},
-        cancel: { text: getMessage.FTE07012, action: 'negative', style: 'width:120px'}
-    }, '480px').then( function( flag ){
-        if ( flag ) {
-            const rest = ( ex.type === 'menuImport')? '/menu/import/execute/': '/excel/bulk/import/execute/',
-                  manage = ( ex.type === 'menuImport')? 'menu_export_import_list': 'bulk_excel_export_import_list';
-            let process = fn.processingModal( getMessage.FTE07032 );
-            fn.fetch( rest, null, 'POST', restData ).then(function( result ){
-                const filter = { execution_no: { NORMAL: result.execution_no } };
-                window.location.href = `?menu=${manage}&filter=${fn.filterEncode( filter )}`;
-            }).catch(function( error ){
-                window.console.error( error );
-                alert( getMessage.FTE07033 );
-                process.close();
-                process = null;
+    return new Promise(function( resolve ){
+        // Importリスト作成
+        const restData = {};
+        
+        let fileName = '',
+            menuCount = 0;
+        
+        if ( ex.type === 'excelImport') {
+            // Excel インポート
+            const menu = {};
+            ex.$.content.find('.exportImportCheckItem:checked').each(function(){
+                const $item = $( this ),
+                    value = $item.val(),
+                    group = $item.attr('data-menuGroup');
+                
+                if ( !menu[ group ] ) menu[ group ] = [];
+                menu[ group ].push( value );
+                menuCount++;
             });
-        }        
+            restData.menu = menu;
+            restData.upload_id = ex.importData.upload_id;
+            restData.data_portability_upload_file_name = ex.importData.data_portability_upload_file_name;
+            fileName = ex.importData.data_portability_upload_file_name;
+        } else {
+            // Menu インポート
+            const menu = [];
+            ex.$.content.find('.exportImportCheckItem:checked').each(function(){
+                menu.push( $( this ).val() );
+                menuCount++;
+            });
+            restData.menu = menu;
+            restData.upload_id = ex.importData.upload_id;
+            restData.file_name = ex.importData.file_name;
+            fileName = ex.importData.file_name;
+        }
+        
+        // 確認HTML
+        let html = ``
+        + `<div class="commonSection">`
+            + `<div class="commonTitle">${getMessage.FTE07021}</div>`
+            + `<div class="commonBody">`
+                + `<p class="commonParagraph">${getMessage.FTE07029}</p>`
+                + `<table class="commonTable">`
+                    + `<tbody class="commonTbody">`
+                        + `<tr class="commonTr">`
+                            + `<th class="commonTh">${getMessage.FTE07028}</th>`
+                            + `<td class="commonTd">${fn.escape( fileName )}</td>`
+                        + `</tr>`
+                        + `<tr class="commonTr">`
+                            + `<th class="commonTh">${getMessage.FTE07006}</th>`
+                            + `<td class="commonTd">${menuCount}</td>`
+                        + `</tr>`;
+        if ( ex.type === 'menuImport') {
+            html += ``
+                        + `<tr class="commonTr">`
+                            + `<th class="commonTh">${getMessage.FTE07007}</th>`
+                            + `<td class="commonTd">${ex.exportModeText( ex.importData.mode )}</td>`
+                        + `</tr>`
+                        + `${( ex.importData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd"></td></tr>`: ``}`
+                        + `<tr class="commonTr">`
+                            + `<th class="commonTh">${getMessage.FTE07009}</th>`
+                            + `<td class="commonTd">${ex.exportDiscardText( ex.importData.abolished_type )}</td>`
+                        + `</tr>`;
+        }
+        html += ``
+                    + `</tbody>`
+                + `</table>`
+            + `</div>`
+        + `</div>`;
+        
+        // インポート確認
+        fn.alert( getMessage.FTE07030, html, 'common', {
+            ok: { text: getMessage.FTE07031, action: 'default', style: 'width:160px', className: 'dialogPositive'},
+            cancel: { text: getMessage.FTE07012, action: 'negative', style: 'width:120px'}
+        }, '480px').then( function( flag ){
+            if ( flag ) {
+                const rest = ( ex.type === 'menuImport')? '/menu/import/execute/': '/excel/bulk/import/execute/',
+                    manage = ( ex.type === 'menuImport')? 'menu_export_import_list': 'bulk_excel_export_import_list';
+                let process = fn.processingModal( getMessage.FTE07032 );
+                fn.fetch( rest, null, 'POST', restData ).then(function( result ){
+                    const filter = { execution_no: { NORMAL: result.execution_no } };
+                    window.location.href = `?menu=${manage}&filter=${fn.filterEncode( filter )}`;
+                }).catch(function( error ){
+                    if ( fn.typeof( error ) === 'object') {
+                        if ( fn.typeof( error.message ) === 'string') {
+                            alert( error.message );
+                        } else {
+                            alert( getMessage.FTE07033 );
+                        }
+                    } else {
+                        alert( getMessage.FTE07033 );
+                    }
+                    process.close();
+                    process = null;
+                    resolve();
+                });
+            } else {
+                resolve();
+            }  
+        });
     });
 }
 /*

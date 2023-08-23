@@ -401,6 +401,76 @@ CREATE TABLE T_EVRL_ACTION_STATUS
 
 
 
+-- フィルター管理
+CREATE TABLE T_EVRL_FILTER
+(
+    FILTER_ID                       VARCHAR(40),                                -- フィルターID
+    FILTER_NAME                     VARCHAR(255),                               -- フィルター名
+    FILTER_CONDITION_JSON           LONGTEXT,                                   -- フィルター条件
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(FILTER_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_EVRL_FILTER_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    FILTER_ID                       VARCHAR(40),                                -- フィルターID
+    FILTER_NAME                     VARCHAR(255),                               -- フィルター名
+    FILTER_CONDITION_JSON           LONGTEXT,                                   -- フィルター条件
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- ルール管理
+CREATE TABLE T_EVRL_RULE
+(
+    RULE_ID                         VARCHAR(40),                                -- ルールID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名
+    RULE_PRIORITY                   INT,                                        -- 優先順位
+    FILTER_NAME                     VARCHAR(40),                                -- フィルター名
+    RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
+    LABELING_INFORMATION            LONGTEXT,                                   -- ラベリング情報
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(RULE_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_EVRL_RULE_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    RULE_ID                         VARCHAR(40),                                -- ルールID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名
+    RULE_PRIORITY                   INT,                                        -- 優先順位
+    FILTER_NAME                     VARCHAR(40),                                -- フィルター名
+    RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
+    LABELING_INFORMATION            LONGTEXT,                                   -- ラベリング情報
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- インデックス
 CREATE INDEX IND_T_EVRL_CONNECTION_METHOD_01 ON T_EVRL_CONNECTION_METHOD(DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_EVENT_COLLECTION_SETTINGS_01 ON T_EVRL_EVENT_COLLECTION_SETTINGS(DISUSE_FLAG);

@@ -1188,6 +1188,9 @@ def _get_target_datas(objdbca, compare_config, options):
             # execute filter
             status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, rest_mode)
 
+            # del discard operation data
+            tmp_result = [_tmp_data for _tmp_data in tmp_result if _tmp_data['parameter']['base_datetime'] is not None]
+
             # target_parameter SET
             compare_config.setdefault("_target_parameter", {})
             compare_config = _set_target_parameter(compare_config, target_key, vertical, tmp_result)

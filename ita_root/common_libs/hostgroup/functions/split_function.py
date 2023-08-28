@@ -456,12 +456,12 @@ def split_host_grp(hgsp_config, hgsp_data):
             if vertical_flg is False:
                 input_data_array = sorted(
                     input_data_array,
-                    key=lambda x: (x['BASE_TIMESTAMP'], x['OPERATION_NAME'])
+                    key=lambda x: (str(x['BASE_TIMESTAMP']), str(x['OPERATION_NAME']))
                 )
             else:
                 input_data_array = sorted(
                     input_data_array,
-                    key=lambda x: (x['BASE_TIMESTAMP'], x['OPERATION_NAME'], x['INPUT_ORDER'])
+                    key=lambda x: (str(x['BASE_TIMESTAMP']), str(x['OPERATION_NAME']), x['INPUT_ORDER'])
                 )
         # 出力用テーブルを検索:SQL実行
         sql = output_table.create_sselect("WHERE DISUSE_FLAG = '0'")
@@ -486,14 +486,19 @@ def split_host_grp(hgsp_config, hgsp_data):
 
         # 優先順位を取得するためにホストグループ一覧を検索:SQL実行
         host_group_listTable = HostgroupListTable(objdbca)  # noqa: F405
-        sql = host_group_listTable.create_sselect("WHERE DISUSE_FLAG = '0' ORDER BY PRIORITY ASC")
+        sql = host_group_listTable.create_sselect("ORDER BY PRIORITY ASC")
         result = host_group_listTable.select_table(sql)
         if result is False:
             tmp_msg = 'select table error HostgroupListTable'
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             raise Exception()
-        host_group_list_array = result
-        host_group_id_list = [hgd.get('ROW_ID') for hgd in host_group_list_array]
+
+        # ホストグループ一覧(廃止除く)
+        host_group_list_array = [hgd for hgd in result if hgd.get('DISUSE_FLAG') == "0"]
+        # ホストグループIDリスト(廃止除く)
+        host_group_id_list = [hgd.get('ROW_ID') for hgd in result if hgd.get('DISUSE_FLAG') == "0"]
+        # ホストグループIDリスト(廃止含む)
+        host_group_id_all_list = [hgd.get('ROW_ID') for hgd in result]
 
         hold_host_id = []
         sameid_array = None
@@ -502,6 +507,7 @@ def split_host_grp(hgsp_config, hgsp_data):
         hgsp_data.setdefault('idxs', idxs)
         hgsp_data.setdefault('host_group_list_array', host_group_list_array)
         hgsp_data.setdefault('host_group_id_list', host_group_id_list)
+        hgsp_data.setdefault('host_group_id_all_list', host_group_id_all_list)
         hgsp_data.setdefault('output_data_array', output_data_array)
         hgsp_data.setdefault('copy_file_array', copy_file_array)
         hgsp_data.setdefault('operation_ids', operation_ids)
@@ -534,7 +540,7 @@ def split_host_grp(hgsp_config, hgsp_data):
                     match_flg = True
 
             # ホストの場合, PRIORITY:最大設定(0-2147483647)
-            if match_flg is False or input_data['HOST_ID'] not in host_group_id_list:
+            if match_flg is False or input_data['HOST_ID'] not in host_group_id_all_list:
                 input_data_array[input_data_key]['PRIORITY'] = hostgroup_const.MAX_PRIORITY
 
             # 一回目の場合
@@ -590,7 +596,7 @@ def split_host_grp(hgsp_config, hgsp_data):
         for output_data in output_data_array:
             # 分割データにある場合は廃止しない
             hold_key = create_hold_key(vertical_flg, output_data.get('HOST_ID'), output_data.get('OPERATION_ID'), output_data.get('INPUT_ORDER'))
-            if hold_key in hold_host_id and output_data.get('HOST_ID') not in host_group_id_list:
+            if hold_key in hold_host_id and output_data.get('HOST_ID') not in host_group_id_all_list:
                 tmp_msg = 'not discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
@@ -708,6 +714,7 @@ def make_host_data(hgsp_config, hgsp_data):
 
             'host_group_list_array', # ホストグループデータ
             'host_group_id_list',    # ホストグループIDリスト
+            'host_group_id_all_list',# ホストグループIDリスト(廃止含む)
             'output_data_array',     # 入力対象のデータ
             'copy_file_array',       # ファイルコピー情報設定
             'sameid_array',          # 同一処理対象(オペレーション or オペレーション + 代入順序)
@@ -728,6 +735,7 @@ def make_host_data(hgsp_config, hgsp_data):
         hierarchy = hgsp_data.get('hierarchy')
         idxs = hgsp_data.get('idxs')
         host_group_id_list = hgsp_data.get('host_group_id_list')
+        host_group_id_all_list = hgsp_data.get('host_group_id_all_list')
         output_data_array = hgsp_data.get('output_data_array')
         sameid_array = copy.deepcopy(hgsp_data.get('sameid_array'))
 
@@ -755,6 +763,10 @@ def make_host_data(hgsp_config, hgsp_data):
                 tree_array[tree_data_key]['ALL_PARENT_IDS'] = copy.deepcopy(parent_ids_list)
                 if sameid_data.get('HOST_ID') == tree_data.get('HOST_ID'):
                     treematch_flg = True
+                    if sameid_data['HOST_ID'] in host_group_id_all_list:
+                        if not tree_array[tree_data_key]['OPERATION']:
+                            tree_array[tree_data_key]['OPERATION'] = []
+                    tree_array[tree_data_key]['OPERATION'].append(sameid_data.get('OPERATION_ID'))
                     tree_array[tree_data_key]['DATA'] = copy.deepcopy(sameid_data)
                     tree_array[tree_data_key]['DATA_HIERARCHY'] = copy.deepcopy(tree_array[tree_data_key]['HIERARCHY'])
                     # アップロードファイルがあるか確認
@@ -790,7 +802,7 @@ def make_host_data(hgsp_config, hgsp_data):
         # ツリー上にいなかったデータを単独で登録する
         for alone_data in alone_data_array:
             # ホストグループの場合は無視する
-            if alone_data['HOST_ID'] in host_group_id_list:
+            if alone_data['HOST_ID'] in host_group_id_all_list:
                 continue
 
             # 保有しているホストIDを退避しておく

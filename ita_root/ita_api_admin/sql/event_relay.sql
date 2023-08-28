@@ -222,7 +222,7 @@ FROM
 CREATE TABLE T_EVRL_EVENT_COLLECTION_PROGRESS
 (
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
-    FETCHED_TIME                    VARCHAR(40),                                -- 経過時間
+    FETCHED_TIME                    VARCHAR(255),                               -- 経過時間
     EVALUATED_FLAG                  VARCHAR(40),                                -- 評価フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -237,7 +237,7 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_PROGRESS_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
-    FETCHED_TIME                    VARCHAR(40),                                -- 経過時間
+    FETCHED_TIME                    VARCHAR(255),                               -- 経過時間
     EVALUATED_FLAG                  VARCHAR(40),                                -- 評価フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ

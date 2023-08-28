@@ -229,15 +229,20 @@ setSideMenuEvents() {
             + `</div></div>`);
 
             ui.$.container.append( $html );
-            $( window ).on('mousedown.groupSub', function( e ){
+
+            const $window = $( window ), $iframe = ui.$.content.find('.customMenuIframe');
+            const close = function( e ) { console.log('!')
                 if ( !$( e.target ).closest('.menuGroupSub, .subGroupMenuOpen').length ) {
                     ui.$.menu.find('.subGroupMenuOpen').removeClass('subGroupMenuOpen');
                     $html.animate({ left: '-100%'}, 300, function(){
                         $( this ).remove();
                     });
-                    $( this ).off('mousedown.groupSub');
+                    $window.off('mousedown.groupSub');
+                    if ( $iframe.length ) $iframe.contents().off('mousedown.groupSub');
                 }
-            });
+            };
+            $window.on('mousedown.groupSub', close );
+            if ( $iframe.length ) $iframe.contents().on('mousedown.groupSub', close );
         }
     });
 
@@ -958,13 +963,17 @@ headerMenu( readyFlag = true ) {
             $userInfo.removeClass('open');
         } else {
             $userInfo.addClass('open');
-            const $window = $( window );
-            $window.on('pointerdown.userInfo', function( e ){
+            const $window = $( window ), $iframe = mn.$.content.find('.customMenuIframe');
+
+            const close = function( e ) {
                 if ( !$( e.target ).closest('.userInfomation, .modalOverlay').length ) {
                     $userInfo.removeClass('open');
                     $window.off('pointerdown.userInfo');
+                    if ( $iframe.length ) $iframe.contents().off('pointerdown.userInfo');
                 }
-            });
+            };
+            $window.on('pointerdown.userInfo', close );
+            if ( $iframe.length ) $iframe.contents().on('pointerdown.userInfo', close );
         }
     });
 
@@ -1214,9 +1223,11 @@ contentTabEvent( openTab = '#dataList') {
 
         const $link = $( this ),
               tab = $link.attr('href');
+        mn.$.content.addClass('tabChange');
         mn.$.content.find('.tabOpen').removeClass('tabOpen').removeAttr('tabindex');
         $link.addClass('tabOpen').attr('tabindex', -1 );
         $( tab ).addClass('tabOpen');
+        mn.$.content.removeClass('tabChange');
     });
 }
 // 指定のタブを開く

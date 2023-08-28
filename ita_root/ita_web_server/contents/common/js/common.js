@@ -64,12 +64,14 @@ const fn = ( function() {
     };
     const cmmonAuthFlag = commonAuthCheck();
 
-
     // iframeフラグ
     const iframeFlag = windowFlag? ( window.parent !== window ): false;
 
-    const organization_id = ( windowFlag && cmmonAuthFlag )? CommonAuth.getRealm(): null,
-          workspace_id =  ( windowFlag )? window.location.pathname.split('/')[3]: null;
+    const
+    organization_id = ( windowFlag && cmmonAuthFlag )? CommonAuth.getRealm():
+        ( iframeFlag && window.parent.getToken )? window.parent.getRealm(): null,
+    workspace_id =  ( windowFlag && cmmonAuthFlag )? window.location.pathname.split('/')[3]:
+        ( iframeFlag && window.parent.getWorkspace )? window.parent.getWorkspace(): null;
 
     const typeofValue = function( value ) {
         return Object.prototype.toString.call( value ).slice( 8, -1 ).toLowerCase();
@@ -127,6 +129,14 @@ const cmn = {
 */
 getCommonParams: function() {
     return Object.assign( {}, commonParams );
+},
+/*
+##################################################
+   cmmonAuthが使えるか返す
+##################################################
+*/
+getCmmonAuthFlag: function() {
+    return cmmonAuthFlag;
 },
 /*
 ##################################################
@@ -198,7 +208,8 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
 fetch: function( url, token, method = 'GET', data, option = {} ) {
 
     if ( !token ) {
-        token = ( cmmonAuthFlag )? CommonAuth.getToken(): null;
+        token = ( cmmonAuthFlag )? CommonAuth.getToken():
+            ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
     }
 
     let errorCount = 0;

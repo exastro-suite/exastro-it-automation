@@ -565,6 +565,9 @@ transition-duration: .2s;
 .toggleButton[data-toggle="off"] .toggleButtonSwitch > span {
 transform: translateY(-100%);
 }
+.tabChange .toggleButtonSwitch > span {
+transition-duration: 0s;
+}
 /* min width button */
 .buttonMinWidth {
 display: block;
@@ -884,7 +887,7 @@ height: calc( 100% - 96px );
 }
 .inMaintenanceMode .modeMessage {
 position: relative;
-z-index: 1000;
+z-index: 5;
 display: flex;
 justify-content: center;
 align-items: center;

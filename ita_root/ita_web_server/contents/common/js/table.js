@@ -2455,7 +2455,7 @@ filterSelectOpen( $button ) {
         // Select box
         const $selectBox = $(`<select class="filterSelect filterInput" name="${name}" data-type="select" data-rest="${rest}" multiple="multiple"></select>`);
 
-         // Option
+        // Option
         const option = [];
         for ( const item of selectList ) {
             const $option = $(`<option></option>`),
@@ -2746,9 +2746,12 @@ workerPost( type, data ) {
                 tb.rest.filter,
                 tb.params.orgId,
                 tb.params.wsId );
-
+            
+            const token = ( fn.getCmmonAuthFlag() )? CommonAuth.getToken():
+                ( window.parent && window.parent.getToken )? window.parent.getToken(): null;
+            
             post.rest = {
-                token: CommonAuth.getToken(),
+                token: token,
                 url: url,
                 filter: data
             };
@@ -4453,7 +4456,9 @@ filterError( error ) {
         errorMessage = JSON.parse( error.message );
     } catch ( e ) {
         //JSONを作成
-        errorMessage["0"][ getMessage.FTE00064 ] = error.message;
+        if ( !errorMessage ) errorMessage = [];
+        if ( !errorMessage['0'] ) errorMessage['0'] = [];
+        errorMessage['0'][ getMessage.FTE00064 ] = error.message;
     }
 
     const errorHtml = [];
@@ -4461,7 +4466,8 @@ filterError( error ) {
     for ( const item in errorMessage ) {
         for ( const error in errorMessage[item] ) {
             const name = fn.cv( tb.data.restNames[ error ], error, true );
-            let   body = fn.cv( errorMessage[item][error].join(''), '?', true );
+            const message = ( fn.typeof( errorMessage[item][error] ) === 'array')? errorMessage[item][error].join(''): errorMessage[item][error];
+            let   body = fn.cv( message, '?', true );
 
             if ( fn.typeof( body ) === 'string') body = body.replace(/\r?\n/g, '<br>');
             errorHtml.push(`<tr class="tBodyTr tr">`

@@ -242,8 +242,6 @@ setSideMenuEvents() {
                 }
             };
             $window.on('mousedown.groupSub', close );
-
-            // 独自メニュー場合、iframe無いでもmousedown閉じるようにする
             if ( $iframe.length ) $iframe.contents().on('mousedown.groupSub', close );
         }
     });

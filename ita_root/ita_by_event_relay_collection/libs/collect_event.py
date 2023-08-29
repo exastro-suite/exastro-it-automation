@@ -22,7 +22,7 @@ from common_libs.event_relay import *
 ######################################################
 # イベント収集
 ######################################################
-def collect_event(mariaDB, mongoDB):
+def collect_event(wsDb, wsMongo):
     events = []
     debug_msg = ""
 
@@ -41,19 +41,14 @@ def collect_event(mariaDB, mongoDB):
         value = jmespath.search(jsonpath, data)
         return value
 
-    wsMariaDB = mariaDB
-    wsMongoDB = mongoDB
-    g.applogger.debug("mongodb-ws can connet")
-
-    event_settings = wsMariaDB.table_select(
+    event_settings = wsDb.table_select(
         "T_EVRL_EVENT_COLLECTION_SETTINGS",
-        "WHERE DISUSE_FLAG=%s",
-        ["0"]
+        "WHERE DISUSE_FLAG=0"
     )
     print(event_settings)
 
     # 生データ保存用コレクション
-    event_collection = wsMongoDB.collection("event_collection")
+    event_collection = wsMongo.collection("event_collection")
 
     fetched_time = datetime.datetime.now()
     for setting in event_settings:
@@ -79,6 +74,7 @@ def collect_event(mariaDB, mongoDB):
                 event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
                 event["_exastro_fetched_time"] = fetched_time.timestamp()
                 event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
+                event["_exastro_type"] = "event"
                 events.append(event)
 
             # RESPONSE_KEYの値がリスト形式の場合、1つずつ保存
@@ -93,6 +89,7 @@ def collect_event(mariaDB, mongoDB):
                     event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
                     event["_exastro_fetched_time"] = fetched_time.timestamp()
                     event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
+                    event["_exastro_type"] = "event"
                     events.append(event)
 
         except Exception as e:
@@ -108,6 +105,8 @@ def collect_event(mariaDB, mongoDB):
             print("failed to insert fetched events")
     except Exception as e:
         print(e)
+
+    # 取得時間を記録
 
     print(events)
     print(len(events))

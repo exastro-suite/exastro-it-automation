@@ -14,14 +14,13 @@
 
 
 from flask import g
-from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.common.util import get_timestamp, get_all_execution_limit, get_org_execution_limit
 from common_libs.ci.util import log_err
 from libs.collect_event import collect_event
 from libs.label_event import label_event
-
-# from libs import common_functions as cm
+# from libs import collect_event, label_event
 
 
 def backyard_main(organization_id, workspace_id):
@@ -47,14 +46,15 @@ def main_logic(organization_id, workspace_id):
     g.applogger.debug("organization_id=" + organization_id)
     g.applogger.debug("workspace_id=" + workspace_id)
 
-    wsMariaDB = DBConnectWs(workspace_id)
-    wsMongoDB = MONGOConnectWs()
+    wsDb = DBConnectWs(workspace_id)
+    wsMongo = MONGOConnectWs()
+    g.applogger.debug("mongodb-ws can connet")
 
-    events = collect_event(wsMariaDB, wsMongoDB)
+    events = collect_event(wsDb, wsMongo)
     if events == []:
         print("no events to label")
         return True
 
-    label_event(wsMariaDB, wsMongoDB, events)
+    label_event(wsDb, wsMongo, events)
 
     return True

@@ -19,23 +19,19 @@ import jmespath
 import json
 
 
-def label_event(mariaDB, mongoDB, events):
+def label_event(wsDb, wsMongo, events):
 
     label_result = True
     debug_msg = ""
 
-    # DB接続
-    wsMariaDB = mariaDB
-    wsMongoDB = mongoDB
-
-    labeling_settings = wsMariaDB.table_select(
+    labeling_settings = wsDb.table_select(
         "T_EVRL_LABELING_SETTINGS",
         "WHERE DISUSE_FLAG=%s",
         ["0"]
     )
 
     # ラベルデータ保存用コレクション
-    labeled_event_collection = wsMongoDB.collection("labeled_event_collection")
+    labeled_event_collection = wsMongo.collection("labeled_event_collection")
 
     compare_operator = {
         "1": operator.eq,
@@ -82,10 +78,10 @@ def label_event(mariaDB, mongoDB, events):
         return value
 
     def label(event, setting):
-        label_key_record = wsMariaDB.table_select(
+        label_key_record = wsDb.table_select(
             "V_EVRL_LABEL_KEY",
-            "WHERE LABEL_KEY_ID=%s AND DISUSE_FLAG=%s",
-            [setting["LABEL_KEY_ID"], "0"]
+            "WHERE DISUSE_FLAG=0 AND LABEL_KEY_ID=%s",
+            [setting["LABEL_KEY_ID"]]
         )
         label_key_id = label_key_record[0]["LABEL_KEY_ID"]
         label_key_string = label_key_record[0]["LABEL_KEY"]
@@ -105,7 +101,8 @@ def label_event(mariaDB, mongoDB, events):
             "_exastro_event_collection_settings_id": event["_exastro_event_collection_settings_id"],
             "_exastro_fetched_time": event["_exastro_fetched_time"],
             "_exastro_end_time": event["_exastro_end_time"],
-            "_exastro_evaluated": "0"
+            "_exastro_evaluated": "0",
+            "_exastro_type": "event"
         }
         labeled_event["labels"] = exastro_labels
         del labeled_event["event"]["_exastro_event_collection_settings_id"]

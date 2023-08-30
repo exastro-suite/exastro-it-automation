@@ -1,0 +1,9 @@
+[
+    ["workspace.sql", "workspace_master.sql"],
+    ["menu_create.sql", "menu_create_master.sql"],
+    ["ansible.sql", "ansible_master.sql"],
+    ["compare.sql", ""],
+    ["", "terraform_cloud_ep_master.sql"],
+    ["", "terraform_cli_master.sql"],
+    ["hostgroup.sql", ""]
+]

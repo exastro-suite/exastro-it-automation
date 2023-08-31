@@ -153,7 +153,7 @@ def backyard_main(organization_id, workspace_id):
 
         # 設定なしの場合
         if num_of_rows == 0:
-            raise Exception("No records in if_info.")
+            return 0
 
         # 重複登録の場合
         elif num_of_rows > 1:

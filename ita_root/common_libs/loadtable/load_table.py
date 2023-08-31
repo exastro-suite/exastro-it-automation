@@ -1925,10 +1925,15 @@ class loadTable():
                             file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
                             rest_file.setdefault(rest_key, file_data)
                         elif self.get_col_class_name(rest_key) == 'FileUploadEncryptColumn':
-                            if mode in ['input', 'inner', 'export']:
+                            if mode in ['input', 'inner']:
                                 objcolumn = self.get_columnclass(rest_key)
                                 # ファイル取得＋64変換
                                 file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
+                                rest_file.setdefault(rest_key, file_data)
+                            elif mode in ['export']:
+                                objcolumn = self.get_columnclass(rest_key)
+                                # ファイル取得＋複合化＋64変換
+                                file_data = objcolumn.get_decrypt_file_data(col_val, target_uuid, target_uuid_jnl)
                                 rest_file.setdefault(rest_key, file_data)
 
         return rest_parameter, rest_file

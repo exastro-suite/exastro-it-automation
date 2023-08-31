@@ -3756,7 +3756,9 @@ height: 28px;
 border-color: #0070FF;
 background-color: #E5F1FF;
 }
-
+.select2-results__option.select2-results__message {
+  opacity: .3;
+}
 
 /*
 ##################################################

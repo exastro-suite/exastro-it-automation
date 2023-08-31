@@ -1805,18 +1805,16 @@ setTableEvents() {
         tb.$.tbody.on('click', '.tableEditInputSelectValue', function(){
             const $value = $( this ),
                   $select = $value.next('.tableEditInputSelect'),
-                  width = $value.outerWidth();
+                  restName = $select.attr('data-key');
 
             if ( $value.is('.tableEditInputSelectValueDisabled') ) return false;
 
-            $value.remove();
-
-            $select.select2({
-                dropdownAutoWidth: false,
-                width: width
-            }).select2('open');
-
-            $select.change();
+            const list = Object.keys( tb.data.editSelect[ restName ] ).map(function(key){
+                return tb.data.editSelect[ restName ][ key ];
+            });
+            tb.setSelect2( null, $select, list, true, null, $value ).then(function(){
+                $select.change();
+            });      
         });
 
         // select2が開いているときはスクロールさせない
@@ -2437,54 +2435,119 @@ editModeMenuCheck() {
 filterSelectOpen( $button ) {
     const tb = this;
 
-    const $select = $button.parent('.filterSelectArea'),
-        width = $select.width() + 'px',
+    const $selectArea = $button.parent('.filterSelectArea'),
         name = $button.attr('data-type') + '_RF',
         rest = $button.attr('data-rest');
+
+    const $selectBox = $('<select/>' , {
+        'class': 'filterSelect filterInput',
+        'name': name,
+        'data-type': 'select',
+        'data-rest': rest,
+        'multiple': 'multiple'
+    });
 
     $button.addClass('buttonWaiting').prop('disabled', true );
 
     fn.fetch(`${tb.rest.filterPulldown}${rest}/`).then(function( selectList ){
+        tb.setSelect2( $selectArea, $selectBox, selectList, true );
+    }).catch( function( e ) {
+        window.console.error( e.message );
+        fn.gotoErrPage( e.message );
+    });
+}
+/*
+##################################################
+   select2
+##################################################
+*/
+setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $removeObj ) {
+    return new Promise(function( resolve ){
         // listをソートする
-        selectList.sort(function( a, b ){
+        optionlist.sort(function( a, b ){
             a = fn.cv( a, '');
             b = fn.cv( b, '');
             return a.localeCompare( b );
         });
 
-        // Select box
-        const $selectBox = $(`<select class="filterSelect filterInput" name="${name}" data-type="select" data-rest="${rest}" multiple="multiple"></select>`);
+        // select2データ形式
+        const selectedData = [];
+        optionlist = optionlist.map(function( item ){
+            const data = {};
 
-        // Option
-        const option = [];
-        for ( const item of selectList ) {
-            const $option = $(`<option></option>`),
-                value = fn.cv( item, '', true );
-            if ( value !== '') {
-                $option.val( value ).text( value );
+            if ( item === null ) {
+                data.id = '{blank}';
+                data.text = `{${getMessage.FTE00177}}`;
             } else {
-                $option.val('').text('{空白}');
+                data.id = data.text = item;
             }
-            $selectBox.append( $option );
-        }
 
-        $select.html( $selectBox );
+            if ( selected && selected.indexOf( item ) !== -1 ) {
+                data.selected = true;
+                selectedData.push( data );
+            }
 
-        // select2
-        const $first = $select.find('option').eq(0);
-        if ( $first.val() === '') {
-            $first.val('_blank_');
-            setTimeout(function(){ $first.val(''); },1);
-        }
-        $select.find('select').select2({
-            placeholder: "Pulldown select",
-            dropdownAutoWidth: false,
-            width: width,
-            closeOnSelect: false
-        }).select2('open');
-    }).catch( function( e ) {
-        window.console.error( e.message );
-        fn.gotoErrPage( e.message );
+            return data;
+        })
+
+        $.fn.select2.amd.require([
+            'select2/data/array',
+            'select2/utils'
+        ], function ( ArrayData, Utils ) {
+            function CustomData ( $element, options ) {
+                CustomData.__super__.constructor.call( this, $element, options );
+            }
+        
+            Utils.Extend( CustomData, ArrayData );
+
+            CustomData.prototype.query = function ( params, callback ) {
+                let options;
+                if ( params.term && params.term !== '') {
+                    options = optionlist.filter(function( item ){
+                        return item.text.indexOf( params.term ) !== -1;
+                    });
+                } else {
+                    options = optionlist;
+                }
+
+                // ページネーション
+                if ( !('page' in params) ) params.page = 1;
+                const pageSize = 50;
+                const results = {
+                    results: options.slice(( params.page - 1 ) * pageSize, params.page * pageSize ),
+                    pagination: {
+                        more: ( params.page * pageSize < options.length )
+                    }
+                };
+                
+                callback( results );
+            };
+            
+            const select2Option = {
+                dropdownAutoWidth: false,
+                ajax: {},
+                dataAdapter: CustomData
+            };
+
+            // Filter or Data
+            if ( $selectArea ) {
+                $selectArea.html( $selectBox );
+                select2Option.data = selectedData;
+                select2Option.placeholder = 'Pulldown select';
+                select2Option.width = $selectArea.width();
+            } else if ( $removeObj ) {
+                select2Option.width = $removeObj.outerWidth();
+                $removeObj.remove();
+            }
+            if ( optionlist.length === 0 ) select2Option.width = 120;
+            $selectBox.select2( select2Option );
+            
+            if ( openFlag ) {
+                $selectBox.select2('open');
+            }
+
+            resolve();
+        });
     });
 }
 /*
@@ -2515,28 +2578,28 @@ filterSelectParamsOpen( filterParams ) {
         if ( length ) {
             // 各セレクトリストの取得
             fn.fetch( filterRestUrls ).then(function( result ){
+                let count = 0;
                 for ( let i = 0; i < length; i++ ) {
-                    const $button = tb.$.thead.find(`.filterPulldownOpenButton[data-rest="${filterKeys[i]}"]`),
-                          name = $button.attr('data-type') + '_RF',
-                          $selectArea = $button.parent('.filterSelectArea');
-
-                    $selectArea.html( tb.filterSelectBoxHtml( result[i], name, filterKeys[i] ) );
-                    const $select = $selectArea.find('select');
-
-                    $select.val( filterList[ filterKeys[i] ]);
-
-                    // 対象が存在しない場合は文字列フィルターに入れる
-                    if ( $select.val().length === 0 ) {
-                        const $input = tb.$.thead.find(`.filterInputText[data-rest="${filterKeys[i]}"]`);
-                        $input.val( filterList[ filterKeys[i] ][0] );
-                    }
-
-                    $select.select2({
-                        placeholder: "Pulldown select",
-                        dropdownAutoWidth: false,
+                    const
+                    $button = tb.$.thead.find(`.filterPulldownOpenButton[data-rest="${filterKeys[i]}"]`),
+                    name = $button.attr('data-type') + '_RF',
+                    $selectArea = $button.parent('.filterSelectArea');
+                    
+                    const $selectBox = $('<select/>' , {
+                        'class': 'filterSelect filterInput',
+                        'name': name,
+                        'data-type': 'select',
+                        'data-rest': filterKeys[i],
+                        'multiple': 'multiple'
+                    });
+                    
+                    tb.setSelect2( $selectArea, $selectBox, result[i], false, filterList[ filterKeys[i] ] ).then(function(){
+                        // 全てのselect2の適用が終わったら
+                        if ( ++count === length ) {
+                            resolve();
+                        }
                     });
                 }
-                resolve();
             }).catch( function( e ) {
                 fn.gotoErrPage( e.message );
             });
@@ -2646,13 +2709,25 @@ getFilterParameter() {
                 case 'text':
                     filterParams[ rest ].NORMAL = value;
                 break;
-                case 'select':
-                    filterParams[ rest ].LIST = value;
-                    // 空白がある場合nullに変換
-                    for ( let i = 0; i < filterParams[ rest ].LIST.length; i++ ) {
-                        if ( filterParams[ rest ].LIST[i] === '' ) filterParams[ rest ].LIST[i] = null;
-                    }
-                break;
+                case 'select': {
+                    const selected = [];
+                    // 空白の判定をするためvalueを別で取得する
+                    $input.find(':selected').each(function(){
+                        const
+                        $option = $( this ),
+                        optionValue = $option.val(),
+                        optionText = $option.text();
+
+                        // {空白}の場合はnullを入れる
+                        if ( optionValue === '{blank}' && optionText === `{${getMessage.FTE00177}}` ) {
+                            selected.push( null );
+                        } else {
+                            selected.push( optionValue );
+                        }
+
+                    });
+                    filterParams[ rest ].LIST = selected;
+                } break;
                 case 'fromNumber':
                     if ( !filterParams[ rest ].RANGE ) filterParams[ rest ].RANGE = {};
                     filterParams[ rest ].RANGE.START = String( value );
@@ -2697,31 +2772,6 @@ clearFilter() {
     tb.option.initSetFilter = undefined;
     tb.flag.initFilter = ( tb.info.menu_info.initial_filter_flg === '1');
     tb.setTable( tb.mode );
-}
-/*
-##################################################
-   Filter select box HTML
-##################################################
-*/
-filterSelectBoxHtml( list, name, rest ) {
-    const select = [];
-
-    // listをソートする
-    list.sort(function( a, b ){
-        a = fn.cv( a, '');
-        b = fn.cv( b, '');
-        return a.localeCompare( b );
-    });
-
-    for ( const item of list ) {
-        const value = fn.cv( item, '', true );
-        if ( value !== '') {
-            select.push(`<option value="${value}">${value}</option>`)
-        } else {
-            select.push(`<option value="">{空白}</option>`)
-        }
-    }
-    return `<select class="filterSelect filterInput" name="${name}" data-type="select" data-rest="${rest}" multiple="multiple">${select.join('')}</select>`;
 }
 /*
 ##################################################
@@ -3661,11 +3711,12 @@ editCellHtml( item, columnKey ) {
 
         // プルダウン
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
-        case 'EnvironmentIDColumn': case 'JsonIDColumn':
+        case 'EnvironmentIDColumn': case 'JsonIDColumn': {
             return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
             + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${value}</span></div>`
-            + fn.html.select( fn.cv( tb.data.editSelect[columnName], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
+                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
             + `</div>`;
+        }
 
         // パスワード
         case 'PasswordColumn': case 'PasswordIDColumn': case 'JsonPasswordIDColumn': case 'MaskColumn': {
@@ -4020,6 +4071,30 @@ changeEdtiMode( changeMode ) {
         // 選択項目
         tb.data.editSelect = result;
 
+        // 配列に変換
+        tb.data.editSelectArray = {};
+        tb.data.editSelectLength = {};
+        for ( const restName in result ) {
+            tb.data.editSelectArray[ restName ] = [];
+            for ( const id in result[ restName ] ) {
+                tb.data.editSelectArray[ restName ].push( result[ restName ][ id ] );
+            }
+            // ソート
+            tb.data.editSelectArray[ restName ].sort(function( a, b ){
+                a = fn.cv( a, '');
+                b = fn.cv( b, '');
+                return a.localeCompare( b );
+            });
+            
+            // バイト数の多い順に並べる
+            tb.data.editSelectLength[ restName ] = $.extend( true, [], tb.data.editSelectArray[ restName ] );
+            tb.data.editSelectLength[ restName ].sort(function( a, b ) {
+                return encodeURIComponent(b).replace(/%../g, 'x').length - encodeURIComponent(a).replace(/%../g, 'x').length;
+            });
+            tb.data.editSelectLength[ restName ] = tb.data.editSelectLength[ restName ].slice( 0, 5 );
+        }
+        
+
         // 追加用空データ
         tb.edit.blank = {
             file: {},
@@ -4037,9 +4112,9 @@ changeEdtiMode( changeMode ) {
             if ( selectTarget.indexOf( columnInfo.column_type ) !== -1
               && columnInfo.required_item === '1'
               && columnInfo.initial_value === null ) {
-                const select = tb.data.editSelect[ columnInfo.column_name_rest ];
+                const select = tb.data.editSelectArray[ columnInfo.column_name_rest ];
                 if ( select !== undefined ) {
-                    tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[ Object.keys( select )[0] ];
+                    tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[0];
                 }
             } else {
                 if ( info[ key ].column_name_rest !== 'discard') {

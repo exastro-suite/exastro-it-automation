@@ -231,7 +231,7 @@ setSideMenuEvents() {
             ui.$.container.append( $html );
 
             const $window = $( window ), $iframe = ui.$.content.find('.customMenuIframe');
-            const close = function( e ) { console.log('!')
+            const close = function( e ) {
                 if ( !$( e.target ).closest('.menuGroupSub, .subGroupMenuOpen').length ) {
                     ui.$.menu.find('.subGroupMenuOpen').removeClass('subGroupMenuOpen');
                     $html.animate({ left: '-100%'}, 300, function(){

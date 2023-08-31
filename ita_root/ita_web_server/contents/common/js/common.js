@@ -1717,7 +1717,7 @@ html: {
             + `<label for="${id}" class="radioTextLabel"><span class="radioTextMark"></span><span class="radioTextText">${( text )? text: value}</span></label>`
         + `</div>`;
     },
-    'select': function( list, className, value, name, attrs = {}, option = {}) {
+    select: function( list, className, value, name, attrs = {}, option = {}) {
         const selectOption = [],
               attr = inputCommon( null, name, attrs );
         if ( option.select2 !== true ) {
@@ -1733,18 +1733,26 @@ html: {
         }
 
         // listを名称順にソートする
-        const sortList = Object.keys( list ).map(function(key){
-            return list[key];
-        });
+        let sortList;
+        if ( cmn.typeof(list) === 'object') {
+            sortList = Object.keys( list ).map(function(key){
+                return list[key];
+            });
+        } else {
+            sortList = $.extend( true, [], list );
+            // リストにvalueが含まれてなければ追加する
+            if ( sortList.indexOf( value ) === -1 ) {
+                sortList.push( value );
+            }
+        }
         sortList.sort(function( a, b ){
             return a.localeCompare( b );
         });
 
-
         for ( const item of sortList ) {
             const val = cmn.escape( item ),
                   optAttr = [`value="${val}"`];
-            if ( value === val ) optAttr.push('selected', 'selected');
+            if ( value === val ) optAttr.push('selected="selected"');
             selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
         }
 

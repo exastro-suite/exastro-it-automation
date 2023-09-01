@@ -1,0 +1,13 @@
+RULE_ID,RULE_LABEL_NAME,RULE_NAME,RULE_PRIORITY,RULE_CONDITION_JSON,LABELING_INFORMATION,ACTION_ID,REEVALUATE_TTL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER
+"r_01","r_01_label_name","r_01_name" ,1,"r_01","r_01","",500,"","0","",""
+"r_02","r_02_label_name","r_02_name" ,2,"r_02","r_02","",500,"","0","",""
+"r_03","r_03_label_name","r_03_name" ,3,"r_03","r_03","",500,"","0","",""
+"r_04","r_04_label_name","r_04_name" ,4,"r_04","r_04","",500,"","0","",""
+"r_05","r_05_label_name","r_05_name" ,5,"r_05","r_05","",500,"","0","",""
+"r_06","r_06_label_name","r_06_name" ,6,"r_06","r_06","",500,"","0","",""
+"r_07","r_07_label_name","r_07_name" ,7,"r_07","r_07","",500,"","0","",""
+"r_08","r_08_label_name","r_08_name" ,8,"r_08","r_08","",500,"","0","",""
+"r_51","r_51_label_name","r_51_name" ,8,"r_51","r_51","",500,"","0","",""
+"r_52","r_52_label_name","r_52_name" ,8,"r_52","r_52","",500,"","0","",""
+"r_53","r_53_label_name","r_53_name" ,8,"r_53","r_53","",500,"","0","",""
+"r_54","r_54_label_name","r_54_name" ,8,"r_54","r_54","",500,"","0","",""

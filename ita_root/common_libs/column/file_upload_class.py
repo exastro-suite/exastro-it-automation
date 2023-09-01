@@ -253,6 +253,41 @@ class FileUploadColumn(Column):
 
         return result
 
+    def get_decrypt_file_data(self, file_name, target_uuid, target_uuid_jnl=''):
+        """
+            複合化されたファイル(base64)を取得
+            ARGS:
+                file_name:ファイル名
+                target_uuid:uuid
+                target_uuid_jnl:uuid
+            RETRUN:
+                base64 string
+        """
+        result = None
+
+        if file_name is not None:
+            if len(file_name) != 0:
+                workspace_id = g.get("WORKSPACE_ID")
+                menu_id = self.get_menu()
+                rest_name = self.get_rest_key_name()
+
+                ret = self.get_file_upload_place()
+                if not ret:
+                    path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, target_uuid_jnl)   # noqa:F405
+                else:
+                    path = get_upload_file_path_specify(workspace_id, ret, target_uuid, file_name, target_uuid_jnl)   # noqa:F405
+                dir_path = path["file_path"]
+                old_file_path = path["old_file_path"]
+                if target_uuid_jnl:
+                    # target_uuid_jnl指定時
+                    # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
+                    result = file_decode(old_file_path)  # noqa: F405
+                else:
+                    # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
+                    result = file_decode(dir_path)  # noqa: F405
+
+        return result
+
     def get_file_data_path(self, file_name, target_uuid, target_uuid_jnl='', file_chk=True):
         """
             ファイルのパスを取得

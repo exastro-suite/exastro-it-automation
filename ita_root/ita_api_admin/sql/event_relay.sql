@@ -21,15 +21,14 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS
     EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式
     REQUEST_METHOD                  VARCHAR(40),                                -- リクエストメソッド
-    API_URL                         VARCHAR(1024),                              -- APIのURL
+    URL                             VARCHAR(1024),                              -- URL
+    PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
     PROXY                           VARCHAR(255),                               -- プロキシ
     AUTH_TOKEN                      VARCHAR(1024),                              -- 認証トークン
     USERNAME                        VARCHAR(255),                               -- ユーザー名
     PASSWORD                        TEXT,                                       -- パスワード
     HOSTNAME                        VARCHAR(255),                               -- ホスト名
-    PORT                            INT,                                        -- ポート
-    COMMUNICATION_METHOD            VARCHAR(255),                               -- コミュニケーション方法
     ACCESS_KEY_ID                   VARCHAR(1024),                              -- アクセスキーID
     SECRET_ACCESS_KEY               TEXT,                                       -- 秘密アクセスキー
     PARAMETER                       TEXT,                                       -- パラメータ
@@ -52,15 +51,14 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS_JNL
     EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式
     REQUEST_METHOD                  VARCHAR(40),                                -- リクエストメソッド
-    API_URL                         VARCHAR(1024),                              -- APIのURL
+    URL                             VARCHAR(1024),                              -- URL
+    PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
     PROXY                           VARCHAR(255),                               -- プロキシ
     AUTH_TOKEN                      VARCHAR(1024),                              -- 認証トークン
     USERNAME                        VARCHAR(255),                               -- ユーザー名
     PASSWORD                        TEXT,                                       -- パスワード
     HOSTNAME                        VARCHAR(255),                               -- ホスト名
-    PORT                            INT,                                        -- ポート
-    COMMUNICATION_METHOD            VARCHAR(255),                               -- コミュニケーション方法
     ACCESS_KEY_ID                   VARCHAR(1024),                              -- アクセスキーID
     SECRET_ACCESS_KEY               TEXT,                                       -- 秘密アクセスキー
     PARAMETER                       TEXT,                                       -- パラメータ

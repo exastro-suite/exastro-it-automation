@@ -39,6 +39,14 @@
 		"python.formatting.autopep8Args": [
 			"--aggressive", "--aggressive",
 		],
+		// Rest Client setting
+		"rest-client.environmentVariables": {
+			"$shared": {
+				"sys-mng-port": "38001",
+				"org-mng-port": "38000"
+			}
+		},
+		"rest-client.decodeEscapedUnicodeCharacters": true
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
@@ -64,6 +72,7 @@
 		// "mtxr.sqltools-driver-mysql",
 		"mitchdenny.ecdc",
 		"snyk-security.snyk-vulnerability-scanner",
+		"humao.rest-client",
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [

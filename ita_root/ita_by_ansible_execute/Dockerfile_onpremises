@@ -20,12 +20,13 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 ENV PYTHONPATH=/exastro/
-ENV USER_ID=110101
+ENV USER_ID=20101
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
-ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=1
-ENV SERVICE_NAME=ita-by-execinstance-dataautoclean
+ENV CONTAINER_BASE=docker
+ENV DEFAULT_LOCAL_TMP=/tmp
+ENV SERVICE_NAME=ita-by-ansible-execute
 
 RUN dnf install -y \
     gcc \
@@ -36,6 +37,13 @@ RUN dnf install -y \
     wget \
     zip \
     unzip \
+    openssh-clients \
+    git \
+&&  curl -kL https://storage.googleapis.com/kubernetes-release/release/v1.24.3/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+&&  chmod +x /usr/local/bin/kubectl \
+&&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
+&&  curl -kL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
+&&  chmod +x /usr/local/bin/docker-compose \
 &&  pip3.9 install --upgrade pip \
 &&  pip3.9 install --upgrade setuptools \
 &&  pip3.9 install --upgrade Flask \
@@ -45,10 +53,16 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade pymysql \
 &&  pip3.9 install --upgrade python-dotenv \
 &&  pip3.9 install --upgrade chardet \
+&&  pip3.9 install --upgrade dictknife \
+&&  pip3.9 install --upgrade ansible \
+&&  pip3.9 install --upgrade kubernetes \
 &&  pip3.9 install --upgrade pycryptodome \
-&&  pip3.9 install --upgrade python-hcl2 \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+COPY ./ita_root/ita_by_ansible_execute/config/centos8.repo /etc/yum.repos.d/centos8.repo
+
+RUN dnf install -y --enablerepo=baseos expect
 
 #
 # Build for development
@@ -61,7 +75,6 @@ ARG APP_PATH
 
 RUN dnf install -y \
     sudo \
-    git \
     vim \
     diffutils \
     bind-utils \
@@ -69,7 +82,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade debugpy \
 &&  pip3.9 install --upgrade flake8 \
 &&  pip3.9 install --upgrade autopep8 \
-&&  usermod -G wheel $USERNAME \
+&&  usermod -aG wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 USER $USERNAME
@@ -80,7 +93,7 @@ RUN mkdir ~/.config \
 
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_execinstance_dataautoclean/ $APP_PATH/
+COPY ./ita_root/ita_by_ansible_execute/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
@@ -96,13 +109,13 @@ ARG APP_PATH
 USER $USERNAME
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_execinstance_dataautoclean/ $APP_PATH/
+COPY ./ita_root/ita_by_ansible_execute/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
 USER root
-RUN chmod a+x $APP_PATH/backyard/backyard_init.py
+RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
 USER $USERNAME
 
-ENTRYPOINT ["python3", "./backyard/backyard_init.py", "1"]
+ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]

@@ -1,4 +1,4 @@
-version: '3.1'
+version: '3.7'
 services:
   ita-api-organization:
     build:
@@ -20,7 +20,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-api-organization/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-organization/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -55,7 +54,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-api-admin/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-admin/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -109,10 +107,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
-      # kube or docker
-      - ../ita_root/ita_by_ansible_execute/config/kubernetes/admin.conf:/home/app_user/.kube/config:cached
-      - /var/run/docker.sock:/var/run/docker.sock:cached
       - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -145,7 +139,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-ansible-legacy-role-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-legacy-role-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -178,7 +171,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-ansible-legacy-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-legacy-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -211,7 +203,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-ansible-pioneer-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-pioneer-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -244,7 +235,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-ansible-towermaster-sync/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-ansible-towermaster-sync/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -257,6 +247,7 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
   ita-by-collector:
     build:
       target: develop_build
@@ -276,7 +267,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-collector/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-collector/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -289,6 +279,7 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
   ita-by-conductor-synchronize:
     build:
       target: develop_build
@@ -308,7 +299,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-conductor-synchronize/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-conductor-synchronize/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -321,6 +311,7 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
   ita-by-conductor-regularly:
     build:
       target: develop_build
@@ -340,7 +331,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-conductor-regularly/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-conductor-regularly/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -353,6 +343,7 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
   ita-by-menu-create:
     build:
       target: develop_build
@@ -372,7 +363,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-menu-create/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-menu-create/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -405,7 +395,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-menu-export-import/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-menu-export-import/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -438,7 +427,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-excel-export-import/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-excel-export-import/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -451,7 +439,6 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-
 
   ita-by-terraform-cloud-ep-execute:
     build:
@@ -472,7 +459,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -505,7 +491,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cloud-ep-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -538,7 +523,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-terraform-cli-execute/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cli-execute/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -571,7 +555,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-terraform-cli-vars-listup/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-terraform-cli-vars-listup/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -584,7 +567,6 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-
 
   ita-by-hostgroup-split:
     build:
@@ -605,7 +587,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-hostgroup-split/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-hostgroup-split/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -638,7 +619,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-cicd-for-iac/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-cicd-for-iac/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -671,7 +651,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-execinstance-dataautoclean/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-execinstance-dataautoclean/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -704,7 +683,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-file-autoclean/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-file-autoclean/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -735,7 +713,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-migration/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-migration/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:

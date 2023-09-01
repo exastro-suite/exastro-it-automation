@@ -43,3 +43,18 @@ COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/ansible.cfg /etc
 USER $USERNAME
 
 ENTRYPOINT ["sh"]
+
+#
+# Build for ServiceNow
+#
+
+FROM common_build
+ARG USERNAME
+ARG GROUPNAME
+
+RUN ansible-galaxy collection install servicenow.servicenow \
+&&  pip3.9 install --upgrade pysnow
+
+USER $USERNAME
+
+ENTRYPOINT ["sh"]

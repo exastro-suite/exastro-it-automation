@@ -112,12 +112,12 @@ class DockerMode(AnsibleAgent):
                 host_mount_path_driver=host_mount_path_driver,
                 container_mount_path_driver=container_mount_path_driver,
                 host_mount_path_conductor=host_mount_path_conductor,
-                container_mount_path_conductor=container_mount_path_conductor
+                container_mount_path_conductor=container_mount_path_conductor,
+                network_id=os.getenv('NETWORK_ID', "")
             ))
 
         # create command string
-        docker_compose_command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "up", "-d"]
-        command = ["sudo"] + docker_compose_command
+        command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "up", "-d"]
 
         # docker-compose -f file -p project up
         cp = subprocess.run(command, capture_output=True, text=True)
@@ -134,8 +134,7 @@ class DockerMode(AnsibleAgent):
         """
         # docker-compose -p project ps
         project_name = self.get_unique_name(execution_no)
-        docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json"]
-        command = ["sudo"] + docker_compose_command
+        command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json"]
 
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
@@ -155,8 +154,7 @@ class DockerMode(AnsibleAgent):
         """
         # docker-compose -p project kill
         project_name = self.get_unique_name(execution_no)
-        docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "kill"]
-        command = ["sudo"] + docker_compose_command
+        command = ["/usr/local/bin/docker-compose", "-p", project_name, "kill"]
 
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
@@ -164,8 +162,7 @@ class DockerMode(AnsibleAgent):
             return False, {"function": "container_kill->kill", "return_code": cp.returncode, "stderr": cp.stderr}
 
         # docker-compose -p project rm -f
-        docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
-        command = ["sudo"] + docker_compose_command
+        command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
 
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
@@ -180,8 +177,7 @@ class DockerMode(AnsibleAgent):
         """
         # docker-compose -p project ps
         project_name = self.get_unique_name(execution_no)
-        docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json"]
-        command = ["sudo"] + docker_compose_command
+        command = ["/usr/local/bin/docker-compose", "-p", project_name, "ps", "--format", "json"]
 
         cp = subprocess.run(command, capture_output=True, text=True)
         if cp.returncode != 0:
@@ -191,8 +187,7 @@ class DockerMode(AnsibleAgent):
         result_obj = json.loads(cp.stdout)
         if len(result_obj) > 0 and result_obj[0]['State'] in ['exited']:
             # docker-compose -p project rm -f
-            docker_compose_command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
-            command = ["sudo"] + docker_compose_command
+            command = ["/usr/local/bin/docker-compose", "-p", project_name, "rm", "-f"]
 
             cp = subprocess.run(command, capture_output=True, text=True)
             if cp.returncode != 0:
@@ -208,7 +203,6 @@ class DockerMode(AnsibleAgent):
     #     g.applogger.debug("unused_allclean")
 
     #     command = ["/usr/local/bin/docker", "system", "prune", "--force"]
-    #     command = ["sudo"] + command
 
     #     cp = subprocess.run(command, capture_output=True, text=True)
     #     if cp.returncode != 0:

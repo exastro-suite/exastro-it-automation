@@ -24,6 +24,11 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+
   ita-api-admin:
     user: 1000:1000
     build:
@@ -52,6 +57,11 @@ services:
       - GITLAB_ROOT_TOKEN=${GITLAB_ROOT_TOKEN}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+
   ita-web-server:
     user: 1000:1000
     build:
@@ -67,15 +77,15 @@ services:
       - LISTEN_PORT=80
     ports:
       - "0.0.0.0:80:80"
+    networks:
+      - exastro
+
   ita-mariadb:
     image: mariadb:10.4.8
     healthcheck:
-      test: mysqladmin ping --silent && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;'
+      test: (mysqladmin ping --silent -u root -p$${MYSQL_ROOT_PASSWORD} && mysql -u root -p$${MYSQL_ROOT_PASSWORD} -e 'select 1;') || exit 1
       interval: 3s
       retries: 200
-    volumes:
-      - ../.volumes/ita-mariadb/data:/var/lib/mysql
-      - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     environment:
       - TZ=Asia/Tokyo
       - MYSQL_ROOT_PASSWORD=password
@@ -86,11 +96,16 @@ services:
       # - MARIADB_PASSWORD=${MARIADB_PASSWORD}
     ports:
       - "0.0.0.0:3306:3306"
+    volumes:
+      - ../.volumes/ita-mariadb/data:/var/lib/mysql
+      - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
+    networks:
+      - exastro
 
   ita-by-ansible-execute:
-    user: 1000:1000
+    user: 1000:${HOST_DOCKER_GID:-1000}
     build:
-      dockerfile: ./ita_root/ita_by_ansible_execute/Dockerfile
+      dockerfile: ./ita_root/ita_by_ansible_execute/Dockerfile_onpremises
       context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
@@ -117,7 +132,15 @@ services:
       - ANSIBLE_AGENT_IMAGE_TAG=${ANSIBLE_AGENT_IMAGE_TAG}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-    # init: true
+      - NETWORK_ID=${NETWORK_ID}
+    volumes:
+      - ${HOST_DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock:cached
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-execute
@@ -144,6 +167,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-role-vars-listup
@@ -170,6 +200,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-legacy-vars-listup
@@ -196,6 +233,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-pioneer-vars-listup
@@ -222,6 +266,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-ansible-towermaster-sync
@@ -248,6 +299,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-collector
@@ -274,6 +332,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-synchronize
@@ -300,6 +365,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-conductor-regularly
@@ -326,6 +398,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-create
@@ -352,6 +431,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-menu-export-import
@@ -378,6 +464,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-excel-export-import
@@ -404,6 +497,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-execute
@@ -430,6 +530,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cloud-ep-vars-listup
@@ -456,6 +563,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-execute
@@ -482,6 +596,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-terraform-cli-vars-listup
@@ -508,6 +629,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-hostgroup-split
@@ -534,6 +662,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-cicd-for-iac
@@ -560,35 +695,49 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
     profiles:
       - exastro-it-automation-backyard
       - ita-by-execinstance-dataautoclean
 
   ita-by-file-autoclean:
-      user: 1000:1000
-      build:
-        dockerfile: ./ita_root/ita_by_file_autoclean/Dockerfile
-        context: ../.
-        args:
-          - HTTP_PROXY=${HTTP_PROXY}
-          - http_proxy=${HTTP_PROXY}
-          - HTTPS_PROXY=${HTTPS_PROXY}
-          - https_proxy=${HTTPS_PROXY}
-      environment:
-        - TZ=Asia/Tokyo
-        - ENCRYPT_KEY=${ENCRYPT_KEY}
-        - DB_HOST=${DB_HOST}
-        - DB_PORT=${DB_PORT}
-        - DB_DATABASE=${DB_DATABASE}
-        - DB_USER=${DB_USER}
-        - DB_PASSWORD=${DB_PASSWORD}
-        - DB_ADMIN_USER=${DB_ADMIN_USER}
-        - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-        - PLATFORM_API_HOST=platform-api
-        - PLATFORM_API_PORT=8000
-      profiles:
-        - exastro-it-automation-backyard
-        - ita-by-file-autoclean
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_by_file_autoclean/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-file-autoclean
 
   ita-migration:
     user: 1000:1000
@@ -618,8 +767,24 @@ services:
       - ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT=${ORG_ANSIBLE_EXECUTION_LIMIT_DEFAULT}
       - ORG_ANSIBLE_EXECUTION_LIMIT_MAX=${ORG_ANSIBLE_EXECUTION_LIMIT_MAX}
       - ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION=${ORG_ANSIBLE_EXECUTION_LIMIT_DESCRIPTION}
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
     depends_on:
       ita-mariadb:
         condition: service_healthy
       platform-migration-2:
         condition: service_completed_successfully
+
+volumes:
+  vol-ita-storage:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ${PWD}/../../.volumes/storage
+
+networks:
+  exastro:
+    name: "exastro_${NETWORK_ID}"

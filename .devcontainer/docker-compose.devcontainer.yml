@@ -816,6 +816,32 @@ services:
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
+  ita-event-relay-mailserver:
+    build:
+      context: ../ita_root/ita_event_relay_mailserver/
+      dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    hostname: ita-event-relay-mailserver
+    environment:
+      - TZ=Asia/Tokyo
+    volumes:
+      - "../ita_root/ita_event_relay_mailserver/conf/dovecot/dovecot.conf:/etc/dovecot/dovecot.conf"
+      - "../ita_root/ita_event_relay_mailserver/conf/postfix/main.cf:/etc/postfix/main.cf"
+    tty: true
+    privileged: true
+    command: /sbin/init
+    ports:
+      - "0.0.0.0:25:25" # SMTP
+      - "0.0.0.0:143:143" # IMAP
+      - "0.0.0.0:587:587" # StartTLS
+      - "0.0.0.0:993:993" # IMAPS
+    profiles:
+      - ita-by-event-relay
+
   # mongo-express:
   #   image: mongo-express
   #   depends_on:

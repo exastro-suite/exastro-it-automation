@@ -23,7 +23,6 @@ from common_libs.event_relay import *
 # イベント収集
 ######################################################
 def collect_event(wsDb, wsMongo):
-    events = []
     debug_msg = ""
 
     auth_method = {
@@ -50,64 +49,64 @@ def collect_event(wsDb, wsMongo):
     # 生データ保存用コレクション
     event_collection = wsMongo.collection("event_collection")
 
-    fetched_time = datetime.datetime.now()
     for setting in event_settings:
-        try:
-            # APIの呼び出し
-            api_client = get_auth_client(setting)
-            call_result, json_data = api_client.call_api(json.loads(setting["PARAMETER"]))
-            if call_result is False:
-                debug_msg = f"failed to fetch api. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
+        events = []
+        fetched_time = datetime.datetime.now()  # API取得時間
+
+        # APIの呼び出し
+        api_client = get_auth_client(setting)
+        call_result, json_data = api_client.call_api(json.loads(setting["PARAMETER"]))
+        if call_result is False:
+            debug_msg = f"failed to fetch api. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
+            print(debug_msg)
+            raise Exception
+
+        # 設定で指定したキーの値を取得
+        json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
+        if json_data is None:
+            debug_msg = f"RESPONSE_KEY does not exist. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
+            print(debug_msg)
+            raise Exception
+
+        # RESPONSE_KEYの値がリスト形式ではない場合、そのまま保存する
+        if setting["RESPONSE_LIST_FLAG"] == 0:
+            event = json_data
+            event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
+            event["_exastro_fetched_time"] = fetched_time.timestamp()
+            event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
+            event["_exastro_type"] = "event"
+            events.append(event)
+
+        # RESPONSE_KEYの値がリスト形式の場合、1つずつ保存
+        else:
+            # 値がリスト形式かチェック
+            if isinstance(json_data, list) is False:
+                debug_msg = f"the value of RESPONSE_KEY is not array type. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
                 print(debug_msg)
                 raise Exception
-
-            # 設定で指定したキーの値を取得
-            json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
-            if json_data is None:
-                debug_msg = f"RESPONSE_KEY does not exist. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
-                print(debug_msg)
-                raise Exception
-
-            # RESPONSE_KEYの値がリスト形式ではない場合、そのまま保存する
-            if setting["RESPONSE_LIST_FLAG"] == 0:
-                event = json_data
+            for data in json_data:
+                event = data
                 event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
                 event["_exastro_fetched_time"] = fetched_time.timestamp()
                 event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
                 event["_exastro_type"] = "event"
                 events.append(event)
 
-            # RESPONSE_KEYの値がリスト形式の場合、1つずつ保存
-            else:
-                # 値がリスト形式かチェック
-                if isinstance(json_data, list) is False:
-                    debug_msg = f"the value of RESPONSE_KEY is not array type. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
-                    print(debug_msg)
-                    raise Exception
-                for data in json_data:
-                    event = data
-                    event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
-                    event["_exastro_fetched_time"] = fetched_time.timestamp()
-                    event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
-                    event["_exastro_type"] = "event"
-                    events.append(event)
+        print(events)
+        print(len(events))
 
+        # MongoDBに保存　→　イベントをローカルsqliteに保存
+        try:
+            res = event_collection.insert_many(events)
+            if res.acknowledged is False:
+                print("failed to insert fetched events")
         except Exception as e:
-            import traceback
-            print(traceback.format_exc())
-            print(debug_msg)
             print(e)
 
-    # MongoDBに保存
-    try:
-        res = event_collection.insert_many(events)
-        if res.acknowledged is False:
-            print("failed to insert fetched events")
-    except Exception as e:
-        print(e)
+        # 取得時間（APIごと）を記録（APIに送信）
 
-    # 取得時間を記録
+        # ラベル設定APIに送信（ローカルから未送信のイベントを取り出して、まとめて送信）
 
-    print(events)
-    print(len(events))
-    return events
+        # ラベル設定APIへの送信が成功したら、ローカルに保存したイベントに、送信済みフラグを立てる
+
+    return True

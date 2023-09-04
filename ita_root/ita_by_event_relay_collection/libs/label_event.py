@@ -88,7 +88,7 @@ def label_event(wsDb, wsMongo, events):
 
         event["labels"]["_exastro_evaluated"] = 0
         event["labels"][label_key_string] = setting["LABEL_VALUE"]
-        event["exastro_labeling_settings_ids"][label_key_string] = setting["LABELING_SETTINGS_ID"]
+        event["exastro_labeling_settings"][label_key_string] = setting["LABELING_SETTINGS_ID"]
         event["exastro_label_key_input_ids"][label_key_string] = label_key_id
 
     labeled_events = []
@@ -101,8 +101,10 @@ def label_event(wsDb, wsMongo, events):
             "_exastro_event_collection_settings_id": event["_exastro_event_collection_settings_id"],
             "_exastro_fetched_time": event["_exastro_fetched_time"],
             "_exastro_end_time": event["_exastro_end_time"],
+            "_exastro_type": "event",
             "_exastro_evaluated": "0",
-            "_exastro_type": "event"
+            "_exastro_undetected": "0",
+            "_exastro_timeout": "0"
         }
         labeled_event["labels"] = exastro_labels
         del labeled_event["event"]["_exastro_event_collection_settings_id"]
@@ -111,7 +113,7 @@ def label_event(wsDb, wsMongo, events):
         labeled_events.append(labeled_event)
 
     for event in labeled_events:
-        event["exastro_labeling_settings_ids"] = {}
+        event["exastro_labeling_settings"] = {}
         event["exastro_label_key_input_ids"] = {}
 
         # ラベリング設定に該当するデータにはラベルを貼る
@@ -146,7 +148,7 @@ def label_event(wsDb, wsMongo, events):
                 print(debug_msg)
 
     # ラベルされていないものは除外
-    labeled_events = [item for item in labeled_events if item["exastro_labeling_settings_ids"] != {}]
+    labeled_events = [item for item in labeled_events if item["exastro_labeling_settings"] != {}]
     print(labeled_events)
     print(len(labeled_events))
 

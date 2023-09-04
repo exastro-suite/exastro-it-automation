@@ -155,6 +155,7 @@ class CICDMakeParamBase():
 
         return rset
 
+
 class CICDMakeParamLegacy(CICDMakeParamBase):
 
     def __init__(self, table_name, pkey, fcol_name, menu_name):
@@ -196,6 +197,7 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
         )
 
         return ret
+
 
 class CICDMakeParamPioneer(CICDMakeParamBase):
 
@@ -333,6 +335,7 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
 
     def __init__(self, table_name, pkey, fcol_name, menu_name):
 
+        self.__vars_list = ""
         super(CICDMakeParamTemplate, self).__init__(table_name, pkey, fcol_name, menu_name)
 
     def make_param(self, row, tgtFileName):
@@ -340,6 +343,8 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
         param = {}
         param['ANS_TEMPLATE_VARS_NAME'] = row['MATL_LINK_NAME']
         param['ANS_TEMPLATE_FILE'] = tgtFileName
+        param['VARS_LIST'] = row['TEMPLATE_FILE_VARS_LIST']
+        self.__vars_list = row['TEMPLATE_FILE_VARS_LIST']
 
         return param
 
@@ -349,6 +354,7 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
         data['template_id'] = kwargs['ANS_TEMPLATE_ID'] if editType != load_table.CMD_REGISTER else ''
         data['template_embedded_variable_name'] = linkname
         data['template_files'] = filename
+        data['variable_definition'] = self.__vars_list
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
         super(CICDMakeParamTemplate, self).make_rest_param(data, note=note)
@@ -410,6 +416,7 @@ class CICDMakeParamModule(CICDMakeParamBase):
         ret = super(CICDMakeParamModule, self).diff_file(filedata, None, path=filepath)
         return ret
 
+
 class CICDMakeParamPolicy(CICDMakeParamBase):
 
     def __init__(self, table_name, pkey, fcol_name, menu_name):
@@ -447,6 +454,7 @@ class CICDMakeParamPolicy(CICDMakeParamBase):
         filepath = "%s%s/%s/%s" % (getDataRelayStorageDir(), TFCloudEPConst.DIR_POLICY, mid, name)
         ret = super(CICDMakeParamPolicy, self).diff_file(filedata, None, path=filepath)
         return ret
+
 
 class CICDMakeParamModuleCLI(CICDMakeParamBase):
 
@@ -1336,7 +1344,7 @@ class CICD_GrandChildWorkflow():
             return FREE_LOG
 
         else:
-            row =tgtMatlLinkRow[0]
+            row = tgtMatlLinkRow[0]
 
             # 廃止レコードか判定
             if row['DISUSE_FLAG'] == '1':
@@ -2629,4 +2637,3 @@ def backyard_main(organization_id, workspace_id):
     g.applogger.debug(FREE_LOG)
 
     g.applogger.debug("backyard_main end")
-

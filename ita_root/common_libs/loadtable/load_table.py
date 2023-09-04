@@ -1981,12 +1981,27 @@ class loadTable():
                         if objcol is not None:
                             seve_type = self.get_save_type(tmp_constraint_key)
                             if seve_type == 'JSON':
-                                where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) = %s '.format(
-                                    self.get_col_name(tmp_constraint_key),
-                                    tmp_constraint_key,
-                                )
                                 val = parameter.get(tmp_constraint_key)
-                                bind_value_list.append(val)
+                                if val:
+                                    if val == "null":
+                                        # 文字列としての"null"はjsonとしてのnullと区別するようにwhere_strを作成する
+                                        where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = %s AND JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) != "NULL"'.format(  # noqa: E501
+                                            self.get_col_name(tmp_constraint_key),
+                                            tmp_constraint_key,
+                                        )
+                                        bind_value_list.append(val)
+                                    else:
+                                        where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) = %s '.format(
+                                            self.get_col_name(tmp_constraint_key),
+                                            tmp_constraint_key,
+                                        )
+                                        bind_value_list.append(val)
+                                else:
+                                    # 入力値が空の場合、JSON_TYPEで登録されている値がnullであるかどうかを判定する。
+                                    where_str = where_str + conjunction + ' JSON_TYPE(JSON_EXTRACT(`{}`,"$.{}")) = "NULL" '.format(
+                                        self.get_col_name(tmp_constraint_key),
+                                        tmp_constraint_key,
+                                    )
                                 objcolumn = self.get_columnclass(tmp_constraint_key)
                                 tmp_bool, tmp_msg, output_val = objcolumn.convert_value_output(val)
                                 dict_bind_kv.setdefault(tmp_constraint_key, output_val)

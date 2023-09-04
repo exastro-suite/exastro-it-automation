@@ -193,7 +193,7 @@ CREATE TABLE T_EVRL_LABEL_KEY_INPUT_JNL
 
 
 -- ラベルキー結合ビュー
-CREATE VIEW V_EVRL_LABEL_KEY_GROUP AS 
+CREATE VIEW V_EVRL_LABEL_KEY_GROUP AS
 SELECT
     LABEL_KEY_ID,
     LABEL_KEY,
@@ -343,6 +343,7 @@ CREATE TABLE T_EVRL_FILTER
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           LONGTEXT,                                   -- フィルター条件
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -358,6 +359,7 @@ CREATE TABLE T_EVRL_FILTER_JNL
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           LONGTEXT,                                   -- フィルター条件
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -372,12 +374,14 @@ CREATE TABLE T_EVRL_RULE
 (
     RULE_ID                         VARCHAR(40),                                -- ルールID
     RULE_NAME                       VARCHAR(255),                               -- ルール名
+    RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
     FILTER_NAME                     VARCHAR(40),                                -- フィルター名
     RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
     LABELING_INFORMATION            LONGTEXT,                                   -- ラベリング情報
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -392,12 +396,14 @@ CREATE TABLE T_EVRL_RULE_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     RULE_ID                         VARCHAR(40),                                -- ルールID
     RULE_NAME                       VARCHAR(255),                               -- ルール名
+    RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
     FILTER_NAME                     VARCHAR(40),                                -- フィルター名
     RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
     LABELING_INFORMATION            LONGTEXT,                                   -- ラベリング情報
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

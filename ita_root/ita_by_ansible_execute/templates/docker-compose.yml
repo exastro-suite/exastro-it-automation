@@ -5,7 +5,16 @@ services:
       - organization_id={{ organization_id }}
       - workspace_id={{ workspace_id }}
       - execution_no={{ execution_no }}
-    image: "{{ ansible_agent_image }}"
+    # image: "{{ ansible_agent_image }}"
+    build:
+      context: ./work/
+      args:
+        ANSIBLE_AGENT_IMAGE: "${ANSIBLE_AGENT_IMAGE}"
+        ANSIBLE_AGENT_IMAGE_TAG: "${ANSIBLE_AGENT_IMAGE_TAG}"
+        http_proxy: "${http_proxy}"
+        https_proxy: "${https_proxy}"
+        HTTP_PROXY: "${HTTP_PROXY}"
+        HTTPS_PROXY: "${HTTPS_PROXY}"
     entrypoint:
       - "bash"
       - "-c"

@@ -16,6 +16,7 @@ import json
 import os
 import re
 import subprocess
+import shutil
 
 from flask import g
 from abc import ABC, abstractclassmethod
@@ -116,7 +117,21 @@ class DockerMode(AnsibleAgent):
                 network_id=os.getenv('NETWORK_ID', "")
             ))
 
+        dir_tmp = "%s/.tmp/work/" % (container_mount_path_driver)
+        shutil.copytree('/exastro/templates/work/', dir_tmp)
+
         # create command string
+        command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "build"]
+
+        # docker-compose -f file -p project build
+        cp = subprocess.run(command, capture_output=True, text=True)
+
+        if cp.returncode == 0:
+            pass
+        else:
+            # cp.check_returncode()  # 例外を発生させたい場合
+            return False, {"function": "container_build", "return_code": cp.returncode, "stderr": cp.stderr}
+
         command = ["/usr/local/bin/docker-compose", "-f", exec_manifest, "-p", project_name, "up", "-d"]
 
         # docker-compose -f file -p project up

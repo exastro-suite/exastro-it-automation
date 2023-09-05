@@ -20,7 +20,7 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式
-    REQUEST_METHOD                  VARCHAR(40),                                -- リクエストメソッド
+    REQUEST_METHOD                  VARCHAR(2),                                 -- リクエストメソッド
     URL                             VARCHAR(1024),                              -- URL
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
@@ -50,7 +50,7 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS_JNL
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式
-    REQUEST_METHOD                  VARCHAR(40),                                -- リクエストメソッド
+    REQUEST_METHOD                  VARCHAR(2),                                 -- リクエストメソッド
     URL                             VARCHAR(1024),                              -- URL
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
@@ -193,7 +193,7 @@ CREATE TABLE T_EVRL_LABEL_KEY_INPUT_JNL
 
 
 -- ラベルキー結合ビュー
-CREATE VIEW V_EVRL_LABEL_KEY_GROUP AS
+CREATE VIEW V_EVRL_LABEL_KEY_GROUP AS 
 SELECT
     LABEL_KEY_ID,
     LABEL_KEY,
@@ -413,6 +413,21 @@ CREATE TABLE T_EVRL_RULE_JNL
 
 
 
+-- リクエストメソッドマスタ
+CREATE TABLE T_EVRL_REQUEST_METHOD
+(
+    REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
+    REQUEST_METHOD                  VARCHAR(255),                               -- リクエストメソッド
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(REQUEST_METHOD_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- インデックス
 CREATE INDEX IND_T_EVRL_CONNECTION_METHOD_01 ON T_EVRL_CONNECTION_METHOD(DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_EVENT_COLLECTION_SETTINGS_01 ON T_EVRL_EVENT_COLLECTION_SETTINGS(DISUSE_FLAG);
@@ -425,6 +440,7 @@ CREATE INDEX IND_T_EVRL_EVENT_COLLECTION_PROGRESS_01 ON T_EVRL_EVENT_COLLECTION_
 CREATE INDEX IND_T_EVRL_ACTION_01 ON T_EVRL_ACTION (DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_ACTION_LOG_01 ON T_EVRL_ACTION_LOG (DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_ACTION_STATUS_01 ON T_EVRL_ACTION_STATUS (DISUSE_FLAG);
+CREATE INDEX IND_T_EVRL_REQUEST_METHOD_01 ON T_EVRL_REQUEST_METHOD (DISUSE_FLAG);
 
 
 

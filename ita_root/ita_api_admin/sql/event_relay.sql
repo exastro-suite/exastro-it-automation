@@ -19,8 +19,8 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS
 (
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
-    CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式
-    REQUEST_METHOD                  VARCHAR(40),                                -- リクエストメソッド
+    CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
+    REQUEST_METHOD                  VARCHAR(2),                                 -- リクエストメソッド
     URL                             VARCHAR(1024),                              -- URL
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
@@ -28,12 +28,12 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS
     AUTH_TOKEN                      VARCHAR(1024),                              -- 認証トークン
     USERNAME                        VARCHAR(255),                               -- ユーザー名
     PASSWORD                        TEXT,                                       -- パスワード
-    HOSTNAME                        VARCHAR(255),                               -- ホスト名
+    MAILBOXNAME                     VARCHAR(255),                               -- メールボックス名
     ACCESS_KEY_ID                   VARCHAR(1024),                              -- アクセスキーID
     SECRET_ACCESS_KEY               TEXT,                                       -- 秘密アクセスキー
     PARAMETER                       TEXT,                                       -- パラメータ
-    RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- リスト
-    RESPONSE_KEY                    VARCHAR(255),                               -- リストキー
+    RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
+    RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -49,8 +49,8 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
-    CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式
-    REQUEST_METHOD                  VARCHAR(40),                                -- リクエストメソッド
+    CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
+    REQUEST_METHOD                  VARCHAR(2),                                 -- リクエストメソッド
     URL                             VARCHAR(1024),                              -- URL
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
@@ -58,12 +58,12 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS_JNL
     AUTH_TOKEN                      VARCHAR(1024),                              -- 認証トークン
     USERNAME                        VARCHAR(255),                               -- ユーザー名
     PASSWORD                        TEXT,                                       -- パスワード
-    HOSTNAME                        VARCHAR(255),                               -- ホスト名
+    MAILBOXNAME                     VARCHAR(255),                               -- メールボックス名
     ACCESS_KEY_ID                   VARCHAR(1024),                              -- アクセスキーID
     SECRET_ACCESS_KEY               TEXT,                                       -- 秘密アクセスキー
     PARAMETER                       TEXT,                                       -- パラメータ
-    RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- リスト
-    RESPONSE_KEY                    VARCHAR(255),                               -- リストキー
+    RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
+    RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -79,13 +79,13 @@ CREATE TABLE T_EVRL_LABELING_SETTINGS
 (
     LABELING_SETTINGS_ID            VARCHAR(40),                                -- ラベリング設定ID
     LABELING_SETTINGS_NAME          VARCHAR(255),                               -- ラベリング設定名
-    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名
+    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
     TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
-    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプ
-    TARGET_VALUE                    TEXT,                                       -- ターゲット値
-    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法
-    LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキー
-    LABEL_VALUE                     VARCHAR(255),                               -- ラベル値
+    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
+    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
+    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
+    LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキーID
+    LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -100,13 +100,13 @@ CREATE TABLE T_EVRL_LABELING_SETTINGS_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     LABELING_SETTINGS_ID            VARCHAR(40),                                -- ラベリング設定ID
     LABELING_SETTINGS_NAME          VARCHAR(255),                               -- ラベリング設定名
-    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名
+    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
     TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
-    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプ
-    TARGET_VALUE                    TEXT,                                       -- ターゲット値
-    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法
-    LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキー
-    LABEL_VALUE                     VARCHAR(255),                               -- ラベル値
+    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
+    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
+    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
+    LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキーID
+    LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -220,8 +220,8 @@ FROM
 CREATE TABLE T_EVRL_EVENT_COLLECTION_PROGRESS
 (
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
+    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定ID
     FETCHED_TIME                    INT,                                        -- 経過時間
-    EVALUATED_FLAG                  VARCHAR(40),                                -- 評価フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -235,8 +235,8 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_PROGRESS_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
+    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定ID
     FETCHED_TIME                    INT,                                        -- 経過時間
-    EVALUATED_FLAG                  VARCHAR(40),                                -- 評価フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -413,6 +413,21 @@ CREATE TABLE T_EVRL_RULE_JNL
 
 
 
+-- リクエストメソッドマスタ
+CREATE TABLE T_EVRL_REQUEST_METHOD
+(
+    REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
+    REQUEST_METHOD                  VARCHAR(255),                               -- リクエストメソッド
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(REQUEST_METHOD_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- インデックス
 CREATE INDEX IND_T_EVRL_CONNECTION_METHOD_01 ON T_EVRL_CONNECTION_METHOD(DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_EVENT_COLLECTION_SETTINGS_01 ON T_EVRL_EVENT_COLLECTION_SETTINGS(DISUSE_FLAG);
@@ -425,6 +440,7 @@ CREATE INDEX IND_T_EVRL_EVENT_COLLECTION_PROGRESS_01 ON T_EVRL_EVENT_COLLECTION_
 CREATE INDEX IND_T_EVRL_ACTION_01 ON T_EVRL_ACTION (DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_ACTION_LOG_01 ON T_EVRL_ACTION_LOG (DISUSE_FLAG);
 CREATE INDEX IND_T_EVRL_ACTION_STATUS_01 ON T_EVRL_ACTION_STATUS (DISUSE_FLAG);
+CREATE INDEX IND_T_EVRL_REQUEST_METHOD_01 ON T_EVRL_REQUEST_METHOD (DISUSE_FLAG);
 
 
 

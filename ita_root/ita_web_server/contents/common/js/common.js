@@ -1761,7 +1761,7 @@ html: {
             + selectOption.join('')
         + `</select>`;
     },
-    'noSelect': function() {
+    noSelect: function() {
         return '<div class="noSelect">No data</div>';
     },
     row: function( element, className ) {

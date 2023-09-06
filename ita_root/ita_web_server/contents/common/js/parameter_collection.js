@@ -110,7 +110,7 @@ mainHtml() {
    const menu = {
       Main: [
          { radio:
-            { 
+            {
                name: 'modeSelect',
                className: 'modeSelect',
                title: getMessage.FTE11001,
@@ -134,7 +134,7 @@ mainHtml() {
       + pc.operationTimeLineHtml()
       + '<div class="parameterBody">'
          + `<div class="parameterSide">`
-            + `<div class="parameterInfo">`
+            + `<div class="parameterInfo commonScroll">`
                + `<div class="commonSubTitle">${getMessage.FTE11007}</div>`
                + pc.selectButton('parameter')
                + `<div class="commonBody commonWrap targetParameter"></div>`
@@ -146,7 +146,7 @@ mainHtml() {
                + fn.html.iconButton('check', getMessage.FTE11009, 'itaButton parameterSetButton', { action: 'positive', disabled: 'disabled'})
             + `</div>`
          + `</div>`
-         + `<div class="parameterMain">`
+         + `<div class="parameterMain commonScroll">`
             + pc.initMesssageHtml()
          + `</div>`
       + `</div>`
@@ -197,13 +197,13 @@ initMesssageHtml() {
 targetListHtml( type, select, inputFlag = false ) {
    const pc = this;
 
-   if ( ( select && select.length ) || ( type === 'Host' && pc.select.mode === 'host') ) {
+   if ( ( select && select.length ) || ( type === 'Host') ) {
       const itemClassName = ( inputFlag )? 'commonInputItem': 'commonItem',
             listClassName = ( inputFlag )? 'commonInputList': 'commonList',
             key = ( type === 'Parameter')? 'parameter_sheet': 'host',
             idKey = ( type === 'Parameter')? 'menu_id': 'managed_system_item_number',
             nameKey = ( type === 'Parameter')? 'menu_name': 'host_name';
-      
+
       if ( !select ) select = [];
       const selectLength = select.length;
 
@@ -227,12 +227,12 @@ targetListHtml( type, select, inputFlag = false ) {
                   + fn.html.radioText(`targetSelect${type}`, id, `targetSelect${type}`, `targetSelect${type}_${id}`, checked, name, 'narrowRadioTextWrap')
                + `</li>`);
             } else {
-               list.push(`<li class="${itemClassName} target${type}Item">${name}</li>`);
+               list.push(`<li class="${itemClassName} target${type}Item" data-id="${id}">${name}</li>`);
             }
          }
       }
-      // ホスト無
-      if ( type === 'Host'  && pc.select.mode === 'host') {
+      // ホストモード ホスト無し
+      if ( type === 'Host' && pc.select.mode === 'host') {
          const checked = {};
          if ( selectLength === 0 ) {
             pc.select.mainHost = '-1';
@@ -242,7 +242,21 @@ targetListHtml( type, select, inputFlag = false ) {
             + fn.html.radioText(`targetSelect${type}`, -1, `targetSelect${type}`, `targetSelect${type}_-1`, checked, getMessage.FTE11014, 'narrowRadioTextWrap')
          + `</li>`);
       }
-      pc.$.content.find(`.target${type}`).html(`<ul class="${listClassName}">${list.join('')}</ul>`);
+
+      let html = `<ul class="${listClassName}">${list.join('')}</ul>`;
+
+      // オペレーションモード ホスト無し
+      if ( type === 'Host' && pc.select.mode === 'operation') {
+         const checked = ( pc.select.targetNoHost )? { checked: 'checked'}: {};
+         const noHostCheckbox = `<div class="targetNoHost">${fn.html.checkboxText('targetCheckboxNoHost', null, 'targetCheckboxNoHost', 'targetCheckboxNoHost', checked, getMessage.FTE11058 )}</div>`;
+         if ( selectLength > 0 ) {
+            html = noHostCheckbox + html;
+         } else {
+            html = noHostCheckbox + pc.noSelectHtml();
+         }
+      }
+      
+      pc.$.content.find(`.target${type}`).html( html );
    } else {
       pc.$.content.find(`.target${type}`).html( pc.noSelectHtml() );
    }
@@ -389,6 +403,7 @@ setMenuButtonEvents() {
                $button.prop('disabled', false );
             }).catch(function(){
                alert( getMessage.FTE11050 );
+               $button.prop('disabled', false );
             });
             break;
       }
@@ -473,6 +488,94 @@ setSelectEvents() {
          $button.prop('disabled', false );
       });
    });
+
+   // ホスト無しを表示
+   pc.$.content.find('.targetHost').on({
+      'change': function(){
+         pc.select.targetNoHost = $( this ).prop('checked');
+         pc.parameterSetButtonCheck();
+      },
+      'click': function( e ){
+         if ( pc.tableLoading ) {
+            e.preventDefault();
+            return false;
+         }
+      }
+   }, '.targetCheckboxNoHost');
+
+   // リストを移動する
+   pc.$.content.find('.targetParameter').on('mousedown', '.targetParameterItem', function( mde ){
+      const
+      $move = $( this ),
+      $window = $( window );
+      
+      const 
+      $list = $move.closest('.commonList'),
+      width = $move.outerWidth(),
+      height = $move.outerHeight(),
+      defaultY = $move.position().top - $list.position().top,
+      maxY = $list.outerHeight() - height,
+      $dummy = $('<li class="commonItem commonItemDummy"></li>'),
+      $body = $move.closest('.parameterInfo'),
+      defaultScroll = $body.scrollTop();
+      
+      $list.css('height', $list.outerHeight() ).addClass('active');
+      $move.addClass('move').css({
+         top: defaultY,
+         width: width
+      }).after( $dummy );
+      $dummy.css('height', height );
+      
+      fn.deselection();
+
+      let positionY = defaultY;
+      const listPosition = function(){
+          let setPostion = positionY - ( defaultScroll - $body.scrollTop() );
+          if ( setPostion < 0 ) setPostion = 0;
+          if ( setPostion > maxY ) setPostion = maxY;
+          $move.css('top', setPostion );
+      };
+
+      // スクロールした場合も位置を更新する
+      $body.on('scroll.freeMove', function(){
+          listPosition();
+      });
+      
+      $list.on({
+          'mousemove.freeMove': function( mme ){
+              positionY = defaultY + mme.pageY - mde.pageY;
+              listPosition();
+              if ( $( mme.target ).is('.commonItem') ) {
+                  const
+                  $target = $( mme.target ),
+                  targetNo = $target.index(),
+                  dummyNo = $dummy.index();
+
+                  if ( targetNo < dummyNo ) {
+                      $target.before( $dummy );
+                  } else if ( targetNo > dummyNo ) {
+                      $target.after( $dummy );
+                  }
+              }
+          }
+      });
+      $window.on({
+         'mouseup.freeUp': function(){
+            $body.off('scroll.freeMove');
+            $list.off('mousemove.freeMove');
+            $window.off('mouseup.freeUp');
+            $list.removeClass('active').removeAttr('style');
+            $move.removeClass('move').removeAttr('style');
+            $dummy.replaceWith( $move );
+
+            // リストの順番を更新
+            pc.select.parameter = [];
+            $list.find('.targetParameterItem').each(function(){
+               pc.select.parameter.push( $( this ).attr('data-id') );
+            });
+          }
+      });
+  });
 }
 /*
 ##################################################
@@ -684,7 +787,7 @@ operationTimeLineHtml() {
       const ope = list[i];
       if ( !ope.skip ) ope.skip = false;
       if ( ope.skip === false ) {
-         const 
+         const
          date = ( ope.last_run_date )? ope.last_run_date: ope.scheduled_date_for_execution,
          name = fn.cv( ope.operation_name, '', true ),
          id = fn.cv( ope.operation_id, '', true ),
@@ -706,7 +809,7 @@ operationTimeLineHtml() {
                a = new Date( date ).getTime(),
                b = new Date( nextDate ).getTime();
                if ( b - a <= n ) {
-                  
+
                   blockList.push(nextOpe);
                   nextOpe.skip = true;
                   j++;
@@ -860,12 +963,12 @@ operationTimelineEvents() {
       if ( left < 0 ) left = 0;
       const checkRight = newWidth - left - width;
       if ( checkRight < 0 ) left = left + checkRight;
-    
+
       // バーサイズ
       const
       rangeWidth = width / newWidth * 100,
       rangeLeft = left / newWidth * 100;
-      
+
       // ％
       if ( left !== 0 ) {
          left = - ( left / width * 100 );
@@ -948,7 +1051,7 @@ operationTimelineEvents() {
 
          // scaleArray調整
          const num = timeWidth / 100;
-         
+
          const index = scaleArray.findIndex(function(val){
             return val >= num;
          });
@@ -1071,7 +1174,7 @@ parameterSelectOpen() {
          menu_info: {
             columns_view: [`c1`,`c2`,`c3`,`c4`,`c5`,`c6`],
             pk_column_name_rest: `menu_id`,
-            sort_key: ``,
+            sort_key: `[{"ASC":"menu_name"}]`,
          }
       };
 
@@ -1091,8 +1194,8 @@ parameterSelectOpen() {
          infoData: info,
          selectType: 'multi',
          select: pc.select.parameter
-      }; 
- 
+      };
+
       fn.selectModalOpen('parameterSelect', getMessage.FTE11015, 'parameterSelect', option ).then(function( result ){
          resolve( result );
       });
@@ -1145,7 +1248,7 @@ hostSelectOpen() {
          menu_info: {
             columns_view: [`c1`,`c2`,`c3`,`c4`],
             pk_column_name_rest: `managed_system_item_number`,
-            sort_key: ``,
+            sort_key: `[{"ASC":"host_name"}]`
          }
       };
 
@@ -1165,8 +1268,8 @@ hostSelectOpen() {
          infoData: info,
          selectType: 'multi',
          select: pc.select.host
-      }; 
- 
+      };
+
       fn.selectModalOpen('hostSelect', getMessage.FTE11044, 'hostSelect', option ).then(function( result ){
          resolve( result );
       });
@@ -1192,13 +1295,15 @@ setParameterTables() {
 
       if ( !pc.checkParameterStatus() ) return resolve();
 
-      // 選択パラメータをフィルタする
-      const params = pc.info.parameter_sheet.filter(function( para ){
-         return pc.select.parameter.indexOf( para.menu_id ) !== -1;
+      // 選択パラメータデータ（対象パラメータのリスト順にする）
+      const params = pc.select.parameter.map(function( paramId ){
+         return pc.info.parameter_sheet.find(function( paramData ){
+            return paramData.menu_id === paramId;
+         });
       });
 
       if ( params.length ) {
-         pc.tableLoading = true;         
+         pc.tableLoading = true;
 
          // すでにTableが作成済みの場合Workerを終了する
          if ( pc.table && pc.table.length ) {
@@ -1213,8 +1318,7 @@ setParameterTables() {
          // RESTリスト作成
          const rests = [];
          for ( const param of params ) {
-            const rest = ( param.hostgroup === '0')? param.menu_name_rest: param.hg_menu_name_rest;
-            rests.push( rest );
+            rests.push( param.menu_name_rest );
          }
 
          // URLリスト作成
@@ -1226,10 +1330,11 @@ setParameterTables() {
          // ブロック作成
          const html = [], length = rests.length;     ;
          for ( let i = 0; i < length; i++ ) {
-            const rest = rests[i];
-            html.push(`<div class="parameterBlock">`
+            const param = params[i];
+            const rest = ( param.hostgroup === '0')? param.menu_name_rest: param.hg_menu_name_rest;
+            html.push(`<div class="parameterBlock" data-rest="${rests[i]}">`
                + `<div class="parameterBlockHeader">`
-                  + `<div class="parameterBlockName">${fn.cv( params[i].menu_name, '', true )}</div>`
+                  + `<div class="parameterBlockName">${fn.cv( param.menu_name, '', true )}</div>`
                   + `<div class="parameterBlockMenu">${fn.html.iconButton('edit', getMessage.FTE11016, 'parameterEditOpen itaButton', { action: 'default', parameter: rest })}</div>`
                + `</div>`
                + `<div class="parameterBlockBody"></div>`
@@ -1294,14 +1399,14 @@ setParameterTables() {
                   const hostName = ( targetHost )? fn.cv( targetHost.host_name, ''): '';
                   if ( hostName !== '') {
                      parameterHostList.push( hostName );
-                     parameterHostList.push( '[H]' + hostName );
                      filterHostList.push( hostName );
                      filterHostList.push( '[H]' + hostName );
                   }
                }
             }
-            // ホスト無しを最後に追加
-            parameterHostList.push( getMessage.FTE11014 );
+
+            // ホスト無し
+            if ( pc.select.targetNoHost ) parameterHostList.push( getMessage.FTE11014 );
          }
 
          pc.$.param.addClass('parameterStandby').html(``
@@ -1320,7 +1425,7 @@ setParameterTables() {
 
          // 読み込み
          fn.fetch( urls ).then(function( result ){
-            
+
             // テーブルセット
             for ( let i = 0; i < length; i++ ) {
                const
@@ -1334,6 +1439,7 @@ setParameterTables() {
                   parameterOperationList: parameterOperationList,
                   parameterHostList: parameterHostList
                }
+               if ( pc.select.targetNoHost ) tableOption.operationNoHost = true;
 
                tableParams.menuNameRest = rests[i];
 
@@ -1406,7 +1512,9 @@ checkParameterStatus() {
             return false;
          }
       } else {
-         if ( ( pc.select.mainOperation && pc.select.mainOperation !== '' ) ) {
+         if ( ( pc.select.mainOperation && pc.select.mainOperation !== '' ) && ( pc.select.host && pc.select.host.length )) {
+            return true;
+         } else if ( ( pc.select.mainOperation && pc.select.mainOperation !== '' ) && pc.select.targetNoHost ) {
             return true;
          } else {
             return false;
@@ -1455,7 +1563,7 @@ tableItemWidthAlign() {
       let selectLength;
       for ( const table of pc.table ) {
          width.thead.push( table.$.thead.outerWidth() );
-         
+
          selectLength = table.$.tbody.find('.parameterTh').length;
          for ( let i = 0; i < selectLength; i++ ) {
             const target = `parameterMainTh${i}`;
@@ -1511,7 +1619,7 @@ setPresetEvents() {
 
       const $button = $( this ),
       id = $button.attr('data-id');
-      
+
       pc.presetLoad( id );
 
    });
@@ -1532,11 +1640,9 @@ setPresetEvents() {
 
       $button.prop('disabled', true );
       switch( type ) {
-         case 'update': 
+         case 'update':
             if ( target ) {
-               pc.presetSave( target.filter_name, id, target.last_update_date_time ).then(function(){
-                  $button.prop('disabled', false );
-               }).catch(function(){
+               pc.confirmpPesetSave( target.filter_name, id, target.last_update_date_time ).then(function(){
                   $button.prop('disabled', false );
                });
             }
@@ -1549,7 +1655,7 @@ setPresetEvents() {
             }
             break;
          case 'delete':
-            pc.presetDelete( id ).then(function(){
+            pc.confirmpPesetDelete( id, target.filter_name ).then(function(){
                $button.prop('disabled', false );
             });
             break;
@@ -1572,6 +1678,31 @@ presetListLoad() {
          window.console.error( error );
          alert( error );
          reject();
+      });
+   });
+}
+/*
+##################################################
+   プリセット削除確認
+##################################################
+*/
+confirmpPesetDelete( uuid, name ) {
+   const pc = this;
+
+   return new Promise(function( resolve ){
+      fn.alert( getMessage.FTE11053, getMessage.FTE11057( name ), 'confiarm',{
+         ok: { text: getMessage.FTE11054, action: 'danger', style: 'width:160px', className: 'dialogPositive'},
+         cancel: { text: getMessage.FTE11055, action: 'negative', style: 'width:120px'}
+      }).then(function( flag ){
+         if ( flag ) {
+            pc.presetDelete( uuid ).then(function(){
+               resolve();
+            }).catch(function(){
+               resolve();   
+            });
+         } else {
+            resolve();
+         }
       });
    });
 }
@@ -1610,6 +1741,31 @@ presetDelete( uuid ) {
 }
 /*
 ##################################################
+   プリセット上書き保存確認
+##################################################
+*/
+confirmpPesetSave( name, uuid, date ) {
+   const pc = this;
+
+   return new Promise(function( resolve ){
+      fn.alert( getMessage.FTE11051, getMessage.FTE11056( name ), 'confiarm',{
+         ok: { text: getMessage.FTE11052, action: 'positive', style: 'width:160px', className: 'dialogPositive'},
+         cancel: { text: getMessage.FTE11055, action: 'negative', style: 'width:120px'}
+      }).then(function( flag ){
+         if ( flag ) {
+            pc.presetSave( name, uuid, date ).then(function(){
+               resolve();
+            }).catch(function(){
+               resolve();   
+            });
+         } else {
+            resolve();
+         }
+      });
+   });
+}
+/*
+##################################################
    プリセット保存
 ##################################################
 */
@@ -1638,7 +1794,7 @@ presetSave( name = '', uuid = '', date = '') {
          if ( error.message ) {
             alert( error.message );
          } else {
-            window.console.error( error ); 
+            window.console.error( error );
          }
          process.close();
          process = null;
@@ -1791,7 +1947,7 @@ presetListHtml() {
          + `</div>`
          + `<div class="prameterPresetItemMenu">`
             + `<ul class="parameterPresetItemMenuList">`
-               + `<li class="parameterPresetItemMenuItem">${fn.html.iconButton('update01', '', 'parameterPresetItemMenuButton popup', { id: preset.uuid, type: 'update',title: getMessage.FTE11026 })}</li>`
+               + `<li class="parameterPresetItemMenuItem">${fn.html.iconButton('download', '', 'parameterPresetItemMenuButton popup', { id: preset.uuid, type: 'update',title: getMessage.FTE11026 })}</li>`
                + `<li class="parameterPresetItemMenuItem">${fn.html.iconButton('edit', '', 'parameterPresetItemMenuButton popup', { id: preset.uuid, type: 'rename',title: getMessage.FTE11027 })}</li>`
                + `<li class="parameterPresetItemMenuItem">${fn.html.iconButton('cross', '', 'parameterPresetItemMenuButton popup', { id: preset.uuid, type: 'delete',title: getMessage.FTE11028 })}</li>`
             + `</ul>`
@@ -1815,7 +1971,7 @@ presetListHtml() {
 */
 presetHtml() {
    const pc = this;
-   
+
    return ``
    + `<div class="parameterPreset">`
       + `<div class="parameterPresetHeader">`
@@ -2037,7 +2193,7 @@ outputExcel() {
 
             // 幅
             worksheet.columns = width;
-            
+
          });
 
          workbook.xlsx.writeBuffer().then(function( uint8Array ){
@@ -2057,10 +2213,11 @@ outputExcel() {
             fileName = fileName.replace(/\s+/g, '-');
             fileName = fileName.substring( 0, 200 );
             fn.download('exceljs', uint8Array, fileName );
-            
+
             setTimeout( function(){ resolve(); }, 1000 );
          });
       } catch ( error ) {
+         console.error( error )
          reject();
       }
    });

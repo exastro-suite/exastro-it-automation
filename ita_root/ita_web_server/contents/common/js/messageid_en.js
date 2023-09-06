@@ -905,7 +905,7 @@ getMessage = ( function() {
         'FTE11023': 'Parameter collection preset name change',
         'FTE11024': 'Preset registration',
         'FTE11025': 'Rename Preset',
-        'FTE11026': 'Update',
+        'FTE11026': 'Save',
         'FTE11027': 'Rename',
         'FTE11028': 'Delete',
         'FTE11029': 'There is no preset registration.',
@@ -929,6 +929,14 @@ getMessage = ( function() {
         'FTE11048': 'No parameters to display.',
         'FTE11049': 'Excel download',
         'FTE11050': 'Excel download failed.',
+        'FTE11051': 'Save confirmation',
+        'FTE11052': 'Save',
+        'FTE11053': 'Delete confirmation',
+        'FTE11054': 'Delete',
+        'FTE11055': 'Cancel',
+        'FTE11056': function( name ){ return `Save the preset "${name}".`},
+        'FTE11057': function( name ){ return `Delete the preset "${name}".`},
+        'FTE11058': 'Show no host',
 
         // Custom menu
         'FTE12001': 'Failed to display custom menu.',

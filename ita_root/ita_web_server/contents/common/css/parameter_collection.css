@@ -157,6 +157,9 @@ text-align: center;
 font-size: 11px;
 color: rgba(0,0,0,.3);
 }
+.darkmode .targetNoSelect {
+color: rgba(255,255,255,.3);
+}
 .operationTimelineHide .operationTimeline {
 display: none;
 }
@@ -418,8 +421,20 @@ border-left: 1px solid rgba(0,0,0,.3);
 margin-top: 0;
 }
 
+.targetHostItem .radioTextLabel {
+padding: 0;
+}
+.targetNoHost .checkboxTextLabel {
+padding: 0 2px;
+}
 
-
+.targetNoHost {
+margin-bottom: 4px; padding-bottom: 4px;
+border-bottom: 1px solid rgba( 0,0,0,.1 );
+}
+.darkmode .targetNoHost {
+border-color: rgba(0,0,0,.3);
+}
 
 .mainTarget {
 position: sticky;
@@ -813,4 +828,49 @@ background-color: #333!important;
 background-color: #2E3136;
 background-image: none;
 box-shadow: none;
+}
+
+/* list move */
+.commonItem.commonItemDummy {
+opacity: 0;
+}
+.commonList.active {
+position: relative;
+z-index: 0;
+user-select: none;
+cursor: grabbing;
+overflow: hidden;
+}
+.commonItem.move {
+background-color: #EEE;
+pointer-events: none;
+position: absolute;
+z-index: 10;
+left: 4px;
+}
+.darkmode .commonItem.move {
+background-color: #444;
+}
+.commonList.active .commonItem:last-child {
+margin-bottom: 4px;
+border-bottom: 1px solid rgba( 0,0,0,.1 );
+}
+
+.targetParameterItem {
+padding-left: 16px;
+cursor: grab;
+}
+.commonList.active .targetParameterItem {
+cursor: grabbing;
+}
+.targetParameterItem::before {
+content: '';
+display: block;
+width: 8px;
+background-color: transparent;
+background-image: linear-gradient( rgba( 0,0,0,.2 ) 50%, transparent 50% );
+background-size: 4px 4px;
+}
+.darkmode .targetParameterItem::before {
+background-image: linear-gradient( #999 50%, transparent 50% );
 }

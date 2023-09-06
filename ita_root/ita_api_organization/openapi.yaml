@@ -58,6 +58,8 @@ tags:
     description: Terraform Cloud/Enterpriseとの連携
   - name: CI/CD for IaC
     description: CI/CD for IaCの操作
+  - name: Event Relay
+    description: イベント連携用
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
@@ -5679,6 +5681,54 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
+   
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_collection_settings/check/:
+    post:
+      tags:
+        - Event Relay
+      description: 対象の監視ソフトの連携状態を確認する
+      operationId: postCheckMonitoringSoftware
+      x-openapi-router-controller: controllers.event_relay_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
 components:
   schemas:
     TABLE:

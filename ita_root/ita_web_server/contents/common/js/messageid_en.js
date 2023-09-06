@@ -936,6 +936,7 @@ getMessage = ( function() {
         'FTE11055': 'Cancel',
         'FTE11056': function( name ){ return `Save the preset "${name}".`},
         'FTE11057': function( name ){ return `Delete the preset "${name}".`},
+        'FTE11058': 'Show no host',
 
         // Custom menu
         'FTE12001': 'Failed to display custom menu.',

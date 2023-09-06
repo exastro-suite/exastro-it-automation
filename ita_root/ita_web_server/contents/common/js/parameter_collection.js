@@ -248,7 +248,7 @@ targetListHtml( type, select, inputFlag = false ) {
       // オペレーションモード ホスト無し
       if ( type === 'Host' && pc.select.mode === 'operation') {
          const checked = ( pc.select.targetNoHost )? { checked: 'checked'}: {};
-         const noHostCheckbox = `<div class="targetNoHost">${fn.html.checkboxText('targetCheckboxNoHost', null, 'targetCheckboxNoHost', 'targetCheckboxNoHost', checked, 'ホスト無しを表示')}</div>`;
+         const noHostCheckbox = `<div class="targetNoHost">${fn.html.checkboxText('targetCheckboxNoHost', null, 'targetCheckboxNoHost', 'targetCheckboxNoHost', checked, getMessage.FTE11058 )}</div>`;
          if ( selectLength > 0 ) {
             html = noHostCheckbox + html;
          } else {

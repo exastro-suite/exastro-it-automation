@@ -83,6 +83,7 @@ message( data ) {
         break;
         case 'normal':
             tw.result = tw.data.tableData;
+            tw.sort();
             tw.postPageData();
         break;
         case 'history': {

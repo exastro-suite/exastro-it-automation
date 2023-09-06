@@ -2929,7 +2929,7 @@ setTbody() {
         const body = tb.parameterBody();
         if ( body !== '') {
             tb.$.container.removeClass('noData');
-            tb.$.tbody.html( tb.parameterBody() );
+            tb.$.tbody.html( body );
         } else {
             tb.$.container.addClass('noData');
             tb.$.message.html( nodataHtml );
@@ -5423,9 +5423,16 @@ parameterBody() {
         let rowspan = 0;
 
         for ( const item of list ) {
+            // 対象が一致するものを表示
             if (
                 ( item.parameter[ nameKey ] === parameter ) ||
-                ( tb.option.parameterSheetType === '3' && tb.option.parameterMode === 'operation' && i + 1 === length )
+                // ホスト無しを表示
+                (
+                    tb.option.parameterSheetType === '3' // オペレーションのみ
+                    && tb.option.operationNoHost === true // ホスト無しを表示フラグ
+                    && tb.option.parameterMode === 'operation' // オペレーションモード
+                    && i + 1 === length // 配列の最後
+                )
             ) {
                 const rowHtml = [];
                 if ( tb.menuMode === 'bundle') {

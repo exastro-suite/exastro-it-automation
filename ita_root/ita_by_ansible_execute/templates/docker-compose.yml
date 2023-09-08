@@ -1,23 +1,24 @@
-version: '3.1'
+version: '3.7'
 services:
   ita_ansible_agent:
     labels:
       - organization_id={{ organization_id }}
       - workspace_id={{ workspace_id }}
       - execution_no={{ execution_no }}
-    image: "{{ ansible_agent_image }}"
-    # build:
-    #   dockerfile: /exastro/ita_ansible_agent/Dockerfile
-    #   context: /exastro/ita_ansible_agent/
-    #   args:
-    #     - HTTP_PROXY={{ HTTP_PROXY }}
-    #     - http_proxy={{ HTTP_PROXY }}
-    #     - HTTPS_PROXY={{ HTTPS_PROXY }}
-    #     - https_proxy={{ HTTPS_PROXY }}
-    command: >
-      "bash"
-      "-c"
-      "{{ str_shell_command }}"
+    # image: "{{ ansible_agent_image }}"
+    build:
+      context: ./work/
+      args:
+        ANSIBLE_AGENT_IMAGE: "${ANSIBLE_AGENT_IMAGE}"
+        ANSIBLE_AGENT_IMAGE_TAG: "${ANSIBLE_AGENT_IMAGE_TAG}"
+        http_proxy: "${http_proxy}"
+        https_proxy: "${https_proxy}"
+        HTTP_PROXY: "${HTTP_PROXY}"
+        HTTPS_PROXY: "${HTTPS_PROXY}"
+    entrypoint:
+      - "bash"
+      - "-c"
+      - "{{ str_shell_command }}"
     volumes:
       - type: bind
         source: {{ host_mount_path_driver }}
@@ -33,7 +34,10 @@ services:
       - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
       - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server
       - EXEC_DIR={{ container_mount_path_driver }}
+    networks:
+      - exastro
+
 networks:
-  default:
-    name: devcontainer_default
+  exastro:
+    name: exastro_{{ network_id }}
     external: true

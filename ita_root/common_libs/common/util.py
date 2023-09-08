@@ -258,6 +258,28 @@ def file_encode(file_path):
         return False
 
 
+def file_decode(file_path):
+    """
+    Encode a file to base64
+
+    Arguments:
+        file_path: Encoding target filepath
+    Returns:
+        Encoded string
+    """
+    try:
+        is_file = os.path.isfile(file_path)
+        if not is_file:
+            return ""
+
+        with open(file_path, "rb") as f:
+            text = f.read().decode()
+        text_decrypt = ky_decrypt(text)
+        return base64.b64encode(text_decrypt.encode()).decode()
+    except Exception:
+        return False
+
+
 def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_name, uuid_jnl):
     """
     Get filepath

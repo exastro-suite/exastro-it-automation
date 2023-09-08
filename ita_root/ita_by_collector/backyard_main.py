@@ -462,6 +462,7 @@ def backyard_main(organization_id, workspace_id):
                     driver_id = ansible_driver_id_info[intCollectOrcNo]['id']
                     execNo = aryMovement['EXECUTION_NO']
                     operation_id = aryMovement['OPERATION_ID']
+                    last_update_timestamp = str(aryMovement['LAST_UPDATE_TIMESTAMP'])
 
                     ans_const = getAnsibleConst(driver_id)
                     ansdrv = CreateAnsibleExecFiles(driver_id, ans_if_info, execNo, "", aryMovement['I_ANSIBLE_CONFIG_FILE'], dbAccess)
@@ -485,7 +486,7 @@ def backyard_main(organization_id, workspace_id):
                         request_param['parameter'] = {}
                         request_param['parameter']['execution_no'] = execNo
                         request_param['parameter']['collection_status'] = collect_sts_info['3'] if '3' in collect_sts_info else ''  # 3:対象外
-                        request_param['parameter']['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+                        request_param['parameter']['last_update_date_time'] = last_update_timestamp
                         if len(collection_log) > 0:
                             request_param['file']['collection_log'] = base64.b64encode(collection_log.encode()).decode()
                             request_param['parameter']['collection_log'] = tmpCollectlogfile
@@ -792,7 +793,7 @@ def backyard_main(organization_id, workspace_id):
                                                         if op_language and op_language in ['ja', 'en']:
                                                             setattr(g, 'LANGUAGE', op_language)
 
-                                                        now = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+                                                        # now = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
 
                                                         # 既存のレコードを抽出
                                                         filter_info = {}
@@ -815,7 +816,7 @@ def backyard_main(organization_id, workspace_id):
                                                             tmparr3['parameter']['last_execute_timestamp'] = None
                                                             tmparr3['parameter']['discard'] = '0'
                                                             tmparr3['parameter']['remarks'] = None
-                                                            tmparr3['parameter']['last_update_date_time'] = now
+                                                            tmparr3['parameter']['last_update_date_time'] = None
                                                             tmparr3['parameter']['last_updated_user'] = g.USER_ID
 
                                                         # 既存レコードがあれば「更新」
@@ -831,7 +832,7 @@ def backyard_main(organization_id, workspace_id):
                                                             tmparr3['parameter']['last_execute_timestamp'] = param['last_execute_timestamp']
                                                             tmparr3['parameter']['discard'] = '0'
                                                             tmparr3['parameter']['remarks'] = param['remarks']
-                                                            tmparr3['parameter']['last_update_date_time'] = now
+                                                            tmparr3['parameter']['last_update_date_time'] = param['last_update_date_time']
                                                             tmparr3['parameter']['last_updated_user'] = g.USER_ID
                                                             for k, v in param.items():
                                                                 if k not in tmparr3['parameter']:
@@ -883,7 +884,7 @@ def backyard_main(organization_id, workspace_id):
                         request_param['parameter'] = {}
                         request_param['parameter']['execution_no'] = execNo
                         request_param['parameter']['collection_status'] = collect_sts_info[NOTICE_FLG] if NOTICE_FLG in collect_sts_info else ''
-                        request_param['parameter']['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+                        request_param['parameter']['last_update_date_time'] = last_update_timestamp
                         if len(collection_log) > 0:
                             request_param['file']['collection_log'] = base64.b64encode(collection_log.encode()).decode()
                             request_param['parameter']['collection_log'] = tmpCollectlogfile

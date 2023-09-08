@@ -1234,7 +1234,10 @@ class loadTable():
             # 対象メニューのテーブルと「ロック対象テーブル」を昇順でロック
             locktable_list = self.get_locktable()
             if locktable_list is not None:
-                tmp_result = self.objdbca.table_lock([locktable_list])
+                locktable_list = json.loads(locktable_list)
+                locktable_list.append(self.get_table_name())
+                locktable_list = list(set(locktable_list))
+                tmp_result = self.objdbca.table_lock(locktable_list)
             else:
                 tmp_result = self.objdbca.table_lock([self.get_table_name()])
 
@@ -2215,7 +2218,16 @@ class loadTable():
                 try:
                     lastupdatetime_parameter = datetime.datetime.strptime(lastupdatetime_parameter, '%Y/%m/%d %H:%M:%S.%f')
                 except Exception:
-                    # 日付変換できないデータはバリデータのほうでエラーにする
+                    status_code = 'MSG-00028'
+                    msg_args = [lastupdatetime_parameter]
+                    msg = g.appmsg.get_api_message(status_code, msg_args)
+                    msg = "{} = {}".format(lastupdatetime_current, lastupdatetime_parameter),
+                    dict_msg = {
+                        'status_code': status_code,
+                        'msg_args': msg_args,
+                        'msg': msg,
+                    }
+                    self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
                     return
 
                 # 更新系の追い越し判定

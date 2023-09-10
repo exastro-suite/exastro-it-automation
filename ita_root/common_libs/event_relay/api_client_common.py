@@ -12,25 +12,37 @@
 # limitations under the License.
 #
 
-from common_libs.common.dbconnect import *  # noqa: F403
 import requests
 import json
+from common_libs.common.util import ky_decrypt
 
 
 class APIClientCommon:
-    def __init__(self, event_settings):
-        self.request_method = event_settings["REQUEST_METHOD"]
-        self.url = event_settings["API_URL"]
-        self.headers = json.loads(event_settings["REQUEST_HEADER"])
+
+    def __init__(self, event_settings, last_fetched_timestamp):
+        self.request_methods = {
+            "1": "GET",
+            "2": "POST",
+            "3": "SSL/TLS",
+            "4": "StartTLS",
+            "5": "Plaintext"
+        }
+
+        self.request_method = self.request_methods[event_settings["REQUEST_METHOD"]]
+        self.url = event_settings["URL"]
+        self.port = event_settings["PORT"]
+        self.headers = json.loads(event_settings["REQUEST_HEADER"]) if event_settings["REQUEST_HEADER"] else None
         self.proxy = {
             "http": event_settings["PROXY"],
             "https": event_settings["PROXY"]
         }
-        self.auth_token = event_settings["AUTH_TOKEN"]
+        self.auth_token = ky_decrypt(event_settings["AUTH_TOKEN"])
         self.username = event_settings["USERNAME"]
-        self.password = event_settings["PASSWORD"]
+        self.password = ky_decrypt(event_settings["PASSWORD"])
         self.access_key_id = event_settings["ACCESS_KEY_ID"]
-        self.secret_access_key = event_settings["SECRET_ACCESS_KEY"]
+        self.secret_access_key = ky_decrypt(event_settings["SECRET_ACCESS_KEY"])
+        self.mailbox_name = event_settings["MAILBOXNAME"]
+        self.last_fetched_timestamp = last_fetched_timestamp
 
     def call_api(self, parameter):
         result = True
@@ -41,8 +53,8 @@ class APIClientCommon:
                 method=self.request_method,
                 url=self.url,
                 headers=self.headers,
-                params=parameter if self.request_method == "GET" else None,
-                data=json.dumps(self.parameter) if self.request_method == "POST" else None,
+                params=parameter if self.request_method == "1" else None,
+                data=json.dumps(self.parameter) if self.request_method == "2" else None,
                 proxies=self.proxy
             )
             # ステータス400系500系は例外へ

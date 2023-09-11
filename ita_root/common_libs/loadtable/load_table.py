@@ -2221,7 +2221,6 @@ class loadTable():
                     status_code = 'MSG-00028'
                     msg_args = [lastupdatetime_parameter]
                     msg = g.appmsg.get_api_message(status_code, msg_args)
-                    msg = "{} = {}".format(lastupdatetime_current, lastupdatetime_parameter),
                     dict_msg = {
                         'status_code': status_code,
                         'msg_args': msg_args,

@@ -3668,6 +3668,39 @@ gap: 8px;
 align-items: center;
 padding: 0 8px;
 }
+.operationMenuSearch {
+position: relative;
+flex: 1 1 auto;
+align-items: center;
+}
+.operationMenuSearchText {
+width: 240px;
+padding: 0 28px;
+}
+.operationMenuSearch > .icon-search {
+position: absolute;
+left: 8px; top: 50%;
+transform: translateY(-50%);
+font-size: 14px;
+color: #888;
+}
+.operationMenuSearchClear {
+position: absolute;
+right: 4px; top: 50%;
+transform: translateY(-50%);
+width: 25px; height: 25px;
+background-color: transparent;
+border: none;
+color: #CCC;
+cursor: pointer;
+font-size: 12px;
+outline: none;
+}
+.operationMenuSearchClear:hover,
+.operationMenuSearchClear:focus {
+color: #DDD;
+}
+
 
 /*
 ##################################################

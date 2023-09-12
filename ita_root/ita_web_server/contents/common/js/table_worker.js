@@ -103,6 +103,11 @@ message( data ) {
             tw.duplicatSelectData();
             tw.postPageData();
         break;
+        case 'search':
+            tw.search();
+            tw.sort();
+            tw.postPageData();
+        break;
     }
 }
 /*
@@ -378,6 +383,45 @@ setDiscardIdList() {
         }
     });    
 }
+/*
+##################################################
+   絞り込み検索
+##################################################
+*/
+search() {
+    const tw = this;
+
+    // 配列をコピー
+    if ( !tw.originalData ) {
+        if ( fn.typeof( structuredClone ) === 'function') {
+            tw.originalData = structuredClone( tw.result );
+        } else {
+            tw.originalData = JSON.parse(JSON.stringify( tw.result ));
+        }
+    }
+
+    // 検索
+    if ( tw.data.searchText && tw.data.searchText !== '') {
+        tw.result = tw.originalData.filter(function( item ){
+            let matchFlag = false;
+            if ( tw.data.searchKeys && tw.data.searchKeys.length ) {
+                for ( const key of tw.data.searchKeys ) {
+                    if ( fn.typeof( item.parameter[ key ] ) === 'string' && item.parameter[ key ].indexOf( tw.data.searchText ) !== -1 ) {
+                        matchFlag = true;
+                    }
+                }
+            }
+            return matchFlag;
+        });
+    } else {
+        // キーワードが無ければ元の値を使用
+        if ( fn.typeof( structuredClone ) === 'function') {
+            tw.result = structuredClone( tw.originalData );
+        } else {
+            tw.result = JSON.parse(JSON.stringify( tw.originalData ));
+        }
+    }
+}   
 
 }
 

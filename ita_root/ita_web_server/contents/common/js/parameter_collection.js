@@ -1189,7 +1189,9 @@ parameterSelectOpen() {
 
       const option = {
          option: {
-             data: parameter
+             data: parameter,
+             searchText: getMessage.FTE11059,
+             searchKeys: ['menu_name']
          },
          infoData: info,
          selectType: 'multi',
@@ -1263,7 +1265,9 @@ hostSelectOpen() {
 
       const option = {
          option: {
-             data: host
+             data: host,
+             searchText: getMessage.FTE11060,
+             searchKeys: ['host_name']
          },
          infoData: info,
          selectType: 'multi',

@@ -538,6 +538,9 @@ setTable( mode ) {
                     if ( tb.option.data ) {
                         // フィルターボタンを削除
                         menuList.Sub.shift(-1);
+                        // 検索
+                        menuList.Sub[0].separate = true;
+                        menuList.Sub.unshift({ search: { placeholder: tb.option.searchText, tableId: tb.id }});
                     }
                     menuList.Main.push({ message: { text: getMessage.FTE00004 }});
                 }
@@ -615,6 +618,32 @@ setTable( mode ) {
                     }
                 }
             });
+
+            // 検索
+            if ( tb.option.data ) {
+                const search = function( text ){
+                    if ( !tb.checkWork ) {
+                        tb.workStart('search');
+                        tb.workerPost('search', {
+                            text: text,
+                            keys: tb.option.searchKeys
+                        });
+                    }
+                };
+                const $input = tb.$.header.find('.operationMenuSearchText');
+                $input.on({
+                    change: function( e ){
+                        search( $( this ).val() );
+                    }
+                });
+                tb.$.header.find('.operationMenuSearchClear').on({
+                    click: function( e ){
+                        $input.val('');
+                        search('');
+                    }
+                });
+            }
+
             // tbody表示
             if ( !tb.option.data ) {
                 if ( tb.flag.initFilter ) {
@@ -2843,6 +2872,10 @@ workerPost( type, data ) {
                 url: url
             };
         } break;
+        case 'search':
+            post.searchText = data.text;
+            post.searchKeys = data.keys;
+        break;
     }
     tb.worker.postMessage( post );
 }

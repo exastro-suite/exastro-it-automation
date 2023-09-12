@@ -942,6 +942,8 @@ getMessage = ( function() {
         'FTE11056': function( name ){ return `プリセット「${name}」に保存します。`},
         'FTE11057': function( name ){ return `プリセット「${name}」を削除します。`},
         'FTE11058': 'ホスト無しを表示',
+        'FTE11059': 'メニュー名検索',
+        'FTE11060': 'ホスト名検索',
 
         // 独自メニュー
         'FTE12001': '独自メニューの表示に失敗しました。',

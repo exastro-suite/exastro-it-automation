@@ -1904,6 +1904,16 @@ html: {
             itemHtml.push( cmn.html.inputText( inputClass, input.value, null, null, inputOption ) );
         }
 
+        // search
+        if ( item.search ) {
+            const placeholder = ( item.search.placeholder )? item.search.placeholder: '';
+            itemHtml.push(`<div class="operationMenuSearch">`
+                + `<span class="icon icon-search"></span>`
+                + `<input class="operationMenuSearchText input" name="${item.search.tableId}_operationMenuSearchText" autocomplete="off" placeholder="${placeholder}">`
+                + `<button class="operationMenuSearchClear"><span class="icon icon-cross"></span></button>`
+            + `</div>`);
+        }
+
         // check
         if ( item.check ) {
             const check = item.check,
@@ -1917,7 +1927,7 @@ html: {
             const messageIcon = ( item.message.icon )? item.message.icon: 'circle_info';
             itemHtml.push(`<div class="operationMenuMessage">`
             + `<span class="operationMenuMessageIcon">${cmn.html.icon( messageIcon )}</span>`
-            + `<span class="operationMenuMessageText">${item.message.text}</span></div>`)
+            + `<span class="operationMenuMessageText">${item.message.text}</span></div>`);
         }
 
         // Radio list

@@ -13,8 +13,10 @@
 #   limitations under the License.
 
 import connexion
-from flask import jsonify
+from flask import jsonify, g
 import sys
+import base64
+import json
 
 sys.path.append('../../')
 from common_libs.common import *  # noqa: F403
@@ -25,7 +27,7 @@ from libs.organization_common import check_menu_info, check_auth_menu, check_she
 
 
 @api_filter
-def maintenance_all(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  # noqa: E501
     """maintenance_all
 
     レコードを一括で登録/更新/廃止/復活する # noqa: E501
@@ -45,6 +47,11 @@ def maintenance_all(organization_id, workspace_id, menu, body=None):  # noqa: E5
     #    body = object.from_dict(connexion.request.get_json())  # noqa: E501
     # return 'do some magic!'
 
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00001"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -63,10 +70,13 @@ def maintenance_all(organization_id, workspace_id, menu, body=None):  # noqa: E5
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    parameters = []
-    if connexion.request.is_json:
-        body = connexion.request.get_json()
-        parameters = body
+    retBool, parameters, = menu_maintenance_all.create_maintenance_parameters(connexion.request)
+    if retBool is False:
+        status_code = "400-00003"
+        request_content_type = connexion.request.content_type.lower()
+        log_msg_args = [request_content_type]
+        api_msg_args = [request_content_type]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters)
     return result_data,

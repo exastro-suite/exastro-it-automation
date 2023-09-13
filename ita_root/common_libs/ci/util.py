@@ -162,7 +162,8 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         # job for workspace
         try:
             if allow_proc(organization_id, workspace_id) is True:
-                main_logic(organization_id, workspace_id)
+                main_logic_exec = main_logic
+                main_logic_exec(organization_id, workspace_id)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
             app_exception(e)
@@ -170,6 +171,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             # catch - other all error
             exception(e)
 
+        del main_logic_exec
         # delete environment of workspace
         g.pop('WORKSPACE_ID')
         g.db_connect_info.pop("WSDB_HOST")
@@ -201,7 +203,8 @@ def wrapper_job_all_org(main_logic, loop_count=500):
             # set applogger.set_level: default:INFO / Use ITA_DB config value
             set_service_loglevel(common_db)
 
-            main_logic(common_db)
+            main_logic_exec = main_logic
+            main_logic_exec(common_db)
 
             common_db.db_disconnect()
         except AppException as e:
@@ -211,6 +214,7 @@ def wrapper_job_all_org(main_logic, loop_count=500):
             # catch - other all error
             exception(e)
 
+        del main_logic_exec
         if count >= max:
             break
         else:

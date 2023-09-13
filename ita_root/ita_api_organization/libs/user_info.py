@@ -94,6 +94,8 @@ def collect_user_auth(objdbca):
         RETRUN:
             user_auth_data
     """
+    # メンテナンスモード状態の取得
+    maintenance_mode = g.get('maintenance_mode')
 
     # ユーザIDを取得
     user_id = g.get('USER_ID')
@@ -126,6 +128,7 @@ def collect_user_auth(objdbca):
             web_table_settings = json.loads(ret[0]['WEB_TABLE_SETTINGS'])
 
     user_auth_data = {
+        "maintenance_mode": maintenance_mode,
         "user_id": user_id,
         "user_name": user_name,
         "roles": roles,

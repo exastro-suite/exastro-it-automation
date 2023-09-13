@@ -13,6 +13,8 @@
 #   limitations under the License.
 
 from flask import g  # noqa: F401
+import json
+import base64
 
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
@@ -54,3 +56,64 @@ def rest_maintenance(objdbca, menu, parameter, target_uuid):
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     return result
+
+
+def create_maintenance_parameters(connexion_request, cmd_type='Register'):
+    """
+    create_maintenance_parameters
+        Use connexion.request
+            - application/json
+            -  multipart/form-data, application/x-www-form-urlencoded
+        Parameter generation from xxxx
+            - application/json
+                connexion.request.get_json()
+            -  multipart/form-data, application/x-www-form-urlencoded
+                connexion.request.form['json_parameters']
+                connexion_request.files
+            => { "parameter":{}, "file":{} }
+    Arguments:
+        connexion_request: connexion.request
+        cmd_type: cmd_type(Register/Update/Discard/Restore)
+    Returns:
+        bool, parameters,
+    """
+
+    parameters = []
+    # get parameters
+    if connexion_request.is_json:
+        # application/json
+        parameters = connexion_request.get_json()
+    elif connexion_request.form:
+        # multipart/form-data, application/x-www-form-urlencoded
+        # check key : json_parameters
+        if 'json_parameters' in connexion_request.form:
+            # json.loads
+            try:
+                parameters = json.loads(connexion_request.form['json_parameters'])
+            except:   # noqa: E722
+                parameters = connexion_request.form['json_parameters']
+                if isinstance(parameters, (list, dict)) is False:
+                    return False, [],
+            # check key : parameter
+            if 'parameter' not in parameters:
+                return False, [],
+
+            # set cmd_type
+            parameters.setdefault('type', cmd_type)
+
+            # set parameter['file'][rest_name]
+            if connexion_request.files:
+                for _file_key in connexion_request.files:
+                    # set file->rest_key_name->filedata(base64)
+                    _file_data = connexion_request.files[_file_key]
+                    _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
+                    parameters.setdefault('file', {})
+                    parameters['file'][_file_key] = _str_b64_file_data
+        else:
+            return False, [],
+
+    # check parameters
+    if len(parameters) == 0:
+        return False, [],
+
+    return True, parameters,

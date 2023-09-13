@@ -19,10 +19,10 @@
 #   <<環境変数>>
 #     HOST:            リモートホスト
 #     TYPE:            認証方式
-#                      パスワード認証:             pass  
+#                      パスワード認証:             pass
 #                      鍵認証:                     key
 #                      鍵認証(パスフレーズあり:    key
-#                      鍵認証(鍵交換済み):         none  
+#                      鍵認証(鍵交換済み):         none
 #     USER:            ユーザー名
 #     PASSWD:          パスワード
 #     KEY_FILE_PATH:   鍵認証ファイル
@@ -30,6 +30,7 @@
 #     DEST_PATH:       ファイル転送先パス
 #     FROMTO:          転送方向
 #                      ITA: ITA->TOWER   TOWER:  TOWER->ITA
+#     PORT:            ポート番号
 #   <<exit code>>
 #     0:   正常
 #     他:　異常
@@ -42,6 +43,7 @@ set KEY_FILE_PATH    " "
 set SRC_PATH         $env(SRC_PATH)
 set DEST_PATH        $env(DEST_PATH)
 set FROMTO           $env(FROMTO)
+set PORT             $env(PORT)
 if { ${FROMTO} == "ITA" } {
    set REMOTE_SRC       ${SRC_PATH}
    set REMOTE_DEST      ${USER}@${HOST}:${DEST_PATH}
@@ -54,7 +56,7 @@ if { ${TYPE} == "key" } {
 }
 set timeout 120
 if { ${TYPE} == "pass" } {
-    spawn scp -pr -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${REMOTE_SRC} ${REMOTE_DEST}
+    spawn scp -P ${PORT} -pr -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${REMOTE_SRC} ${REMOTE_DEST}
     expect "assword:" {
         send "${PASSWD}\n"
         exp_continue
@@ -75,7 +77,7 @@ if { ${TYPE} == "pass" } {
        exit ${STATUS}
     }
 } elseif { ${TYPE} == "key" } {
-    spawn scp -pr -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${KEY_FILE_PATH} ${REMOTE_SRC} ${REMOTE_DEST}
+    spawn scp -P ${PORT} -pr -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ${KEY_FILE_PATH} ${REMOTE_SRC} ${REMOTE_DEST}
     expect "assword:" {
         exit 201
     } "(yes/no)?" {
@@ -95,7 +97,7 @@ if { ${TYPE} == "pass" } {
     }
 }
 if { ${TYPE} == "none" } {
-    spawn scp -pr -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${REMOTE_SRC} ${REMOTE_DEST}
+    spawn scp -P ${PORT} -pr -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${REMOTE_SRC} ${REMOTE_DEST}
     expect "password:" {
         exit 201
     } "(yes/no)?" {

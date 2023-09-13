@@ -26,6 +26,7 @@ ENV STORAGEPATH=/storage/
 ENV LISTEN_PORT             8000
 ENV APACHE_PID_DIR          /var/run_$USERNAME/httpd/pid
 ENV APACHE_SOCKET_DIR       /var/run_$USERNAME/httpd/socket
+ENV APACHE_TIMEOUT          300
 ENV APACHE_USERNAME         $USERNAME
 ENV APACHE_GROUPNAME        $GROUPNAME
 ENV SERVICE_NAME=ita-api-admin
@@ -49,7 +50,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade pyyaml \
 &&  pip3.9 install --upgrade pytz \
 &&  pip3.9 install --upgrade markdown \
-&&  pip3.9 install --upgrade pymysql \
+&&  pip3.9 install --upgrade pymysql==1.0.3 \
 &&  pip3.9 install --upgrade python-dotenv \
 &&  pip3.9 install --upgrade chardet \
 &&  pip3.9 install --upgrade connexion[swagger-ui] \

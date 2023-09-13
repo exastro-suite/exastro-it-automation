@@ -38,7 +38,6 @@ constructor() {
 
     // jQuery cache
     ui.$ = {};
-    ui.$.window = $( window ),
     ui.$.body = $('body'),
     ui.$.container = $('#container');
     ui.$.header = $('#header');
@@ -93,6 +92,7 @@ init() {
                 ui.rest.user = ui.storageUser;
 
                 ui.setSideMenu();
+                ui.maintenanceMode();
                 ui.headerMenu( false );
             });
         }
@@ -229,15 +229,20 @@ setSideMenuEvents() {
             + `</div></div>`);
 
             ui.$.container.append( $html );
-            ui.$.window.on('mousedown.groupSub', function( e ){
+
+            const $window = $( window ), $iframe = ui.$.content.find('.customMenuIframe');
+            const close = function( e ) {
                 if ( !$( e.target ).closest('.menuGroupSub, .subGroupMenuOpen').length ) {
                     ui.$.menu.find('.subGroupMenuOpen').removeClass('subGroupMenuOpen');
                     $html.animate({ left: '-100%'}, 300, function(){
                         $( this ).remove();
                     });
-                    ui.$.window.off('mousedown.groupSub');
+                    $window.off('mousedown.groupSub');
+                    if ( $iframe.length ) $iframe.contents().off('mousedown.groupSub');
                 }
-            });
+            };
+            $window.on('mousedown.groupSub', close );
+            if ( $iframe.length ) $iframe.contents().on('mousedown.groupSub', close );
         }
     });
 
@@ -501,7 +506,7 @@ sideMenuBody( title, icon, list, panel, searchFlag = true ) {
 
     const iconImage = ui.getPanelImage( title, icon, panel );
 
-    return `
+    let html = `
     <div class="menuTitle">
         <div class="menuTitleIcon">
             ${iconImage}
@@ -515,7 +520,17 @@ sideMenuBody( title, icon, list, panel, searchFlag = true ) {
             ${list}
         </ul>
     </nav>
-    ${( searchFlag )? ui.serachBlock(): ''}`;
+    ${( searchFlag )? ui.serachBlock( icon ): ''}`;
+
+    // サブメニューコンテンツ
+    if ( searchFlag && panel && ui.params.menuNameRest === 'parameter_collection') {
+        html = `<div class="menuPageMain">`
+            + html
+        + `</div>`
+        + `<div class="menuPageContent"><div class="pageContentLoading"></div></div>`;
+    }
+
+    return html;
 }
 /*
 ##################################################
@@ -685,11 +700,12 @@ menuHistory(){
    Search menu
 ##################################################
 */
-serachBlock() {
+serachBlock( icon ) {
+    icon = fn.cv( icon, 'menu');
     return `
     <div class="menuSearch">
         <span class="icon icon-search"></span>
-        <input class="menuSearchText" data-search="menuMain" placeholder="${getMessage.FTE10007}">
+        <input class="menuSearchText" name="menuSearchText_${icon}" data-search="menuMain" placeholder="${getMessage.FTE10007}">
         <button class="menuSearchClear"><span class="icon icon-cross"></span></button>
     </div>`;
 }
@@ -758,6 +774,28 @@ topicPath() {
     document.title = title.join(' / ');
 }
 
+/*
+##################################################
+   メンテナンスモード
+##################################################
+*/
+maintenanceMode() {
+    const ui = this;
+
+    if ( ui.rest.user.maintenance_mode ) {
+        if ( ui.rest.user.maintenance_mode.data_update_stop === '1') {
+            ui.$.container.addClass('inMaintenanceMode');
+            ui.$.container.find('.modeMessageText').text( getMessage.FTE10096 );
+        } else if ( ui.rest.user.maintenance_mode.backyard_execute_stop === '1') {
+            ui.$.container.addClass('inMaintenanceMode');
+            ui.$.container.find('.modeMessageText').text( getMessage.FTE10095 );
+        } else {
+            ui.$.container.removeClass('inMaintenanceMode');
+            ui.$.container.find('.modeMessageText').empty()
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   メニュー（コンテンツ）
@@ -778,9 +816,10 @@ setMenu() {
 
     fn.fetch( urls ).then(function( result ){
         // ユーザ情報に変更があれば更新
-        if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) ) {
+        if ( JSON.stringify( result[0] ) !== JSON.stringify( mn.storageUser ) || !mn.rest.user ) {
             mn.rest.user = result[0];
             mn.headerMenu();
+            mn.maintenanceMode();
 
             fn.storage.set('restUser', mn.rest.user, 'session');
         } else {
@@ -789,7 +828,7 @@ setMenu() {
 
         // 画面設定
         const uiStrageSetting = fn.storage.get('ui_setting'),
-              uiSetting = ( mn.rest.user.web_table_settings && mn.rest.user.web_table_settings.ui )? mn.rest.user.web_table_settings.ui: {};
+            uiSetting = ( mn.rest.user && mn.rest.user.web_table_settings && mn.rest.user.web_table_settings.ui )? mn.rest.user.web_table_settings.ui: {};
         if ( JSON.stringify( uiStrageSetting ) !== JSON.stringify( uiSetting ) ) {
             fn.storage.set('ui_setting', uiSetting );
             fn.setUiSetting();
@@ -889,6 +928,14 @@ sheetType() {
                 mn.$.content.addClass('tabContent');
                 mn.terraformManagement();
             break;
+            // 25 : パラメータ集
+            case '25':
+                mn.parameterCollection();
+            break;
+            // 99 : 独自メニュー
+            case '99':
+                mn.customMenu();
+            break;
         }
     }
 }
@@ -916,12 +963,17 @@ headerMenu( readyFlag = true ) {
             $userInfo.removeClass('open');
         } else {
             $userInfo.addClass('open');
-            mn.$.window.on('pointerdown.userInfo', function( e ){
+            const $window = $( window ), $iframe = mn.$.content.find('.customMenuIframe');
+
+            const close = function( e ) {
                 if ( !$( e.target ).closest('.userInfomation, .modalOverlay').length ) {
                     $userInfo.removeClass('open');
-                    mn.$.window.off('pointerdown.userInfo');
+                    $window.off('pointerdown.userInfo');
+                    if ( $iframe.length ) $iframe.contents().off('pointerdown.userInfo');
                 }
-            });
+            };
+            $window.on('pointerdown.userInfo', close );
+            if ( $iframe.length ) $iframe.contents().on('pointerdown.userInfo', close );
         }
     });
 
@@ -1171,9 +1223,11 @@ contentTabEvent( openTab = '#dataList') {
 
         const $link = $( this ),
               tab = $link.attr('href');
+        mn.$.content.addClass('tabChange');
         mn.$.content.find('.tabOpen').removeClass('tabOpen').removeAttr('tabindex');
         $link.addClass('tabOpen').attr('tabindex', -1 );
         $( tab ).addClass('tabOpen');
+        mn.$.content.removeClass('tabChange');
     });
 }
 // 指定のタブを開く
@@ -1327,7 +1381,7 @@ dataDownload() {
     if ( mn.flag.insert ) {
         list.push({ title: getMessage.FTE10015, description: getMessage.FTE10016, type: 'newDwonloadExcel'});
     }
-    
+
     if ( mn.flag.history ) {
         list.push({ title: getMessage.FTE10023, description: getMessage.FTE10024, type: 'allHistoryDwonloadExcel'});
     }
@@ -1360,7 +1414,7 @@ dataDownload() {
 fileRegister( $button, type ) {
     const mn = this;
 
-    const fileType = ( type === 'excel')? 'base64': 'json',
+    const fileType = ( type === 'excel')? 'file': 'json',
           fileMime = ( type === 'excel')? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'application/json',
           restUrl = ( type === 'excel')? `excel/maintenance/`: `maintenance/all/`;
 
@@ -1369,7 +1423,6 @@ fileRegister( $button, type ) {
 
     // ファイル選択
     fn.fileSelect( fileType, null, fileMime ).then(function( selectFile ){
-        const postData = ( type === 'excel')? { excel: selectFile.base64 }: selectFile.json;
 
         // 登録するか確認する
         const buttons = {
@@ -1381,29 +1434,42 @@ fileRegister( $button, type ) {
         table.tbody.push([ getMessage.FTE10027, selectFile.name ]);
         table.tbody.push([ getMessage.FTE10028, selectFile.size.toLocaleString() + ' byte']);
 
+        let postData;
+        const option = {
+            multipart: true
+        };
         if ( fileType === 'json') {
             try {
                 table.tbody.push([ getMessage.FTE10029, selectFile.json.length.toLocaleString() ]);
             } catch( e ) {
                 throw new Error( getMessage.FTE10021 );
             }
+            postData = mn.jsonToFormData( selectFile.json );
+        } else {
+            postData = new FormData();
+            postData.append('excel', selectFile );
         }
 
         fn.alert( getMessage.FTE00083, fn.html.table( table, 'fileSelectTable', 1 ), 'confirm', buttons ).then( function( flag ){
             if ( flag ) {
-
                 const processing = fn.processingModal( getMessage.FTE00084 );
 
                 // POST（登録）
-                fn.fetch(`/menu/${mn.params.menuNameRest}/${restUrl}`, null, 'POST', postData ).then(function( result ){
+                fn.fetch(`/menu/${mn.params.menuNameRest}/${restUrl}`, null, 'POST', postData, option ).then(function( result ){
                     // 登録成功
                     fn.resultModal( result ).then(function(){
                         mn.contentTabOpen('#dataList');
                         mn.mainTable.changeViewMode();
                     });
                 }).catch(function( error ){
-                    // 登録失敗
-                    fn.errorModal( error, mn.title, mn.info );
+                    if ( fn.typeof( error ) === 'object') {
+                        if ( error.result === '498-00001') {
+                            if ( fn.typeof( error.message ) === 'string') window.alert( error.message );
+                        } else {
+                            // 登録失敗
+                            fn.errorModal( error, mn.title, mn.info );
+                        }
+                    }
                 }).then(function(){
                     // ボタンを戻す
                     fn.disabledTimer( $button, false, 1000 );
@@ -1420,6 +1486,47 @@ fileRegister( $button, type ) {
         }
         fn.disabledTimer( $button, false, 0 );
     });
+}
+/*
+##################################################
+   一括登録JSONをFormDataに変換
+##################################################
+*/
+jsonToFormData( json ) {
+    // パラメータとファイルを分ける
+    const
+    formData = new FormData(),
+    parameters = [],
+    paramLength = json.length;
+
+    for ( let i = 0; i < paramLength; i++ ) {
+        const item = json[i];
+        // パラメータ
+        parameters.push({
+            parameter: item.parameter,
+            type: item.type
+        });
+
+        // ファイルをFormDataに追加
+        // Parameter No. + . + Rest Name Key
+        for ( const key in item.file ) {
+            if ( item.parameter[ key ] !== undefined && item.parameter[ key ] !== null ) {
+                const
+                fileName = item.parameter[ key ],
+                base64 = item.file[ key ];
+
+                if ( fn.typeof( base64 ) === 'string') {
+                    const file = fn.base64ToFile( item.file[ key ], fileName );
+                    formData.append(`${i}.${key}`, file );
+                }
+            }
+        }
+    }
+
+    // パラメータをFormDataに追加
+    formData.append('json_parameters', fn.jsonStringify( parameters ) );
+
+    return formData;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1675,6 +1782,60 @@ terraformManagement() {
         terraform.setup();
 
         mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   パラメータ集
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+parameterCollection() {
+    const mn = this;
+
+    const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
+    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection() ) );
+    mn.setCommonEvents();
+
+    const assets = [
+        { type: 'js', url: '/_/ita/lib/exceljs/exceljs.js'},
+        { type: 'js', url: '/_/ita/js/parameter_collection.js'},
+        { type: 'css', url: '/_/ita/css/parameter_collection.css'},
+    ];
+
+    fn.loadAssets( assets ).then(function(){
+        const params = mn.params;
+        params.user = mn.rest.user;
+
+        const pc = new ParameterCollection( mn.params.menuNameRest, params );
+        pc.setup();
+
+        mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   独自メニュー
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+customMenu() {
+    const mn = this;
+
+    const assets = [
+        { type: 'js', url: '/_/ita/js/custom_menu.js'}
+    ];
+
+    fn.loadAssets( assets ).then(function(){
+        customMenu( mn.info ).then(function( $iframe ){
+            mn.$.content.html( $iframe );
+        }).catch(function(){
+            // alert( getMessage.FTE12001 );
+        }).then(function(){
+            mn.onReady();
+        });
     });
 }
 

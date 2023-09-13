@@ -31,12 +31,13 @@
 #     KEY_FILE_PATH:   鍵認証ファイル
 #     SRC_PATH:        ファイル転送元パス
 #     DEST_PATH:       ファイル転送先パス
-#     RAS_FILE:        鍵認証ファイル 
+#     RAS_FILE:        鍵認証ファイル
 #     RAS_FILE_PASSWD: 鍵認証ファイル パスフレーズ
 #                      パスフレーズなし: undefine
 #     BASE_DIR:        ita-rootパス
 #     FROMTO:          転送方向
-#                      ITA: ITA->TOWER   TOWER:  TOWER->ITA 
+#                      ITA: ITA->TOWER   TOWER:  TOWER->ITA
+#     PORT:            PORT番号
 #   <<exit code>>
 #     0:   正常
 #     他:　異常
@@ -57,6 +58,7 @@ do
     export RAS_FILE_PASSWD=${LINE[7]}
     export BASE_DIR=${LINE[8]}
     export FROMTO=${LINE[9]}
+    export PORT=${LINE[10]}
     break
 done < ${FILE}
 ## 鍵認証ファイル パスフレーズが設定されている場合にssh-agentにパスフレーズ登録
@@ -66,7 +68,7 @@ if [ "${RAS_FILE_PASSWD}" != "undefine" ]; then
     echo "failed to startup ssh-agent." >> /dev/stderr
     exit 100
   fi
-  # expect 
+  # expect
   expect ${BASE_DIR}/common_libs/ansible_driver/shells/ky_ansible_ssh_add.exp 1>/dev/null 2>>/dev/stderr
   EXIT_CODE=$?
   if [ ${EXIT_CODE}  -ne 0 ]; then
@@ -84,7 +86,7 @@ if [ "${RAS_FILE_PASSWD}" != "undefine" ]; then
     exit 100
   fi
 fi
-expect ${BASE_DIR}/common_libs/ansible_driver/shells/ky_ansible_materials_transfer.exp 
+expect ${BASE_DIR}/common_libs/ansible_driver/shells/ky_ansible_materials_transfer.exp
 RET_CODE=$?
 if [ "${RAS_FILE_PASSWD}" != "undefine" ]; then
   eval `ssh-agent -k` 1>/dev/null

@@ -1760,3 +1760,41 @@ def _format_loadtable_msg(loadtable_msg):
         result_msg[key] = msg_list
 
     return result_msg
+
+
+def create_upload_parameters(connexion_request, key_name):
+    """
+    create_upload_parameters
+        Use connexion.request
+            - application/json
+            - multipart/form-data
+        Parameter generation from xxxx
+            - application/json
+                connexion.request.get_json()
+            - multipart/form-data
+                connexion_request.files
+            => { "key_name": { "name":"", "base64":"" }}
+    Arguments:
+        connexion_request: connexion.request
+    Returns:
+        bool, upload_data,
+    """
+
+    upload_data = {}
+    # if connexion_request:
+    if connexion_request.is_json:
+        # application/json
+        upload_data = dict(connexion_request.get_json())
+    elif connexion_request.files:
+        # get files & set parameter['file'][rest_name]
+        for _file_key in connexion_request.files:
+            # set key_name -> name, base64
+            _file_data = connexion_request.files[_file_key]
+            _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
+            upload_data.setdefault(key_name, {})
+            upload_data[key_name]["name"] = _file_data.filename
+            upload_data[key_name]["base64"] = _str_b64_file_data
+    else:
+        return False, {},
+
+    return True, upload_data,

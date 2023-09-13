@@ -1,0 +1,64 @@
+# Global values
+# not quate strings
+@sys-user-id = admin
+@sys-user-pw = password
+@org-user-id = test_user
+@org-user-pw = password
+
+@base_sys_url = http://platform-auth:{{sys-mng-port}}
+@base_org_url = http://platform-auth:{{org-mng-port}}
+
+# 1 api to ###
+
+###
+# Organization一覧取得
+GET {{base_sys_url}}/api/platform/organizations
+Authorization: Basic {{sys-user-id}} {{sys-user-pw}}
+
+
+###
+# Organization作成
+POST {{base_sys_url}}/api/platform/organizations
+Authorization: Basic {{sys-user-id}} {{sys-user-pw}}
+content-type: application/json
+
+{
+  "id": "org1",
+  "name": "organization of org1",
+  "organization_managers": [
+    {
+      "username": "test_user",
+      "email": "test@test.com",
+      "firstName": "doe",
+      "lastName": "john",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": true
+        }
+      ],
+      "requiredActions": [
+        "UPDATE_PROFILE"
+      ],
+      "enabled": true
+    }
+  ],
+  "plan": {
+  },
+  "options": {},
+  "optionsIta": {
+    "no_install_driver": [
+    ]
+  }
+}
+
+###
+# Organization削除
+@organization_id = org1
+
+DELETE {{base_sys_url}}/api/platform/organizations/{{organization_id}}
+Authorization: Basic {{sys-user-id}} {{sys-user-pw}}
+content-type: application/json
+
+###

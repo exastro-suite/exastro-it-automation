@@ -14,11 +14,15 @@
 import os
 import re
 from flask import g
+import shlex
 
 from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath, get_AnsibleDriverShellPath, getAnsibleConst
+from common_libs.ansible_driver.functions.util import get_OSTmpPath, addAnsibleCreateFilesPath
+
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
-from common_libs.common.util import ky_file_decrypt
-from common_libs.common.util import ky_decrypt
+from common_libs.common.util import ky_file_decrypt, ky_decrypt
+from common_libs.ansible_driver.functions.util import loacl_quote
+
 """
 Ansible coreコンテナの実行を制御するモジュール
 """
@@ -108,8 +112,8 @@ class AnsibleExecute():
         # palybook実行に必要なファイルパス生成
         strExecshellTemplateName = "{}/ky_ansible_playbook_command_shell_template.sh".format(get_AnsibleDriverShellPath())
         strSSHAddShellName = "{}/{}/.ky_ansible_ssh_add.exp".format(execute_path, self.strTempFolderName)
-        strDecodeSSHAgentconfigFileName = "{}/{}/.sshAgentConfig.txt".format(execute_path, self.strTempFolderName)
-        strEncodeSSHAgentconfigFileName = "{}/{}/.sshAgentConfig.enc".format(execute_path, self.strTempFolderName)
+        strEncodeSSHAgentconfigFileName = "{}/{}/.sshAgentConfig.txt".format(execute_path, self.strTempFolderName)
+        strDecodeSSHAgentconfigFileName = "{}/{}/.sshAgentConfig.dec".format(execute_path, self.strTempFolderName)
         strShellLogFileName = "{}/{}/playbook_execute_shell.log".format(execute_path, self.strTempFolderName)
         strVaultPasswordFileName = "{}/{}/.tmpkey".format(execute_path, self.strTempFolderName)
         strResultFileName = "{}/{}/{}".format(execute_path, self.strOutFolderName, self.Resultfile)
@@ -136,7 +140,8 @@ class AnsibleExecute():
         stransibleplaybook_options = ''
         with open(stroptionfile) as fd:
             stransibleplaybook_options += fd.read()
-
+        # パラメータ文字列をエスケープする
+        stransibleplaybook_options = loacl_quote(stransibleplaybook_options)
         # ドライランモードの場合のansible-playbookのパラメータを設定する。
         if run_mode == '2':
             stransibleplaybook_options += ' --check '
@@ -155,16 +160,19 @@ class AnsibleExecute():
 
         # ssh-agentへの秘密鍵ファイルのパスフレーズ登録が必要か判定
         sshAgentExec = "NONE"
-        if os.path.isfile(strDecodeSSHAgentconfigFileName):
-            if os.path.getsize(strDecodeSSHAgentconfigFileName) != 0:
+        if os.path.isfile(strEncodeSSHAgentconfigFileName):
+            if os.path.getsize(strEncodeSSHAgentconfigFileName) != 0:
                 sshAgentExec = "RUN"
                 # ssh-agentへの秘密鍵ファイルのパスフレーズ登録に必要な情報ファイルの復号化
-                ret = ky_file_decrypt(strDecodeSSHAgentconfigFileName, strEncodeSSHAgentconfigFileName)
+                ret = ky_file_decrypt(strEncodeSSHAgentconfigFileName, strDecodeSSHAgentconfigFileName)
                 if ret is False:
                     # sshAgent用認証ファイル作成失敗
                     msgstr = g.appmsg.get_api_message("MSG-10889", [])
                     self.setLastError(msgstr)
                     return False
+                # ssh-agentへの秘密鍵ファイルのパスフレーズ登録されているファイルなのでゴミ掃除リストに追加
+                addAnsibleCreateFilesPath(strDecodeSSHAgentconfigFileName)
+
         # hostsフルパス
         strhosts = "{}/{}/hosts".format(execute_path, self.strInFolderName)
         # playbookフルパス
@@ -180,13 +188,14 @@ class AnsibleExecute():
             strEngineVirtualenvName = "__undefine__"
             ansible_path += "/"
 
+        playbook_command = ansible_path + "/ansible-playbook"
         # Ansible実行するshellを作成
-        strBuildCommand = "{}/ansible-playbook -i {} {} --vault-password-file {} {}".format(
-            ansible_path,
-            strhosts,
+        strBuildCommand = "{} -i {} {} --vault-password-file {} {}".format(
+            shlex.quote(playbook_command),
+            shlex.quote(strhosts),
             stransibleplaybook_options,
-            strVaultPasswordFileName,
-            strPlaybookPath)
+            shlex.quote(strVaultPasswordFileName),
+            shlex.quote(strPlaybookPath))
 
         # sshAgentの設定とPlaybookを実行するshellのテンプレートを読み込み
         strShell = ""
@@ -194,7 +203,7 @@ class AnsibleExecute():
             strShell += fd.read()
 
         # テンプレート内の変数を実値に置き換え
-        strShell = strShell.replace('<<sshAgentConfigFile>>', strEncodeSSHAgentconfigFileName)
+        strShell = strShell.replace('<<sshAgentConfigFile>>', strDecodeSSHAgentconfigFileName)
         strShell = strShell.replace('<<logFile>>', strShellLogFileName)
         strShell = strShell.replace('<<ssh_add_script_path>>', strSSHAddShellName)
         strShell = strShell.replace('<<in_directory_path>>', strCurrentPath)
@@ -202,6 +211,8 @@ class AnsibleExecute():
         strShell = strShell.replace('<<sshAgentExec>>', sshAgentExec)
         strShell = strShell.replace('<<virtualenv_path>>', strEngineVirtualenvName)
         strShell = strShell.replace('<<result_file_path>>', strResultFileName)
+
+        print(strShell)
 
         # ansible-playbook実行 shell作成
         with open(strExecshellName, 'w') as fd:

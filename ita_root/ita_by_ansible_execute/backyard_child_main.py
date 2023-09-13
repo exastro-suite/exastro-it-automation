@@ -22,6 +22,7 @@ import glob
 import inspect
 import copy
 import shlex
+import subprocess
 
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
@@ -635,7 +636,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             execute_data['FILE_RESULT'] = zip_result_file
         else:
             # ZIPファイル作成の作成に失敗しても、ログに出して次に進む
-            g.applogger.warn(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
+            g.applogger.info(g.appmsg.get_log_message("BKY-00004", ["createTmpZipFile", err_msg]))
 
     # statusによって処理を分岐
     if status != -1:
@@ -1235,15 +1236,16 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
         addAnsibleCreateFilesPath(zip_temp_save_path)
 
         # OSコマンドでzip圧縮する
-        tmp_str_command = "cd " + shlex.quote(zip_data_source_dir) + "; zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
+        tmp_str_command = "cd " + shlex.quote(zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
 
-        os.system(tmp_str_command)
+        ret = subprocess.run(tmp_str_command, check=True, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-        # zipファイルの存在を確認
+        # zipファイルパス
         zip_temp_save_path = zip_temp_save_dir + "/" + zip_file_name
-        if not os.path.exists(zip_temp_save_path):
-            err_msg = g.appmsg.get_log_message("MSG-10252", [zip_type, zip_temp_save_path])
-            False, err_msg, zip_file_name, zip_temp_save_dir
+        # subprocess.runのエラー時は例外発生
+        # if ret.returncode != 0:
+        #    err_msg = g.appmsg.get_log_message("MSG-10252", [zip_type, tmp_str_command, ret.stdout])
+        #    False, err_msg, zip_file_name, zip_temp_save_dir
 
         # 処理]{}ディレクトリを圧縮(圧縮ファイル:{})
         g.applogger.debug(g.appmsg.get_log_message("MSG-10783", [zip_type, os.path.basename(zip_temp_save_path)]))

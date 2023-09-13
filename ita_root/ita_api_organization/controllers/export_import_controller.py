@@ -17,6 +17,8 @@ from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body, check_request_body_key
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import export_import
+from flask import g
+
 
 @api_filter
 def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa: E501
@@ -33,6 +35,11 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00016"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -74,6 +81,11 @@ def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00017"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -115,6 +127,11 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00014"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -163,6 +180,11 @@ def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00015"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -222,7 +244,7 @@ def get_excel_bulk_export_list(organization_id, workspace_id):  # noqa: E501
     return result_data,
 
 @api_filter
-def post_excel_bulk_upload(organization_id, workspace_id, body=None):  # noqa: E501
+def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs):  # noqa: E501
     """post_excel_bulk_upload
 
     Excel一括インポートのアップロード # noqa: E501
@@ -236,6 +258,10 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None):  # noqa: E
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00017"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -254,8 +280,13 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None):  # noqa: E
     # bodyのjson形式チェック
     check_request_body()
 
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
+    retBool, body = export_import.create_upload_parameters(connexion.request, 'zipfile')
+    if retBool is False:
+        status_code = "400-00003"
+        request_content_type = connexion.request.content_type.lower()
+        log_msg_args = [request_content_type]
+        api_msg_args = [request_content_type]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca)
 
@@ -293,7 +324,7 @@ def get_menu_export_list(organization_id, workspace_id):  # noqa: E501
     return result_data,
 
 @api_filter
-def post_menu_import_upload(organization_id, workspace_id, body=None):  # noqa: E501
+def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):  # noqa: E501
     """post_menu_import_upload
 
     メニューインポートのアップロード # noqa: E501
@@ -307,6 +338,11 @@ def post_menu_import_upload(organization_id, workspace_id, body=None):  # noqa: 
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00015"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -325,11 +361,17 @@ def post_menu_import_upload(organization_id, workspace_id, body=None):  # noqa: 
     check_request_body()
 
     body_file = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        body_file = check_request_body_key(body, 'file')  # keyが無かったら400-00002エラー
-        check_request_body_key(body_file, 'name')
-        check_request_body_key(body_file, 'base64')
+    retBool, body = export_import.create_upload_parameters(connexion.request, 'file')
+    if retBool is False:
+        status_code = "400-00003"
+        request_content_type = connexion.request.content_type.lower()
+        log_msg_args = [request_content_type]
+        api_msg_args = [request_content_type]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+    body_file = check_request_body_key(body, 'file')  # keyが無かったら400-00002エラー
+    check_request_body_key(body_file, 'name')
+    check_request_body_key(body_file, 'base64')
 
     result_data = export_import.post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body_file)
 

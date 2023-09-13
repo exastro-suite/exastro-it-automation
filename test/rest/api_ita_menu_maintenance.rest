@@ -1,0 +1,49 @@
+###### Menu Maintenance ######
+
+# Global values
+# not quate strings
+@org-user-id = test_user
+@org-user-pw = password
+@base_org_url = http://platform-auth:{{org-mng-port}}
+@organization_id = org1
+@workspace_id = ws1
+@menu = operation_list
+
+
+###
+# レコードを登録する
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/maintenance/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "parameter": {
+    "operation_name": "ope1",
+    "scheduled_date_for_execution": "2024/01/01 01:23:45",
+    "remarks": "test"
+  },
+  "file": {
+  }
+}
+
+###
+# レコードを更新/廃止/復活する
+@uuid = 111111
+
+PATCH {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/maintenance/{{uuid}}
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "parameter": {
+    "operation_id": "1",
+    "operation_name": "ope1",
+    "remarks": "test",
+    "scheduled_date_for_execution": "2024/01/01 01:23:45",
+    "last_update_date_time": "2024/01/01 12:34:56.000000"
+  },
+  "file": {
+  }
+}
+
+

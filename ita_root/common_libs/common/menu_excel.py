@@ -38,7 +38,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import absolute_coordinate
 from common_libs.loadtable import *
 from common_libs.common import menu_maintenance_all, menu_info
-
+from common_libs.api import check_request_body_key
 
 def collect_excel_all(
         objdbca,
@@ -2352,6 +2352,9 @@ def execute_excel_maintenance(
     parameter = []
     dict_param = {}
 
+    # 対象項目数確認用
+    cnt_column_order = len(column_order) - 1
+
     # i:対象行の分だけループ
     if excel_data:
         for row_i in range(len(excel_data)):
@@ -2360,6 +2363,9 @@ def execute_excel_maintenance(
             parameter[row_i]["file"] = file_param
             # j:項目数の分だけループ
             for col_j in range(len(excel_data[0])):
+                # 入力対象枠外は処理しない
+                if col_j > cnt_column_order:
+                    break
                 if process_type[row_i] == msg_reg:
                     if column_order[col_j] in register_list:
                         continue
@@ -2414,3 +2420,43 @@ def execute_excel_maintenance(
     os.remove(file_path)
 
     return result_data
+
+
+def create_upload_parameters(connexion_request):
+    """
+    create_maintenance_parameters
+        Use connexion.request
+            - application/json
+            - multipart/form-data
+        Parameter generation from xxxx
+            - application/json
+                connexion.request.get_json()
+            - multipart/form-data
+                connexion.request.form['json_parameters']
+                connexion_request.files
+            => { "excel":"str_b64_file_data" }
+    Arguments:
+        connexion_request: connexion.request
+    Returns:
+        bool, excel_data,
+    """
+
+    excel_data = {}
+    # if connexion_request:
+    if connexion_request.is_json:
+        # application/json
+        body = dict(connexion_request.get_json())
+        excel_data = check_request_body_key(body, 'excel')  # keyが無かったら400-00002エラー
+    elif connexion_request.files:
+        # get files & set parameter['excel']
+        for _file_key in connexion_request.files:
+            # set excel str_b64_file_data
+            _file_data = connexion_request.files[_file_key]
+            _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
+            excel_data.setdefault('excel', None)
+            excel_data['excel'] = _str_b64_file_data
+        excel_data = check_request_body_key(excel_data, 'excel')  # keyが無かったら400-00002エラー
+    else:
+        return False, {},
+
+    return True, excel_data,

@@ -689,9 +689,9 @@ initEvents() {
           break;
           // コンダクター新規登録
           case 'registration':
+              cd.menuButtonDisabled( true );
               fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE02030 ).then(function( flag ){
                   if ( flag ) {
-                      cd.menuButtonDisabled( true );
                       fn.fetch(`/menu/${cd.menu}/conductor/class/maintenance/`, null, 'POST', cd.data ).then(function( result ){
                           cd.fetchConductor( result.conductor_class_id ).then(function(){
                               cd.menuButtonDisabled( false );
@@ -705,13 +705,14 @@ initEvents() {
                           fn.messageClear();
                           cd.message('danger', getMessage.FTE02032, error.message );
                       });
+                  } else {
+                    cd.menuButtonDisabled( false );
                   }
               });
           break;
           // 登録済みコンダクターを選択し表示する
           case 'selectConductor': {
               cd.menuButtonDisabled( true );
-              
               cd.selectModalOpen('conductor').then(function( select ){
                   if ( select && select.length ) {
                       cd.fetchConductor( select[0].id ).then(function( result ){
@@ -729,6 +730,7 @@ initEvents() {
               cd.conductorMode('update');
           break;
           case 'reset':
+              cd.menuButtonDisabled( true );
               fn.iconConfirm('return', getMessage.FTE10059, getMessage.FTE02034 ).then(function( flag ){
                   if ( flag ) {
                       cd.clearConductor();
@@ -736,10 +738,12 @@ initEvents() {
                       fn.messageClear();
                       cd.message('info', getMessage.FTE02035);
                   }
+                  cd.menuButtonDisabled( false );
               });
           break;
           case 'diversion':
             // 流用しますか？
+            cd.menuButtonDisabled( true );
             fn.iconConfirm('copy', getMessage.FTE10059, getMessage.FTE02036 ).then(function( flag ){
                 if ( flag ) {
                     // 流用する場合は下記の項目はnullに
@@ -755,6 +759,7 @@ initEvents() {
                     fn.messageClear();
                     cd.message('info', getMessage.FTE02037);
                 }
+                cd.menuButtonDisabled( false );
             });
             break;
           case 'new':
@@ -768,6 +773,7 @@ initEvents() {
           break;
           case 'update':
               // 更新しますか？
+              cd.menuButtonDisabled( true );
               fn.iconConfirm('update02', getMessage.FTE10059, getMessage.FTE02038 ).then(function( flag ){
                   if ( flag ) {
                       cd.menuButtonDisabled( true );
@@ -784,10 +790,12 @@ initEvents() {
                           cd.message('danger', getMessage.FTE02040, error.message );
                       });
                   }
+                  cd.menuButtonDisabled( false );
               });
           break;
           // 編集中データ再読み込み
           case 'refresh':
+              cd.menuButtonDisabled( true );
               fn.iconConfirm('update01', getMessage.FTE10059, getMessage.FTE02041 ).then(function( flag ){
                   if ( flag ) {
                       cd.menuButtonDisabled( true );
@@ -797,6 +805,7 @@ initEvents() {
                           cd.message('success', getMessage.FTE02042);
                       });
                   }
+                  cd.menuButtonDisabled( false );
               });
             break;
           // 編集をキャンセルする

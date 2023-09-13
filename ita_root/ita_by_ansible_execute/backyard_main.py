@@ -24,7 +24,7 @@ from operator import itemgetter
 
 from flask import g
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import get_timestamp, get_all_execution_limit, get_org_execution_limit
+from common_libs.common.util import get_timestamp, get_all_execution_limit, get_org_execution_limit, get_maintenance_mode_setting
 from common_libs.ci.util import log_err
 from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles, get_OSTmpPath
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
@@ -83,6 +83,18 @@ def main_logic(common_db):
 
         if len(execution_list) == 0:
             return True
+
+        # メンテナンスモード「backyard_execute_stop」が有効(1)の場合は処理を終了する。
+        try:
+            maintenance_mode = get_maintenance_mode_setting()
+            # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+            if str(maintenance_mode['backyard_execute_stop']) == "1":
+                g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+                return
+        except Exception:
+            # エラーログ出力
+            g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+            return
 
         # 現在の実行数
         crr_count = 0

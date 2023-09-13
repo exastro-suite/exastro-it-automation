@@ -1,0 +1,252 @@
+-- INSERT/UPDATE: -2.2.0
+    -- T_COMN_MENU_COLUMN_LINK: DELETE and UPDATE and INSERT
+
+-- ------------------------------------------------------------
+-- ▼TABLE MASTER UPDATE START
+-- ------------------------------------------------------------
+-- 20103 AACホスト一覧: ポート　追加
+DELETE FROM T_COMN_MENU_COLUMN_LINK     WHERE COLUMN_DEFINITION_ID in ("2010308",
+                                                                       "2010309",
+                                                                       "2010310",
+                                                                       "2010311",
+                                                                       "2010312");
+
+DELETE FROM T_COMN_MENU_COLUMN_LINK_JNL WHERE COLUMN_DEFINITION_ID in ("2010308",
+                                                                       "2010309",
+                                                                       "2010310",
+                                                                       "2010311",
+                                                                       "2010312");
+
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES('2010308','20103','ポート','Port','ansible_automation_controller_port',NULL,'3',80,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_PORT',NULL,'0','1','1','0','0','1','0',NULL,'{
+"int_min": 0,
+"int_max": 65535
+}',NULL,NULL,NULL,'Ansible Automation Controllerにsshで接続するポート番号はデフォルト(22)で接続していますが、22以外の場合にポート番号を入力します。','The port number to connect to Ansible Automation Controller via ssh is the default (22), but if it is other than 22, enter the port number.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES(2010308,_____DATE_____,'INSERT','2010308','20103','ポート','Port','ansible_automation_controller_port',NULL,'3',80,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_PORT',NULL,'0','1','1','0','0','1','0',NULL,'{
+"int_min": 0,
+"int_max": 65535
+}',NULL,NULL,NULL,'Ansible Automation Controllerにsshで接続するポート番号はデフォルト(22)で接続していますが、22以外の場合にポート番号を入力します。','The port number to connect to Ansible Automation Controller via ssh is the default (22), but if it is other than 22, enter the port number.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES('2010309','20103','isolatedTower','isolated Tower','isolated_tower',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES(2010309,_____DATE_____,'INSERT','2010309','20103','isolatedTower','isolated Tower','isolated_tower',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES('2010310','20103','備考','Remarks','remarks',NULL,'12',100,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'NOTE',NULL,'0','1','1','0','0','1','0',NULL,'{
+"min_length": 0,
+"max_length": 4000
+}',NULL,NULL,NULL,'自由記述欄。レコードの廃止・復活時にも記載可能。','Comments section. Can comment when removing or restoring records.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES(2010310,_____DATE_____,'INSERT','2010310','20103','備考','Remarks','remarks',NULL,'12',100,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'NOTE',NULL,'0','1','1','0','0','1','0',NULL,'{
+"min_length": 0,
+"max_length": 4000
+}',NULL,NULL,NULL,'自由記述欄。レコードの廃止・復活時にも記載可能。','Comments section. Can comment when removing or restoring records.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES('2010311','20103','廃止フラグ','Discard','discard',NULL,'1',110,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'DISUSE_FLAG',NULL,'1','1','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'廃止フラグ。復活以外のオペレーションは不可','Discard flag. Cannot do operation other than restore.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES(2010311,_____DATE_____,'INSERT','2010311','20103','廃止フラグ','Discard','discard',NULL,'1',110,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'DISUSE_FLAG',NULL,'1','1','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'廃止フラグ。復活以外のオペレーションは不可','Discard flag. Cannot do operation other than restore.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES('2010312','20103','最終更新日時','Last update date/time','last_update_date_time',NULL,'13',120,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_TIMESTAMP',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'レコードの最終更新日。更新可否判定に使用。自動登録のため編集不可。','Last update date of record. Useful for judging the possibility of an update. Cannot edit because of auto-numbering.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES(2010312,_____DATE_____,'INSERT','2010312','20103','最終更新日時','Last update date/time','last_update_date_time',NULL,'13',120,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_TIMESTAMP',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'レコードの最終更新日。更新可否判定に使用。自動登録のため編集不可。','Last update date of record. Useful for judging the possibility of an update. Cannot edit because of auto-numbering.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES('2010313','20103','最終更新者','Last updated by','last_updated_user',NULL,'14',130,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_USER',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'更新者。ログインユーザのIDが自動的に登録される。編集不可。','Updated by. Login user ID is automatically registered. Cannot edit.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER)
+VALUES(2010313,_____DATE_____,'INSERT','2010313','20103','最終更新者','Last updated by','last_updated_user',NULL,'14',130,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_USER',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'更新者。ログインユーザのIDが自動的に登録される。編集不可。','Updated by. Login user ID is automatically registered. Cannot edit.',NULL,'0',_____DATE_____,1);
+
+-- 20101 機器一覧・AACホスト一覧: 認証方式から鍵認証(鍵交換済み)を削除
+
+DELETE FROM T_COMN_MENU_COLUMN_LINK     WHERE COLUMN_DEFINITION_ID IN ('2010110',
+                                                                       '2010303');
+DELETE FROM T_COMN_MENU_COLUMN_LINK_JNL WHERE COLUMN_DEFINITION_ID IN ('2010110',
+                                                                       '2010303');
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+('2010110','20101','認証方式','Authentication method','authentication_method','2010104','7',100,'T_ANSC_LOGIN_AUTH_TYPE','LOGIN_AUTH_TYPE_ID','LOGIN_AUTH_TYPE_NAME',NULL,'1',NULL,NULL,NULL,NULL,'LOGIN_AUTH_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'Ansibleから機器へ接続する際の認証方式を選択します。
+・パスワード認証
+　ログインパスワードの入力が必須です。
+・鍵認証(パスフレーズなし)
+　ssh秘密鍵ファイルのアップロードが必須です。
+・鍵認証(パスフレーズあり)
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
+・パスワード認証(winrm)
+　必要に応じてWinRM接続情報を入力します。
+尚、パスワード認証(winrm)以外の認証方式の場合、機器側に以下の設定が必要です。
+ログインユーザの sudo 権限を NOPASSWD付で /etc/sudoers に設定する必要があります。','Select the authentication method when connecting to the device from Ansible.
+-Password authentication
+ login password is required.
+-Key authentication (no passphrase)
+ Uploading the ssh private key file is required.
+-Key authentication (with passphrase)
+ You must upload the ssh private key file and enter the passphrase.
+-Password authentication (winrm)
+ Enter the WinRM connection information as required.
+For authentication methods other than password authentication (winrm), the following settings are required on the device side.
+The login user sudo privileges must be set to / etc / sudoers with his NOPASSWD.',NULL,'0',_____DATE_____,1);
+
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+(2010110,_____DATE_____,'INSERT','2010110','20101','認証方式','Authentication method','authentication_method','2010104','7',100,'T_ANSC_LOGIN_AUTH_TYPE','LOGIN_AUTH_TYPE_ID','LOGIN_AUTH_TYPE_NAME',NULL,'1',NULL,NULL,NULL,NULL,'LOGIN_AUTH_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'Ansibleから機器へ接続する際の認証方式を選択します。
+・パスワード認証
+　ログインパスワードの入力が必須です。
+・鍵認証(パスフレーズなし)
+　ssh秘密鍵ファイルのアップロードが必須です。
+・鍵認証(パスフレーズあり)
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。
+・パスワード認証(winrm)
+　必要に応じてWinRM接続情報を入力します。
+尚、パスワード認証(winrm)以外の認証方式の場合、機器側に以下の設定が必要です。
+ログインユーザの sudo 権限を NOPASSWD付で /etc/sudoers に設定する必要があります。','Select the authentication method when connecting to the device from Ansible.
+-Password authentication
+ login password is required.
+-Key authentication (no passphrase)
+ Uploading the ssh private key file is required.
+-Key authentication (with passphrase)
+ You must upload the ssh private key file and enter the passphrase.
+-Password authentication (winrm)
+ Enter the WinRM connection information as required.
+For authentication methods other than password authentication (winrm), the following settings are required on the device side.
+The login user sudo privileges must be set to / etc / sudoers with his NOPASSWD.',NULL,'0',_____DATE_____,1);
+
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+('2010303','20103','認証方式','Authentication method','authentication_method',NULL,'7',30,'V_ANSC_TWR_LOGIN_AUTH_TYPE','LOGIN_AUTH_TYPE_ID','LOGIN_AUTH_TYPE_NAME',NULL,'1',NULL,NULL,NULL,NULL,'ANSTWR_LOGIN_AUTH_TYPE',NULL,'0','1','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'sshでAnsible Automation Controllerに接続する場合の認証方式を選択します。
+・パスワード認証
+　ユーザとパスワードの入力が必須です。
+・鍵認証(パスフレーズなし)
+　ssh秘密鍵ファイルのアップロードが必須です。
+・鍵認証(パスフレーズあり)
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。','Select the authentication method when connecting to Ansible Automation Controller with ssh.
+-Password authentication
+ Select ● in the login password management and enter the login password.
+-Key authentication (no passphrase)
+ Uploading the ssh private key file is required.
+-Key authentication (with passphrase)
+ You must upload the ssh private key file and enter the passphrase.',NULL,'0',_____DATE_____,1);
+
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+(2010303,_____DATE_____,'INSERT','2010303','20103','認証方式','Authentication method','authentication_method',NULL,'7',30,'V_ANSC_TWR_LOGIN_AUTH_TYPE','LOGIN_AUTH_TYPE_ID','LOGIN_AUTH_TYPE_NAME',NULL,'1',NULL,NULL,NULL,NULL,'ANSTWR_LOGIN_AUTH_TYPE',NULL,'0','1','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'sshでAnsible Automation Controllerに接続する場合の認証方式を選択します。
+・パスワード認証
+　ユーザとパスワードの入力が必須です。
+・鍵認証(パスフレーズなし)
+　ssh秘密鍵ファイルのアップロードが必須です。
+・鍵認証(パスフレーズあり)
+　ssh秘密鍵ファイルのアップロードと、パスフレーズの入力が必須です。','Select the authentication method when connecting to Ansible Automation Controller with ssh.
+-Password authentication
+ Select ● in the login password management and enter the login password.
+-Key authentication (no passphrase)
+ Uploading the ssh private key file is required.
+-Key authentication (with passphrase)
+ You must upload the ssh private key file and enter the passphrase.',NULL,'0',_____DATE_____,1);
+
+UPDATE T_ANSC_LOGIN_AUTH_TYPE SET DISUSE_FLAG = 1, LAST_UPDATE_TIMESTAMP = _____DATE_____  WHERE LOGIN_AUTH_TYPE_ID=3;
+
+
+-- 20103 AACホスト一覧: isolatedTower->Execution nodeに変更
+DELETE FROM T_COMN_MENU_COLUMN_LINK     WHERE COLUMN_DEFINITION_ID IN ('2010309');
+DELETE FROM T_COMN_MENU_COLUMN_LINK_JNL WHERE COLUMN_DEFINITION_ID IN ('2010309');
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+('2010309','20103','Execution node','Execution node','execution_node',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+(2010309,_____DATE_____,'INSERT','2010309','20103','Execution node','Execution node','execution_node',NULL,'7',90,'T_COMN_BOOLEAN_FLAG','FLAG_ID','FLAG_NAME',NULL,'0',NULL,NULL,NULL,NULL,'ANSTWR_ISOLATED_TYPE',NULL,'0','1','1','0','0','1','0',NULL,NULL,NULL,NULL,NULL,'対象ノードがAnsible Automation Controllerのexecution nodeの場合に「True」を選択します。','If the target node is an execution node for Ansible Automation Controller, select \"True\"',NULL,'0',_____DATE_____,1);
+
+-- 20106 テンプレート管理: isolatedTower->Execution nodeに変更
+DELETE FROM T_COMN_MENU_COLUMN_LINK     WHERE COLUMN_DEFINITION_ID IN ('2010604');
+DELETE FROM T_COMN_MENU_COLUMN_LINK_JNL WHERE COLUMN_DEFINITION_ID IN ('2010604');
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+('2010604','20106','変数定義','Variable definition','variable_definition',NULL,'2',40,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'VARS_LIST',NULL,'0','1','1','0','0','1','0',NULL,'{
+"min_length": 0,
+"max_length": 4000
+}',NULL,NULL,NULL,'テンプレート素材で使用している変数の構造をYAML形式で定義します。
+変数の構造は以下の4種類で定義可能です。
+変数の具体値は使用しないので省略可能です。
+・変数名に対して具体値を１つ定義できる変数
+    例
+      sample:
+・変数名に対して具体値を複数定義できる変数
+    例
+      sample: []
+・階層化された変数
+    例
+      sample:
+        name:
+        value:
+・グローバル変数
+    例
+      GBL_sample:
+　※クルーバル変数管理に変数の登録が必要です。
+また、テンプレート素材でITA独自変数を使用できますが、変数定義に記載する必要はありません。','Define the structure of the variable used in Template file in YAML format.
+The structure of variables can be defined by the following four types.
+Since the concrete value of the variable is not used, it can be omitted.
+・Variable that can define one specific value for variable name.
+    exp)
+      sample:
+・Variable that can define multiple concrete values for variable name.
+    exp)
+      sample: []
+・Nested variable.
+    exp)
+      sample:
+        name:
+        value:"
+・Global variables
+    exp)
+       GBL_sample:
+*Registration of variables is required for global variable management.
+Also, ITA-specific variables can be used in template materials, but they do not need to be listed in the variable definition.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES
+(2010604,_____DATE_____,'INSERT','2010604','20106','変数定義','Variable definition','variable_definition',NULL,'2',40,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'VARS_LIST',NULL,'0','1','1','0','0','1','0',NULL,'{
+"min_length": 0,
+"max_length": 4000
+}',NULL,NULL,NULL,'テンプレート素材で使用している変数の構造をYAML形式で定義します。
+変数の構造は以下の4種類で定義可能です。
+変数の具体値は使用しないので省略可能です。
+・変数名に対して具体値を１つ定義できる変数
+    例
+      sample:
+・変数名に対して具体値を複数定義できる変数
+    例
+      sample: []
+・階層化された変数
+    例
+      sample:
+        name:
+        value:
+・グローバル変数
+    例
+      GBL_sample:
+　※クルーバル変数管理に変数の登録が必要です。
+また、テンプレート素材でITA独自変数を使用できますが、変数定義に記載する必要はありません。','Define the structure of the variable used in Template file in YAML format.
+The structure of variables can be defined by the following four types.
+Since the concrete value of the variable is not used, it can be omitted.
+・Variable that can define one specific value for variable name.
+    exp)
+      sample:
+・Variable that can define multiple concrete values for variable name.
+    exp)
+      sample: []
+・Nested variable.
+    exp)
+      sample:
+        name:
+        value:"
+・Global variables
+    exp)
+       GBL_sample:
+*Registration of variables is required for global variable management.
+Also, ITA-specific variables can be used in template materials, but they do not need to be listed in the variable definition.',NULL,'0',_____DATE_____,1);
+
+-- ------------------------------------------------------------
+-- ▲TABLE MASTER UPDATE END
+-- ------------------------------------------------------------
+
+-- T_COMN_MENU_COLUMN_LINK: UPDATE
+UPDATE T_COMN_MENU_COLUMN_LINK SET VALIDATE_OPTION = NULL , DESCRIPTION_JA = "対象の変数もしくはメンバー変数配下のメンバー変数が繰り返される数。
+最小値は1、最大値は「管理コンソール/システム設定」内で設定変更可能。" , DESCRIPTION_EN = "The number of times the target variable or a member variable under the member variable is repeated.
+The minimum value is 1, the maximum value can be changed within the Management console/System setting." , LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2040605";
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_OPTION = NULL , DESCRIPTION_JA = "対象の変数もしくはメンバー変数配下のメンバー変数が繰り返される数。
+最小値は1、最大値は「管理コンソール/システム設定」内で設定変更可能。" , DESCRIPTION_EN = "The number of times the target variable or a member variable under the member variable is repeated.
+The minimum value is 1, the maximum value can be changed within the Management console/System setting." , LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2040605";
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = "Ansible Automation Controllerにsshで接続するポート番号のデフォルト(22)です。デフォルト以外のポートを使用したい場合、ポート番号を入力します。" ,
+DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." , 
+LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2010308";
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = "Ansible Automation Controllerにsshで接続するポート番号のデフォルト(22)です。デフォルト以外のポートを使用したい場合、ポート番号を入力します。" ,
+DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." , 
+LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2010308";

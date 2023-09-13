@@ -58,6 +58,7 @@ def backyard_main(organization_id, workspace_id):
 
     try:
         hierarchy = 0
+        tree_array = []
         # ツリー作成
         retBool, tree_array, hierarchy = make_tree(objdbca, hierarchy)  # noqa: F405
         if retBool is False:
@@ -174,6 +175,11 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         tmp_msg = g.appmsg.get_log_message("BKY-70000", ['End: Exception'])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+    # DB切断
+    objdbca.db_disconnect()
+    tmp_msg = 'db disconnect'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-70000", ['End'])

@@ -626,7 +626,9 @@ paths:
                   $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
                 file:
                   $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
-
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_FORM'
       responses:
         '200':
           description: Success
@@ -692,6 +694,14 @@ paths:
           application/json:
             schema:
               description: 更新する値を設定。廃止/復活は廃止フラグを更新することで実施。
+              properties:
+                parameter:
+                  $ref: '#/components/schemas/MAINTENANCE_PARAMETER_P'
+                file:
+                  $ref: '#/components/schemas/MAINTENANCE_PARAMETER_F'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_FORM'
       responses:
         '200':
           description: Success
@@ -754,6 +764,9 @@ paths:
               items: {
                 $ref: '#/components/schemas/MAINTENANCE_PARAMETERS',
               }
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MAINTENANCE_ALL_FORM'
       responses:
         '200':
           description: Success
@@ -986,6 +999,16 @@ paths:
           application/json:
             schema:
               description: 検索条件を設定
+          multipart/form-data:
+            schema:
+              description: 検索条件を設定
+              type: object
+              properties:
+                excel:
+                  description:
+                    excelファイルアップロードの対象を指定。
+                  type: string
+                  format: binary
       responses:
         '200':
           description: Success
@@ -1484,59 +1507,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/create/execute/:
-    post:
-      tags:
-        - Menu Create
-      description: パラメータシート作成実行
-      operationId: executeMenuCreate
-      x-openapi-router-controller: controllers.menu_create_controller
-      parameters:
-        - name: organization_id
-          in: path
-          description: OrganizationID
-          required: true
-          schema:
-            type: string
-        - name: workspace_id
-          in: path
-          description: WorkspaceID
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              description: 作成対象のパラメータシート定義一覧IDを指定(複数指定可)
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  result:
-                    type: string
-                    example: 000-00000
-                  data:
-                    type: boolean
-                  message:
-                    type: string
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ERROR_TEMPLATE'
-
   /api/{organization_id}/workspaces/{workspace_id}/ita/create/define/execute/:
     post:
       tags:
@@ -1797,6 +1767,208 @@ paths:
                     example: 000-00000
                   data:
                     type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/:
+    get:
+      tags:
+        - Menu Create
+      description: パラメータシートの一覧を取得する
+      operationId: getParameterCollection
+      x-openapi-router-controller: controllers.menu_create_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    items: {}
+                    example: {"operation": [], "host": [], "hostgroup": [], "parameter_sheet": []}
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/:
+    get:
+      tags:
+        - Menu Create
+      description: パラメータ集の検索条件を取得する
+      operationId: getParameterCollectionFilterTermsGet
+      x-openapi-router-controller: controllers.menu_create_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    items: {}
+                    example: {"uuid": xxx, "filter_name": xxx, "filter_json": xxx}
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+    post:
+      tags:
+        - Menu Create
+      description: パラメータ集の検索条件を登録・更新する
+      operationId: getParameterCollectionFilterTermsUpdate
+      x-openapi-router-controller: controllers.menu_create_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を登録・更新する
+              type: object
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/parameter_collection/filter_data/{uuid}:
+    delete:
+      tags:
+        - Menu Create
+      description: パラメータ集の検索条件を削除する
+      operationId: getParameterCollectionFilterTermsDelete
+      x-openapi-router-controller: controllers.menu_create_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: organizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: uuid
+          in: path
+          description: uuid
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
                   message:
                     type: string
         '401':
@@ -3737,6 +3909,9 @@ paths:
               properties:
                 rest_key_name:
                   $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MENU_UPLOAD_FORM'
       responses:
         '200':
           description: Success
@@ -3981,6 +4156,9 @@ paths:
               properties:
                 rest_key_name:
                   $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EXCEL_BULK_UPLOAD_FORM'
       responses:
         '200':
           description: Success
@@ -5938,6 +6116,47 @@ components:
           type: string
           example: Register/Update
 
+    MAINTENANCE_FORM:
+      type: object
+      properties:
+        json_parameters:
+          type: string
+          description:
+            parameter:リクエストとtype:実行種別(登録/更新/廃止/復活)を指定。
+            parameter下では、項目名と値をkey-value形式で指定。
+          example:
+            parameter:
+              rest_key_name: "string"
+            file:
+              rest_key_name: "base64 encode file"
+        rest_key_name:
+          description:
+            rest_key_name:parametersのファイルアップロードの対象を指定。
+          type: array
+          items:
+            type: string
+            format: binary
+
+    MAINTENANCE_ALL_FORM:
+      type: object
+      properties:
+        json_parameters:
+          type: string
+          description:
+            parameter:リクエストとtype:実行種別(登録/更新/廃止/復活)をlist構造で指定。
+            parameter下では、項目名と値をkey-value形式で指定。
+          example:
+            - parameter:
+              rest_key_name: string
+              type: Register/Update
+        xxx.rest_key_name:
+          description:
+            xxx:parametersのlist番号を指定。
+            rest_key_name:parametersのファイルアップロードの対象を指定。
+          type: array
+          items:
+            type: string
+            format: binary
     CONDUCTOR_INFO_LIST:
       type: object
       properties:
@@ -6121,6 +6340,22 @@ components:
                 "menu_id": メニューID,
                 "execution_id": 作業ID
               }
+
+    MENU_UPLOAD_FORM:
+      type: object
+      properties:
+        file:
+          description: インポート対象のkymファイルを指定。
+          type: string
+          format: binary
+
+    EXCEL_BULK_UPLOAD_FORM:
+      type: object
+      properties:
+        zipfile:
+          description: インポート対象をまとめたzipファイルを指定。
+          type: string
+          format: binary
 
   securitySchemes:
     BearerAuth:

@@ -53,6 +53,7 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
     TTL                             INT,                                        -- TTL
+    COLLECT_INTERVAL                INT,                                        -- インターバル
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -83,6 +84,7 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS_JNL
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
     TTL                             INT,                                        -- TTL
+    COLLECT_INTERVAL                INT,                                        -- インターバル
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -240,7 +242,6 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_PROGRESS
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定ID
     FETCHED_TIME                    INT,                                        -- 経過時間
-    EVALUATED_FLAG                  VARCHAR(40),                                -- 評価フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -256,7 +257,6 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_PROGRESS_JNL
     EVENT_COLLECTION_ID             VARCHAR(40),                                -- イベント収集ID
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定ID
     FETCHED_TIME                    INT,                                        -- 経過時間
-    EVALUATED_FLAG                  VARCHAR(40),                                -- 評価フラグ
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

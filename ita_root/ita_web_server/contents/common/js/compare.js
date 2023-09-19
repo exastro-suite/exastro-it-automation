@@ -82,6 +82,10 @@ init() {
         host: []
     };
 
+    cp.select = {
+        host: cp.info.list.host
+    };
+
     cp.$.content.removeClass('nowLoading').html( cp.compareHtml() );
 
     cp.$.setting = cp.$.content.find('.compareSetting');
@@ -148,7 +152,7 @@ compareHtml() {
             + cp.compareSettingMessageHtml()
         + '</div>'
         + '<div class="compareHost compareBodyBlock">'
-            + cp.hostHtml( cp.info.list.host )
+            + cp.hostHtml( cp.select.host )
         + '</div>'
         + '<div class="compareResult compareBodyBlock">'
             + cp.compareResultMessageHtml()
@@ -311,7 +315,15 @@ compareEvents() {
             case 'hostSelect':
                 cp.selectModalOpen('host').then(function( result ){
                     if ( result ) {
-                        cp.$.host.html( cp.hostHtml( result ) );
+                        // 形式を合わせる
+                        cp.select.host = result.map(function( item ){
+                            if ( fn.typeof( item ) === 'object') {
+                                return item.name;
+                            } else {
+                                return item;
+                            }
+                        });
+                        cp.$.host.html( cp.hostHtml( cp.select.host ) );
                         cp.$.result.html( cp.compareResultMessageHtml() );
                         cp.$.host.removeClass('compareExecuteHost');
                         cp.compareButtonCheck();
@@ -412,6 +424,9 @@ selectModalOpen( type ) {
             selectConfig.filterPulldown = `/menu/${cp.menu}/compare/execute/filter/device_list/search/candidates/`;
             selectConfig.selectType = 'multi';
             selectConfig.unselected = true;
+            selectConfig.selectTextArray = cp.select.host;
+            selectConfig.selectTextArrayTextKey = 'host_name';
+            selectConfig.selectTextArrayIdKey = 'managed_system_item_number';
         } else {
             title = getMessage.FTE06001;
             selectConfig.infoData = cp.list.compare_list;

@@ -939,6 +939,7 @@ getMessage = ( function() {
         'FTE11058': 'Show no host',
         'FTE11059': 'Menu name search',
         'FTE11060': 'Host name search',
+        'FTE11061': 'Parameter_collection_',
 
         // Custom menu
         'FTE12001': 'Failed to display custom menu.',

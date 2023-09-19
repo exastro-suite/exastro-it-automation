@@ -158,7 +158,8 @@ class DBConnectOrgRoot(DBConnectOrg):
                 port=self._port,
                 user=self._db_user,
                 passwd=ky_decrypt(self._db_passwd),
-                charset='utf8',
+                charset='utf8mb4',
+                collation='utf8mb4_general_ci',
                 cursorclass=pymysql.cursors.DictCursor
             )
         except pymysql.Error as e:

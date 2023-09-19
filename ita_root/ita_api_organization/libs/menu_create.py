@@ -2181,6 +2181,7 @@ def collect_parameter_list(objdbca):
 
             if ret2:
                 for record2 in ret2:
+                    loop_flag = False
                     privilege = record2.get('PRIVILEGE')
                 table_name = record.get('TABLE_NAME')
                 ret3 = objdbca.table_select(table_name, 'WHERE  DISUSE_FLAG=%s', ['0'])
@@ -2204,6 +2205,18 @@ def collect_parameter_list(objdbca):
                                                 menu_group_id2 = record_menu3.get('MENU_GROUP_ID')
                                 # hostgroupの場合、代入値自動登録用のメニュー情報、それ以外は入力用のメニュー情報
                                 if hostgroup == '1':
+                                    # hostgroupの場合、代入値自動登録用のメニューのロールチェック
+                                    where = 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s AND ROLE_ID IN %s'
+                                    parameter = [0, menu_id2, role_id_list]
+                                    ret_role = objdbca.table_select(t_comn_role_menu_link, where, parameter)
+                                    if ret_role:
+                                        for record_role in ret_role:
+                                            privilege = record_role.get('PRIVILEGE')
+                                    else:
+                                        # 2重ループから抜ける
+                                        loop_flag = True
+                                        continue
+
                                     menu_id = menu_id2
                                     menu_name = menu_name2
                                     menu_name_rest = menu_name_rest2
@@ -2217,6 +2230,9 @@ def collect_parameter_list(objdbca):
                                     hg_menu_name_rest = record_menu.get('MENU_NAME_REST')
                                 else:
                                     hg_menu_name_rest = ""
+
+                            if loop_flag is True:
+                                continue
 
                             ret_group = objdbca.table_select(t_comn_menu_group, 'WHERE  DISUSE_FLAG=%s AND MENU_GROUP_ID=%s', ['0', menu_group_id])
                             if ret_group:

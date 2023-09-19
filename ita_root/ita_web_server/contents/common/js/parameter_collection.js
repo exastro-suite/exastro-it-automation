@@ -196,7 +196,7 @@ initMesssageHtml() {
 */
 targetListHtml( type, select, inputFlag = false ) {
    const pc = this;
-
+   
    if ( ( select && select.length ) || ( type === 'Host') ) {
       const itemClassName = ( inputFlag )? 'commonInputItem': 'commonItem',
             listClassName = ( inputFlag )? 'commonInputList': 'commonList',
@@ -208,6 +208,8 @@ targetListHtml( type, select, inputFlag = false ) {
       const selectLength = select.length;
 
       const list = [];
+      let idFlag = false;
+      if ( inputFlag && select.indexOf( pc.select.mainHost ) !== -1 ) idFlag = true;
       for ( let i = 0; i < selectLength; i++ ) {
          const id = select[i];
          const item = pc.info[ key ].find(function(i){
@@ -217,11 +219,12 @@ targetListHtml( type, select, inputFlag = false ) {
          if ( item ) {
             const name = fn.cv( item[nameKey], '', true );
             if ( inputFlag ) {
-               // 最初の項目を選択
                const checked = {};
-               if ( i === 0 ) {
+               if ( ( !idFlag && i === 0 ) || ( pc.select.mainHost === '' && i === 0 && type === 'Host') ) {
                   checked.checked = 'checked';
-                  if ( type === 'Host') pc.select.mainHost = id;
+                  pc.select.mainHost = id;
+               } else if ( id === pc.select.mainHost ) {
+                  checked.checked = 'checked';
                }
                list.push(`<li class="${itemClassName} target${type}Item" data-id="${id}">`
                   + fn.html.radioText(`targetSelect${type}`, id, `targetSelect${type}`, `targetSelect${type}_${id}`, checked, name, 'narrowRadioTextWrap')
@@ -234,12 +237,10 @@ targetListHtml( type, select, inputFlag = false ) {
       // ホストモード ホスト無し
       if ( type === 'Host' && pc.select.mode === 'host') {
          const checked = {};
-         if ( selectLength === 0 ) {
-            pc.select.mainHost = '-1';
-            checked.checked = 'checked';
-         }
-         list.push(`<li class="${itemClassName} target${type}Item targetNoHost" data-id="-1">`
-            + fn.html.radioText(`targetSelect${type}`, -1, `targetSelect${type}`, `targetSelect${type}_-1`, checked, getMessage.FTE11014, 'narrowRadioTextWrap')
+         if ( selectLength === 0 ) pc.select.mainHost = '__nohost__';   
+         if ( pc.select.mainHost === '__nohost__') checked.checked = 'checked';
+         list.push(`<li class="${itemClassName} target${type}Item targetNoHost" data-id="__nohost__">`
+            + fn.html.radioText(`targetSelect${type}`, '__nohost__', `targetSelect${type}`, `targetSelect${type}_nohost`, checked, getMessage.FTE11014, 'narrowRadioTextWrap')
          + `</li>`);
       }
 
@@ -1195,7 +1196,8 @@ parameterSelectOpen() {
          },
          infoData: info,
          selectType: 'multi',
-         select: pc.select.parameter
+         select: pc.select.parameter,
+         unselected: true
       };
 
       fn.selectModalOpen('parameterSelect', getMessage.FTE11015, 'parameterSelect', option ).then(function( result ){
@@ -1271,7 +1273,8 @@ hostSelectOpen() {
          },
          infoData: info,
          selectType: 'multi',
-         select: pc.select.host
+         select: pc.select.host,
+         unselected: true
       };
 
       fn.selectModalOpen('hostSelect', getMessage.FTE11044, 'hostSelect', option ).then(function( result ){
@@ -1304,7 +1307,7 @@ setParameterTables() {
          return pc.info.parameter_sheet.find(function( paramData ){
             return paramData.menu_id === paramId;
          });
-      });
+      }).filter( Boolean );
 
       if ( params.length ) {
          pc.tableLoading = true;
@@ -1355,7 +1358,7 @@ setParameterTables() {
 
          if ( pc.select.mode === 'host') {
             targetModeName = getMessage.FTE11008;
-            if ( pc.select.mainHost !== '-1') {
+            if ( pc.select.mainHost !== '__nohost__') {
                const targetHost = pc.info.host.find(function( host ){
                   return host.managed_system_item_number === pc.select.mainHost;
                });
@@ -2201,21 +2204,7 @@ outputExcel() {
          });
 
          workbook.xlsx.writeBuffer().then(function( uint8Array ){
-            const targetName = pc.$.param.find('.mainTargetName').text();
-            let fileName = 'parameter_' + targetName;
-
-            if ( fn.typeof( pc.select.parameter ) === 'array' && pc.select.parameter.length ) {
-               const parameterNames = [];
-               for ( const id of pc.select.parameter ) {
-                  const data = pc.info.parameter_sheet.find(function( parameter ){
-                     return parameter.menu_id === id;
-                  });
-                  parameterNames.push( data.menu_name );
-               }
-               fileName += `(${parameterNames.join('_')})`;
-            }
-            fileName = fileName.replace(/\s+/g, '-');
-            fileName = fileName.substring( 0, 200 );
+            const fileName = getMessage.FTE11061 + fn.date( new Date(), 'yyyyMMdd_HHmmss');
             fn.download('exceljs', uint8Array, fileName );
 
             setTimeout( function(){ resolve(); }, 1000 );

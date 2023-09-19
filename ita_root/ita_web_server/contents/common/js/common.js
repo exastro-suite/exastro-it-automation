@@ -566,6 +566,18 @@ fileNameCheck( fileName ) {
 },
 /*
 ##################################################
+   配列コピー
+##################################################
+*/
+arrayCopy( array ) {
+    if ( fn.typeof( structuredClone ) === 'function') {
+        return structuredClone( array );
+    } else {
+        return JSON.parse(JSON.stringify( array ));
+    }
+},
+/*
+##################################################
    ダウンロード
 ##################################################
 */
@@ -2336,7 +2348,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
         const modalFuncs = {
             ok: function() {
                 modalInstance[ modalId ].modal.hide();
-                const selectId = modalInstance[ modalId ].table.select.select;
+                const selectId = cmn.arrayCopy( modalInstance[ modalId ].table.select.select );
                 resolve( selectId );
             },
             cancel: function() {
@@ -2352,14 +2364,9 @@ selectModalOpen: function( modalId, title, menu, config ) {
             });
         } else {
             modalInstance[ modalId ].modal.show();
-            // 外部で選択状況を更新した場合
-            if ( config.select ) {
-                modalInstance[ modalId ].table.select.select = config.select;
-                modalInstance[ modalId ].table.setTbody();
+            // 選択状態をセットする
+            cmn.setSelectArray( modalInstance[ modalId ].table, config, modalInstance[ modalId ].modal );
 
-                const checkFlag = ( config.select.length === 0 );
-                modalInstance[ modalId ].modal.buttonPositiveDisabled( checkFlag );
-            }
             modalInstance[ modalId ].modal.btnFn = modalFuncs;
         }
     });
@@ -2372,7 +2379,7 @@ selectModalOpen: function( modalId, title, menu, config ) {
 */
 initSelectModal: function( modalId, title, menu, selectConfig ) {
 
-    return new Promise(function( resolve, reject ) {
+    return new Promise(function( resolve ) {
         const modalConfig = {
             mode: 'modeless',
             width: ( selectConfig.width )? selectConfig.width: 'auto',
@@ -2427,6 +2434,9 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
 
             // 初期表示の場合は読み込み完了後に表示
             $( window ).one( tableId + '__tableReady', function(){
+                // 選択状態（名称リストからIDリストを作成）
+                cmn.setSelectArray( table, selectConfig, modal );
+
                 processingModal.close();
                 modal.hide();
                 modal.$.dialog.removeClass('hiddenDialog');
@@ -2453,6 +2463,40 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
             });
         }
     });
+},
+/*
+##################################################
+  選択状態をセットする
+##################################################
+*/
+setSelectArray( table, config, modal ) {
+    if ( config.selectTextArray && config.selectTextArray.length ) {
+        table.select.select = config.selectTextArray.map(function( text ){
+            const param = table.data.body.find(function( item ){
+                return item.parameter[ config.selectTextArrayTextKey ] === text;
+            });
+            if ( param ) {
+                return {
+                    id: param.parameter[ config.selectTextArrayIdKey ],
+                    name: text
+                };
+            } else {
+                return undefined;
+            }
+        }).filter( Boolean );
+
+        table.setTbody();
+    }
+
+    if ( config.select && config.select.length ) {
+        table.select.select = cmn.arrayCopy( config.select );
+        table.setTbody();
+    }
+
+    const checkFlag = ( table.select.select.length === 0 );
+    if ( !config.unselected ) {
+        modal.buttonPositiveDisabled( checkFlag );
+    }
 },
 /*
 ##################################################

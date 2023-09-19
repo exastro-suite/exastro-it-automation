@@ -2655,14 +2655,14 @@ requestTbody() {
             }
         };
         if ( tb.option.parameterMode === 'host') {
-            // ホスト指定でオペレーションのみの場合はIDに-1を入れて表示しない
+            // ホスト指定でオペレーションのみの場合はIDに__nohost_を入れて表示しない
             if ( tb.option.parameterHostList &&
             (
                 ( tb.option.parameterHostList.length && tb.option.parameterSheetType === '3') ||
                 ( tb.option.parameterHostList.length === 0 && tb.option.parameterSheetType !== '3')
             ) ) {
                 tb.filterParams.uuid = {
-                    NORMAL: '-1'
+                    NORMAL: '__nohost__'
                 }
             } else {
                 tb.filterParams.host_name = {
@@ -3153,17 +3153,15 @@ tbodyHtml() {
             // チェック状態
             const attrs = {};
             if ( tb.mode === 'select' || tb.mode === 'execute') {
-                if ( fn.typeof( tb.select[ tb.mode ] ) === 'object') {
+                if ( fn.typeof( tb.select[ tb.mode ] ) === 'array' && tb.select[ tb.mode ].length ) {
                     const selectId = tb.select[ tb.mode ].find(function( item ){
-                        return item.id === rowId;
+                        if ( fn.typeof( item ) === 'object') {
+                            return item.id === rowId;
+                        } else {
+                            return item === rowId;
+                        }
                     });
-                    if ( selectId ) {
-                        attrs['checked'] = 'checked';
-                    }
-                } else {
-                    if ( tb.select[ tb.mode ].indexOf( rowId ) !== -1 ) {
-                        attrs['checked'] = 'checked';
-                    }
+                    if ( selectId ) attrs['checked'] = 'checked';
                 }
             } else {
                 if ( tb.select[ tb.mode ].indexOf( rowId ) !== -1 ) {

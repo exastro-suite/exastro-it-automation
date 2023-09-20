@@ -1402,7 +1402,7 @@ Since the concrete value of the variable is not used, it can be omitted.
     exp)
       sample:
         name:
-        value:"
+        value:
 ・Global variables
     exp)
        GBL_sample:
@@ -1442,7 +1442,7 @@ Since the concrete value of the variable is not used, it can be omitted.
     exp)
       sample:
         name:
-        value:"
+        value:
 ・Global variables
     exp)
        GBL_sample:
@@ -4567,5 +4567,4 @@ INSERT INTO T_COMN_RECODE_LOCK_TABLE (TABLE_NAME) VALUES('T_ANSR_NESTVAR_MEMBER_
 INSERT INTO T_COMN_RECODE_LOCK_TABLE (TABLE_NAME) VALUES('T_ANSC_TWR_INSTANCE_GROUP');
 
 INSERT INTO T_COMN_RECODE_LOCK_TABLE (TABLE_NAME) VALUES('T_ANSC_TWR_ORGANIZATION');
-
 

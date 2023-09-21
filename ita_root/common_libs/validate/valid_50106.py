@@ -18,12 +18,12 @@ from flask import g
 def menu_unique_constraint_valid(objdbca, objtable, option):
     retBool = True
     msg = ''
-    
+
     entry_parameter = option.get('entry_parameter').get('parameter')
     menu_name = entry_parameter.get("menu_name")
     unique_constraint_item = entry_parameter.get("unique_constraint_item")
     cmd_type = option.get('cmd_type')
-    
+
     # 廃止/復活の場合はチェックをスキップする
     if cmd_type == "Discard" or cmd_type == "Restore":
         return retBool, msg, option
@@ -66,5 +66,14 @@ def menu_unique_constraint_valid(objdbca, objtable, option):
         else:
             retBool = False
             msg = g.appmsg.get_api_message("MSG-20251", [])
+
+    # unique_constraint_itemの重複をチェック
+    seen = []
+    check_unique_list = [x for x in unique_constraint_item if x not in seen and not seen.append(x)]
+    if len(unique_constraint_item) != len(check_unique_list):
+        seen = []
+        duplication_target = [x for x in unique_constraint_item if not seen.append(x) and seen.count(x) == 2]
+        retBool = False
+        msg = g.appmsg.get_api_message("MSG-20262", [str(duplication_target)])
 
     return retBool, msg, option

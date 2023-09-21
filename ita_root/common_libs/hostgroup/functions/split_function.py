@@ -840,25 +840,24 @@ def make_host_data(hgsp_config, hgsp_data):
                 # アップロードファイルの比較
                 for rest_key in file_columns_info['target_rest_name']:
                     alone_id = alone_data['ROW_ID']
+                    output_id = output_data['ROW_ID']
                     alone_data_json = get_json_loads(alone_data.get("DATA_JSON"))
                     output_data_json = get_json_loads(output_data.get("DATA_JSON"))
                     alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
                     output_file_name = output_data_json.get(rest_key) if rest_key in output_data_json else None
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
                     if alone_file_name:
-                        # input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, alone_id, None, False)
-                        input_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
+                        alone_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
                     if output_file_name:
-                        # output_file_path = file_columns_info['output'][rest_key].get_file_data_path(output_file_name, alone_id, None, False)
-                        output_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
+                        output_file_data = file_columns_info['output'][rest_key].get_file_data(output_file_name, output_id)
 
                     # ファイル名,ファイルに差分があるか判定
-                    if alone_file_name != output_file_name and input_file_data != output_file_data:
+                    if alone_file_name != output_file_name or alone_file_data != output_file_data:
                         chgFlg = True
 
                     # ファイル解放
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
 
                 if chgFlg is True:
@@ -1182,24 +1181,25 @@ def make_host_data(hgsp_config, hgsp_data):
 
                 # アップロードファイルの比較
                 for rest_key in file_columns_info['target_rest_name']:
-                    host_id = host_data['DATA']['ROW_ID']
+                    alone_id = host_data['DATA']['ROW_ID']
+                    output_id = output_data['ROW_ID']
                     alone_data_json = get_json_loads(host_data['DATA'].get("DATA_JSON"))
                     output_data_json = get_json_loads(output_data.get("DATA_JSON"))
                     alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
                     output_file_name = output_data_json.get(rest_key) if rest_key in output_data_json else None
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
                     if alone_file_name:
-                        # input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, host_id, None, False)
-                        input_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, host_id)
+                        alone_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
                     if output_file_name:
-                        # output_file_path = file_columns_info['output'][rest_key].get_file_data_path(output_file_name, host_id, None, False)
-                        output_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, host_id)
-                    if alone_file_name != output_file_name and input_file_data != output_file_data:
+                        output_file_data = file_columns_info['output'][rest_key].get_file_data(output_file_name, output_id)
+
+                    # ファイル名,ファイルに差分があるか判定
+                    if alone_file_name != output_file_name or alone_file_data != output_file_data:
                         chgFlg = True
 
                     # ファイル解放
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
 
                 # 廃止になっている場合は復活する

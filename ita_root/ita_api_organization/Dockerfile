@@ -58,6 +58,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade dictdiffer \
 &&  pip3.9 install --upgrade python-hcl2 \
 &&  pip3.9 install --upgrade pyrsistent \
+&&  pip3.9 install --upgrade pymongo \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \

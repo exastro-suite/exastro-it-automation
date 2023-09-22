@@ -16,8 +16,10 @@ import os
 from flask import g
 
 from common_libs.common import *  # noqa: F403
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable import *
-
+from datetime import datetime
+from pymongo import ASCENDING
 
 def rest_filter(objdbca, menu, filter_parameter):
     """
@@ -47,3 +49,214 @@ def rest_filter(objdbca, menu, filter_parameter):
 
     return result
 
+
+def collect_event_history(wsMongo: MONGOConnectWs, parameter: dict):
+    """
+    検索条件を指定し、イベント履歴を取得する
+    ARGS:
+        wsMongo:DB接続クラス  MONGOConnectWs()
+        parameter:bodyの中身
+    RETRUN:
+        data
+    """
+
+    # イベント履歴のコレクション名
+    COLLECTION_NAME = "labeled_event_collection"
+
+    # MongoDBから取得するデータのソート条件
+    SORT_KEY = [
+        ("labels._exastro_fetched_time", ASCENDING),
+        ("labels._exastro_end_time", ASCENDING),
+        ("_id", ASCENDING)
+    ]
+
+    def create_filter():
+        """
+        イベント履歴の検索に使用する条件を取得する
+        RETRUN:
+            filter
+        """
+
+        # APIのリクエストパラメータとmongoDBのイベント履歴の項目の対応表。
+        PARAM_MAP = {
+            "start_time": "labels._exastro_end_time",
+            "end_time": "labels._exastro_fetched_time",
+            "evaluted": "labels._exastro_evaluated",
+            "undetected": "labels._exastro_undetected",
+            "timeouted": "labels._exastro_time_out"
+        }
+
+        # UNIX時間への変換処理を行うパラメータ。
+        TIME_PARAM = ["start_time", "end_time"]
+
+        # boolから0,1への変換処理を行うパラメータ。
+        BOOL_PARAM = ["evaluted", "undetected", "timeouted"]
+
+        filter = {}
+        for key, value in parameter.items():
+            # 想定していないパラメータを渡された場合は次のパラメータにスキップする。
+            param_key = PARAM_MAP.get(key)
+            if param_key is None:
+                continue
+
+            fix_value = None
+            # MongoDBのデータに合わせるため、時刻項目の場合UNIX時間に変換する。
+            if key in TIME_PARAM:
+                dt = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z')
+                fix_value = str(int(dt.timestamp()))
+            # MongoDBのデータに合わせるため、Bool値の場合は一旦intに変換し、その後文字に変換する。
+            elif key in BOOL_PARAM:
+                fix_value = str(int(value))
+            # 初期化漏れを防ぐため定義。扱うパラメータを考慮すると通ることはない。
+            else:
+                fix_value = value
+
+            # UNIX時間は範囲を条件とするため値の設定方法を変える
+            if key == "start_time":
+                filter[param_key] = {"$gte": fix_value}
+            elif key == "end_time":
+                filter[param_key] = {"$lte": fix_value}
+            else:
+                filter[param_key] = fix_value
+
+        return filter
+
+    event_history = (wsMongo.collection(COLLECTION_NAME)
+                     .find(create_filter())
+                     .sort(SORT_KEY))
+
+    # MongoDBから取得した値をそのまま返却するとエラーになるため原因となる項目（_id）を変換する
+    result = []
+    for item in event_history:
+        # TODO:MongoDBのIDは単純にstringに変換で良いか（ObjectId()の部分が無くなる）
+        item["_id"] = str(item["_id"])
+        result.append(item)
+
+    return result
+
+
+def collect_action_log(wsDb: DBConnectWs, parameter: dict):
+    """
+    検索条件を指定し、アクション履歴を取得する
+    ARGS:
+        wsDb:DB接続クラス  DBConnectWs()
+        parameter:bodyの中身
+    RETRUN:
+        data
+    """
+
+    # アクション履歴テーブルの物理名
+    TABLE_NAME = "T_EVRL_ACTION_LOG"
+
+    # 取得するアクション履歴のソート条件
+    SORT_KEY = "ORDER BY TIME_REGISTER, ACTION_LOG_ID"
+
+    def create_where():
+        """
+        アクション履歴の検索に使用する条件を取得する
+        RETRUN:
+            where: where句の文字列
+            bind_value: 検索で指定する値
+        """
+
+        TARGET_PARAM = ["start_time", "end_time"]
+
+        # 後にORDER BY句の文字列を結合することを考慮して予め末尾にスペースを仕込んでおく。
+        where = "WHERE DISUSE_FLAG=0 "
+        bind_value = []
+        for key, value in parameter.items():
+            # 想定していないパラメータを渡された場合は次のパラメータにスキップする。
+            if key not in TARGET_PARAM:
+                continue
+
+            # TODO:検索条件は登録時間で良いか要確認（最終更新時間では無いことを確定させたい）
+            # 片落ちで指定されることを想定してBetweenは使わない。
+            if key == "start_time":
+                where += "AND TIME_REGISTER >= %s "
+            elif key == "end_time":
+                where += "AND TIME_REGISTER <= %s "
+
+            bind_value.append(value)
+
+        return where, bind_value
+
+    where, bind_value = create_where()
+    action_log = wsDb.table_select(
+        TABLE_NAME,
+        where + SORT_KEY,
+        bind_value
+    )
+
+    return action_log
+
+
+def collect_filter(wsDb: DBConnectWs):
+    """
+    フィルター管理を取得する
+    ARGS:
+        wsDb:DB接続クラス  DBConnectWs()
+    RETRUN:
+        data
+    """
+
+    # フィルター管理テーブルの物理名
+    TABLE_NAME = "T_EVRL_FILTER"
+
+    # 取得するフィルター管理のソート条件
+    # TODO:テーブル定義からソート列が確認できなかったため仮で作成
+    SORT_KEY = "ORDER BY FILTER_NAME, FILTER_ID"
+
+    where = "WHERE DISUSE_FLAG=0 "
+    filter = wsDb.table_select(
+        TABLE_NAME,
+        where + SORT_KEY
+    )
+
+    return filter
+
+
+def collect_action(wsDb: DBConnectWs):
+    """
+    アクション定義を取得する
+    ARGS:
+        wsDb:DB接続クラス  DBConnectWs()
+    RETRUN:
+        data
+    """
+
+    # アクション定義テーブルの物理名
+    TABLE_NAME = "T_EVRL_ACTION"
+
+    # 取得するアクション定義のソート条件
+    SORT_KEY = "ORDER BY ACTION_NAME, ACTION_ID"
+
+    where = "WHERE DISUSE_FLAG=0 "
+    action = wsDb.table_select(
+        TABLE_NAME,
+        where + SORT_KEY
+    )
+
+    return action
+
+
+def collect_rule(wsDb: DBConnectWs):
+    """
+    ルール定義を取得する
+    ARGS:
+        wsDb:DB接続クラス  DBConnectWs()
+    RETRUN:
+        data
+    """
+
+    # ルール管理テーブルの物理名
+    TABLE_NAME = "T_EVRL_RULE"
+
+    # 取得するルール管理のソート条件
+    SORT_KEY = "ORDER BY RULE_NAME, RULE_ID"
+
+    where = "WHERE DISUSE_FLAG=0 "
+    rule = wsDb.table_select(
+        TABLE_NAME,
+        where + SORT_KEY
+    )
+    return rule

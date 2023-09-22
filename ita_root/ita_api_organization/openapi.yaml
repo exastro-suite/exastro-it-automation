@@ -5780,6 +5780,77 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/:
+    post:
+      tags:
+        - Event Relay
+      description: 検索条件を指定し、イベントフロー画面に描画する情報を取得する
+      operationId: postEventFlow
+      x-openapi-router-controller: controllers.event_relay_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を指定
+              properties:
+                start_time:
+                  type: string
+                  format: date-time
+                  example: "2017-07-21T17:32:28Z"
+                end_time:
+                  type: string
+                  format: date-time
+                  example: "2017-07-21T17:32:28Z"
+                evaluted:
+                  type: boolean
+                  example: "true"
+                undetected:
+                  type: boolean
+                  example: "false"
+                timeouted:
+                  type: boolean
+                  example: "false"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    example: {"action":[{}], "action_log":[{}],"event_history":[{}], "filter":[{}], "rule":[{}] }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
 components:
   schemas:
     TABLE:

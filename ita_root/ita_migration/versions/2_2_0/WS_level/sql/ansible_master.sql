@@ -185,7 +185,7 @@ Since the concrete value of the variable is not used, it can be omitted.
     exp)
       sample:
         name:
-        value:"
+        value:
 ・Global variables
     exp)
        GBL_sample:
@@ -226,7 +226,7 @@ Since the concrete value of the variable is not used, it can be omitted.
     exp)
       sample:
         name:
-        value:"
+        value:
 ・Global variables
     exp)
        GBL_sample:

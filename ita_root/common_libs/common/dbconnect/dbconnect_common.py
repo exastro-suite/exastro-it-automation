@@ -74,12 +74,11 @@ class DBConnectCommon:
                 passwd=ky_decrypt(self._db_passwd),
                 database=self._db,
                 charset='utf8mb4',
+                collation='utf8mb4_general_ci',
                 cursorclass=pymysql.cursors.DictCursor
             )
         except pymysql.Error as e:
             raise AppException("999-00002", [self._db, e])
-        except Exception:
-            raise AppException("999-00002", [self._db, "cannot access. connect info may be incorrect"])
 
         return True
 
@@ -627,7 +626,8 @@ class DBConnectCommonRoot(DBConnectCommon):
                 port=self._port,
                 user=self._db_user,
                 passwd=self._db_passwd,
-                charset='utf8',
+                charset='utf8mb4',
+                collation='utf8mb4_general_ci',
                 cursorclass=pymysql.cursors.DictCursor
             )
         except Exception as e:

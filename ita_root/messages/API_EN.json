@@ -1360,6 +1360,7 @@
     "MSG-20259": "The search condition name is blank.",
     "MSG-20260": "The search condition name is already registered.",
     "MSG-20261": "filter_json is invalid. The value must be JSON format.",
+    "MSG-20262": "Duplicate combinations cannot be specified for \"Unique Constraint(Multiple Items)\". (duplicate combination: {})",
     "MSG-30001": "Notes",
     "MSG-30002": "Execution process type",
     "MSG-30003": "●:Required\n○:Optional\n×:Cannot edit",

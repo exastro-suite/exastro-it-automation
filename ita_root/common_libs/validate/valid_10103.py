@@ -42,6 +42,12 @@ def external_valid_menu_before(objdbca, objtable, option):
 
         try:
             # ファイルがzip形式か確認
+            if not file_name.endswith('.zip'):
+                if os.path.exists(uploadPath):
+                    shutil.rmtree(uploadPath)
+                errormsg = g.appmsg.get_api_message("499-00308")
+                return False, errormsg, option
+
             if zipfile.is_zipfile(uploadPath + file_name):
                 with zipfile.ZipFile(uploadPath + file_name) as z:
                     for info in z.infolist():

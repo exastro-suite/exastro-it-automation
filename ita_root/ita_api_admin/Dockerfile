@@ -50,11 +50,12 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade pyyaml \
 &&  pip3.9 install --upgrade pytz \
 &&  pip3.9 install --upgrade markdown \
-&&  pip3.9 install --upgrade pymysql==1.0.3 \
+&&  pip3.9 install --upgrade pymysql \
 &&  pip3.9 install --upgrade python-dotenv \
 &&  pip3.9 install --upgrade chardet \
 &&  pip3.9 install --upgrade connexion[swagger-ui] \
 &&  pip3.9 install --upgrade pycryptodome \
+&&  pip3.9 install --upgrade cryptography \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \

@@ -1986,7 +1986,7 @@ class loadTable():
                             if seve_type == 'JSON':
                                 val = parameter.get(tmp_constraint_key)
                                 if val:
-                                    if val == "null":
+                                    if val.lower() == "null":
                                         # 文字列としての"null"はjsonとしてのnullと区別するようにwhere_strを作成する
                                         where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = %s AND JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) != "NULL"'.format(  # noqa: E501
                                             self.get_col_name(tmp_constraint_key),
@@ -2000,8 +2000,8 @@ class loadTable():
                                         )
                                         bind_value_list.append(val)
                                 else:
-                                    # 入力値が空の場合、JSON_TYPEで登録されている値がnullであるかどうかを判定する。
-                                    where_str = where_str + conjunction + ' JSON_TYPE(JSON_EXTRACT(`{}`,"$.{}")) = "NULL" '.format(
+                                    # 入力値が「空」および「JSONとしてのnull(None)」場合、登録されている値が「空」であるかどうかとJSON_TYPEがnullであるかどうかを判定する。
+                                    where_str = where_str + conjunction + ' JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) = "NULL" OR JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = ""'.format(  # noqa: E501
                                         self.get_col_name(tmp_constraint_key),
                                         tmp_constraint_key,
                                     )

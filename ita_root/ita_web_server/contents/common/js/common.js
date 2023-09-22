@@ -2470,7 +2470,7 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
 ##################################################
 */
 setSelectArray( table, config, modal ) {
-    if ( config.selectTextArray && config.selectTextArray.length ) {
+    if ( cmn.typeof( config.selectTextArray ) === 'array' ) {
         table.select.select = config.selectTextArray.map(function( text ){
             const param = table.data.body.find(function( item ){
                 return item.parameter[ config.selectTextArrayTextKey ] === text;
@@ -2488,7 +2488,7 @@ setSelectArray( table, config, modal ) {
         table.setTbody();
     }
 
-    if ( config.select && config.select.length ) {
+    if ( cmn.typeof( config.select ) === 'array' ) {
         table.select.select = cmn.arrayCopy( config.select );
         table.setTbody();
     }

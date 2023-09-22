@@ -16,6 +16,7 @@ import sys
 
 sys.path.append('../../')
 from common_libs.common import *  # noqa: F403
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable.load_table import loadTable
 from common_libs.api import api_filter
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
@@ -68,5 +69,39 @@ def post_check_monitoring_software(organization_id, workspace_id, body=None):  #
     """
 
     result_data = {}
+
+    return result_data,
+
+
+@api_filter
+def post_event_flow(organization_id, workspace_id, body=None):  # noqa: E501
+    """post_event_history
+
+    検索条件を指定し、イベントフロー画面に描画する情報を取得する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
+
+    :rtype: InlineResponse2006
+    """
+
+    wsDb = DBConnectWs(workspace_id=workspace_id)
+    wsMongo = MONGOConnectWs()
+
+    parameter = {}
+    if connexion.request.is_json:
+        parameter = dict(connexion.request.get_json())
+
+    result_data = {}
+
+    result_data["event_history"] = event_relay.collect_event_history(wsMongo, parameter)
+    result_data["action_log"] = event_relay.collect_action_log(wsDb, parameter)
+    result_data["filter"] = event_relay.collect_filter(wsDb)
+    result_data["action"] = event_relay.collect_action(wsDb)
+    result_data["rule"] = event_relay.collect_rule(wsDb)
 
     return result_data,

@@ -11,10 +11,50 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+import connexion
+import sys
+
+sys.path.append('../../')
+from common_libs.common import *  # noqa: F403
+from common_libs.loadtable.load_table import loadTable
 from common_libs.api import api_filter
+from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
+from libs import event_relay
 
 @api_filter
-def post_check_monitoring_software(organization_id, workspace_id, body=None):  # noqa: E501
+def get_event_relay_filter(organization_id, workspace_id):  # noqa: E501
+    """get_event_relay_filter
+
+    イベント連携のレコードを全件取得する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2005
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    menu = 'filter_management'
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    filter_parameter = {}
+    result_data = event_relay.rest_filter(objdbca, menu, filter_parameter)
+    return result_data,
+
+
+@api_filter
+def post_check_monitoring_software(organization_id, workspace_id):  # noqa: E501
     """post_check_monitoring_software
 
     対象の監視ソフトの連携状態を確認する # noqa: E501

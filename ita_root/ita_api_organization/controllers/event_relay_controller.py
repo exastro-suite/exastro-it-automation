@@ -74,8 +74,8 @@ def post_check_monitoring_software(organization_id, workspace_id, body=None):  #
 
 
 @api_filter
-def post_event_flow(organization_id, workspace_id, body=None):  # noqa: E501
-    """post_event_history
+def post_event_flow_history(organization_id, workspace_id, body=None):  # noqa: E501
+    """post_event_flow_history
 
     検索条件を指定し、イベントフロー画面に描画する情報を取得する # noqa: E501
 
@@ -86,7 +86,7 @@ def post_event_flow(organization_id, workspace_id, body=None):  # noqa: E501
     :param body:
     :type body: dict | bytes
 
-    :rtype: InlineResponse2006
+    :rtype: InlineResponse20022
     """
 
     wsDb = DBConnectWs(workspace_id=workspace_id)
@@ -96,10 +96,32 @@ def post_event_flow(organization_id, workspace_id, body=None):  # noqa: E501
     if connexion.request.is_json:
         parameter = dict(connexion.request.get_json())
 
+    event_history = event_relay.collect_event_history(wsMongo, parameter)
+    action_history = event_relay.collect_action_log(wsDb, parameter)
+
+    history_data = event_relay.create_history_list(event_history, action_history)
+
+    return history_data,
+
+
+@api_filter
+def get_event_flow_definition(organization_id, workspace_id):  # noqa: E501
+    """get_event_flow_definition
+
+    イベントフローで扱う定義情報（ラベル、アクション、ルール）を取得する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse20023
+    """
+
+    wsDb = DBConnectWs(workspace_id=workspace_id)
+
     result_data = {}
 
-    result_data["event_history"] = event_relay.collect_event_history(wsMongo, parameter)
-    result_data["action_log"] = event_relay.collect_action_log(wsDb, parameter)
     result_data["filter"] = event_relay.collect_filter(wsDb)
     result_data["action"] = event_relay.collect_action(wsDb)
     result_data["rule"] = event_relay.collect_rule(wsDb)

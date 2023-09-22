@@ -5097,12 +5097,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.event_relay_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/history/:
     post:
       tags:
       - Event Relay
-      description: 検索条件を指定し、イベントフロー画面に描画する情報を取得する
-      operationId: post_event_flow
+      description: 検索条件を指定し、イベントフローで扱う履歴情報（イベント履歴、アクション履歴）を取得する
+      operationId: post_event_flow_history
       parameters:
       - name: organization_id
         in: path
@@ -5150,6 +5150,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/inline_response_200_22'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.event_relay_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/definition/:
+    get:
+      tags:
+      - Event Relay
+      description: イベントフローで扱う定義情報（ラベル、アクション、ルール）を取得する
+      operationId: get_event_flow_definition
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_23'
         "401":
           description: Unauthorized
           content:
@@ -6612,7 +6655,21 @@ components:
           type: string
       example:
         result: 000-00000
-        data: {"action":[{}], "action_log":[{}],"event_history":[{}], "filter":[{}], "rule":[{}] }
+        data: []
+        message: message
+    inline_response_200_23:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          $ref: '#/components/schemas/inline_response_200_23_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: {"action":[{}], "filter":[{}], "rule":[{}] }
         message: message
     execute_file_body:
       properties:
@@ -7323,6 +7380,14 @@ components:
       type: object
       properties:
         data:
+          type: array
+          items:
+            example: イベント履歴とアクション履歴をまとめて日時の昇順でソートした一覧
+      example:
+    inline_response_200_23_data:
+      type: object
+      properties:
+        data:
           type: object
           properties:
             action:
@@ -7331,18 +7396,6 @@ components:
                 type: object
                 example:
                 - アクション定義のカラム名
-            action_log:
-              type: array
-              items:
-                type: object
-                example:
-                - アクション履歴のカラム名
-            event_history:
-              type: array
-              items:
-                type: object
-                example:
-                - MongoDBから取得したイベント履歴のドキュメント
             filter:
               type: array
               items:

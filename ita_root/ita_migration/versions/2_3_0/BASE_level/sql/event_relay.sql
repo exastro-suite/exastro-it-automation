@@ -396,9 +396,8 @@ CREATE TABLE T_EVRL_RULE
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
-    FILTER_NAME                     VARCHAR(40),                                -- フィルター名
     RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
-    LABELING_INFORMATION            LONGTEXT,                                   -- ラベリング情報
+    LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
@@ -418,9 +417,8 @@ CREATE TABLE T_EVRL_RULE_JNL
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
-    FILTER_NAME                     VARCHAR(40),                                -- フィルター名
     RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
-    LABELING_INFORMATION            LONGTEXT,                                   -- ラベリング情報
+    LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
@@ -443,6 +441,21 @@ CREATE TABLE T_EVRL_REQUEST_METHOD
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
     PRIMARY KEY(REQUEST_METHOD_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- フィルター組み合わせ演算子マスタ
+CREATE TABLE T_EVRL_FILTER_OPERATOR
+(
+    OPERATION_ID                    VARCHAR(2),                                 -- 演算子ID
+    OPERATION_NAME                  VARCHAR(255),                               -- 演算子名
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(OPERATION_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 

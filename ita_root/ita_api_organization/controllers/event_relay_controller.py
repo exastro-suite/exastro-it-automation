@@ -54,7 +54,7 @@ def get_event_relay_filter(organization_id, workspace_id):  # noqa: E501
 
 
 @api_filter
-def post_check_monitoring_software(organization_id, workspace_id):  # noqa: E501
+def post_check_monitoring_software(organization_id, workspace_id, body=None):  # noqa: E501
     """post_check_monitoring_software
 
     対象の監視ソフトの連携状態を確認する # noqa: E501

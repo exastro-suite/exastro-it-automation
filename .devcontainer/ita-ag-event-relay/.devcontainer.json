@@ -1,9 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/jekyll
 {
-	"name": "it-automation2 - ita-event-relay-agent",
-	"dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml"],
-	"service": "ita-event-relay-agent",
+	"name": "it-automation2 - ita-ag-event-relay",
+	"dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml", "../docker-compose.platform.yml", "../docker-compose agent.event-relay.yml"],
+	"service": "ita-ag-event-relay",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"files.trimTrailingWhitespace": true,

@@ -8,14 +8,14 @@
         "name": "Python: Flask",
         "type": "python",
         "request": "launch",
-        "program": "/exastro/backyard/backyard_init.py",
+        "program": "/exastro/api.py",
         "env": {
-            "FLASK_APP": "/exastro/backyard/backyard_init.py"
+            "FLASK_APP": "/exastro/api.py"
         },
         "cwd": "/exastro",
         "pathMappings": [
           {
-            "localRoot": "${workspaceFolder}/ita_root/ita_by_event_relay_collection",
+            "localRoot": "${workspaceFolder}/ita_root/ita_api_event_relay_receiver",
             "remoteRoot": "/exastro"
           },
         ],
@@ -31,14 +31,14 @@
         "name": "[DEBUG] Python: Flask",
         "type": "python",
         "request": "launch",
-        "program": "/exastro/backyard/backyard_init.py",
+        "program": "/exastro/api.py",
         "env": {
-            "FLASK_APP": "/exastro/backyard/backyard_init.py"
+            "FLASK_APP": "/exastro/api.py"
         },
         "cwd": "/exastro",
         "pathMappings": [
           {
-            "localRoot": "${workspaceFolder}/ita_root/ita_by_event_relay_collection",
+            "localRoot": "${workspaceFolder}/ita_root/ita_api_event_relay_receiver",
             "remoteRoot": "/exastro"
           },
         ],
@@ -48,6 +48,29 @@
         ],
         "jinja": true,
         "justMyCode": true
-      }
+      },
+      {
+        "name": "[DEBUG] Python: Flask (Attach)",
+        "type": "python",
+        "request": "attach",
+        "connect": {
+          "host": "localhost",
+          "port": 5678
+        },
+        "pathMappings": [
+            {
+                "localRoot": "${workspaceFolder}/ita_root/ita_api_event_relay_receiver",
+                "remoteRoot": "/exastro"
+              },
+              {
+                "localRoot": "${workspaceFolder}/ita_root/common_libs",
+                "remoteRoot": "/exastro/common_libs"
+              },
+              {
+                "localRoot": "${workspaceFolder}/ita_root/messages",
+                "remoteRoot": "/exastro/messages"
+              },
+        ]
+    },
   ]
 }

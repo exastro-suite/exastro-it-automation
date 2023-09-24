@@ -1,10 +1,9 @@
-version: '3'
+version: '3.7'
 services:
-
   ita-event-relay-agent:
     user: 1000:1000
     build:
-      dockerfile: ./ita_root/ita_event_relay_agent/Dockerfile
+      dockerfile: ./ita_root/ita_ag_event_relay/Dockerfile
       context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
@@ -24,6 +23,6 @@ services:
       # - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       # - MONGO_HOST=${MONGO_HOST}
       # - MONGO_PORT=${MONGO_PORT}
-    # profiles:
-    #   - exastro-it-automation-backyard
-    #   - ita-by-event-relay
+    profiles:
+      - exastro-it-automation-agent
+      - ita-ag-event-relay

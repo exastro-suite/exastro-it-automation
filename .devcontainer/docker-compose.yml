@@ -631,10 +631,10 @@ services:
         condition: service_completed_successfully
 
 
-  ita-by-event-relay-collection:
+  ita-api-event-relay-receiver:
     user: 1000:1000
     build:
-      dockerfile: ./ita_root/ita_by_event_relay_collection/Dockerfile
+      dockerfile: ./ita_root/ita_api_event_relay_receiver/Dockerfile
       context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
@@ -643,6 +643,7 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
+      - LISTEN_PORT=8079
       - ENCRYPT_KEY=${ENCRYPT_KEY}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
@@ -654,9 +655,11 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - MONGO_HOST=${MONGO_HOST}
       - MONGO_PORT=${MONGO_PORT}
+      - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
+      - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
     profiles:
       - exastro-it-automation-backyard
-      - ita-by-event-relay
+      - ita-event-relay
 
   ita-by-event-relay-conclusion:
     user: 1000:1000
@@ -683,7 +686,7 @@ services:
       - MONGO_PORT=${MONGO_PORT}
     profiles:
       - exastro-it-automation-backyard
-      - ita-by-event-relay
+      - ita-event-relay
 
   ita-mongodb:
     image: mongo:6.0.7
@@ -705,4 +708,4 @@ services:
       - "0.0.0.0:27017:27017"
     profiles:
       - exastro-it-automation-backyard
-      - ita-by-event-relay
+      - ita-event-relay

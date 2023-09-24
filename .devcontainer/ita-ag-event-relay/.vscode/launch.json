@@ -8,14 +8,14 @@
         "name": "Python: Flask",
         "type": "python",
         "request": "launch",
-        "program": "/exastro/backyard/backyard_init.py",
+        "program": "/exastro/backyard/backyard_agent_init.py",
         "env": {
-            "FLASK_APP": "/exastro/backyard/backyard_init.py"
+            "FLASK_APP": "/exastro/backyard/backyard_agent_init.py"
         },
         "cwd": "/exastro",
         "pathMappings": [
           {
-            "localRoot": "${workspaceFolder}/ita_root/ita_event_relay_agent",
+            "localRoot": "${workspaceFolder}/ita_root/ita_ag_event_relay",
             "remoteRoot": "/exastro"
           },
         ],
@@ -31,14 +31,14 @@
         "name": "[DEBUG] Python: Flask",
         "type": "python",
         "request": "launch",
-        "program": "/exastro/backyard/backyard_init.py",
+        "program": "/exastro/backyard/backyard_agent_init.py",
         "env": {
-            "FLASK_APP": "/exastro/backyard/backyard_init.py"
+            "FLASK_APP": "/exastro/backyard/backyard_agent_init.py"
         },
         "cwd": "/exastro",
         "pathMappings": [
           {
-            "localRoot": "${workspaceFolder}/ita_root/ita_event_relay_agent",
+            "localRoot": "${workspaceFolder}/ita_root/ita_ag_event_relay",
             "remoteRoot": "/exastro"
           },
         ],

@@ -28,8 +28,8 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-event-relay-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-event-relay-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -63,8 +63,8 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-event-relay-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-event-relay-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -750,38 +750,41 @@ services:
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 
-  ita-by-event-relay-collection:
+  ita-api-event-relay-receiver:
     build:
       target: develop_build
+    command: "python3 -m debugpy --listen 5678 /exastro/api.py"
+    # command: bash -c "chmod -R 777 /storage && python3 -m debugpy --listen 5678 /exastro/api.py"
     volumes:
       - ..:/workspace:cached
-      - ../ita_root/common_libs:/workspace/ita_root/ita_by_event_relay_collection/common_libs:cached
-      - ../ita_root/messages:/workspace/ita_root/ita_by_event_relay_collection/messages:cached
-      - ../ita_root/backyard:/workspace/ita_root/ita_by_event_relay_collection/backyard:cached
-      - ../ita_root/ita_by_event_relay_collection:/exastro:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_api_event_relay_receiver/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_api_event_relay_receiver/messages:cached
+      - ../ita_root/ita_api_event_relay_receiver:/exastro:cached
       - ../ita_root/common_libs:/exastro/common_libs:cached
       - ../ita_root/messages:/exastro/messages:cached
-      - ../ita_root/backyard:/exastro/backyard:cached
+      - ../ita_root/ita_api_event_relay_receiver/config/httpd.conf/httpd.conf:/etc/httpd/conf/httpd.conf:cached
+      - ../ita_root/ita_api_event_relay_receiver/config/httpd.conf/wsgi.conf:/etc/httpd/conf.d/wsgi.conf:cached
       - ~/.netrc:/home/app_user/.netrc
       - ~/.gitconfig:/home/app_user/.gitconfig
-      - ./ita-by-event-relay-collection/.vscode/launch.json:/workspace/.vscode/launch.json
+      - ./ita-api-event-relay-receiver/.vscode/launch.json:/workspace/.vscode/launch.json
       - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
-      - ../.vscode_extensions/ita-by-event-relay-collection/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
-      - ../.vscode_extensions/ita-by-event-relay-collection/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - ../.vscode_extensions/ita-api-event-relay-receiver/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-api-event-relay-receiver/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-event-relay-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-event-relay-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 
   ita-by-event-relay-conclusion:
     build:
@@ -810,8 +813,8 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-event-relay-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-event-relay-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -840,11 +843,11 @@ services:
       - "0.0.0.0:587:587" # StartTLS
       - "0.0.0.0:993:993" # IMAPS
     profiles:
-      - ita-by-event-relay
+      - ita-ag-event-relay
 
-  ita-event-relay-agent:
+  ita-ag-event-relay:
     build:
-      dockerfile: ./ita_root/ita_event_relay_agent/Dockerfile
+      dockerfile: ./ita_root/ita_ag_event_relay/Dockerfile
       context: ../.
       target: develop_build
       args:
@@ -852,28 +855,25 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
-    env_file:
-      - ./.env
-      - ../ita_root/ita_event_relay_agent/.env
     volumes:
       - ..:/workspace:cached
-      - ../ita_root/common_libs:/workspace/ita_root/ita_event_relay_agent/common_libs:cached
-      - ../ita_root/messages:/workspace/ita_root/ita_event_relay_agent/messages:cached
-      - ../ita_root/backyard:/workspace/ita_root/ita_event_relay_agent/backyard:cached
-      - ../ita_root/ita_event_relay_agent:/exastro:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_ag_event_relay/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_ag_event_relay/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_ag_event_relay/backyard:cached
+      - ../ita_root/ita_ag_event_relay:/exastro:cached
       - ../ita_root/common_libs:/exastro/common_libs:cached
       - ../ita_root/messages:/exastro/messages:cached
       - ../ita_root/backyard:/exastro/backyard:cached
       - ~/.netrc:/home/app_user/.netrc
       - ~/.gitconfig:/home/app_user/.gitconfig
-      - ./ita-event-relay-agent/.vscode/launch.json:/workspace/.vscode/launch.json
+      - ./ita-ag-event-relay/.vscode/launch.json:/workspace/.vscode/launch.json
       - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
       - ../.volumes/storage:/storage
-      - ../.vscode_extensions/ita-event-relay-agent/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
-      - ../.vscode_extensions/ita-event-relay-agent/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+      - ../.vscode_extensions/ita-ag-event-relay/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-ag-event-relay/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
       - TZ=Asia/Tokyo
       - ENCRYPT_KEY=${ENCRYPT_KEY}
@@ -882,14 +882,12 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-event-relay-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-event-relay-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-    profiles:
-      - exastro-it-automation-backyard
-      - ita-by-event-relay
+
 
   # mongo-express:
   #   image: mongo-express

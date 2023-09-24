@@ -23,8 +23,9 @@ ENV PYTHONPATH=/exastro/
 ENV USER_ID=90101
 ENV EXECUTE_INTERVAL=1
 ENV LANGUAGE=en
-ENV STORAGEPATH=/storage/
-ENV SERVICE_NAME=ita-by-event-relay-collection
+# ENV STORAGEPATH=/storage/
+ENV SERVICE_NAME=ita-ag-event-relay
+
 
 RUN dnf install -y \
     gcc \
@@ -45,8 +46,8 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade python-dotenv \
 &&  pip3.9 install --upgrade chardet \
 &&  pip3.9 install --upgrade pycryptodome \
-&&  pip3.9 install --upgrade pymongo \
 &&  pip3.9 install --upgrade jmespath \
+&&  pip3.9 install --upgrade imapclient \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
@@ -58,7 +59,6 @@ FROM    common_build as develop_build
 ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
-
 
 RUN dnf install -y \
     sudo \
@@ -81,7 +81,7 @@ RUN mkdir ~/.config \
 
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_event_relay_collection/ $APP_PATH/
+COPY ./ita_root/ita_ag_event_relay/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
@@ -97,13 +97,13 @@ ARG APP_PATH
 USER $USERNAME
 WORKDIR $APP_PATH
 
-COPY ./ita_root/ita_by_event_relay_collection/ $APP_PATH/
+COPY ./ita_root/ita_ag_event_relay/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
 
 USER root
-RUN chmod a+x $APP_PATH/backyard/entrypoint.sh
+RUN chmod a+x $APP_PATH/backyard/entrypoint_agent.sh
 USER $USERNAME
 
-ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]
+ENTRYPOINT ["bash", "./backyard/entrypoint_agent.sh"]

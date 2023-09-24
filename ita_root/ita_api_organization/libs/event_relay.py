@@ -260,3 +260,50 @@ def collect_rule(wsDb: DBConnectWs):
         where + SORT_KEY
     )
     return rule
+
+
+def create_history_list(event_history: list, action_log: list) :
+    """
+    イベント履歴とアクション履歴をまとめて日時の昇順でソートしたリストを作成する
+    ARGS:
+        event_history:イベント履歴のリスト
+        action_log:アクション履歴のリスト
+    RETRUN:
+        history_list
+    """
+
+    history_list = []
+
+    for event in event_history:
+        append_data = {}
+        append_data["id"] = event["_id"]
+        append_data["type"] = "event"
+
+        ts = int(event["labels"]["_exastro_fetched_time"])
+        dt = datetime.fromtimestamp(ts)
+        append_data["datetime"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        append_data["item"] = event
+
+        history_list.append(append_data)
+
+    for action in action_log:
+        append_data = {}
+        append_data["id"] = action["ACTION_LOG_ID"]
+        append_data["type"] = "action"
+
+        tr = action["TIME_REGISTER"]
+        append_data["datetime"] = tr.strftime("%Y-%m-%d %H:%M:%S")
+
+        append_data["item"] = action
+
+        history_list.append(append_data)
+
+    # 毎回同じ順序で取得できるようにidをソートキーに加える
+    # （UUIDなので追加されると順番が崩れ可能性はあるが、過去データを参照する場合は問題ない認識）
+    # またイベントの結果アクションが発生するという流れを考慮しイベントが先に来るようにtypeをソートキーに指定
+    history_list.sort(key=lambda x: x["id"], reverse=False)
+    history_list.sort(key=lambda x: x["type"], reverse=True)
+    history_list.sort(key=lambda x: x["datetime"], reverse=False)
+
+    return history_list

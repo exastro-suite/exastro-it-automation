@@ -18,6 +18,8 @@ from flask import request, g
 import os
 import base64
 import re
+import json
+import copy
 
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.exception import AppException
@@ -444,8 +446,8 @@ def get_backyard_execute_status_list():
         backyard_execute_status_list = {}
 
         # チェック対象の一覧。テーブル名、カラム名、ステータスID等。
-        backyard_check_list = [
-            {
+        tmp_backyard_check_list = {
+            "ansible": {
                 "container_name": "ita-by-ansible-execute",
                 "table_name": "V_ANSC_EXEC_STS_INST",
                 "primary_key": "EXECUTION_NO",
@@ -456,7 +458,7 @@ def get_backyard_execute_status_list():
                 "status_name_column": "EXEC_STATUS_NAME",
                 "add_count": True
             },
-            {
+            "conductor": {
                 "container_name": "ita-by-conductor-synchronize",
                 "table_name": "T_COMN_CONDUCTOR_INSTANCE",
                 "primary_key": "CONDUCTOR_INSTANCE_ID",
@@ -467,7 +469,7 @@ def get_backyard_execute_status_list():
                 "status_name_column": "STATUS_NAME",
                 "add_count": False  # Conductorはexecute_countに加算をしない。
             },
-            {
+            "excel_export_import": {
                 "container_name": "ita-by-excel-export-import",
                 "table_name": "T_BULK_EXCEL_EXPORT_IMPORT",
                 "primary_key": "EXECUTION_NO",
@@ -478,7 +480,7 @@ def get_backyard_execute_status_list():
                 "status_name_column": "TASK_STATUS_NAME",
                 "add_count": True
             },
-            {
+            "menu_export_import": {
                 "container_name": "ita-by-menu-export-import",
                 "table_name": "T_MENU_EXPORT_IMPORT",
                 "primary_key": "EXECUTION_NO",
@@ -489,7 +491,7 @@ def get_backyard_execute_status_list():
                 "status_name_column": "TASK_STATUS_NAME",
                 "add_count": True
             },
-            {
+            "menu_create": {
                 "container_name": "ita-by-menu-create",
                 "table_name": "T_MENU_CREATE_HISTORY",
                 "primary_key": "HISTORY_ID",
@@ -500,7 +502,7 @@ def get_backyard_execute_status_list():
                 "status_name_column": "STATUS_NAME",
                 "add_count": True
             },
-            {
+            "terraform_cli": {
                 "container_name": "ita-by-terraform-cli-execute",
                 "table_name": "T_TERC_EXEC_STS_INST",
                 "primary_key": "EXECUTION_NO",
@@ -511,7 +513,7 @@ def get_backyard_execute_status_list():
                 "status_name_column": "EXEC_STATUS_NAME",
                 "add_count": True
             },
-            {
+            "terraform_cloud_ep": {
                 "container_name": "ita-by-terraform-cloud-ep-execute",
                 "table_name": "T_TERE_EXEC_STS_INST",
                 "primary_key": "EXECUTION_NO",
@@ -522,18 +524,29 @@ def get_backyard_execute_status_list():
                 "status_name_column": "EXEC_STATUS_NAME",
                 "add_count": True
             }
-        ]
+        }
 
         # Organizationの一覧を取得
         organization_list = []
         where_str = "WHERE `DISUSE_FLAG`='0'"
         t_comn_organization_db_info_records = common_db.table_select('T_COMN_ORGANIZATION_DB_INFO', where_str)
         for record in t_comn_organization_db_info_records:
-            organization_data = {'organization_id': record.get('ORGANIZATION_ID'), 'db_database': record.get('DB_DATABASE')}
+            organization_data = {'organization_id': record.get('ORGANIZATION_ID'), 'db_database': record.get('DB_DATABASE'), 'no_install_driver': record.get('NO_INSTALL_DRIVER')}  # noqa: E501
             organization_list.append(organization_data)
 
         # Organizationの一覧でループスタート
         for org_data in organization_list:
+            # 対象一覧をコピー
+            backyard_check_list = copy.deepcopy(tmp_backyard_check_list)
+
+            # インストール対象外ドライバについて、ループ対象から削除する
+            no_install_driver = org_data.get('no_install_driver')
+            if no_install_driver:
+                no_install_driver_list = json.loads(no_install_driver)
+                for exclusion_target in no_install_driver_list:
+                    if exclusion_target in backyard_check_list:
+                        del backyard_check_list[exclusion_target]
+
             org_id = org_data.get('organization_id')
             org_db = DBConnectOrg(org_id)  # noqa: F405
             organization_exec_count = 0
@@ -558,7 +571,7 @@ def get_backyard_execute_status_list():
                 # 返却値にworkspace_idでkeyを作成
                 backyard_execute_status_list[org_id][ws_id] = {}
 
-                for backyard_data in backyard_check_list:
+                for backyard_data in backyard_check_list.values():
                     # 返却値にbackyardコンテナ名でkeyを作成
                     container_name = backyard_data.get('container_name')
                     backyard_execute_status_list[org_id][ws_id][container_name] = []

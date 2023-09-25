@@ -754,7 +754,6 @@ services:
     build:
       target: develop_build
     command: "python3 -m debugpy --listen 5678 /exastro/api.py"
-    # command: bash -c "chmod -R 777 /storage && python3 -m debugpy --listen 5678 /exastro/api.py"
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_api_event_relay_receiver/common_libs:cached

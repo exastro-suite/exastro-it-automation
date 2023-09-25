@@ -16,7 +16,7 @@ import os
 import connexion
 
 from dotenv import load_dotenv  # python-dotenv
-from libs.admin_common import before_request_handler
+from libs.event_relay_receiver_common import before_request_handler
 # import secrets
 # import string
 

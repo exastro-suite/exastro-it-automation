@@ -1,6 +1,6 @@
 version: '3.7'
 services:
-  ita-event-relay-agent:
+  ita-ag-event-relay:
     user: 1000:1000
     build:
       dockerfile: ./ita_root/ita_ag_event_relay/Dockerfile
@@ -14,15 +14,7 @@ services:
       - TZ=Asia/Tokyo
       # - ENCRYPT_KEY=${ENCRYPT_KEY}
       - DEFAULT_LANGUAGE=ja
-      # - DB_HOST=${DB_HOST}
-      # - DB_PORT=${DB_PORT}
-      # - DB_DATABASE=${DB_DATABASE}
-      # - DB_USER=${DB_USER}
-      # - DB_PASSWORD=${DB_PASSWORD}
-      # - DB_ADMIN_USER=${DB_ADMIN_USER}
-      # - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-      # - MONGO_HOST=${MONGO_HOST}
-      # - MONGO_PORT=${MONGO_PORT}
+
     profiles:
       - exastro-it-automation-agent
       - ita-ag-event-relay

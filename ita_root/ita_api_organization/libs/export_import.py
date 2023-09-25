@@ -1421,13 +1421,12 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         msg_args = e.args[1]
         return False, result_code, msg_args, None
 
-    # import_menu/import/アップロードIDのディレクトリを削除する
-    if os.path.isdir(import_path):
-        shutil.rmtree(import_path)
-
-    is_file = os.path.isfile(import_path + '_ita_data.tar.gz')
-    if is_file is True:
-        os.remove(import_path + '_ita_data.tar.gz')
+    try:
+        # import_menu/import/アップロードIDのディレクトリを削除する
+        if os.path.isdir(import_path):
+            shutil.rmtree(import_path)
+    except Exception as e:
+        g.applogger.debug("Failed to delete: {} ({})".format(e, import_path))
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')

@@ -1366,20 +1366,21 @@ getFileData( id, name, type ) {
         }
     });
 
-    let file;
     if ( params !== undefined ) {
-        if ( tb.mode === 'diff' && type === 'beforeValue' && tb.option && tb.option.before[ id ] && tb.option.before[ id ].file[ name ]) {
-            // 編集確認画面、変更前データ
-            file = tb.option.before[ id ].file[ name ];
-        } else if ( tb.mode === 'edit' && tb.edit && tb.edit.input[ id ] && tb.edit.input[ id ].after.file[ name ]) {
-            // 編集画面、入力済みのデータがある場合
-            file = tb.edit.input[ id ].after.file[ name ];
-        } else if ( params.file[ name ] !== undefined && params.file[ name ] !== null ) {
-            file = params.file[ name ];
+        if ( tb.mode === 'edit' && tb.edit && tb.edit.input[ id ] && tb.edit.input[ id ].after.file[ name ]) {
+            // 編集画面で入力済みデータがある場合
+            return tb.edit.input[ id ].after.file[ name ];
+        } else if ( tb.mode === 'diff') {
+            // 確認画面
+            if ( (type === 'beforeValue' || ( !params.file[ name ] && type === '')) && tb.option && tb.option.before[ id ] && tb.option.before[ id ].file[ name ] ) {
+                return tb.option.before[ id ].file[ name ];
+            } else {
+                return params.file[ name ];
+            }
+        } else {
+            return params.file[ name ];
         }
     }
-
-    return file;
 }
 /*
 ##################################################
@@ -4365,7 +4366,17 @@ editOk() {
             for ( const columnKey of tb.data.regiColumnKeys ) {
                 const columnNameRest = info[ columnKey ].column_name_rest,
                       columnType = info[ columnKey ].column_type;
+                
+                // ファイルがフォームデータではない場合は変換する
+                const fileCheck = function( file ) {
+                    if ( fn.typeof( file ) === 'file') {
+                        return file;
+                    } else {
+                        return fn.base64ToFile( file );
+                    }
+                };
 
+                // 入力済みがあるか？
                 const setData = function( type ) {
                     if ( item.after[ type ][ columnNameRest ] !== undefined ) {
                         return item.after[ type ][ columnNameRest ]
@@ -4391,8 +4402,8 @@ editOk() {
                             itemData.parameter[ columnNameRest ] = setData('parameter');
 
                             const fileAfterValue = item.after.parameter[ columnNameRest ];
-                            if ( fileAfterValue !== undefined && fileAfterValue !== '') {
-                                itemData.file[ columnNameRest ] = setData('file');
+                            if ( ( fileAfterValue !== undefined && fileAfterValue !== '') || itemData.type === 'Register' ){
+                                itemData.file[ columnNameRest ] = fileCheck( setData('file') );
                             }
                         break;
                         case 'FileUploadEncryptColumn': {
@@ -4402,7 +4413,7 @@ editOk() {
                                 itemData.parameter[ columnNameRest ] = setData('parameter');
                                 // nullじゃなければファイルもセット
                                 if ( fileAfterValue !== null ) {
-                                    itemData.file[ columnNameRest ] = setData('file');
+                                    itemData.file[ columnNameRest ] = fileCheck( setData('file') );
                                 }
                                 // { key: null } の場合は削除とする
                             }

@@ -254,7 +254,8 @@ duplicatSelectData() {
     const tw = this;
     
     const newData = [],
-          exclusion = ['last_update_date_time', 'last_updated_user'];
+          exclusion = ['last_update_date_time', 'last_updated_user'], // 複製しない項目
+          exclusionColumn = ['FileUploadEncryptColumn']; // 複製しないカラムタイプ
 
    tw.result.forEach(function( val ){
         const id = String( val.parameter[ tw.data.idName ] );
@@ -265,6 +266,10 @@ duplicatSelectData() {
                 if ( key === tw.data.idName ) {
                     parameters[ key ] = String( tw.data.addId-- );
                 } else if ( exclusion.indexOf( key ) === -1 ) {
+                    // 複製しないカラムタイプか？
+                    const columnType = tw.checkColumnType( key );
+                    if ( exclusionColumn.indexOf( columnType ) !== -1 ) continue;
+
                     // 入力済みのデータがあるか
                     if ( tw.data.input && tw.data.input[id] && key in tw.data.input[id].after.parameter ) {
                         parameters[ key ] = tw.data.input[id].after.parameter[ key ];
@@ -277,11 +282,19 @@ duplicatSelectData() {
             }
             // ファイル
             for ( const key in val.file ) {
+                // 複製しないカラムタイプか？
+                const columnType = tw.checkColumnType( key );
+                if ( exclusionColumn.indexOf( columnType ) !== -1 ) continue;
+                
                 files[ key ] = val.file[ key ];
             }
             // 入力済みのファイルがあれば上書き
             if ( tw.data.input && tw.data.input[id] ) {
                 for ( const key in tw.data.input[id].after.file ) {
+                    // 複製しないカラムタイプか？
+                    const columnType = tw.checkColumnType( key );
+                    if ( exclusionColumn.indexOf( columnType ) !== -1 ) continue;
+
                     if ( tw.data.input[id].after.file[ key ] !== undefined ) {
                         files[ key ] = tw.data.input[id].after.file[ key ];
                     } else if ( tw.data.input[id].after.file[ key ] === undefined && key in files ) {
@@ -301,6 +314,26 @@ duplicatSelectData() {
     } else {
         tw.result = newData.concat( tw.result );
     }
+}
+/*
+##################################################
+   カラムタイプを調べる
+##################################################
+*/
+checkColumnType( key ) {
+    const tw = this;
+    if ( tw.data.tableInfo && tw.data.tableInfo ) {
+        for ( const column in tw.data.tableInfo.column_info ) {
+            const
+            data = tw.data.tableInfo.column_info[ column ],
+            rest = data.column_name_rest;
+
+            if ( rest === key ) {
+                return data.column_type;
+            }                        
+        }
+    }
+    return null;
 }
 /*
 ##################################################

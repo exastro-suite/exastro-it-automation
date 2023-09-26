@@ -3918,7 +3918,7 @@ border-top-color: #FFF;
 bottom: -8px;
 border-bottom-color: #FFF;
 }
-
+/* Dark */
 .darkPopup .popupInner {
 background-color: #000;
 background-image: linear-gradient( rgba( 255,255,255,.2 ), rgba( 255,255,255,0) );
@@ -3931,6 +3931,24 @@ border-top-color: #000;
 .popupBottom.darkPopup .popupArrow > span {
 border-bottom-color: #000;
 }
+/* Parameter Collection */
+.parameterCollectionPopup {
+animation: none;
+}
+.parameterCollectionPopup .popupInner {
+border: 1px solid var(--mainColor40);
+box-shadow: none;
+}
+.popupTop.parameterCollectionPopup .popupArrow {
+bottom: -92px;
+width: 1px; height: 100px;
+background-color: var(--mainColor40);
+border: none!important;
+}
+.popupTop.parameterCollectionPopup .popupArrow > span {
+display: none;
+}
+
 
 /*
 ##################################################
@@ -4821,6 +4839,7 @@ height: 100%;
 padding: 16px;
 letter-spacing: .25px;
 line-height: 1.75;
+word-break: break-all;
 font-size: 16px;
 } 
 .alertMessageIconBlock {

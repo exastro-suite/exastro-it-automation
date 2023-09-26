@@ -5054,7 +5054,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.event_relay_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/filter/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/filter/{menu}/:
     get:
       tags:
       - Event Relay
@@ -5077,6 +5077,69 @@ paths:
         explode: false
         schema:
           type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.event_relay_controller
+    post:
+      tags:
+      - Event Relay
+      description: 検索条件を指定し、レコードを取得する
+      operationId: post_event_relay_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/filter_menu_body'
       responses:
         "200":
           description: Success
@@ -6725,6 +6788,73 @@ components:
           type: string
           example: /api/v2/policies/pol-xxxxxxxxxx/download
       description: policyコードのダウンロードパスを記載
+    filter_menu_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    event_flow_history_body:
+      properties:
+        start_time:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        end_time:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        evaluted:
+          type: boolean
+          example: true
+        undetected:
+          type: boolean
+          example: false
+        timeouted:
+          type: boolean
+          example: false
+      description: 検索条件を指定
+    inline_response_200_22:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example: []
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: []
+        message: message
+    inline_response_200_23:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: object
+          example:
+            action:
+            - {}
+            filter:
+            - {}
+            rule:
+            - {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          action:
+          - {}
+          filter:
+          - {}
+          rule:
+          - {}
+        message: message
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:

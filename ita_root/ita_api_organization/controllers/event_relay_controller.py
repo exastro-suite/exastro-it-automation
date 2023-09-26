@@ -23,7 +23,7 @@ from libs.organization_common import check_menu_info, check_auth_menu, check_she
 from libs import event_relay
 
 @api_filter
-def get_event_relay_filter(organization_id, workspace_id):  # noqa: E501
+def get_event_relay_filter(organization_id, workspace_id, menu):  # noqa: E501
     """get_event_relay_filter
 
     イベント連携のレコードを全件取得する # noqa: E501
@@ -31,7 +31,42 @@ def get_event_relay_filter(organization_id, workspace_id):  # noqa: E501
     :param organization_id: OrganizationID
     :type organization_id: str
     :param workspace_id: WorkspaceID
+    :param menu: メニュー名
     :type workspace_id: str
+
+    :rtype: InlineResponse2005
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    filter_parameter = {}
+    result_data = event_relay.rest_filter(objdbca, menu, filter_parameter)
+    return result_data,
+
+
+def post_event_relay_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
+    """post_event_relay_filter
+
+    検索条件を指定し、レコードを取得する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param menu: メニュー名
+    :type menu: str
+    :param body:
+    :type body: dict | bytes
 
     :rtype: InlineResponse2005
     """
@@ -50,6 +85,10 @@ def get_event_relay_filter(organization_id, workspace_id):  # noqa: E501
     check_auth_menu(menu, objdbca)
 
     filter_parameter = {}
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        filter_parameter = body
+
     result_data = event_relay.rest_filter(objdbca, menu, filter_parameter)
     return result_data,
 
@@ -66,6 +105,26 @@ def post_check_monitoring_software(organization_id, workspace_id, body=None):  #
     :type workspace_id: str
 
     :rtype: InlineResponse2006
+    """
+
+    result_data = {}
+
+    return result_data,
+
+
+def post_event_flow(organization_id, workspace_id, body=None):  # noqa: E501
+    """post_event_flow
+
+    検索条件を指定し、イベントフローで扱う履歴情報（イベント履歴、アクション履歴）を取得する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param body:
+    :type body: dict | bytes
+
+    :rtype: InlineResponse20022
     """
 
     result_data = {}

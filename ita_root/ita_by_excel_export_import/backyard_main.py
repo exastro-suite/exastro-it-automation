@@ -53,9 +53,14 @@ def backyard_main(organization_id, workspace_id):
         # DB接続
         objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-        # メンテナンスモード「backyard_execute_stop」が有効(1)の場合は処理を終了する。
+        # メンテナンスモードのチェック
         try:
             maintenance_mode = get_maintenance_mode_setting()
+            # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
+            if str(maintenance_mode['data_update_stop']) == "1":
+                g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
+                return
+
             # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
             if str(maintenance_mode['backyard_execute_stop']) == "1":
                 g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))

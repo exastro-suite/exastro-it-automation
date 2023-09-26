@@ -5730,7 +5730,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/filter/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/filter/{menu}/:
     get:
       tags:
         - Event Relay
@@ -5750,6 +5750,75 @@ paths:
           required: true
           schema:
             type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    items: {
+                      $ref: '#/components/schemas/FILTER_PARAMETERS',
+                    }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+    post:
+      tags:
+        - Event Relay
+      description: 検索条件を指定し、レコードを取得する
+      operationId: postEventRelayFilter
+      x-openapi-router-controller: controllers.event_relay_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を設定
+              properties:
+                rest_key_name:
+                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+
       responses:
         '200':
           description: Success

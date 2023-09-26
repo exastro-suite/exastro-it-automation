@@ -54,6 +54,7 @@ def get_event_relay_filter(organization_id, workspace_id, menu):  # noqa: E501
     return result_data,
 
 
+@api_filter
 def post_event_relay_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """post_event_relay_filter
 
@@ -112,6 +113,7 @@ def post_check_monitoring_software(organization_id, workspace_id, body=None):  #
     return result_data,
 
 
+@api_filter
 def post_event_flow(organization_id, workspace_id, body=None):  # noqa: E501
     """post_event_flow
 

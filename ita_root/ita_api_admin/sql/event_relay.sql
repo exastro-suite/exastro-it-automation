@@ -171,6 +171,7 @@ CREATE TABLE T_EVRL_LABEL_KEY_INPUT
 (
     LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキーID
     LABEL_KEY                       VARCHAR(255),                               -- ラベルキー
+    COLOR_CODE                      VARCHAR(40),                                -- カラーコード
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -185,6 +186,7 @@ CREATE TABLE T_EVRL_LABEL_KEY_INPUT_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキーID
     LABEL_KEY                       VARCHAR(255),                               -- ラベルキー
+    COLOR_CODE                      VARCHAR(40),                                -- カラーコード
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

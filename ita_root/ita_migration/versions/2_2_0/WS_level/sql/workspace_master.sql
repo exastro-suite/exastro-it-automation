@@ -1,7 +1,6 @@
 -- INSERT/UPDATE: -2.2.0
     -- T_COMN_DEL_OPERATION_LIST: UPDATE
     -- T_COMN_MENU_COLUMN_LINK: UPDATE
-    -- T_COMN_SYSTEM_CONFIG: INSERT
     -- T_COMN_MENU_TABLE_LINK: UPDATE
     -- T_COMN_SHEET_TYPE: INSERT
 
@@ -15,7 +14,7 @@ UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = "データストレージパ
 /storage/<<organization>>/<<workspace>>/配下のパスの場合は、/storage/<<organization>>/<<workspace>>からの相対パスを記載します。
 exp)
  Ansible-Legacy
-  /driver/ansible/legacy 
+  /driver/ansible/legacy
  Ansible-Pioneer
   /driver/ansible/pioneer",LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "1010505";
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = "データストレージパス(省略可能)
@@ -23,22 +22,22 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = "データストレー�
 /storage/<<organization>>/<<workspace>>/配下のパスの場合は、/storage/<<organization>>/<<workspace>>からの相対パスを記載します。
 exp)
  Ansible-Legacy
-  /driver/ansible/legacy 
+  /driver/ansible/legacy
  Ansible-Pioneer
   /driver/ansible/pioneer",LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "1010505";
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_EN = "Data storage path (Can be abbreviated)
 If there are files that are managed in a Data storage path, input said path.For paths under /storage/<<organization>>/<<workspace>>/, input a relative path from /storage/<<organization>>/<<workspace>>. 
 exp)
- Ansible-Legacy 
-  /driver/ansible/legacy 
+ Ansible-Legacy
+  /driver/ansible/legacy
  Ansible-Pioneer 
   /driver/ansible/pioneer",LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "1010505";
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_EN = "Data storage path (Can be abbreviated)
 If there are files that are managed in a Data storage path, input said path.For paths under /storage/<<organization>>/<<workspace>>/, input a relative path from /storage/<<organization>>/<<workspace>>. 
 exp)
- Ansible-Legacy 
-  /driver/ansible/legacy 
+ Ansible-Legacy
+  /driver/ansible/legacy
  Ansible-Pioneer 
   /driver/ansible/pioneer",LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "1010505";
 
@@ -136,64 +135,6 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1010316,_____DATE_____,'INSERT','1010316','10103','最終更新日時','Last update date/time','last_update_date_time',NULL,'13',160,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_TIMESTAMP',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'レコードの最終更新日。自動登録のため編集不可。','Last update date of record. Cannot edit because of auto-registration.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('1010317','10103','最終更新者','Last updated by','last_updated_user',NULL,'14',170,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_USER',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'更新者。ログインユーザのIDが自動的に登録される。編集不可。','Updated by. Login user ID is automatically registered. Cannot edit.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1010317,_____DATE_____,'INSERT','1010317','10103','最終更新者','Last updated by','last_updated_user',NULL,'14',170,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_USER',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'更新者。ログインユーザのIDが自動的に登録される。編集不可。','Updated by. Login user ID is automatically registered. Cannot edit.',NULL,'0',_____DATE_____,1);
-
--- T_COMN_SYSTEM_CONFIG: INSERT
-INSERT INTO T_COMN_SYSTEM_CONFIG (ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES("3", "MAXIMUM_ITERATION_ANSIBLE-LEGACYROLE", "Maximum iteration count of Ansible-LegacyRole", "1024", "Ansible-LegacyRole：変数ネスト管理における最大繰返数の上限値
-1～1024の間で設定可能
-1～1024：設定した値
-上記以外：1024
-
-Ansible-LegacyRole：Maximum iteration counts upper limit in Nested variable list
-Can be set between 1 and 1024
-Configured value: 1 ~ 1024
-Other than the above: 1024", "0", _____DATE_____, "1");
-INSERT INTO T_COMN_SYSTEM_CONFIG_JNL (JOURNAL_SEQ_NO, JOURNAL_REG_DATETIME, JOURNAL_ACTION_CLASS, ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES ("3", _____DATE_____, "INSERT", "3", "MAXIMUM_ITERATION_ANSIBLE-LEGACYROLE", "Maximum iteration count of Ansible-LegacyRole", "1024", "Ansible-LegacyRole：変数ネスト管理における最大繰返数の上限値
-1～1024の間で設定可能
-1～1024：設定した値
-上記以外：1024
-
-Ansible-LegacyRole：Maximum iteration counts upper limit in Nested variable list
-Can be set between 1 and 1024
-Configured value: 1 ~ 1024
-Other than the above: 1024", "0", _____DATE_____, "1");
-
-INSERT INTO T_COMN_SYSTEM_CONFIG (ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES ("4", "MAXIMUM_ITERATION_TERRAFORM-CLOUD-EP", "Maximum iteration count of Terraform-Cloud/EP", "1024", "Terraform-Cloud/EP：変数ネスト管理における最大繰返数の上限値
-1～1024の間で設定可能
-1～1024：設定した値
-上記以外：1024
-
-Terraform-Cloud/EP：Maximum iteration counts upper limit in Nested variable list
-Can be set between 1 and 1024
-Configured value: 1 ~ 1024
-Other than the above: 1024", "0", _____DATE_____, "1");
-INSERT INTO T_COMN_SYSTEM_CONFIG_JNL (JOURNAL_SEQ_NO, JOURNAL_REG_DATETIME, JOURNAL_ACTION_CLASS, ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES ("4", _____DATE_____, "INSERT", "4", "MAXIMUM_ITERATION_TERRAFORM-CLOUD-EP", "Maximum iteration count of Terraform-Cloud/EP", "1024", "Terraform-Cloud/EP：変数ネスト管理における最大繰返数の上限値
-1～1024の間で設定可能
-1～1024：設定した値
-上記以外：1024
-
-Terraform-Cloud/EP：Maximum iteration counts upper limit in Nested variable list
-Can be set between 1 and 1024
-Configured value: 1 ~ 1024
-Other than the above: 1024", "0", _____DATE_____, "1");
-
-INSERT INTO T_COMN_SYSTEM_CONFIG (ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES ("5", "MAXIMUM_ITERATION_TERRAFORM-CLI", "Maximum iteration count of Terraform-CLI", "1024", "Terraform-CLI：変数ネスト管理における最大繰返数の上限値
-1～1024の間で設定可能
-1～1024：設定した値
-上記以外：1024
-
-Terraform-CLI：Maximum iteration counts upper limit in Nested variable list
-Can be set between 1 and 1024
-Configured value: 1 ~ 1024
-Other than the above: 1024", "0", _____DATE_____, "1");
-INSERT INTO T_COMN_SYSTEM_CONFIG_JNL (JOURNAL_SEQ_NO, JOURNAL_REG_DATETIME, JOURNAL_ACTION_CLASS, ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES ("5", _____DATE_____, "INSERT", "5", "MAXIMUM_ITERATION_TERRAFORM-CLI", "Maximum iteration count of Terraform-CLI", "1024", "Terraform-CLI：変数ネスト管理における最大繰返数の上限値
-1～1024の間で設定可能
-1～1024：設定した値
-上記以外：1024
-
-Terraform-CLI：Maximum iteration counts upper limit in Nested variable list
-Can be set between 1 and 1024
-Configured value: 1 ~ 1024
-Other than the above: 1024", "0", _____DATE_____, "1");
 
 -- T_COMN_MENU_TABLE_LINK: UPDATE
 UPDATE T_COMN_MENU_TABLE_LINK SET BEFORE_VALIDATE_REGISTER = "external_valid_menu_before" WHERE TABLE_DEFINITION_ID = "10103";

@@ -39,11 +39,16 @@ def backyard_main(organization_id, workspace_id):
 
     error_flag = False
 
-    # メンテナンスモード「backyard_execute_stop」が有効(1)の場合は「未実行」「未実行(予約)」の作業インスタンスはスキップする。
+    # メンテナンスモードのチェック
     skip_flag = False
     try:
         maintenance_mode = get_maintenance_mode_setting()
-        # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['data_update_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
+            return
+
+        # backyard_execute_stopの値が"1"の場合、メンテナンス中のためskip_flagをTrueにする。
         if str(maintenance_mode['backyard_execute_stop']) == "1":
             g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
             skip_flag = True

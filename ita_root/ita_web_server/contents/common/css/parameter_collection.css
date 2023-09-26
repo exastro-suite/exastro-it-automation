@@ -236,6 +236,9 @@ background-color: #FFF;
 border: 2px solid var(--mainColor40);
 border-radius: 50%;
 }
+.operationTimelineOperationItem {
+transform: translateX(-8px);
+}
 .operationTimelineOperationGroupItem {
 border-radius: 0;
 }
@@ -260,20 +263,20 @@ z-index: 1000;
 }
 .operationTimelineOperation {
 position: absolute;
-left: 0; top: 0;
+left: -2px; top: -2px;
 width: 16px; height: 16px;
 transform-origin: center center;
 }
 .operationTimelineLabel {
 position: absolute;
-left: 0; top: -2px;
+left: 0; top: 0;
 width: 16px; height: 16px;
 cursor: pointer;
 user-select: none;
 }
 .operationTimelineOperationBlockButton {
 position: absolute;
-left: 0; top: -2px;
+left: 0; top: 0;
 width: 16px; height: 16px;
 background-color: transparent;
 border: none;
@@ -317,7 +320,7 @@ opacity: 0;
 .operationTimelineCheckbox:checked ~ .operationTimelineLabel::after {
 content: '';
 position: absolute;
-left: 2px; top: 4px;  
+left: 4px; top: 4px;  
 width: 8px; height: 8px;
 background-color: var(--accentColor100);
 border-radius: 50%;
@@ -336,6 +339,7 @@ box-shadow: 2px 2px 0 rgba(0,0,0,.1);
 }
 .operationTimelineOperationGroupItemOpen {
 border-color: var(--accentColor100);
+z-index: 1000;
 }
 .operationTimelineOperationGroupItemOpen .operationTimelineOperationBlock {
 display: block;

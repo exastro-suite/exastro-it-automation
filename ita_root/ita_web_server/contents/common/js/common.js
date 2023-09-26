@@ -1851,17 +1851,21 @@ html: {
             + `</div>`
         + `</div>`;
     },
-    fileSelect: function( value, className, attrs = {}, option = {}) {
+    fileSelect: function( value, className, attrs = {}, edit = true ) {
         className = classNameCheck( className, 'inputFile');
 
         let file = ''
         + `<div class="inputFileBody">`
                 + cmn.html.button( value, className, attrs )
-        + `</div>`
-        + `<div class="inputFileEdit">`
-            + cmn.html.button( cmn.html.icon('edit'), 'itaButton inputFileEditButton popup', Object.assign( attrs, { action: 'positive', title: getMessage.FTE00175 }))
-        + `</div>`
-        + `<div class="inputFileClear">`
+        + `</div>`;
+
+        if ( edit ) {
+            file += `<div class="inputFileEdit">`
+                + cmn.html.button( cmn.html.icon('edit'), 'itaButton inputFileEditButton popup', Object.assign( attrs, { action: 'positive', title: getMessage.FTE00175 }))
+            + `</div>`
+        }
+        
+        file += `<div class="inputFileClear">`
             + cmn.html.button( cmn.html.icon('clear'), 'itaButton inputFileClearButton popup', { action: 'restore', title: getMessage.FTE00076 })
         + `</div>`;
 
@@ -2181,6 +2185,8 @@ setCommonEvents: function() {
         if ( ttl !== undefined ) {
             $t.removeAttr('title');
 
+            const type = ( $t.is('.parameterCollectionPopup') )? 'parameterCollection': 'default';
+
             const $p = $('<div/>', {
                 'class': 'popupBlock',
                 'html': `<div class="popupInner">${fn.escape( ttl, true )}</div>`
@@ -2190,6 +2196,7 @@ setCommonEvents: function() {
                   $arrow = $p.find('.popupArrow');
 
             if( $t.is('.darkPopup') ) $p.addClass('darkPopup');
+            if( $t.is('.parameterCollectionPopup') ) $p.addClass('parameterCollectionPopup');
 
             $body.append( $p );
 
@@ -2199,7 +2206,7 @@ setCommonEvents: function() {
                   tW = $t.outerWidth(),
                   tH = $t.outerHeight(),
                   tL = r.left,
-                  tT = r.top,
+                  tT = ( type === 'parameterCollection')? r.top - 92: r.top,
                   tB = wH - tT - tH,
                   pW = $p.outerWidth(),
                   wsL = $window.scrollLeft();
@@ -2257,7 +2264,9 @@ setCommonEvents: function() {
 
             // ホイールでポップアップ内をスクロール
             $t.on('wheel.popup', function( e ){
-                if ( !$t.is('.popupScroll') ) return;
+                if ( !$t.is('.popupScroll') ) {
+                    $t.trigger('pointerleave');
+                }
                 e.preventDefault();
 
                 const delta = e.originalEvent.deltaY ? - ( e.originalEvent.deltaY ) : e.originalEvent.wheelDelta ? e.originalEvent.wheelDelta : - ( e.originalEvent.detail );
@@ -3201,6 +3210,7 @@ textToFile: function( text, fileName ) {
 ##################################################
 */
 base64ToFile: function( base64, fileName ) {
+    if ( cmn.typeof( base64 ) !== 'string') return null;
     const
     bin = atob( base64.replace(/^.*,/, '')),
     length = bin.length,

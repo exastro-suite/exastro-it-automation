@@ -2813,6 +2813,7 @@ workerPost( type, data ) {
     const tb = this;
 
     const post = {
+        tableInfo: tb.info,
         type: type,
         paging: tb.paging,
         sort: tb.sort,
@@ -3760,9 +3761,14 @@ editCellHtml( item, columnKey ) {
         }
 
         // ファイルアップロード
-        case 'FileUploadColumn': case 'FileUploadEncryptColumn':
+        case 'FileUploadColumn':
             inputClassName.push('tableEditSelectFile');
             return fn.html.fileSelect( value, inputClassName, attr );
+        
+        // ファイルアップロード（機器一覧：ssh秘密鍵ファイルなど）
+        case 'FileUploadEncryptColumn':
+            inputClassName.push('tableEditSelectFile');
+            return fn.html.fileSelect( value, inputClassName, attr, false );
 
         // ボタン
         case 'ButtonColumn':
@@ -4371,8 +4377,10 @@ editOk() {
                 const fileCheck = function( file ) {
                     if ( fn.typeof( file ) === 'file') {
                         return file;
-                    } else {
+                    } else if ( fn.typeof( file ) === 'string') {
                         return fn.base64ToFile( file );
+                    } else {
+                        return null;
                     }
                 };
 
@@ -4402,22 +4410,31 @@ editOk() {
                             itemData.parameter[ columnNameRest ] = setData('parameter');
 
                             const fileAfterValue = item.after.parameter[ columnNameRest ];
-                            if ( ( fileAfterValue !== undefined && fileAfterValue !== '') || itemData.type === 'Register' ){
+                            if ( ( fileAfterValue !== undefined && fileAfterValue !== '') || itemData.type === 'Register'){
                                 itemData.file[ columnNameRest ] = fileCheck( setData('file') );
                             }
                         break;
+                        // File（機器一覧：ssh秘密鍵ファイルなど）
                         case 'FileUploadEncryptColumn': {
                             const fileAfterValue = item.after.parameter[ columnNameRest ];
-                            // 変更があるか？
+                            // 変更があるか？（更新時、変更がなければ値をセットしない）
                             if ( fileAfterValue !== undefined && fileAfterValue !== '') {
                                 itemData.parameter[ columnNameRest ] = setData('parameter');
                                 // nullじゃなければファイルもセット
                                 if ( fileAfterValue !== null ) {
-                                    itemData.file[ columnNameRest ] = fileCheck( setData('file') );
+                                    itemData.file[ columnNameRest ] = setData('file');
                                 }
                                 // { key: null } の場合は削除とする
+                            } else if ( itemData.type === 'Register') {
+                                // 登録時（複製時など）
+                                const
+                                name = setData('parameter'),
+                                file = fileCheck( setData('file') );
+                                if ( name && file ) {
+                                    itemData.parameter[ columnNameRest ] = name;
+                                    itemData.file[ columnNameRest ] = file;
+                                }
                             }
-                            // 変更がなければ値をセットしない
                         } break;
                         // 最終更新日時と最終更新者
                         case 'LastUpdateDateColumn': case 'LastUpdateUserColumn':
@@ -5142,7 +5159,8 @@ tableSettingOpen() {
             tb.tableSettingModal[ tb.tableMode ] = new Dialog( config, funcs );
             tb.tableSettingModal[ tb.tableMode ].open( html );
 
-            tb.tableSettingEvents();
+            tb.tableSettingGroupCheck();
+            tb.tableSettingEvents();        
             fn.commonTab( tb.tableSettingModal[ tb.tableMode ].$.dbody.find(`.commonTab`) );
         }
     });
@@ -5225,6 +5243,24 @@ tableSettingListHtml() {
 
 /*
 ##################################################
+   グループチェック状態を確認
+##################################################
+*/
+tableSettingGroupCheck() {
+    const tb = this;
+    
+    const $dBody = tb.tableSettingModal[ tb.tableMode ].$.dbody;
+    $dBody.find('.tableSettingCheckGroup:checked').each(function(){
+        const
+        $checkGroup = $( this ),
+        $checkWrap = $checkGroup.closest('.checkboxTextWrap'),
+        $unchecked = $checkGroup.closest('.tableSettingItemName').next('.tableSettingList').find('.tableSettingCheckItem').not(':checked');
+
+        if ( $unchecked.length ) $checkWrap.addClass('checkboxTextOneOrMore');
+    });
+}
+/*
+##################################################
    テーブル設定モーダルイベント
 ##################################################
 */
@@ -5301,16 +5337,16 @@ tableSettingEvents() {
 
             if ( $wrap.is('.checkboxTextOneOrMore') && !$checks.not('.tableSettingCheckGroup').filter(':checked').length ) {
                 checked = true;
-                $([ $check, $checks ]).prop('checked', checked );
+                $check.add( $checks ).prop('checked', checked );
             } else {
                 $checks.prop('checked', checked );
             }
 
-            $([ $wrap, $parent.find('.checkboxTextOneOrMore') ]).removeClass('checkboxTextOneOrMore');
+            $wrap.add( $parent.find('.checkboxTextOneOrMore') ).removeClass('checkboxTextOneOrMore');
 
             if ( !checked ) {
                 // グループのチェック状態を確認
-                $([ $wrap, $parent.find('.checkboxTextWrap') ]).find('.tableSettingCheckGroup').each(function(){
+                $wrap.add( $parent.find('.checkboxTextWrap') ).find('.tableSettingCheckGroup').each(function(){
                     const $checkGroup = $( this ),
                         $checked = $checkGroup.closest('.tableSettingItemName').next('.tableSettingList').find('.tableSettingCheckItem:checked');
 

@@ -826,7 +826,7 @@ operationTimeLineHtml() {
             + `<li class="operationTimelineOperationItem" style="left:${ratio}%">`
                + `<div class="operationTimelineOperation">`
                   + `<input type="checkbox" class="operationTimelineCheckbox" id="${idName}" name="operationTimelineCheckbox" value="${id}">`
-                  + `<label for="${idName}" class="operationTimelineLabel">`
+                  + `<label for="${idName}" class="operationTimelineLabel popup parameterCollectionPopup" title="${date + '\n' + name}">`
                      + `<div class="operationTimelineOperationName">${name}</div>`
                   + `</label>`
                + `</div>`
@@ -843,7 +843,7 @@ operationTimeLineHtml() {
                + `<li class="operationTimelineOperationBlockItem">`
                   + `<div class="operationTimelineOperation">`
                      + `<input type="checkbox" class="operationTimelineCheckbox operationTimelineGroupCheckbox" id="${blockIdName}" name="operationTimelineCheckbox" value="${blockId}">`
-                     + `<label for="${blockIdName}" class="operationTimelineLabel">`
+                     + `<label for="${blockIdName}" class="operationTimelineLabel popup" title="${date + '\n' + name}">`
                         + `<div class="operationTimelineOperationName">${blockName}</div>`
                      + `</label>`
                   + `</div>`

@@ -1,9 +1,30 @@
 -- INSERT/UPDATE: -2.2.0
+    -- T_COMN_SYSTEM_CONFIG: INSERT
     -- T_COMN_MENU_COLUMN_LINK: DELETE and UPDATE and INSERT
 
 -- ------------------------------------------------------------
 -- ▼TABLE MASTER UPDATE START
 -- ------------------------------------------------------------
+-- T_COMN_SYSTEM_CONFIG: INSERT
+INSERT INTO T_COMN_SYSTEM_CONFIG (ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES("3", "MAXIMUM_ITERATION_ANSIBLE-LEGACYROLE", "Maximum iteration count of Ansible-LegacyRole", "1024", "Ansible-LegacyRole：変数ネスト管理における最大繰返数の上限値
+1～1024の間で設定可能
+1～1024：設定した値
+上記以外：1024
+
+Ansible-LegacyRole：Maximum iteration counts upper limit in Nested variable list
+Can be set between 1 and 1024
+Configured value: 1 ~ 1024
+Other than the above: 1024", "0", _____DATE_____, "1");
+INSERT INTO T_COMN_SYSTEM_CONFIG_JNL (JOURNAL_SEQ_NO, JOURNAL_REG_DATETIME, JOURNAL_ACTION_CLASS, ITEM_ID, CONFIG_ID, CONFIG_NAME, VALUE, NOTE, DISUSE_FLAG, LAST_UPDATE_TIMESTAMP, LAST_UPDATE_USER) VALUES ("3", _____DATE_____, "INSERT", "3", "MAXIMUM_ITERATION_ANSIBLE-LEGACYROLE", "Maximum iteration count of Ansible-LegacyRole", "1024", "Ansible-LegacyRole：変数ネスト管理における最大繰返数の上限値
+1～1024の間で設定可能
+1～1024：設定した値
+上記以外：1024
+
+Ansible-LegacyRole：Maximum iteration counts upper limit in Nested variable list
+Can be set between 1 and 1024
+Configured value: 1 ~ 1024
+Other than the above: 1024", "0", _____DATE_____, "1");
+
 -- 20103 AACホスト一覧: ポート　追加
 DELETE FROM T_COMN_MENU_COLUMN_LINK     WHERE COLUMN_DEFINITION_ID in ("2010308",
                                                                        "2010309",
@@ -245,8 +266,8 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_OPTION = NULL , DESCRIPTION_JA =
 最小値は1、最大値は「管理コンソール/システム設定」内で設定変更可能。" , DESCRIPTION_EN = "The number of times the target variable or a member variable under the member variable is repeated.
 The minimum value is 1, the maximum value can be changed within the Management console/System setting." , LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2040605";
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = "Ansible Automation Controllerにsshで接続するポート番号のデフォルト(22)です。デフォルト以外のポートを使用したい場合、ポート番号を入力します。" ,
-DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." , 
+DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." ,
 LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2010308";
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = "Ansible Automation Controllerにsshで接続するポート番号のデフォルト(22)です。デフォルト以外のポートを使用したい場合、ポート番号を入力します。" ,
-DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." , 
+DESCRIPTION_EN = "The default port number (22) used when connecting to Ansible Automation Controller with ssh. Input a valid port number if the user is not using the default number." ,
 LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = "2010308";

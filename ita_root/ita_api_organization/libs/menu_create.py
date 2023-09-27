@@ -2268,11 +2268,13 @@ def collect_parameter_list(objdbca):
                         if ret_operation:
                             for record_operation in ret_operation:
                                 operation_date = record_operation.get('OPERATION_DATE').strftime('%Y/%m/%d %H:%M:%S')
+                                if record_operation.get('LAST_EXECUTE_TIMESTAMP') is not None:
+                                    last_run_date = record_operation.get('LAST_EXECUTE_TIMESTAMP').strftime('%Y/%m/%d %H:%M:%S')
                                 tmp_dict = {
                                     'operation_id': operation_id,
                                     'operation_name': record_operation.get('OPERATION_NAME'),
                                     'scheduled_date_for_execution': operation_date,
-                                    'last_run_date': record_operation.get('LAST_EXECUTE_TIMESTAMP')
+                                    'last_run_date': last_run_date
                                 }
                                 # 重複チェック
                                 duplication_flg = True

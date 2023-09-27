@@ -380,7 +380,7 @@ CREATE TABLE T_EVRL_RULE
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
-    RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
+    FILTER_COMBINATION_JSON         LONGTEXT,                                   -- フィルター組み合わせ情報
     LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
@@ -401,7 +401,7 @@ CREATE TABLE T_EVRL_RULE_JNL
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
-    RULE_COMBINATION_JSON           LONGTEXT,                                   -- ルール組み合わせ情報
+    FILTER_COMBINATION_JSON         LONGTEXT,                                   -- フィルター組み合わせ情報
     LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
     ACTION_ID                       VARCHAR(40),                                -- アクションID
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL

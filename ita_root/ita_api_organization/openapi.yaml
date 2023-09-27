@@ -5905,6 +5905,20 @@ paths:
                     example: 000-00000
                   data:
                     type: array
+                    items:
+                      type: object
+                      properties:
+                        datetime:
+                          type: string
+                          example: "2023-09-12 15:41:29"
+                        id:
+                          type: string
+                        item:
+                          type: object
+                          description: "イベント履歴かアクション履歴から取得した内容"
+                        type:
+                          type: string
+                          description: "取得元を判断するための文字列。イベント履歴：event, アクション履歴：action"
                     example: []
                   message:
                     type: string

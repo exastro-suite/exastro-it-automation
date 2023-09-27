@@ -6793,68 +6793,6 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
-    event_flow_history_body:
-      properties:
-        start_time:
-          type: string
-          format: date-time
-          example: 2017-07-21T17:32:28Z
-        end_time:
-          type: string
-          format: date-time
-          example: 2017-07-21T17:32:28Z
-        evaluted:
-          type: boolean
-          example: true
-        undetected:
-          type: boolean
-          example: false
-        timeouted:
-          type: boolean
-          example: false
-      description: 検索条件を指定
-    inline_response_200_22:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: array
-          example: []
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: []
-        message: message
-    inline_response_200_23:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          type: object
-          example:
-            action:
-            - {}
-            filter:
-            - {}
-            rule:
-            - {}
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data:
-          action:
-          - {}
-          filter:
-          - {}
-          rule:
-          - {}
-        message: message
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:

@@ -2270,6 +2270,8 @@ def collect_parameter_list(objdbca):
                                 operation_date = record_operation.get('OPERATION_DATE').strftime('%Y/%m/%d %H:%M:%S')
                                 if record_operation.get('LAST_EXECUTE_TIMESTAMP') is not None:
                                     last_run_date = record_operation.get('LAST_EXECUTE_TIMESTAMP').strftime('%Y/%m/%d %H:%M:%S')
+                                else:
+                                    last_run_date = record_operation.get('LAST_EXECUTE_TIMESTAMP')
                                 tmp_dict = {
                                     'operation_id': operation_id,
                                     'operation_name': record_operation.get('OPERATION_NAME'),

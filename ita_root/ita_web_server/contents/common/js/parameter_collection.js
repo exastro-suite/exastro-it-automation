@@ -836,6 +836,7 @@ operationTimeLineHtml() {
             const blockHtml = [], blockLength = blockList.length;
             for ( const block of blockList ) {
                const
+               blockDate = ( block.last_run_date )? block.last_run_date: block.scheduled_date_for_execution,
                blockName = fn.cv( block.operation_name, '', true ),
                blockId = fn.cv( block.operation_id, '', true ),
                blockIdName = `operationTimeline_${blockId}`;
@@ -843,7 +844,7 @@ operationTimeLineHtml() {
                + `<li class="operationTimelineOperationBlockItem">`
                   + `<div class="operationTimelineOperation">`
                      + `<input type="checkbox" class="operationTimelineCheckbox operationTimelineGroupCheckbox" id="${blockIdName}" name="operationTimelineCheckbox" value="${blockId}">`
-                     + `<label for="${blockIdName}" class="operationTimelineLabel popup" title="${date + '\n' + name}">`
+                     + `<label for="${blockIdName}" class="operationTimelineLabel popup" title="${blockDate + '\n' + blockName}">`
                         + `<div class="operationTimelineOperationName">${blockName}</div>`
                      + `</label>`
                   + `</div>`
@@ -992,6 +993,9 @@ operationTimelineEvents() {
 
    // ホイールで拡大縮小
    $timeline.on('wheel', function( e ){
+      // グループブロック上の場合、拡大縮小させない
+      if ( $( e.target ).closest('.operationTimelineOperationBlock').length ) return;
+      
       e.preventDefault();
 
       // 位置

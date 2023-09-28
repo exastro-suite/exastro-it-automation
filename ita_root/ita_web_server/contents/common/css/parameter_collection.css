@@ -61,7 +61,7 @@ border: 1px solid rgba(8, 8, 8, 0.1);
 overflow: hidden;
 display: flex;
 gap: 16px;
-height: 44px;
+min-height: 44px;
 border-bottom: 1px solid rgba(8, 8, 8, 0.1);
 }
 .parameterBlockName {
@@ -70,9 +70,10 @@ align-items: center;
 position: relative;
 z-index: 0;
 min-width: 0;
-padding: 0 16px 0 44px;
+padding: 8px 16px 6px 44px;
 line-height: 1.2;
 letter-spacing: .75px;
+word-break: break-all;
 font-size: 16px;
 font-weight: bold;
 color: var(--black80);
@@ -320,7 +321,7 @@ opacity: 0;
 .operationTimelineCheckbox:checked ~ .operationTimelineLabel::after {
 content: '';
 position: absolute;
-left: 4px; top: 4px;  
+left: 4px; top: 4px;
 width: 8px; height: 8px;
 background-color: var(--accentColor100);
 border-radius: 50%;
@@ -373,7 +374,7 @@ bottom: 0;
 margin-bottom: 14px;
 }
 .operationTimelineOperationBlockItem:last-child {
-margin-bottom: 0;   
+margin-bottom: 0;
 }
 
 .operationTimelineBar {
@@ -739,7 +740,7 @@ display: block;
 display: none;
 }
 .parameterPrint .section {
-padding: 0;    
+padding: 0;
 }
 .parameterPrint,
 .parameterPrint #container,

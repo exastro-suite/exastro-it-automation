@@ -5854,7 +5854,7 @@ paths:
       tags:
         - Event Relay
       description: 検索条件を指定し、イベントフローで扱う履歴情報（イベント履歴、アクション履歴）を取得する
-      operationId: postEventFlow
+      operationId: postEventFlowHistory
       x-openapi-router-controller: controllers.event_relay_controller
       parameters:
         - name: organization_id

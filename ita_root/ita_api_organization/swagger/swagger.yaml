@@ -5187,25 +5187,7 @@ paths:
         content:
           application/json:
             schema:
-              description: 検索条件を指定
-              properties:
-                start_time:
-                  type: string
-                  format: date-time
-                  example: "2017-07-21T17:32:28Z"
-                end_time:
-                  type: string
-                  format: date-time
-                  example: "2017-07-21T17:32:28Z"
-                evaluted:
-                  type: boolean
-                  example: "true"
-                undetected:
-                  type: boolean
-                  example: "false"
-                timeouted:
-                  type: boolean
-                  example: "false"
+              $ref: '#/components/schemas/event_flow_history_body'
       responses:
         "200":
           description: Success
@@ -5945,7 +5927,7 @@ components:
           type: string
       example:
         result: 000-00000
-        data: 0.80082819046101150206595775671303272247314453125
+        data: 0.8008281904610115
         message: message
     filter_count_body:
       properties:
@@ -6706,34 +6688,6 @@ components:
           file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
           file_data: Compare result base64 string
         message: message
-    inline_response_200_22:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: '#/components/schemas/inline_response_200_22_data'
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: []
-        message: message
-    inline_response_200_23:
-      type: object
-      properties:
-        result:
-          type: string
-          example: 000-00000
-        data:
-          $ref: '#/components/schemas/inline_response_200_23_data'
-        message:
-          type: string
-      example:
-        result: 000-00000
-        data: {"action":[{}], "filter":[{}], "rule":[{}] }
-        message: message
     execute_file_body:
       properties:
         compare:
@@ -6793,6 +6747,70 @@ components:
         rest_key_name:
           $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
       description: 検索条件を設定
+    event_flow_history_body:
+      properties:
+        start_time:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        end_time:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        evaluted:
+          type: boolean
+          example: true
+        undetected:
+          type: boolean
+          example: false
+        timeouted:
+          type: boolean
+          example: false
+      description: 検索条件を指定
+    inline_response_200_22:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example: []
+          items:
+            $ref: '#/components/schemas/inline_response_200_22_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: []
+        message: message
+    inline_response_200_23:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: object
+          example:
+            action:
+            - {}
+            filter:
+            - {}
+            rule:
+            - {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          action:
+          - {}
+          filter:
+          - {}
+          rule:
+          - {}
+        message: message
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:
@@ -7447,36 +7465,17 @@ components:
     inline_response_200_22_data:
       type: object
       properties:
-        data:
-          type: array
-          items:
-            example: イベント履歴とアクション履歴をまとめて日時の昇順でソートした一覧
-      example:
-    inline_response_200_23_data:
-      type: object
-      properties:
-        data:
+        datetime:
+          type: string
+          example: 2023-09-12 15:41:29
+        id:
+          type: string
+        item:
           type: object
-          properties:
-            action:
-              type: array
-              items:
-                type: object
-                example:
-                - アクション定義のカラム名
-            filter:
-              type: array
-              items:
-                type: object
-                example:
-                - フィルター管理のカラム名
-            rule:
-              type: array
-              items:
-                type: object
-                example:
-                - ルール管理のカラム名
-      example:
+          description: イベント履歴かアクション履歴から取得した内容
+        type:
+          type: string
+          description: "取得元を判断するための文字列。イベント履歴：event, アクション履歴：action"
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

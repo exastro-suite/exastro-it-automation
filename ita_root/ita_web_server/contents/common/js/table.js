@@ -4451,9 +4451,13 @@ editOk() {
                             if ( passwordAfterValue === false ) {
                                 // false -> 削除 { key: null }
                                 itemData.parameter[ columnNameRest ] = null;
-                            } else if ( passwordAfterValue !== '' && passwordAfterValue !== null ){
+                            } else if ( passwordAfterValue !== '' && passwordAfterValue !== null && passwordAfterValue !== undefined ){
                                 // 値有 -> 更新 { key: value }
                                 itemData.parameter[ columnNameRest ] = passwordAfterValue;
+                            } else if ( itemData.type === 'Register') {
+                                // 登録時（複製時など）
+                                const password = setData('parameter');
+                                if ( password ) itemData.parameter[ columnNameRest ] = password;
                             }
                             // null or 空白 -> そのまま（keyをセットしない）
                         } break;

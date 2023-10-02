@@ -81,25 +81,6 @@ def get_event_relay_filter(organization_id, workspace_id, menu):  # noqa: E501
 
 
 @api_filter
-def post_check_monitoring_software(organization_id, workspace_id):  # noqa: E501
-    """post_check_monitoring_software
-
-    対象の監視ソフトの連携状態を確認する # noqa: E501
-
-    :param organization_id: OrganizationID
-    :type organization_id: str
-    :param workspace_id: WorkspaceID
-    :type workspace_id: str
-
-    :rtype: InlineResponse2006
-    """
-
-    result_data = {}
-
-    return result_data,
-
-
-@api_filter
 def post_event_flow_history(organization_id, workspace_id, body=None):  # noqa: E501
     """post_event_flow_history
 

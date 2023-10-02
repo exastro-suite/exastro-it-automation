@@ -28,6 +28,9 @@
 const fn = ( function() {
     'use strict';
 
+    // バージョン
+    const version = '2.2.0';
+
     // AbortController
     const controller = new AbortController();
 
@@ -147,6 +150,7 @@ loadAssets: function( assets ){
     const f = function( type, url, id ){
         return new Promise(function( resolve, reject ){
             type = ( type === 'css')? 'link': 'script';
+            url = url + '?v=' + version;
 
             const body = document.getElementById('container'),
                   asset = document.createElement( type );
@@ -2903,7 +2907,7 @@ setUiSetting: function() {
 
 setTheme: function( theme ) {
     const $theme = $('#thema'),
-          src = `/_/ita/thema/${theme}.css`;
+          src = `/_/ita/thema/${theme}.css?v=${version}`;
     $theme.attr('href', src );
 
     // ダークモード

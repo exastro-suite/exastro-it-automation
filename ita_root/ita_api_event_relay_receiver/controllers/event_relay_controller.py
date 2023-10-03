@@ -17,8 +17,8 @@ from common_libs.api import api_filter
 
 
 @api_filter
-def get_event_collection_settings(body, organization_id, workspace_id):  # noqa: E501
-    """get_event_collection_settings
+def post_event_collection_settings(body, organization_id, workspace_id):  # noqa: E501
+    """post_event_collection_settings
 
     対象のイベント収集設定と最新のイベント取得時間を取得 # noqa: E501
 

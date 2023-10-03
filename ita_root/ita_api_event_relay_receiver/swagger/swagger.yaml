@@ -26,9 +26,6 @@ servers:
       default: localhost
     port:
       default: "30080"
-security:
-- BearerAuth: []
-- BasicAuth: []
 tags:
 - name: Event Relay
   description: イベント連携機能の情報を取得・登録
@@ -38,7 +35,7 @@ paths:
       tags:
       - Event Relay
       description: 対象のイベント収集設定と最新のイベント取得時間を取得
-      operationId: get_event_collection_settings
+      operationId: post_event_collection_settings
       parameters:
       - name: organization_id
         in: path

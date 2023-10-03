@@ -38,7 +38,7 @@ paths:
       tags:
         - Event Relay
       description: 対象のイベント収集設定と最新のイベント取得時間を取得
-      operationId: getEventCollectionSettings
+      operationId: postEventCollectionSettings
       x-openapi-router-controller: controllers.event_relay_controller
       parameters:
         - name: organization_id

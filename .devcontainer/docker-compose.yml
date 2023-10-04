@@ -643,7 +643,7 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
-      - LISTEN_PORT=8079
+      - LISTEN_PORT=8000
       - ENCRYPT_KEY=${ENCRYPT_KEY}
       - DEFAULT_LANGUAGE=ja
       - DB_HOST=${DB_HOST}
@@ -657,6 +657,8 @@ services:
       - MONGO_PORT=${MONGO_PORT}
       - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
       - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
     profiles:
       - exastro-it-automation-backyard
       - ita-event-relay

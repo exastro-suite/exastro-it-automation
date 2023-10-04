@@ -36,6 +36,6 @@ if __name__ == '__main__':
     flask_app.run(
         debug=True,
         host='0.0.0.0',
-        port=int(os.environ.get('LISTEN_PORT', '8079')),
+        port=int(os.environ.get('LISTEN_PORT', '8000')),
         threaded=True
     )

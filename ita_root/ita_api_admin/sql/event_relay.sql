@@ -35,7 +35,6 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
     TTL                             INT,                                        -- TTL
-    COLLECT_INTERVAL                INT,                                        -- インターバル
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -66,7 +65,6 @@ CREATE TABLE T_EVRL_EVENT_COLLECTION_SETTINGS_JNL
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
     TTL                             INT,                                        -- TTL
-    COLLECT_INTERVAL                INT,                                        -- インターバル
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

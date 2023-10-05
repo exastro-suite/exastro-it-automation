@@ -501,7 +501,7 @@ getPanelImage( title, icon, panel ) {
    サイドメニュー各HTML
 ##################################################
 */
-sideMenuBody( title, icon, list, panel, searchFlag = true ) {
+sideMenuBody( title, icon, list, panel, searchFlag = true, contentFlag = false ) {
     const ui = this;
 
     const iconImage = ui.getPanelImage( title, icon, panel );
@@ -523,7 +523,10 @@ sideMenuBody( title, icon, list, panel, searchFlag = true ) {
     ${( searchFlag )? ui.serachBlock( icon ): ''}`;
 
     // サブメニューコンテンツ
-    if ( searchFlag && panel && ui.params.menuNameRest === 'parameter_collection') {
+    const subMenuNameRest = [
+        'parameter_collection'
+    ];
+    if ( contentFlag && subMenuNameRest.indexOf( ui.params.menuNameRest ) !== -1 ) {
         html = `<div class="menuPageMain">`
             + html
         + `</div>`
@@ -594,7 +597,7 @@ menuMain() {
             return htmlArray.join('');
         };
 
-        return ui.sideMenuBody( ui.currentGroup.title, null, list( ui.currentMenuGroupList.menus ), ui.currentGroup.panel );
+        return ui.sideMenuBody( ui.currentGroup.title, null, list( ui.currentMenuGroupList.menus ), ui.currentGroup.panel, true, true );
     } else {
         // メインメニュー用リスト
         const dashboard = `<li class="menuItem"><a class="menuLink current" href="${ui.params.path}">DashBoard</a></li>`;

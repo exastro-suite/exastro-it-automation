@@ -16,6 +16,8 @@ import os
 from flask import g
 
 from common_libs.common import *  # noqa: F403
+from common_libs.common.mongoconnect.const import Const
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable import *
 
 
@@ -39,12 +41,21 @@ def rest_count(objdbca, menu, filter_parameter):
         api_msg_args = ["not menu or table"]
         raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
 
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
+    # MongoDB向けの処理はmodeで分岐させているため、対象のシートタイプの場合はmodeを上書き
+    wsMongo = None
+    if objmenu.get_sheet_type() == Const.MONGODB_SHEETTYPE_ID:
+        mode = 'mongo_count'
+
+        # MariaDBのコネクションはコントローラーで生成しているため、MongoDBも同様にすべきだが、
+        # アクセスしない場合もコネクションを生成するのは無駄が多いためここで生成することにした。
+        wsMongo = MONGOConnectWs()
+
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, wsMongo)
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)
-    
+
     return result
 
 
@@ -57,6 +68,7 @@ def rest_filter(objdbca, menu, filter_parameter):
             filter_parameter: 検索条件  {}
             lang: 言語情報 ja / en
             mode: 本体 / 履歴
+            wsMongo:DB接続クラス  MONGOConnectWs()
         RETRUN:
             statusCode, {}, msg
     """
@@ -68,12 +80,21 @@ def rest_filter(objdbca, menu, filter_parameter):
         api_msg_args = ["not menu or table"]
         raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
 
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
+    # MongoDB向けの処理はmodeで分岐させているため、対象のシートタイプの場合はmodeを上書き
+    wsMongo = None
+    if objmenu.get_sheet_type() == Const.MONGODB_SHEETTYPE_ID:
+        mode = 'mongo'
+
+        # MariaDBのコネクションはコントローラーで生成しているため、MongoDBも同様にすべきだが、
+        # アクセスしない場合もコネクションを生成するのは無駄が多いためここで生成することにした。
+        wsMongo = MONGOConnectWs()
+
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, wsMongo)
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)
-    
+
     return result
 
 
@@ -89,7 +110,7 @@ def rest_filter_journal(objdbca, menu, uuid):
         RETRUN:
             statusCode, {}, msg
     """
-    
+
     objmenu = load_table.loadTable(objdbca, menu)
     if objmenu.get_objtable() is False:
         log_msg_args = ["not menu or table"]

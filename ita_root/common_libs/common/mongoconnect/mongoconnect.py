@@ -23,6 +23,9 @@ from pymongo.errors import PyMongoError
 from ..dbconnect.dbconnect_org import DBConnectOrg
 from common_libs.common.exception import AppException
 from common_libs.common.util import ky_decrypt, ky_encrypt, generate_secrets
+from . import collection
+from .collection_base import CollectionBase
+from .const import Const
 
 
 class MONGOConnectRoot():
@@ -228,3 +231,53 @@ class MONGOConnectWs(MONGOConnectRoot):
 
         # connect database
         self.connect()
+
+
+class CollectionFactory():
+    """
+    CollectionFactory
+
+        CollectionBaseの具象クラスをコレクション名を与えて生成するために定義したクラス。
+        定義のメンテナンスを行う際は以下を確認すること。
+        ・CollectionFactory.FACTORY_MAP
+        ・collection/__init__.py
+        ・const.py
+
+    """
+
+    # MongoDBのコレクション名と対応するクラスの対応表
+    FACTORY_MAP: [str, CollectionBase] = {
+        Const.LABELED_EVENT_COLLECTION: collection.LabeledEventCollection
+    }
+
+    @classmethod
+    def create(cls, collection_name: str) -> CollectionBase:
+        '''
+        コレクション名に対応したCollectionBaseの具象クラスを生成する。
+        Arguments:
+            collection_name: 生成するクラスに対応したコレクション名
+
+        Raises:
+            TypeError:未定義のコレクション名を受け取った場合に発生
+
+        Returns:
+            CollectionBaseの具象クラス
+        '''
+
+        if collection_name in cls.FACTORY_MAP:
+            return cls.FACTORY_MAP[collection_name]()
+        raise TypeError
+
+    @classmethod
+    def get_collection_name(cls, table_name: str) -> str:
+        """
+        MariaDBのテーブル名に対応するMongoDBのコレクション名を返却する
+
+        Arguments:
+            mariadb_table_name (str): テーブル名
+
+        Returns:
+            str: コレクション名
+        """
+
+        return Const.NAME_MAP[table_name]

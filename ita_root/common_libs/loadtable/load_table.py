@@ -24,6 +24,7 @@ import re
 from flask import g
 from common_libs.column import *  # noqa: F403
 from common_libs.common import *  # noqa: F403
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs, CollectionFactory
 
 
 # 定数
@@ -899,7 +900,7 @@ class loadTable():
         return result
 
     # [filter]:メニューのレコード取得
-    def rest_filter(self, parameter, mode='nomal'):
+    def rest_filter(self, parameter, mode='nomal', wsMongo: MONGOConnectWs = None):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
@@ -910,6 +911,7 @@ class loadTable():
                     nomal:本体 / jnl:履歴 / jnl_all:履歴 /
                     excel:本体Excel用 / excel_jnl:履歴Excel用 / excel_jnl_all:全履歴Excel用 /
                     count:件数 / count_jnl:履歴件数 / count_jnl_all:全履歴件数
+                wsMongo:DB接続クラス  MONGOConnectWs()
             RETRUN:
                 status_code, result, msg,
         """
@@ -1108,6 +1110,17 @@ class loadTable():
                 if sort_key is not None:
                     str_orderby = ''
                     where_str = where_str + str_orderby
+            elif mode in ['mongo', 'mongo_count']:
+                # get_table_nameではMariaDB側のテーブル名が取得されるためそのまま利用はできない。
+                # get_table_nameで取得した値をMongoDBのコレクション名に変換が必要
+                mariadb_table_name = self.get_table_name()
+                mondodb_collection_name = CollectionFactory.get_collection_name(mariadb_table_name)
+                collection = CollectionFactory.create(mondodb_collection_name)
+
+                where_str = collection.create_where(parameter)
+
+                # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
+                sort_key = collection.create_sort_key(self.get_sort_key())
 
             if mode in ['inner', 'nomal', 'excel', 'jnl', 'excel_jnl', 'jnl_all', 'excel_jnl_all']:
                 # データ取得
@@ -1126,6 +1139,18 @@ class loadTable():
             elif mode in ['count', 'count_jnl', 'jnl_count_all']:
                 # 件数取得
                 tmp_result = self.objdbca.table_count(table_name, where_str, bind_value_list)
+                result_list = tmp_result
+            elif mode in ['mongo']:
+                tmp_result = (wsMongo.collection(mondodb_collection_name)
+                              .find(where_str)
+                              .sort(sort_key))
+
+                result_list = collection.create_result(tmp_result)
+
+            elif mode in ['mongo_count']:
+                tmp_result = (wsMongo.collection(mondodb_collection_name)
+                              .count_documents(where_str))
+
                 result_list = tmp_result
 
         except AppException as e:

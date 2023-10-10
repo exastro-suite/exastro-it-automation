@@ -1,0 +1,31 @@
+###### Menu Info ######
+
+# Global values
+# not quate strings
+@org-user-id = test_user
+@org-user-pw = password
+@base_org_url = http://platform-auth:{{org-mng-port}}
+@organization_id = org1
+@workspace_id = ws1
+@menu = menu_list
+
+
+###
+# メニューの基本情報および項目情報を取得する
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/info/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+
+###
+# メニューの項目一覧(REST用項目名)を取得する
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/info/column/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+
+###
+# IDColumn項目のプルダウン選択用の一覧を取得する
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/info/pulldown/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+
+###
+# 表示フィルタで利用するプルダウン検索の候補一覧を取得する
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/info/pulldown/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}

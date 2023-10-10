@@ -89,7 +89,7 @@ class CICDMakeParamBase():
 
         data['remarks'] = kwargs['note'] if 'note' in kwargs else ''
         data['discard'] = '0'
-        data['last_update_date_time'] = (datetime.datetime.now()).strftime('%Y/%m/%d %H:%M:%S')
+        data['last_update_date_time'] = kwargs['last_update_date_time'] if 'last_update_date_time' in kwargs else ''
         data['last_updated_user'] = g.USER_ID
 
     def diff_file(self, filedata, cur_filedata, *args, **kwargs):
@@ -178,7 +178,8 @@ class CICDMakeParamLegacy(CICDMakeParamBase):
         data['playbook_file'] = filename
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamLegacy, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamLegacy, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -223,7 +224,8 @@ class CICDMakeParamPioneer(CICDMakeParamBase):
         data['dialog_file'] = filename
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamPioneer, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamPioneer, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -267,7 +269,8 @@ class CICDMakeParamRole(CICDMakeParamBase):
         data['variable_definition_analysis_result'] = ''
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamRole, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamRole, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -310,7 +313,8 @@ class CICDMakeParamContent(CICDMakeParamBase):
         data['files'] = filename
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamContent, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamContent, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -357,7 +361,8 @@ class CICDMakeParamTemplate(CICDMakeParamBase):
         data['variable_definition'] = self.__vars_list
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamTemplate, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamTemplate, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -400,7 +405,8 @@ class CICDMakeParamModule(CICDMakeParamBase):
         data['module_file'] = filename
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamModule, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamModule, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -439,7 +445,8 @@ class CICDMakeParamPolicy(CICDMakeParamBase):
         data['policy_file'] = filename
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamPolicy, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamPolicy, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -478,7 +485,8 @@ class CICDMakeParamModuleCLI(CICDMakeParamBase):
         data['module_file'] = filename
 
         note = kwargs['NOTE'] if 'NOTE' in kwargs else ''
-        super(CICDMakeParamModuleCLI, self).make_rest_param(data, note=note)
+        last_update_date_time = str(kwargs['LAST_UPDATE_TIMESTAMP']) if 'LAST_UPDATE_TIMESTAMP' in kwargs else ''
+        super(CICDMakeParamModuleCLI, self).make_rest_param(data, note=note, last_update_date_time=last_update_date_time)
 
         param = {}
         param['type'] = editType
@@ -1053,7 +1061,7 @@ class CICD_GrandChildWorkflow():
             return str(e), outRolesDir, zipFileName
         """
 
-        cmd = "cd %s;zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
+        cmd = "cd %s && zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
         ret = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if ret.returncode != 0:
             ret = ret.stdout

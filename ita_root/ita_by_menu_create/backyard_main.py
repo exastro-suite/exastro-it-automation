@@ -17,6 +17,7 @@ import ast
 from flask import g
 # from common_libs.common.exception import AppException
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import get_maintenance_mode_setting
 
 
 def backyard_main(organization_id, workspace_id):
@@ -31,6 +32,18 @@ def backyard_main(organization_id, workspace_id):
     # メイン処理開始
     debug_msg = g.appmsg.get_log_message("BKY-20001", [])
     g.applogger.debug(debug_msg)
+
+    # メンテナンスモードのチェック
+    try:
+        maintenance_mode = get_maintenance_mode_setting()
+        # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['data_update_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
+            return
+    except Exception:
+        # エラーログ出力
+        g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+        return
 
     # テーブル名
     t_menu_create_history = 'T_MENU_CREATE_HISTORY'  # パラメータシート作成履歴
@@ -56,6 +69,11 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.error(msg)
             continue
         objdbca.db_transaction_end(True)
+
+    # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+    if str(maintenance_mode['backyard_execute_stop']) == "1":
+        g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+        return
 
     # 「パラメータシート作成履歴」から「未実行(ID:1)」のレコードを取得
     ret = objdbca.table_select(t_menu_create_history, 'WHERE STATUS_ID = %s AND DISUSE_FLAG = %s', [1, 0])
@@ -326,6 +344,45 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                     for sql in sql_list:
                         if re.fullmatch(r'[\s\n\r]*', sql) is None:
                             objdbca.sql_execute(sql)
+
+        # 「編集」の場合、VIEWの置き換えSQLのみ実行
+        elif create_type == 'edit':
+            debug_msg = g.appmsg.get_log_message("BKY-20020", [create_view_name, create_view_name_jnl])
+            g.applogger.debug(debug_msg)
+            # reg: CREATE OR REPLACE VIEW
+            search_ptn = r'CREATE[\s]*OR[\s]*REPLACE[\s]*VIEW'
+            with open(sql_file_path, "r") as f:
+                file = f.read()
+                if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
+                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+                    file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
+                    file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
+                elif sheet_type == "2":  # データシート
+                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+                sql_list = file.split(";\n")
+                for sql in sql_list:
+                    if re.fullmatch(r'[\s\n\r]*', sql) is None:
+                        # VIEWの置き換えSQL実行
+                        if re.search(search_ptn, sql, re.IGNORECASE) is not None:
+                            objdbca.sql_execute(sql)
+
+            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
+            if hostgroup_flag:
+                with open(sql_file_path, "r") as f:
+                    file = f.read()
+                    if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
+                        file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
+                        file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
+                        file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
+                        file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
+                    sql_list = file.split(";\n")
+                    for sql in sql_list:
+                        if re.fullmatch(r'[\s\n\r]*', sql) is None:
+                            # VIEWの置き換えSQL実行
+                            if re.search(search_ptn, sql, re.IGNORECASE) is not None:
+                                objdbca.sql_execute(sql)
 
         # カラムグループ登録の処理に必要な形式にフォーマット
         result, msg, dict_t_menu_column_group, target_column_group_list = _format_column_group_data(record_t_menu_column_group, record_t_menu_column, menu_create_id)  # noqa: E501
@@ -1204,11 +1261,11 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 "COLUMN_NAME_EN": "Operation name",
                 "COLUMN_NAME_REST": "operation_name_disp",
                 "COL_GROUP_ID": operation_col_group_id,  # カラムグループ「オペレーション」
-                "COLUMN_CLASS": 1,  # SingleTextColumn
+                "COLUMN_CLASS": 7,  # IDColumn
                 "COLUMN_DISP_SEQ": disp_seq_num,
-                "REF_TABLE_NAME": None,
-                "REF_PKEY_NAME": None,
-                "REF_COL_NAME": None,
+                "REF_TABLE_NAME": "V_COMN_OPERATION",
+                "REF_PKEY_NAME": "OPERATION_ID",
+                "REF_COL_NAME": "OPERATION_NAME",
                 "REF_SORT_CONDITIONS": None,
                 "REF_MULTI_LANG": 0,  # False
                 "REFERENCE_ITEM": None,

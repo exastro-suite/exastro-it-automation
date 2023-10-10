@@ -1,0 +1,58 @@
+###### Menu Filter ######
+
+# Global values
+# not quate strings
+@org-user-id = test_user
+@org-user-pw = password
+@base_org_url = http://platform-auth:{{org-mng-port}}
+@organization_id = org1
+@workspace_id = ws1
+@menu = menu_list
+
+
+###
+# レコード全件の件数を取得する
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/filter/count/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+
+###
+# 検索条件を指定し、レコードの件数する
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/filter/count/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "discard": {
+    "NORMAL": "0"
+  },
+  "menu_group_name": {
+    "LIST": ["管理コンソール", "基本コンソール"]
+  }
+}
+
+###
+# レコードを全件取得する
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/filter/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+
+###
+# 検索条件を指定し、レコードを取得する
+POST {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/filter/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}
+content-type: application/json
+
+{
+  "discard": {
+    "NORMAL": "0"
+  },
+  "menu_group_name": {
+    "LIST": ["管理コンソール", "基本コンソール"]
+  }
+}
+
+###
+# レコードの履歴を取得する
+@uuid = 10101
+
+GET {{base_org_url}}/api/{{organization_id}}/workspaces/{{workspace_id}}/ita/menu/{{menu}}/filter/journal/{{uuid}}/
+Authorization: Basic {{org-user-id}} {{org-user-pw}}

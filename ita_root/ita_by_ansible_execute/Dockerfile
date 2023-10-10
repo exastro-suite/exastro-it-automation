@@ -54,6 +54,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade ansible \
 &&  pip3.9 install --upgrade kubernetes \
 &&  pip3.9 install --upgrade pycryptodome \
+&&  pip3.9 install --upgrade cryptography \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

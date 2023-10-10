@@ -47,6 +47,7 @@ CREATE TABLE T_COMN_MENU
     DISP_SEQ                        INT,                                        -- メニューグループ内表示順序
     AUTOFILTER_FLG                  VARCHAR(2),                                 -- オートフィルタチェック
     INITIAL_FILTER_FLG              VARCHAR(2),                                 -- 初回フィルタ
+    CUSTOM_MENU_ITEM                VARCHAR(255),                               -- 独自メニュー用素材
     WEB_PRINT_LIMIT                 INT,                                        -- Web表示最大行数
     WEB_PRINT_CONFIRM               INT,                                        -- Web表示前確認行数
     XLS_PRINT_LIMIT                 INT,                                        -- Excel出力最大行数
@@ -71,6 +72,7 @@ CREATE TABLE T_COMN_MENU_JNL
     DISP_SEQ                        INT,                                        -- メニューグループ内表示順序
     AUTOFILTER_FLG                  VARCHAR(2),                                 -- オートフィルタチェック
     INITIAL_FILTER_FLG              VARCHAR(2),                                 -- 初回フィルタ
+    CUSTOM_MENU_ITEM                VARCHAR(255),                               -- 独自メニュー用素材
     WEB_PRINT_LIMIT                 INT,                                        -- Web表示最大行数
     WEB_PRINT_CONFIRM               INT,                                        -- Web表示前確認行数
     XLS_PRINT_LIMIT                 INT,                                        -- Excel出力最大行数

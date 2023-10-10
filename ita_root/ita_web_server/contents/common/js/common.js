@@ -28,6 +28,9 @@
 const fn = ( function() {
     'use strict';
 
+    // バージョン
+    const version = '2.2.0';
+
     // AbortController
     const controller = new AbortController();
 
@@ -53,11 +56,25 @@ const fn = ( function() {
     };
     const windowFlag = windowCheck();
 
+    // CommonAuth check
+    const commonAuthCheck = function() {
+        try {
+            CommonAuth;
+            return true;
+        } catch( e ) {
+            return false;
+        }
+    };
+    const cmmonAuthFlag = commonAuthCheck();
+
     // iframeフラグ
     const iframeFlag = windowFlag? ( window.parent !== window ): false;
 
-    const organization_id = ( windowFlag )? CommonAuth.getRealm(): null,
-          workspace_id =  ( windowFlag )? window.location.pathname.split('/')[3]: null;
+    const
+    organization_id = ( windowFlag && cmmonAuthFlag )? CommonAuth.getRealm():
+        ( iframeFlag && window.parent.getToken )? window.parent.getRealm(): null,
+    workspace_id =  ( windowFlag && cmmonAuthFlag )? window.location.pathname.split('/')[3]:
+        ( iframeFlag && window.parent.getWorkspace )? window.parent.getWorkspace(): null;
 
     const typeofValue = function( value ) {
         return Object.prototype.toString.call( value ).slice( 8, -1 ).toLowerCase();
@@ -118,6 +135,14 @@ getCommonParams: function() {
 },
 /*
 ##################################################
+   cmmonAuthが使えるか返す
+##################################################
+*/
+getCmmonAuthFlag: function() {
+    return cmmonAuthFlag;
+},
+/*
+##################################################
    script, styleの読み込み
 ##################################################
 */
@@ -125,6 +150,7 @@ loadAssets: function( assets ){
     const f = function( type, url, id ){
         return new Promise(function( resolve, reject ){
             type = ( type === 'css')? 'link': 'script';
+            url = url + '?v=' + version;
 
             const body = document.getElementById('container'),
                   asset = document.createElement( type );
@@ -183,10 +209,11 @@ getRestApiUrl: function( url, orgId = organization_id, wsId = workspace_id ) {
    データ読み込み
 ##################################################
 */
-fetch: function( url, token, method = 'GET', json, option = {} ) {
+fetch: function( url, token, method = 'GET', data, option = {} ) {
 
     if ( !token ) {
-        token = CommonAuth.getToken();
+        token = ( cmmonAuthFlag )? CommonAuth.getToken():
+            ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
     }
 
     let errorCount = 0;
@@ -200,22 +227,31 @@ fetch: function( url, token, method = 'GET', json, option = {} ) {
                 return;
             }
 
-            if ( windowFlag ) u = cmn.getRestApiUrl( u );
+            if ( windowFlag ) u = cmn.getRestApiUrl( u );            
 
             const init = {
                 method: method,
                 headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
+                    Authorization: `Bearer ${token}`
                 },
                 signal: controller.signal
             };
 
-            if ( ( method === 'POST' || method === 'PATCH' ) && json !== undefined ) {
-                try {
-                    init.body = JSON.stringify( json );
-                } catch ( e ) {
-                    reject( e );
+            // Content-Type ※マルチパートの場合は指定しない
+            if ( !option.multipart ) {
+                init.headers['Content-Type'] = 'application/json';
+            }
+
+            // body
+            if ( ( method === 'POST' || method === 'PATCH' ) && data !== undefined ) {
+                if ( !option.multipart ) {
+                    try {
+                        init.body = JSON.stringify( data );
+                    } catch ( e ) {
+                        reject( e );
+                    }
+                } else {
+                    init.body = data;
                 }
             }
 
@@ -235,8 +271,9 @@ fetch: function( url, token, method = 'GET', json, option = {} ) {
                         errorCount++;
 
                         switch ( response.status ) {
-                            //バリデーションエラーは呼び出し元に返す
-                            case 499:
+                            // 呼び出し元に返す
+                            case 498: // メンテナンス中
+                            case 499: // バリデーションエラー
                                 response.json().then(function( result ){
                                     reject( result );
                                 }).catch(function( e ) {
@@ -533,6 +570,18 @@ fileNameCheck( fileName ) {
 },
 /*
 ##################################################
+   配列コピー
+##################################################
+*/
+arrayCopy( array ) {
+    if ( fn.typeof( structuredClone ) === 'function') {
+        return structuredClone( array );
+    } else {
+        return JSON.parse(JSON.stringify( array ));
+    }
+},
+/*
+##################################################
    ダウンロード
 ##################################################
 */
@@ -574,6 +623,15 @@ download: function( type, data, fileName = 'noname') {
             // BASE64
             case 'base64': {
                 url = 'data:;base64,' + data;
+            } break;
+
+            // Exceljs
+            case 'exceljs': {
+                const blob = new Blob([ data ], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                fileName += '.xlsx';
+                url = URL.createObjectURL( blob );
             } break;
 
         }
@@ -639,9 +697,7 @@ fileSelect: function( type = 'base64', limitFileSize, accept ){
                     reject( reader.error );
                 };
             } else if ( type === 'file') {
-                const formData = new FormData();
-                formData.append('file', file );
-                resolve( formData );
+                resolve( file );
             } else if ( type === 'json') {
                 reader.readAsText( file );
 
@@ -1463,6 +1519,9 @@ html: {
         if ( option.minWidth ) {
             html.push(`<span class="buttonMinWidth" style="width:${option.minWidth}"></span>`);
         }
+        if ( option.width ) {
+            attr.push(`style="width:${option.width}"`)
+        }
 
         attr.push(`class="${className.join(' ')}"`);
         return `<button ${attr.join(' ')}><span class="inner">${html.join('')}</span></button>`;
@@ -1664,17 +1723,17 @@ html: {
             + `<label for="${id}" class="radioLabel"></label>`
         + `</div>`;
     },
-    radioText: function( className, value, name, id, attrs = {}, text ) {
+    radioText: function( className, value, name, id, attrs = {}, text, typeClass = 'defaultRadioTextWrap') {
         const attr = inputCommon( value, name, attrs, id );
         attr.push(`class="${classNameCheck( className, 'radioText').join(' ')}"`);
 
         return ``
-        + `<div class="radioTextWrap">`
+        + `<div class="radioTextWrap ${typeClass}">`
             + `<input type="radio" ${attr.join(' ')}>`
             + `<label for="${id}" class="radioTextLabel"><span class="radioTextMark"></span><span class="radioTextText">${( text )? text: value}</span></label>`
         + `</div>`;
     },
-    'select': function( list, className, value, name, attrs = {}, option = {}) {
+    select: function( list, className, value, name, attrs = {}, option = {}) {
         const selectOption = [],
               attr = inputCommon( null, name, attrs );
         if ( option.select2 !== true ) {
@@ -1690,18 +1749,26 @@ html: {
         }
 
         // listを名称順にソートする
-        const sortList = Object.keys( list ).map(function(key){
-            return list[key];
-        });
+        let sortList;
+        if ( cmn.typeof(list) === 'object') {
+            sortList = Object.keys( list ).map(function(key){
+                return list[key];
+            });
+        } else {
+            sortList = $.extend( true, [], list );
+            // リストにvalueが含まれてなければ追加する
+            if ( sortList.indexOf( value ) === -1 ) {
+                sortList.push( value );
+            }
+        }
         sortList.sort(function( a, b ){
             return a.localeCompare( b );
         });
 
-
         for ( const item of sortList ) {
             const val = cmn.escape( item ),
                   optAttr = [`value="${val}"`];
-            if ( value === val ) optAttr.push('selected', 'selected');
+            if ( value === val ) optAttr.push('selected="selected"');
             selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
         }
 
@@ -1710,7 +1777,7 @@ html: {
             + selectOption.join('')
         + `</select>`;
     },
-    'noSelect': function() {
+    noSelect: function() {
         return '<div class="noSelect">No data</div>';
     },
     row: function( element, className ) {
@@ -1788,17 +1855,21 @@ html: {
             + `</div>`
         + `</div>`;
     },
-    fileSelect: function( value, className, attrs = {}, option = {}) {
+    fileSelect: function( value, className, attrs = {}, edit = true ) {
         className = classNameCheck( className, 'inputFile');
 
         let file = ''
         + `<div class="inputFileBody">`
                 + cmn.html.button( value, className, attrs )
-        + `</div>`
-        + `<div class="inputFileEdit">`
-            + cmn.html.button( cmn.html.icon('edit'), 'itaButton inputFileEditButton popup', Object.assign( attrs, { action: 'positive', title: getMessage.FTE00175 }))
-        + `</div>`
-        + `<div class="inputFileClear">`
+        + `</div>`;
+
+        if ( edit ) {
+            file += `<div class="inputFileEdit">`
+                + cmn.html.button( cmn.html.icon('edit'), 'itaButton inputFileEditButton popup', Object.assign( attrs, { action: 'positive', title: getMessage.FTE00175 }))
+            + `</div>`
+        }
+        
+        file += `<div class="inputFileClear">`
             + cmn.html.button( cmn.html.icon('clear'), 'itaButton inputFileClearButton popup', { action: 'restore', title: getMessage.FTE00076 })
         + `</div>`;
 
@@ -1853,6 +1924,16 @@ html: {
             itemHtml.push( cmn.html.inputText( inputClass, input.value, null, null, inputOption ) );
         }
 
+        // search
+        if ( item.search ) {
+            const placeholder = ( item.search.placeholder )? item.search.placeholder: '';
+            itemHtml.push(`<div class="operationMenuSearch">`
+                + `<span class="icon icon-search"></span>`
+                + `<input class="operationMenuSearchText input" name="${item.search.tableId}_operationMenuSearchText" autocomplete="off" placeholder="${placeholder}">`
+                + `<button class="operationMenuSearchClear"><span class="icon icon-cross"></span></button>`
+            + `</div>`);
+        }
+
         // check
         if ( item.check ) {
             const check = item.check,
@@ -1866,7 +1947,23 @@ html: {
             const messageIcon = ( item.message.icon )? item.message.icon: 'circle_info';
             itemHtml.push(`<div class="operationMenuMessage">`
             + `<span class="operationMenuMessageIcon">${cmn.html.icon( messageIcon )}</span>`
-            + `<span class="operationMenuMessageText">${item.message.text}</span></div>`)
+            + `<span class="operationMenuMessageText">${item.message.text}</span></div>`);
+        }
+
+        // Radio list
+        if ( item.radio ) {
+            const title = item.radio.title;
+
+            const listHtml = [];
+            for ( const key in item.radio.list ) {
+                const checked = ( key === item.radio.checked )? {checked: 'checked'}: {};
+                listHtml.push(`<li class="operationMenuRadioItem">`
+                + cmn.html.radioText('operationMenuRadio ' + item.radio.className, key, item.radio.name, 'operationMenuRadio_' + key, checked, item.radio.list[ key ], 'narrowRadioTextWrap')
+                + `</li>`);
+            }
+            itemHtml.push(`<div class="operationMenuRadioWrap">`
+            + `<div class="operationMenuRadioTitle">${title}</div>`
+            + `<ul class="operationMenuRadioList">${listHtml.join('')}</ul></div>`)
         }
 
         return `<li ${itemAttrs.join(' ')}>${itemHtml.join('')}</li>`;
@@ -2092,6 +2189,8 @@ setCommonEvents: function() {
         if ( ttl !== undefined ) {
             $t.removeAttr('title');
 
+            const type = ( $t.is('.parameterCollectionPopup') )? 'parameterCollection': 'default';
+
             const $p = $('<div/>', {
                 'class': 'popupBlock',
                 'html': `<div class="popupInner">${fn.escape( ttl, true )}</div>`
@@ -2101,6 +2200,7 @@ setCommonEvents: function() {
                   $arrow = $p.find('.popupArrow');
 
             if( $t.is('.darkPopup') ) $p.addClass('darkPopup');
+            if( $t.is('.parameterCollectionPopup') ) $p.addClass('parameterCollectionPopup');
 
             $body.append( $p );
 
@@ -2110,7 +2210,7 @@ setCommonEvents: function() {
                   tW = $t.outerWidth(),
                   tH = $t.outerHeight(),
                   tL = r.left,
-                  tT = r.top,
+                  tT = ( type === 'parameterCollection')? r.top - 92: r.top,
                   tB = wH - tT - tH,
                   pW = $p.outerWidth(),
                   wsL = $window.scrollLeft();
@@ -2168,7 +2268,9 @@ setCommonEvents: function() {
 
             // ホイールでポップアップ内をスクロール
             $t.on('wheel.popup', function( e ){
-                if ( !$t.is('.popupScroll') ) return;
+                if ( !$t.is('.popupScroll') ) {
+                    $t.trigger('pointerleave');
+                }
                 e.preventDefault();
 
                 const delta = e.originalEvent.deltaY ? - ( e.originalEvent.deltaY ) : e.originalEvent.wheelDelta ? e.originalEvent.wheelDelta : - ( e.originalEvent.detail );
@@ -2241,22 +2343,25 @@ textareaAdjustment: function() {
 ##################################################
   選択用モーダル
   config: {
-      title: モーダルタイトル、ボタンテキスト
+      title: モーダルタイトル
       selectNameKey: 選択で返す名称Key
       info: Table構造info URL
       infoData: Table構造infoが取得済みの場合はこちらに
       filter: Filter URL
       filterPulldown: Filter pulldown URL
       sub: infoに複数のTable構造がある場合のKey
+      option: テーブル用オプション
+      select: 選択状態の変更値,
+      unselected: ture, 未選択も可にする
   }
 ##################################################
 */
 selectModalOpen: function( modalId, title, menu, config ) {
-    return new Promise(function( resolve, reject ){
+    return new Promise(function( resolve ){
         const modalFuncs = {
             ok: function() {
                 modalInstance[ modalId ].modal.hide();
-                const selectId = modalInstance[ modalId ].table.select.select;
+                const selectId = cmn.arrayCopy( modalInstance[ modalId ].table.select.select );
                 resolve( selectId );
             },
             cancel: function() {
@@ -2272,6 +2377,9 @@ selectModalOpen: function( modalId, title, menu, config ) {
             });
         } else {
             modalInstance[ modalId ].modal.show();
+            // 選択状態をセットする
+            cmn.setSelectArray( modalInstance[ modalId ].table, config, modalInstance[ modalId ].modal );
+
             modalInstance[ modalId ].modal.btnFn = modalFuncs;
         }
     });
@@ -2284,10 +2392,10 @@ selectModalOpen: function( modalId, title, menu, config ) {
 */
 initSelectModal: function( modalId, title, menu, selectConfig ) {
 
-    return new Promise(function( resolve, reject ) {
+    return new Promise(function( resolve ) {
         const modalConfig = {
             mode: 'modeless',
-            width: 'auto',
+            width: ( selectConfig.width )? selectConfig.width: 'auto',
             position: 'center',
             visibility: false,
             header: {
@@ -2315,28 +2423,41 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
             if ( selectConfig.selectOtherKeys ) params.selectOtherKeys = selectConfig.selectOtherKeys;
             if ( selectConfig.selectType ) params.selectType = selectConfig.selectType;
 
+            let option = {};
+            if ( selectConfig.option ) option = selectConfig.option;
+
             // 取得したinfoのSubキー確認
             if ( selectConfig.sub ) info = info[ selectConfig.sub ];
 
             const tableId = `${modalId}_${menu.toUpperCase()}${( selectConfig.sub )? `_${selectConfig.sub}`: ``}`,
-                  table = new DataTable( tableId, 'select', info, params );
+                  table = new DataTable( tableId, 'select', info, params, option );
+            if ( selectConfig.select ) table.select.select = selectConfig.select;
             modal.setBody( table.setup() );
 
             // 選択チェック
-            table.$.container.on(`${table.id}selectChange`, function(){
-                if ( table.select.select.length ) {
-                    modal.buttonPositiveDisabled( false);
-                } else {
-                    modal.buttonPositiveDisabled( true );
-                }
-            });
+            if ( !selectConfig.unselected ) {
+                table.$.container.on(`${table.id}selectChange`, function(){
+                    if ( table.select.select.length ) {
+                        modal.buttonPositiveDisabled( false );
+                    } else {
+                        modal.buttonPositiveDisabled( true );
+                    }
+                });
+            }
 
             // 初期表示の場合は読み込み完了後に表示
             $( window ).one( tableId + '__tableReady', function(){
+                // 選択状態（名称リストからIDリストを作成）
+                cmn.setSelectArray( table, selectConfig, modal );
+
                 processingModal.close();
                 modal.hide();
                 modal.$.dialog.removeClass('hiddenDialog');
                 modal.show();
+
+                if ( selectConfig.unselected && table.data.count > 0 ) {
+                    modal.buttonPositiveDisabled( false );
+                }
             });
 
             resolve({
@@ -2355,6 +2476,40 @@ initSelectModal: function( modalId, title, menu, selectConfig ) {
             });
         }
     });
+},
+/*
+##################################################
+  選択状態をセットする
+##################################################
+*/
+setSelectArray( table, config, modal ) {
+    if ( cmn.typeof( config.selectTextArray ) === 'array' ) {
+        table.select.select = config.selectTextArray.map(function( text ){
+            const param = table.data.body.find(function( item ){
+                return item.parameter[ config.selectTextArrayTextKey ] === text;
+            });
+            if ( param ) {
+                return {
+                    id: param.parameter[ config.selectTextArrayIdKey ],
+                    name: text
+                };
+            } else {
+                return undefined;
+            }
+        }).filter( Boolean );
+
+        table.setTbody();
+    }
+
+    if ( cmn.typeof( config.select ) === 'array' ) {
+        table.select.select = cmn.arrayCopy( config.select );
+        table.setTbody();
+    }
+
+    const checkFlag = ( table.select.select.length === 0 );
+    if ( !config.unselected ) {
+        modal.buttonPositiveDisabled( checkFlag );
+    }
 },
 /*
 ##################################################
@@ -2562,13 +2717,22 @@ jsonStringify: function( json ) {
     }
 },
 
+jsonParse: function( json ) {
+    try {
+        return JSON.parse( json );
+    } catch( error ) {
+        return {};
+    }
+},
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   iframeモーダル
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-modalIframe: function( menu, title, option = {}){
+modalIframe: function( menu, title, option){
+    if ( !option ) option = {};
     if ( !modalInstance[ menu ] ) {
         const modalFuncs = {
             cancel: function() {
@@ -2725,7 +2889,7 @@ modalConductor: function( menu, mode, conductorId, option ) {
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-setUiSetting() {
+setUiSetting: function() {
     const uiSettingData = cmn.storage.get('ui_setting');
     // テーマ
     if ( uiSettingData && uiSettingData.theme ) {
@@ -2741,9 +2905,9 @@ setUiSetting() {
     }
 },
 
-setTheme( theme ) {
+setTheme: function( theme ) {
     const $theme = $('#thema'),
-          src = `/_/ita/thema/${theme}.css`;
+          src = `/_/ita/thema/${theme}.css?v=${version}`;
     $theme.attr('href', src );
 
     // ダークモード
@@ -2754,7 +2918,7 @@ setTheme( theme ) {
     }
 },
 
-setFilter( filterList ) {
+setFilter: function( filterList ) {
     const style = [];
     for ( const type in filterList ) {
         const value = filterList[ type ];
@@ -2771,7 +2935,7 @@ setFilter( filterList ) {
     $('body').css('filter', style.join(' ') );
 },
 
-uiSetting() {
+uiSetting: function() {
     return new Promise(function( resolve ){
         const funcs = {
             ok: function(){
@@ -2986,20 +3150,20 @@ uiSetting() {
 
 /*
 ##################################################
-   BASE64をテキストにデコード
+   BASE64をテキストに変換
 ##################################################
 */
-base64Decode( base64Text, charset = 'utf-8') {
+base64Decode: function( base64Text, charset = 'utf-8') {
     return fetch(`data:text/plain;charset=${charset};base64,${base64Text}`).then(function( result ) {
         return result.text();
     });
 },
 /*
 ##################################################
-   BASE64をテキストにデコード
+   テキストをBASE64に変換
 ##################################################
 */
-base64Encode( text ) {
+base64Encode: function( text ) {
     return new Promise(function( resolve ){
         const reader = new FileReader();
         reader.onload = function(){
@@ -3010,15 +3174,70 @@ base64Encode( text ) {
 },
 /*
 ##################################################
+   ファイルをテキストに変換
+##################################################
+*/
+fileToText: function( file ) {
+    return new Promise(function( resolve ){
+        const reader = new FileReader();
+        reader.onload = function(){
+            resolve( reader.result );
+        };
+        reader.readAsText( file );
+    });
+},
+/*
+##################################################
+   ファイルをBASE64に変換
+##################################################
+*/
+fileToBase64: function( file ) {
+    return new Promise(function( resolve ){
+        const reader = new FileReader();
+        reader.onload = function(){
+            resolve( reader.result.split(';base64,')[1] );
+        };
+        reader.readAsDataURL( file );
+    });
+},
+/*
+##################################################
+   テキストをファイルに変換
+##################################################
+*/
+textToFile: function( text, fileName ) {
+    return new File([text], fileName, { type: 'text/plain'} );
+},
+/*
+##################################################
+   BASE64をファイルに変換
+##################################################
+*/
+base64ToFile: function( base64, fileName ) {
+    if ( cmn.typeof( base64 ) !== 'string') return null;
+    const
+    bin = atob( base64.replace(/^.*,/, '')),
+    length = bin.length,
+    buffer = new Uint8Array( length );
+
+    for (let i = 0; i < length; i++) {
+        buffer[i] = bin.charCodeAt(i);
+    }
+    return  new File([buffer.buffer], fileName );
+},
+/*
+##################################################
    ファイルタイプ拡張子
 ##################################################
 */
-fileTypeCheck( fileName ) {
+fileTypeCheck: function( fileName ) {
     const extension = cmn.cv( fileName.split('.').pop(), '');
 
     const fileTypes = {
         image: ['gif','jpe','jpg','jpeg','png','svg','webp','bmp','ico'],
         text: ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2'],
+        style: ['css'],
+        script: ['js']
     }
 
     for ( const fileType in fileTypes ) {
@@ -3033,7 +3252,7 @@ fileTypeCheck( fileName ) {
    画像ファイルのMIMEタイプ
 ##################################################
 */
-imageMimeTypeCheck( fileName ) {
+imageMimeTypeCheck: function( fileName ) {
     const extension = cmn.cv( fileName.split('.').pop(), '');
 
     const fileTypes = {
@@ -3057,7 +3276,7 @@ imageMimeTypeCheck( fileName ) {
    Aceエディターモードチェック
 ##################################################
 */
-fileModeCheck( fileName ) {
+fileModeCheck: function( fileName ) {
     const extension = cmn.cv( fileName.split('.').pop(), '');
 
     const fileTypes = {
@@ -3080,7 +3299,7 @@ fileModeCheck( fileName ) {
    ITA独自変数一覧
 ##################################################
 */
-itaOriginalVariable() {
+itaOriginalVariable: function() {
     return [
         '__loginprotocol__',
         '__loginpassword__',
@@ -3100,14 +3319,56 @@ itaOriginalVariable() {
 },
 /*
 ##################################################
+   ファイル or BASE64をテキストに変換
+##################################################
+*/
+fileOrBase64ToText: function( data ) {
+    return new Promise(function( resolve ){
+        if ( cmn.typeof( data ) === 'file') {
+            cmn.fileToText( data ).then(function( result ){
+                resolve( result );
+            }).catch(function( error ){
+                resolve('');
+            });
+        } else if ( data === '') {
+            resolve('');
+        } else {
+            cmn.base64Decode( data ).then(function( result ){
+                resolve( result );
+            }).catch(function( error ){
+                resolve('');
+            });
+        }
+    });
+},
+/*
+##################################################
+   ファイル or BASE64をチェックしBASE64を返す
+##################################################
+*/
+fileOrBase64ToBase64: function( data ) {
+    return new Promise(function( resolve ){
+        if ( cmn.typeof( data ) === 'file') {
+            cmn.fileToBase64( data ).then(function( result ){
+                resolve( result );
+            }).catch(function( error ){
+                resolve('');
+            });
+        } else {
+            resolve( data );
+        }
+    });
+},
+/*
+##################################################
    Aceエディター
 ##################################################
 */
-fileEditor( base64Text, fileName, mode = 'edit') {
-    return new Promise( function( resolve, reject ){
+fileEditor( fileData, fileName, mode = 'edit') {
+    return new Promise( function( resolve ){
         const fileType = cmn.fileTypeCheck( fileName );
         let fileMode = cmn.fileModeCheck( fileName );
-    
+
         // モーダル設定
         const height = ( mode === 'edit' && fileType === false )? 'auto': '100%';
         const config = {
@@ -3127,25 +3388,17 @@ fileEditor( base64Text, fileName, mode = 'edit') {
         // 編集モード
         if ( mode === 'edit') {
             config.footer.button.update = { text: getMessage.FTE00168, action: 'positive', width: '160px'};
-            funcs.update = function() {
-                fileName = modal.$.dbody.find('.editorFileName').val();
-                modal.close();
-                modal = null;
-
-                resolve({
-                    name: fileName,
-                    base64: base64Text
-                });
-            };
         }
-        
+
         config.footer.button.download = { text: getMessage.FTE00169, action: 'restore', width: '88px'};
         config.footer.button.close = { text: getMessage.FTE00170, action: 'normal', width: '88px'};
         funcs.close = function() {
             modal.close();
             modal = null;
-        };             
-        
+
+            resolve( null );
+        };
+
         const modeSelectList = {
             text: 'Text(txt)',
             yaml: 'YAML(yaml,yml)',
@@ -3187,7 +3440,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                 html += `<div class="editorHeader"><table class="commonInputTable">${nameInputTr}`;
                 if ( fileType === 'text') {
                     html += modeSelectTr;
-                }                
+                }
                 html += `</table></div>`;
             } else if ( fileType === 'text') {
                 html += `<div class="editorHeader"><table class="commonInputTable">${modeSelectTr}</table></div>`;
@@ -3204,7 +3457,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
         let modal = new Dialog( config, funcs );
 
         if ( fileType === 'text') {
-            cmn.base64Decode( base64Text ).then(function( text ){
+            cmn.fileOrBase64ToText( fileData ).then(function( text ){
                 modal.open( modalHtmlSelect() );
                 if ( mode === 'edit') {
                     modal.$.dbody.find('.editorFileName').val( fileName );
@@ -3273,7 +3526,9 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                     const value = aceEditor.getValue();
 
                     cmn.base64Encode( value ).then(function( base64 ){
-                        fileName = modal.$.dbody.find('.editorFileName').val();
+                        if ( mode === 'edit') {
+                            fileName = modal.$.dbody.find('.editorFileName').val();
+                        }
                         cmn.download('base64', base64, fileName );
                     });
                 };
@@ -3301,43 +3556,57 @@ fileEditor( base64Text, fileName, mode = 'edit') {
                 // 更新
                 modal.btnFn.update = function() {
                     const value = aceEditor.getValue();
-        
-                    cmn.base64Encode( value ).then(function( base64 ){
-                        fileName = modal.$.dbody.find('.editorFileName').val();
-                        modal.close();
-                        modal = null;
-    
-                        resolve({
-                            name: fileName,
-                            base64: base64
-                        });
+
+                    fileName = modal.$.dbody.find('.editorFileName').val();
+                    modal.close();
+                    modal = null;
+
+                    resolve({
+                        name: fileName,
+                        file: cmn.textToFile( value, fileName )
                     });
                 };
             });
-        } else if ( fileType === 'image') {
-            // ダウンロード
-            modal.btnFn.download = function() {
-                cmn.download('base64', base64Text, fileName );
-            };
-
-            modal.open( modalHtmlSelect() );
-            if ( mode === 'edit') {
-                modal.$.dbody.find('.editorFileName').val( fileName );
-            }
-
-            const mime = cmn.imageMimeTypeCheck( fileName ),
-                    src = `data:image/${mime};base64,${base64Text}`;
-            modal.$.dbody.find('.editorImage').attr('src', src );
         } else {
-            modal.open( modalHtmlSelect() );
-            if ( mode === 'edit') {
-                modal.$.dbody.find('.editorFileName').val( fileName );
-            }
+            cmn.fileOrBase64ToBase64( fileData ).then(function( base64 ){
+                // ダウンロード
+                modal.btnFn.download = function() {
+                    if ( mode === 'edit') {
+                        fileName = modal.$.dbody.find('.editorFileName').val();
+                    }
+                    cmn.download('base64', base64, fileName );
+                };
+
+                modal.open( modalHtmlSelect() );
+                if ( mode === 'edit') {
+                    modal.$.dbody.find('.editorFileName').val( fileName );
+
+                    // 更新
+                    modal.btnFn.update = function() {
+                        fileName = modal.$.dbody.find('.editorFileName').val();
+                        modal.close();
+                        modal = null;
+
+                        resolve({
+                            name: fileName,
+                            file: cmn.base64ToFile( base64, fileName )
+                        });
+                    };
+                }
+
+                // imageの場合画像をセットする
+                if ( fileType === 'image') {
+                    const
+                    mime = cmn.imageMimeTypeCheck( fileName ),
+                    src = `data:image/${mime};base64,${base64}`;
+
+                    modal.$.dbody.find('.editorImage').attr('src', src );
+                }
+            });
         }
     });
-    
-},
 
+},
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   画面フルスクリーン
@@ -3349,7 +3618,7 @@ fileEditor( base64Text, fileName, mode = 'edit') {
 ##################################################
 */
 // フルスクリーンチェック
-fullScreenCheck() {
+fullScreenCheck: function() {
     if (
         ( document.fullScreenElement !== undefined && document.fullScreenElement === null ) ||
         ( document.msFullscreenElement !== undefined && document.msFullscreenElement === null ) ||
@@ -3362,7 +3631,7 @@ fullScreenCheck() {
     }
 },
 // フルスクリーン切り替え
-fullScreen( elem ) {
+fullScreen: function( elem ) {
     if ( elem === undefined ) elem = document.body;
 
     if ( !this.fullScreenCheck() ) {
@@ -3393,7 +3662,7 @@ fullScreen( elem ) {
    タブ
 ##################################################
 */
-commonTab( $target ) {
+commonTab: function( $target ) {
     $target.find('.commonTabItem').eq(0).add( $target.find('.commonTabSection').eq(0) ).addClass('open');
 
     $target.find('.commonTabItem').on('click', function(){

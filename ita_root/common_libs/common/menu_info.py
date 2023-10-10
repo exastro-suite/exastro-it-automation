@@ -15,6 +15,7 @@
 import textwrap
 import datetime
 import json
+import zipfile
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
@@ -299,7 +300,104 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     info_data = {
         'menu_info': menu_info_data,
         'column_info': column_info_data,
-        'column_group_info': column_group_info_data
+        'column_group_info': column_group_info_data,
+        'custom_menu': {},
+    }
+
+    return info_data
+
+
+def collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_list):
+    """
+        メニュー情報の取得(独自メニュー用)
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+            menu: メニュー string
+            menu_record: メニュー管理のレコード
+            privilege: メニューに対する権限
+            custom_file_list: 独自メニュー用素材
+        RETRUN:
+            info_data
+    """
+    # テーブル名
+    t_common_menu_group = 'T_COMN_MENU_GROUP'
+
+    # 変数定義
+    lang = g.LANGUAGE
+
+    # メニュー管理のレコードが空の場合、検索する
+    if len(menu_record) == 0:
+        menu_record = objdbca.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [menu, 0])
+        if not menu_record:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00002", log_msg_args, api_msg_args)  # noqa: F405
+
+    # メニュー管理から情報取得
+    menu_id = menu_record[0].get('MENU_ID')  # 対象メニューを特定するためのID
+    menu_group_id = menu_record[0].get('MENU_GROUP_ID')  # 対象メニューグループを特定するためのID
+    menu_name = menu_record[0].get('MENU_NAME_' + lang.upper())
+    login_necessity = menu_record[0].get('LOGIN_NECESSITY')
+    auto_filter_flg = menu_record[0].get('AUTOFILTER_FLG')
+    initial_filter_flg = menu_record[0].get('INITIAL_FILTER_FLG')
+    web_print_limit = menu_record[0].get('WEB_PRINT_LIMIT')
+    web_print_confirm = menu_record[0].get('WEB_PRINT_CONFIRM')
+    xls_print_limit = menu_record[0].get('XLS_PRINT_LIMIT')
+    sort_key = menu_record[0].get('SORT_KEY')
+
+    # 『メニューグループ管理』テーブルから対象のデータを取得
+    ret = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID = %s AND DISUSE_FLAG = %s', [menu_group_id, 0])
+    if not ret:
+        log_msg_args = [menu]
+        api_msg_args = [menu]
+        raise AppException("499-00004", log_msg_args, api_msg_args)  # noqa: F405
+
+    menu_group_name = ret[0].get('MENU_GROUP_NAME_' + lang.upper())
+    parent_menu_group_id = ret[0].get('PARENT_MENU_GROUP_ID')
+    parent_menu_group_name = None
+    if parent_menu_group_id:
+        ret = objdbca.table_select(t_common_menu_group, 'WHERE MENU_GROUP_ID = %s AND DISUSE_FLAG = %s', [parent_menu_group_id, 0])
+        if ret:
+            parent_menu_group_name = ret[0].get('MENU_GROUP_NAME_' + lang.upper())
+
+    menu_info_data = {
+        'menu_info': None,
+        'menu_group_id': menu_group_id,
+        'menu_group_name': menu_group_name,
+        'parent_menu_group_id': parent_menu_group_id,
+        'parent_menu_group_name': parent_menu_group_name,
+        'menu_id': menu_id,
+        'menu_name': menu_name,
+        'sheet_type': '99',
+        'history_table_flag': None,
+        'table_name': None,
+        'view_name': None,
+        'pk_column_name_rest': None,
+        'inherit': None,
+        'vertical': None,
+        'row_insert_flag': None,
+        'row_update_flag': None,
+        'row_disuse_flag': None,
+        'row_reuse_flag': None,
+        'login_necessity': login_necessity,
+        'auto_filter_flg': auto_filter_flg,
+        'initial_filter_flg': initial_filter_flg,
+        'web_print_limit': web_print_limit,
+        'web_print_confirm': web_print_confirm,
+        'xls_print_limit': xls_print_limit,
+        'sort_key': sort_key,
+        'privilege': privilege
+    }
+
+    if 'item' in custom_file_list:
+        if custom_file_list['item'] is None:
+            custom_file_list = {}
+
+    info_data = {
+        'menu_info': menu_info_data,
+        'column_info': {},
+        'column_group_info': {},
+        'custom_menu': custom_file_list
     }
 
     return info_data
@@ -670,3 +768,161 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         search_candidates = list(dict.fromkeys(search_candidates))
 
     return search_candidates
+
+
+def custom_check_sheet_type(menu, sheet_type_list, wsdb_istc=None):
+    """
+    check_sheet_type
+    メニューテーブル紐付管理に紐づいていない場合、独自メニュー用素材を返す
+
+    Arguments:
+        menu: menu_name_rest
+        sheet_type_list: (list)許容するシートタイプのリスト,falseの場合はシートタイプのチェックを行わない
+        wsdb_istc: (class)DBConnectWs Instance
+    Returns:
+        (dict)T_COMN_MENU_TABLE_LINKの該当レコード
+        or
+        独自メニュー用素材
+    """
+
+    if not wsdb_istc:
+        wsdb_istc = DBConnectWs(g.get('WORKSPACE_ID'))  # noqa: F405
+
+    query_str = textwrap.dedent("""
+        SELECT * FROM `T_COMN_MENU_TABLE_LINK` TAB_A
+            LEFT JOIN `T_COMN_MENU` TAB_B ON ( TAB_A.`MENU_ID` = TAB_B.`MENU_ID`)
+        WHERE TAB_B.`MENU_NAME_REST` = %s AND
+              TAB_A.`DISUSE_FLAG`='0' AND
+              TAB_B.`DISUSE_FLAG`='0'
+    """).strip()
+
+    menu_table_link_record = wsdb_istc.sql_execute(query_str, [menu])
+
+    custom_file_list = {}
+    if not menu_table_link_record:
+        custom_file_list = unzip_custom_menu_item(wsdb_istc, menu)
+        if len(custom_file_list) == 0:
+            custom_file_list['item'] = None
+    else:
+        if sheet_type_list and menu_table_link_record[0].get('SHEET_TYPE') not in sheet_type_list:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00001", log_msg_args, api_msg_args)  # noqa: F405
+
+    return menu_table_link_record, custom_file_list
+
+
+def unzip_custom_menu_item(wsdb_istc, menu):
+    """
+    独自メニュー用素材をBASE64に変換して返す
+
+    Arguments:
+        menu: menu_name_rest
+        sheet_type_list: (list)許容するシートタイプのリスト,falseの場合はシートタイプのチェックを行わない
+        wsdb_istc: (class)DBConnectWs Instance
+    Returns:
+        (dict)T_COMN_MENU_TABLE_LINKの該当レコード
+        or
+        独自メニュー用素材
+    """
+
+    # メニューID,ファイル名取得
+    where = 'WHERE DISUSE_FLAG=%s AND MENU_NAME_REST=%s'
+    ret = wsdb_istc.table_select('T_COMN_MENU', where, ['0', menu])
+
+    file_name = ''
+    if ret:
+        for records in ret:
+            file_name = records.get('CUSTOM_MENU_ITEM')
+            menu_id = records.get('MENU_ID')
+
+    # ファイルが登録されているか確認
+    if file_name is None:
+        return {}
+
+    # 独自メニュー用素材ファイルパス
+    file_path = os.environ.get('STORAGEPATH') + "/".join([g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')]) + "/uploadfiles/10103/custom_menu_item/" + menu_id
+
+    # zip解凍先パス
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')]) + "/tmp/" + menu_id
+
+    if not os.path.exists(uploadPath):
+        os.makedirs(uploadPath)
+        os.chmod(uploadPath, 0o777)
+
+    ret = unzip_file(file_path + '/' + file_name, uploadPath)
+
+    custom_file_list = {}
+    if ret is True:
+        custom_file_list = convert_to_base64(uploadPath)
+
+    if os.path.exists(uploadPath):
+        shutil.rmtree(uploadPath)
+
+    return custom_file_list
+
+
+def unzip_file(file_path, uploadPath):
+    """
+        zipファイルを解凍する
+
+        args:
+            fileName: ファイル名
+            uploadPath: 解凍先パス
+            upload_id: アップロードID
+    """
+    """
+        zipファイルを解凍する(コマンド)
+
+        args:
+            fileName: ファイル名
+            uploadPath: 解凍先パス
+            upload_id: アップロードID
+    """
+
+    try:
+        with zipfile.ZipFile(file_path) as z:
+            for info in z.infolist():
+                info.filename = info.orig_filename.encode('cp437').decode('cp932')
+                if os.sep != "/" and os.sep in info.filename:
+                    info.filename = info.filename.replace(os.sep, "/")
+                z.extract(info, path=uploadPath)
+
+    except Exception as e:
+        return False
+
+    return True
+
+
+def convert_to_base64(file_path):
+    """
+        ファイルをBASE64に変換する
+
+        args:
+            file_path: ファイルパス
+    """
+
+    lst = os.listdir(file_path)
+
+    fileAry = []
+    for value in lst:
+        if not value == '.' and not value == '..':
+            path = os.path.join(file_path, value)
+            if os.path.isdir(path):
+                dir_name = value
+                sublst = os.listdir(path)
+                for subvalue in sublst:
+                    if not subvalue == '.' and not subvalue == '..':
+                        fileAry.append(dir_name + "/" + subvalue)
+            else:
+                fileAry.append(value)
+
+    custom_file_list = {}
+    for file in fileAry:
+        ret = file_encode(file_path + '/' + file)
+        custom_file_list[file] = ret
+
+    if os.path.exists(file_path):
+        shutil.rmtree(file_path)
+
+    return custom_file_list

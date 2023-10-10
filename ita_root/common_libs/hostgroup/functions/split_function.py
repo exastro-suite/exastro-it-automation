@@ -167,6 +167,7 @@ def make_tree(objdbca, hierarchy=0):
             hierarchy: int
     """
     try:
+        tree_array = []
         tmp_msg = 'make_tree start'
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -455,12 +456,12 @@ def split_host_grp(hgsp_config, hgsp_data):
             if vertical_flg is False:
                 input_data_array = sorted(
                     input_data_array,
-                    key=lambda x: (x['BASE_TIMESTAMP'], x['OPERATION_NAME'])
+                    key=lambda x: (str(x['BASE_TIMESTAMP']), str(x['OPERATION_NAME']))
                 )
             else:
                 input_data_array = sorted(
                     input_data_array,
-                    key=lambda x: (x['BASE_TIMESTAMP'], x['OPERATION_NAME'], x['INPUT_ORDER'])
+                    key=lambda x: (str(x['BASE_TIMESTAMP']), str(x['OPERATION_NAME']), x['INPUT_ORDER'])
                 )
         # 出力用テーブルを検索:SQL実行
         sql = output_table.create_sselect("WHERE DISUSE_FLAG = '0'")
@@ -485,14 +486,19 @@ def split_host_grp(hgsp_config, hgsp_data):
 
         # 優先順位を取得するためにホストグループ一覧を検索:SQL実行
         host_group_listTable = HostgroupListTable(objdbca)  # noqa: F405
-        sql = host_group_listTable.create_sselect("WHERE DISUSE_FLAG = '0' ORDER BY PRIORITY ASC")
+        sql = host_group_listTable.create_sselect("ORDER BY PRIORITY ASC")
         result = host_group_listTable.select_table(sql)
         if result is False:
             tmp_msg = 'select table error HostgroupListTable'
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             raise Exception()
-        host_group_list_array = result
-        host_group_id_list = [hgd.get('ROW_ID') for hgd in host_group_list_array]
+
+        # ホストグループ一覧(廃止除く)
+        host_group_list_array = [hgd for hgd in result if hgd.get('DISUSE_FLAG') == "0"]
+        # ホストグループIDリスト(廃止除く)
+        host_group_id_list = [hgd.get('ROW_ID') for hgd in result if hgd.get('DISUSE_FLAG') == "0"]
+        # ホストグループIDリスト(廃止含む)
+        host_group_id_all_list = [hgd.get('ROW_ID') for hgd in result]
 
         hold_host_id = []
         sameid_array = None
@@ -501,6 +507,7 @@ def split_host_grp(hgsp_config, hgsp_data):
         hgsp_data.setdefault('idxs', idxs)
         hgsp_data.setdefault('host_group_list_array', host_group_list_array)
         hgsp_data.setdefault('host_group_id_list', host_group_id_list)
+        hgsp_data.setdefault('host_group_id_all_list', host_group_id_all_list)
         hgsp_data.setdefault('output_data_array', output_data_array)
         hgsp_data.setdefault('copy_file_array', copy_file_array)
         hgsp_data.setdefault('operation_ids', operation_ids)
@@ -533,7 +540,7 @@ def split_host_grp(hgsp_config, hgsp_data):
                     match_flg = True
 
             # ホストの場合, PRIORITY:最大設定(0-2147483647)
-            if match_flg is False or input_data['HOST_ID'] not in host_group_id_list:
+            if match_flg is False or input_data['HOST_ID'] not in host_group_id_all_list:
                 input_data_array[input_data_key]['PRIORITY'] = hostgroup_const.MAX_PRIORITY
 
             # 一回目の場合
@@ -589,7 +596,7 @@ def split_host_grp(hgsp_config, hgsp_data):
         for output_data in output_data_array:
             # 分割データにある場合は廃止しない
             hold_key = create_hold_key(vertical_flg, output_data.get('HOST_ID'), output_data.get('OPERATION_ID'), output_data.get('INPUT_ORDER'))
-            if hold_key in hold_host_id and output_data.get('HOST_ID') not in host_group_id_list:
+            if hold_key in hold_host_id and output_data.get('HOST_ID') not in host_group_id_all_list:
                 tmp_msg = 'not discard in split data:({}[{}])'.format(id_conv(hold_key, hgsp_config['alllist']), hold_key)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 continue
@@ -707,6 +714,7 @@ def make_host_data(hgsp_config, hgsp_data):
 
             'host_group_list_array', # ホストグループデータ
             'host_group_id_list',    # ホストグループIDリスト
+            'host_group_id_all_list',# ホストグループIDリスト(廃止含む)
             'output_data_array',     # 入力対象のデータ
             'copy_file_array',       # ファイルコピー情報設定
             'sameid_array',          # 同一処理対象(オペレーション or オペレーション + 代入順序)
@@ -727,6 +735,7 @@ def make_host_data(hgsp_config, hgsp_data):
         hierarchy = hgsp_data.get('hierarchy')
         idxs = hgsp_data.get('idxs')
         host_group_id_list = hgsp_data.get('host_group_id_list')
+        host_group_id_all_list = hgsp_data.get('host_group_id_all_list')
         output_data_array = hgsp_data.get('output_data_array')
         sameid_array = copy.deepcopy(hgsp_data.get('sameid_array'))
 
@@ -754,15 +763,21 @@ def make_host_data(hgsp_config, hgsp_data):
                 tree_array[tree_data_key]['ALL_PARENT_IDS'] = copy.deepcopy(parent_ids_list)
                 if sameid_data.get('HOST_ID') == tree_data.get('HOST_ID'):
                     treematch_flg = True
+                    if sameid_data['HOST_ID'] in host_group_id_all_list:
+                        if not tree_array[tree_data_key]['OPERATION']:
+                            tree_array[tree_data_key]['OPERATION'] = []
+                    tree_array[tree_data_key]['OPERATION'].append(sameid_data.get('OPERATION_ID'))
                     tree_array[tree_data_key]['DATA'] = copy.deepcopy(sameid_data)
                     tree_array[tree_data_key]['DATA_HIERARCHY'] = copy.deepcopy(tree_array[tree_data_key]['HIERARCHY'])
                     # アップロードファイルがあるか確認
-                    data_json = json.loads(sameid_data.get("DATA_JSON"))
+                    data_json = get_json_loads(sameid_data.get("DATA_JSON"))
                     row_id = sameid_data.get('ROW_ID')
                     for rest_key, file_name in data_json.items():
                         if rest_key in file_columns_info['target_rest_name']:
-                            tree_array[tree_data_key]['UPLOAD_FILES'].setdefault(rest_key, None)
-                            tree_array[tree_data_key]['UPLOAD_FILES'][rest_key] = {"id": row_id, "name": file_name}
+                            tree_array[tree_data_key]['UPLOAD_FILES'].setdefault(rest_key, {})
+                            if file_name:
+                                tree_array[tree_data_key]['UPLOAD_FILES'][rest_key]["id"] = row_id
+                                tree_array[tree_data_key]['UPLOAD_FILES'][rest_key]["name"] = file_name
             if treematch_flg is False:
                 alone_data_array.append(sameid_data)
 
@@ -789,7 +804,7 @@ def make_host_data(hgsp_config, hgsp_data):
         # ツリー上にいなかったデータを単独で登録する
         for alone_data in alone_data_array:
             # ホストグループの場合は無視する
-            if alone_data['HOST_ID'] in host_group_id_list:
+            if alone_data['HOST_ID'] in host_group_id_all_list:
                 continue
 
             # 保有しているホストIDを退避しておく
@@ -827,25 +842,24 @@ def make_host_data(hgsp_config, hgsp_data):
                 # アップロードファイルの比較
                 for rest_key in file_columns_info['target_rest_name']:
                     alone_id = alone_data['ROW_ID']
-                    alone_data_json = json.loads(alone_data.get("DATA_JSON"))
-                    output_data_json = json.loads(output_data.get("DATA_JSON"))
+                    output_id = output_data['ROW_ID']
+                    alone_data_json = get_json_loads(alone_data.get("DATA_JSON"))
+                    output_data_json = get_json_loads(output_data.get("DATA_JSON"))
                     alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
                     output_file_name = output_data_json.get(rest_key) if rest_key in output_data_json else None
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
                     if alone_file_name:
-                        # input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, alone_id, None, False)
-                        input_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
+                        alone_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
                     if output_file_name:
-                        # output_file_path = file_columns_info['output'][rest_key].get_file_data_path(output_file_name, alone_id, None, False)
-                        output_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
+                        output_file_data = file_columns_info['output'][rest_key].get_file_data(output_file_name, output_id)
 
                     # ファイル名,ファイルに差分があるか判定
-                    if alone_file_name != output_file_name and input_file_data != output_file_data:
+                    if alone_file_name != output_file_name or alone_file_data != output_file_data:
                         chgFlg = True
 
                     # ファイル解放
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
 
                 if chgFlg is True:
@@ -874,7 +888,7 @@ def make_host_data(hgsp_config, hgsp_data):
                         raise Exception()
 
                     # ファイルコピー情報設定
-                    copy_file_array = chk_file_file_columns(file_columns_info, output_table, alone_data, result[0], copy_file_array)
+                    copy_file_array = chk_file_file_columns(file_columns_info, output_table, alone_data, {}, result[0], copy_file_array)
 
                     update_cnt += 1
                 break
@@ -912,7 +926,7 @@ def make_host_data(hgsp_config, hgsp_data):
                     raise Exception()
 
                 # ファイルコピー情報設定
-                copy_file_array = chk_file_file_columns(file_columns_info, output_table, alone_data, result[0], copy_file_array)
+                copy_file_array = chk_file_file_columns(file_columns_info, output_table, alone_data, {}, copy_file_array)
 
                 insert_cnt += 1
 
@@ -975,9 +989,11 @@ def make_host_data(hgsp_config, hgsp_data):
                                     child_priority = child_priority if child_priority else hostgroup_const.MAX_PRIORITY
                                     parent_data = copy.copy(tree_array[parent_key]['DATA'][tmp_column_name])
                                     child_data = copy.copy(tree_array[tree_data_child_key]['DATA'][tmp_column_name])
+                                    parent_row_id = tree_array[parent_key]['DATA']['ROW_ID']
+                                    child_row_id = tree_array[tree_data_child_key]['DATA']['ROW_ID']
                                     if tmp_column_name == "DATA_JSON":
-                                        parent_data_json = json.loads(parent_data)
-                                        child_data_json = json.loads(child_data)
+                                        parent_data_json = get_json_loads(parent_data)
+                                        child_data_json = get_json_loads(child_data)
                                         base_data_json = dict((x, y) for x, y in sorted(output_table.objmenu.get_json_cols_base().items()))
                                         for rest_name in base_data_json.keys():
                                             # 空文字の扱いを統一してNoneとして扱う  "" '' -> None
@@ -986,17 +1002,33 @@ def make_host_data(hgsp_config, hgsp_data):
                                             # 親も子も値が入っていない場合
                                             if child_val is None and parent_val is None:
                                                 base_data_json[rest_name] = None
+                                                tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                    file_columns_info,
+                                                    tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                    rest_name, None, None)
                                             # 親のみに値が入っている場合
                                             elif child_val is None and parent_val is not None:
                                                 base_data_json[rest_name] = parent_val
+                                                tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                    file_columns_info,
+                                                    tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                    rest_name, parent_row_id, parent_val)
                                             # 子のみに値が入っている場合
                                             elif child_val is not None and parent_val is None:
                                                 base_data_json[rest_name] = child_val
+                                                tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                    file_columns_info,
+                                                    tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                    rest_name, child_row_id, child_val)
                                             # 親も子も値が入っている場合
                                             else:
                                                 # 子のデータの階層が親のデータの階層よりも大きい場合
                                                 if child_data_hierarchy > parent_data_hierarchy:
                                                     base_data_json[rest_name] = parent_val
+                                                    tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                        file_columns_info,
+                                                        tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                        rest_name, parent_row_id, parent_val)
                                                     chgFlg = True
                                                 # 子のデータの階層と親のデータの階層が同じ場合
                                                 elif child_data_hierarchy == parent_data_hierarchy:
@@ -1005,6 +1037,10 @@ def make_host_data(hgsp_config, hgsp_data):
                                                         # 親のデータ利用:None場合、子のデータ使用
                                                         if parent_val is not None:
                                                             base_data_json[rest_name] = parent_val
+                                                            tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                                file_columns_info,
+                                                                tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                                rest_name, parent_row_id, parent_val)
                                                         else:
                                                             base_data_json[rest_name] = child_val
                                                         chgFlg = True
@@ -1012,11 +1048,23 @@ def make_host_data(hgsp_config, hgsp_data):
                                                         # 子のデータ利用:Noneの場合、親のデータ使用
                                                         if child_val is not None:
                                                             base_data_json[rest_name] = child_val
+                                                            tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                                file_columns_info,
+                                                                tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                                rest_name, child_row_id, child_val)
                                                         else:
                                                             base_data_json[rest_name] = parent_val
+                                                            tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                                file_columns_info,
+                                                                tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                                rest_name, parent_row_id, parent_val)
                                                         chgFlg = True
                                                 else:
                                                     base_data_json[rest_name] = child_val
+                                                    tree_array[tree_data_child_key]['UPLOAD_FILES'] = update_file_info(
+                                                        file_columns_info,
+                                                        tree_array[tree_data_child_key]['UPLOAD_FILES'],
+                                                        rest_name, child_row_id, child_val)
                                                     chgFlg = True
                                                     # 何もしない
                                                     pass
@@ -1033,6 +1081,7 @@ def make_host_data(hgsp_config, hgsp_data):
                                         # 親のみに値が入っている場合
                                         elif child_data is None and parent_data is not None:
                                             tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
+                                            tree_array[tree_data_child_key]['UPLOAD_FILES'] = copy.copy(tree_array[parent_key]['UPLOAD_FILES'])
                                         # 子のみに値が入っている場合
                                         elif child_data is not None and parent_data is None:
                                             tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
@@ -1042,21 +1091,24 @@ def make_host_data(hgsp_config, hgsp_data):
                                             # 子のデータの階層が親のデータの階層よりも大きい場合
                                             if child_data_hierarchy > parent_data_hierarchy:
                                                 tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
+                                                tree_array[tree_data_child_key]['UPLOAD_FILES'] = copy.copy(tree_array[parent_key]['UPLOAD_FILES'])
                                                 chgFlg = True
                                             # 子のデータの階層と親のデータの階層が同じ場合
                                             elif child_data_hierarchy == parent_data_hierarchy:
                                                 # 子のデータの優先順位が親のデータの優先順位より小さい場合
                                                 if child_priority < parent_priority:
                                                     # 親のデータ利用:None場合、子のデータ使用
-                                                    if parent_val is not None:
+                                                    if parent_data is not None:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
+                                                        tree_array[tree_data_child_key]['UPLOAD_FILES'] = copy.copy(tree_array[parent_key]['UPLOAD_FILES'])
                                                     else:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
                                                     chgFlg = True
                                                 else:
                                                     # 子のデータ利用:Noneの場合、親のデータ使用
-                                                    if child_val is not None:
+                                                    if child_data is not None:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(child_data)
+                                                        tree_array[tree_data_child_key]['UPLOAD_FILES'] = copy.copy(tree_array[parent_key]['UPLOAD_FILES'])
                                                     else:
                                                         tree_array[tree_data_child_key]['DATA'][tmp_column_name] = copy.copy(parent_data)
                                                     chgFlg = True
@@ -1118,9 +1170,8 @@ def make_host_data(hgsp_config, hgsp_data):
                             or host_data['DATA']['HOST_ID'] in tree_array[match_parent_kykey_idx]['ALL_PARENT_IDS'] is not False:
 
                         if len(host_data['OPERATION']) >= parent_id_Key:
-                            if host_data['OPERATION'][parent_id_Key] is None:
-                                opematch_flg = True
-                            elif host_data['DATA']['OPERATION_ID'] in host_data['OPERATION']:
+                            if host_data['OPERATION'][parent_id_Key] is None \
+                                    or host_data['OPERATION'][parent_id_Key] == host_data['DATA']['OPERATION_ID']:
                                 opematch_flg = True
                             else:
                                 pass
@@ -1170,24 +1221,25 @@ def make_host_data(hgsp_config, hgsp_data):
 
                 # アップロードファイルの比較
                 for rest_key in file_columns_info['target_rest_name']:
-                    host_id = host_data['DATA']['ROW_ID']
-                    alone_data_json = json.loads(host_data['DATA'].get("DATA_JSON"))
-                    output_data_json = json.loads(output_data.get("DATA_JSON"))
+                    alone_id = host_data['DATA']['ROW_ID']
+                    output_id = output_data['ROW_ID']
+                    alone_data_json = get_json_loads(host_data['DATA'].get("DATA_JSON"))
+                    output_data_json = get_json_loads(output_data.get("DATA_JSON"))
                     alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
                     output_file_name = output_data_json.get(rest_key) if rest_key in output_data_json else None
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
                     if alone_file_name:
-                        # input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, host_id, None, False)
-                        input_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, host_id)
+                        alone_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, alone_id)
                     if output_file_name:
-                        # output_file_path = file_columns_info['output'][rest_key].get_file_data_path(output_file_name, host_id, None, False)
-                        output_file_data = file_columns_info['input'][rest_key].get_file_data(alone_file_name, host_id)
-                    if alone_file_name != output_file_name and input_file_data != output_file_data:
+                        output_file_data = file_columns_info['output'][rest_key].get_file_data(output_file_name, output_id)
+
+                    # ファイル名,ファイルに差分があるか判定
+                    if alone_file_name != output_file_name or alone_file_data != output_file_data:
                         chgFlg = True
 
                     # ファイル解放
-                    input_file_data = None
+                    alone_file_data = None
                     output_file_data = None
 
                 # 廃止になっている場合は復活する
@@ -1221,7 +1273,7 @@ def make_host_data(hgsp_config, hgsp_data):
                         raise Exception()
 
                     # ファイルコピー情報設定
-                    copy_file_array = chk_file_file_columns(file_columns_info, output_table, host_data['DATA'], result[0], copy_file_array)
+                    copy_file_array = chk_file_file_columns(file_columns_info, output_table, host_data['DATA'], host_data['UPLOAD_FILES'], result[0], copy_file_array)
 
                     update_cnt += 1
 
@@ -1279,7 +1331,7 @@ def make_host_data(hgsp_config, hgsp_data):
                     raise Exception()
 
                 # ファイルコピー情報設定
-                copy_file_array = chk_file_file_columns(file_columns_info, output_table, host_data['DATA'], result[0], copy_file_array)
+                copy_file_array = chk_file_file_columns(file_columns_info, output_table, host_data['DATA'], host_data['UPLOAD_FILES'], result[0], copy_file_array)
 
                 insert_cnt += 1
 
@@ -1363,7 +1415,7 @@ def get_file_columns_info(objdbca, input_table, output_table):
 
 
 # アップロードファイルのコピー用情報収集
-def chk_file_file_columns(file_columns_info, output_table, input_data, target_data, copy_file_array=[]):
+def chk_file_file_columns(file_columns_info, output_table, input_data, file_info, target_data, copy_file_array=[]):
     """
     copy_upload_file: アップロードファイルのコピー、リンク生成
     Args:
@@ -1376,10 +1428,15 @@ def chk_file_file_columns(file_columns_info, output_table, input_data, target_da
         copy_file_array
     """
     for rest_key in file_columns_info['target_rest_name']:
-        alone_data_json = json.loads(target_data.get("DATA_JSON"))
+        alone_data_json = get_json_loads(target_data.get("DATA_JSON"))
         alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
         if alone_file_name:
             input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, input_data['ROW_ID'], None, False)
+
+            # 自身以外のレコードのファイルのパスを取得
+            if rest_key in file_info and "id" in file_info[rest_key]:
+                input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, file_info[rest_key]["id"], None, False)
+
             jnl_data = output_table.objmenu.get_maintenance_uuid(target_data['ROW_ID'])
             jnl_uuid = jnl_data[0]["JOURNAL_SEQ_NO"]
             output_file_path = file_columns_info['output'][rest_key].get_file_data_path(alone_file_name, target_data['ROW_ID'], jnl_uuid, False)
@@ -1670,7 +1727,7 @@ def id_conv(data, iddict={}, mode='dict'):
     for _k, _v in iddict.items():
         xxxx = xxxx.replace(_k, _v)
     if mode == 'dict':
-        xxxx = json.loads(xxxx)
+        xxxx = get_json_loads(xxxx)
     return xxxx
 
 
@@ -1705,3 +1762,39 @@ def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
         return '{}'.format(dt)
     else:
         return dt
+
+
+def get_json_loads(data, return_val={}):
+    """
+    get_json_loads:
+    Args:
+        data (str):
+        return_val (optional): return type. Defaults to 'dict'.
+    Returns:
+        json.loads(data) or return_val()
+    """
+    try:
+        return json.loads(data)
+    except:  # noqa: E722
+        return return_val
+
+
+def update_file_info(file_columns_info, file_info, rest_name, id, name):
+    """
+    update_file_info:
+    Args:
+        file_columns_info: file upload column data
+        file_info: tree_array[xxx]['UPLOAD_FILES']
+        rest_name:
+        id: row_id
+        name: file name
+    Returns:
+        file_info
+    """
+    if rest_name in file_columns_info['target_rest_name']:
+        file_info.setdefault(rest_name, {})
+        _path = file_columns_info['input'][rest_name].get_file_data_path(name, id)
+        if _path:
+            file_info[rest_name]["id"] = id
+            file_info[rest_name]["name"] = name
+    return file_info

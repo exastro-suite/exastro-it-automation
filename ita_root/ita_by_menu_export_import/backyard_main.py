@@ -17,7 +17,7 @@ import datetime
 import tarfile
 from flask import g
 from common_libs.common import *  # noqa: F403
-from common_libs.common.util import ky_encrypt
+from common_libs.common.util import ky_encrypt, get_maintenance_mode_setting
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.exception import AppException  # noqa: F401
@@ -48,6 +48,18 @@ def backyard_main(organization_id, workspace_id):
     # メイン処理開始
     debug_msg = g.appmsg.get_log_message("BKY-20001", [])
     g.applogger.debug(debug_msg)
+
+    # メンテナンスモードのチェック
+    try:
+        maintenance_mode = get_maintenance_mode_setting()
+        # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['data_update_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
+            return
+    except Exception:
+        # エラーログ出力
+        g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+        return
 
     strage_path = os.environ.get('STORAGEPATH')
     workspace_path = strage_path + "/".join([organization_id, workspace_id])
@@ -83,6 +95,11 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.error(msg)
             continue
         objdbca.db_transaction_end(True)
+
+    # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+    if str(maintenance_mode['backyard_execute_stop']) == "1":
+        g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+        return
 
     # 「メニューエクスポート・インポート管理」から「未実行(ID:1)」のレコードを取得(最終更新日時の古い順から処理)
     ret = objdbca.table_select(t_menu_export_import, 'WHERE STATUS = %s AND DISUSE_FLAG = %s ORDER BY LAST_UPDATE_TIMESTAMP ASC', [1, 0])
@@ -166,9 +183,22 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         tmp_msg = "Target record data: {}, {}, {}, {}".format(execution_no, file_name, dp_mode, json_storage_item)
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        execution_no_path = uploadfiles_60103_dir + '/file_name/' + execution_no
-        file_path = execution_no_path + '/' + file_name
-        if os.path.isfile(file_path) is False:
+        # KYMファイル
+        ori_execution_no_path = uploadfiles_60103_dir + '/file_name/' + execution_no
+        ori_file_path = ori_execution_no_path + '/' + file_name
+        if os.path.isfile(ori_file_path) is False:
+            # 対象ファイルなし
+            raise AppException("499-00905", [], [])
+
+        # 一時作業用: /tmp/<execution_no>
+        execution_no_path = '/tmp/' + execution_no
+        tmp_file_path = execution_no_path + '/' + file_name
+        if not os.path.isdir(execution_no_path):
+            os.makedirs(execution_no_path)
+
+        # KYMファイルを一時作業用へコピー
+        file_path = shutil.copyfile(ori_file_path, tmp_file_path)
+        if os.path.isfile(tmp_file_path) is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
 
@@ -366,12 +396,20 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         if os.path.isdir(backupfile_dir):
             shutil.rmtree(backupfile_dir)
 
+        if os.path.isdir(execution_no_path):
+            # 展開した一時ファイル群の削除
+            shutil.rmtree(execution_no_path)
+
         # 正常系リターン
         return True, msg
 
     except Exception as msg:
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
+
+        if os.path.isdir(execution_no_path):
+            # 展開した一時ファイル群の削除
+            shutil.rmtree(execution_no_path)
 
         # コミット/トランザクション終了
         debug_msg = g.appmsg.get_log_message("BKY-20005", [])
@@ -1027,6 +1065,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             "parameter": {
                 "file_name": kym_name,
                 "last_update_date_time": last_update_taimestamp.strftime('%Y/%m/%d %H:%M:%S.%f'),
+                "discard": "0"
             },
             "type": "Update"
         }
@@ -1039,7 +1078,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         g.applogger.debug(debug_msg)
         objdbca.db_transaction_start()
 
-        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)  # noqa: E999
+        exec_result = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True, False, True)  # noqa: E999
 
         # コミット/トランザクション終了
         debug_msg = g.appmsg.get_log_message("BKY-20005", [])

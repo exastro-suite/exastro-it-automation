@@ -200,6 +200,11 @@ def post_driver_cancel(organization_id, workspace_id, menu, execution_no, body=N
 
     :rtype: InlineResponse20011
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00007"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -246,6 +251,11 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
 
     :rtype: InlineResponse20017
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00010"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -318,6 +328,11 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
 
     :rtype: InlineResponse20017
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00012"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -389,6 +404,11 @@ def post_driver_execute_delete_resource(organization_id, workspace_id, menu, bod
 
     :rtype: InlineResponse20018
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00013"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -454,6 +474,11 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
 
     :rtype: InlineResponse20017
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00011"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -583,6 +608,11 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
 
     :rtype: InlineResponse20011
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00008"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 

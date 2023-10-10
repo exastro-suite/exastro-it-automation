@@ -47,6 +47,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade six \
 &&  pip3.9 install --upgrade pyrsistent \
 &&  pip3.9 install --upgrade python-hcl2 \
+&&  pip3.9 install --upgrade cryptography \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

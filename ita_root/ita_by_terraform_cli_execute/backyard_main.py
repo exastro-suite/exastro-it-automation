@@ -20,7 +20,7 @@ from datetime import datetime
 
 from flask import g
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.common.util import get_timestamp
+from common_libs.common.util import get_timestamp, get_maintenance_mode_setting
 from common_libs.ci.util import log_err
 
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
@@ -43,6 +43,18 @@ def main_logic(organization_id, workspace_id):
     # db instance
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
 
+    # メンテナンスモードのチェック
+    try:
+        maintenance_mode = get_maintenance_mode_setting()
+        # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['data_update_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
+            return True
+    except Exception:
+        # エラーログ出力
+        g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+        return False
+
     # 準備中/実行中の作業インスタンスに関して、実行プロセスが存在しているかの存在確認
     if child_process_exist_check(wsDb, organization_id, workspace_id) is False:
         g.applogger.debug(g.appmsg.get_log_message("MSG-10059"))
@@ -57,6 +69,11 @@ def main_logic(organization_id, workspace_id):
         if worksapce_id in executed_worksapce_id_list:
             continue
         executed_worksapce_id_list.append(worksapce_id)
+
+    # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+    if str(maintenance_mode['backyard_execute_stop']) == "1":
+        g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
+        return True
 
     # 未実行（実行待ち）の作業を実行
     retBool = run_unexecuted(wsDb, organization_id, workspace_id, executed_worksapce_id_list)

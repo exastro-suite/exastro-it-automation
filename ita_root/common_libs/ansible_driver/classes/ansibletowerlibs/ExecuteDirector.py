@@ -412,7 +412,7 @@ class ExecuteDirector():
                 g.applogger.info(endlog)
         except Exception as e:
             errorMessage = "Failed to gitlab project delete."
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             allResult = False
 
         # Ansible Automation Controller側の/var/lib/exastro配下の該当ディレクトリ削除
@@ -520,10 +520,15 @@ class ExecuteDirector():
         if os.path.exists(src_path):
             cmd = ["/bin/rm", "-rf", src_path]
             try:
-                ret = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                ret = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            except subprocess.CalledProcessError as e:
+                errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
+                self.ExceptionErrorLog(e, errorMessage, "", e.stderr)
+                return False
+
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
         ###########################################################
@@ -537,10 +542,15 @@ class ExecuteDirector():
         addAnsibleCreateFilesPath(dest_path)
         cmd = ["/bin/cp", "-rfp", src_path, dest_path]
         try:
-            ret = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            ret = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
+            self.ExceptionErrorLog(e, errorMessage, "", e.stderr)
+            return False
+
         except Exception as e:
             errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             return False
 
         ###########################################################
@@ -552,10 +562,15 @@ class ExecuteDirector():
         dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_GITREPO_OUT_PATH]
         cmd = ["/bin/cp", "-rfp", src_path, dest_path]
         try:
-            ret = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            ret = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
+            self.ExceptionErrorLog(e, errorMessage, "", e.stderr)
+            return False
+
         except Exception as e:
             errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             return False
 
         ###########################################################
@@ -567,10 +582,15 @@ class ExecuteDirector():
         dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_GITREPO_TMP_PATH]
         cmd = ["/bin/cp", "-rfp", src_path, dest_path]
         try:
-            ret = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            ret = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
+            self.ExceptionErrorLog(e, errorMessage, "", e.stderr)
+            return False
+
         except Exception as e:
             errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             return False
 
         ###########################################################
@@ -583,10 +603,15 @@ class ExecuteDirector():
             dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_GITREPO_CONDUCTOR_PATH]
             cmd = ["/bin/cp", "-rfp", src_path, dest_path]
             try:
-                ret = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                ret = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            except subprocess.CalledProcessError as e:
+                errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
+                self.ExceptionErrorLog(e, errorMessage, "", e.stderr)
+                return False
+
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
         return result_code
 
@@ -615,7 +640,7 @@ class ExecuteDirector():
             src_path = srcBasePath
             dest_path = self.getMaterialsTransferDestinationPath("ExastroPath", execution_no)
             info = (
-                "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n"
+                "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n"
             ) % (
                 credential['host_name'],
                 credential['auth_type'],
@@ -626,14 +651,15 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 os.environ.get("PYTHONPATH", "/exastro"),
-                "ITA"
+                "ITA",
+                credential['ssh_port_str']
             )
 
             try:
                 pathlib.Path(tmp_TowerInfo_File).write_text(info)
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
             cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
@@ -643,12 +669,19 @@ class ExecuteDirector():
                     endlog = "[Trace] transfer material to ansible automation controller done."
                     g.applogger.info(startlog)  # 外部アプリへの処理開始・終了ログ
 
+                    # shell実行の場合にcapture_output=Trueだとstderrは取得できない模様
                     ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
                     g.applogger.info(endlog)
+            except subprocess.CalledProcessError as e:
+                errorMessage = g.appmsg.get_api_message("MSG-10682", [credential['host_name']])
+                # shellの場合にstderrが出力されない場合あり、exitcode出力
+                self.ExceptionErrorLog(e, errorMessage, tmp_log_file, self.LocalShellExitCodeToErrorMsg(e.returncode))
+                return False
+
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10682", [credential['host_name']])
-                self.ExceptionErrorLog(e, errorMessage, tmp_log_file)
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
             if os.path.isfile(tmp_log_file):
@@ -739,21 +772,22 @@ class ExecuteDirector():
             if os.path.isfile(tmp_TowerInfo_File):
                 os.unlink(tmp_TowerInfo_File)
 
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
                 credential['password'],
                 credential['ssh_key_file'],
                 dest_path, credential['ssh_key_file_pass'],
-                root_dir_path
+                root_dir_path,
+                credential['ssh_port_str']
             )
 
             try:
                 pathlib.Path(tmp_TowerInfo_File).write_text(info)
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 result_code = False
 
             else:
@@ -768,9 +802,14 @@ class ExecuteDirector():
 
                         g.applogger.info(endlog)
 
+                except subprocess.CalledProcessError as e:
+                    errorMessage = g.appmsg.get_api_message("MSG-10684", [credential['host_name'], dest_path])
+                    # shell実行の場合にstderrが出力されない場合あり、exitcode出力
+                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file, self.LocalShellExitCodeToErrorMsg(e.returncode))
+                    return False
                 except Exception as e:
                     errorMessage = g.appmsg.get_api_message("MSG-10684", [credential['host_name'], dest_path])
-                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file)
+                    self.ExceptionErrorLog(e, errorMessage, "", "")
                     result_code = False
 
                 if os.path.isfile(tmp_log_file):
@@ -809,7 +848,7 @@ class ExecuteDirector():
             if AnscConst.DF_SCP_CONDUCTOR_ITA_PATH in self.vg_TowerProjectsScpPathArray:
                 src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_CONDUCTOR_TOWER_PATH]
                 dest_path = os.path.dirname(self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_CONDUCTOR_ITA_PATH])
-                info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+                info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                     credential['host_name'],
                     credential['auth_type'],
                     credential['username'],
@@ -819,7 +858,8 @@ class ExecuteDirector():
                     dest_path,
                     credential['ssh_key_file_pass'],
                     root_dir_path,
-                    "TOWER"
+                    "TOWER",
+                    credential['ssh_port_str']
                 )
 
                 try:
@@ -827,7 +867,7 @@ class ExecuteDirector():
 
                 except Exception as e:
                     errorMessage = g.appmsg.get_api_message("MSG-10570")
-                    self.ExceptionErrorLog(e, errorMessage, "")
+                    self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
                 else:
@@ -838,12 +878,19 @@ class ExecuteDirector():
                             endlog = "[Trace] Transfer material updated to ansible automation controller done."
                             g.applogger.info(startlog)  # 外部アプリへの処理開始・終了ログ
 
+                            # shell実行の場合にcapture_output=Trueだとstderrは取得できない模様
                             ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
                             g.applogger.info(endlog)
+                    except subprocess.CalledProcessError as e:
+                        errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
+                        # shell実行の場合にstderrが出力されない場合あり、exitcode出力
+                        self.ExceptionErrorLog(e, errorMessage, tmp_log_file, self.LocalShellExitCodeToErrorMsg(e.returncode))
+                        return False
+
                     except Exception as e:
                         errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
-                        self.ExceptionErrorLog(e, errorMessage, tmp_log_file)
+                        self.ExceptionErrorLog(e, errorMessage, "", "")
                         return False
 
             if os.path.isfile(tmp_log_file):
@@ -859,7 +906,7 @@ class ExecuteDirector():
             ########################################################################################################
             src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_TOWER_PATH] + "/*";
             dest_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_OUT_ITA_PATH]
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
@@ -869,7 +916,8 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 root_dir_path,
-                "TOWER"
+                "TOWER",
+                credential['ssh_port_str']
             )
 
             try:
@@ -877,7 +925,7 @@ class ExecuteDirector():
 
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
             else:
@@ -888,13 +936,19 @@ class ExecuteDirector():
                         endlog = "[Trace] Transfer material updated to ansible automation controller done."
                         g.applogger.info(startlog)  # 外部アプリへの処理開始・終了ログ
 
+                        # shell実行の場合にcapture_output=Trueだとstderrは取得できない模様
                         ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
                         g.applogger.info(endlog)
+                except subprocess.CalledProcessError as e:
+                    errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
+                    # shell実行の場合にstderrが出力されない場合あり、exitcode出力
+                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file, self.LocalShellExitCodeToErrorMsg(e.returncode))
+                    return False
 
                 except Exception as e:
                     errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
-                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file)
+                    self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
             if os.path.isfile(tmp_log_file):
@@ -910,7 +964,7 @@ class ExecuteDirector():
             ########################################################################################################
             src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_TOWER_PATH]
             dest_path = os.path.dirname(self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_ITA_PATH])
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
@@ -920,7 +974,8 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 root_dir_path,
-                "TOWER"
+                "TOWER",
+                credential['ssh_port_str']
             )
 
             try:
@@ -928,7 +983,7 @@ class ExecuteDirector():
 
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
             else:
@@ -939,12 +994,19 @@ class ExecuteDirector():
                         endlog = "[Trace] Transfer material updated to ansible automation controller done."
                         g.applogger.info(startlog)  # 外部アプリへの処理開始・終了ログ
 
+                        # shell実行の場合にcapture_output=Trueだとstderrは取得できない模様
                         ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
                         g.applogger.info(endlog)
+                except subprocess.CalledProcessError as e:
+                    errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
+                    # shell実行の場合にstderrが出力されない場合あり、exitcode出力
+                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file, self.LocalShellExitCodeToErrorMsg(e.returncode))
+                    return False
+
                 except Exception as e:
                     errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
-                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file)
+                    self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
             if os.path.isfile(tmp_log_file):
@@ -960,7 +1022,7 @@ class ExecuteDirector():
             ########################################################################################################
             src_path = self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_FILE_TOWER_PATH]
             dest_path = os.path.dirname(self.vg_TowerProjectsScpPathArray[AnscConst.DF_SCP_IN_PARAMATERS_FILE_ITA_PATH])
-            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
+            info = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n" % (
                 credential['host_name'],
                 credential['auth_type'],
                 credential['username'],
@@ -970,7 +1032,8 @@ class ExecuteDirector():
                 dest_path,
                 credential['ssh_key_file_pass'],
                 root_dir_path,
-                "TOWER"
+                "TOWER",
+                credential['ssh_port_str']
             )
 
             try:
@@ -978,7 +1041,7 @@ class ExecuteDirector():
 
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
             else:
@@ -992,9 +1055,15 @@ class ExecuteDirector():
                         ret = subprocess.run(cmd, check=True, stdout=fp, stderr=subprocess.STDOUT)
 
                         g.applogger.info(endlog)
+                except subprocess.CalledProcessError as e:
+                    errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
+                    # shellの場合にstderrが出力されない場合あり、exitcode出力
+                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file, self.LocalShellExitCodeToErrorMsg(e.returncode))
+                    return False
+
                 except Exception as e:
                     errorMessage = g.appmsg.get_api_message("MSG-10067", [credential['host_name']])
-                    self.ExceptionErrorLog(e, errorMessage, tmp_log_file)
+                    self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
             if os.path.isfile(tmp_log_file):
@@ -1025,6 +1094,12 @@ class ExecuteDirector():
 
         chkobj = AuthTypeParameterRequiredCheck()
         for row in rows:
+            # sshポート番号のデフォルト値設定
+            if not row['ANSTWR_PORT']:
+                ssh_port_str = "22"
+            else:
+                ssh_port_str = str(row['ANSTWR_PORT'])
+
             if 'ANSTWR_ISOLATED_TYPE' in row and row['ANSTWR_ISOLATED_TYPE'] is not None and row['ANSTWR_ISOLATED_TYPE'] == 1:
                 node_type = AnscConst.DF_EXECUTE_NODE
 
@@ -1053,7 +1128,7 @@ class ExecuteDirector():
 
                     except Exception as e:
                         errorMessage = g.appmsg.get_api_message("MSG-10636", [os.path.basename(src_file)])
-                        self.ExceptionErrorLog(e, errorMessage, "")
+                        self.ExceptionErrorLog(e, errorMessage, "", "")
                         return False, TowerHostList
 
                     # ky_encryptで中身がスクランブルされているので復元する
@@ -1068,7 +1143,7 @@ class ExecuteDirector():
 
                     except Exception as e:
                         errorMessage = g.appmsg.get_api_message("MSG-10085", [inspect.currentframe().f_lineno])
-                        self.ExceptionErrorLog(e, errorMessage, "")
+                        self.ExceptionErrorLog(e, errorMessage, "", "")
                         return False, TowerHostList
 
             sshKeyFilePass = "undefine"
@@ -1097,7 +1172,8 @@ class ExecuteDirector():
                 "password": password,
                 "ssh_key_file": sshKeyFile,
                 "ssh_key_file_pass": sshKeyFilePass,
-                "node_type": node_type
+                "node_type": node_type,
+                "ssh_port_str": ssh_port_str
             }
 
             TowerHostList.append(credential)
@@ -2098,7 +2174,7 @@ class ExecuteDirector():
 
                 except Exception as e:
                     errorMessage = "CreateLogs Faild to write file. %s" % (jobFileFullPath)
-                    self.ExceptionErrorLog(e, errorMessage, "")
+                    self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
                 if JobData['name'] not in self.jobOrgLogFileList:
@@ -2119,7 +2195,7 @@ class ExecuteDirector():
 
                 except Exception as e:
                     errorMessage = "CreateLogs Faild to write file. %s" % (jobFileFullPath)
-                    self.ExceptionErrorLog(e, errorMessage, "")
+                    self.ExceptionErrorLog(e, errorMessage, "", "")
                     return False
 
                 # 加工ログファイル
@@ -2168,7 +2244,7 @@ class ExecuteDirector():
 
         except Exception as e:
             errorMessage = "AllCreateLogs Faild to write file."
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             return False
 
         # 全ジョブの加工ログファイル
@@ -2187,7 +2263,7 @@ class ExecuteDirector():
 
         except Exception as e:
             errorMessage = "AllCreateLogs Faild to write file."
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             return False
 
         return True
@@ -2210,7 +2286,7 @@ class ExecuteDirector():
 
             except Exception as e:
                 errorMessage = "Faild to write message."
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
 
     def getMaterialsTransferDestinationPath(self, PathId, execution_no):
 
@@ -2313,7 +2389,7 @@ class ExecuteDirector():
 
         except Exception as e:
             errorMessage = g.appmsg.get_api_message("MSG-10018", [""])
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             return False
 
         # git clone ～ git push
@@ -2325,21 +2401,21 @@ class ExecuteDirector():
             g.applogger.info("[Trace] git clone start. url:{}".format(http_repo_url))   # 外部アプリへの処理開始・終了ログ
 
             os.chdir(repositories_base_path)
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             g.applogger.info("[Trace] git clone done.")
 
             cmd = "/bin/cp -rf %s %s" % (SrcFilePath, self.gitLoaclRepositoriesPath)
-            subprocess.run(cmd, check=True, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
 
             os.chdir(self.gitLoaclRepositoriesPath)
             git_username = g.gitlab_connect_info.get('GITLAB_USER')
             cmd = ["git", "config", "--local", "user.name", git_username]
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             git_email = '%s@example.com' % (git_username.lower())
             cmd = ["git", "config", "--local", "user.email", git_email]
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             cmd = ["git", "add", "."]
             self.gitCommandRetry(cmd)
@@ -2355,27 +2431,27 @@ class ExecuteDirector():
         except subprocess.CalledProcessError as e:
             t = traceback.format_exc()
             self.errorLogOut(arrange_stacktrace_format(t))
-            log = e.stdout.decode()
+            log = "stdout:%s\nstderr:%s" % (e.stdout,e.stderr)
             log = '%s\n%s' % (log, g.appmsg.get_api_message("MSG-10018", [cmd]))
             self.errorLogOut(log)
             return False
 
         except Exception as e:
             errorMessage = g.appmsg.get_api_message("MSG-10018", [""])
-            self.ExceptionErrorLog(e, errorMessage, "")
+            self.ExceptionErrorLog(e, errorMessage, "", "")
             return False
 
         return True
 
     def gitCommandRetry(self, cmd):
         try:
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
         except subprocess.CalledProcessError as e:
             # 詳細ログの取得を設定し、 gitコマンドをリトライする。
             os.environ["GIT_TRACE"] = 'true'
             os.environ["GIT_TRACE_SETUP"] = 'true'
             os.environ["GIT_CURL_VERBOSE"]= 'true'
-            subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
             os.environ.pop('GIT_TRACE',None)
             os.environ.pop('GIT_TRACE_SETUP',None)
             os.environ.pop('GIT_CURL_VERBOSE',None)
@@ -2407,10 +2483,16 @@ class ExecuteDirector():
         if os.path.exists(src_path):
             cmd = ["/bin/rm", "-rf", src_path]
             try:
-                subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+            except subprocess.CalledProcessError as e:
+                errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
+                self.ExceptionErrorLog(e, errorMessage, "", e.stderr)
+                return False
+
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10017", [cmd])
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
         return True
@@ -2513,10 +2595,15 @@ class ExecuteDirector():
         if os.path.exists(SrcFilePath):
             cmd = ["/bin/rm", "-rf", SrcFilePath]
             try:
-                subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                subprocess.run(cmd, capture_output=True, text=True, check=True)
+            except subprocess.CalledProcessError as e:
+                errorMessage = 'Failed to delete Git repository.(%s)' % (str(cmd))
+                self.ExceptionErrorLog(e, errorMessage, "", e.stderr)
+                return False
+
             except Exception as e:
                 errorMessage = 'Failed to delete Git repository.(%s)' % (str(cmd))
-                self.ExceptionErrorLog(e, errorMessage, "")
+                self.ExceptionErrorLog(e, errorMessage, "", "")
                 return False
 
         return True
@@ -2739,13 +2826,33 @@ class ExecuteDirector():
         AACCreateObjectIdDict = json.loads(jsonstr)
         return AACCreateObjectIdDict
 
-    def ExceptionErrorLog(self, e, errorMessage, logfile):
+    def ExceptionErrorLog(self, e, errorMessage, stderrlogfile, stderrmsg=""):
         if errorMessage:
             self.errorLogOut(errorMessage)
-        if logfile:
-            if os.path.isfile(logfile):
-                log = pathlib.Path(logfile).read_text()
+
+        if stderrmsg:
+            self.errorLogOut(stderrmsg)
+
+        if stderrlogfile:
+            if os.path.isfile(stderrlogfile):
+                log = pathlib.Path(stderrlogfile).read_text()
                 self.errorLogOut(log)
         t = traceback.format_exc()
         self.errorLogOut(arrange_stacktrace_format(t))
         self.errorLogOut(str(e))
+
+    def LocalShellExitCodeToErrorMsg(self, exit_code):
+        exit_code = str(exit_code)
+        ErrorMsg = {}
+        ErrorMsg["100"] = "ssh-agent error (exit code:%s)"
+        ErrorMsg["200"] = "ssh Authentication timeout (exit code:%s)"
+        ErrorMsg["201"] = "ssh Authentication method error (exit code:%s)"
+        ErrorMsg["202"] = "ssh Authentication error (exit code:%s)"
+        ErrorMsg["203"] = "The specified authentication method is unexpected (exit code:%s)"
+        ErrorMsg["others"] = "Unexpected error (exit code: %s)"
+        exit_code = str(exit_code)
+        if exit_code in ("100","200","201","202","203"):
+            ReturnMsg = ErrorMsg[exit_code] % (exit_code)
+        else:
+            ReturnMsg = ErrorMsg["others"] % (exit_code)
+        return ReturnMsg

@@ -1421,13 +1421,12 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         msg_args = e.args[1]
         return False, result_code, msg_args, None
 
-    # import_menu/import/アップロードIDのディレクトリを削除する
-    if os.path.isdir(import_path):
-        shutil.rmtree(import_path)
-
-    is_file = os.path.isfile(import_path + '_ita_data.tar.gz')
-    if is_file is True:
-        os.remove(import_path + '_ita_data.tar.gz')
+    try:
+        # import_menu/import/アップロードIDのディレクトリを削除する
+        if os.path.isdir(import_path):
+            shutil.rmtree(import_path)
+    except Exception as e:
+        g.applogger.debug("Failed to delete: {} ({})".format(e, import_path))
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')
@@ -1760,3 +1759,41 @@ def _format_loadtable_msg(loadtable_msg):
         result_msg[key] = msg_list
 
     return result_msg
+
+
+def create_upload_parameters(connexion_request, key_name):
+    """
+    create_upload_parameters
+        Use connexion.request
+            - application/json
+            - multipart/form-data
+        Parameter generation from xxxx
+            - application/json
+                connexion.request.get_json()
+            - multipart/form-data
+                connexion_request.files
+            => { "key_name": { "name":"", "base64":"" }}
+    Arguments:
+        connexion_request: connexion.request
+    Returns:
+        bool, upload_data,
+    """
+
+    upload_data = {}
+    # if connexion_request:
+    if connexion_request.is_json:
+        # application/json
+        upload_data = dict(connexion_request.get_json())
+    elif connexion_request.files:
+        # get files & set parameter['file'][rest_name]
+        for _file_key in connexion_request.files:
+            # set key_name -> name, base64
+            _file_data = connexion_request.files[_file_key]
+            _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
+            upload_data.setdefault(key_name, {})
+            upload_data[key_name]["name"] = _file_data.filename
+            upload_data[key_name]["base64"] = _str_b64_file_data
+    else:
+        return False, {},
+
+    return True, upload_data,

@@ -1173,7 +1173,6 @@ class CreateAnsibleExecFiles():
         # ドライバ区分を判定
         if self.getAnsibleDriverID() in [self.AnscObj.DF_LEGACY_DRIVER_ID, self.AnscObj.DF_PIONEER_DRIVER_ID]:
             # ホスト変数定義ファイル作成
-            # enomoto未テスト
             if self.CreateHostvarsfiles(ina_host_vars, ina_pioneer_template_host_vars,
                                         ina_host_child_vars, ina_DB_child_vars_master) is False:
                 return False
@@ -9539,7 +9538,7 @@ class CreateAnsibleExecFiles():
                             mt_pionner_template_host_vars[row['HOST_NAME']][row['VARS_NAME']] = ""
 
                         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
-                            #  複数具体値変数は対話ファイルの変数の具体値に置換　enomoto これはなんの為？
+                            #  複数具体値変数は対話ファイルの変数の具体値に置換
                             if row['VARS_NAME'] in mt_vault_vars:
                                 del mt_vault_vars[row['VARS_NAME']]
 

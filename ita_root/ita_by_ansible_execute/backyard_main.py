@@ -24,7 +24,7 @@ from operator import itemgetter
 
 from flask import g
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import get_timestamp, get_all_execution_limit, get_org_execution_limit
+from common_libs.common.util import get_timestamp, get_all_execution_limit, get_org_execution_limit, get_maintenance_mode_setting
 from common_libs.ci.util import log_err
 from common_libs.ansible_driver.functions.util import rmAnsibleCreateFiles, get_OSTmpPath
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
@@ -67,6 +67,18 @@ def main_logic(common_db):
         ansibleAg = KubernetesMode()
 
     try:
+        # メンテナンスモードのチェック
+        try:
+            maintenance_mode = get_maintenance_mode_setting()
+            # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
+            if str(maintenance_mode['data_update_stop']) == "1":
+                g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
+                return True
+        except Exception:
+            # エラーログ出力
+            g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+            return False
+
         # システム全体の同時実行数取得
         all_execution_limit = get_all_execution_limit("ita.system.ansible.execution_limit")
         # organization毎の同時実行数取得
@@ -82,6 +94,11 @@ def main_logic(common_db):
             return False
 
         if len(execution_list) == 0:
+            return True
+
+        # backyard_execute_stopの値が"1"の場合、メンテナンス中のためreturnする。
+        if str(maintenance_mode['backyard_execute_stop']) == "1":
+            g.applogger.debug(g.appmsg.get_log_message("BKY-00006", []))
             return True
 
         # 現在の実行数

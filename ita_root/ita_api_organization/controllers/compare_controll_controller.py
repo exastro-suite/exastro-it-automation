@@ -20,6 +20,7 @@ from common_libs.api import api_filter
 from common_libs.common import menu_info
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import compare_controll, menu_filter
+from flask import g
 
 
 @api_filter
@@ -83,6 +84,10 @@ def post_compare_execute(organization_id, workspace_id, menu, body=None):  # noq
 
     :rtype: InlineResponse2006
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00018"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -127,6 +132,10 @@ def post_compare_execute_output(organization_id, workspace_id, menu, body=None):
 
     :rtype: InlineResponse20021
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00018"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -172,6 +181,10 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  
 
     :rtype: InlineResponse2006
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00018"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405

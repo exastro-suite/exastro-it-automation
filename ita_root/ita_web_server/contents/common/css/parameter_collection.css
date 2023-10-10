@@ -1,0 +1,883 @@
+@charset "utf-8";
+/* CSS Document */
+
+.parameterContainer {
+display: flex;
+flex-direction: column;
+height: 100%;
+}
+.parameterContainer > div {
+min-height: 0;
+}
+.parameterHeader {
+flex: 0 0 auto;
+}
+.parameterBody {
+display: flex;
+flex: 1 1 auto;
+gap: 16px;
+}
+.parameterBody > div {
+min-width: 0;
+}
+.parameterSide {
+flex: 0 0 auto;
+display: flex;
+flex-direction: column;
+gap: 8px;
+width: 220px;
+height: 100%;
+padding-right: 16px;
+border-right: 1px solid rgba( 0,0,0,.2 );
+}
+.parameterInfo {
+overflow: auto;
+flex: 1 1 auto;
+min-height: 0;
+}
+.parameterSet {
+flex: 0 0 32px;
+min-height: 0;
+}
+.parameterSetButton {
+width: 100%;
+}
+.parameterBody .commonBody {
+margin: 8px 0 16px;
+}
+.parameterMain {
+overflow: auto;
+flex: 1 1 auto;
+height: 100%;
+}
+.parameterBlock {
+position: relative;
+min-height: 100px;
+margin-top: 8px;
+background-color: #FEFEFE;
+border: 1px solid rgba(8, 8, 8, 0.1);
+}
+.parameterBlockHeader {
+overflow: hidden;
+display: flex;
+gap: 16px;
+min-height: 44px;
+border-bottom: 1px solid rgba(8, 8, 8, 0.1);
+}
+.parameterBlockName {
+display: flex;
+align-items: center;
+position: relative;
+z-index: 0;
+min-width: 0;
+padding: 8px 16px 6px 44px;
+line-height: 1.2;
+letter-spacing: .75px;
+word-break: break-all;
+font-size: 16px;
+font-weight: bold;
+color: var(--black80);
+}
+.parameterBlockName::before,
+.parameterBlockName::after {
+content: '';
+display: block;
+position: absolute;
+left: 12px; top: 50%;
+transform: translateY(-50%);
+width: 24px; height: 18px;
+}
+.parameterBlockName::before {
+z-index: 0;
+background-color: var(--mainColor10);
+border: 2px solid var(--mainColor40);
+}
+.parameterBlockName::after {
+z-index: 1;
+background-image: linear-gradient( transparent 5px, var(--mainColor40) 5px, var(--mainColor40) 6px, transparent 6px ),
+linear-gradient( 90deg, transparent 6px, var(--mainColor40) 6px, var(--mainColor40) 7px, transparent 7px );
+}
+.parameterBlockMenu {
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 0 8px;
+margin-left: auto;
+}
+.parameterEditOpen {
+height: 24px;
+line-height: 24px;
+font-size: 12px;
+}
+
+.parameterBlockBody {
+display: flex;
+gap: 8px;
+padding: 8px;
+}
+.parameterBlockTableBody {
+flex: 1 1 100%;
+min-width: 0;
+}
+.parameterMessage,
+.commonMessage {
+height: 100%;
+}
+.targetList {
+padding: 4px;
+}
+.targetItem {
+position: relative;
+margin-bottom: 4px;
+padding: 2px 4px 4px 10px;
+border-bottom: 1px solid rgba( 0,0,0,.1 );
+word-break: break-all;
+line-height: 1.3;
+font-size: 12px;
+}
+.targetItem::before {
+content: '';
+position: absolute;
+left: 0; top: 4px;
+width: 4px;
+height: calc( 100% - 12px );
+background-color: var(--mainColor40);
+}
+.targetItem:last-child {
+margin-bottom: 0; padding-bottom: 0;
+border-bottom: none;
+}
+.targetItem:last-child::before {
+height: calc( 100% - 8px );
+}
+.targetNoSelect {
+padding: 8px;
+background-color: rgba(0,0,0,.01);
+border: 1px solid rgba(0,0,0,.05);
+text-align: center;
+font-size: 11px;
+color: rgba(0,0,0,.3);
+}
+.darkmode .targetNoSelect {
+color: rgba(255,255,255,.3);
+}
+.operationTimelineHide .operationTimeline {
+display: none;
+}
+.operationTimeline {
+overflow: hidden;
+position: relative;
+flex: 0 0 200px;
+margin-bottom: 16px;
+background-color: #FEFEFE;
+border: 1px solid rgba(0,0,0,.15);
+}
+.operationTimelineBody {
+position: relative;
+height: 100%;
+}
+
+
+.operationTimeLineDateTable {
+position: absolute;
+left: 0; top: 0;
+width: 100%; height: 100%;
+table-layout: fixed;
+}
+.operationTimeLineDateMonth .operationTimeLineDateTd,
+.operationTimeLineDateDate .operationTimeLineDateTd {
+height: 24px;
+background-color: rgba(0,0,0,.025);
+vertical-align: middle;;
+}
+.operationTimeLineDateDate .operationTimeLineDateTd {
+height: 16px;
+border-bottom: 1px solid rgba(0,0,0,.1);
+text-align: center;
+}
+.operationTimeLineDateTd {
+border-left: 1px solid rgba(0,0,0,.1);
+}
+.operationTimeLineDateInner {
+display: inline-block;
+white-space: nowrap;
+position: sticky;
+left: 2px;
+padding: 4px;
+color: #666;
+font-size: 10px;
+}
+.operationTimeLineDateMonth .operationTimeLineDateInner {
+font-weight: bold;
+font-size: 11px;
+}
+
+.operationTimelineOperationList {
+position: absolute;
+left: 0; top: 0;
+z-index: 10;
+width: 100%; height: 100%;
+}
+.operationTimelineOperationList::after {
+content: '';
+position: absolute;
+left: 0; bottom: 40px;
+z-index: -1;
+width: 100%; height: 2px;
+background-color: var(--mainColor40);
+}
+
+
+.operationTimelineOperationItem,
+.operationTimelineOperationBlockItem {
+position: absolute;
+bottom: 32px;
+width: 16px; height: 16px;
+background-color: #FFF;
+border: 2px solid var(--mainColor40);
+border-radius: 50%;
+}
+.operationTimelineOperationItem {
+transform: translateX(-8px);
+}
+.operationTimelineOperationGroupItem {
+border-radius: 0;
+}
+.operationTimelineOperationGroupItem[data-checked="some"]::after,
+.operationTimelineOperationGroupItem[data-checked="full"]::after {
+content: '';
+display: block;
+position: absolute;
+left: 50%; top: 50%;
+transform: translate(-50%,-50%);
+width: 8px; height: 8px;
+background-color: var(--accentColor100);
+}
+.operationTimelineOperationGroupItem[data-checked="some"]::after {
+height: 2px;
+}
+.operationTimelineOperationBlockItem {
+position: inherit;
+}
+.operationTimelineOperationItem:hover {
+z-index: 1000;
+}
+.operationTimelineOperation {
+position: absolute;
+left: -2px; top: -2px;
+width: 16px; height: 16px;
+transform-origin: center center;
+}
+.operationTimelineLabel {
+position: absolute;
+left: 0; top: 0;
+width: 16px; height: 16px;
+cursor: pointer;
+user-select: none;
+}
+.operationTimelineOperationBlockButton {
+position: absolute;
+left: 0; top: 0;
+width: 16px; height: 16px;
+background-color: transparent;
+border: none;
+cursor: pointer;
+user-select: none;
+}
+.operationTimelineOperationName {
+overflow: hidden;
+text-overflow: ellipsis;
+position: absolute;
+left: 0; top: -6px;
+transform-origin: 8px center;
+transform: rotate(-45deg) translateX(18px);
+max-width: 132px;
+padding: 0 8px;
+background-color: #FFF;
+border: 2px solid var(--mainColor40);
+border-radius: 32px;
+white-space: nowrap;
+line-height: 20px;
+}
+.operationTimelineOperationGroupName {
+max-width: 168px;
+padding-right: 0;
+border: none;
+}
+.operationTimelineLabel:hover .operationTimelineOperationName {
+border-color: var(--accentColor100);
+}
+.operationTimelineCheckbox:checked ~ .operationTimelineLabel .operationTimelineOperationName {
+background-color: var(--accentColor100);
+border-color: var(--accentColor100);
+color: #FFF;
+}
+.operationTimelineCheckbox {
+position: absolute;
+left: 0; top: 0;
+z-index: -1;
+opacity: 0;
+}
+.operationTimelineCheckbox:checked ~ .operationTimelineLabel::after {
+content: '';
+position: absolute;
+left: 4px; top: 4px;
+width: 8px; height: 8px;
+background-color: var(--accentColor100);
+border-radius: 50%;
+}
+.operationTimelineOperationBlock {
+display: none;
+overflow: auto;
+position: absolute;
+left: 18px; bottom: -10px;
+z-index: 2000;
+width: 200px; height: 128px;
+background-color: #FFF;
+border: 1px solid rgba(0,0,0,.1);
+border-radius: 4px;
+box-shadow: 2px 2px 0 rgba(0,0,0,.1);
+}
+.operationTimelineOperationGroupItemOpen {
+border-color: var(--accentColor100);
+z-index: 1000;
+}
+.operationTimelineOperationGroupItemOpen .operationTimelineOperationBlock {
+display: block;
+}
+.operationTimelineOperationGroupItemOpen .operationTimelineOperationGroup {
+display: none;
+}
+.operationTimelineOperationBlock .operationTimelineOperationName {
+transform: translateX(18px);
+top: -4px;
+max-width: 146px;
+}
+.operationTimelineOperationBlockList {
+position: relative;
+width: 100%; min-height: 100%;
+padding: 12px 8px;
+}
+.operationTimelineOperationBlockList::after {
+content: '';
+display: block;
+position: absolute;
+left: 15px; top: 0;
+z-index: 0;
+height: 100%; width: 2px;
+background-color: var(--mainColor40);
+}
+.operationTimelineOperationBlockItem {
+position: relative;
+z-index: 1;
+bottom: 0;
+margin-bottom: 14px;
+}
+.operationTimelineOperationBlockItem:last-child {
+margin-bottom: 0;
+}
+
+.operationTimelineBar {
+position: absolute;
+left: 0; bottom: 4px;
+z-index: 20;
+width: 100%;
+height: 16px;
+background-color: rgba(0,0,0,.1);
+user-select: none;
+}
+.operationTimelineRange {
+position: absolute;
+bottom: 0; left: 0;
+width: 100%; height: 100%;
+background-color: var(--mainColor50);
+background-image: linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.2));
+cursor: pointer;
+}
+.operationTimelineRangeStart,
+.operationTimelineRangeEnd {
+position: absolute;
+left: 0; top: 0;
+width: 8px; height: 100%;
+background-color: #BBB;
+border-left: 1px solid rgba(255,255,255,.3);
+border-top: 1px solid rgba(255,255,255,.3);
+border-right: 1px solid rgba(0,0,0,.2);
+border-bottom: 1px solid rgba(0,0,0,.2);
+cursor: col-resize;
+box-shadow: 0 0 0 1px rgba(0,0,0,.6);
+}
+.operationTimelineRangeEnd {
+left: auto; right: 0;
+}
+.operationTimelineRangeStart::after,
+.operationTimelineRangeEnd::after {
+content: '';
+position: absolute;
+left: 50%; top: 50%;
+transform: translate(-50%,-50%);
+width: 2px; height: 60%;
+border-right: 1px solid rgba(255,255,255,.5);
+border-left: 1px solid rgba(0,0,0,.3);
+}
+
+
+.commonSubTitle:first-child {
+margin-top: 0;
+}
+
+.targetHostItem .radioTextLabel {
+padding: 0;
+}
+.targetNoHost .checkboxTextLabel {
+padding: 0 2px;
+}
+
+.targetNoHost {
+margin-bottom: 4px; padding-bottom: 4px;
+border-bottom: 1px solid rgba( 0,0,0,.1 );
+}
+.darkmode .targetNoHost {
+border-color: rgba(0,0,0,.3);
+}
+
+.mainTarget {
+position: sticky;
+top: 0;
+z-index: 10;
+display: flex;
+gap: 12px;
+padding: 12px 16px 10px;
+background-color: #FFF;
+background-image: linear-gradient( rgba(0,0,0,0), rgba(0,0,0,.05));
+border-top: 4px solid var(--mainColor70);
+border-bottom: 1px solid #FFF;
+box-shadow: 0 2px 2px rgba( 0,0,0,.05 );
+}
+
+.mainTargetType {
+position: relative;
+display: flex;
+white-space: nowrap;
+align-items: center;
+padding-right: 16px;
+font-size: 12px;
+color: rgba(0,0,0,.5);
+}
+.mainTargetType::after {
+content: '';
+position: absolute;
+right: 0; top: 50%;
+transform: translateY(-50%);
+width: 8px; height: 8px;
+border: 4px solid transparent;
+border-left-color: var(--accentColor100);
+}
+.mainTargetName {
+word-break: break-all;
+line-height: 1.2;
+font-size: 24px;
+font-weight: bold;
+color: var(--mainColor100);
+}
+/* Parameter menu */
+.parameterMenu {
+margin-top: 12px;
+}
+.parameterMenuList {
+display: flex;
+border-left: 1px solid #CCC;
+}
+.parameterMenuItem {
+padding: 0 8px;
+border-right: 1px solid #CCC;
+}
+.parameterMenuButton {
+padding: 4px 8px;
+background-color: transparent;
+border: none;
+border-radius: 4px;
+font-size: 11px;
+color: #333;
+cursor: pointer;
+}
+.parameterMenuButton:hover {
+background-color: rgba(0,0,0,.05);
+}
+.parameterMenuButton:disabled {
+opacity: .3;
+cursor: no-drop;
+}
+
+/* Parameter area table */
+.parameterArea .noData .tableBody  {
+display: none;
+}
+.parameterArea .noData .tableMessage {
+margin-top: 0;
+}
+.parameterArea .tableWrap {
+background-color: #F6F6F6;
+border: none;
+}
+.parameterArea .tableBody .table {
+transform: none;
+}
+.parameterArea .ci {
+padding: 2px 8px 1px;
+font-size: 12px;
+}
+.parameterArea .parameterTheadTh {
+background-color: #F6F6F6;
+}
+.parameterArea .tableHorizontal .tableWrap .tBodyTh,
+.parameterArea .tableHorizontal .tableWrap .tBodyTd {
+border-right-width: 1px;
+}
+.parameterArea .parameterTh .ci {
+padding: 4px 16px 2px;
+}
+.parameterArea .tableVertical .parameterSeparateTr .tBodyTh,
+.parameterArea .tableVertical .parameterSeparateTr .tBodyTd {
+border-bottom-color: var(--mainColor60)!important;
+}
+.parameterArea .tableVertical .tBodyTr:last-child .tBodyTh,
+.parameterArea .tableVertical .tBodyTr:last-child .tBodyTd,
+.parameterArea .tableVertical .parameterLast {
+border-bottom-style: solid;
+}
+.parameterArea .tableHorizontal .parameterSeparateTr .tBodyTh,
+.parameterArea .tableHorizontal .parameterSeparateTr .tBodyTd {
+border-right-color: var(--mainColor60)!important;
+}
+.parameterArea .parameterTh {
+color: var(--mainColor100);
+}
+.parameterArea .tableVertical .parameterTh {
+text-align: left;
+border-right-style: solid;
+border-bottom-color: var(--mainColor60)!important;
+border-left: 1px solid var(--mainColor60)!important;
+}
+.parameterArea .tableHorizontal .parameterTh {
+text-align: center;
+border-bottom-style: solid;
+border-right-color: var(--mainColor60)!important;
+border-top: 1px solid var(--mainColor60)!important;
+}
+.parameterArea .tBodyTh,
+.parameterArea .tBodyTd {
+border-bottom-width: 1px;
+}
+.parameterArea .tBodyTh,
+.parameterArea .tBodyTd,
+.parameterArea .tBodyTr:hover > .tBodyTh,
+.parameterArea .tBodyTr:hover > .tBodyTd {
+background-color: #FFF!important;
+}
+.parameterArea .parameterTh,
+.parameterArea .tBodyTr:hover .parameterTh {
+background-color: var(--mainColor10)!important;
+}
+.parameterArea .tableHorizontal .tBodyTd:last-child {
+border-bottom-style: solid;
+}
+.parameterArea .parameterBlankTd,
+.parameterArea .tBodyTr:hover > .parameterBlankTd  {
+background-color: #F2F2F2!important;
+}
+
+.noData .tableMessage {
+min-height: 120px;
+}
+
+.parameterPreset {
+display: flex;
+flex-direction: column;
+height: 100%;
+color: #DDD;
+}
+.parameterPresetHeader {
+flex: 0 0 36px;
+padding: 0 8px;
+background-color: rgba(255,255,255,.05);
+line-height: 36px;
+font-size: 11px;
+}
+.parameterPresetBody {
+flex: 1 1 auto;
+min-height: 0;
+}
+.parameterPresetListWrap {
+overflow: auto;
+width: 100%; height: 100%;
+direction: rtl;
+}
+.parameterPresetListWrap::-webkit-scrollbar {
+width: 12px;
+}
+.parameterPresetListWrap::-webkit-scrollbar-track {
+background: rgba(255,255,255,.05);
+}
+.parameterPresetListWrap::-webkit-scrollbar-thumb {
+background: #666;
+}
+/* Firefox */
+.parameterPresetListWrap {
+scrollbar-width: thin;
+scrollbar-color: #999 #222;
+}
+
+.parameterPresetList {
+direction: ltr;
+border-top: 1px solid rgba(0,0,0,.4);
+border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.parameterPresetItem {
+position: relative;
+}
+.parameterPresetButton {
+position: relative;
+display: block;
+width: 100%; min-height: 24px;
+padding: 4px 16px 4px 20px;
+background-color: var(--black80);
+border: none;
+border-top: 1px solid rgba(255,255,255,.1);
+border-bottom: 1px solid rgba(0,0,0,.4);
+text-decoration: none;
+text-shadow: 1px 1px 1px rgba(0,0,0,.5);
+box-shadow: none;
+word-break: break-all;
+text-align: left;
+line-height: 1.3;
+letter-spacing: .75px;
+font-size: 11px;
+color: #AAA;
+outline: none;
+cursor: pointer;
+}
+.parameterPresetButton::after {
+content: '';
+position: absolute;
+left: 8px; top: 50%;
+transform: translateY(-50%);
+width: 2px; height: 8px;
+border-right: 1px solid rgba(0,0,0,.4);
+border-left: 1px solid rgba(255,255,255,.2);
+}
+.parameterPresetButton:focus,
+.parameterPresetItem:hover .parameterPresetButton {
+background-image: linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,.05));
+}
+
+.prameterPresetItemMenu {
+display: none;
+position: absolute;
+right: 0; top: 0;
+height: calc( 100% - 2px );
+background-color: var(--black80);
+background-image: linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,.05));
+}
+.parameterPresetItem:hover .prameterPresetItemMenu {
+display: block;
+}
+.parameterPresetItemMenuList {
+display: flex;
+gap: 8px;
+align-items: center;
+height: 100%;
+padding: 0 8px;
+}
+.parameterPresetItemMenuButton {
+height: 24px;
+line-height: 24px;
+outline: none;
+}
+.parameterPresetItemMenuButton .icon {
+margin: 0;
+color: #EEE;
+font-size: 12px;
+}
+.parameterPresetItemMenuButton:hover,
+.parameterPresetItemMenuButton:focus {
+opacity: .5;
+}
+.parameterPresetItemMenuButton:hover > .inner,
+.parameterPresetItemMenuButton:focus > .inner {
+background-image: none;
+}
+.noPresetData {
+padding: 16px 8px;
+border-top: 1px solid rgba(255,255,255,.1);
+direction: ltr;
+text-align: center;
+font-size: 11px;
+opacity: .5;
+}
+
+/* Parameter loading */
+.parameterLoading {
+display: none;
+}
+.parameterStandby .parameterArea,
+.parameterStandby .parameterMenu,
+.parameterStandby .mainTarget {
+position: absolute;
+z-index: -1;
+}
+.parameterStandby .parameterLoading {
+display: block;
+}
+
+/* プリント */
+.parameterPrint .containerHeader,
+.parameterPrint #menu,
+.parameterPrint .contentHeader,
+.parameterPrint .parameterHeader,
+.parameterPrint .operationTimeline,
+.parameterPrint .parameterSide,
+.parameterPrint .parameterMenu,
+.parameterPrint .parameterBlockMenu {
+display: none;
+}
+.parameterPrint .section {
+padding: 0;
+}
+.parameterPrint,
+.parameterPrint #container,
+.parameterPrint .containerBody,
+.parameterPrint #main,
+.parameterPrint #content,
+.parameterPrint .contentInner,
+.parameterPrint .contentBody,
+.parameterPrint .section,
+.parameterPrint .sectionBody,
+.parameterPrint .parameterContainer,
+.parameterPrint .parameterBody,
+.parameterPrint .parameterMain {
+display: block!important;
+height: auto!important;
+background-color: transparent!important;
+background-image: none!important;
+}
+
+/* Darkmode */
+.darkmode .operationTimeline {
+background-color: rgba(0,0,0,.2);
+}
+.darkmode .operationTimeLineDateInner {
+color: #AAA;
+}
+.darkmode .operationTimeLineDateTd {
+border-color: rgba(0,0,0,.25);
+}
+.darkmode .operationTimelineOperationName {
+background-color: #111;
+color: #CCC;
+}
+.darkmode .operationTimelineOperationBlock {
+background-color: #222;
+}
+.darkmode .operationTimelineOperationItem,
+.darkmode .operationTimelineOperationBlockItem {
+background-color: #111;
+}
+.darkmode .operationTimelineOperationName {
+background-color: #2E3136;
+color: #CCC;
+}
+.darkmode .mainTargetType {
+color: #CCC;
+}
+.darkmode .mainTarget {
+background-color: #313439;
+border-bottom-color: #282B30;
+}
+.darkmode .mainTargetName {
+color: var(--mainColor10);
+}
+.darkmode .parameterMenuList,
+.darkmode .parameterMenuItem {
+border-color: rgba(0,0,0,.5);
+}
+.darkmode .parameterMenuButton {
+color: #CCC;
+}
+.darkmode .parameterMenuButton:hover {
+background-color: rgba(0,0,0,.2);
+}
+.darkmode .parameterBlock {
+background-color: rgba(0,0,0,.1);
+}
+.darkmode .parameterBlockName {
+color: #CCC;
+}
+.darkmode .parameterBlockName::before {
+background-color: #33373C;
+}
+.darkmode .parameterArea .tableWrap {
+background-color: rgba(0,0,0,.1);
+}
+.darkmode .parameterArea .tBodyTd,
+.darkmode .parameterArea .tBodyTr:hover > .tBodyTd {
+background-color: var(--rowEvenColor)!important;
+}
+.darkmode .parameterArea .parameterTh,
+.darkmode .parameterArea .tBodyTr:hover .parameterTh {
+background-color: var(--mainColor85)!important;
+}
+.darkmode .parameterArea .parameterBlankTd,
+.darkmode .parameterArea .tBodyTr:hover > .parameterBlankTd {
+background-color: #333!important;
+}
+.darkmode .parameterArea .parameterTheadTh {
+background-color: #2E3136;
+background-image: none;
+box-shadow: none;
+}
+
+/* list move */
+.commonItem.commonItemDummy {
+opacity: 0;
+}
+.commonList.active {
+position: relative;
+z-index: 0;
+user-select: none;
+cursor: grabbing;
+overflow: hidden;
+}
+.commonItem.move {
+background-color: #EEE;
+pointer-events: none;
+position: absolute;
+z-index: 10;
+left: 4px;
+}
+.darkmode .commonItem.move {
+background-color: #444;
+}
+.commonList.active .commonItem:last-child {
+margin-bottom: 4px;
+border-bottom: 1px solid rgba( 0,0,0,.1 );
+}
+
+.targetParameterItem {
+padding-left: 16px;
+cursor: grab;
+}
+.commonList.active .targetParameterItem {
+cursor: grabbing;
+}
+.targetParameterItem::before {
+content: '';
+display: block;
+width: 8px;
+background-color: transparent;
+background-image: linear-gradient( rgba( 0,0,0,.2 ) 50%, transparent 50% );
+background-size: 4px 4px;
+}
+.darkmode .targetParameterItem::before {
+background-image: linear-gradient( #999 50%, transparent 50% );
+}

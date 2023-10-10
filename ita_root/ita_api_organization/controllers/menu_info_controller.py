@@ -75,13 +75,17 @@ def get_menu_info(organization_id, workspace_id, menu):  # noqa: E501
 
     # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
     sheet_type_list = False     # シートタイプはすべて許容
-    menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+    menu_table_link_record, custom_file_list = menu_info.custom_check_sheet_type(menu, sheet_type_list, objdbca)
 
     # メニューに対するロール権限をチェック
     privilege = check_auth_menu(menu, objdbca)
 
     # メニューの基本情報および項目情報の取得
-    data = menu_info.collect_menu_info(objdbca, menu, menu_record, menu_table_link_record, privilege)
+    if len(custom_file_list) == 0:
+        data = menu_info.collect_menu_info(objdbca, menu, menu_record, menu_table_link_record, privilege)
+    else:
+        # 独自メニュー用の基本情報および項目情報の取得
+        data = menu_info.collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_list)
 
     return data,
 

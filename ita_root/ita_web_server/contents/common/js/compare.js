@@ -55,6 +55,12 @@ setRestApiUrls() {
 setup() {
     const cp = this;
 
+    cp.$ = {};
+    cp.$.content = $('#content').find('.sectionBody');
+
+    // ローディング表示
+    cp.$.content.addClass('nowLoading');
+
     fn.fetch( [ cp.rest.info, cp.rest.list ] ).then(function( result ){
         cp.info = result[0];
         cp.list = result[1];
@@ -71,15 +77,16 @@ setup() {
 init() {
     const cp = this;
 
-    cp.$ = {};
-    cp.$.content = $('#content').find('.sectionBody');
-
     cp.compareData = {
         compare: '',
         host: []
     };
 
-    cp.$.content.html( cp.compareHtml() );
+    cp.select = {
+        host: cp.info.list.host
+    };
+
+    cp.$.content.removeClass('nowLoading').html( cp.compareHtml() );
 
     cp.$.setting = cp.$.content.find('.compareSetting');
     cp.$.host = cp.$.content.find('.compareHost');
@@ -145,7 +152,7 @@ compareHtml() {
             + cp.compareSettingMessageHtml()
         + '</div>'
         + '<div class="compareHost compareBodyBlock">'
-            + cp.hostHtml( cp.info.list.host )
+            + cp.hostHtml( cp.select.host )
         + '</div>'
         + '<div class="compareResult compareBodyBlock">'
             + cp.compareResultMessageHtml()
@@ -248,11 +255,11 @@ compareSettingHtml( info ) {
 hostHtml( hostList ) {
     const cp = this;
 
+    cp.compareData.host = [];
+
     if ( !hostList.length ) {
         return cp.compareHostMessageHtml();
     }
-
-    cp.compareData.host = [];
 
     const html = ['<ul class="compareHostList">'];
     for ( const host of hostList ) {
@@ -308,8 +315,17 @@ compareEvents() {
             case 'hostSelect':
                 cp.selectModalOpen('host').then(function( result ){
                     if ( result ) {
-                        cp.$.host.html( cp.hostHtml( result ) );
+                        // 形式を合わせる
+                        cp.select.host = result.map(function( item ){
+                            if ( fn.typeof( item ) === 'object') {
+                                return item.name;
+                            } else {
+                                return item;
+                            }
+                        });
+                        cp.$.host.html( cp.hostHtml( cp.select.host ) );
                         cp.$.result.html( cp.compareResultMessageHtml() );
+                        cp.$.host.removeClass('compareExecuteHost');
                         cp.compareButtonCheck();
                     }
                 });
@@ -317,12 +333,22 @@ compareEvents() {
             case 'compare': {
                 $button.prop('disabled', true );
                 cp.getCompareSettingData();
+                cp.$.result.addClass('nowLoading').empty();
                 fn.fetch( cp.rest.compare, null, 'POST', cp.compareData ).then(function( result ){
                     cp.setCompareResult( result );
                 }).catch(function( error ){
-                    console.error( error );
-                    alert( getMessage.FTE06021);
+                    if ( fn.typeof( error ) === 'object') {
+                        if ( fn.typeof( error.message ) === 'string') {
+                            alert( error.message );
+                        } else {
+                            alert( getMessage.FTE06021 );
+                        }
+                    } else {
+                        alert( getMessage.FTE06021 );
+                    }
+                    cp.$.result.html( cp.compareResultMessageHtml() );
                 }).then(function(){
+                    cp.$.result.removeClass('nowLoading');
                     $button.prop('disabled', false );
                 });
             } break;
@@ -333,8 +359,15 @@ compareEvents() {
                     const fileName = fn.cv( result.file_name, '');
                     fn.download('base64', result.file_data, fileName );
                 }).catch(function( error ){
-                    console.error( error );
-                    alert( getMessage.FTE06033 );
+                    if ( fn.typeof( error ) === 'object') {
+                        if ( fn.typeof( error.message ) === 'string') {
+                            alert( error.message );
+                        } else {
+                            alert( getMessage.FTE06033 );
+                        }
+                    } else {
+                        alert( getMessage.FTE06033 );
+                    }
                 }).then(function(){
                     $button.prop('disabled', false );
                 });
@@ -390,6 +423,10 @@ selectModalOpen( type ) {
             selectConfig.filter = `/menu/${cp.menu}/compare/execute/filter/device_list/`;
             selectConfig.filterPulldown = `/menu/${cp.menu}/compare/execute/filter/device_list/search/candidates/`;
             selectConfig.selectType = 'multi';
+            selectConfig.unselected = true;
+            selectConfig.selectTextArray = cp.select.host;
+            selectConfig.selectTextArrayTextKey = 'host_name';
+            selectConfig.selectTextArrayIdKey = 'managed_system_item_number';
         } else {
             title = getMessage.FTE06001;
             selectConfig.infoData = cp.list.compare_list;
@@ -428,7 +465,7 @@ setCompareResult( info ) {
 
     let html = '';
 
-    const hostList = info.config.target_host_list,
+    const hostList = cp.compareData.host,
           cols = info.config.target_column_info;
 
     let comapreCount = 0;
@@ -437,7 +474,7 @@ setCompareResult( info ) {
 
     for ( const host of hostList ) {
         const hostName = fn.escape( host ),
-              compareData = info.compare_data[ host ];
+              compareData = ( info.compare_data )? info.compare_data[ host ]: null;
         if ( compareData ) {
             const compareFlag = fn.cv( info.compare_diff_flg[ host ], false );
             comapreCount++;
@@ -522,7 +559,7 @@ setCompareResult( info ) {
     + '</div>');
 
     if ( comapreCount > 0 ) {
-          cp.$.host.find('.compareExecuteItem').eq( 0 ).click();
+        cp.$.host.find('.compareExecuteItem').eq( 0 ).click();
     }
 
     // ファイル比較
@@ -533,6 +570,7 @@ setCompareResult( info ) {
 
         const fileDiffData = info.compare_data[ host ]._file_compare_execute_info[ name ];
 
+        $button.prop('disabled', true );
         fn.fetch(`/menu/${cp.menu}/compare/execute/file/`, null, 'POST', fileDiffData.parameter ).then(function(result){
             const config = {
                 className: 'diffModal',
@@ -544,7 +582,7 @@ setCompareResult( info ) {
                 width: '1600px',
                 footer: {
                     button: {
-                        close: { text: getMessage.FTE06031, action: 'normal'},
+                        cancel: { text: getMessage.FTE06031, action: 'normal'},
                         print: { text: getMessage.FTE06034, action: 'normal'}
                     }
                 }
@@ -552,9 +590,14 @@ setCompareResult( info ) {
             const func = {
                 print: function(){
                     modal.printBody();
+                },
+                cancel: function(){
+                    $button.prop('disabled', false );
+                    modal.close();
+                    modal = null;
                 }
             };
-            const modal = new Dialog( config, func );
+            let modal = new Dialog( config, func );
 
             const diffHtml = Diff2Html.html( result.unified_diff.diff_result, {
               drawFileList: false,
@@ -562,6 +605,15 @@ setCompareResult( info ) {
               outputFormat: 'side-by-side',
             });
             modal.open( diffHtml );
+        }).catch(function( error ){
+            if ( fn.typeof( error ) === 'object') {
+                if ( fn.typeof( error.message ) === 'string') {
+                    alert( error.message );
+                }
+            } else {
+                window.console.error( error );
+            }
+            $button.prop('disabled', false );
         });
     });
 }

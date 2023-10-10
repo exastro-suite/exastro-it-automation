@@ -489,9 +489,11 @@ class Column():
 
         if cmd_type != "Discard":
             # バリデーション必須
-            result_1 = self.is_valid_required(val, option)
-            if result_1[0] is not True:
-                return result_1
+            # 「復活(Restore)」かつ「PasswordColumn(ID:8)」の場合は必須チェックを行わない
+            if not (cmd_type == "Restore" and str(self.get_objcol().get('COLUMN_CLASS')) == "8"):
+                result_1 = self.is_valid_required(val, option)
+                if result_1[0] is not True:
+                    return result_1
 
             # バリデーション一意 DBアクセス
             result_2 = self.get_uniqued()
@@ -678,9 +680,14 @@ class Column():
                                             tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
                                             retBool = False
                                     else:
-                                        if jsonval == val:
+                                        # jsonvalとvalが両方「空」もしくは「null(None)」の組み合わせの場合にバリデーションエラーにする
+                                        if not jsonval and not val:
                                             tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
                                             retBool = False
+                                        else:
+                                            if jsonval == val:
+                                                tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
+                                                retBool = False
 
                     if not retBool:
                         status_code = 'MSG-00025'
@@ -700,8 +707,13 @@ class Column():
                     bind_value_list = [convert_val]
                 else:
                     # 通常のカラムの場合
-                    where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
-                    bind_value_list = [val]
+                    if not val:
+                        # 入力値が「空」もしくは「null(None)」の場合
+                        where_str = ' WHERE `DISUSE_FLAG` = 0 AND `{0}` = "" OR `{0}` IS NULL '.format(self.col_name)
+                        bind_value_list = []
+                    else:
+                        where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
+                        bind_value_list = [val]
 
                 if 'uuid' in option:
                     if option.get('uuid') is not None:

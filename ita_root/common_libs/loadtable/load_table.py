@@ -1234,7 +1234,10 @@ class loadTable():
             # 対象メニューのテーブルと「ロック対象テーブル」を昇順でロック
             locktable_list = self.get_locktable()
             if locktable_list is not None:
-                tmp_result = self.objdbca.table_lock([locktable_list])
+                locktable_list = json.loads(locktable_list)
+                locktable_list.append(self.get_table_name())
+                locktable_list = list(set(locktable_list))
+                tmp_result = self.objdbca.table_lock(locktable_list)
             else:
                 tmp_result = self.objdbca.table_lock([self.get_table_name()])
 
@@ -1981,12 +1984,27 @@ class loadTable():
                         if objcol is not None:
                             seve_type = self.get_save_type(tmp_constraint_key)
                             if seve_type == 'JSON':
-                                where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) = %s '.format(
-                                    self.get_col_name(tmp_constraint_key),
-                                    tmp_constraint_key,
-                                )
                                 val = parameter.get(tmp_constraint_key)
-                                bind_value_list.append(val)
+                                if val:
+                                    if val.lower() == "null":
+                                        # 文字列としての"null"はjsonとしてのnullと区別するようにwhere_strを作成する
+                                        where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = %s AND JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) != "NULL"'.format(  # noqa: E501
+                                            self.get_col_name(tmp_constraint_key),
+                                            tmp_constraint_key,
+                                        )
+                                        bind_value_list.append(val)
+                                    else:
+                                        where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{}`,"$.{}")) = %s '.format(
+                                            self.get_col_name(tmp_constraint_key),
+                                            tmp_constraint_key,
+                                        )
+                                        bind_value_list.append(val)
+                                else:
+                                    # 入力値が「空」および「JSONとしてのnull(None)」場合、登録されている値が「空」であるかどうかとJSON_TYPEがnullであるかどうかを判定する。
+                                    where_str = where_str + conjunction + ' JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) = "NULL" OR JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = ""'.format(  # noqa: E501
+                                        self.get_col_name(tmp_constraint_key),
+                                        tmp_constraint_key,
+                                    )
                                 objcolumn = self.get_columnclass(tmp_constraint_key)
                                 tmp_bool, tmp_msg, output_val = objcolumn.convert_value_output(val)
                                 dict_bind_kv.setdefault(tmp_constraint_key, output_val)
@@ -2200,7 +2218,15 @@ class loadTable():
                 try:
                     lastupdatetime_parameter = datetime.datetime.strptime(lastupdatetime_parameter, '%Y/%m/%d %H:%M:%S.%f')
                 except Exception:
-                    # 日付変換できないデータはバリデータのほうでエラーにする
+                    status_code = 'MSG-00028'
+                    msg_args = [lastupdatetime_parameter]
+                    msg = g.appmsg.get_api_message(status_code, msg_args)
+                    dict_msg = {
+                        'status_code': status_code,
+                        'msg_args': msg_args,
+                        'msg': msg,
+                    }
+                    self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
                     return
 
                 # 更新系の追い越し判定

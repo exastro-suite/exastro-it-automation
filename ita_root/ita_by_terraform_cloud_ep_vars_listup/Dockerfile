@@ -46,6 +46,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade dictknife \
 &&  pip3.9 install --upgrade pycryptodome \
 &&  pip3.9 install --upgrade python-hcl2 \
+&&  pip3.9 install --upgrade cryptography \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

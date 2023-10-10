@@ -17,6 +17,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter, check_request_body
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import menu_create as menu_create_lib
+from flask import g
 
 
 @api_filter
@@ -34,6 +35,10 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
 
     :rtype: InlineResponse20011
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -58,47 +63,6 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
         create_param = body
 
     result_data = menu_create_lib.menu_create_define(objdbca, create_param)
-    return result_data,
-
-
-@api_filter
-def execute_menu_create(organization_id, workspace_id, body=None):  # noqa: E501
-    """execute_menu_create
-
-    パラメータシート作成実行 # noqa: E501
-
-    :param organization_id: OrganizationID
-    :type organization_id: str
-    :param workspace_id: WorkspaceID
-    :type workspace_id: str
-    :param body:
-    :type body: dict | bytes
-
-    :rtype: InlineResponse20011
-    """
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)  # noqa: F405
-
-    # メニューの存在確認
-    menu = 'menu_creation_execution'
-    check_menu_info(menu, objdbca)
-
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['19']
-    check_sheet_type(menu, sheet_type_list, objdbca)
-
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
-
-    # bodyのjson形式チェック
-    check_request_body()
-
-    exec_target = {"create_new": {}, "initialize": {}, "edit": {}}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        exec_target = body
-
-    result_data = menu_create_lib.menu_create_execute(objdbca, exec_target)
     return result_data,
 
 
@@ -295,5 +259,124 @@ def get_reference_item(organization_id, workspace_id, menu, column):  # noqa: E5
                 raise e
 
     data = menu_create_lib.collect_pulldown_reference_item(objdbca, menu, column)
+
+    return data,
+
+
+@api_filter
+def get_parameter_collection(organization_id, workspace_id):  # noqa: E501
+    """get_parameter_collection
+
+    パラメータシートの一覧を取得する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # パラメータシートの一覧を取得する
+    data = menu_create_lib.collect_parameter_list(objdbca)
+
+    return data,
+
+
+@api_filter
+def get_parameter_collection_filter_terms_get(organization_id, workspace_id):
+    """get_parameter_collection_filter_terms_get
+
+    パラメータシートの検索条件を取得する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # パラメータシートの検索条件を取得する
+    data = menu_create_lib.collect_filter_terms(objdbca)
+
+    return data,
+
+
+@api_filter
+def get_parameter_collection_filter_terms_update(organization_id, workspace_id, body):
+    """get_parameter_collection_filter_terms_get
+
+    パラメータシートの検索条件を登録・更新する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00020"
+        raise AppException(status_code, [], [])  # noqa: F405
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # bodyのjson形式チェック
+    check_request_body()
+
+    parameter = {}
+    if connexion.request.is_json:
+        body = dict(connexion.request.get_json())
+        parameter = body
+
+    # パラメータシートの検索条件を取得する
+    data = menu_create_lib.update_filter_terms(objdbca, parameter)
+
+    return data,
+
+
+@api_filter
+def get_parameter_collection_filter_terms_delete(organization_id, workspace_id, uuid):
+    """get_parameter_collection_filter_terms_get
+
+    パラメータシートの検索条件を削除する
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+
+    :rtype: InlineResponse2001
+    """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00021"
+        raise AppException(status_code, [], [])  # noqa: F405
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # 「パラメーター集」メニューに対するロール権限をチェック
+    check_auth_menu('parameter_collection', objdbca)
+
+    # パラメータシートの検索条件を取得する
+    data = menu_create_lib.delete_filter_terms(objdbca, uuid)
 
     return data,

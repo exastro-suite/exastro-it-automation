@@ -459,3 +459,21 @@ CREATE INDEX IND_T_EVRL_REQUEST_METHOD_01 ON T_EVRL_REQUEST_METHOD (DISUSE_FLAG)
 
 
 
+-- イベント履歴
+CREATE TABLE T_EVRL_EVENT_HISTORY
+(
+    id                              VARCHAR(40),                                -- オブジェクトID
+    event_collection_settings_id    VARCHAR(40),                                -- イベント収集設定UUID
+    fetched_time                    DATETIME(6),                                -- イベント収集日時
+    end_time                        DATETIME(6),                                -- イベント有効日時
+    event_status                    VARCHAR(255),                               -- イベント状態
+    event_type                      VARCHAR(255),                               -- イベント種別
+    labels                          TEXT,                                       -- ラベル
+    rule_name                       VARCHAR(255),                               -- 評価ルール名
+    events                          TEXT,                                       -- 利用イベント
+    PRIMARY KEY(id)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+

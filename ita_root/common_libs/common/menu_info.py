@@ -698,13 +698,33 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
                   .find()
                   .sort(sort_key))
     result_list = collection.create_result(tmp_result)
-    search_candidates = [item.get(column) for item in result_list]
+
+    search_candidates = []
+    for item in result_list:
+        if column in item:
+            search_candidates.append(item[column])
 
     # 重複を排除したリストを作成
     # 値がobjectの可能性もあるため詰めなおす方式で実装
     result = []
     for item in search_candidates:
-        if item not in result:
-            result.append(item)
+        if isinstance(item, dict):
+            for key, value in item.items():
+                # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                tmp_str = '"' + key + '": "' + str(value) + '"'
 
-    return result
+                if tmp_str not in result:
+                    result.append(tmp_str)
+
+        elif isinstance(item, list):
+            for value in item:
+                if value not in result:
+                    # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                    # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                    result.append(str(value))
+        else:
+            if item not in result:
+                result.append(item)
+
+    return sorted(result)

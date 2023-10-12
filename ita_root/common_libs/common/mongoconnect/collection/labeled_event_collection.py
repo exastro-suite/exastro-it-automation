@@ -13,6 +13,7 @@
 #
 
 import datetime
+import json
 
 from bson.objectid import ObjectId
 from common_libs.common.mongoconnect.collection_base import CollectionBase
@@ -31,9 +32,14 @@ class LabeledEventCollection(CollectionBase):
         "_exastro_end_time"
     ]
 
+    LABELS_PARAMETER = None
+
     def _is_separated_supported_item(self, rest_key_name, type):
         # _exastro_event_statusにLISTが指定された場合$orを使用する必要があるため個別対応とした
         if rest_key_name == "_exastro_event_status" and type == "LIST":
+            return True
+
+        if rest_key_name == "labels":
             return True
 
         return False
@@ -46,7 +52,7 @@ class LabeledEventCollection(CollectionBase):
             "_exastro_fetched_time": ["labels._exastro_fetched_time"],
             "_exastro_end_time": ["labels._exastro_end_time"],
             "_exastro_type": ["labels._exastro_type"],
-            "_exastro_rule_name": ["exastro_rule.name"],
+            "_exastro_rule_name": ["labels._exastro_rule_name"],
             "_exastro_events": ["exastro_events"],
             "_exastro_event_status": ["labels._exastro_time_out", "labels._exastro_evaluated", "labels._exastro_undetected"]
         }
@@ -111,6 +117,11 @@ class LabeledEventCollection(CollectionBase):
 
             else:
                 return {}
+
+        if rest_key_name == "labels":
+            # labelsのフィルタリングは_format_result_valueで行うため、ここではフィールドへ値の退避のみ行う。
+            self.LABELS_PARAMETER = {type: value}
+            return {}
 
         return {rest_key_name: value}
 
@@ -207,5 +218,22 @@ class LabeledEventCollection(CollectionBase):
                 # eventsは再評価イベントを作成するきっかけとなったイベントの_idが格納されている。
                 # そのままではJSONとして扱えないため_idと同じように変換する。
                 format_item["_exastro_events"].append(str(item))
+
+        # LABELS_PARAMETERがNoneではない場合、labelsに対する条件が指定されているため確認を行う。
+        # labelsの検索の要件をMongoDBの検索時に満たそうとするとサブドキュメントに対してあいまい検索が必要となる。
+        # しかし、確認した限りだと文字列型以外にあいまい検索は不可のためpython側での対応とした
+        if self.LABELS_PARAMETER is not None:
+            tmp_str = json.dumps(format_item["labels"])
+            for type, value in self.LABELS_PARAMETER.items():
+                if type == "NORMAL":
+                    value = [value]
+
+                for item in value:
+                    if item in tmp_str:
+                        return format_item
+
+            # ここまで処理が流れた場合、labelsが条件を満たす内容ではないためNoneを返却する
+            # Noneを返却 = 画面に返却しないデータとして処理する
+            return None
 
         return format_item

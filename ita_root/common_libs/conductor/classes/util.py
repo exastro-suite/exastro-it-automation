@@ -1017,7 +1017,7 @@ class ConductorCommonLibs():
                     # movement_name
                     if block_1.get('movement_id'):
                         data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_id'], block_1['orchestra_id']])  # noqa E501
-                        if 0 in data_list:
+                        if len(data_list) == 1:
                             block_1['movement_name'] = data_list[0]['MOVEMENT_NAME']
                         else:
                             data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
@@ -1028,7 +1028,11 @@ class ConductorCommonLibs():
                     # operation_name
                     if block_1.get('operation_id'):
                         data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
-                        block_1['operation_name'] = data_list[0]['OPERATION_NAME']
+                        if len(data_list) == 1:
+                            block_1['operation_name'] = data_list[0]['OPERATION_NAME']
+                        else:
+                            data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_name']])  # noqa E501
+                            block_1['operation_id'] = data_list[0]['OPERATION_ID']
                     elif block_1.get('operation_name'):
                         data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
                         block_1['operation_id'] = data_list[0]['OPERATION_ID']
@@ -1039,19 +1043,22 @@ class ConductorCommonLibs():
                     # call_conductor_name
                     if block_1.get('call_conductor_id'):
                         data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [block_1['call_conductor_id']])  # noqa E501
-                        if isinstance(data_list, list):
-                            if len(data_list) == 1:
-                                block_1['call_conductor_name'] = data_list[0]['CONDUCTOR_NAME']
-                            else:
-                                data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
-                                block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
+                        if len(data_list) == 1:
+                            block_1['call_conductor_name'] = data_list[0]['CONDUCTOR_NAME']
+                        else:
+                            data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
+                            block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
                     else:
                         data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
                         block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
                     # operation_name
                     if block_1.get('operation_id'):
                         data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
-                        block_1['operation_name'] = data_list[0]['OPERATION_NAME']
+                        if len(data_list) == 1:
+                            block_1['operation_name'] = data_list[0]['OPERATION_NAME']
+                        else:
+                            data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_name']])  # noqa E501
+                            block_1['operation_id'] = data_list[0]['OPERATION_ID']
                     elif block_1.get('operation_name'):
                         data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
                         block_1['operation_id'] = data_list[0]['OPERATION_ID']
@@ -1059,7 +1066,7 @@ class ConductorCommonLibs():
                         block_1['operation_id'] = None
 
         except Exception as e:
-            g.applogger.error(e)
+            g.applogger.debug(e)
             msg = g.appmsg.get_api_message('MSG-40013')
             return False, msg
             # return False, retCode

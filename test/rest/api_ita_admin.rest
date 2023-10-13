@@ -47,7 +47,7 @@ content-type: application/json
           "password": null,
           "ssh_private_key_file": "aap_id_rsa",
           "passphrase": null,
-          "ansible_automation_controller_port": 22,
+          "ansible_automation_controller_port": "22",
           "execution_node": "False",
           "remarks": null
         }

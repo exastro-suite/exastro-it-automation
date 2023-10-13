@@ -212,8 +212,6 @@ class AnsibleExecute():
         strShell = strShell.replace('<<virtualenv_path>>', strEngineVirtualenvName)
         strShell = strShell.replace('<<result_file_path>>', strResultFileName)
 
-        print(strShell)
-
         # ansible-playbook実行 shell作成
         with open(strExecshellName, 'w') as fd:
             fd.write(strShell)

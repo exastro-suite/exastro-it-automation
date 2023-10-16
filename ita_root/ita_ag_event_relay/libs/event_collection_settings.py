@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Copyright 2022 NEC Corporation#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +12,28 @@
 # limitations under the License.
 #
 
-set -eu
+import json
+import os
+import requests
 
-while true
-do
-    # start_time=`date +%s`
-    # echo "backyard_init start = "`date "+%Y-%m-%d %H:%M:%S"` >> /exastro/app.log
+file_name = "./event_collection_settings.json"
 
-    cd /exastro
-    # python3 backyard/backyard_init.py | tee -a /exastro/app.log
-    python3 backyard/backyard_agent_init.py $ORGANIZATION_ID $WORKSPACE_ID
+# def fetch_settings():
 
-    # echo "backyard_init end = "`date "+%Y-%m-%d %H:%M:%S"` >> /exastro/app.log
-    # end_time=`date +%s`
-    # run_time=$((end_time - start_time))
-    # echo "backyard_init execute-time = "$run_time >> /exastro/app.log
 
-    sleep $EXECUTE_INTERVAL
-done
+def create_file(settings):
+    with open(file_name, "x") as f:
+        update = json.dump(settings, f)
+
+
+def remove_file():
+    os.remove(file_name)
+
+
+def get_settings():
+    try:
+        with open(file_name, "r") as f:
+            settings = json.load(f)
+            return settings
+    except FileNotFoundError:
+        return False

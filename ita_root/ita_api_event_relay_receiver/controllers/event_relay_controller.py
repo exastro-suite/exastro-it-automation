@@ -14,6 +14,8 @@
 
 
 from common_libs.api import api_filter
+from common_libs.common import DBConnectWs
+from libs import event_relay
 
 
 @api_filter
@@ -32,8 +34,8 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
     :rtype: InlineResponse200
     """
 
-    data = [
-        {}
-    ]
+    wsDb = DBConnectWs(workspace_id)
 
-    return data
+    data = event_relay.get_event_collection_settings(wsDb, body)
+
+    return data,

@@ -11,3 +11,22 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+
+
+def get_event_collection_settings(wsDb, body):
+
+    table_name = "T_EVRL_EVENT_COLLECTION_SETTINGS"
+
+    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_SETTINGS_ID IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_ids"])))
+
+    bind_values = tuple(body["event_collection_settings_ids"])
+    print(bind_values)
+    print(where_str)
+
+    data = wsDb.table_select(
+        table_name,
+        where_str,
+        bind_values
+    )
+
+    return data

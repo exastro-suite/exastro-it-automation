@@ -858,11 +858,11 @@ services:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_ag_event_relay/common_libs:cached
       - ../ita_root/messages:/workspace/ita_root/ita_ag_event_relay/messages:cached
-      - ../ita_root/backyard:/workspace/ita_root/ita_ag_event_relay/backyard:cached
+      - ../ita_root/agent:/workspace/ita_root/ita_ag_event_relay/agent:cached
       - ../ita_root/ita_ag_event_relay:/exastro:cached
       - ../ita_root/common_libs:/exastro/common_libs:cached
       - ../ita_root/messages:/exastro/messages:cached
-      - ../ita_root/backyard:/exastro/backyard:cached
+      - ../ita_root/agent:/exastro/agent:cached
       - ~/.netrc:/home/app_user/.netrc
       - ~/.gitconfig:/home/app_user/.gitconfig
       - ./ita-ag-event-relay/.vscode/launch.json:/workspace/.vscode/launch.json
@@ -886,6 +886,16 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+      - ORGANIZATION_ID=${ORGANIZATION_ID}
+      - WORKSPACE_ID=${WORKSPACE_ID}
+      - USERNAME=${USERNAME}
+      - PASSWORD=${PASSWORD}
+      - URL=${URL}
+      - ROLES=${ROLES}
+      - USER_ID=${USER_ID}
+      - EVENT_COLLECTION_SETTINGS_IDS=${EVENT_COLLECTION_SETTINGS_IDS}
+      - ITERATION=${ITERATION}
+      - INTERVAL=${INTERVAL}
 
 
   # mongo-express:

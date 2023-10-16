@@ -21,7 +21,7 @@ ARG GROUPNAME
 ARG APP_PATH
 ENV PYTHONPATH=/exastro/
 ENV USER_ID=90101
-ENV EXECUTE_INTERVAL=1
+ENV EXECUTE_INTERVAL=10
 ENV LANGUAGE=en
 # ENV STORAGEPATH=/storage/
 ENV SERVICE_NAME=ita-ag-event-relay
@@ -36,6 +36,7 @@ RUN dnf install -y \
     wget \
     zip \
     unzip \
+    sqlite \
 &&  pip3.9 install --upgrade pip \
 &&  pip3.9 install --upgrade setuptools \
 &&  pip3.9 install --upgrade Flask \
@@ -84,7 +85,7 @@ WORKDIR $APP_PATH
 COPY ./ita_root/ita_ag_event_relay/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
-COPY ./ita_root/backyard/ $APP_PATH/backyard/
+COPY ./ita_root/agent/ $APP_PATH/agent/
 
 #
 # Build for production
@@ -100,10 +101,10 @@ WORKDIR $APP_PATH
 COPY ./ita_root/ita_ag_event_relay/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
-COPY ./ita_root/backyard/ $APP_PATH/backyard/
+COPY ./ita_root/agent/ $APP_PATH/agent/
 
 USER root
-RUN chmod a+x $APP_PATH/backyard/entrypoint_agent.sh
+RUN chmod a+x $APP_PATH/agent/entrypoint.sh
 USER $USERNAME
 
-ENTRYPOINT ["bash", "./backyard/entrypoint_agent.sh"]
+ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]

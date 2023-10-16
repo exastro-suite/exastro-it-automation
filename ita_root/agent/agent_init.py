@@ -16,10 +16,10 @@ from dotenv import load_dotenv  # python-dotenv
 import os
 import sys
 
-# from common_libs.common.exception import AppException
-# from common_libs.common.logger import AppLog
+from common_libs.common.exception import AppException
+from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
-from backyard_main import backyard_main as main_logic
+from agent_main import agent_main as main_logic
 
 
 def main():
@@ -42,13 +42,22 @@ def main():
             g.LANGUAGE = os.environ.get("LANGUAGE")
             g.SERVICE_NAME = os.environ.get("SERVICE_NAME")
             # create app log instance and message class instance
-            # g.applogger = AppLog()
+            g.applogger = AppLog()
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
-            main_logic(organization_id, workspace_id)
+            loop_count = 5
+            # loop_count = os.environ.get("INTERVAL")
+
+            main_logic(organization_id, workspace_id, loop_count)
+        except AppException as e:
+            print(e)
+            import traceback
+            traceback.print_exc()
         except Exception as e:
             # catch - other all error
             print(e)
+            import traceback
+            traceback.print_exc()
 
 
 if __name__ == '__main__':

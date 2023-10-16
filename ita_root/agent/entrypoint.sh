@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2022 NEC Corporation#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +14,20 @@
 # limitations under the License.
 #
 
-from libs.platform_token import get_access_token
+set -eu
 
+while true
+do
+    # start_time=`date +%s`
+    # echo "backyard_init start = "`date "+%Y-%m-%d %H:%M:%S"` >> /exastro/app.log
 
-def backyard_main(organization_id, workspace_id):
+    cd /exastro
+    # python3 backyard/backyard_init.py | tee -a /exastro/app.log
+    python3 agent/agent_init.py $ORGANIZATION_ID $WORKSPACE_ID
 
-    username = ""
-    password = ""
-    result = get_access_token(organization_id, username, password)
-    print(result)
+    # echo "backyard_init end = "`date "+%Y-%m-%d %H:%M:%S"` >> /exastro/app.log
+    # end_time=`date +%s`
+    # run_time=$((end_time - start_time))
+    # echo "backyard_init execute-time = "$run_time >> /exastro/app.log
+
+done

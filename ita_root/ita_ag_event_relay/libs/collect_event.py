@@ -16,50 +16,32 @@ from flask import g
 import datetime
 import jmespath
 import json
-from common_libs.event_relay import *
+from common_libs.event_relay import get_auth_client
 
 
 ######################################################
 # イベント収集
 ######################################################
-def collect_event(wsDb, wsMongo):
+def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=None):
     debug_msg = ""
 
-    auth_method = {
-        "1": BasicAuthAPIClient,  # noqa: F405
-        "2": BearerAuthAPIClient,  # noqa: F405
-        "3": SharedKeyLiteAuthAPIClient  # noqa: F405
-    }
+    # ドット区切りの文字列で辞書を指定して値を取得
+    def get_value_from_jsonpath(jsonpath=None, data=None):
+        if jsonpath is None:
+            return data
 
-    def get_auth_client(setting):
-        auth_class = auth_method[setting["CONNECTION_METHOD_ID"]]
-        return auth_class(setting)
-
-    # ドット区切りの文字列でで辞書を指定して値を取得
-    def get_value_from_jsonpath(jsonpath, data):
         value = jmespath.search(jsonpath, data)
         return value
 
-    event_settings = wsDb.table_select(
-        "T_EVRL_EVENT_COLLECTION_SETTINGS",
-        "WHERE DISUSE_FLAG=0"
-    )
-    print(event_settings)
-
-    # 生データ保存用コレクション
-    event_collection = wsMongo.collection("event_collection")
-
-    for setting in event_settings:
-        events = []
+    events = []
+    for setting in event_collection_settings:
+        setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_ID"]]
         fetched_time = datetime.datetime.now()  # API取得時間
 
         # APIの呼び出し
-        api_client = get_auth_client(setting)
-        call_result, json_data = api_client.call_api(json.loads(setting["PARAMETER"]))
-        if call_result is False:
-            debug_msg = f"failed to fetch api. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
-            print(debug_msg)
-            raise Exception
+        api_client = get_auth_client(setting)  # noqa: F405
+        api_parameter = json.loads(setting["PARAMETER"]) if setting["PARAMETER"] else None
+        json_data = api_client.call_api(parameter=api_parameter)
 
         # 設定で指定したキーの値を取得
         json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
@@ -70,10 +52,11 @@ def collect_event(wsDb, wsMongo):
 
         # RESPONSE_KEYの値がリスト形式ではない場合、そのまま保存する
         if setting["RESPONSE_LIST_FLAG"] == 0:
-            event = json_data
+            event = {}
+            event["event"] = json_data
             event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
-            event["_exastro_fetched_time"] = fetched_time.timestamp()
-            event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
+            event["_exastro_fetched_time"] = int(fetched_time.timestamp())
+            event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
             event["_exastro_type"] = "event"
             events.append(event)
 
@@ -85,23 +68,24 @@ def collect_event(wsDb, wsMongo):
                 print(debug_msg)
                 raise Exception
             for data in json_data:
-                event = data
+                event = {}
+                event["event"] = data
                 event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
-                event["_exastro_fetched_time"] = fetched_time.timestamp()
-                event["_exastro_end_time"] = (fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp()
+                event["_exastro_fetched_time"] = int(fetched_time.timestamp())
+                event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
                 event["_exastro_type"] = "event"
                 events.append(event)
 
-        print(events)
-        print(len(events))
+        # 取得を試みた時間を保存
+        sqliteDB.insert_last_fetched_time(
+            setting["EVENT_COLLECTION_SETTINGS_ID"],
+            int(fetched_time.timestamp())
+        )
+        # print("#############イベントのリスト################")
+        # print(events)
+        # print(len(events))
 
-        # MongoDBに保存　→　イベントをローカルsqliteに保存
-        try:
-            res = event_collection.insert_many(events)
-            if res.acknowledged is False:
-                print("failed to insert fetched events")
-        except Exception as e:
-            print(e)
+        # イベントをローカルsqliteに保存
 
         # 取得時間（APIごと）を記録（APIに送信）
 
@@ -109,4 +93,4 @@ def collect_event(wsDb, wsMongo):
 
         # ラベル設定APIへの送信が成功したら、ローカルに保存したイベントを削除
 
-    return True
+    return events

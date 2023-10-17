@@ -17,17 +17,15 @@ import os
 import time
 import sqlite3
 import datetime
-from agent.libs.platform_token import get_access_token
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
 from libs.event_collection_settings import create_file, remove_file, get_settings
 
 
-def agent_main(organization_id, workspace_id, loop_count):
+def agent_main(organization_id, workspace_id, loop_count=500):
 
     interval = int(os.environ.get("INTERVAL"))
-    # interval = 5
     count = 1
     max = int(loop_count)
 

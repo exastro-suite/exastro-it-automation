@@ -20,8 +20,7 @@ class sqliteConnect:
 
     def __init__(self, organization_id, workspace_id):
 
-        self.db_name = f"ag_event_relay_{organization_id}_{workspace_id}"
-        # self.db_name = f"/storage/ag_event_relay_{organization_id}_{workspace_id}"
+        self.db_name = f"/sqlite/ag_event_relay_{organization_id}_{workspace_id}"
 
         # DB接続（作成）
         self.db_connect = sqlite3.connect(self.db_name)

@@ -18,17 +18,17 @@ from common_libs.common.util import ky_decrypt
 
 
 class APIClientCommon:
-
-    def __init__(self, event_settings, last_fetched_timestamp):
+    """
+        メールおよびAPI呼び出し用共通クラス
+    """
+    # 必要項目定義
+    def __init__(self, event_settings):
         self.request_methods = {
             "1": "GET",
-            "2": "POST",
-            "3": "SSL/TLS",
-            "4": "StartTLS",
-            "5": "Plaintext"
+            "2": "POST"
         }
 
-        self.request_method = self.request_methods[event_settings["REQUEST_METHOD"]]
+        self.request_method = self.request_methods[event_settings["REQUEST_METHOD"]] if event_settings["REQUEST_METHOD"] in ["1", "2"] else None
         self.url = event_settings["URL"]
         self.port = event_settings["PORT"]
         self.headers = json.loads(event_settings["REQUEST_HEADER"]) if event_settings["REQUEST_HEADER"] else None
@@ -42,30 +42,19 @@ class APIClientCommon:
         self.access_key_id = event_settings["ACCESS_KEY_ID"]
         self.secret_access_key = ky_decrypt(event_settings["SECRET_ACCESS_KEY"])
         self.mailbox_name = event_settings["MAILBOXNAME"]
-        self.last_fetched_timestamp = last_fetched_timestamp
+        self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
 
     def call_api(self, parameter):
-        result = True
         API_response = None
         self.parameter = parameter  # APIのパラメータ
-        try:
-            response = requests.request(
-                method=self.request_method,
-                url=self.url,
-                headers=self.headers,
-                params=parameter if self.request_method == "1" else None,
-                data=json.dumps(self.parameter) if self.request_method == "2" else None,
-                proxies=self.proxy
-            )
-            # ステータス400系500系は例外へ
-            response.raise_for_status()
-            API_response = response.json()
+        response = requests.request(
+            method=self.request_method,
+            url=self.url,
+            headers=self.headers,
+            params=parameter if self.request_method == "1" else None,
+            data=json.dumps(self.parameter) if self.request_method == "2" else None,
+            proxies=self.proxy
+        )
+        API_response = response.json()
 
-        except requests.exceptions.HTTPError as e:
-            http_error = f"HTTP Error: {e}"
-            error_message = f"Error Message: {e.response.text}"
-            print(http_error)
-            print(error_message)
-            result = False
-
-        return result, API_response
+        return API_response

@@ -287,6 +287,7 @@ CREATE TABLE T_EVRL_ACTION_LOG
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     RULE_NAME                       VARCHAR(255),                               -- ルール名称
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
@@ -308,6 +309,7 @@ CREATE TABLE T_EVRL_ACTION_LOG_JNL
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     RULE_NAME                       VARCHAR(255),                               -- ルール名称
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID

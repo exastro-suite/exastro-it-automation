@@ -712,7 +712,10 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
             for key, value in item.items():
                 # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
                 # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
-                tmp_str = '"' + key + '": "' + str(value) + '"'
+                if isinstance(value, str):
+                    tmp_str = '"' + key + '": "' + str(value) + '"'
+                else:
+                    tmp_str = '"' + key + '": ' + json.dumps(value)
 
                 if tmp_str not in result:
                     result.append(tmp_str)
@@ -722,7 +725,13 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
                 if value not in result:
                     # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
                     # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
-                    result.append(str(value))
+                    if isinstance(value, dict):
+                        result.append(json.dumps(value))
+                    elif isinstance(value, list):
+                        result.append(json.dumps(value))
+                    else:
+                        result.append(value)
+
         else:
             if item not in result:
                 result.append(item)

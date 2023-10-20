@@ -21,7 +21,7 @@ import json
 
 def label_event(wsDb, wsMongo, events):
 
-    label_result = True
+    label_result = False
     debug_msg = ""
 
     labeling_settings = wsDb.table_select(
@@ -30,10 +30,22 @@ def label_event(wsDb, wsMongo, events):
         ["0"]
     )
 
+    # そのままのデータ保存コレクション
+    event_collection = wsMongo.collection("event_collection")
+
     # ラベルデータ保存用コレクション
     labeled_event_collection = wsMongo.collection("labeled_event_collection")
 
-    compare_operator = {
+    # そのままのデータをMongoDBに保存
+    try:
+        event_collection.insert_many(events)
+    except Exception as e:
+        debug_msg = "failed to insert events"
+        print(debug_msg)
+        print(e)
+        return label_result
+
+    comparison_operator = {
         "1": operator.eq,
         "2": operator.ne,
         "3": operator.lt,
@@ -61,28 +73,29 @@ def label_event(wsDb, wsMongo, events):
     }
 
     # target_value比較用
-    def compare_values(compare_method_id="1", comparative=None, referent=None):
-        key_list = list(compare_operator.keys())
-        if compare_method_id in key_list:
-            if compare_method_id == "7":
+    def comparison_values(comparison_method_id="1", comparative=None, referent=None):
+        key_list = list(comparison_operator.keys())
+        if comparison_method_id in key_list:
+            if comparison_method_id == "7":
                 regex_pattern = re.compile(referent)
                 result = regex_pattern.search(comparative)
             else:
-                compare = compare_operator[compare_method_id]
-                result = compare(comparative, referent)
+                comparison = comparison_operator[comparison_method_id]
+                result = comparison(comparative, referent)
         return result
 
-    # ドット区切りの文字列でで辞書を指定して値を取得
+    # ドット区切りの文字列で辞書を指定して値を取得
     def get_value_from_jsonpath(jsonpath, data):
         value = jmespath.search(jsonpath, data)
         return value
 
     def label(event, setting):
         label_key_record = wsDb.table_select(
-            "V_EVRL_LABEL_KEY",
+            "V_EVRL_LABEL_KEY_GROUP",
             "WHERE DISUSE_FLAG=0 AND LABEL_KEY_ID=%s",
             [setting["LABEL_KEY_ID"]]
         )
+
         label_key_id = label_key_record[0]["LABEL_KEY_ID"]
         label_key_string = label_key_record[0]["LABEL_KEY"]
 
@@ -90,6 +103,7 @@ def label_event(wsDb, wsMongo, events):
         event["labels"][label_key_string] = setting["LABEL_VALUE"]
         event["exastro_labeling_settings"][label_key_string] = setting["LABELING_SETTINGS_ID"]
         event["exastro_label_key_input_ids"][label_key_string] = label_key_id
+        return event
 
     labeled_events = []
 
@@ -126,11 +140,11 @@ def label_event(wsDb, wsMongo, events):
 
                 if setting["TARGET_KEY"] == "" and same_id_flag:
                     if setting["TARGET_TYPE_ID"] == "7" and get_value_from_jsonpath(setting["TARGET_KEY"], event["event"]) is False:
-                        label(event, setting)
-                    label(event, setting)
+                        event = label(event, setting)
+                    event = label(event, setting)
 
                 if setting["TARGET_KEY"] and setting["TARGET_KEY"] in event and same_id_flag:
-                    label(event, setting)
+                    event = label(event, setting)
 
                 if (setting["TARGET_KEY"] and setting["TARGET_VALUE"]) != "" and same_id_flag:
                     target_value = get_value_from_jsonpath(setting["TARGET_KEY"], event["event"])
@@ -141,23 +155,24 @@ def label_event(wsDb, wsMongo, events):
                         debug_msg = "Invalid labeling setting"
                         raise Exception
                     target_value = target_value_type[setting["TARGET_TYPE_ID"]](target_value)
-                    if compare_values(setting["COMPARISON_METHOD_ID"], target_value, setting["TARGET_VALUE"]):
-                        label(event, setting)
+
+                    if comparison_values(setting["COMPARISON_METHOD_ID"], target_value, setting["TARGET_VALUE"]):
+
+                        event = label(event, setting)
             except Exception as e:
                 print(e)
                 print(debug_msg)
+                return label_result
 
-    # ラベルされていないものは除外
-    labeled_events = [item for item in labeled_events if item["exastro_labeling_settings"] != {}]
-    print(labeled_events)
-    print(len(labeled_events))
-
-    # MongoDBに保存
+    # ラベリングしたデータをMongoDBに保存
     try:
         labeled_event_collection.insert_many(labeled_events)
     except Exception as e:
         debug_msg = "failed to insert labeled events"
         print(debug_msg)
         print(e)
+        return label_result
+
+    label_result = True
 
     return label_result

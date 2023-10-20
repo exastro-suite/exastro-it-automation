@@ -1,0 +1,70 @@
+# Global values
+# not quate strings
+@sys-user-id = admin
+@sys-user-pw = password
+@org-user-id = test_user
+@org-user-pw = password
+
+@base_sys_url = http://platform-auth:{{sys-mng-port}}
+@base_org_url = http://platform-auth:{{org-mng-port}}
+
+@organization_id = org1
+
+# 1 api to ###
+
+###
+# すべてのorganizationのAnsibleの初期データを取得する
+GET {{base_sys_url}}/api/ita/initial-settings/ansible/
+Authorization: Basic {{sys-user-id}} {{sys-user-pw}}
+
+
+###
+# すべてのorganizationのAnsibleの初期データを取得する
+GET {{base_sys_url}}//api/ita/{{organization_id}}/initial-settings/ansible/
+Authorization: Basic {{sys-user-id}} {{sys-user-pw}}
+
+###
+# Organization作成
+POST {{base_sys_url}}/api/ita/{{organization_id}}/initial-settings/ansible/
+Authorization: Basic {{sys-user-id}} {{sys-user-pw}}
+content-type: application/json
+
+{
+  "input_limit_setting": false,
+  "execution_engine_list": [
+    "Ansible Automation Controller","Ansible-Core"
+  ],
+  "initial_data": {
+    "ansible_automation_controller_host_list": [
+      {
+        "file": {
+          "ssh_private_key_file": "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUJsd0FBQUFkemMyZ3RjbgpOaEFBQUFBd0VBQVFBQUFZRUF0V0ZvVVA5ZkZSRlhUTTV0U2s4cmU1dTVEVjNqclF3VVd5d2swMkwrZ0tkNElsOFQ4TnBkCk40Z3ZGVkMxM1VueGNxc1pxVWdEWk41NnphSnMrdThQcTBlVjl2R0dkWmZDcU11OHRrbzh5WUw2MGQ2VUVoVXFOVVJkb1UKSEJ3bngzbjZidlNWMVE0em56V0JBNVBqOFl3SENiL0swVGFEMndvMkRkbFhqTXhhTlpXTXlpRFVMbE1pSk02VFdCU0lYMwo2emE5ZnI2cGFmak5Vc0hBTk9YSTdGbUFQcC9Jcy80TmtJVkhZN2M1UkJkUTUvNWgrTCtxRmlVazhKbE9vcFdnMjJOWWlXCkpKUGM0U09iTWxtRUY1OEdMdloxZTlCS0FvaXEvdWIvVmlhZG9hRFlyTzlEM0U3UW1NTldWMjNNMnMyN2tnS0ZKcFJJSUMKbmllZlJyaTdkOVhEYldoclBFY1FlRUMyZnNrRzVyY3Q0RFhrQUtVVCtSTkdwMll6bWZqSHlHNkRPWkJIa1RCNnJ5OVF3SgpRaFpFTjEvM3k2K0Q1V1BpbWlxeVFBNmtXdnZYZUtHWkhzZEhLdG5QaGZra1EyUWlteFgyWFRHaGZwdjRSUkUzZWNGUmxRClQvenRLeWg5enIzWmd4UU1nWHgwdEJ5V2dZSUJwZVZHa1dFTTVkeTNBQUFGa1BlMkRlYjN0ZzNtQUFBQUIzTnphQzF5YzIKRUFBQUdCQUxWaGFGRC9YeFVSVjB6T2JVcFBLM3VidVExZDQ2ME1GRnNzSk5OaS9vQ25lQ0pmRS9EYVhUZUlMeFZRdGQxSgo4WEtyR2FsSUEyVGVlczJpYlBydkQ2dEhsZmJ4aG5XWHdxakx2TFpLUE1tQyt0SGVsQklWS2pWRVhhRkJ3Y0o4ZDUrbTcwCmxkVU9NNTgxZ1FPVDQvR01Cd20veXRFMmc5c0tOZzNaVjR6TVdqV1ZqTW9nMUM1VElpVE9rMWdVaUY5K3Mydlg2K3FXbjQKelZMQndEVGx5T3haZ0Q2ZnlMUCtEWkNGUjJPM09VUVhVT2YrWWZpL3FoWWxKUENaVHFLVm9OdGpXSWxpU1QzT0VqbXpKWgpoQmVmQmk3MmRYdlFTZ0tJcXY3bS8xWW1uYUdnMkt6dlE5eE8wSmpEVmxkdHpOck51NUlDaFNhVVNDQXA0bm4wYTR1M2ZWCncyMW9henhIRUhoQXRuN0pCdWEzTGVBMTVBQ2xFL2tUUnFkbU01bjR4OGh1Z3ptUVI1RXdlcTh2VU1DVUlXUkRkZjk4dXYKZytWajRwb3Fza0FPcEZyNzEzaWhtUjdIUnlyWno0WDVKRU5rSXBzVjlsMHhvWDZiK0VVUk4zbkJVWlVFLzg3U3NvZmM2OQoyWU1VRElGOGRMUWNsb0dDQWFYbFJwRmhET1hjdHdBQUFBTUJBQUVBQUFHQkFMRHVJTzBKL3YwMUdqeXhETWswNjB5N2ZjCnM5TUErb3ZkNmw5QkpEK2RFVUM4c3poZWNuaTFEVlJtQjdoN3dpR2lYcUk3RU9yMGpoQVZmQVBxQ1ZQR3F1L09tVGRyOFUKMSswQ09NWjFLbEREdE5tdVRqQkpkdy9ZN2FDVTNXWlROZm1GeE51QzdKbUsrUWFKWk4yRWZTZVRjWVlNYXViL2JtUWc1RwpXZkhka1kyOW9VVzJ1bU9wOHArRzV4SS9qVHZpQXpHS3dmWG5FaUkxKzc0anQzZndTVzFkUEExKzVFUDRVZmphRUdwUlQzCnpaTlFnTTgrWDdNVWJyRklTdjJzQ0VWSU54cGJDSE9iQkRZcTdodUljeDdKUVEvcW5EMVJGdFhBa3d4M1ZkMFF4elZUTDUKZXF6ci9jc3h6S3l1M08yVE5weWVodE1SWVB6M2dXZ2xieFI1SStObWl1VGlTQWFHa1o2OXJqblY0bVNmL25xUnJwUWRpeAozS1E1bUZldVNUUFdEdXZQNFdWNlJybzBPajRjalZnNTlGNHVWM05xQmpvMFpXYmt1QnhZeDRBK2hsZjcwMmdMLzVMZTBPCllTc1dFS0U5aFhueHZ5b0NBUTBCLy9meDFnaHkxY2xQWi9JR3FpWDYwUEQrY0FmTnFWNmt6aFo5WmZmQmVOZ2x3NThRQUEKQU1FQTBqbVF4VVc2WW9ZRnovUFg5aXgrNEd3VXh4WWFTdlVYRDJHZGt4cGtkYS9EV3lKUlJFd1FjTzhPQTdhWUFhV0hxSwp1T1ZCWVJlY3h0Z01SbzUreUNpZjVoNE9HNzVyVEtSQ0NRLy9Td2hyS25iQjFoOVJ0Q2dWNjlSd0tMSUhxcXo0dGQ0V20wCkw0NmFtditjd0ZrVVdxOFRtdzNkR1NlV3AydURQcjVxSjVGWDlEdmZRWUNKSEVkNThnN2lESXdzMUd3VExKaTJ3L0J1QlEKbzB2MUw4dGo0eG1MTUxpcW1zdDZLRHM3cHBlOGpJYTgycHVTSUJ1ZWJ5Y3pKdXljcmNBQUFBd1FEbU5SV25qcisxWmJSdgpPRjJVT2hGQ2I2UVlpQkFsTzVuWVZQUnQ2amhMWmdvMjlkUVUwUmRnYzNObmtOdzY1ZFpQbnZVMTlaamkzcFBlRnVQczJQCnEyaDg1aFNCK3VRR3JodEovRGM2MU1ZS2k5cjkxQmtvd0ZHSDR3YW9mSUsyYmF1V2VFMGg3UFFmajhrSzZVbndLbnpPSTcKc1o2anJTZStxaHQwMzkxUzhTb2F1bkhnMXNsOTRYS092bG1RQUpQMHNuS2VMcGIyalZIR0ZTR0JRdG1GQUh2aXV6Zm5nUgpGc3hrd2ROSU1ERGxLNmxVMnFhbkppL0NBM0VOQldDLzhBQUFEQkFNbXoyUkVEbllkSjM0N2prWWFDNzNHdGtjWDZDN0NxCjZ6cGRXQkZ6Zjd0NkhJbzJMdUlPenVFa2IxV0VjOFZibTBHbTA1YkZ4YnFEYjF2OWpJRmErTG9qTHVOUmFoSEZHVFRRUDYKTk9DMzA2SDd2TWgwMStNUVJNaERKYW9GRlRRVy9uSVBIQldwcDVJNzFVN0FNa0d6cXJoWVU5dlVNSXBNS2taQUQyYWF3dwpreUp6eFZzTFhUQXhrT3BVU3lWZmJsZVBKZXJpVmIydmVXbm5RUmRnRm02empSeXpSTXlYODFkaldzelNDTVZUeWI2YW9GCjdBYjZPZzlib0lnRmVQU1FBQUFCTnpjR2hwYm5oQU1qWmxNR05pWkRrM05UZGxBUUlEQkFVRwotLS0tLUVORCBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0K"
+        },
+        "parameter": {
+          "host": "aap.example.com",
+          "authentication_method": "鍵認証(パスフレーズなし)",
+          "user": "awx",
+          "password": null,
+          "ssh_private_key_file": "aap_id_rsa",
+          "passphrase": null,
+          "ansible_automation_controller_port": "22",
+          "execution_node": "False",
+          "remarks": null
+        }
+      }
+    ],
+    "interface_info_ansible": {
+      "parameter": {
+        "execution_engine": "Ansible Automation Controller",
+        "representative_server": "aap.example.com",
+        "ansible_automation_controller_protocol": "https",
+        "ansible_automation_controller_port": "443",
+        "organization_name": null,
+        "authentication_token": "LwWw3dwoHGx19ZhP1YQZU0JdZzobFv",
+        "delete_runtime_data": "True",
+        "proxy_address": null,
+        "proxy_port": null
+      }
+    }
+  }
+}

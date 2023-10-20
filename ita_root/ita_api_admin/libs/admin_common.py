@@ -193,15 +193,20 @@ def initial_settings_ansible(ws_db, body):
             initial_host_list = []
             for initial_data_aac_host in initial_data_aac_hosts:
                 match_flg = False
-                host                        = initial_data_aac_host.get('parameter').get('host')                    # noqa: E221
-                authentication_method       = initial_data_aac_host.get('parameter').get('authentication_method')   # noqa: E221
-                user                        = initial_data_aac_host.get('parameter').get('user')                    # noqa: E221
-                password                    = initial_data_aac_host.get('parameter').get('password')                # noqa: E221
-                ssh_private_key_file        = initial_data_aac_host.get('parameter').get('ssh_private_key_file')    # noqa: E221
-                ssh_private_key_file_base64 = initial_data_aac_host.get('file').get('ssh_private_key_file')         # noqa: E221
-                passphrase                  = initial_data_aac_host.get('parameter').get('passphrase')              # noqa: E221
-                isolated_tower              = initial_data_aac_host.get('parameter').get('isolated_tower')          # noqa: E221
-                remarks                     = initial_data_aac_host.get('parameter').get('remarks')                 # noqa: E221
+                host                                = initial_data_aac_host.get('parameter').get('host')                                # noqa: E221
+                authentication_method               = initial_data_aac_host.get('parameter').get('authentication_method')               # noqa: E221
+                user                                = initial_data_aac_host.get('parameter').get('user')                                # noqa: E221
+                password                            = initial_data_aac_host.get('parameter').get('password')                            # noqa: E221
+                ssh_private_key_file                = initial_data_aac_host.get('parameter').get('ssh_private_key_file')                # noqa: E221
+                ssh_private_key_file_base64         = initial_data_aac_host.get('file').get('ssh_private_key_file')                     # noqa: E221
+                passphrase                          = initial_data_aac_host.get('parameter').get('passphrase')                          # noqa: E221
+                ansible_automation_controller_port  = initial_data_aac_host.get('parameter').get('ansible_automation_controller_port')  # noqa: E221
+                execution_node = None
+                if 'isolated_tower' in initial_data_aac_host.get('parameter').keys():
+                    execution_node                  = initial_data_aac_host.get('parameter').get('isolated_tower')                      # noqa: E221
+                if 'execution_node' in initial_data_aac_host.get('parameter').keys():
+                    execution_node                  = initial_data_aac_host.get('parameter').get('execution_node')                      # noqa: E221
+                remarks                             = initial_data_aac_host.get('parameter').get('remarks')                             # noqa: E221
                 initial_host_list.append(host)
 
                 for registerd_aac_host in registerd_aac_hosts[1]:
@@ -220,8 +225,12 @@ def initial_settings_ansible(ws_db, body):
                             update_aac_host["file"]["ssh_private_key_file"] = ssh_private_key_file_base64
                         if 'passphrase' in initial_data_aac_host.get('parameter').keys():
                             update_aac_host["parameter"]["passphrase"] = passphrase
+                        if 'ansible_automation_controller_port' in initial_data_aac_host.get('parameter').keys():
+                            update_aac_host["parameter"]["ansible_automation_controller_port"] = ansible_automation_controller_port
                         if 'isolated_tower' in initial_data_aac_host.get('parameter').keys():
-                            update_aac_host["parameter"]["isolated_tower"] = isolated_tower
+                            update_aac_host["parameter"]["execution_node"] = execution_node
+                        if 'execution_node' in initial_data_aac_host.get('parameter').keys():
+                            update_aac_host["parameter"]["execution_node"] = execution_node
                         if 'remarks' in initial_data_aac_host.get('parameter').keys():
                             update_aac_host["parameter"]["remarks"] = remarks
 
@@ -243,7 +252,8 @@ def initial_settings_ansible(ws_db, body):
                                                      "password": password,
                                                      "ssh_private_key_file": ssh_private_key_file,
                                                      "passphrase": passphrase,
-                                                     "isolated_tower": isolated_tower,
+                                                     "ansible_automation_controller_port": ansible_automation_controller_port,
+                                                     "execution_node": execution_node,
                                                      "remarks": remarks},
                                        "file": {"ssh_private_key_file": ssh_private_key_file_base64}}
 

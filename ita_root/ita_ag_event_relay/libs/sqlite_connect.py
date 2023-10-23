@@ -33,8 +33,8 @@ class sqliteConnect:
         for event in events:
             self.insert_event(event)
             self.insert_timestamp(
-                event["_exastro_event_collection_settings_id"],
-                event["_exastro_fetched_time"]
+                event["event"]["_exastro_event_collection_settings_id"],
+                event["event"]["_exastro_fetched_time"]
             )
 
         self.db_connect.commit()
@@ -46,14 +46,15 @@ class sqliteConnect:
                 CREATE TABLE IF NOT EXISTS {table_name}(
                     event_collection_settings_id TEXT NOT NULL,
                     event TEXT NOT NULL,
+                    fetched_time INTEGER NOT NULL,
                     sent_flag BOOLEAN NOT NULL
                 )
             """
         )
         event_string = json.dumps(event)
         self.db_cursor.execute(
-            f"INSERT INTO {table_name} (event_collection_settings_id, event, sent_flag) VALUES (?, ?, ?)",
-            (event["_exastro_event_collection_settings_id"], event_string, False)
+            f"INSERT INTO {table_name} (event_collection_settings_id, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?)",
+            (event["event"]["_exastro_event_collection_settings_id"], event_string, event["event"]["_exastro_fetched_time"], False)
         )
         # self.db_connect.commit()
 

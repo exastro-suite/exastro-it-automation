@@ -45,10 +45,11 @@ def main():
             g.applogger = AppLog()
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
-            iteration = os.environ.get("ITERATION")
             loop_count = 500
-            if isinstance(iteration, int) and iteration > 0:
-                loop_count = iteration
+            iteration = os.environ.get("ITERATION")
+            if iteration:
+                if int(iteration) > 0:
+                    loop_count = iteration
 
             main_logic(organization_id, workspace_id, loop_count)
         except AppException as e:

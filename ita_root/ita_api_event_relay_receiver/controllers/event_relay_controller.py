@@ -66,39 +66,39 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
     wsMongo = MONGOConnectWs()
 
-    events_moto = {
-        "events": [
-            {
-                "event": [
-                    '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_1>","envelope_from": "root@ita-event-relay-mailserver.localdomain_1","envelope_to": "user1@localhost_1","header_from": "<root@ita-event-relay-mailserver.localdomain_1>","header_to": "user1@localhost_1","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_1>","mailaddr_to": "user1@localhost_1","date": "2023-10-04 16:17:11","lastchange": 1696403830.1,"body": "Lorem1 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "1111111112","_exastro_end_time": "1111111113"}',
-                    '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_2>","envelope_from": "root@ita-event-relay-mailserver.localdomain_2","envelope_to": "user1@localhost_2","header_from": "<root@ita-event-relay-mailserver.localdomain_2>","header_to": "user1@localhost_2","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_2>","mailaddr_to": "user1@localhost_2","date": "2023-10-04 16:17:12","lastchange": 1696403830.2,"body": "Lorem2 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "1111111112","_exastro_end_time": "1111111113"}'
-                ],
-                "fetched_time": 11111112,
-                "event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94"
-            },
-            {
-                "event": [
-                    '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_3>","envelope_from": "root@ita-event-relay-mailserver.localdomain_3","envelope_to": "user1@localhost_3","header_from": "<root@ita-event-relay-mailserver.localdomain_3>","header_to": "user1@localhost_3","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_3>","mailaddr_to": "user1@localhost_3","date": "2023-10-04 16:17:13","lastchange": 1696403830.3,"body": "Lorem3 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "eb66c6fe-344e-4609-9a56-5798eb3d2859","_exastro_fetched_time": "2222222222","_exastro_end_time": "2222222223"}'
-                ],
-                "fetched_time": 22222222,
-                "event_collection_settings_id": "eb66c6fe-344e-4609-9a56-5798eb3d2859"
-            },
-            {
-                "event": [
-                    '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_4>","envelope_from": "root@ita-event-relay-mailserver.localdomain_4","envelope_to": "user1@localhost_4","header_from": "<root@ita-event-relay-mailserver.localdomain_4>","header_to": "user1@localhost_4","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_4>","mailaddr_to": "user1@localhost_4","date": "2023-10-04 16:17:14","lastchange": 1696403830.4,"body": "Lorem4 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "3333333333","_exastro_end_time": "4444444443"}'
-                ],
-                "fetched_time": 33333333,
-                "event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94"
-            }
-        ]
-    }
+    # body = {
+    #     "events": [
+    #         {
+    #             "event": [
+    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_1>","envelope_from": "root@ita-event-relay-mailserver.localdomain_1","envelope_to": "user1@localhost_1","header_from": "<root@ita-event-relay-mailserver.localdomain_1>","header_to": "user1@localhost_1","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_1>","mailaddr_to": "user1@localhost_1","date": "2023-10-04 16:17:11","lastchange": 1696403830.1,"body": "Lorem1 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "1111111112","_exastro_end_time": "1111111113"}',
+    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_2>","envelope_from": "root@ita-event-relay-mailserver.localdomain_2","envelope_to": "user1@localhost_2","header_from": "<root@ita-event-relay-mailserver.localdomain_2>","header_to": "user1@localhost_2","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_2>","mailaddr_to": "user1@localhost_2","date": "2023-10-04 16:17:12","lastchange": 1696403830.2,"body": "Lorem2 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "1111111112","_exastro_end_time": "1111111113"}'
+    #             ],
+    #             "fetched_time": 11111112,
+    #             "event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94"
+    #         },
+    #         {
+    #             "event": [
+    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_3>","envelope_from": "root@ita-event-relay-mailserver.localdomain_3","envelope_to": "user1@localhost_3","header_from": "<root@ita-event-relay-mailserver.localdomain_3>","header_to": "user1@localhost_3","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_3>","mailaddr_to": "user1@localhost_3","date": "2023-10-04 16:17:13","lastchange": 1696403830.3,"body": "Lorem3 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "eb66c6fe-344e-4609-9a56-5798eb3d2859","_exastro_fetched_time": "2222222222","_exastro_end_time": "2222222223"}'
+    #             ],
+    #             "fetched_time": 22222222,
+    #             "event_collection_settings_id": "eb66c6fe-344e-4609-9a56-5798eb3d2859"
+    #         },
+    #         {
+    #             "event": [
+    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_4>","envelope_from": "root@ita-event-relay-mailserver.localdomain_4","envelope_to": "user1@localhost_4","header_from": "<root@ita-event-relay-mailserver.localdomain_4>","header_to": "user1@localhost_4","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_4>","mailaddr_to": "user1@localhost_4","date": "2023-10-04 16:17:14","lastchange": 1696403830.4,"body": "Lorem4 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "3333333333","_exastro_end_time": "4444444443"}'
+    #             ],
+    #             "fetched_time": 33333333,
+    #             "event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94"
+    #         }
+    #     ]
+    # }
 
     events = []
 
     data_list = []
 
     # eventsデータを取り出す
-    events_list = events_moto["events"]
+    events_list = body["events"]
 
     for events_dict in events_list:
         data_dict = {}

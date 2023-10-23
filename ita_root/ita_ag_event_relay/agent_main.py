@@ -17,6 +17,7 @@ import os
 import time
 import sqlite3
 import datetime
+import uuid
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
@@ -80,14 +81,15 @@ def collection_logic(organization_id, workspace_id):
 
     id_list = os.environ.get("EVENT_COLLECTION_SETTINGS_IDS").split(",")
 
+    baseUrl = os.environ.get("URL")
+
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
         g.applogger.info("no json file exists")
 
-        baseUrl = os.environ.get("URL")
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/event_relay_agent/event_collection/settings"
 
-        response = exastro_api.api_request(
+        status_code, response = exastro_api.api_request(
             "POST",
             endpoint,
             {
@@ -114,8 +116,6 @@ def collection_logic(organization_id, workspace_id):
                 timestamp_dict[key] = current_timestamp
     except sqlite3.OperationalError:
         pass
-    except Exception as e:
-        g.applogger.error(e)
 
     # イベント収集
     g.applogger.info("getting events")
@@ -128,37 +128,47 @@ def collection_logic(organization_id, workspace_id):
 
     # ITAに送信するデータを取得
     g.applogger.info("searching unsent events")
-    post_body = []
+    post_body = {
+        "events": []
+    }
     unsent_event_rowids = []  # アップデート用rowidリスト
     unsent_timestamp_rowids = []  # アップデート用rowidリスト
+    # event_collection_settings_idとfetched_timeの組み合わせで辞書を作成
     for id in id_list:
-        event_dict = {}
         sqliteDB.db_cursor.execute(
-            "SELECT rowid, event FROM events WHERE event_collection_settings_id=? AND sent_flag=?",
-            (id, 0)
-        )
-        unsent_event = sqliteDB.db_cursor.fetchall()
-        unsent_event_rowids.extend([row[0] for row in unsent_event])
-        sqliteDB.db_cursor.execute(
-            "SELECT rowid, fetched_time FROM sent_timestamp WHERE event_collection_settings_id=? AND sent_flag=?",
+            "SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp WHERE event_collection_settings_id=? AND sent_flag=?",
             (id, 0)
         )
         unsent_timestamp = sqliteDB.db_cursor.fetchall()
         unsent_timestamp_rowids.extend([row[0] for row in unsent_timestamp])
 
-        event_dict["event"] = [row[1] for row in unsent_event]
-        event_dict["fetched_time"] = [row[1] for row in unsent_timestamp]
-        event_dict["event_collection_settings_id"] = id
-        post_body.append(event_dict)
+        for item in unsent_timestamp:
+            unsent_event = {}
+            event_collection_settings_id = item[1]
+            fetched_time = item[2]
+            unsent_event["fetched_time"] = fetched_time
+            unsent_event["event_collection_settings_id"] = event_collection_settings_id
+            unsent_event["event"] = []
+            sqliteDB.db_cursor.execute(
+                "SELECT rowid, event_collection_settings_id, event, fetched_time FROM events WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?",
+                (event_collection_settings_id, fetched_time, 0)
+            )
+            unsent_events = sqliteDB.db_cursor.fetchall()
+            unsent_event["event"].extend([row[2] for row in unsent_events])
+            unsent_event_rowids.extend([row[0] for row in unsent_event])
+            post_body["events"].append(unsent_event)
 
     # ITAにデータを送信
     g.applogger.info("sending events to IT Automation")
-    def tmp_post_ita():  # noqa: E306
-        return True
-    ita_post_result = tmp_post_ita()
+    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/event_relay_agent/event_collection/events"
+    status_code, response = exastro_api.api_request(
+        "POST",
+        endpoint,
+        post_body
+    )
 
     # データ送信に成功した場合、sent_flagカラムをtrueにアップデート
-    if ita_post_result is True:
+    if status_code == 200:
         for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
             sqliteDB.db_cursor.execute(
                 """

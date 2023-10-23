@@ -54,10 +54,10 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         if setting["RESPONSE_LIST_FLAG"] == 0:
             event = {}
             event["event"] = json_data
-            event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
-            event["_exastro_fetched_time"] = int(fetched_time.timestamp())
-            event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
-            event["_exastro_type"] = "event"
+            event["event"]["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
+            event["event"]["_exastro_fetched_time"] = int(fetched_time.timestamp())
+            event["event"]["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
+            event["event"]["_exastro_type"] = "event"
             events.append(event)
 
         # RESPONSE_KEYの値がリスト形式の場合、1つずつ保存
@@ -70,10 +70,10 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             for data in json_data:
                 event = {}
                 event["event"] = data
-                event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
-                event["_exastro_fetched_time"] = int(fetched_time.timestamp())
-                event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
-                event["_exastro_type"] = "event"
+                event["event"]["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
+                event["event"]["_exastro_fetched_time"] = int(fetched_time.timestamp())
+                event["event"]["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
+                event["event"]["_exastro_type"] = "event"
                 events.append(event)
 
         # 取得を試みた時間を保存
@@ -81,16 +81,5 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             setting["EVENT_COLLECTION_SETTINGS_ID"],
             int(fetched_time.timestamp())
         )
-        # print("#############イベントのリスト################")
-        # print(events)
-        # print(len(events))
-
-        # イベントをローカルsqliteに保存
-
-        # 取得時間（APIごと）を記録（APIに送信）
-
-        # ラベル設定APIに送信（ローカルから未送信のイベントを取り出して、まとめて送信）
-
-        # ラベル設定APIへの送信が成功したら、ローカルに保存したイベントを削除
 
     return events

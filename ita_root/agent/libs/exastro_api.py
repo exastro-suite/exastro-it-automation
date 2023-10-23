@@ -14,7 +14,6 @@
 
 from flask import g
 import requests
-import json
 
 
 class Exastro_API:
@@ -39,7 +38,9 @@ class Exastro_API:
             json=body
         )
 
-        return response.json()
+        status_code = response.status_code
+
+        return status_code, response.json()
 
     def get_access_token(self, url, organization_id, grant_type, refresh_token=None):
         token_url = f"{url}/auth/realms/{organization_id}/protocol/openid-connect/token"

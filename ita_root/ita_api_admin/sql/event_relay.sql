@@ -479,3 +479,33 @@ CREATE TABLE T_EVRL_EVENT_HISTORY
 
 
 
+-- 通知テンプレート(共通)
+CREATE TABLE T_EVRL_NOTIFICATION_TEMPLATE_COMMON
+(
+    NOTIFICATION_TEMPLATE_ID        VARCHAR(2),                                 -- 通知テンプレートID
+    EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(NOTIFICATION_TEMPLATE_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_EVRL_NOTIFICATION_TEMPLATE_COMMON_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    NOTIFICATION_TEMPLATE_ID        VARCHAR(2),                                 -- 通知テンプレートID
+    EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+

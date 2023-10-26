@@ -87,6 +87,8 @@ services:
       - ../.volumes/phpmyadmin/sessions:/sessions
       - ../.vscode_extensions/phpmyadmin/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/phpmyadmin/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    networks:
+      - exastro
 
   ita-by-ansible-execute:
     build:

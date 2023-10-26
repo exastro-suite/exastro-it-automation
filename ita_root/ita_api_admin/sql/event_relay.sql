@@ -284,13 +284,15 @@ CREATE TABLE T_EVRL_ACTION_JNL
 CREATE TABLE T_EVRL_ACTION_LOG
 (
     ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
+    RULE_ID                         VARCHAR(40),                                -- ルールID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名称
+    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
-    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
-    RULE_NAME                       VARCHAR(255),                               -- ルール名称
-    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
@@ -306,13 +308,15 @@ CREATE TABLE T_EVRL_ACTION_LOG_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
+    RULE_ID                         VARCHAR(40),                                -- ルールID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名称
+    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
-    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
-    RULE_NAME                       VARCHAR(255),                               -- ルール名称
-    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考

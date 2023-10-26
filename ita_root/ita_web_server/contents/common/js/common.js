@@ -1743,11 +1743,6 @@ html: {
         }
         attr.push(`class="${className.join(' ')}"`);
 
-        // 必須じゃない場合空白を追加
-        if ( attrs.required === '0') {
-            selectOption.push(`<option value=""></option>`);
-        }
-
         // listを名称順にソートする
         let sortList;
         if ( cmn.typeof(list) === 'object') {

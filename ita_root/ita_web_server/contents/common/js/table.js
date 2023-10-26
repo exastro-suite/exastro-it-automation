@@ -1833,15 +1833,21 @@ setTableEvents() {
 
         // select欄クリック時にselect2を適用する
         tb.$.tbody.on('click', '.tableEditInputSelectValue', function(){
-            const $value = $( this ),
-                  $select = $value.next('.tableEditInputSelect'),
-                  restName = $select.attr('data-key');
+            const
+            $value = $( this ),
+            $select = $value.next('.tableEditInputSelect'),
+            restName = $select.attr('data-key'),
+            required = $select.attr('data-required');
 
             if ( $value.is('.tableEditInputSelectValueDisabled') ) return false;
 
             const list = Object.keys( tb.data.editSelect[ restName ] ).map(function(key){
                 return tb.data.editSelect[ restName ][ key ];
             });
+
+            // 必須じゃない場合は空白を追加する
+            if ( required === '0') list.unshift('');
+
             tb.setSelect2( null, $select, list, true, null, $value ).then(function(){
                 $select.change();
             });      
@@ -1862,24 +1868,13 @@ setTableEvents() {
         
         // select欄フォーカス時にselect2を適用する
         tb.$.tbody.on('focus.select2', '.tableEditInputSelect', function(){
-            const $select = $( this );           
+            const $select = $( this );
 
-            if ( !$select.is('.select2-hidden-accessible') ) {
+            // フォーカス時のスクロールを0に
+            $select.closest('.tableEditInputSelectContainer').scrollTop(0);
 
-                const $value = $select.prev('.tableEditInputSelectValue'),
-                      width = $value.outerWidth();
-
-                $select.off('focus.select2');
-                $value.remove();
-
-                $select.select2({
-                    dropdownAutoWidth: false,
-                    width: width
-                }).select2('open');
-
-                $select.change();
-                
-            }
+            // クリックイベント
+            $select.prev('.tableEditInputSelectValue').click();
         });
 
         // input hidden変更時にテキストも変更する
@@ -2518,7 +2513,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             }
 
             return data;
-        })
+        });
 
         $.fn.select2.amd.require([
             'select2/data/array',
@@ -4054,6 +4049,7 @@ setPagingEvent() {
                 });
             } else {
                 $list.removeClass('pagingOnePageOpen');
+                $( window ).off('pointerdown.pagingOnePageNum');
             }
         }
     });

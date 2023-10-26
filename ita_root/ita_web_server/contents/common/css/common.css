@@ -2777,6 +2777,12 @@ height: 32px;
 background-color: #DFF4CF;
 border-color: #60C60D;
 }
+.tableEditInputSelectContainer .select2-container--focus .select2-selection,
+.tableEditInputSelectContainer.tableEditChange .select2-container--focus .select2-selection {
+outline: none;
+background-color: var(--focusBackgroundColor);
+border-color: var(--focusColor);
+}
 .tableEditInputSelectValueDisabled,
 .select2-container--default.select2-container--disabled .select2-selection--single {
 background-color: var(--black15);

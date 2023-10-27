@@ -13,7 +13,6 @@
 #   limitations under the License.
 
 from common_libs.api import api_filter
-# from common_libs.common import DBConnectWs
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from libs import event_relay
@@ -66,70 +65,63 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
     wsMongo = MONGOConnectWs()
 
-    # body = {
-    #     "events": [
-    #         {
-    #             "event": [
-    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_1>","envelope_from": "root@ita-event-relay-mailserver.localdomain_1","envelope_to": "user1@localhost_1","header_from": "<root@ita-event-relay-mailserver.localdomain_1>","header_to": "user1@localhost_1","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_1>","mailaddr_to": "user1@localhost_1","date": "2023-10-04 16:17:11","lastchange": 1696403830.1,"body": "Lorem1 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "1111111112","_exastro_end_time": "1111111113"}',
-    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_2>","envelope_from": "root@ita-event-relay-mailserver.localdomain_2","envelope_to": "user1@localhost_2","header_from": "<root@ita-event-relay-mailserver.localdomain_2>","header_to": "user1@localhost_2","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_2>","mailaddr_to": "user1@localhost_2","date": "2023-10-04 16:17:12","lastchange": 1696403830.2,"body": "Lorem2 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "1111111112","_exastro_end_time": "1111111113"}'
-    #             ],
-    #             "fetched_time": 11111112,
-    #             "event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94"
-    #         },
-    #         {
-    #             "event": [
-    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_3>","envelope_from": "root@ita-event-relay-mailserver.localdomain_3","envelope_to": "user1@localhost_3","header_from": "<root@ita-event-relay-mailserver.localdomain_3>","header_to": "user1@localhost_3","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_3>","mailaddr_to": "user1@localhost_3","date": "2023-10-04 16:17:13","lastchange": 1696403830.3,"body": "Lorem3 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "eb66c6fe-344e-4609-9a56-5798eb3d2859","_exastro_fetched_time": "2222222222","_exastro_end_time": "2222222223"}'
-    #             ],
-    #             "fetched_time": 22222222,
-    #             "event_collection_settings_id": "eb66c6fe-344e-4609-9a56-5798eb3d2859"
-    #         },
-    #         {
-    #             "event": [
-    #                 '{"message_id": "<20231004071711.06338770D0A0@ita-event-relay-mailserver.localdomain_4>","envelope_from": "root@ita-event-relay-mailserver.localdomain_4","envelope_to": "user1@localhost_4","header_from": "<root@ita-event-relay-mailserver.localdomain_4>","header_to": "user1@localhost_4","mailaddr_from": "root <root@ita-event-relay-mailserver.localdomain_4>","mailaddr_to": "user1@localhost_4","date": "2023-10-04 16:17:14","lastchange": 1696403830.4,"body": "Lorem4 ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui! Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis impedit, ipsam consequatur architecto voluptatum minima soluta animi numquam quod odio quae explicabo laudantium nulla? Quia in nesciunt quo quibusdam qui!\r\n","_exastro_event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94","_exastro_fetched_time": "3333333333","_exastro_end_time": "4444444443"}'
-    #             ],
-    #             "fetched_time": 33333333,
-    #             "event_collection_settings_id": "c65d5636-73e2-4372-9dc9-9de49c1cde94"
-    #         }
-    #     ]
-    # }
-
     events = []
 
-    data_list = []
+    fetched_time_list = []
 
     # eventsデータを取り出す
     events_list = body["events"]
 
-    for events_dict in events_list:
-        data_dict = {}
+    # イベントリストからイベントを取り出す
+    for single_event in events_list:
+        single_data = {}
 
-        event_list = events_dict["event"]
+        # 文字列化された辞書を取り出す
+        event_list = single_event["event"]
 
-        data_dict["EVENT_COLLECTION_SETTINGS_ID"] = events_dict["event_collection_settings_id"]
-        data_dict["FETCHED_TIME"] = events_dict["fetched_time"]
+        # イベント収集設定IDとfetched_timeをsingle_dataに格納する
+        single_data["EVENT_COLLECTION_SETTINGS_ID"] = single_event["event_collection_settings_id"]
+        single_data["FETCHED_TIME"] = single_event["fetched_time"]
 
-        data_list.append(data_dict)
+        event_collection_settings_id = single_data["EVENT_COLLECTION_SETTINGS_ID"]
+        fetched_time = single_data["FETCHED_TIME"]
 
+        table_name = "T_EVRL_EVENT_COLLECTION_PROGRESS"
+        primary_key_name = "EVENT_COLLECTION_ID"
+
+        # # # イベント収集経過テーブルからイベント収集設定IDを基準にfetched_timeが最新のもの1件を取得する
+        collection_progress = wsDb.table_select(table_name, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id])  # noqa: E501
+
+        if collection_progress == []:
+            fetched_time_list.append(single_data)
+        else:
+            last_fetched_time = collection_progress[0]["FETCHED_TIME"]
+
+            if fetched_time <= last_fetched_time:
+                msg = "送られてきたfetched_timeは最新ではないため保存されませんでした"
+                print(msg)
+                continue
+            # イベント収集設定IDとfetched_timeをリストに格納
+            fetched_time_list.append(single_data)
+
+        # 辞書型のイベントから文字列型のイベントを取り出す
         for event_str in event_list:
-            # tryの中で辞書化する
+            # tryの中で文字列から辞書化する
             try:
                 event_dict = json.loads(event_str, strict=False)
             except Exception as e:
                 print(e)
                 return event_result
-
+            # 辞書化したイベントをリストに格納
             events.append(event_dict)
 
     # そのまま/ラベリングしてMongoDBに保存
-    res = label_event(wsDb, wsMongo, events)
+    res = label_event(wsDb, wsMongo, events)  # noqa: F841
 
-    # MySQLにevent_collection_settings_idとfetched_timeを保存
-    table_name = "T_EVRL_EVENT_COLLECTION_PROGRESS"
-    primary_key_name = "EVENT_COLLECTION_ID"
-
+    # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
     wsDb.db_transaction_start()
 
-    ret = wsDb.table_insert(table_name, data_list, primary_key_name, True)
+    ret = wsDb.table_insert(table_name, fetched_time_list, primary_key_name, True)  # noqa: F841
 
     wsDb.db_transaction_end(True)
 

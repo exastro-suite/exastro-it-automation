@@ -56,6 +56,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade connexion[swagger-ui] \
 &&  pip3.9 install --upgrade pycryptodome \
 &&  pip3.9 install --upgrade cryptography \
+&&  pip3.9 install --upgrade pymongo \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
 &&  setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd \

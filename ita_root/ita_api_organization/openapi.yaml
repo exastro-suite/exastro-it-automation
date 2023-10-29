@@ -58,6 +58,8 @@ tags:
     description: Terraform Cloud/Enterpriseとの連携
   - name: CI/CD for IaC
     description: CI/CD for IaCの操作
+  - name: Event Relay
+    description: イベント連携用
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
@@ -5857,6 +5859,260 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/filter/{menu}/:
+    get:
+      tags:
+        - Event Relay
+      description: イベント連携のレコードを全件取得する
+      operationId: getEventRelayFilter
+      x-openapi-router-controller: controllers.event_relay_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    items: {
+                      $ref: '#/components/schemas/FILTER_PARAMETERS',
+                    }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+    post:
+      tags:
+        - Event Relay
+      description: 検索条件を指定し、レコードを取得する
+      operationId: postEventRelayFilter
+      x-openapi-router-controller: controllers.event_relay_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を設定
+              properties:
+                rest_key_name:
+                  $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    items: {
+                      $ref: '#/components/schemas/FILTER_PARAMETERS',
+                    }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/history/:
+    post:
+      tags:
+        - Event Relay
+      description: 検索条件を指定し、イベントフローで扱う履歴情報（イベント履歴、アクション履歴）を取得する
+      operationId: postEventFlowHistory
+      x-openapi-router-controller: controllers.event_relay_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 検索条件を指定
+              properties:
+                start_time:
+                  type: string
+                  format: date-time
+                  example: "2017-07-21T17:32:28Z"
+                end_time:
+                  type: string
+                  format: date-time
+                  example: "2017-07-21T17:32:28Z"
+                evaluted:
+                  type: boolean
+                  example: "true"
+                undetected:
+                  type: boolean
+                  example: "false"
+                timeouted:
+                  type: boolean
+                  example: "false"
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        datetime:
+                          type: string
+                          example: "2023-09-12 15:41:29"
+                        id:
+                          type: string
+                        item:
+                          type: object
+                          description: "イベント履歴かアクション履歴から取得した内容"
+                        type:
+                          type: string
+                          description: "取得元を判断するための文字列。イベント履歴：event, アクション履歴：action"
+                    example: []
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/definition/:
+    get:
+      tags:
+        - Event Relay
+      description: イベントフローで扱う定義情報（ラベル、アクション、ルール）を取得する
+      operationId: getEventFlowDefinition
+      x-openapi-router-controller: controllers.event_relay_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: object
+                    example: {"action":[{}], "filter":[{}], "rule":[{}] }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
 components:
   schemas:
     TABLE:

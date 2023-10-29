@@ -50,6 +50,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade python-dotenv \
 &&  pip3.9 install --upgrade pycryptodome \
 &&  pip3.9 install --upgrade cryptography \
+&&  pip3.9 install --upgrade pymongo \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 

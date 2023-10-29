@@ -55,6 +55,8 @@ tags:
   description: Terraform Cloud/Enterpriseとの連携
 - name: CI/CD for IaC
   description: CI/CD for IaCの操作
+- name: Event Relay
+  description: イベント連携用
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
     get:
@@ -5164,6 +5166,203 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.cicd_for_ia_c_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/filter/{menu}/:
+    get:
+      tags:
+      - Event Relay
+      description: イベント連携のレコードを全件取得する
+      operationId: get_event_relay_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.event_relay_controller
+    post:
+      tags:
+      - Event Relay
+      description: 検索条件を指定し、レコードを取得する
+      operationId: post_event_relay_filter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/filter_menu_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.event_relay_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/history/:
+    post:
+      tags:
+      - Event Relay
+      description: 検索条件を指定し、イベントフローで扱う履歴情報（イベント履歴、アクション履歴）を取得する
+      operationId: post_event_flow_history
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/event_flow_history_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_22'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.event_relay_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/event_relay/event_flow/definition/:
+    get:
+      tags:
+      - Event Relay
+      description: イベントフローで扱う定義情報（ラベル、アクション、ルール）を取得する
+      operationId: get_event_flow_definition
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_23'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.event_relay_controller
 components:
   schemas:
     TABLE:
@@ -6768,6 +6967,75 @@ components:
           type: string
           example: /api/v2/policies/pol-xxxxxxxxxx/download
       description: policyコードのダウンロードパスを記載
+    filter_menu_body:
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/FILTER_REQUEST_PARAMETERS'
+      description: 検索条件を設定
+    event_flow_history_body:
+      properties:
+        start_time:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        end_time:
+          type: string
+          format: date-time
+          example: 2017-07-21T17:32:28Z
+        evaluted:
+          type: boolean
+          example: true
+        undetected:
+          type: boolean
+          example: false
+        timeouted:
+          type: boolean
+          example: false
+      description: 検索条件を指定
+    inline_response_200_22:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example: []
+          items:
+            $ref: '#/components/schemas/inline_response_200_22_data'
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: []
+        message: message
+    inline_response_200_23:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: object
+          example:
+            action:
+            - {}
+            filter:
+            - {}
+            rule:
+            - {}
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+          action:
+          - {}
+          filter:
+          - {}
+          rule:
+          - {}
+        message: message
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:
@@ -7419,6 +7687,20 @@ components:
       example:
         file_name: "{compare_name}_YYYY/MMDDhhmmss.xlsx"
         file_data: Compare result base64 string
+    inline_response_200_22_data:
+      type: object
+      properties:
+        datetime:
+          type: string
+          example: 2023-09-12 15:41:29
+        id:
+          type: string
+        item:
+          type: object
+          description: イベント履歴かアクション履歴から取得した内容
+        type:
+          type: string
+          description: "取得元を判断するための文字列。イベント履歴：event, アクション履歴：action"
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

@@ -705,6 +705,42 @@ CREATE TABLE T_COMN_DEL_FILE_LIST_JNL
 
 
 
+-- 通知設定
+CREATE TABLE T_COMN_NOTIFICATION_SETTINGS
+(
+    DESTINATION_ID                  VARCHAR(36),                                -- 通知先ID
+    DESTINATION_NAME                VARCHAR(255),                               -- 通知先名
+    EVENT_RELAY_NEW                 VARCHAR(2),                                 -- イベント連携_新規
+    EVENT_RELAY_EVALUATED           VARCHAR(2),                                 -- イベント連携_既知（判定済）
+    EVENT_RELAY_TIME_OUT            VARCHAR(2),                                 -- イベント連携_既知（時間切れ）
+    EVENT_RELAY_UNDETECTED          VARCHAR(2),                                 -- イベント連携_未知
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(DESTINATION_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_COMN_NOTIFICATION_SETTINGS_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    DESTINATION_ID                  VARCHAR(36),                                -- 通知先ID
+    DESTINATION_NAME                VARCHAR(255),                               -- 通知先名
+    EVENT_RELAY_NEW                 VARCHAR(2),                                 -- イベント連携_新規
+    EVENT_RELAY_EVALUATED           VARCHAR(2),                                 -- イベント連携_既知（判定済）
+    EVENT_RELAY_TIME_OUT            VARCHAR(2),                                 -- イベント連携_既知（時間切れ）
+    EVENT_RELAY_UNDETECTED          VARCHAR(2),                                 -- イベント連携_未知
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- インデックス
 CREATE INDEX IND_T_COMN_MENU_GROUP_01 ON T_COMN_MENU_GROUP (DISUSE_FLAG);
 CREATE INDEX IND_T_COMN_MENU_01 ON T_COMN_MENU (DISUSE_FLAG);

@@ -1,0 +1,22 @@
+version: '3.7'
+services:
+  ita-ag-event-relay:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_ag_event_relay/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      # - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DEFAULT_LANGUAGE=ja
+
+    profiles:
+      - exastro-it-automation-agent
+      - ita-ag-event-relay
+    networks:
+      - exastro

@@ -24,6 +24,8 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
     volumes:
       - vol-ita-storage:/storage
     networks:
@@ -51,6 +53,10 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
+      - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
       - GITLAB_PROTOCOL=${GITLAB_PROTOCOL:-http}
       - GITLAB_HOST=${GITLAB_HOST}
       - GITLAB_PORT=${GITLAB_PORT}
@@ -707,37 +713,37 @@ services:
       - ita-by-execinstance-dataautoclean
 
   ita-by-file-autoclean:
-    user: 1000:1000
-    build:
-      dockerfile: ./ita_root/ita_by_file_autoclean/Dockerfile
-      context: ../.
-      args:
-        - HTTP_PROXY=${HTTP_PROXY}
-        - http_proxy=${HTTP_PROXY}
-        - HTTPS_PROXY=${HTTPS_PROXY}
-        - https_proxy=${HTTPS_PROXY}
-    environment:
-      - TZ=Asia/Tokyo
-      - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_DATABASE=${DB_DATABASE}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_ADMIN_USER=${DB_ADMIN_USER}
-      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-      - PLATFORM_API_HOST=platform-api
-      - PLATFORM_API_PORT=8000
-    volumes:
-      - vol-ita-storage:/storage
-    networks:
-      - exastro
-    depends_on:
-      ita-migration:
-        condition: service_completed_successfully
-    profiles:
-      - exastro-it-automation-backyard
-      - ita-by-file-autoclean
+      user: 1000:1000
+      build:
+        dockerfile: ./ita_root/ita_by_file_autoclean/Dockerfile
+        context: ../.
+        args:
+          - HTTP_PROXY=${HTTP_PROXY}
+          - http_proxy=${HTTP_PROXY}
+          - HTTPS_PROXY=${HTTPS_PROXY}
+          - https_proxy=${HTTPS_PROXY}
+      environment:
+        - TZ=Asia/Tokyo
+        - ENCRYPT_KEY=${ENCRYPT_KEY}
+        - DB_HOST=${DB_HOST}
+        - DB_PORT=${DB_PORT}
+        - DB_DATABASE=${DB_DATABASE}
+        - DB_USER=${DB_USER}
+        - DB_PASSWORD=${DB_PASSWORD}
+        - DB_ADMIN_USER=${DB_ADMIN_USER}
+        - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+        - PLATFORM_API_HOST=platform-api
+        - PLATFORM_API_PORT=8000
+      volumes:
+        - vol-ita-storage:/storage
+      networks:
+        - exastro
+      depends_on:
+        ita-migration:
+          condition: service_completed_successfully
+      profiles:
+        - exastro-it-automation-backyard
+        - ita-by-file-autoclean
 
   ita-migration:
     user: 1000:1000
@@ -776,6 +782,99 @@ services:
         condition: service_healthy
       platform-migration-2:
         condition: service_completed_successfully
+
+
+  ita-api-event-relay-receiver:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_api_event_relay_receiver/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - LISTEN_PORT=8000
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DEFAULT_LANGUAGE=ja
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
+      - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+    profiles:
+      - ita-event-relay
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+
+  ita-by-event-relay-conclusion:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_by_event_relay_conclusion/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DEFAULT_LANGUAGE=ja
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-event-relay
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
+
+  ita-mongodb:
+    image: mongo:6.0.7
+    # healthcheck:
+    #   test: ""
+    #   interval: 3s
+    #   retries: 200
+    environment:
+      - TZ=Asia/Tokyo
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "0.0.0.0:27017:27017"
+    volumes:
+      # - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
+      # - ../ita_root/ita-mongodb/initdb.d:/docker-entrypoint-initdb.d
+      # - ../ita_root/ita_mongodb/logs:/root/logs
+      - ../.volumes/ita-mongodb/data:/data/db
+    # entrypoint: ["mongod", "--config", "/etc/mongo/mongod.conf"]
+    profiles:
+      - ita-event-relay
+    networks:
+      - exastro
 
 volumes:
   vol-ita-storage:

@@ -20,6 +20,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
 from flask import g
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs, CollectionFactory
 
 
 def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, privilege='1'):  # noqa: C901
@@ -768,6 +769,72 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         search_candidates = list(dict.fromkeys(search_candidates))
 
     return search_candidates
+
+
+def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu_record, menu_table_link_record):
+    """
+    Args:
+        wsMongo (MONGOConnectWs): DB接続クラス  MONGOConnectWs()
+        column: REST API項目名
+        menu_record: メニュー管理のレコード
+        menu_table_link_record: メニュー-テーブル紐付管理のレコード
+    Returns:
+        search_candidates
+    """
+
+    # メニュー-テーブル紐付管理はMariaDBのテーブル名を保持するのでそのままでは利用できないため、MongoDBのコレクション名に変換する
+    mariadb_table_name = menu_table_link_record["TABLE_NAME"]
+    mondodb_collection_name = CollectionFactory.get_collection_name(mariadb_table_name)
+    collection = CollectionFactory.create(mondodb_collection_name)
+
+    # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
+    sort_key = collection.create_sort_key(menu_record["SORT_KEY"])
+
+    # filter向けに用意した処理を流用し、python側で絞り込んだ方が実装工数が短くなるため一旦この実装とする。
+    # MongoDBから扱わない項目も取得しているため、その分のコストが重い場合は専用の実装を検討する。
+    tmp_result = (wsMongo.collection(mondodb_collection_name)
+                  .find()
+                  .sort(sort_key))
+    result_list = collection.create_result(tmp_result)
+
+    search_candidates = []
+    for item in result_list:
+        if column in item:
+            search_candidates.append(item[column])
+
+    # 重複を排除したリストを作成
+    # 値がobjectの可能性もあるため詰めなおす方式で実装
+    result = []
+    for item in search_candidates:
+        if isinstance(item, dict):
+            for key, value in item.items():
+                # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                if isinstance(value, str):
+                    tmp_str = '"' + key + '": "' + str(value) + '"'
+                else:
+                    tmp_str = '"' + key + '": ' + json.dumps(value)
+
+                if tmp_str not in result:
+                    result.append(tmp_str)
+
+        elif isinstance(item, list):
+            for value in item:
+                if value not in result:
+                    # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                    # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                    if isinstance(value, dict):
+                        result.append(json.dumps(value))
+                    elif isinstance(value, list):
+                        result.append(json.dumps(value))
+                    else:
+                        result.append(value)
+
+        else:
+            if item not in result:
+                result.append(item)
+
+    return sorted(result)
 
 
 def custom_check_sheet_type(menu, sheet_type_list, wsdb_istc=None):

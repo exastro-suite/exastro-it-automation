@@ -30,55 +30,6 @@ def returns_bool(_value):
         return None
 
 
-# 取得してきたJSONデータ内target_valueの正規表現
-def bool_RegExp(comparison_method_id, target_value_collection, target_value_setting):
-
-    # ラベリング設定内比較方法が ≠ の場合
-    if comparison_method_id == "2":
-        # ラベリング設定内で "True" 指定の場合
-        if target_value_setting == "True":
-            # 取得してきたJSONデータ内target_valueと"False"を正規表現で比較
-            bool_check = str(re.search(target_value_collection, "False", flags=re.IGNORECASE))
-            # 取得してきたJSONデータとラベリング設定内target_valueが一致しないことを確認
-            if bool_check != "<re.Match object; span=(0, 4), match='True'>":
-                # 取得してきたJSONデータとラベリング設定内target_valueの対義語("False")が一致することを確認
-                if bool_check == "<re.Match object; span=(0, 5), match='False'>":
-                    result = "unmatch"
-                    return result
-                else:
-                    return None
-            else:
-                return None
-        # ラベリング設定内で "False" 指定の場合
-        elif target_value_setting == "False":
-            # 取得してきたJSONデータ内target_valueと"True"を正規表現で比較
-            bool_check = str(re.search(target_value_collection, "True", flags=re.IGNORECASE))
-            # 取得してきたJSONデータとラベリング設定内target_valueが一致しないことを確認
-            if bool_check != "<re.Match object; span=(0, 5), match='False'>":
-                # 取得してきたJSONデータとラベリング設定内target_valueの対義語("True")が一致することを確認
-                if bool_check == "<re.Match object; span=(0, 4), match='True'>":
-                    result = "unmatch"
-                    return result
-                else:
-                    return None
-        else:
-            return None
-    # ラベリング設定内比較方法が ≠ 以外の場合
-    else:
-        bool_check = str(re.search(target_value_collection, target_value_setting, flags=re.IGNORECASE))
-
-        # ラベリング設定内target_valueが"True"の場合、取得してきたJSONデータとラベリング設定内target_valueが一致することを確認
-        if bool_check == "<re.Match object; span=(0, 4), match='True'>":
-            result = "match"
-            return result
-        # ラベリング設定内target_valueが"False"の場合、取得してきたJSONデータとラベリング設定内target_valueが一致することを確認
-        elif bool_check == "<re.Match object; span=(0, 5), match='False'>":
-            result = "match"
-            return result
-        else:
-            return None
-
-
 # ラベリング設定内target_valueを取得してきたイベントのタイプに合わせて比較するためのマスタ
 target_value_type = {
     "1": str,  # string

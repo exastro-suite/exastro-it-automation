@@ -749,7 +749,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-api-event-relay-receiver/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-api-event-relay-receiver/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -783,7 +782,6 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/storage
       - ../.vscode_extensions/ita-by-event-relay-conclusion/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-by-event-relay-conclusion/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
@@ -799,8 +797,8 @@ services:
 
   ita-event-relay-mailserver:
     build:
-      context: ../ita_root/ita_event_relay_mailserver/
-      dockerfile: Dockerfile
+      dockerfile: ./ita_root/ita_event_relay_mailserver/Dockerfile
+      context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
         - http_proxy=${HTTP_PROXY}
@@ -810,8 +808,8 @@ services:
     environment:
       - TZ=Asia/Tokyo
     volumes:
-      - "../ita_root/ita_event_relay_mailserver/conf/dovecot/dovecot.conf:/etc/dovecot/dovecot.conf"
-      - "../ita_root/ita_event_relay_mailserver/conf/postfix/main.cf:/etc/postfix/main.cf"
+      - ../ita_root/ita_event_relay_mailserver/conf/dovecot/dovecot.conf:/etc/dovecot/dovecot.conf
+      - ../ita_root/ita_event_relay_mailserver/conf/postfix/main.cf:/etc/postfix/main.cf
     tty: true
     privileged: true
     command: /sbin/init
@@ -820,19 +818,14 @@ services:
       - "0.0.0.0:143:143" # IMAP
       - "0.0.0.0:587:587" # StartTLS
       - "0.0.0.0:993:993" # IMAPS
+    networks:
+      - exastro
     profiles:
       - ita-ag-event-relay
 
   ita-ag-event-relay:
     build:
-      dockerfile: ./ita_root/ita_ag_event_relay/Dockerfile
-      context: ../.
       target: develop_build
-      args:
-        - HTTP_PROXY=${HTTP_PROXY}
-        - http_proxy=${HTTP_PROXY}
-        - HTTPS_PROXY=${HTTPS_PROXY}
-        - https_proxy=${HTTPS_PROXY}
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_ag_event_relay/common_libs:cached
@@ -849,13 +842,9 @@ services:
       - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
       - ~/.config/git/ignore:/home/app_user/.config/git/ignore
       - ${TALISMAN_HOME}:${TALISMAN_HOME}
-      - ../.volumes/storage:/sqlite
       - ../.vscode_extensions/ita-ag-event-relay/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/ita-ag-event-relay/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
     environment:
-      - TZ=Asia/Tokyo
-      - ENCRYPT_KEY=${ENCRYPT_KEY}
-      - DEFAULT_LANGUAGE=ja
       - HTTP_PROXY=${HTTP_PROXY}
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
@@ -865,16 +854,6 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
-      - ORGANIZATION_ID=${ORGANIZATION_ID}
-      - WORKSPACE_ID=${WORKSPACE_ID}
-      - USERNAME=${USERNAME}
-      - PASSWORD=${PASSWORD}
-      - URL=${URL}
-      - ROLES=${ROLES}
-      - USER_ID=${USER_ID}
-      - EVENT_COLLECTION_SETTINGS_IDS=${EVENT_COLLECTION_SETTINGS_IDS}
-      - ITERATION=${ITERATION}
-      - INTERVAL=${INTERVAL}
 
 
   # mongo-express:
@@ -888,4 +867,6 @@ services:
   #   ports:
   #     - "8080:8081"
   #   profiles:
-  #     - exastro-it-automation-event-driven
+  #     - ita-event-relay
+  #   networks:
+  #     - exastro

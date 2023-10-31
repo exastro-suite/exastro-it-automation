@@ -1,3 +1,16 @@
+#   Copyright 2023 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 version: '3.7'
 services:
   ita-api-organization:
@@ -713,37 +726,37 @@ services:
       - ita-by-execinstance-dataautoclean
 
   ita-by-file-autoclean:
-      user: 1000:1000
-      build:
-        dockerfile: ./ita_root/ita_by_file_autoclean/Dockerfile
-        context: ../.
-        args:
-          - HTTP_PROXY=${HTTP_PROXY}
-          - http_proxy=${HTTP_PROXY}
-          - HTTPS_PROXY=${HTTPS_PROXY}
-          - https_proxy=${HTTPS_PROXY}
-      environment:
-        - TZ=Asia/Tokyo
-        - ENCRYPT_KEY=${ENCRYPT_KEY}
-        - DB_HOST=${DB_HOST}
-        - DB_PORT=${DB_PORT}
-        - DB_DATABASE=${DB_DATABASE}
-        - DB_USER=${DB_USER}
-        - DB_PASSWORD=${DB_PASSWORD}
-        - DB_ADMIN_USER=${DB_ADMIN_USER}
-        - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-        - PLATFORM_API_HOST=platform-api
-        - PLATFORM_API_PORT=8000
-      volumes:
-        - vol-ita-storage:/storage
-      networks:
-        - exastro
-      depends_on:
-        ita-migration:
-          condition: service_completed_successfully
-      profiles:
-        - exastro-it-automation-backyard
-        - ita-by-file-autoclean
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_by_file_autoclean/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-file-autoclean
 
   ita-migration:
     user: 1000:1000
@@ -812,12 +825,12 @@ services:
       - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-    profiles:
-      - ita-event-relay
     volumes:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    profiles:
+      - ita-event-relay
 
   ita-by-event-relay-conclusion:
     user: 1000:1000
@@ -842,13 +855,13 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - MONGO_HOST=${MONGO_HOST}
       - MONGO_PORT=${MONGO_PORT}
-    profiles:
-      - exastro-it-automation-backyard
-      - ita-event-relay
     volumes:
       - vol-ita-storage:/storage
     networks:
       - exastro
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-event-relay
     depends_on:
       ita-migration:
         condition: service_completed_successfully
@@ -871,8 +884,6 @@ services:
       # - ../ita_root/ita_mongodb/logs:/root/logs
       - ../.volumes/ita-mongodb/data:/data/db
     # entrypoint: ["mongod", "--config", "/etc/mongo/mongod.conf"]
-    profiles:
-      - ita-event-relay
     networks:
       - exastro
 

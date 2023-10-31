@@ -1,0 +1,48 @@
+#   Copyright 2023 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+version: '3.7'
+services:
+  ita-ag-event-relay:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_ag_event_relay/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      # - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DEFAULT_LANGUAGE=en
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    profiles:
+      - ita-ag-event-relay
+
+
+volumes:
+  vol-ita-storage:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ${PWD}/../../.volumes/storage
+
+networks:
+  exastro:
+    name: "exastro_${NETWORK_ID}"

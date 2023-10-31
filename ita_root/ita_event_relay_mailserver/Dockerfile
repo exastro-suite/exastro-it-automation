@@ -22,6 +22,6 @@ RUN yum -y install dovecot \
 && ln -s /usr/lib/systemd/system/dovecot.service /etc/systemd/system/multi-user.target.wants/dovecot.service \
 && ln -s /usr/lib/systemd/system/postfix.service /etc/systemd/system/multi-user.target.wants/postfix.service
 
-COPY docker-entrypoint.sh /
+COPY ./ita_root/ita_event_relay_mailserver/docker-entrypoint.sh /
 RUN chmod a+x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]

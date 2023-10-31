@@ -49,7 +49,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade jmespath \
 &&  pip3.9 install --upgrade imapclient \
 &&  groupadd $GROUPNAME \
-&&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
+&&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
 
 #

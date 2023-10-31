@@ -34,15 +34,3 @@ services:
     profiles:
       - ita-ag-event-relay
 
-
-volumes:
-  vol-ita-storage:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: ${PWD}/../../.volumes/storage
-
-networks:
-  exastro:
-    name: "exastro_${NETWORK_ID}"

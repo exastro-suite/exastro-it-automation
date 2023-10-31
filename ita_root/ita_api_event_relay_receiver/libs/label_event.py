@@ -12,14 +12,14 @@
 # limitations under the License.
 #
 
-from flask import g
+from flask import g  # noqa: F401
 import operator
 import re
 import jmespath
 import json
 
 
-# ラベリング設定内で比較方法として真偽値を使用　value = ラベリング設定内でのtarget_value       value.lowercase()
+# ラベリング設定内で比較方法として真偽値を使用、value = ラベリング設定内でのtarget_value
 def returns_bool(_value):
     value = _value.lower()
     if value == "true":
@@ -61,26 +61,15 @@ def comparison_values(comparison_method_id="1", comparative=None, referent=None)
 
     # リストの中にcomparison_method_idが存在するか確認
     if comparison_method_id in key_list:
-
         # 正規表現処理
         if comparison_method_id == "7":
             regex_pattern = re.compile(referent)
             result = regex_pattern.search(comparative)
-        elif comparison_method_id == "2":
-            comparison = comparison_operator[comparison_method_id]
-            result_unmatch = comparison(comparative, referent)
-            if result_unmatch is True:
-                if comparative is True:
-                    result = True
-                elif comparative is False:
-                    result = True
-                else:
-                    result = None
-
+            if result is not None:
+                result = True
         else:
             comparison = comparison_operator[comparison_method_id]
             result = comparison(comparative, referent)
-
     else:
         result = None
     return result
@@ -99,12 +88,6 @@ def label(wsDb, event_collection_data, setting):
         "WHERE DISUSE_FLAG=0 AND LABEL_KEY_ID=%s",
         [setting["LABEL_KEY_ID"]]
     )
-
-    # label_key_record = wsDb.table_select(
-    #     "V_EVRL_LABEL_KEY_GROUP",
-    #     "WHERE DISUSE_FLAG=0 AND LABEL_KEY_ID=%s",
-    #     [setting["LABEL_KEY_ID"]]
-    # )
 
     label_key_id = label_key_record[0]["LABEL_KEY_ID"]
     label_key_string = label_key_record[0]["LABEL_KEY"]
@@ -227,7 +210,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                 if setting["TARGET_KEY"] is None:
                     # ラベリング設定内target_typeが"その他"、かつ取得してきたイベント内"event"のvalueがラベリング設定内target_keyの中に存在しない場合
                     if setting["TARGET_TYPE_ID"] != "7" or get_value_from_jsonpath(setting["TARGET_KEY"], event_collection_data[event_inside_key]) is not False:  # noqa: E501
-                        event = label(wsDb, event_collection_data, setting)
+                        event_collection_data = label(wsDb, event_collection_data, setting)  # パターンC
 
                 # ラベリング設定内にtarget_keyが存在する、かつ取得してきたJSONデータ内にラベリング設定内で指定したtarget_keyが存在するか確認（パターンA,B,D,E用）
                 elif setting["TARGET_KEY"] and setting["TARGET_KEY"] in event_collection_data[event_inside_key]:
@@ -235,15 +218,15 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                     # ラベリング設定内target_keyが取得してきたイベント,inside_keyの中に存在するか確認(パターンA,B,D,E用)
                     if (setting["TARGET_KEY"] in event_collection_data[event_inside_key]):
 
-                        # ラベリング設定内target_typeが"その他"以外、かつラベリング設定内にtarget_type_id、Target_valueのどちらも存在していない場合(パターンD用)
+                        # ラベリング設定内target_typeが"空関数"以外、かつラベリング設定内にtarget_type_id、Target_valueのどちらも存在しない場合(パターンD用)
                         if ((setting["TARGET_TYPE_ID"] and setting["TARGET_VALUE"]) is None) and setting["TARGET_TYPE_ID"] != "7":
 
                             query = create_jmespath_query(setting["TARGET_KEY"])
                             # queryが取得してきたイベント,inside_keyの中に存在する場合
                             if get_value_from_jsonpath(query, event_collection_data[event_inside_key]):
-                                event = label(wsDb, event_collection_data, setting)
+                                event_collection_data = label(wsDb, event_collection_data, setting)  # パターンD
 
-                        # パターンA,B,D
+                        # パターンA,B,E
                         else:
                             # 取得してきたイベント,event_inside_key内にラベリング設定内target_keyが一致するものを取得
                             target_value_collection = get_value_from_jsonpath(setting["TARGET_KEY"], event_collection_data[event_inside_key])
@@ -252,19 +235,19 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                             if target_value_collection is None:
                                 continue
 
-                            else:  # パターンA,B,D
+                            else:  # パターンA,B,E
                                 # ラベリング設定内target_valueをラベリング設定内target_typeに合わせて変換
                                 target_value_setting = target_value_type[setting["TARGET_TYPE_ID"]](setting["TARGET_VALUE"])
 
-                                if setting["TARGET_TYPE_ID"] == "7":  # 空判定
-
-                                    if setting["COMPARISON_METHOD_ID"] == "1":
+                                if setting["TARGET_TYPE_ID"] == "7":  # 空判定(パターンE用)
+                                    if setting["COMPARISON_METHOD_ID"] == "1":  # ==
                                         # ラベリング設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在するか確認
                                         if (target_value_collection in ["", [], {}, 0, False]) is True:
-                                            event = label(wsDb, event_collection_data, setting)
-                                    elif setting["COMPARISON_METHOD_ID"] == "2":
+                                            event_collection_data = label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'==')
+                                    elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
+                                        # ラベリング設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在しないか確認
                                         if (target_value_collection in ["", [], {}, 0, False]) is False:
-                                            event = label(wsDb, event_collection_data, setting)
+                                            event_collection_data = label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'≠')
                                     else:
                                         continue
 
@@ -273,8 +256,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                                     # label_valueが空の場合、target_valueをlabel_valueに流用する（パターンB用）
                                     if setting["LABEL_VALUE"] is None:
                                         setting["LABEL_VALUE"] = setting["TARGET_VALUE"]
-
-                                    event = label(wsDb, event_collection_data, setting)  # noqa: F841
+                                    event_collection_data = label(wsDb, event_collection_data, setting)  # パターンA,B
 
             except Exception as e:
                 print(e)

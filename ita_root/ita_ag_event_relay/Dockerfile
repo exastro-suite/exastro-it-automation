@@ -20,12 +20,11 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 ENV PYTHONPATH=/exastro/
-ENV USER_ID=90101
-ENV EXECUTE_INTERVAL=10
 ENV LANGUAGE=en
-# ENV STORAGEPATH=/storage/
-ENV SERVICE_NAME=ita-ag-event-relay
+ENV STORAGEPATH=/storage/
 
+ENV SERVICE_NAME=ita-ag-event-relay
+ENV USER_ID=ita-ag-event-relay01
 
 RUN dnf install -y \
     gcc \
@@ -51,7 +50,7 @@ RUN dnf install -y \
 &&  pip3.9 install --upgrade imapclient \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME \
-&&  mkdir sqlite
+
 
 #
 # Build for development
@@ -108,4 +107,4 @@ USER root
 RUN chmod a+x $APP_PATH/agent/entrypoint.sh
 USER $USERNAME
 
-ENTRYPOINT ["bash", "./backyard/entrypoint.sh"]
+ENTRYPOINT ["bash", "./agent/entrypoint.sh"]

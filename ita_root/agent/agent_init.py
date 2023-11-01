@@ -15,19 +15,16 @@ from flask import Flask, g
 from dotenv import load_dotenv  # python-dotenv
 import os
 import sys
+import time
 
 from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
+from common_libs.ci.util import app_exception, exception
 from agent_main import agent_main as main_logic
 
 
 def main():
-    # コマンドラインから引数を受け取る["自身のファイル名", "organization_id", "workspace_id"]
-    args = sys.argv
-    organization_id = args[1]
-    workspace_id = args[2]
-
     # load environ variables
     load_dotenv(override=True)
 
@@ -35,32 +32,37 @@ def main():
 
     with flask_app.app_context():
         try:
+            organization_id = os.environ.get("ORGANIZATION_ID")
+            workspace_id = os.environ.get("WORKSPACE_ID")
             g.ORGANIZATION_ID = organization_id
             g.WORKSPACE_ID = workspace_id
 
+            g.AGENT_NAME = os.environ.get("AGENT_NAME", "agent-oase-01")
             g.USER_ID = os.environ.get("USER_ID")
             g.LANGUAGE = os.environ.get("LANGUAGE")
-            g.SERVICE_NAME = os.environ.get("SERVICE_NAME")
+
             # create app log instance and message class instance
             g.applogger = AppLog()
+            g.applogger.set_level(os.environ.get("LOG_LEVEL"), "INFO")
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
-            loop_count = 500
-            iteration = os.environ.get("ITERATION")
-            if iteration:
-                if int(iteration) > 0:
-                    loop_count = iteration
+            # storageにdbの保存場所を作成
+            db_dir = "/storage/{}/{}/sqlite".format(organization_id, workspace_id)
+            os.makedirs(db_dir, exist_ok=True)
 
-            main_logic(organization_id, workspace_id, loop_count)
+            # コマンドラインから引数を受け取る["自身のファイル名", "ループ回数"]
+            args = sys.argv
+            loop_count = int(os.environ.get("ITERATION", 500)) if len(args) == 1 else int(args[1])
+            interval = int(os.environ.get("EXECUTE_INTERVAL", 30))
+
+            main_logic(organization_id, workspace_id, loop_count, interval)
         except AppException as e:
-            print(e)
-            import traceback
-            traceback.print_exc()
+            app_exception(e)
+            time.sleep(interval)
         except Exception as e:
             # catch - other all error
-            print(e)
-            import traceback
-            traceback.print_exc()
+            exception(e)
+            time.sleep(interval)
 
 
 if __name__ == '__main__':

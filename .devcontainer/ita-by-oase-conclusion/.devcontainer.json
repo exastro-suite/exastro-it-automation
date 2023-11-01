@@ -1,9 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/jekyll
 {
-	"name": "it-automation2 - ita-by-event-relay-conclusion",
+	"name": "it-automation2 - ita-by-oase-conclusion",
     "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.agent.oase.yml", "../docker-compose.devcontainer.yml", "../docker-compose.platform.yml"],
-	"service": "ita-by-event-relay-conclusion",
+	"service": "ita-by-oase-conclusion",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"files.trimTrailingWhitespace": true,

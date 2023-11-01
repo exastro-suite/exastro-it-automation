@@ -1,9 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/jekyll
 {
-	"name": "it-automation2 - ita-api-organization",
+	"name": "it-automation2 - ita-by-oase-conclusion",
     "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.agent.oase.yml", "../docker-compose.devcontainer.yml", "../docker-compose.platform.yml"],
-	"service": "ita-api-organization",
+	"service": "ita-by-oase-conclusion",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"files.trimTrailingWhitespace": true,
@@ -17,11 +17,6 @@
 		// git menu setting
 		"git.allowNoVerifyCommit": true,
 
-		// thunder-client setting
-		"thunder-client.customLocation": "",
-		"thunder-client.saveToWorkspace": true,
-		"thunder-client.workspaceRelativePath": ".vscode_extensions",
-
 		// python extension setting
 		"python.linting.pylintEnabled": false,
 		"python.linting.flake8Enabled": true,
@@ -31,22 +26,14 @@
 		"python.linting.flake8Args": [
 			"--ignore=W293, W504",
 			"--max-line-length=150",
-			"--max-complexity=20",
+			"--max-complexity=20"
 		],
 
 		"python.formatting.provider": "autopep8",
 
 		"python.formatting.autopep8Args": [
-			"--aggressive", "--aggressive",
-		],
-		// Rest Client setting
-		"rest-client.environmentVariables": {
-			"$shared": {
-				"sys-mng-port": "38001",
-				"org-mng-port": "38000"
-			}
-		},
-		"rest-client.decodeEscapedUnicodeCharacters": true
+			"--aggressive", "--aggressive"
+		]
 	},
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
@@ -56,10 +43,7 @@
 		"ms-vscode.references-view",
 		"eamodio.gitlens",
 		"mhutchie.git-graph",
-		"42crunch.vscode-openapi",
-		"arjun.swagger-viewer",
 		"redhat.vscode-yaml",
-		"adisreyaj.swagger-snippets",
 		"hediet.vscode-drawio",
 		"oderwat.indent-rainbow",
 		"aaron-bond.better-comments",
@@ -67,21 +51,19 @@
 		"mechatroner.rainbow-csv",
 		"ryu1kn.partial-diff",
 		"pkief.material-icon-theme",
-		"rangav.vscode-thunder-client",
 		// "mtxr.sqltools",
 		// "mtxr.sqltools-driver-mysql",
 		"mitchdenny.ecdc",
-		"snyk-security.snyk-vulnerability-scanner",
-		"humao.rest-client",
+		"snyk-security.snyk-vulnerability-scanner"
 	],
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [
-		8000
-	],
+	// // Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [
+	// 	8000
+	// ],
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "onCreateCommand":"sudo dnf install -y git vim diffutils bind-utils iputils && sudo pip3.9 install flake8 && sudo pip3.9 install autopep8",
 	// "postAttachCommand": "",
 	"postCreateCommand": "sudo chmod -R 777 /home/app_user/.vscode-server && sudo chmod 777 /home/app_user/.vscode-server-insiders",
 	"workspaceFolder": "/workspace",
-	"overrideCommand": true,
+	"overrideCommand": true
 }

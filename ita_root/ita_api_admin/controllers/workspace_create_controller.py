@@ -155,7 +155,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             ['terraform_cli.sql', 'terraform_cli_master.sql'],
             ['hostgroup.sql', 'hostgroup_master.sql'],
             ['cicd.sql', 'cicd_master.sql'],
-            ['event_relay.sql', 'event_relay_master.sql'],
+            ['oase.sql', 'oase_master.sql'],
         ]
         last_update_timestamp = str(get_timestamp())
 
@@ -169,7 +169,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                     (sql_files[0] == 'terraform_cloud_ep.sql' and 'terraform_cloud_ep' in no_install_driver) or \
                     (sql_files[0] == 'terraform_cli.sql' and 'terraform_cli' in no_install_driver) or \
                     (sql_files[0] == 'cicd.sql' and 'ci_cd' in no_install_driver) or \
-                    (sql_files[0] == 'event_relay.sql' and 'event_relay' in no_install_driver):
+                    (sql_files[0] == 'oase.sql' and 'oase' in no_install_driver):
                 continue
 
             # create table of workspace-db

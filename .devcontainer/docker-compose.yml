@@ -797,10 +797,10 @@ services:
         condition: service_completed_successfully
 
 
-  ita-api-event-relay-receiver:
+  ita-api-oase-receiver:
     user: 1000:1000
     build:
-      dockerfile: ./ita_root/ita_api_event_relay_receiver/Dockerfile
+      dockerfile: ./ita_root/ita_api_oase_receiver/Dockerfile
       context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
@@ -830,12 +830,12 @@ services:
     networks:
       - exastro
     profiles:
-      - ita-event-relay
+      - ita-oase
 
-  ita-by-event-relay-conclusion:
+  ita-by-oase-conclusion:
     user: 1000:1000
     build:
-      dockerfile: ./ita_root/ita_by_event_relay_conclusion/Dockerfile
+      dockerfile: ./ita_root/ita_by_oase_conclusion/Dockerfile
       context: ../.
       args:
         - HTTP_PROXY=${HTTP_PROXY}
@@ -861,7 +861,7 @@ services:
       - exastro
     profiles:
       - exastro-it-automation-backyard
-      - ita-event-relay
+      - ita-oase
     depends_on:
       ita-migration:
         condition: service_completed_successfully

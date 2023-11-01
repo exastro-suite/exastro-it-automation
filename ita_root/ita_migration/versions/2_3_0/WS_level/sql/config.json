@@ -1,4 +1,4 @@
 [
     ["", "workspace_master.sql"],
-    ["event_relay.sql", "event_relay_master.sql"]
+    ["oase.sql", "oase_master.sql"]
 ]

@@ -2,7 +2,7 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.231.6/containers/jekyll
 {
 	"name": "it-automation2 - ita-by-execinstance-dataautoclean",
-	"dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml", "../docker-compose.platform.yml"],
+	"dockerComposeFile": ["../docker-compose.yml","../docker-compose.devcontainer.yml"],
 	"service": "ita-by-execinstance-dataautoclean",
 	// Set *default* container specific settings.json values on container create.
 	"settings": {

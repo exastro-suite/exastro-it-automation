@@ -17,51 +17,47 @@ import os
 import time
 import sqlite3
 import datetime
-import uuid
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
 from libs.event_collection_settings import create_file, remove_file, get_settings
 
 
-def agent_main(organization_id, workspace_id, loop_count=500):
-
-    interval = int(os.environ.get("INTERVAL"))
+def agent_main(organization_id, workspace_id, loop_count, interval):
     count = 1
     max = int(loop_count)
 
+    g.applogger.info("loop starts")
     while True:
         print("")
         print("")
-        print("")
-        g.applogger.info("loop starts")
         try:
             collection_logic(organization_id, workspace_id)
-        except Exception:
-            g.applogger.info("")
-            import traceback
-            traceback.print_exc()
+            g.applogger.info(f"loop count: {count}")
+        except Exception as e:
+            raise e
 
+        time.sleep(interval)
         if count >= max:
+            g.applogger.info("loop ends")
             break
         else:
             count = count + 1
-            time.sleep(interval)
-
-        g.applogger.info(f"loop count: {count}")
 
     # ループ終了後に設定ファイルを削除
     remove_file()
-    g.applogger.info("remove json file")
-    g.applogger.info("loop ends")
+    g.applogger.info("json file removed")
 
 
 def collection_logic(organization_id, workspace_id):
 
-    username = os.environ.get("USERNAME")
-    password = os.environ.get("PASSWORD")
-    roles = os.environ.get("ROLES")
-    user_id = os.environ.get("USER_ID")
+    # 環境変数の取得
+    username = os.environ["USERNAME"]
+    password = os.environ["PASSWORD"]
+    roles = os.environ["ROLES"]
+    user_id = os.environ["USER_ID"]
+    id_list = os.environ["EVENT_COLLECTION_SETTINGS_IDS"].split(",")
+    baseUrl = os.environ["URL"]
 
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
@@ -78,10 +74,6 @@ def collection_logic(organization_id, workspace_id):
     # イベント収集設定ファイルからイベント収集設定の取得
     settings = get_settings()
     g.applogger.info("getting settings from json file")
-
-    id_list = os.environ.get("EVENT_COLLECTION_SETTINGS_IDS").split(",")
-
-    baseUrl = os.environ.get("URL")
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
@@ -102,8 +94,7 @@ def collection_logic(organization_id, workspace_id):
         settings = get_settings()
 
     # 最終取得日時
-    # current_timestamp = int(datetime.datetime.now().timestamp())
-    current_timestamp = 1688137200
+    current_timestamp = int(datetime.datetime.now().timestamp())
     timestamp_data = {}
     timestamp_dict = {key: current_timestamp for key in id_list}
     try:
@@ -123,8 +114,9 @@ def collection_logic(organization_id, workspace_id):
     g.applogger.info(f"got {len(events)} events")
 
     # 収集したイベント, 取得時間をSQLiteに保存
-    sqliteDB.insert_events(events)
-    g.applogger.info("events saved")
+    if events != []:
+        sqliteDB.insert_events(events)
+        g.applogger.info("events saved")
 
     # ITAに送信するデータを取得
     g.applogger.info("searching unsent events")
@@ -133,14 +125,24 @@ def collection_logic(organization_id, workspace_id):
     }
     unsent_event_rowids = []  # アップデート用rowidリスト
     unsent_timestamp_rowids = []  # アップデート用rowidリスト
+    send_to_ita_flag = False
+
     # event_collection_settings_idとfetched_timeの組み合わせで辞書を作成
     for id in id_list:
-        sqliteDB.db_cursor.execute(
-            "SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp WHERE event_collection_settings_id=? AND sent_flag=?",
-            (id, 0)
-        )
-        unsent_timestamp = sqliteDB.db_cursor.fetchall()
-        unsent_timestamp_rowids.extend([row[0] for row in unsent_timestamp])
+        try:
+            sqliteDB.db_cursor.execute(
+                "SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp WHERE event_collection_settings_id=? AND sent_flag=?",
+                (id, 0)
+            )
+            unsent_timestamp = sqliteDB.db_cursor.fetchall()
+            unsent_timestamp_rowids.extend([row[0] for row in unsent_timestamp])
+        except sqlite3.OperationalError:
+            continue
+
+        if unsent_timestamp == []:
+            continue
+        else:
+            send_to_ita_flag = True
 
         for item in unsent_timestamp:
             unsent_event = {}
@@ -150,7 +152,7 @@ def collection_logic(organization_id, workspace_id):
             unsent_event["event_collection_settings_id"] = event_collection_settings_id
             unsent_event["event"] = []
             sqliteDB.db_cursor.execute(
-                "SELECT rowid, event_collection_settings_id, event, fetched_time FROM events WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?",
+                "SELECT rowid, event_collection_settings_id, event, fetched_time FROM events WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?",  # noqa E501
                 (event_collection_settings_id, fetched_time, 0)
             )
             unsent_events = sqliteDB.db_cursor.fetchall()
@@ -159,27 +161,32 @@ def collection_logic(organization_id, workspace_id):
             post_body["events"].append(unsent_event)
 
     # ITAにデータを送信
-    g.applogger.info("sending events to IT Automation")
-    endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/event_relay_agent/event_collection/events"
-    status_code, response = exastro_api.api_request(
-        "POST",
-        endpoint,
-        post_body
-    )
+    if send_to_ita_flag is True:
+        g.applogger.info("sending events to IT Automation")
+        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/event_relay_agent/event_collection/events"
+        status_code, response = exastro_api.api_request(
+            "POST",
+            endpoint,
+            post_body
+        )
 
-    # データ送信に成功した場合、sent_flagカラムをtrueにアップデート
-    if status_code == 200:
-        for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
-            sqliteDB.db_cursor.execute(
-                """
-                    UPDATE {}
-                    SET sent_flag = {}
-                    WHERE rowid IN ({})
-                """.format(table_name, 1, ", ".join("?" for id in list)),
-                list
-            )
-            sqliteDB.db_connect.commit()
+        # データ送信に成功した場合、sent_flagカラムの値をtrueにアップデート
+        if status_code == 200:
+            g.applogger.info("events sent to ITA")
+            for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
+                sqliteDB.db_cursor.execute(
+                    """
+                        UPDATE {}
+                        SET sent_flag = {}
+                        WHERE rowid IN ({})
+                    """.format(table_name, 1, ", ".join("?" for id in list)),
+                    list
+                )
+                sqliteDB.db_connect.commit()
+            g.applogger.info("sent flag updated")
+        sqliteDB.db_close()
 
-    sqliteDB.db_close()
+    else:
+        g.applogger.info("No events sent to ITA")
 
     return

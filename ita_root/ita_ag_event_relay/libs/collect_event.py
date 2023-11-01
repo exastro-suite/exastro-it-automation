@@ -12,7 +12,6 @@
 # limitations under the License.
 #
 
-from flask import g
 import datetime
 import jmespath
 import json
@@ -48,16 +47,11 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         if json_data is None:
             debug_msg = f"RESPONSE_KEY does not exist. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
             print(debug_msg)
-            raise Exception
+            continue
 
         # RESPONSE_KEYの値がリスト形式ではない場合、そのまま保存する
         if setting["RESPONSE_LIST_FLAG"] == 0:
-            event = {}
-            event["event"] = json_data
-            event["event"]["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
-            event["event"]["_exastro_fetched_time"] = int(fetched_time.timestamp())
-            event["event"]["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
-            event["event"]["_exastro_type"] = "event"
+            event = init_label(json_data, fetched_time, setting)
             events.append(event)
 
         # RESPONSE_KEYの値がリスト形式の場合、1つずつ保存
@@ -65,15 +59,9 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             # 値がリスト形式かチェック
             if isinstance(json_data, list) is False:
                 debug_msg = f"the value of RESPONSE_KEY is not array type. setting_id: {setting['EVENT_COLLECTION_SETTINGS_ID']}"
-                print(debug_msg)
-                raise Exception
+                continue
             for data in json_data:
-                event = {}
-                event["event"] = data
-                event["event"]["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
-                event["event"]["_exastro_fetched_time"] = int(fetched_time.timestamp())
-                event["event"]["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
-                event["event"]["_exastro_type"] = "event"
+                event = init_label(data, fetched_time, setting)
                 events.append(event)
 
         # 取得を試みた時間を保存
@@ -83,3 +71,14 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         )
 
     return events
+
+
+def init_label(data, fetched_time, setting):
+    event = {}
+    event = data
+    event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
+    event["_exastro_fetched_time"] = int(fetched_time.timestamp())
+    event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
+    event["_exastro_type"] = "event"
+
+    return event

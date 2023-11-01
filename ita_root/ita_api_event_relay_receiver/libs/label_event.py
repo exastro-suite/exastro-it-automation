@@ -113,7 +113,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     if labeling_settings is None:
         msg = "ラベリング設定テーブルが取得できませんでした。"
         print(msg)
-        # msg = g.appmsg.get_api_message("MSG-80001", [tf_organization_name])
         return labeling_settings
 
     # そのままのデータを保存するためのコレクション
@@ -141,11 +140,9 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     # 取得してきたJSONデータをイベント単位で分割
     for single_event in events:
 
-        # data
         if single_event is None:
             msg = "イベント単位に分割が失敗しました。"
             print(msg)
-            # msg = g.appmsg.get_api_message("MSG-80001", [tf_organization_name])
             return labeling_settings
 
         labeled_event = {}
@@ -172,7 +169,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     if labeled_events is None:
         msg = "Exastroラベリングされたイベントを取得失敗しました。"
         print(msg)
-        # msg = g.appmsg.get_api_message("MSG-80001", [tf_organization_name])
         return labeling_settings
 
     # exastro用ラベルを貼った後のデータをイベント単位で再分割
@@ -182,7 +178,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
             msg = "イベント単位の分割が失敗しました。"
             print(msg)
             return labeling_settings
-            # msg = g.appmsg.get_api_message("MSG-80001", [tf_organization_name])
 
         event_collection_data["exastro_labeling_settings"] = {}
         event_collection_data["exastro_label_key_input_ids"] = {}
@@ -193,7 +188,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
             if event_collection_data is None:
                 msg = "ラベリング設定の分割が失敗しました。"
                 print(msg)
-                # msg = g.appmsg.get_api_message("MSG-80001", [tf_organization_name])
                 return label_result
 
             try:
@@ -202,61 +196,77 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                     continue
 
                 if (setting["TARGET_KEY"] in event_collection_data["event"]):
-                    event_inside_key = "event"
+                    settings = event_collection_data["event"]
+                    setting_flag = True
                 elif (setting["TARGET_KEY"] in event_collection_data["labels"]):
-                    event_inside_key = "labels"
-
+                    settings = event_collection_data["labels"]
+                    setting_flag = True
+                else:
+                    if setting["TARGET_KEY"] is None:
+                        setting_flag = False
+                    else:
+                        query = create_jmespath_query(setting["TARGET_KEY"])
+                        if query is None:
+                            setting_flag = None
+                            continue
+                        settings = event_collection_data["event"]
+                        setting_flag = True
                 # ラベリング設定内にtarget_keyが存在するか確認(パターンC用)
-                if setting["TARGET_KEY"] is None:
-                    # ラベリング設定内target_typeが"その他"、かつ取得してきたイベント内"event"のvalueがラベリング設定内target_keyの中に存在しない場合
-                    if setting["TARGET_TYPE_ID"] != "7" or get_value_from_jsonpath(setting["TARGET_KEY"], event_collection_data[event_inside_key]) is not False:  # noqa: E501
+                if setting_flag is False:
+
+                    # ラベリング設定内target_typeが"空関数"、かつ取得してきたイベント内"event"のvalueがラベリング設定内target_keyの中に存在しない場合
+                    if setting["TARGET_TYPE_ID"] is None and setting["TARGET_VALUE"] is None:
                         event_collection_data = label(wsDb, event_collection_data, setting)  # パターンC
 
                 # ラベリング設定内にtarget_keyが存在する、かつ取得してきたJSONデータ内にラベリング設定内で指定したtarget_keyが存在するか確認（パターンA,B,D,E用）
-                elif setting["TARGET_KEY"] and setting["TARGET_KEY"] in event_collection_data[event_inside_key]:
+                if setting["TARGET_KEY"] and setting_flag is True:
 
-                    # ラベリング設定内target_keyが取得してきたイベント,inside_keyの中に存在するか確認(パターンA,B,D,E用)
-                    if (setting["TARGET_KEY"] in event_collection_data[event_inside_key]):
+                    # ラベリング設定内target_typeが"空関数"以外、かつラベリング設定内にtarget_type_id、Target_valueのどちらも存在しない場合(パターンD用)
+                    if ((setting["TARGET_TYPE_ID"] and setting["TARGET_VALUE"]) is None) and setting["TARGET_TYPE_ID"] != "7":
 
-                        # ラベリング設定内target_typeが"空関数"以外、かつラベリング設定内にtarget_type_id、Target_valueのどちらも存在しない場合(パターンD用)
-                        if ((setting["TARGET_TYPE_ID"] and setting["TARGET_VALUE"]) is None) and setting["TARGET_TYPE_ID"] != "7":
+                        if setting_flag is True:
+                            event_collection_data = label(wsDb, event_collection_data, setting)  # パターンD
 
-                            query = create_jmespath_query(setting["TARGET_KEY"])
+                        elif setting_flag is False:
                             # queryが取得してきたイベント,inside_keyの中に存在する場合
-                            if get_value_from_jsonpath(query, event_collection_data[event_inside_key]):
+                            if get_value_from_jsonpath(query, settings):
                                 event_collection_data = label(wsDb, event_collection_data, setting)  # パターンD
 
-                        # パターンA,B,E
-                        else:
-                            # 取得してきたイベント,event_inside_key内にラベリング設定内target_keyが一致するものを取得
-                            target_value_collection = get_value_from_jsonpath(setting["TARGET_KEY"], event_collection_data[event_inside_key])
+                    # パターンA,B,E
+                    else:
+                        # 取得してきたイベント,event_inside_key内にラベリング設定内target_keyが一致するものを取得
+                        target_value_collection = get_value_from_jsonpath(setting["TARGET_KEY"], settings)
 
-                            # target_keyに対応する値が取得できたか確認
-                            if target_value_collection is None:
+                        # target_keyに対応する値が取得できたか確認
+                        if target_value_collection is None:
+                            # queryが取得してきたイベント,inside_keyの中に存在する場合
+                            if get_value_from_jsonpath(query, settings) is not True:
                                 continue
+                            event_collection_data = label(wsDb, event_collection_data, setting)  # パターンD
 
-                            else:  # パターンA,B,E
-                                # ラベリング設定内target_valueをラベリング設定内target_typeに合わせて変換
-                                target_value_setting = target_value_type[setting["TARGET_TYPE_ID"]](setting["TARGET_VALUE"])
+                        else:  # パターンA,B,E
+                            # ラベリング設定内target_valueをラベリング設定内target_typeに合わせて変換
+                            target_value_setting = target_value_type[setting["TARGET_TYPE_ID"]](setting["TARGET_VALUE"])
 
-                                if setting["TARGET_TYPE_ID"] == "7":  # 空判定(パターンE用)
-                                    if setting["COMPARISON_METHOD_ID"] == "1":  # ==
-                                        # ラベリング設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在するか確認
-                                        if (target_value_collection in ["", [], {}, 0, False]) is True:
-                                            event_collection_data = label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'==')
-                                    elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
-                                        # ラベリング設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在しないか確認
-                                        if (target_value_collection in ["", [], {}, 0, False]) is False:
-                                            event_collection_data = label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'≠')
-                                    else:
-                                        continue
+                            if setting["TARGET_TYPE_ID"] == "7":  # 空判定(パターンE用)
+                                if setting["COMPARISON_METHOD_ID"] == "1":  # ==
+                                    # ラベリング設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在するか確認
+                                    if (target_value_collection in ["", [], {}, 0, False]) is True:
+                                        event_collection_data = label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'==')
+                                elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
 
-                                # 収取したJSONデータのtarget_valueとラベリング設定内target_valueを比較
-                                elif comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting) is True:
-                                    # label_valueが空の場合、target_valueをlabel_valueに流用する（パターンB用）
-                                    if setting["LABEL_VALUE"] is None:
-                                        setting["LABEL_VALUE"] = setting["TARGET_VALUE"]
-                                    event_collection_data = label(wsDb, event_collection_data, setting)  # パターンA,B
+                                    # ラベリング設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在しないか確認
+                                    if (target_value_collection in ["", [], {}, 0, False]) is False:
+                                        event_collection_data = label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'≠')
+                                else:
+                                    continue
+
+                            # 収取したJSONデータのtarget_valueとラベリング設定内target_valueを比較
+                            elif comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting) is True:
+                                # label_valueが空の場合、target_valueをlabel_valueに流用する（パターンB用）
+                                if setting["LABEL_VALUE"] is None:
+                                    setting["LABEL_VALUE"] = setting["TARGET_VALUE"]
+                                event_collection_data = label(wsDb, event_collection_data, setting)  # パターンA,B
 
             except Exception as e:
                 print(e)

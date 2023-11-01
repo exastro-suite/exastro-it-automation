@@ -53,7 +53,7 @@ def main():
             # コマンドラインから引数を受け取る["自身のファイル名", "ループ回数"]
             args = sys.argv
             loop_count = int(os.environ.get("ITERATION", 500)) if len(args) == 1 else int(args[1])
-            interval = int(os.environ.get("EXECUTE_INTERVAL", 30))
+            interval = int(os.environ.get("EXECUTE_INTERVAL", 10))
 
             main_logic(organization_id, workspace_id, loop_count, interval)
         except AppException as e:

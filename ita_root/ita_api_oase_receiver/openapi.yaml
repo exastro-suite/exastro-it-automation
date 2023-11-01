@@ -1,0 +1,196 @@
+openapi: 3.0.3
+info:
+  title: Exastro ITA OASE Reciever API
+  description: Exastro ITA OASE Reciever API
+  version: 2.1.0
+
+servers:
+  - url: "https://{host}"
+    description: API endpoint
+    variables:
+      host:
+        default: localhost
+  - url: "http://{host}"
+    description: API endpoint
+    variables:
+      host:
+        default: localhost
+  - url: "{protocol}://{host}:{port}"
+    description: API endpoint (Development)
+    variables:
+      protocol:
+        enum:
+          - http
+          - https
+        default: https
+      host:
+        default: localhost
+      port:
+        default: '30080'
+
+tags:
+  - name: OASE
+    description: イベント連携機能の情報を取得・登録
+
+paths:
+  /api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings:
+    post:
+      tags:
+        - OASE
+      description: 対象のイベント収集設定と最新のイベント取得時間を取得
+      operationId: postEventCollectionSettings
+      x-openapi-router-controller: controllers.oase_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: 対象のイベント収集設定のUUIDを記載
+              properties:
+                event_collection_settings_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/events:
+    post:
+      tags:
+        - OASE
+      description: イベントを受け取り、ラベリングして保存する
+      operationId: postEventCollectionEvents
+      x-openapi-router-controller: controllers.oase_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: イベントのJSONデータを文字列化したもの、取得した時間、イベント収集設定IDを記載
+              properties:
+                events:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      event:
+                        type: array
+                        items:
+                          type: string
+                          example: "{\"date\": \"2024-01-01 00:00:00\"}"
+                      fetched_time:
+                        type: integer
+                        example: 1704034800
+                      event_collection_settings_id:
+                        type: string
+                        example: "uuid"
+
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: string
+                    example: ""
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+components:
+  schemas:
+    ERROR_TEMPLATE:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 001-002
+        message:
+          type: string
+
+  securitySchemes:
+    BearerAuth:
+      description: Credentials or access token for API
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    BasicAuth:
+      description: Value converted from ID/Password in base64
+      type: http
+      scheme: basic
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+security:
+- BearerAuth: []
+- BasicAuth: []

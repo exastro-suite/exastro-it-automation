@@ -43,7 +43,7 @@ def main():
 
             # create app log instance and message class instance
             g.applogger = AppLog()
-            g.applogger.set_level(os.environ.get("LOG_LEVEL"), "INFO")
+            g.applogger.set_level(os.environ.get("LOG_LEVEL", "INFO"))
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
             # storageにdbの保存場所を作成

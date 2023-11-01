@@ -14,8 +14,8 @@
 
 import sqlite3
 import json
-import os
 from flask import g
+
 
 class sqliteConnect:
     def __init__(self, organization_id, workspace_id):
@@ -30,11 +30,24 @@ class sqliteConnect:
 
     def insert_events(self, events):
 
+        timestamp_info = []
+        processed = set()
         for event in events:
             self.insert_event(event)
+            # sent_timestampテーブルにデータを重複して保存しないようにリストを作成
+            check_key = (event["_exastro_event_collection_settings_id"], event["_exastro_fetched_time"])
+            if check_key not in processed:
+                processed.add(check_key)
+                timestamp_info.append(
+                    {
+                        "id": event["_exastro_event_collection_settings_id"],
+                        "timestamp": event["_exastro_fetched_time"]
+                    }
+                )
+        for info in timestamp_info:
             self.insert_timestamp(
-                event["event"]["_exastro_event_collection_settings_id"],
-                event["event"]["_exastro_fetched_time"]
+                info["id"],
+                info["timestamp"]
             )
 
         self.db_connect.commit()
@@ -54,9 +67,8 @@ class sqliteConnect:
         event_string = json.dumps(event)
         self.db_cursor.execute(
             f"INSERT INTO {table_name} (event_collection_settings_id, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?)",
-            (event["event"]["_exastro_event_collection_settings_id"], event_string, event["event"]["_exastro_fetched_time"], False)
+            (event["_exastro_event_collection_settings_id"], event_string, event["_exastro_fetched_time"], False)
         )
-        # self.db_connect.commit()
 
     def insert_timestamp(self, id, fetched_time):
         table_name = "sent_timestamp"
@@ -73,8 +85,6 @@ class sqliteConnect:
             f"INSERT INTO {table_name} (event_collection_settings_id, fetched_time, sent_flag) VALUES (?, ?, ?)",
             (id, fetched_time, False)
         )
-
-        # self.db_connect.commit()
 
     def insert_last_fetched_time(self, id, fetched_time):
         table_name = "last_fetched_time"
@@ -115,8 +125,6 @@ class sqliteConnect:
         records = self.db_cursor.fetchall()
 
         return records
-
-    # def select(self, table_name, column_name, where_str=None, bind_value=None):
 
     def db_close(self):
         self.db_cursor.close()

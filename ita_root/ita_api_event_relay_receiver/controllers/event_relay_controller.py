@@ -59,7 +59,7 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
     :rtype: InlineResponse2001
     """
 
-    event_result = False
+    event_result = True
 
     # DB接続
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
@@ -89,7 +89,7 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
         table_name = "T_EVRL_EVENT_COLLECTION_PROGRESS"
         primary_key_name = "EVENT_COLLECTION_ID"
 
-        # # # イベント収集経過テーブルからイベント収集設定IDを基準にfetched_timeが最新のもの1件を取得する
+        # イベント収集経過テーブルからイベント収集設定IDを基準にfetched_timeが最新のもの1件を取得する
         collection_progress = wsDb.table_select(table_name, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id])  # noqa: E501
 
         if collection_progress == []:
@@ -111,21 +111,22 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
                 event_dict = json.loads(event_str, strict=False)
             except Exception as e:
                 print(e)
-                return event_result
+                event_result = False
+                break
             # 辞書化したイベントをリストに格納
             events.append(event_dict)
 
-    # そのまま/ラベリングしてMongoDBに保存
-    res = label_event(wsDb, wsMongo, events)  # noqa: F841
+    if event_result is True:
+        # そのまま/ラベリングしてMongoDBに保存
+        event_result = label_event(wsDb, wsMongo, events)  # noqa: F841
 
-    # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
-    wsDb.db_transaction_start()
+    if event_result is True:
+        # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
+        wsDb.db_transaction_start()
 
-    ret = wsDb.table_insert(table_name, fetched_time_list, primary_key_name, True)  # noqa: F841
+        ret = wsDb.table_insert(table_name, fetched_time_list, primary_key_name, True)  # noqa: F841
 
-    wsDb.db_transaction_end(True)
-
-    event_result = True
+        wsDb.db_transaction_end(True)
 
     if event_result is False:
         data = {}

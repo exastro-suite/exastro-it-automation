@@ -24,7 +24,6 @@ import re
 from flask import g
 from common_libs.column import *  # noqa: F403
 from common_libs.common import *  # noqa: F403
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs, CollectionFactory
 
 
 # 定数
@@ -900,7 +899,7 @@ class loadTable():
         return result
 
     # [filter]:メニューのレコード取得
-    def rest_filter(self, parameter, mode='nomal', wsMongo: MONGOConnectWs = None):
+    def rest_filter(self, parameter, mode='nomal', wsMongo=None):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
@@ -1114,8 +1113,8 @@ class loadTable():
                 # get_table_nameではMariaDB側のテーブル名が取得されるためそのまま利用はできない。
                 # get_table_nameで取得した値をMongoDBのコレクション名に変換が必要
                 mariadb_table_name = self.get_table_name()
-                mondodb_collection_name = CollectionFactory.get_collection_name(mariadb_table_name)
-                collection = CollectionFactory.create(mondodb_collection_name)
+                mondodb_collection_name = wsMongo.get_collection_name(mariadb_table_name)
+                collection = wsMongo.create_collection(mondodb_collection_name)
 
                 where_str = collection.create_where(parameter)
 

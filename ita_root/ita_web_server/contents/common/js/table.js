@@ -1110,7 +1110,7 @@ filterHtml( filterHeaderFlag = true ) {
                     case 'LastUpdateUserColumn': case 'AppIDColumn': case 'JsonColumn':
                     case 'FileUploadColumn': case 'FileUploadEncryptColumn':
                     case 'EnvironmentIDColumn': case 'TextColumn': case 'RoleIDColumn':
-                    case 'JsonIDColumn': case 'UserIDColumn':
+                    case 'JsonIDColumn': case 'UserIDColumn': case 'NotificationIDColumn':
                         return 'text';
                     break;
                     // 数値のFROM,TO
@@ -1832,12 +1832,13 @@ setTableEvents() {
         };
 
         // select欄クリック時にselect2を適用する
-        tb.$.tbody.on('click', '.tableEditInputSelectValue', function(){
+        tb.$.tbody.on('click', '.tableEditInputSelectValue, .tableEditInputMultipleSelectValue', function(){
             const
             $value = $( this ),
             $select = $value.next('.tableEditInputSelect'),
             restName = $select.attr('data-key'),
-            required = $select.attr('data-required');
+            required = $select.attr('data-required'),
+            multiple = $select.is('.tableEditInputMultipleSelect');
 
             if ( $value.is('.tableEditInputSelectValueDisabled') ) return false;
 
@@ -1846,9 +1847,9 @@ setTableEvents() {
             });
 
             // 必須じゃない場合は空白を追加する
-            if ( required === '0') list.unshift('');
+            if ( required === '0' && multiple !== true ) list.unshift('');
 
-            tb.setSelect2( null, $select, list, true, null, $value ).then(function(){
+            tb.setSelect2( null, $select, list, true, null, $value, multiple ).then(function(){
                 $select.change();
             });      
         });
@@ -1868,13 +1869,17 @@ setTableEvents() {
         
         // select欄フォーカス時にselect2を適用する
         tb.$.tbody.on('focus.select2', '.tableEditInputSelect', function(){
-            const $select = $( this );
+            const
+            $select = $( this ),
+            flag = $select.is('.tableEditInputMultipleSelect'),
+            container = ( flag )? '.tableEditInputMultipleSelectContainer': '.tableEditInputSelectContainer',
+            value = ( flag )? '.tableEditInputMultipleSelectValue': '.tableEditInputSelectValue';
 
             // フォーカス時のスクロールを0に
-            $select.closest('.tableEditInputSelectContainer').scrollTop(0);
+            $select.closest( container ).scrollTop(0);
 
             // クリックイベント
-            $select.prev('.tableEditInputSelectValue').click();
+            $select.prev( value ).click();
         });
 
         // input hidden変更時にテキストも変更する
@@ -2245,6 +2250,13 @@ checkNewInputDataDelete( id ) {
 setInputData( value, id, rest, beforeData ) {
     const tb = this;
 
+    // 配列の場合文字列に変換する（複数選択セレクト）
+    if ( fn.typeof( value ) === 'array') {
+        // Python json.dumpsと合わせるため配列を", "で区切る。
+        value = `["${value.join('", "')}"]`;
+        // value = JSON.stringify( value );
+    }
+
     tb.checkNewInputDataSet( id, beforeData );
 
     // 変更があれば追加、なければ削除
@@ -2486,7 +2498,7 @@ filterSelectOpen( $button ) {
    select2
 ##################################################
 */
-setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $removeObj ) {
+setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $removeObj, multipel = false ) {
     return new Promise(function( resolve ){
         // listをソートする
         optionlist.sort(function( a, b ){
@@ -2554,6 +2566,10 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
                 dataAdapter: CustomData
             };
 
+            if ( multipel ) {
+                select2Option.closeOnSelect = false;
+            } 
+
             // Filter or Data
             if ( $selectArea ) {
                 $selectArea.html( $selectBox );
@@ -2566,7 +2582,13 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             }
             if ( optionlist.length === 0 ) select2Option.width = 120;
             $selectBox.select2( select2Option );
-            
+
+            if ( multipel ) {
+                const $container = $selectBox.closest('.tableEditInputMultipleSelectContainer');
+                $container.addClass('tableEditInputMultipleSelectOpen');
+                $container.find('.select2').css('width', 'auto');
+            }
+
             if ( openFlag ) {
                 $selectBox.select2('open');
             }
@@ -3398,7 +3420,7 @@ viewCellHtml( item, columnKey, journal ) {
         case 'EnvironmentIDColumn': case 'TextColumn':
         case 'DateColumn': case 'DateTimeColumn':
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
-        case 'UserIDColumn':
+        case 'UserIDColumn': case 'NotificationIDColumn':
             return checkJournal( value );
 
         // リンク
@@ -3617,7 +3639,12 @@ editCellHtml( item, columnKey ) {
           inputItem = columnInfo.input_item,
           name = '';
 
-    let value = fn.cv( parameter[ columnName ], '', true );
+    let value;
+    if ( columnType === 'NotificationIDColumn') {
+        value = fn.jsonParse( parameter[ columnName ] );
+    } else {
+        value = fn.cv( parameter[ columnName ], '', true );
+    }
 
     const attr = {
         key: columnName,
@@ -3740,9 +3767,21 @@ editCellHtml( item, columnKey ) {
         // プルダウン
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn': {
-            return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
+            inputClassName.push('tableEditInputSelectContainer');
+            return `<div class="${inputClassName.join(' ')}">`
             + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${value}</span></div>`
                 + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
+            + `</div>`;
+        }
+
+        // 複数選択プルダウン
+        case 'NotificationIDColumn':  {
+            const displayvalue = fn.cv( parameter[ columnName ], '', true );
+            attr.multiple = 'multiple';
+            inputClassName.push('tableEditInputMultipleSelectContainer');
+            return `<div class="${inputClassName.join(' ')}">`
+            + `<div class="tableEditInputMultipleSelectValue"><span class="tableEditInputMultipleSelectValueInner">${displayvalue}</span></div>`
+                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], {}), 'tableEditInputSelect tableEditInputMultipleSelect', value, name, attr, { select2: true } )
             + `</div>`;
         }
 
@@ -3773,6 +3812,21 @@ editCellHtml( item, columnKey ) {
         default:
             return '?';
     }
+}
+/*
+##################################################
+   複数選択セレクト表示用HTML
+##################################################
+*/
+multipleSelectDisplayHtml( list ) {
+    const html = [];
+    if ( fn.typeof( list ) === 'array') {
+        for ( const item of list ) {
+            const value = fn.cv( item, '', true );
+            html.push(`<li class="tableEditInputMultipleSelectValueItem">${value}</li>`);
+        }
+    }
+    return `<ul class="tableEditInputMultipleSelectValueList">${html.join('')}</ul>`;
 }
 /*
 ##################################################
@@ -4142,7 +4196,7 @@ changeEdtiMode( changeMode ) {
             const columnInfo = info[ key ];
 
             // セレクト必須選択項目
-            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn'];
+            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn', 'NotificationIDColumn'];
             if ( selectTarget.indexOf( columnInfo.column_type ) !== -1
               && columnInfo.required_item === '1'
               && columnInfo.initial_value === null ) {

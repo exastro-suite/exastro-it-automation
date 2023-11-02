@@ -2701,7 +2701,8 @@ border-color: #FFDD00;
 border-color: #0078DC;
 }
 .noSelect,
-.tableEditInputSelectValue {
+.tableEditInputSelectValue,
+.tableEditInputMultipleSelectValue {
 display: block;
 width: 120px;
 min-width: 100%; min-height: 32px;
@@ -2714,7 +2715,13 @@ letter-spacing: .75px;
 font-size: 14px;
 outline: none;
 }
-.tableEditInputSelectValueInner {
+.tableEditInputMultipleSelectValue {
+width: auto; max-width: 640px;
+padding-top: 4px;
+cursor: pointer;
+}
+.tableEditInputSelectValueInner,
+.tableEditInputMultipleSelectValueInner {
 display: block;
 overflow: hidden;
 text-overflow: ellipsis;
@@ -2738,7 +2745,15 @@ overflow: hidden;
 position: relative;
 height: 32px;
 }
-.tBodyTrDiscard .tableEditInputSelectContainer {
+.tableEditInputMultipleSelectContainer {
+overflow: hidden;
+height: 32px;
+}
+.tableEditInputMultipleSelectOpen {
+height: auto;
+}
+.tBodyTrDiscard .tableEditInputSelectContainer,
+.tBodyTrDiscard .tableEditInputMultipleSelectContainer {
 pointer-events: none;
 }
 .tableEditInputSelectValue {
@@ -2790,6 +2805,12 @@ border-color: var(--black30);
 color: var(--rowDiscardTextColor)!important;
 opacity: .5!important;
 cursor: no-drop;
+}
+.tableEditInputMultipleSelectValueList {
+}
+.tableEditInputMultipleSelectValueItem {
+display: inline-block;
+margin: 4px 4px 0;
 }
 
 /* Filter */
@@ -3753,6 +3774,15 @@ position: absolute;
 left: 4px; top: 50%;
 transform: translateY(-50%);
 }
+.tableEditInputMultipleSelectContainer .select2-container .select2-selection--multiple .select2-selection__rendered {
+white-space: normal;
+}
+.tableEditInputMultipleSelectContainer .select2-container--default .select2-selection--multiple .select2-selection__choice {
+display: inline-block;
+margin: 4px 4px 0;
+border: 1px solid #CCC;
+border-radius: 4px;
+}
 .select2-container .select2-search--inline .select2-search__field {
 display: block;
 width: 100%!important;
@@ -3795,8 +3825,12 @@ height: 28px;
 border-color: #0070FF;
 background-color: #E5F1FF;
 }
+.tableEditChange ~ .select2-container--default.select2-container--focus .select2-selection--multiple {
+background-color: #DFF4CF;
+border-color: #60C60D;
+}
 .select2-results__option.select2-results__message {
-  opacity: .3;
+opacity: .3;
 }
 
 /*

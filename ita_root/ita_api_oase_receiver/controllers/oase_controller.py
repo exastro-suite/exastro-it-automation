@@ -12,9 +12,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from flask import g
+
 from common_libs.api import api_filter
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
+from common_libs.common.exception import AppException
 from libs import oase
 from libs.label_event import label_event
 import json
@@ -58,21 +61,18 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
 
     :rtype: InlineResponse2001
     """
-
-    event_result = True
-
     # DB接続
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
     wsMongo = MONGOConnectWs()
 
+    # 保存する、整形したイベント
     events = []
-
+    # 保存するイベント取得時間
     fetched_time_list = []
 
     # eventsデータを取り出す
     events_list = body["events"]
 
-    # イベントリストからイベントを取り出す
     for single_event in events_list:
         single_data = {}
 
@@ -98,8 +98,9 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
             last_fetched_time = collection_progress[0]["FETCHED_TIME"]
 
             if fetched_time <= last_fetched_time:
-                msg = "送られてきたfetched_timeは最新ではないため保存されませんでした"
-                print(msg)
+                g.applogger.info("送られてきたfetched_timeは最新ではないため保存されませんでした")
+                g.applogger.info(last_fetched_time)
+                g.applogger.info(single_event)
                 continue
             # イベント収集設定IDとfetched_timeをリストに格納
             fetched_time_list.append(single_data)
@@ -110,33 +111,27 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
             try:
                 event_dict = json.loads(event_str, strict=False)
             except Exception as e:
-                print(e)
-                event_result = False
-                break
+                # "イベントのデータ形式に不備があります"
+                erro_code = "499-00402"
+                log_msg_args = [e, json.dumps(single_event)]
+                api_msg_args = [json.dumps(single_event)]
+                raise AppException(erro_code, log_msg_args, api_msg_args)
             # 辞書化したイベントをリストに格納
             events.append(event_dict)
 
-    if event_result is True:
-        # そのまま/ラベリングしてMongoDBに保存
-        event_result = label_event(wsDb, wsMongo, events)  # noqa: F841
+    if len(events) == 0:
+        # "eventsデータが取得できませんでした。"
+        erro_code = "499-00402"
+        raise AppException(erro_code)
 
-    if event_result is True:
-        # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
-        wsDb.db_transaction_start()
+    # そのまま/ラベリングしてMongoDBに保存
+    erro_code, err_msg = label_event(wsDb, wsMongo, events)  # noqa: F841
+    if erro_code != "000-00000":
+        return "", err_msg, erro_code
 
-        ret = wsDb.table_insert(table_name, fetched_time_list, primary_key_name, True)  # noqa: F841
+    # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
+    wsDb.db_transaction_start()
+    ret = wsDb.table_insert(table_name, fetched_time_list, primary_key_name, True)  # noqa: F841
+    wsDb.db_transaction_end(True)
 
-        wsDb.db_transaction_end(True)
-
-    if event_result is False:
-        data = {}
-        msg = "Error"
-        result_code = "499-99999"
-        status_code = 499
-    else:
-        data = {}
-        msg = ""
-        result_code = "000-00000"
-        status_code = 200
-
-    return data, msg, result_code, status_code,
+    return '',

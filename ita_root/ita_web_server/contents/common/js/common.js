@@ -426,6 +426,28 @@ escape: function( value, br, space ) {
 },
 /*
 ##################################################
+   JSON文字列変換（区切り文字「, 」）
+##################################################
+*/
+jsonStringifyDelimiterSpace: function(vContent) {
+    if (vContent instanceof Object) {
+      var sOutput = "";
+      if (vContent.constructor === Array) {
+        for (var nId = 0; nId < vContent.length; sOutput += this.jsonStringifyDelimiterSpace(vContent[nId]) + ", ", nId++);
+          return "[" + sOutput.substring(0, sOutput.length - 2) + "]";
+      }
+      if (vContent.toString !== Object.prototype.toString) {
+        return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\"";
+      }
+      for (var sProp in vContent) {
+        sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + this.jsonStringifyDelimiterSpace(vContent[sProp]) + ", ";
+      }
+      return "{" + sOutput.substring(0, sOutput.length - 2) + "}";
+   }
+   return typeof vContent === "string" ? "\"" + vContent.replace(/"/g, "\\$&") + "\"" : String(vContent);
+},
+/*
+##################################################
    正規表現文字列エスケープ
 ##################################################
 */
@@ -1785,6 +1807,10 @@ html: {
             }
 
             sortList.sort(function( a, b ){
+                if ( a === null || a === undefined ) a = '';
+                if ( b === null || b === undefined ) b = '';
+                if ( fn.typeof( a ) === 'number') a = String( a );
+                if ( fn.typeof( b ) === 'number') b = String( b );
                 return a.localeCompare( b );
             });
 

@@ -1706,12 +1706,12 @@ setTableEvents() {
             if ( changeFlag ) {
                 $input.addClass('tableEditChange');
                 if ( $input.is('.tableEditInputSelect') ) {
-                    $input.parent('.tableEditInputSelectContainer').addClass('tableEditChange');
+                    $input.parent('.tableEditInputSelectContainer, .tableEditInputMultipleSelectContainer').addClass('tableEditChange');
                 }
             } else {
                 $input.removeClass('tableEditChange');
                 if ( $input.is('.tableEditInputSelect') ) {
-                    $input.parent('.tableEditInputSelectContainer').removeClass('tableEditChange');
+                    $input.parent('.tableEditInputSelectContainer, .tableEditInputMultipleSelectContainer').removeClass('tableEditChange');
                 }
             }
         });
@@ -2252,9 +2252,20 @@ setInputData( value, id, rest, beforeData ) {
 
     // 配列の場合文字列に変換する（複数選択セレクト）
     if ( fn.typeof( value ) === 'array') {
-        // Python json.dumpsと合わせるため配列を", "で区切る。
-        value = `["${value.join('", "')}"]`;
-        // value = JSON.stringify( value );
+        value.sort(function( a, b ){
+            if ( a === null || a === undefined ) a = '';
+            if ( b === null || b === undefined ) b = '';
+            if ( fn.typeof( a ) === 'number') a = String( a );
+            if ( fn.typeof( b ) === 'number') b = String( b );
+            return a.localeCompare( b );
+        });
+        if ( value.length > 0 ) {
+            console.log(value)
+            value = fn.jsonStringifyDelimiterSpace( value );
+            console.log( value );
+        } else {
+            value = `[]`;
+        }
     }
 
     tb.checkNewInputDataSet( id, beforeData );
@@ -3641,7 +3652,7 @@ editCellHtml( item, columnKey ) {
 
     let value;
     if ( columnType === 'NotificationIDColumn') {
-        value = fn.jsonParse( parameter[ columnName ] );
+        value = parameter[ columnName ];
     } else {
         value = fn.cv( parameter[ columnName ], '', true );
     }
@@ -3663,7 +3674,11 @@ editCellHtml( item, columnKey ) {
 
         const afterParameter = tb.edit.input[ rowId ]['after'].parameter[ columnName ];
         if ( afterParameter !== undefined ) {
-            value =  fn.escape( afterParameter );
+            if ( columnType === 'NotificationIDColumn') {
+                value = afterParameter;
+            } else {
+                value = fn.escape( afterParameter );
+            }
 
             const beforeParameter = tb.edit.input[ rowId ]['before'].parameter[ columnName ];
             if ( afterParameter !== beforeParameter ) {
@@ -3776,11 +3791,12 @@ editCellHtml( item, columnKey ) {
 
         // 複数選択プルダウン
         case 'NotificationIDColumn':  {
-            const displayvalue = fn.cv( parameter[ columnName ], '', true );
+            const displayValue = fn.cv( value, '', true );
+            value = fn.jsonParse( value );
             attr.multiple = 'multiple';
             inputClassName.push('tableEditInputMultipleSelectContainer');
             return `<div class="${inputClassName.join(' ')}">`
-            + `<div class="tableEditInputMultipleSelectValue"><span class="tableEditInputMultipleSelectValueInner">${displayvalue}</span></div>`
+            + `<div class="tableEditInputMultipleSelectValue"><span class="tableEditInputMultipleSelectValueInner">${displayValue}</span></div>`
                 + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], {}), 'tableEditInputSelect tableEditInputMultipleSelect', value, name, attr, { select2: true } )
             + `</div>`;
         }

@@ -16,6 +16,7 @@
 class ManageEvents:
     def __init__(self, WsMongo, judgeTime):
         self.labeled_event_collection = WsMongo.collection("labeled_event_collection")
+        # 以下条件のイベントを取得
         undetermined_search_value = {
             "labels._exastro_timeout": "0",
             "labels._exastro_evaluated": "0",
@@ -64,7 +65,6 @@ class ManageEvents:
                 event_status
             )
             self.labeled_events_dict[event["_id"]] = event
-        print(self.labeled_events_dict)
 
     # イベント有効期間判定
     def check_event_status(self, judge_time, fetched_time, end_time):
@@ -154,9 +154,8 @@ class ManageEvents:
                 return False
             for key, value in update_flag_dict.items():
                 self.labeled_events_dict[event_id]["labels"][key] = value
-
             # MongoDB更新
-            self.labeled_event_collection.update_one({"_id": event_id}, {"$set": update_flag_dict})
+            self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
 
         return True
 
@@ -190,3 +189,7 @@ class ManageEvents:
             if event["_id"] not in incident_dict:
                 unused_event_ids.append(event_id)
             return unused_event_ids
+
+    def insert_event(self, dict):
+        result = self.labeled_event_collection.insert_one(dict)
+        return result.inserted_id

@@ -159,10 +159,7 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
     check_auth_menu(menu, objdbca)
 
     # MongoDB向けの処理かどうかで分岐
-    if menu_table_link_record[0]["SHEET_TYPE"] != '26':
-        # 対象項目のプルダウン検索候補一覧を取得
-        data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
-    else:
+    if menu_table_link_record[0]["SHEET_TYPE"] == '26':
         wsMongo = MONGOConnectWs()
 
         # 既存処理もインデックス指定で取得しているため1レコードしか取れない前提で処理して問題ないと判断。
@@ -171,5 +168,9 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
         menu_table_link_record = menu_table_link_record[0]
 
         data = menu_info.collect_search_candidates_from_mongodb(wsMongo, column, menu_record, menu_table_link_record)
+
+    else:
+        # 対象項目のプルダウン検索候補一覧を取得
+        data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
 
     return data,

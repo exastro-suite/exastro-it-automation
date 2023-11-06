@@ -19,6 +19,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.common.mongoconnect.const import Const
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable import *
+from common_libs.loadcollection.load_collection import loadCollection
 
 
 def rest_count(objdbca, menu, filter_parameter):
@@ -42,15 +43,19 @@ def rest_count(objdbca, menu, filter_parameter):
         raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
 
     # MongoDB向けの処理はmodeで分岐させているため、対象のシートタイプの場合はmodeを上書き
+    # 26 : MongoDBを利用するシートタイプ
     wsMongo = None
-    if objmenu.get_sheet_type() == Const.MONGODB_SHEETTYPE_ID:
+    if objmenu.get_sheet_type() == '26':
         mode = 'mongo_count'
 
         # MariaDBのコネクションはコントローラーで生成しているため、MongoDBも同様にすべきだが、
         # アクセスしない場合もコネクションを生成するのは無駄が多いためここで生成することにした。
         wsMongo = MONGOConnectWs()
+        load_collection = loadCollection(wsMongo, objmenu)
+        status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
+    else:
+        status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
 
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, wsMongo)
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]
@@ -82,14 +87,18 @@ def rest_filter(objdbca, menu, filter_parameter):
 
     # MongoDB向けの処理はmodeで分岐させているため、対象のシートタイプの場合はmodeを上書き
     wsMongo = None
-    if objmenu.get_sheet_type() == Const.MONGODB_SHEETTYPE_ID:
+    if objmenu.get_sheet_type() == '26':
         mode = 'mongo'
 
         # MariaDBのコネクションはコントローラーで生成しているため、MongoDBも同様にすべきだが、
         # アクセスしない場合もコネクションを生成するのは無駄が多いためここで生成することにした。
         wsMongo = MONGOConnectWs()
+        load_collection = loadCollection(wsMongo, objmenu)
+        status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
 
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, wsMongo)
+    else:
+        status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
+
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]

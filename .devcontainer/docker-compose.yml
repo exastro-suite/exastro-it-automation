@@ -829,8 +829,8 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
-    profiles:
-      - ita-oase
+    # profiles:
+    #   - ita-oase
 
   ita-by-oase-conclusion:
     user: 1000:1000
@@ -853,6 +853,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
       - MONGO_HOST=${MONGO_HOST}
       - MONGO_PORT=${MONGO_PORT}
     volumes:
@@ -861,7 +863,8 @@ services:
       - exastro
     profiles:
       - exastro-it-automation-backyard
-      - ita-oase
+      - ita-by-oase-conclusion
+      # - ita-oase
     depends_on:
       ita-migration:
         condition: service_completed_successfully

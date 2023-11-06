@@ -65,6 +65,11 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
     wsMongo = MONGOConnectWs()
 
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
+
     # 保存する、整形したイベント
     events = []
     # 保存するイベント取得時間
@@ -112,22 +117,22 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
                 event_dict = json.loads(event_str, strict=False)
             except Exception as e:
                 # "イベントのデータ形式に不備があります"
-                erro_code = "499-00402"
+                err_code = "499-00402"
                 log_msg_args = [e, json.dumps(single_event)]
                 api_msg_args = [json.dumps(single_event)]
-                raise AppException(erro_code, log_msg_args, api_msg_args)
+                raise AppException(err_code, log_msg_args, api_msg_args)
             # 辞書化したイベントをリストに格納
             events.append(event_dict)
 
     if len(events) == 0:
         # "eventsデータが取得できませんでした。"
-        erro_code = "499-00402"
-        raise AppException(erro_code)
+        err_code = "499-00402"
+        raise AppException(err_code)
 
     # そのまま/ラベリングしてMongoDBに保存
-    erro_code, err_msg = label_event(wsDb, wsMongo, events)  # noqa: F841
-    if erro_code != "000-00000":
-        return "", err_msg, erro_code
+    err_code, err_msg = label_event(wsDb, wsMongo, events)  # noqa: F841
+    if err_code != "":
+        return "", err_msg, err_code
 
     # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
     wsDb.db_transaction_start()

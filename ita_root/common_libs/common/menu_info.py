@@ -20,7 +20,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
 from flask import g
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs, CollectionFactory
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 
 def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, privilege='1'):  # noqa: C901
@@ -801,8 +801,8 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
 
     # メニュー-テーブル紐付管理はMariaDBのテーブル名を保持するのでそのままでは利用できないため、MongoDBのコレクション名に変換する
     mariadb_table_name = menu_table_link_record["TABLE_NAME"]
-    mondodb_collection_name = CollectionFactory.get_collection_name(mariadb_table_name)
-    collection = CollectionFactory.create(mondodb_collection_name)
+    mondodb_collection_name = wsMongo.get_collection_name(mariadb_table_name)
+    collection = wsMongo.create_collection(mondodb_collection_name)
 
     # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
     sort_key = collection.create_sort_key(menu_record["SORT_KEY"])

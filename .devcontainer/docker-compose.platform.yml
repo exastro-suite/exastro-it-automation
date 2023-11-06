@@ -43,7 +43,10 @@ services:
       - ITA_API_ADMIN_PROTOCOL=http
       - ITA_API_ADMIN_HOST=ita-api-admin
       - ITA_API_ADMIN_PORT=8079
-      #- PLATFORM_WEB_LOCATION=/*/platform/
+      - ITA_API_OASE_RECEIVER_PROTOCOL=http
+      - ITA_API_OASE_RECEIVER_HOST=ita-api-oase-receiver
+      - ITA_API_OASE_RECEIVER_PORT=8000
+      #- PLATFORM_WEB_LOCATION=/*/platform/\\
       - PLATFORM_WEB_PROTOCOL=http
       - PLATFORM_WEB_HOST=platform-web
       - PLATFORM_WEB_PORT=80

@@ -22,24 +22,39 @@ import json
 # イベントにラベルを付与し、MongDBに保存する
 def label_event(wsDb, wsMongo, events):  # noqa: C901
     # 返却値
-    erro_code = "000-00000"
+    err_code = ""
     err_msg = ""
 
     # ラベル付与の設定を取得
     labeling_settings = wsDb.table_select(
-        "T_EVRL_LABELING_SETTINGS",
+        "T_OASE_LABELING_SETTINGS",
         "WHERE DISUSE_FLAG=%s",
         ["0"]
     )
     if len(labeling_settings) == 0:
-        erro_code = "499-00000"
-        err_msg = "ラベル付与設定テーブルが取得できませんでした。"
+        err_code = "499-00000"
+        err_msg = "ラベル付与設定を取得できませんでした。"
         g.applogger.error(err_msg)
-        return erro_code, err_msg
+        return err_code, err_msg
 
-    # そのままのデータを保存するためのコレクション
+    # ラベルのマスタを取得
+    label_keys = wsDb.table_select(
+        "T_OASE_LABEL_KEY_INPUT",
+        "WHERE DISUSE_FLAG=0"
+    )
+    if len(label_keys) == 0:
+        err_code = "499-00000"
+        err_msg = "ラベルのマスタを取得できませんでした。"
+        g.applogger.error(err_msg)
+        return err_code, err_msg
+    # ラベルのマスタデータをIDで引けるように整形
+    label_key_map = {}
+    for label_key in label_keys:
+        label_key_map[label_key["LABEL_KEY_ID"]] = label_key
+
+    # そのままのイベントデータを保存するためのコレクション
     event_collection = wsMongo.collection("event_collection")
-    # そのままのデータをMongoDBに保存
+    # MongoDBに保存
     event_collection.insert_many(events)
 
     # ラベル付与したイベントデータを保存するためのコレクション
@@ -107,7 +122,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
 
                     # ラベル付与設定内target_typeが"空関数"、かつ取得してきたイベント内"event"のvalueがラベル付与設定内target_keyの中に存在しない場合
                     if setting["TARGET_TYPE_ID"] is None and setting["TARGET_VALUE"] is None:
-                        event_collection_data = add_label(wsDb, event_collection_data, setting)  # パターンC
+                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンC
 
                 # ラベル付与設定内にtarget_keyが存在する、かつ取得してきたJSONデータ内にラベル付与設定内で指定したtarget_keyが存在するか確認（パターンA,B,D,E用）
                 if setting["TARGET_KEY"] and setting_flag is True:
@@ -116,12 +131,12 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                     if ((setting["TARGET_TYPE_ID"] and setting["TARGET_VALUE"]) is None) and setting["TARGET_TYPE_ID"] != "7":
 
                         if setting_flag is True:
-                            event_collection_data = add_label(wsDb, event_collection_data, setting)  # パターンD
+                            event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンD
 
                         elif setting_flag is False:
                             # queryが取得してきたイベント,inside_keyの中に存在する場合
                             if get_value_from_jsonpath(query, settings):
-                                event_collection_data = add_label(wsDb, event_collection_data, setting)  # パターンD
+                                event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンD
 
                     # パターンA,B,E
                     else:
@@ -133,7 +148,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                             # queryが取得してきたイベント,inside_keyの中に存在する場合
                             if get_value_from_jsonpath(query, settings) is not True:
                                 continue
-                            event_collection_data = add_label(wsDb, event_collection_data, setting)  # パターンD
+                            event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンD
 
                         else:  # パターンA,B,E
                             # ラベル付与設定内target_valueをラベル付与設定内target_typeに合わせて変換
@@ -142,12 +157,12 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                             if setting["TARGET_TYPE_ID"] == "7":  # 空判定(パターンE用)
                                 if setting["COMPARISON_METHOD_ID"] == "1":  # ==
                                     # ラベル付与設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在するか確認
-                                    if (target_value_collection in ["", [], {}, 0, False]) is True:
-                                        event_collection_data = add_label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'==')
+                                    if (target_value_collection in ["", [], {}, 0, False, None]) is True:
+                                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'==')
                                 elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
                                     # ラベル付与設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在しないか確認
-                                    if (target_value_collection in ["", [], {}, 0, False]) is False:
-                                        event_collection_data = add_label(wsDb, event_collection_data, setting)  # パターンE(比較方法が'≠')
+                                    if (target_value_collection in ["", [], {}, 0, False, None]) is False:
+                                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'≠')
                                 else:
                                     continue
 
@@ -156,19 +171,19 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                                 # label_valueが空の場合、target_valueをlabel_valueに流用する（パターンB用）
                                 if setting["LABEL_VALUE"] is None:
                                     setting["LABEL_VALUE"] = setting["TARGET_VALUE"]
-                                event_collection_data = add_label(wsDb, event_collection_data, setting)  # パターンA,B
+                                event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンA,B
 
             except Exception as e:
                 err_msg = "ラベル付与に失敗しました"
                 g.applogger.error(e)
                 g.applogger.error(event_collection_data)
                 g.applogger.error(setting)
-                return erro_code, err_msg
+                return err_code, err_msg
 
     # ラベル付与したデータをMongoDBに保存
     labeled_event_collection.insert_many(labeled_events)
 
-    return erro_code,
+    return err_code, err_msg
 
 
 # json構造を検索するためのクエリを生成
@@ -250,15 +265,12 @@ def get_value_from_jsonpath(jsonpath, data):
 
 
 # ラベル付与処理
-def add_label(wsDb, event_collection_data, setting):
-    label_key_record = wsDb.table_select(
-        "T_EVRL_LABEL_KEY_INPUT",
-        "WHERE DISUSE_FLAG=0 AND LABEL_KEY_ID=%s",
-        [setting["LABEL_KEY_ID"]]
-    )
+def add_label(label_key_map, event_collection_data, setting):
+    # ラベルのマスタを引く
+    label_key_data = label_key_map[setting["LABEL_KEY_ID"]]
 
-    label_key_id = label_key_record[0]["LABEL_KEY_ID"]
-    label_key_string = label_key_record[0]["LABEL_KEY"]
+    label_key_id = label_key_data["LABEL_KEY_ID"]
+    label_key_string = label_key_data["LABEL_KEY"]
 
     event_collection_data["labels"][label_key_string] = setting["LABEL_VALUE"]
     event_collection_data["exastro_labeling_settings"][label_key_string] = setting["LABELING_SETTINGS_ID"]

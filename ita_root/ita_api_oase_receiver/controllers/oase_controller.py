@@ -91,7 +91,7 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
         event_collection_settings_id = single_data["EVENT_COLLECTION_SETTINGS_ID"]
         fetched_time = single_data["FETCHED_TIME"]
 
-        table_name = "T_EVRL_EVENT_COLLECTION_PROGRESS"
+        table_name = "T_OASE_EVENT_COLLECTION_PROGRESS"
         primary_key_name = "EVENT_COLLECTION_ID"
 
         # イベント収集経過テーブルからイベント収集設定IDを基準にfetched_timeが最新のもの1件を取得する

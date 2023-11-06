@@ -44,21 +44,16 @@ RUN dnf install -y \
 &&  curl -fsSL https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz | tar -xzC /usr/local/bin --strip=1 docker/docker \
 &&  curl -kL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
 &&  chmod +x /usr/local/bin/docker-compose \
-&&  pip3.9 install --upgrade pip \
-&&  pip3.9 install --upgrade setuptools \
-&&  pip3.9 install --upgrade Flask \
-&&  pip3.9 install --upgrade requests \
-&&  pip3.9 install --upgrade pyyaml \
-&&  pip3.9 install --upgrade pytz \
-&&  pip3.9 install --upgrade pymysql \
-&&  pip3.9 install --upgrade python-dotenv \
-&&  pip3.9 install --upgrade chardet \
-&&  pip3.9 install --upgrade dictknife \
-&&  pip3.9 install --upgrade ansible \
-&&  pip3.9 install --upgrade kubernetes \
-&&  pip3.9 install --upgrade pycryptodome \
+&&  pip3.9 install poetry==1.6.0 \
+&&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+WORKDIR $APP_PATH
+
+COPY ./ita_root/ita_by_ansible_execute/pyproject.toml ./ita_root/ita_by_ansible_execute/poetry.lock $APP_PATH/
+RUN poetry install --only first_install
+RUN poetry install --without develop_build
 
 COPY ./ita_root/ita_by_ansible_execute/config/centos8.repo /etc/yum.repos.d/centos8.repo
 
@@ -79,11 +74,10 @@ RUN dnf install -y \
     diffutils \
     bind-utils \
     iputils \
-&&  pip3.9 install --upgrade debugpy \
-&&  pip3.9 install --upgrade flake8 \
-&&  pip3.9 install --upgrade autopep8 \
 &&  usermod -aG wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+RUN poetry install --with develop_build
 
 USER $USERNAME
 

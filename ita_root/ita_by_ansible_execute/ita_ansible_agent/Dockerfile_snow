@@ -23,16 +23,16 @@ RUN dnf install -y \
     python39 \
     python39-devel \
     sshpass \
-&&  pip3.9 install --upgrade pip \
-&&  pip3.9 install --upgrade setuptools \
-&&  pip3.9 install --upgrade ansible \
-&&  pip3.9 install --upgrade pexpect \
-&&  pip3.9 install --upgrade pywinrm \
-&&  pip3.9 install --upgrade boto3 \
-&&  pip3.9 install --upgrade paramiko \
-&&  pip3.9 install --upgrade boto \
+&&  pip3.9 install poetry==1.6.0 \
+&&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+WORKDIR $APP_PATH
+
+COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/pyproject.toml ./ita_root/ita_by_ansible_execute/ita_ansible_agent/poetry.lock $APP_PATH/
+RUN poetry install --only first_install
+RUN poetry install --without develop_build
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/centos8.repo /etc/yum.repos.d/centos8.repo
 RUN dnf install -y --enablerepo=baseos expect

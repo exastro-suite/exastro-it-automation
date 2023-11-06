@@ -16,7 +16,6 @@ from common_libs.common import *  # noqa: F403
 from common_libs.api import api_filter
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from common_libs.common import menu_info
-from common_libs.common.mongoconnect.const import Const
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 
@@ -152,16 +151,15 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
     # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
     sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
     # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
-    sheet_type_list.append(Const.MONGODB_SHEETTYPE_ID)
+    # 26 : MongoDBを利用するシートタイプ
+    sheet_type_list.append('26')
     menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
 
-    if menu_table_link_record[0]["SHEET_TYPE"] != Const.MONGODB_SHEETTYPE_ID:
-        # 対象項目のプルダウン検索候補一覧を取得
-        data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
-    else:
+    # MongoDB向けの処理かどうかで分岐
+    if menu_table_link_record[0]["SHEET_TYPE"] == '26':
         wsMongo = MONGOConnectWs()
 
         # 既存処理もインデックス指定で取得しているため1レコードしか取れない前提で処理して問題ないと判断。
@@ -170,5 +168,9 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
         menu_table_link_record = menu_table_link_record[0]
 
         data = menu_info.collect_search_candidates_from_mongodb(wsMongo, column, menu_record, menu_table_link_record)
+
+    else:
+        # 対象項目のプルダウン検索候補一覧を取得
+        data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
 
     return data,

@@ -10,7 +10,7 @@
         "request": "launch",
         "program": "/exastro/agent/agent_init.py",
         "env": {
-            "FLASK_APP": "/exastro/backyard/agent_init.py"
+            "FLASK_APP": "/exastro/agent/agent_init.py"
         },
         "cwd": "/exastro",
         "pathMappings": [

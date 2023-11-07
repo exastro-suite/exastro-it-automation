@@ -17,7 +17,6 @@ import os
 import sys
 import time
 
-from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.ci.util import app_exception, exception
@@ -56,12 +55,9 @@ def main():
             interval = int(os.environ.get("EXECUTE_INTERVAL", 10))
 
             main_logic(organization_id, workspace_id, loop_count, interval)
-        except AppException as e:
-            app_exception(e)
-            time.sleep(interval)
         except Exception as e:
             # catch - other all error
-            exception(e)
+            g.applogger.error(e)
             time.sleep(interval)
 
 

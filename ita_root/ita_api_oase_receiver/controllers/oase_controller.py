@@ -18,7 +18,6 @@ from common_libs.api import api_filter
 from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.common.exception import AppException
-from libs import oase
 from libs.label_event import label_event
 import json
 
@@ -41,7 +40,14 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
 
     wsDb = DBConnectWs(workspace_id)
 
-    data = oase.get_event_collection_settings(wsDb, body)
+    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_SETTINGS_ID IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_ids"])))
+    bind_values = tuple(body["event_collection_settings_ids"])
+
+    data = wsDb.table_select(
+        "T_OASE_EVENT_COLLECTION_SETTINGS",
+        where_str,
+        bind_values
+    )
 
     return data,
 
@@ -132,7 +138,7 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
     # そのまま/ラベリングしてMongoDBに保存
     err_code, err_msg = label_event(wsDb, wsMongo, events)  # noqa: F841
     if err_code != "":
-        return "", err_msg, err_code
+        return '', err_msg, err_code
 
     # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
     wsDb.db_transaction_start()

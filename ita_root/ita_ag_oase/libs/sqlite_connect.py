@@ -20,7 +20,7 @@ from flask import g
 class sqliteConnect:
     def __init__(self, organization_id, workspace_id):
         db_dir = "/storage/{}/{}/sqlite".format(organization_id, workspace_id)
-        self.db_name = f"{db_dir}/ag_event_relay_{g.AGENT_NAME}"
+        self.db_name = f"{db_dir}/ag_oase_{g.AGENT_NAME}"
 
         # DB接続（作成）
         self.db_connect = sqlite3.connect(self.db_name)

@@ -17,6 +17,8 @@ import os
 import time
 import sqlite3
 import datetime
+from common_libs.common.exception import AppException
+from common_libs.ci.util import app_exception, exception
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
@@ -34,8 +36,11 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         try:
             collection_logic(organization_id, workspace_id)
             g.applogger.info(f"loop count: {count}")
+        except AppException as e:
+            app_exception(e)
         except Exception as e:
-            raise e
+            # catch - other all error
+            exception(e)
 
         time.sleep(interval)
         if count >= max:
@@ -89,6 +94,8 @@ def collection_logic(organization_id, workspace_id):
             }
         )
         g.applogger.info("getting settings from ita")
+        # g.applogger.debug(status_code)
+        # g.applogger.debug(response)
         create_file(response["data"])
         g.applogger.info("json file created")
         settings = get_settings()

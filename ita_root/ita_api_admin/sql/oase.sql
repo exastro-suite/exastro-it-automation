@@ -14,6 +14,21 @@ CREATE TABLE T_OASE_CONNECTION_METHOD
 
 
 
+-- リクエストメソッドマスタ
+CREATE TABLE T_OASE_REQUEST_METHOD
+(
+    REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
+    REQUEST_METHOD                  VARCHAR(255),                               -- リクエストメソッド
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(REQUEST_METHOD_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- イベント収集設定
 CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS
 (
@@ -74,39 +89,27 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS_JNL
 
 
 
--- ラベリング設定
-CREATE TABLE T_OASE_LABELING_SETTINGS
+-- 通知テンプレート(共通)
+CREATE TABLE T_OASE_NOTIFICATION_TEMPLATE_COMMON
 (
-    LABELING_SETTINGS_ID            VARCHAR(40),                                -- ラベリング設定ID
-    LABELING_SETTINGS_NAME          VARCHAR(255),                               -- ラベリング設定名
-    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
-    TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
-    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
-    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
-    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
-    LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキーID
-    LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
+    NOTIFICATION_TEMPLATE_ID        VARCHAR(2),                                 -- 通知テンプレートID
+    EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(LABELING_SETTINGS_ID)
+    PRIMARY KEY(NOTIFICATION_TEMPLATE_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-CREATE TABLE T_OASE_LABELING_SETTINGS_JNL
+CREATE TABLE T_OASE_NOTIFICATION_TEMPLATE_COMMON_JNL
 (
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    LABELING_SETTINGS_ID            VARCHAR(40),                                -- ラベリング設定ID
-    LABELING_SETTINGS_NAME          VARCHAR(255),                               -- ラベリング設定名
-    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
-    TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
-    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
-    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
-    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
-    LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキーID
-    LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
+    NOTIFICATION_TEMPLATE_ID        VARCHAR(2),                                 -- 通知テンプレートID
+    EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -116,34 +119,19 @@ CREATE TABLE T_OASE_LABELING_SETTINGS_JNL
 
 
 
--- 比較方法マスタ
-CREATE TABLE T_OASE_COMPARISON_METHOD
+-- イベント履歴
+CREATE TABLE T_OASE_EVENT_HISTORY
 (
-    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
-    COMPARISON_METHOD_NAME_EN       VARCHAR(255),                               -- 比較方法名(en)
-    COMPARISON_METHOD_NAME_JA       VARCHAR(255),                               -- 比較方法名(ja)
-    COMPARISON_METHOD_SYMBOL        VARCHAR(40),                                -- 比較方法(記号)
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(COMPARISON_METHOD_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
-
--- ターゲットタイプマスタ
-CREATE TABLE T_OASE_TARGET_TYPE
-(
-    TYPE_ID                         VARCHAR(2),                                 -- タイプID
-    TYPE_EN                         VARCHAR(40),                                -- タイプ名(en)
-    TYPE_JA                         VARCHAR(40),                                -- タイプ名(ja)
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(TYPE_ID)
+    id                              VARCHAR(40),                                -- オブジェクトID
+    event_collection_settings_id    VARCHAR(40),                                -- イベント収集設定UUID
+    fetched_time                    DATETIME(6),                                -- イベント収集日時
+    end_time                        DATETIME(6),                                -- イベント有効日時
+    event_status                    VARCHAR(255),                               -- イベント状態
+    event_type                      VARCHAR(255),                               -- イベント種別
+    labels                          TEXT,                                       -- ラベル
+    rule_name                       VARCHAR(255),                               -- 評価ルール名
+    events                          TEXT,                                       -- 利用イベント
+    PRIMARY KEY(id)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
@@ -218,6 +206,81 @@ FROM
 
 
 
+-- 比較方法マスタ
+CREATE TABLE T_OASE_COMPARISON_METHOD
+(
+    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
+    COMPARISON_METHOD_NAME_EN       VARCHAR(255),                               -- 比較方法名(en)
+    COMPARISON_METHOD_NAME_JA       VARCHAR(255),                               -- 比較方法名(ja)
+    COMPARISON_METHOD_SYMBOL        VARCHAR(40),                                -- 比較方法(記号)
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(COMPARISON_METHOD_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- ターゲットタイプマスタ
+CREATE TABLE T_OASE_TARGET_TYPE
+(
+    TYPE_ID                         VARCHAR(2),                                 -- タイプID
+    TYPE_EN                         VARCHAR(40),                                -- タイプ名(en)
+    TYPE_JA                         VARCHAR(40),                                -- タイプ名(ja)
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(TYPE_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- ラベリング設定
+CREATE TABLE T_OASE_LABELING_SETTINGS
+(
+    LABELING_SETTINGS_ID            VARCHAR(40),                                -- ラベリング設定ID
+    LABELING_SETTINGS_NAME          VARCHAR(255),                               -- ラベリング設定名
+    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
+    TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
+    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
+    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
+    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
+    LABEL_KEY_ID                    VARCHAR(255),                               -- ラベルキーID
+    LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(LABELING_SETTINGS_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_OASE_LABELING_SETTINGS_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    LABELING_SETTINGS_ID            VARCHAR(40),                                -- ラベリング設定ID
+    LABELING_SETTINGS_NAME          VARCHAR(255),                               -- ラベリング設定名
+    EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
+    TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
+    TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
+    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
+    COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
+    LABEL_KEY_ID                    VARCHAR(255),                               -- ラベルキーID
+    LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- イベント収集経過
 CREATE TABLE T_OASE_EVENT_COLLECTION_PROGRESS
 (
@@ -248,98 +311,16 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_PROGRESS_JNL
 
 
 
--- アクション定義
-CREATE TABLE T_OASE_ACTION
+-- フィルター組み合わせ演算子マスタ
+CREATE TABLE T_OASE_FILTER_OPERATOR
 (
-    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
-    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
-    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
-    CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
+    OPERATION_ID                    VARCHAR(2),                                 -- 演算子ID
+    OPERATION_NAME                  VARCHAR(255),                               -- 演算子名
     NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(ACTION_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-CREATE TABLE T_OASE_ACTION_JNL
-(
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
-    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
-    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
-    CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(JOURNAL_SEQ_NO)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
--- アクション履歴
-CREATE TABLE T_OASE_ACTION_LOG
-(
-    ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
-    RULE_ID                         VARCHAR(40),                                -- ルールID
-    RULE_NAME                       VARCHAR(255),                               -- ルール名称
-    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
-    ACTION_ID                       VARCHAR(40),                                -- アクションID
-    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
-    CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
-    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
-    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
-    OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
-    EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
-    TIME_REGISTER                   DATETIME(6),                                -- 登録日時
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(ACTION_LOG_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-CREATE TABLE T_OASE_ACTION_LOG_JNL
-(
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
-    RULE_ID                         VARCHAR(40),                                -- ルールID
-    RULE_NAME                       VARCHAR(255),                               -- ルール名称
-    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
-    ACTION_ID                       VARCHAR(40),                                -- アクションID
-    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
-    CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
-    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
-    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
-    OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
-    EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
-    TIME_REGISTER                   DATETIME(6),                                -- 登録日時
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(JOURNAL_SEQ_NO)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
--- アクションステータスマスタ
-CREATE TABLE T_OASE_ACTION_STATUS
-(
-    ACTION_STASTUS_ID               VARCHAR(2),                                 -- アクションステータスID
-    ACTION_STASTUS_NAME_JA          VARCHAR(255),                               -- アクションステータス名（ja）
-    ACTION_STASTUS_NAME_EN          VARCHAR(255),                               -- アクションステータス名（en）
-    DISP_SEQ                        INT,                                        -- 表示順序
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(ACTION_STASTUS_ID)
+    PRIMARY KEY(OPERATION_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
@@ -371,6 +352,55 @@ CREATE TABLE T_OASE_FILTER_JNL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- アクションステータスマスタ
+CREATE TABLE T_OASE_ACTION_STATUS
+(
+    ACTION_STASTUS_ID               VARCHAR(2),                                 -- アクションステータスID
+    ACTION_STASTUS_NAME_JA          VARCHAR(255),                               -- アクションステータス名（ja）
+    ACTION_STASTUS_NAME_EN          VARCHAR(255),                               -- アクションステータス名（en）
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ACTION_STASTUS_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- アクション定義
+CREATE TABLE T_OASE_ACTION
+(
+    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
+    CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ACTION_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_OASE_ACTION_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
+    CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
@@ -431,97 +461,67 @@ CREATE TABLE T_OASE_RULE_JNL
 
 
 
--- リクエストメソッドマスタ
-CREATE TABLE T_OASE_REQUEST_METHOD
+-- アクション履歴
+CREATE TABLE T_OASE_ACTION_LOG
 (
-    REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
-    REQUEST_METHOD                  VARCHAR(255),                               -- リクエストメソッド
+    ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
+    RULE_ID                         VARCHAR(40),                                -- ルールID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名称
+    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
+    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
+    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
+    OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
+    EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(REQUEST_METHOD_ID)
+    PRIMARY KEY(ACTION_LOG_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
-
-
-
--- フィルター組み合わせ演算子マスタ
-CREATE TABLE T_OASE_FILTER_OPERATOR
+CREATE TABLE T_OASE_ACTION_LOG_JNL
 (
-    OPERATION_ID                    VARCHAR(2),                                 -- 演算子ID
-    OPERATION_NAME                  VARCHAR(255),                               -- 演算子名
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
+    RULE_ID                         VARCHAR(40),                                -- ルールID
+    RULE_NAME                       VARCHAR(255),                               -- ルール名称
+    STATUS_ID                       VARCHAR(2),                                 -- ステータスID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    ACTION_NAME                     VARCHAR(255),                               -- アクション名称
+    CONDUCTOR_INSTANCE_ID           VARCHAR(40),                                -- ConductorインスタンスID
+    CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
+    OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
+    OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
+    EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(OPERATION_ID)
+    PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
 
 
 
 -- インデックス
 CREATE INDEX IND_T_OASE_CONNECTION_METHOD_01 ON T_OASE_CONNECTION_METHOD(DISUSE_FLAG);
+CREATE INDEX IND_T_OASE_REQUEST_METHOD_01 ON T_OASE_REQUEST_METHOD (DISUSE_FLAG);
 CREATE INDEX IND_T_OASE_EVENT_COLLECTION_SETTINGS_01 ON T_OASE_EVENT_COLLECTION_SETTINGS(DISUSE_FLAG);
-CREATE INDEX IND_T_OASE_LABELING_SETTINGS_01 ON T_OASE_LABELING_SETTINGS(DISUSE_FLAG);
-CREATE INDEX IND_T_OASE_COMPARISON_METHOD_01 ON T_OASE_COMPARISON_METHOD(DISUSE_FLAG);
-CREATE INDEX IND_T_OASE_TARGET_TYPE_01 ON T_OASE_TARGET_TYPE(DISUSE_FLAG);
 CREATE INDEX IND_T_OASE_LABEL_KEY_FIXED_01 ON T_OASE_LABEL_KEY_FIXED(DISUSE_FLAG);
 CREATE INDEX IND_T_OASE_LABEL_KEY_INPUT_01 ON T_OASE_LABEL_KEY_INPUT(DISUSE_FLAG);
+CREATE INDEX IND_T_OASE_COMPARISON_METHOD_01 ON T_OASE_COMPARISON_METHOD(DISUSE_FLAG);
+CREATE INDEX IND_T_OASE_TARGET_TYPE_01 ON T_OASE_TARGET_TYPE(DISUSE_FLAG);
+CREATE INDEX IND_T_OASE_LABELING_SETTINGS_01 ON T_OASE_LABELING_SETTINGS(DISUSE_FLAG);
 CREATE INDEX IND_T_OASE_EVENT_COLLECTION_PROGRESS_01 ON T_OASE_EVENT_COLLECTION_PROGRESS(DISUSE_FLAG);
+CREATE INDEX IND_T_OASE_ACTION_STATUS_01 ON T_OASE_ACTION_STATUS (DISUSE_FLAG);
 CREATE INDEX IND_T_OASE_ACTION_01 ON T_OASE_ACTION (DISUSE_FLAG);
 CREATE INDEX IND_T_OASE_ACTION_LOG_01 ON T_OASE_ACTION_LOG (DISUSE_FLAG);
-CREATE INDEX IND_T_OASE_ACTION_STATUS_01 ON T_OASE_ACTION_STATUS (DISUSE_FLAG);
-CREATE INDEX IND_T_OASE_REQUEST_METHOD_01 ON T_OASE_REQUEST_METHOD (DISUSE_FLAG);
-
-
-
--- イベント履歴
-CREATE TABLE T_OASE_EVENT_HISTORY
-(
-    id                              VARCHAR(40),                                -- オブジェクトID
-    event_collection_settings_id    VARCHAR(40),                                -- イベント収集設定UUID
-    fetched_time                    DATETIME(6),                                -- イベント収集日時
-    end_time                        DATETIME(6),                                -- イベント有効日時
-    event_status                    VARCHAR(255),                               -- イベント状態
-    event_type                      VARCHAR(255),                               -- イベント種別
-    labels                          TEXT,                                       -- ラベル
-    rule_name                       VARCHAR(255),                               -- 評価ルール名
-    events                          TEXT,                                       -- 利用イベント
-    PRIMARY KEY(id)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-
-
-
--- 通知テンプレート(共通)
-CREATE TABLE T_OASE_NOTIFICATION_TEMPLATE_COMMON
-(
-    NOTIFICATION_TEMPLATE_ID        VARCHAR(2),                                 -- 通知テンプレートID
-    EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
-    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(NOTIFICATION_TEMPLATE_ID)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
-
-CREATE TABLE T_OASE_NOTIFICATION_TEMPLATE_COMMON_JNL
-(
-    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
-    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
-    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    NOTIFICATION_TEMPLATE_ID        VARCHAR(2),                                 -- 通知テンプレートID
-    EVENT_TYPE                      VARCHAR(255),                               -- イベント種別
-    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレート
-    NOTE                            TEXT,                                       -- 備考
-    DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
-    LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
-    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
-    PRIMARY KEY(JOURNAL_SEQ_NO)
-)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 
 

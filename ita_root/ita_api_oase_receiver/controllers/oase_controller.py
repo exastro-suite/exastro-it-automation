@@ -138,7 +138,9 @@ def post_event_collection_events(body, organization_id, workspace_id):  # noqa: 
     # そのまま/ラベリングしてMongoDBに保存
     err_code, err_msg = label_event(wsDb, wsMongo, events)  # noqa: F841
     if err_code != "":
-        return '', err_msg, err_code
+        g.applogger.info(err_msg)
+        err_code = "499-00402"
+        raise AppException(err_code)
 
     # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
     wsDb.db_transaction_start()

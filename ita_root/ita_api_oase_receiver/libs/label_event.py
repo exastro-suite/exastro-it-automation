@@ -28,13 +28,11 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     # ラベル付与の設定を取得
     labeling_settings = wsDb.table_select(
         "T_OASE_LABELING_SETTINGS",
-        "WHERE DISUSE_FLAG=%s",
-        ["0"]
+        "WHERE DISUSE_FLAG=0"
     )
     if len(labeling_settings) == 0:
         err_code = "499-00000"
         err_msg = "ラベル付与設定を取得できませんでした。"
-        g.applogger.error(err_msg)
         return err_code, err_msg
 
     # ラベルのマスタを取得
@@ -45,7 +43,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     if len(label_keys) == 0:
         err_code = "499-00000"
         err_msg = "ラベルのマスタを取得できませんでした。"
-        g.applogger.error(err_msg)
         return err_code, err_msg
     # ラベルのマスタデータをIDで引けるように整形
     label_key_map = {}
@@ -182,6 +179,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                             elif comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting) is True:
                                 event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンA,B
             except Exception as e:
+                err_code = "499-00000"
                 err_msg = "ラベル付与に失敗しました"
                 g.applogger.error(e)
                 g.applogger.error(event_collection_data)

@@ -21,6 +21,7 @@ from common_libs.loadtable import *
 from datetime import datetime
 from pymongo import ASCENDING
 
+
 def rest_filter(objdbca, menu, filter_parameter):
     """
         メニューのレコード取得
@@ -128,7 +129,6 @@ def collect_event_history(wsMongo: MONGOConnectWs, parameter: dict):
     # MongoDBから取得した値をそのまま返却するとエラーになるため原因となる項目（_id）を変換する
     result = []
     for item in event_history:
-        # TODO:MongoDBのIDは単純にstringに変換で良いか（ObjectId()の部分が無くなる）
         item["_id"] = str(item["_id"])
         result.append(item)
 
@@ -146,7 +146,7 @@ def collect_action_log(wsDb: DBConnectWs, parameter: dict):
     """
 
     # アクション履歴テーブルの物理名
-    TABLE_NAME = "T_EVRL_ACTION_LOG"
+    TABLE_NAME = "T_OASE_ACTION_LOG"
 
     # 取得するアクション履歴のソート条件
     SORT_KEY = "ORDER BY TIME_REGISTER, ACTION_LOG_ID"
@@ -169,7 +169,6 @@ def collect_action_log(wsDb: DBConnectWs, parameter: dict):
             if key not in TARGET_PARAM:
                 continue
 
-            # TODO:検索条件は登録時間で良いか要確認（最終更新時間では無いことを確定させたい）
             # 片落ちで指定されることを想定してBetweenは使わない。
             if key == "start_time":
                 where += "AND TIME_REGISTER >= %s "
@@ -190,79 +189,7 @@ def collect_action_log(wsDb: DBConnectWs, parameter: dict):
     return action_log
 
 
-def collect_filter(wsDb: DBConnectWs):
-    """
-    フィルター管理を取得する
-    ARGS:
-        wsDb:DB接続クラス  DBConnectWs()
-    RETRUN:
-        data
-    """
-
-    # フィルター管理テーブルの物理名
-    TABLE_NAME = "T_EVRL_FILTER"
-
-    # 取得するフィルター管理のソート条件
-    # TODO:テーブル定義からソート列が確認できなかったため仮で作成
-    SORT_KEY = "ORDER BY FILTER_NAME, FILTER_ID"
-
-    where = "WHERE DISUSE_FLAG=0 "
-    filter = wsDb.table_select(
-        TABLE_NAME,
-        where + SORT_KEY
-    )
-
-    return filter
-
-
-def collect_action(wsDb: DBConnectWs):
-    """
-    アクション定義を取得する
-    ARGS:
-        wsDb:DB接続クラス  DBConnectWs()
-    RETRUN:
-        data
-    """
-
-    # アクション定義テーブルの物理名
-    TABLE_NAME = "T_EVRL_ACTION"
-
-    # 取得するアクション定義のソート条件
-    SORT_KEY = "ORDER BY ACTION_NAME, ACTION_ID"
-
-    where = "WHERE DISUSE_FLAG=0 "
-    action = wsDb.table_select(
-        TABLE_NAME,
-        where + SORT_KEY
-    )
-
-    return action
-
-
-def collect_rule(wsDb: DBConnectWs):
-    """
-    ルール定義を取得する
-    ARGS:
-        wsDb:DB接続クラス  DBConnectWs()
-    RETRUN:
-        data
-    """
-
-    # ルール管理テーブルの物理名
-    TABLE_NAME = "T_EVRL_RULE"
-
-    # 取得するルール管理のソート条件
-    SORT_KEY = "ORDER BY RULE_NAME, RULE_ID"
-
-    where = "WHERE DISUSE_FLAG=0 "
-    rule = wsDb.table_select(
-        TABLE_NAME,
-        where + SORT_KEY
-    )
-    return rule
-
-
-def create_history_list(event_history: list, action_log: list) :
+def create_history_list(event_history: list, action_log: list):
     """
     イベント履歴とアクション履歴をまとめて日時の昇順でソートしたリストを作成する
     ARGS:

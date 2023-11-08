@@ -30,7 +30,7 @@ servers:
 
 tags:
   - name: OASE
-    description: イベント連携機能の情報を取得・登録
+    description: OASEの情報を取得・登録
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings:
@@ -94,12 +94,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/events:
+  /api/{organization_id}/workspaces/{workspace_id}/oase_agent/events:
     post:
       tags:
         - OASE
       description: イベントを受け取り、ラベリングして保存する
-      operationId: postEventCollectionEvents
+      operationId: postEvents
       x-openapi-router-controller: controllers.oase_controller
       parameters:
         - name: organization_id

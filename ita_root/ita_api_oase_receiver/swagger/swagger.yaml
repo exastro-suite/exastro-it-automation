@@ -27,8 +27,8 @@ servers:
     port:
       default: "30080"
 tags:
-- name: oase
-  description: OASE機能の情報を取得・登録
+- name: OASE
+  description: OASEの情報を取得・登録
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings:
     post:
@@ -79,12 +79,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.oase_controller
-  /api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/events:
+  /api/{organization_id}/workspaces/{workspace_id}/oase_agent/events:
     post:
       tags:
       - OASE
       description: イベントを受け取り、ラベリングして保存する
-      operationId: post_event_collection_events
+      operationId: post_events
       parameters:
       - name: organization_id
         in: path
@@ -106,7 +106,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/event_collection_events_body'
+              $ref: '#/components/schemas/oase_agent_events_body'
         required: true
       responses:
         "200":
@@ -163,7 +163,7 @@ components:
         - {}
         - {}
         message: message
-    apiorganization_idworkspacesworkspace_idoase_agentevent_collectionevents_events:
+    apiorganization_idworkspacesworkspace_idoase_agentevents_events:
       type: object
       properties:
         event:
@@ -177,12 +177,12 @@ components:
         event_collection_settings_id:
           type: string
           example: uuid
-    event_collection_events_body:
+    oase_agent_events_body:
       properties:
         events:
           type: array
           items:
-            $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevent_collectionevents_events'
+            $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_events'
       description: イベントのJSONデータを文字列化したもの、取得した時間、イベント収集設定IDを記載
     inline_response_200_1:
       type: object

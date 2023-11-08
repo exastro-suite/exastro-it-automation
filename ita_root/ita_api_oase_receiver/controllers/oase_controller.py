@@ -53,8 +53,8 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
 
 
 @api_filter
-def post_event_collection_events(body, organization_id, workspace_id):  # noqa: E501
-    """post_event_collection_events
+def post_events(body, organization_id, workspace_id):  # noqa: E501
+    """post_events
 
     イベントを受け取り、ラベリングして保存する # noqa: E501
 

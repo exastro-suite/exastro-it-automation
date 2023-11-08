@@ -20,6 +20,7 @@ from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.common.util import ky_decrypt, get_timestamp, get_all_execution_limit, get_org_execution_limit
 from common_libs.conductor.classes.exec_util import *
 from common_libs.ci.util import log_err
+from common_libs.event_relay.manage_events import ManageEvents
 import csv
 import datetime
 import inspect
@@ -91,7 +92,7 @@ def _rule_matching(organization_id, workspace_id):
 
     # 単体テスト用
     # connect MongoDB
-    MongoDBCA = "DB"
+    mongodbca = MONGOConnectWs()
     # connect MariaDB
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
@@ -100,7 +101,7 @@ def _rule_matching(organization_id, workspace_id):
     # judgeTime = int(time.time())
     judgeTime = 10000
 
-    ret = JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path)
+    ret = JudgeMain(objdbca, mongodbca, judgeTime, workspace_path)
     if ret is False:
         g.applogger.debug("JudgeMain False")
 
@@ -122,9 +123,9 @@ class Judgement:
 
         # ラベルマスタ取得
         # UnImplementLog("ラベルマスタ取得")
-        # UnImplementLog("select * from T_EVRL_LABEL_KEY_INPUTとT_EVRL_LABEL_KEY_CONCLUSIONがunionされてView where DISUSE_FLAG = '0'")
+        # UnImplementLog("select * from T_OASE_LABEL_KEY_INPUTとT_OASE_LABEL_KEY_CONCLUSIONがunionされてView where DISUSE_FLAG = '0'")
         # 単体テスト用
-        # LabelObj = T_EVRL_LABEL_KEY_INPUT(self.MariaDBCA, 'csv/T_EVRL_LABEL_KEY_INPUT.csv')
+        # LabelObj = T_OASE_LABEL_KEY_INPUT(self.MariaDBCA, 'csv/T_OASE_LABEL_KEY_INPUT.csv')
 
         # self.LabelObj = LabelObj
         self.EventObj = EventObj
@@ -134,12 +135,12 @@ class Judgement:
         UseEveventRows = ""
         EventJudgList = []
         # テーブル名
-        t_evrl_label_key_input = 'T_EVRL_LABEL_KEY_INPUT'  # ラベルマスタ
+        t_oase_label_key_input = 'T_OASE_LABEL_KEY_INPUT'  # ラベルマスタ
 
         # 「ラベルマスタ」からレコードを取得
-        labelList = objdbca.table_select(t_evrl_label_key_input, 'WHERE DISUSE_FLAG = %s', [0])
+        labelList = objdbca.table_select(t_oase_label_key_input, 'WHERE DISUSE_FLAG = %s', [0])
         if not labelList:
-            tmp_msg = "処理対象レコードなし。Table:T_EVRL_LABEL_KEY_INPUT"
+            tmp_msg = "処理対象レコードなし。Table:T_OASE_LABEL_KEY_INPUT"
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False
         tmp_msg = "ラベルマスタ 件数: {}".format(str(len(labelList)))
@@ -174,7 +175,7 @@ class Judgement:
         # イベント 検索
         tmp_msg = "{} イベント検索 JSON: {}".format(DebugMode, str(EventJudgList))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        ret, UsedEventIdList = self.EventObj.findT_EVRL_EVENT(EventJudgList)
+        ret, UsedEventIdList = self.EventObj.find_events(EventJudgList)
         if len(UsedEventIdList) == 0:
             # 対象イベントなし
             tmp_msg = "{} イベント なし EventIdList: {}".format(DebugMode, str(UsedEventIdList))
@@ -236,7 +237,7 @@ class Judgement:
                     if FiltersUsedinRulesDict[FilterId]['rule_id'] != RuleRow['RULE_ID']:
                         hit = False
 
-                # ルール抽出対象: 複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール※2の場合
+                # ルール抽出対象: 複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール※3の場合
                 elif TargetLevel == "Level3":
                     if FilterId not in IncidentDict:
                         tmp_msg = "{} 対象イベント なし  RULE_ID {} FILTER_ID {}>>".format(DebugMode, RuleRow['RULE_ID'], FilterId)
@@ -249,7 +250,7 @@ class Judgement:
                             hit = False
                         else:
                             pass
-                            ret, EventRow = self.EventObj.getT_EVRL_EVENT(IncidentDict[FilterId])
+                            ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
                             if ret is False:
                                 tmp_msg = "対象イベント取得失敗  RULE_ID:{} FILTER_ID:{} EventId:{}".format(RuleRow['RULE_ID'], FilterId, IncidentDict[FilterId])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -303,7 +304,6 @@ class Judgement:
 
         # フィルタ毎のループ
         for FilterId in rule_combination_json['filter_key']:
-            # TraceLog("フィルタ管理判定開始  FILTER_ID: %s" % (FilterId))
             tmp_msg = "フィルタ管理判定開始  FILTER_ID: {}".format(FilterId)
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -357,7 +357,7 @@ class Judgement:
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False, {}
 
-        ret, EventRow = self.EventObj.getT_EVRL_EVENT(IncidentDict[FilterId])
+        ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
         if ret is False:
             tmp_msg = "イベント なし FILTER ID:{}>>".format(FilterId)
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -535,39 +535,29 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
     defObj = RuleJudgementConst()
 
     # テーブル名
-    t_evrl_filter = 'T_EVRL_FILTER'  # フィルター管理
+    t_oase_filter = 'T_OASE_FILTER'  # フィルター管理
 
     # 「フィルター管理」からレコードを取得
-    filterList = objdbca.table_select(t_evrl_filter, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s', [0, 1])
+    filterList = objdbca.table_select(t_oase_filter, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s', [0, 1])
     if not filterList:
-        tmp_msg = "処理対象レコードなし。Table:T_EVRL_FILTER"
+        tmp_msg = "処理対象レコードなし。Table:T_OASE_FILTER"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         return False
 
     tmp_msg = "フィルター管理取得 件数: {}".format(str(len(filterList)))
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    # テーブル名
-    t_evrl_rule = 'T_EVRL_RULE'  # ルール管理
-
-    # 「ルール管理」からレコードを取得
-    ruleList = objdbca.table_select(t_evrl_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY RULE_PRIORITY', [0, 1])
-    if not ruleList:
-        tmp_msg = "処理対象レコードなし。Table:T_EVRL_RULE"
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        return False
-
-    tmp_msg = "ルール管理取得 件数: {}".format(str(len(ruleList)))
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
     # イベントデータ取得
     # 単体テスト用
-    eventcsv_path = workspace_path + '/tmp/driver/T_EVRL_EVENT.csv'
-    if os.path.isfile(eventcsv_path) is False:
-        return
+    # eventcsv_path = workspace_path + '/tmp/driver/T_OASE_EVENT.csv'
+    # if os.path.isfile(eventcsv_path) is False:
+    #     return
 
-    EventObj = T_EVRL_EVENT(MongoDBCA, judgeTime, eventcsv_path)
-    count = EventObj.countT_EVRL_EVENT()
+    # EventObj_csv = T_OASE_EVENT(MongoDBCA, judgeTime, eventcsv_path)
+    EventObj = ManageEvents(MongoDBCA, judgeTime)
+    # dict = EventObj_csv.EventDict
+    # EventObj.insert_event(dict)
+    count = EventObj.count_events()
     if count == 0:
         tmp_msg = "処理対象イベントなし"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -576,7 +566,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
     tmp_msg = "イベント取得 対象時間:{} 取得件数: {}".format(judgeTime, count)
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    ret, timeout_Event_Id_List = EventObj.getTimeOutT_EVRL_EVENT()
+    ret, timeout_Event_Id_List = EventObj.get_timeout_event()
     tmp_msg = "有効期限判定　タイムアウト件数: {}".format(len(timeout_Event_Id_List))
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -584,11 +574,27 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
     if len(timeout_Event_Id_List) > 0:
         # タイムアウトしているイベントの_exastro_timeoutを1に更新
         update_Flag_Dict = {"_exastro_timeout": '1'}
-        EventObj.updateLablesFlagT_EVRL_EVENT(timeout_Event_Id_List, update_Flag_Dict)
+        EventObj.insert_event(timeout_Event_Id_List, update_Flag_Dict)
         tmp_msg = "イベント更新  タイムアウト({}) ids: {}".format(str(update_Flag_Dict), str(timeout_Event_Id_List))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    EventObj.printT_EVRL_EVENT()
+    # PFから通知先一覧取得（既知(時間切れ)がTrue）
+
+    # PFから通知先一覧取得（新規がTrue）
+
+    # テーブル名
+    t_oase_rule = 'T_OASE_RULE'  # ルール管理
+
+    # 「ルール管理」からレコードを取得
+    ruleList = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY RULE_PRIORITY', [0, 1])
+    if not ruleList:
+        tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        return False
+
+    tmp_msg = "ルール管理取得 件数: {}".format(str(len(ruleList)))
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
     # ルール判定　クラス生成
     judgeObj = Judgement(objdbca, MongoDBCA, EventObj)
 
@@ -617,8 +623,12 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
     # ルールで使用しているフィルタを集計
     FiltersUsedinRulesDict = judgeObj.SummaryofFiltersUsedinRules(filterList, ruleList, EventObj, IncidentDict)
 
-    tmp_msg = "ルール判定開始"
+    tmp_msg = "ルールマッチ開始"
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+    # Level1:複数のルールで使用していないフィルタを使用しているルール
+    # Level2:複数のルールで使用しているフィルタで優先順位が最上位のルール
+    # Level3:複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール
     JudgeLevelList = ['Level1', 'Level2', 'Level3']
 
     # 全レベルループ -----
@@ -647,39 +657,11 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
 
                     if ret is True:
                         # ルール判定 マッチ
-                        # 結論イベント登録
-                        ret, ConclusionEventRow = judgeObj.putRaccEvent(ruleRow, UseEventIdList)
-
-                        # 結論イベントに処理で必要なラベル情報を追加
-                        ConclusionEventRow = EventObj.AddLocalLabel(ConclusionEventRow, defObj.DF_LOCAL_LABLE_NAME, defObj.DF_LOCAL_LABLE_STATUS, defObj.DF_PROC_EVENT)
-
-                        FilterCheckLabelDict = ruleRow["LABELING_INFORMATION_JSON"]
-
-                        # 結論イベントに対応するフィルタ確認
-                        ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(FilterCheckLabelDict, filterList)
-
-                        tmp_msg = "結論イベントに対応するフィルタ確認 {}".format(str(ret))
-                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-                        if ret is True:
-                            for UsedFilterId in UsedFilterIdList:
-                                tmp_msg = "結論イベントに対応するフィルタとイベント紐づけ登録  FILTER_ID: {} EVENT_ID: {}".format(UsedFilterId, ConclusionEventRow['_id'])
-                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                IncidentDict[UsedFilterId] = ConclusionEventRow['_id']
-
-                                tmp_msg = "結論イベントをメモリに追加 {}".format(ConclusionEventRow)
-                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                EventObj.appendT_EVRL_EVENT(ConclusionEventRow)
-                                newIncident = True
-
-                        # アクション履歴の登録
+                        # 評価結果登録
                         if getattr(g, 'USER_ID', None) is None:
                             g.USER_ID = '110101'
-
                         objdbca = DBConnectWs()
-
                         objdbca.db_transaction_start()
-
                         Row = {}
                         Row["CONDUCTOR_INSTANCE_ID"] = "CONDUCTOR_INSTANCE_ID"
                         Row["CONDUCTOR_INSTANCE_NAME"] = "CONDUCTOR_INSTANCE_NAME"
@@ -693,9 +675,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
                         Row["TIME_REGISTER"] = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
                         Row["NOTE"] = None
                         Row["DISUSE_FLAG"] = '0'
-
                         RegistrActionLog(objdbca, Row)
-
                         objdbca.db_transaction_end(True)
 
                         # conductor実行
@@ -714,10 +694,39 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
 
                         # 使用済みインシデントフラグを立てる  _exastro_evaluated='1'
                         update_Flag_Dict = {"_exastro_evaluated": '1'}
-                        EventObj.updateLablesFlagT_EVRL_EVENT(UseEventIdList, update_Flag_Dict)
+                        EventObj.insert_event(UseEventIdList, update_Flag_Dict)
 
                         tmp_msg = "使用済みインシデントフラグを立てる ({}) ids: {}".format(str(update_Flag_Dict), str(UseEventIdList))
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                        # MongoDBのインシデント情報を更新
+
+                        # アクション一覧からルールマッチング済みを取得
+
+                        # 結論イベント登録
+                        ret, ConclusionEventRow = judgeObj.putRaccEvent(ruleRow, UseEventIdList)
+
+                        # 結論イベントに処理で必要なラベル情報を追加
+                        ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, defObj.DF_LOCAL_LABLE_NAME, defObj.DF_LOCAL_LABLE_STATUS, defObj.DF_PROC_EVENT)
+
+                        FilterCheckLabelDict = ruleRow["LABELING_INFORMATION_JSON"]
+
+                        # 結論イベントに対応するフィルタ確認
+                        ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(FilterCheckLabelDict, filterList)
+
+                        tmp_msg = "結論イベントに対応するフィルタ確認 {}".format(str(ret))
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                        if ret is True:
+                            for UsedFilterId in UsedFilterIdList:
+                                tmp_msg = "結論イベントに対応するフィルタとイベント紐づけ登録  FILTER_ID: {} EVENT_ID: {}".format(UsedFilterId, ConclusionEventRow['_id'])
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                IncidentDict[UsedFilterId] = ConclusionEventRow['_id']
+
+                                tmp_msg = "結論イベントをメモリに追加 {}".format(ConclusionEventRow)
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                EventObj.append_event(ConclusionEventRow)
+                                newIncident = True
 
                     else:
                         # ルール判定 アンマッチ
@@ -742,47 +751,37 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # ----- レベル毎のループ
-        # 各レベルのルール判定で結論イベントを発生していないか確認
+        # 各レベルのルール判定で結論イベントが発生していないか確認
         total = 0
         for TargetLevel in JudgeLevelList:
             total += newIncidentCount[TargetLevel]
+        # 発生していなかったらループを終了
         if total == 0:
             break
 
     # ----- 全レベルループ
-    tmp_msg = "ルール判定終了"
+    tmp_msg = "ルールマッチ終了"
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    # 処理後タイムアウトイベント検出
-    PostProcTimeoutEventIdList = EventObj.getPostProcTimeoutEvent(IncidentDict)
-    if len(PostProcTimeoutEventIdList) > 0:
-        tmp_msg = "処理後タイムアウト検出 EventId: {}".format(str(PostProcTimeoutEventIdList))
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        # 処理後タイムアウトの_exastro_timeoutを1に更新
-        update_Flag_Dict = {"_exastro_timeout": '1'}
-        EventObj.updateLablesFlagT_EVRL_EVENT(PostProcTimeoutEventIdList, update_Flag_Dict)
-        tmp_msg = "イベント更新  処理後タイムアウト ({}) ids:{}".format(str(update_Flag_Dict), str(PostProcTimeoutEventIdList))
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    else:
-        tmp_msg = "処理後タイムアウトイベントなし"
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-    # 未知イベント検出
-    UnusedEventIdList = EventObj.getUnuseEvent(IncidentDict)
+    # 未知事象フラグを立てる（一括で行う）
+    UnusedEventIdList = EventObj.get_unused_event(IncidentDict)
     if len(UnusedEventIdList) > 0:
         tmp_msg = "未知イベント検出 EventId: {}>>".format(str(UnusedEventIdList))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         # 未知イベントの_exastro_undetectedを1に更新
         update_Flag_Dict = {"_exastro_undetected": '1'}
-        EventObj.updateLablesFlagT_EVRL_EVENT(UnusedEventIdList, update_Flag_Dict)
+        EventObj.insert_event(UnusedEventIdList, update_Flag_Dict)
         tmp_msg = "イベント更新  未知イベント ({}) ids:{}".format(str(update_Flag_Dict), str(UnusedEventIdList))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     else:
         tmp_msg = "未知イベントなし"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    # デバック用　イベント表示
-    EventObj.printT_EVRL_EVENT()
+    # MongoDBのインシデント情報を更新（一括で行う）
+
+    # PFから通知先一覧取得（未知がTrue）
+    # 最後の通知先ではない or 通知先が0件ではない
+    # TrueでPFへ通知メッセージ送付（未知）
 
 
 def UserIDtoUserName(objdbca, UserId):
@@ -798,13 +797,28 @@ def UserIDtoUserName(objdbca, UserId):
 
 
 def RegistrActionLog(objdbca, Row):
+    """
+    アクション一覧に登録する
+    ARGS:
+        objdbca:DB接続クラス  DBConnectWs()
+        Row:登録するパラメータ
+    RETURN:
+    """
     is_RegisterFistory = True
-    TableName = 'T_EVRL_ACTION_LOG'
+    TableName = 'T_OASE_ACTION_LOG'
     PrimaryKey = 'ACTION_LOG_ID'
     objdbca.table_insert(TableName, Row, PrimaryKey, is_RegisterFistory)
 
 
 def conductor_execute(objdbca, conductor_class_id, operation_id):
+    """
+    conductorを実行する（関数を呼ぶ）
+    ARGS:
+        objdbca:DB接続クラス  DBConnectWs()
+        conductor_class_id:
+        operation_id:
+    RETURN:
+    """
     objcbkl = ConductorExecuteBkyLibs(objdbca)  # noqa: F405
     # parameter = {"conductor_class_name": "test", "operation_name": "ope"}
     parameter = {"conductor_class_id": conductor_class_id, "operation_id": operation_id}
@@ -835,13 +849,13 @@ class RuleJudgementConst():
     DF_OPE_ORDER = '3'  # ->
 
 
-class T_EVRL_EVENT():
+class T_OASE_EVENT():
     def __init__(self, MongoDBCA, JudgeTime, filename):
         self.MongoDBCA = MongoDBCA
         self.filename = filename
         self.EventDict = {}
         DebugMode = False   # 単体テスト用
-        # DB find select * from T_EVRL_EVENT where labels._exastro_timeout = '0' and labels._exastro_undetected = '0' and labels._exastro_evaluated = '0'
+        # DB find select * from T_OASE_EVENT where labels._exastro_timeout = '0' and labels._exastro_undetected = '0' and labels._exastro_evaluated = '0'
         #  Now: インシデント判定開始時間
         #  TTL: Now -  (イベント:_exastro_end_time - _exastro_fetched_time)
         #  f  : _exastro_fetched_time
@@ -882,7 +896,7 @@ class T_EVRL_EVENT():
 
         # MongoDB検索
         # UnImplementLog("MongoDB検索処理")
-        # UnImplementLog("find T_EVRL_EVENT where labels._exastro_timeout = '0' and labels._exastro_undetected = '0' and labels._exastro_evaluated = '0'")
+        # UnImplementLog("find T_OASE_EVENT where labels._exastro_timeout = '0' and labels._exastro_undetected = '0' and labels._exastro_evaluated = '0'")
         ##########################
 
         defObj = RuleJudgementConst()
@@ -981,7 +995,7 @@ class T_EVRL_EVENT():
         EventRow[ParentLabel][MemberLabel] = Value
         return EventRow
 
-    def findT_EVRL_EVENT(self, EventJudgList):
+    def findT_OASE_EVENT(self, EventJudgList):
         DebugMode = False  ## 単体テスト用
         UsedEventIdList = []
         defObj = RuleJudgementConst()
@@ -1041,7 +1055,7 @@ class T_EVRL_EVENT():
         return True, UsedEventIdList
 
     # デバック用
-    def printT_EVRL_EVENT(self):
+    def printT_OASE_EVENT(self):
         DebugMode = True
         defObj = RuleJudgementConst()
         tmp_msg = "{} イベント状態".format(DebugMode)
@@ -1072,18 +1086,18 @@ class T_EVRL_EVENT():
             tmp_msg = "{} id:{} 状態:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(DebugMode, id, sts, EventRow['labels']['_exastro_evaluated'], EventRow['labels']['_exastro_undetected'], EventRow['labels']['_exastro_timeout'], localsts)
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    def countT_EVRL_EVENT(self):
+    def countT_OASE_EVENT(self):
         return (len(self.EventDict))
 
-    def appendT_EVRL_EVENT(self, EventRow):
+    def appendT_OASE_EVENT(self, EventRow):
         self.EventDict[EventRow['_id']] = EventRow
 
-    def getT_EVRL_EVENT(self, EventId):
+    def getT_OASE_EVENT(self, EventId):
         if EventId not in self.EventDict:
             return False, {}
         return True, self.EventDict[EventId]
 
-    def getTimeOutT_EVRL_EVENT(self):
+    def getTimeOutT_OASE_EVENT(self):
         TimeOutEventiIdList = []
         defObj = RuleJudgementConst()
         for EventId, row in self.EventDict.items():
@@ -1091,7 +1105,7 @@ class T_EVRL_EVENT():
                 TimeOutEventiIdList.append(EventId)
         return True, TimeOutEventiIdList
 
-    def updateLablesFlagT_EVRL_EVENT(self, EventIdlist, UpdateFlagDict):
+    def updateLablesFlagT_OASE_EVENT(self, EventIdlist, UpdateFlagDict):
         DebugMode = False   # 単体テスト用
         for EventId in EventIdlist:
             if EventId not in self.EventDict:

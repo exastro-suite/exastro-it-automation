@@ -548,15 +548,19 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, workspace_path):
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # イベントデータ取得
-    # 単体テスト用
-    # eventcsv_path = workspace_path + '/tmp/driver/T_OASE_EVENT.csv'
-    # if os.path.isfile(eventcsv_path) is False:
-    #     return
-
-    # EventObj_csv = T_OASE_EVENT(MongoDBCA, judgeTime, eventcsv_path)
     EventObj = ManageEvents(MongoDBCA, judgeTime)
-    # dict = EventObj_csv.EventDict
-    # EventObj.insert_event(dict)
+
+    demo_mode = True
+    print("**取得イベントデータ************")
+    if isinstance(EventObj.labeled_events_dict, dict):
+        for event_id, event in EventObj.labeled_events_dict.items():
+            print(event)
+    else:
+        print(EventObj.labeled_events_dict)
+    print("*******************************")
+    if demo_mode:
+        return True
+
     count = EventObj.count_events()
     if count == 0:
         tmp_msg = "処理対象イベントなし"

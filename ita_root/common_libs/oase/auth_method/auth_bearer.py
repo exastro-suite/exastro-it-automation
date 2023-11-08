@@ -1,4 +1,4 @@
-from common_libs.event_relay.api_client_common import APIClientCommon
+from common_libs.oase.api_client_common import APIClientCommon
 
 
 class BearerAuthAPIClient(APIClientCommon):

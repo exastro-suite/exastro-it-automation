@@ -1,4 +1,4 @@
-from common_libs.event_relay.api_client_common import APIClientCommon
+from common_libs.oase.api_client_common import APIClientCommon
 from imapclient import IMAPClient
 import ssl
 import json

@@ -84,7 +84,7 @@ def collect_event_history(wsMongo: MONGOConnectWs, parameter: dict):
             "end_time": "labels._exastro_fetched_time",
             "evaluted": "labels._exastro_evaluated",
             "undetected": "labels._exastro_undetected",
-            "timeouted": "labels._exastro_time_out"
+            "timeouted": "labels._exastro_timeout"
         }
 
         # UNIX時間への変換処理を行うパラメータ。

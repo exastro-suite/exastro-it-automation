@@ -54,7 +54,7 @@ class LabeledEventCollection(CollectionBase):
             "_exastro_type": ["labels._exastro_type"],
             "_exastro_rule_name": ["labels._exastro_rule_name"],
             "_exastro_events": ["exastro_events"],
-            "_exastro_event_status": ["labels._exastro_time_out", "labels._exastro_evaluated", "labels._exastro_undetected"]
+            "_exastro_event_status": ["labels._exastro_timeout", "labels._exastro_evaluated", "labels._exastro_undetected"]
         }
 
         if rest_key_name in simple_convert_map:
@@ -71,7 +71,7 @@ class LabeledEventCollection(CollectionBase):
         if collection_item_name == "labels._exastro_end_time":
             return str(int(datetime.datetime.strptime(tmp_value, '%Y-%m-%dT%H:%M:%S%z').timestamp()))
 
-        if collection_item_name == "labels._exastro_time_out":
+        if collection_item_name == "labels._exastro_timeout":
             if value == "時間切れ":
                 return "1"
             else:
@@ -128,28 +128,28 @@ class LabeledEventCollection(CollectionBase):
     def __create_exastro_event_status_search_value(self, item):
         if item == "検討中":
             return {
-                "labels._exastro_time_out": "0",
+                "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "0"
             }
 
         elif item == "時間切れ":
             return {
-                "labels._exastro_time_out": "1",
+                "labels._exastro_timeout": "1",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "0"
             }
 
         elif item == "ルールマッチ済み":
             return {
-                "labels._exastro_time_out": "0",
+                "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "1",
                 "labels._exastro_undetected": "0"
             }
 
         elif item == "未知イベント":
             return {
-                "labels._exastro_time_out": "0",
+                "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "1"
             }
@@ -160,7 +160,7 @@ class LabeledEventCollection(CollectionBase):
         format_item = super()._format_result_value(item)
 
         # イベント状態の判定で使用するマップ。
-        # 判定する値は左から_exastro_time_out, _exastro_evaluated, _exastro_undetectedの順に文字列結合する想定。
+        # 判定する値は左から_exastro_timeout, _exastro_evaluated, _exastro_undetectedの順に文字列結合する想定。
         event_status_map = {
             "000": "検討中",
             "001": "未知イベント",
@@ -195,7 +195,7 @@ class LabeledEventCollection(CollectionBase):
 
             # イベント状態の判定で使用する値を組み立てる。
             # 3種とも確実に存在する前提だが、dictの存在チェックを利用する都合により取得できない場合は0を設定する。
-            tmp_status = labels.pop("_exastro_time_out") if "_exastro_time_out" in labels else '0'
+            tmp_status = labels.pop("_exastro_timeout") if "_exastro_timeout" in labels else '0'
             tmp_status += labels.pop("_exastro_evaluated") if "_exastro_evaluated" in labels else '0'
             tmp_status += labels.pop("_exastro_undetected") if "_exastro_undetected" in labels else '0'
 

@@ -170,7 +170,7 @@ def collection_logic(organization_id, workspace_id):
     # ITAにデータを送信
     if send_to_ita_flag is True:
         g.applogger.info("sending events to IT Automation")
-        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/events"
+        endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
         status_code, response = exastro_api.api_request(
             "POST",
             endpoint,

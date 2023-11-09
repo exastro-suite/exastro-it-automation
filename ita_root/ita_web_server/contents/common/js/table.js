@@ -2264,7 +2264,7 @@ setInputData( value, id, rest, beforeData ) {
             value = fn.jsonStringifyDelimiterSpace( value );
             console.log( value );
         } else {
-            value = `[]`;
+            value = null;
         }
     }
 

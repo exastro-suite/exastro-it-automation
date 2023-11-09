@@ -704,11 +704,6 @@ def put_uploadfiles(config_file_path, src_dir, dest_dir):
     return True
 
 
-if __name__ == '__main__':
-    # print(generate_secrets())
-    pass
-
-
 def get_maintenance_mode_setting():
     """
     メンテナンスモードの状態を取得する

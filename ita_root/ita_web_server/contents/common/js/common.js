@@ -94,7 +94,7 @@ const fn = ( function() {
 
         for ( const key in attrs ) {
             if ( attrs[key] !== undefined ) {
-                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class', 'readonly']; // dataをつけない
+                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class', 'readonly', 'multiple']; // dataをつけない
                 if ( attrName.indexOf( key ) !== -1) {
                     attr.push(`${key}="${attrs[key]}"`);
                 } else {
@@ -423,6 +423,28 @@ escape: function( value, br, space ) {
         value = '';
     }
     return value;
+},
+/*
+##################################################
+   JSON文字列変換（区切り文字「, 」）
+##################################################
+*/
+jsonStringifyDelimiterSpace: function(vContent) {
+    if (vContent instanceof Object) {
+      var sOutput = "";
+      if (vContent.constructor === Array) {
+        for (var nId = 0; nId < vContent.length; sOutput += this.jsonStringifyDelimiterSpace(vContent[nId]) + ", ", nId++);
+          return "[" + sOutput.substring(0, sOutput.length - 2) + "]";
+      }
+      if (vContent.toString !== Object.prototype.toString) {
+        return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\"";
+      }
+      for (var sProp in vContent) {
+        sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + this.jsonStringifyDelimiterSpace(vContent[sProp]) + ", ";
+      }
+      return "{" + sOutput.substring(0, sOutput.length - 2) + "}";
+   }
+   return typeof vContent === "string" ? "\"" + vContent.replace(/"/g, "\\$&") + "\"" : String(vContent);
 },
 /*
 ##################################################
@@ -1080,6 +1102,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
             $date.val( inputDate );
         }
         if ( changeFlag ) $date.change();
+        $date.trigger('checkDate');
     };
 
     const $date = $datePicker.find('.datePickerDateInput'),
@@ -1262,7 +1285,7 @@ checkDate: function( date ) {
    Date picker dialog
 ##################################################
 */
-datePickerDialog: function( type, timeFlag, title, date ){
+datePickerDialog: function( type, timeFlag, title, date, required = false ){
     return new Promise(function( resolve ){
         const funcs = {
             ok: function() {
@@ -1292,6 +1315,10 @@ datePickerDialog: function( type, timeFlag, title, date ){
             ok: { text: getMessage.FTE10038, action: 'default', style: 'width:160px;'},
             cancel: { text: getMessage.FTE10026, action: 'normal'}
         };
+
+        if ( required === true ) {
+            buttons.ok.className = 'dialogPositive';
+        }
 
         const config = {
             mode: 'modeless',
@@ -1340,6 +1367,19 @@ datePickerDialog: function( type, timeFlag, title, date ){
         }
 
         dialog.open( $dataPicker );
+
+        // 必須の場合は値をチェックする
+        if ( required === true ) {
+            if ( type === 'fromTo') {
+                const
+                $from = $dataPicker.find('.datePickerFromDateText'),
+                $to = $dataPicker.find('.datePickerToDateText');
+                $from.add( $to ).on('checkDate', function(){
+                    const from = $from.val(), to = $to.val();
+                    dialog.buttonPositiveDisabled( !( from !== '' && to !== '' && from < to ) );
+                });
+            }
+        }
     });
 },
 /*
@@ -1743,33 +1783,72 @@ html: {
         }
         attr.push(`class="${className.join(' ')}"`);
 
-        // 必須じゃない場合空白を追加
-        if ( attrs.required === '0') {
-            selectOption.push(`<option value=""></option>`);
-        }
-
-        // listを名称順にソートする
-        let sortList;
-        if ( cmn.typeof(list) === 'object') {
-            sortList = Object.keys( list ).map(function(key){
-                return list[key];
-            });
-        } else {
-            sortList = $.extend( true, [], list );
-            // リストにvalueが含まれてなければ追加する
-            if ( sortList.indexOf( value ) === -1 ) {
-                sortList.push( value );
+        if ( option.idText !== true ) {
+            // listを名称順にソートする
+            let sortList;
+            if ( cmn.typeof(list) === 'object') {
+                sortList = Object.keys( list ).map(function(key){
+                    return list[key];
+                });
+            } else {
+                sortList = $.extend( true, [], list );
+                // リストにvalueが含まれてなければ追加する
+                if ( fn.typeof( value ) === 'array') {
+                    for ( const val of value ) {
+                        if ( value !== null && sortList.indexOf( val ) === -1 ) {
+                            sortList.push( val );
+                        }
+                    }
+                } else {
+                    if ( value !== null && sortList.indexOf( value ) === -1 ) {
+                        sortList.push( value );
+                    }
+                }
             }
-        }
-        sortList.sort(function( a, b ){
-            return a.localeCompare( b );
-        });
 
-        for ( const item of sortList ) {
-            const val = cmn.escape( item ),
-                  optAttr = [`value="${val}"`];
-            if ( value === val ) optAttr.push('selected="selected"');
-            selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
+            sortList.sort(function( a, b ){
+                if ( a === null || a === undefined ) a = '';
+                if ( b === null || b === undefined ) b = '';
+                if ( fn.typeof( a ) === 'number') a = String( a );
+                if ( fn.typeof( b ) === 'number') b = String( b );
+                return a.localeCompare( b );
+            });
+
+            // option
+            for ( const item of sortList ) {
+                const
+                val = cmn.escape( item ),
+                optAttr = [`value="${val}"`];
+
+                // selected
+                if ( fn.typeof( value ) === 'array') {
+                    if ( value.indexOf( val ) !== -1 ) optAttr.push('selected="selected"');
+                } else {
+                    if ( value === val ) optAttr.push('selected="selected"');
+                }
+                selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
+            }
+        } else {
+            const optionHtml = function( item ) {
+                const
+                text = cmn.escape( item.text ),
+                id = cmn.escape( item.id ),
+                optAttr = [`value="${id}"`];
+                if ( value === id ) optAttr.push('selected="selected"');
+                selectOption.push(`<option ${optAttr.join(' ')}>${text}</option>`);
+            };
+            for ( const item of list ) {
+                if ( option.group ) {
+                    const label = cmn.escape( item.label );
+                    selectOption.push(`<optgroup label="${label}" class="${item.className}">`);
+                    for ( const groupItem of item.list ) {
+                        optionHtml( groupItem );
+                    }
+                    selectOption.push(`</optgroup>`);
+                } else {
+                    optionHtml( item );
+                }
+            }
         }
 
         return ``
@@ -1924,6 +2003,17 @@ html: {
             itemHtml.push( cmn.html.inputText( inputClass, input.value, null, null, inputOption ) );
         }
 
+        // select
+        if ( item.select ) {
+            const input = item.select,
+                  inputClass = ['operationMenuSelect'],
+                  inputOption = { idText: true };
+            if ( !item.list ) item.list = [];
+            if ( input.className ) inputClass.push( input.className );
+            if ( input.group ) inputOption.group = input.group;
+            itemHtml.push( cmn.html.select( input.list, inputClass, input.value, '', {}, inputOption ) );
+        }
+
         // search
         if ( item.search ) {
             const placeholder = ( item.search.placeholder )? item.search.placeholder: '';
@@ -1964,6 +2054,11 @@ html: {
             itemHtml.push(`<div class="operationMenuRadioWrap">`
             + `<div class="operationMenuRadioTitle">${title}</div>`
             + `<ul class="operationMenuRadioList">${listHtml.join('')}</ul></div>`)
+        }
+
+        // HTML
+        if ( item.html ) {
+            itemHtml.push( item.html.html );
         }
 
         return `<li ${itemAttrs.join(' ')}>${itemHtml.join('')}</li>`;

@@ -52,7 +52,7 @@ workHistory( data ) {
     
     const period = wg.data.period,
           date = new Date(),
-          today = new Date();
+          today = new Date( new Date().toDateString() );
 
     // 履歴配列初期化
     for ( let i = 0; i < period; i++ ) {
@@ -60,27 +60,43 @@ workHistory( data ) {
       workHistory.data.push([ 0, 0, 0, 0, 0, 0, 0 ]);
       date.setDate( date.getDate() - 1 );
     }
-    
+
+    // ダミーデータ作成
+    /*
+    data.conductor = [];
+
+    const test = new Date();
+    const testA = ["正常終了","異常終了","警告終了","緊急停止", "予約取消","想定外エラー"];
+    for ( let i = 0; i < 480; i++ ) {
+        data.conductor[i] = {};
+        data.conductor[i][i] = {
+            end: fn.date( test.setHours( test.getHours() + 1 ), 'yyyy/MM/dd HH:mm:ss'),
+            menu_name_rest: "conductor_list",
+            status: testA[ Math.floor(Math.random() * 6 )]
+        }
+    }
+    */
+
     // 日別にカウントする
     for ( const type in data ) {
         for ( const num in data[ type ] ) {
             for ( const id in data[ type ][ num ] ) {
                 const result = data[ type ][ num ][ id ],
                       status = result.status,
-                      targetDay = new Date( result.end ),
-                      diff = Math.round( ( today - targetDay ) / 86400000 );
+                      targetDay = new Date( new Date( result.end ).toDateString() ),
+                      diff = Math.round( ( today.getTime() - targetDay.getTime() ) / 86400000 );
 
                 const usage = workHistory.usage.findIndex(function( item ){
                     return item[1] === status;
                 });
-                
+
                 if ( diff < period ) {
                     workHistory.data[ diff ][ usage ]++;
                 }
             }
         }
     }
-    
+
     return workHistory;
 }
 /*
@@ -260,23 +276,29 @@ setDetaileEvent() {
                   + '</div></td></tr>';
             };
             
+            let beforeTitle;
             const setResult = function(){
                 // Table
                 const title = item[ dataID ][ 0 ];
+
+                // タイトルが同じなら更新しない
+                if ( title === beforeTitle ) return;
+                beforeTitle = title;
+
                 let tableHTML = '<div class="stacked-graph-popup-inner">'
                   + '<div class="stacked-graph-popup-close">' + fn.html.icon('cross') + '</div>'
                   + '<div class="stacked-graph-popup-date">' + title + '</div>'
                   + '<div class="db-table-wrap"><table class="db-table"><tbody>';
 
                 for ( let i = 1; i < resultLength; i++ ) {
-                  tableHTML += resultRow( title, usage[i][3], usage[i][1], usage[i][2], resultData[i] );
+                    tableHTML += resultRow( title, usage[i][3], usage[i][1], usage[i][2], resultData[i] );
                 }
                 tableHTML += resultRow( title, usage[0][3], usage[0][1], usage[0][2], resultData[0], true );
 
                 tableHTML += '</tbody></table></div></div>';
                 $pop.html( tableHTML );
                 $pop.find('.stacked-graph-popup-close').on('click', function(){
-                  $pop.removeClass('fixed').html('').hide();
+                    $pop.removeClass('fixed').html('').hide();
                 });
             };
             
@@ -299,32 +321,46 @@ setDetaileEvent() {
 
                 $pop.show().css({
                   'left': leftPosition,
-                  'top': pageY - scrollTop - 16
+                  'top': pageY - scrollTop - 8
                 });
             };
 
+            // 上側の位置のチェック
+            const positionCheck = function( e ) {
+                const $target = $( e.target ).closest('.stacked-graph-item');
+                if ( $target.length ) {
+                    const
+                    $group = $target.find('.stacked-graph-bar-group'),
+                    $title = $target.find('.stacked-graph-item-title');
+                    
+                    let y = 0;
+                    if ( $group.length ) {
+                        y = $group.offset().top;
+                    } else {
+                        y = $title.offset().top;
+                    }
+                    
+                    setResult();
+
+                    // 上にはみ出ているか？
+                    const headerHeight = $('#header').outerHeight();
+                    const popupHeight = $pop.outerHeight();
+
+                    if ( y - popupHeight - headerHeight - 16 < 0 ) {
+                        y = $title.offset().top + popupHeight + 24;
+                    }
+                    setPopPosition( e.pageX, y );
+                    
+                }
+            }
+
             $bar.on('click.stackedGraphPopup', function( e ){
-              if ( $pop.is('.fixed') ) {
-                setPopPosition( e.pageX, e.pageY );
-                setResult();
-              }
-              $pop.toggleClass('fixed');
+                positionCheck( e );
+                $pop.toggleClass('fixed');
             });
 
             $window.on('mousemove.stackedGraphPopup', function( e ) {
-              const $target = $( e.target ).closest('.stacked-graph-item');
-              if ( $target.length ) {
-                let y = 0;
-                if ( $target.find('.stacked-graph-bar-group').length ) {
-                  y = $target.find('.stacked-graph-bar-group').offset().top;
-                } else {
-                  y = $target.find('.stacked-graph-item-title').offset().top;
-                }
-                if ( !$pop.is('.fixed') ) {
-                  setPopPosition( e.pageX, y );
-                  setResult();
-                }
-              }            
+                if ( !$pop.is('.fixed') ) positionCheck( e );
             });
         },
         'mouseleave.detaile': function() {

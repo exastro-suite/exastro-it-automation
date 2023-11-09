@@ -1807,7 +1807,7 @@ class CreateAnsibleExecFiles():
                 # ドライバ区分判定
                 if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID:
                     target_playbook_path = self.getPlaybook_child_playbook_file(key, file)
-                    value += "    - include: " + target_playbook_path + "\n"
+                    value += "    - include_tasks: " + target_playbook_path + "\n"
 
                 elif self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
                     log_file_path = self.setAnsibleSideFilePath(self.getAnsible_out_Dir(), self.LC_ITA_OUT_DIR)
@@ -4463,8 +4463,8 @@ class CreateAnsibleExecFiles():
                 if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
                     self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
-                # AnsibleのPATHは固定
-                retAry = obj.Vault("/usr/local/bin",
+                # AnsibleのPATHは指定無し
+                retAry = obj.Vault("",
                                    self.getAnsibleExecuteUser(),
                                    VaultPasswordFilePath,
                                    in_pass,
@@ -4523,8 +4523,8 @@ class CreateAnsibleExecFiles():
                 if not self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD']:
                     self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
                 obj.CreateVaultPasswordFile(VaultPasswordFilePath, self.lv_ans_if_info['ANSIBLE_VAULT_PASSWORD'])
-                # AnsibleのPATHは固定
-                retAry = obj.Vault("/usr/local/bin",
+                # AnsibleのPATHは指定無し
+                retAry = obj.Vault("",
                                    self.getAnsibleExecuteUser(),
                                    VaultPasswordFilePath,
                                    in_pass,

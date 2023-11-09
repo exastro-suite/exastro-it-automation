@@ -108,8 +108,8 @@ class ManageEvents:
             labels = event["labels"]
             judge_result = {}
             judge_result["count"] = 0
-            judge_result["true"] = 0
-            judge_result["false"] = 0
+            judge_result["True"] = 0
+            judge_result["False"] = 0
             for item in event_judge_list:
                 judge_result["count"] += 1
                 key = item["LabelKey"]
@@ -126,7 +126,7 @@ class ManageEvents:
                 judge_result[str(hit)] += 1
                 if hit is False:
                     break
-            if judge_result["count"] == judge_result["true"]:
+            if judge_result["count"] == judge_result["True"]:
                 used_event_list.append(event["_id"])
 
         return True, used_event_list
@@ -147,6 +147,8 @@ class ManageEvents:
         for event_id, event in self.labeled_events_dict.items():
             if event[self.rule_const["DF_LOCAL_LABLE_NAME"]][self.rule_const["DF_LOCAL_LABLE_STATUS"]] == self.rule_const["DF_TIMEOUT_EVENT"]:
                 timeout_event_id_list.append(event_id)
+        return timeout_event_id_list
+
 
     def update_label_flag(self, event_id_list, update_flag_dict):
         for event_id in event_id_list:
@@ -188,7 +190,7 @@ class ManageEvents:
             # フィルタにマッチしていないイベント
             if event["_id"] not in incident_dict:
                 unused_event_ids.append(event_id)
-            return unused_event_ids
+        return unused_event_ids
 
     def insert_event(self, dict):
         result = self.labeled_event_collection.insert_one(dict)

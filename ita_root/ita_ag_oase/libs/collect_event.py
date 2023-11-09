@@ -15,7 +15,7 @@
 import datetime
 import jmespath
 import json
-from common_libs.event_relay.get_api_client import get_auth_client
+from common_libs.oase.get_api_client import get_auth_client
 
 
 ######################################################

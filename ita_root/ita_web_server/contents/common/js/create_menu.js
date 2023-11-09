@@ -3772,7 +3772,7 @@ const setMenu = function() {
                         const sv = function( v, f = true ) { return fn.cv( groupData[v], '', f ); };
 
                         setMenuHTML += ''
-                          + '<div class="menu-column-group" data-group-id="' + sv('column_group_id') + '">'
+                          + '<div class="menu-column-group" data-group-id="' + sv('column_group_id') + '" id="' + id + '">'
                             + '<div class="menu-column-group-header">'
                               + getColumnHeaderGroupHTML( sv('column_group_name') )
                             + '</div>'

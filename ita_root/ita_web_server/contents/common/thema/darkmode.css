@@ -477,27 +477,34 @@ background-color: #132803;
 background-color: #280000;
 }
 
-.userInfoContainer {
+.headerMenuInfoContainer {
 background-color: #222528;
 border-color: #111;
 border-top-color: var(--mainColor80);
 color: #DDD;
 }
-.userInfoBlock {
+.headerMenuInfoType {
+background-color: var(--mainColor80);
+}
+.headerMenuInfoBlock {
 border-color: #111;
 }
-.userInfoMenu {
+.headerMenuInfoMenu {
 background-color: rgba(255,255,255,.1);
 }
-.userInfoWorkspaceButton {
+.headerMenuInfoWorkspaceButton {
 color: #DDD;
 }
-.userInfoWorkspaceButton:hover {
+.headerMenuInfoWorkspaceButton:hover {
 background-color: rgba(255,255,255,.1);
 }
-.userInfoWorkspaceButton:hover::after {
+.headerMenuInfoWorkspaceButton:hover::after {
 border-top-color: var(--accentColor100);
 border-right-color: var(--accentColor100);
+}
+.headerMenuInfoCurrent .headerMenuInfoWorkspaceButton {
+background-color: rgba(0,0,0,.3);
+color: rgba(255,255,255,.4);
 }
 .processingContainer::after {
 background-color: #666;
@@ -599,8 +606,8 @@ background-color: #990D00;
 background-color: #117A2C;
 }
 
-.userinfoWorkspaceItem,
-.userinfoRoleItem,
+.headerMenuInfoWorkspaceItem,
+.headerMenuInfoRoleItem,
 .tableHorizontal .tableWrap .tBodyTh,
 .tableHorizontal .tableWrap .tBodyTd {
 border-color: #111;

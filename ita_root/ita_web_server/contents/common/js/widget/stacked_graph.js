@@ -345,7 +345,7 @@ setDetaileEvent() {
                     // 上にはみ出ているか？
                     const headerHeight = $('#header').outerHeight();
                     const popupHeight = $pop.outerHeight();
-                    console.log(popupHeight)
+
                     if ( y - popupHeight - headerHeight - 16 < 0 ) {
                         y = $title.offset().top + popupHeight + 24;
                     }

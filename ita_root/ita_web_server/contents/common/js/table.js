@@ -2260,9 +2260,7 @@ setInputData( value, id, rest, beforeData ) {
             return a.localeCompare( b );
         });
         if ( value.length > 0 ) {
-            console.log(value)
             value = fn.jsonStringifyDelimiterSpace( value );
-            console.log( value );
         } else {
             value = null;
         }

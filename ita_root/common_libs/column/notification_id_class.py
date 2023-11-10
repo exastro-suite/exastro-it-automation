@@ -34,16 +34,16 @@ class NotificationIDColumn(MultiSelectIDColumn):
                 データリスト
         """
         values = {}
-        values[str(1)] = 'Key1'
-        values[str(2)] = 'Key2'
-        values[str(3)] = 'Key3'
-        values[str(4)] = 'Key4'
-        values[str(5)] = 'Key5'
-        values[str(6)] = 'Key6'
-        values[str(7)] = 'Key7'
-        values[str(8)] = 'Key8'
-        values[str(9)] = 'Key9'
-        values[str(10)] = 'Key10'
+        values[str(1)] = 'Ｋｅｙ1'
+        values[str(2)] = 'Ｋｅｙ2'
+        values[str(3)] = 'Ｋｅｙ3'
+        values[str(4)] = 'Ｋｅｙ4'
+        values[str(5)] = 'Ｋｅｙ5'
+        values[str(6)] = 'Ｋｅｙ6'
+        values[str(7)] = 'Ｋｅｙ7'
+        values[str(8)] = 'Ｋｅｙ8'
+        values[str(9)] = 'Ｋｅｙ9'
+        values[str(10)] = 'Ｋｅｙ10'
 
         return values
 
@@ -60,12 +60,11 @@ class NotificationIDColumn(MultiSelectIDColumn):
         """
         try:
             json_rows = json.loads(column_value)
-        except Exception:
-            json_rows = None
-        if not json_rows:
-            return search_candidates
-        if "id" not in json_rows:
-            return search_candidates
+            if type(json_rows['id']) != list:
+                raise Exception("JSON format is abnormal")
+        except Exception as e:
+            raise Exception(e)
+
         if isinstance(json_rows["id"], list):
             keys = json_rows["id"]
             for key in keys:
@@ -156,22 +155,22 @@ class NotificationIDColumn(MultiSelectIDColumn):
         master_row = self.search_id_data_list()
 
         try:
+            if not val:
+                val = {}
+                val['id'] = []
+                val = json.dumps(val)
             json_val = json.loads(val)
-        except Exception:
-            status_code = 'MSG-00001'
-            msg_args = ["JSON format error data(%s)" % (str(val))]
-            val = g.appmsg.get_api_message(status_code, msg_args)
-            return False, msg, val,
-        if not json_val:
-            status_code = 'MSG-00001'
-            msg_args = ["none data"]
-            val = g.appmsg.get_api_message(status_code, msg_args)
-            return False, msg, val,
-        if "id" not in json_val:
-            status_code = 'MSG-00001'
-            msg_args = ["JSON format error(not id) data(%s)" % (str(val))]
-            val = g.appmsg.get_api_message(status_code, msg_args)
-            return False, msg, val,
+            if type(json_val["id"]) != list:
+                status_code = 'MSG-00001'
+                msg_args = ["JSON format error(not list) data(%s)" % (str(val))]
+                val = g.appmsg.get_api_message(status_code, msg_args)
+                return False, msg, val,
+        except Exception as e:
+            retBool = False
+            status_code = '499-01701'
+            msg_args = []
+            msg = g.appmsg.get_api_message(status_code, msg_args)
+            return retBool, msg
 
         search_candidates = []
         if isinstance(json_val["id"], list):
@@ -191,8 +190,8 @@ class NotificationIDColumn(MultiSelectIDColumn):
             msg_args = ["JSON format error(not list) data(%s)" % (str(val))]
             val = g.appmsg.get_api_message(status_code, msg_args)
             return False, msg, val,
-
-        return True, msg, json.dumps(search_candidates),
+        value_list = json.dumps(search_candidates, ensure_ascii=False)
+        return True, msg, value_list,
 
     # [load_table] 値を入力用の値へ変換
     def convert_value_input(self, valnames=''):
@@ -206,6 +205,19 @@ class NotificationIDColumn(MultiSelectIDColumn):
         retBool = True
         retdict = {"id": []}
         msg = ''
+        try:
+            if valnames is None:
+                 return True, [], valnames,
+            val = json.loads(valnames)
+            if type(val) != list:
+                raise Exception("JSON format is abnormal")
+        except Exception as e:
+            retBool = False
+            status_code = '499-01701'
+            msg_args = []
+            msg = g.appmsg.get_api_message(status_code, msg_args)
+            return retBool, msg
+
         if valnames is not None:
             for val in json.loads(valnames):
                 return_values = self.get_values_by_value([val])
@@ -234,15 +246,35 @@ class NotificationIDColumn(MultiSelectIDColumn):
         retBool = True
 
         if valnames is not None:
-            for val in json.loads(valnames):
-                return_values = self.get_values_by_value([val])
-                # 返却値が存在するか確認
-                if len(return_values) == 0:
-                    retBool = False
-                    status_code = 'MSG-00032'
-                    msg_args = [val]
-                    msg = g.appmsg.get_api_message(status_code, msg_args)
-                    return retBool, msg
+            try:
+                vallist = json.loads(valnames)
+            except Exception:
+                retBool = False
+                status_code = '499-01701'
+                msg_args = []
+                msg = g.appmsg.get_api_message(status_code, msg_args)
+                return retBool, msg
+
+            set_Valses = []
+            if len(vallist) > 0:
+                for val in vallist:
+                    return_values = self.get_values_by_value([val])
+                    # 返却値が存在するか確認
+                    if len(return_values) == 0:
+                        retBool = False
+                        status_code = 'MSG-00032'
+                        msg_args = [val]
+                        msg = g.appmsg.get_api_message(status_code, msg_args)
+                        return retBool, msg
+
+                    # 同じ値が複数あるか判定
+                    if set_Valses.count(return_values) > 0:
+                        retBool = False
+                        status_code = '499-01702'
+                        msg_args = [val]
+                        msg = g.appmsg.get_api_message(status_code, msg_args)
+                        return retBool, msg
+                    set_Valses.append(return_values)
 
         return retBool,
 

@@ -130,6 +130,8 @@
     "499-01501": "If the mode is time specification, specify the correct time.",
     "499-01601": "MODE_NAME is invalid. (MODE_NAME: {})",
     "499-01602": "Invalid value for SETTING_VALUE. (MODE_NAME: {}, SETTING_VALUE: {})",
+    "499-01701": "Must be in JSON list format.\ne.g.\n[\"value1\", \"value2\"]",
+    "499-01702": "There are multiple same values. (Value:{})",
     "999-00001": "System Error",
     "999-00002": "System Error",
     "999-00003": "System Error",

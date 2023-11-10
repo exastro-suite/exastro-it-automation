@@ -13,10 +13,12 @@
 #   limitations under the License.
 ARG USERNAME=app_user
 ARG GROUPNAME=app_user
+ARG WORK_PATH=/tmp
 
 FROM    registry.access.redhat.com/ubi8/ubi-init AS common_build
 ARG USERNAME
 ARG GROUPNAME
+ARG WORK_PATH
 
 RUN dnf install -y \
     openssh-clients \
@@ -28,11 +30,11 @@ RUN dnf install -y \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
 
-WORKDIR $APP_PATH
+WORKDIR $WORK_PATH
 
-COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/pyproject.toml ./ita_root/ita_by_ansible_execute/ita_ansible_agent/poetry.lock $APP_PATH/
+COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/pyproject.toml ./ita_root/ita_by_ansible_execute/ita_ansible_agent/poetry.lock $WORK_PATH/
 RUN poetry install --only first_install
-RUN poetry install --without develop_build
+RUN poetry install
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/centos8.repo /etc/yum.repos.d/centos8.repo
 RUN dnf install -y --enablerepo=baseos expect

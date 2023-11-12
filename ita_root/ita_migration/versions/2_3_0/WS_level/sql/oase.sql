@@ -444,6 +444,7 @@ CREATE TABLE T_OASE_RULE
     LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
+    EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -471,6 +472,7 @@ CREATE TABLE T_OASE_RULE_JNL
     LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
+    EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

@@ -30,47 +30,6 @@ import json
 
 def backyard_main(organization_id, workspace_id):
     """
-    [ita_by_ansible_execute]
-    main logicのラッパー
-    called 実行君
-    """
-    g.applogger.debug(g.appmsg.get_log_message("BKY-00001"))
-
-    _rule_matching(organization_id, workspace_id)
-
-    retBool = main_logic(organization_id, workspace_id)
-    if retBool is True:
-        # 正常終了
-        g.applogger.debug(g.appmsg.get_log_message("BKY-00002"))
-    else:
-        g.applogger.debug(g.appmsg.get_log_message("BKY-00003"))
-
-
-def main_logic(organization_id, workspace_id):
-    """
-    main logic
-    """
-    g.applogger.debug("organization_id=" + organization_id)
-    g.applogger.debug("workspace_id=" + workspace_id)
-    g.applogger.debug("WSMONGO_PASSWORD=" + ky_decrypt(g.db_connect_info["WSMONGO_PASSWORD"]))
-
-    wsMong = MONGOConnectWs()
-    g.applogger.debug("mongodb-ws can connet")
-
-    test_collection = wsMong.collection("test_collection")
-    # test_collection.insert_many([
-    #     {'名前': '太郎', '住所': '東京'},
-    #     {'名前': '次郎', '住所': '千葉'}
-    # ])
-    data_list = test_collection.find()
-    for data in data_list:
-        g.applogger.debug(data)
-
-    return True
-
-
-def _rule_matching(organization_id, workspace_id):
-    """
         ルールマッチング機能backyardメイン処理
         ARGS:
             organization_id: Organization ID
@@ -78,6 +37,7 @@ def _rule_matching(organization_id, workspace_id):
         RETURN:
     """
     # DB接続
+    g.applogger.set_level('DEBUG')
     tmp_msg = 'db connect'
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -98,16 +58,26 @@ def _rule_matching(organization_id, workspace_id):
     # 単体テスト用
     # judgeTime = int(time.time())
     judgeTime = 10000
+    EventObj = ManageEvents(mongodbca, judgeTime)
 
     objdbca.db_transaction_start()
+
     # ①ルールマッチ
-    ret = JudgeMain(objdbca, mongodbca, judgeTime)
+    tmp_msg = '①ルールマッチ Start'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    ret = JudgeMain(objdbca, mongodbca, judgeTime, EventObj)
     if ret is False:
         g.applogger.debug("JudgeMain False")
+    tmp_msg = '①ルールマッチ end'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # ②アクション実行後通知と結論イベント登録
-    # obj = ActionStatusMonitor(objdbca, mongodbca)
-    # obj.Monitor()
+    tmp_msg = '②アクション実行後通知と結論イベント登録 Start'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    obj = ActionStatusMonitor(objdbca, mongodbca, EventObj)
+    obj.Monitor()
+    tmp_msg = '②アクション実行後通知と結論イベント登録 end'
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     objdbca.db_transaction_end(True)
 
@@ -218,15 +188,14 @@ class Judgement:
         for RuleRow in RuleList:
             # for FilterId in RuleRow['FILTER_COMBINATION_JSON']['filter_key']:
             filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
-            for FilterRow in filter_combination_json:
-                for FilterId in FilterRow['filter_key']:
-                    if FilterId in FiltersUsedinRulesDict:
-                        FiltersUsedinRulesDict[FilterId]['count'] += 1
-                    else:
-                        FiltersUsedinRulesDict[FilterId] = {}
-                        FiltersUsedinRulesDict[FilterId]['rule_id'] = RuleRow['RULE_ID']
-                        FiltersUsedinRulesDict[FilterId]['rule_priority'] = RuleRow['RULE_PRIORITY']
-                        FiltersUsedinRulesDict[FilterId]['count'] = 1
+            for FilterId in filter_combination_json['filter_key']:
+                if FilterId in FiltersUsedinRulesDict:
+                    FiltersUsedinRulesDict[FilterId]['count'] += 1
+                else:
+                    FiltersUsedinRulesDict[FilterId] = {}
+                    FiltersUsedinRulesDict[FilterId]['rule_id'] = RuleRow['RULE_ID']
+                    FiltersUsedinRulesDict[FilterId]['rule_priority'] = RuleRow['RULE_PRIORITY']
+                    FiltersUsedinRulesDict[FilterId]['count'] = 1
 
         return FiltersUsedinRulesDict
 
@@ -237,58 +206,56 @@ class Judgement:
         for RuleRow in RuleList:
             hit = True
             filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
-            for FilterRow in filter_combination_json:
-                for FilterId in FilterRow['filter_key']:
-                    if FilterId not in FiltersUsedinRulesDict:
-                        tmp_msg = "対象フィルタ未登録  RULE_ID {} FILTER_ID {}>>".format(RuleRow['RULE_ID'], FilterId)
+            for FilterId in filter_combination_json['filter_key']:
+                if FilterId not in FiltersUsedinRulesDict:
+                    tmp_msg = "対象フィルタ未登録  RULE_ID {} FILTER_ID {}>>".format(RuleRow['RULE_ID'], FilterId)
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    hit = False
+                    continue
+                # ルール抽出対象: 複数のルールで使用していないフィルタを使用しているルール※1の場合
+                if TargetLevel == "Level1":
+                    if FiltersUsedinRulesDict[FilterId]['count'] != 1:
+                        hit = False
+
+                # ルール抽出対象: 複数のルールで使用しているフィルタで優先順位が最上位のルール※2の場合
+                elif TargetLevel == "Level2":
+                    # で優先順位が最上位のルールか判定
+                    if FiltersUsedinRulesDict[FilterId]['rule_id'] != RuleRow['RULE_ID']:
+                        hit = False
+
+                # ルール抽出対象: 複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール※3の場合
+                elif TargetLevel == "Level3":
+                    if FilterId not in IncidentDict:
+                        tmp_msg = "{} 対象イベント なし  RULE_ID {} FILTER_ID {}>>".format(DebugMode, RuleRow['RULE_ID'], FilterId)
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         hit = False
-                        continue
-                    # ルール抽出対象: 複数のルールで使用していないフィルタを使用しているルール※1の場合
-                    if TargetLevel == "Level1":
-                        if FiltersUsedinRulesDict[FilterId]['count'] != 1:
-                            hit = False
-
-                    # ルール抽出対象: 複数のルールで使用しているフィルタで優先順位が最上位のルール※2の場合
-                    elif TargetLevel == "Level2":
-                        # で優先順位が最上位のルールか判定
-                        if FiltersUsedinRulesDict[FilterId]['rule_id'] != RuleRow['RULE_ID']:
-                            hit = False
-
-                    # ルール抽出対象: 複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール※3の場合
-                    elif TargetLevel == "Level3":
-                        if FilterId not in IncidentDict:
-                            tmp_msg = "{} 対象イベント なし  RULE_ID {} FILTER_ID {}>>".format(DebugMode, RuleRow['RULE_ID'], FilterId)
+                    else:
+                        if (isinstance(IncidentDict[FilterId], list)):
+                            tmp_msg = "{} 対象イベント 複数あり  RULE_ID:{} FILTER_ID:{} EventId:{}".format(DebugMode, RuleRow['RULE_ID'], FilterId, IncidentDict[FilterId])
                             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             hit = False
                         else:
-                            if (isinstance(IncidentDict[FilterId], list)):
-                                tmp_msg = "{} 対象イベント 複数あり  RULE_ID:{} FILTER_ID:{} EventId:{}".format(DebugMode, RuleRow['RULE_ID'], FilterId, IncidentDict[FilterId])
+                            pass
+                            ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
+                            if ret is False:
+                                tmp_msg = "対象イベント取得失敗  RULE_ID:{} FILTER_ID:{} EventId:{}".format(RuleRow['RULE_ID'], FilterId, IncidentDict[FilterId])
                                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                 hit = False
                             else:
-                                pass
-                                ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
-                                if ret is False:
-                                    tmp_msg = "対象イベント取得失敗  RULE_ID:{} FILTER_ID:{} EventId:{}".format(RuleRow['RULE_ID'], FilterId, IncidentDict[FilterId])
-                                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                if EventRow[defObj.DF_LOCAL_LABLE_NAME][defObj.DF_LOCAL_LABLE_STATUS] != defObj.DF_POST_PROC_TIMEOUT_EVENT:
                                     hit = False
                                 else:
-                                    if EventRow[defObj.DF_LOCAL_LABLE_NAME][defObj.DF_LOCAL_LABLE_STATUS] != defObj.DF_POST_PROC_TIMEOUT_EVENT:
-                                        hit = False
-                                    else:
-                                        hit = True
-                                        break
+                                    hit = True
+                                    break
 
             if TargetLevel == "Level2":
                 if hit is True:
                     hit = False
                     # フィルタを利用しているルールが複数ある事を確認
-                    for FilterRow in filter_combination_json:
-                        for FilterId in FilterRow['filter_key']:
-                            if FiltersUsedinRulesDict[FilterId]['count'] != 1:
-                                hit = True
-                                break
+                    for FilterId in filter_combination_json['filter_key']:
+                        if FiltersUsedinRulesDict[FilterId]['count'] != 1:
+                            hit = True
+                            break
             if hit is True:
                 TargetRuleList.append(RuleRow)
 
@@ -310,44 +277,44 @@ class Judgement:
         FilterResultDict['Operator'] = ''
 
         filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
-        for FilterRow in filter_combination_json:
-            if not FilterRow['filter_operator']:
-                FilterRow['filter_operator'] = ''
 
-            FilterResultDict['Operator'] = str(FilterRow['filter_operator'])
+        if not filter_combination_json['filter_operator']:
+            filter_combination_json['filter_operator'] = ''
 
-            # 論理演算子「operator」設定確認
-            if self.checkRuleOperatorId(FilterResultDict['Operator']) is False:
-                tmp_msg = "ルール管理　論理演算子「operator」が不正 RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        FilterResultDict['Operator'] = str(filter_combination_json['filter_operator'])
 
-            # フィルタ毎のループ
-            for FilterId in FilterRow['filter_key']:
-                tmp_msg = "フィルタ管理判定開始  FILTER_ID: {}".format(FilterId)
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-                ret, EventRow = self.MemoryBaseFilterJudge(FilterId, IncidentDict)
-
-                if ret is True:
-                    FilterResultDict['EventList'].append(EventRow)
-
-                # フィルタ件数 Up
-                FilterResultDict['Count'] += 1
-
-                # フィルタ判定結果退避
-                FilterResultDict[str(ret)] += 1
-
-                # フィルタ判定に使用したイベントID退避
-                if ret is True:
-                    tmp_msg = "フィルタ判定結果　マッチ  FILTER_ID: {}".format(FilterId)
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-                else:
-                    tmp_msg = "フィルタ判定結果　アンマッチ  FILTER_ID: {}".format(FilterId)
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-            tmp_msg = "ルール内　フィルタ判定結果: {}".format(str(ret))
+        # 論理演算子「operator」設定確認
+        if self.checkRuleOperatorId(FilterResultDict['Operator']) is False:
+            tmp_msg = "ルール管理　論理演算子「operator」が不正 RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        # フィルタ毎のループ
+        for FilterId in filter_combination_json['filter_key']:
+            tmp_msg = "フィルタ管理判定開始  FILTER_ID: {}".format(FilterId)
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+            ret, EventRow = self.MemoryBaseFilterJudge(FilterId, IncidentDict)
+
+            if ret is True:
+                FilterResultDict['EventList'].append(EventRow)
+
+            # フィルタ件数 Up
+            FilterResultDict['Count'] += 1
+
+            # フィルタ判定結果退避
+            FilterResultDict[str(ret)] += 1
+
+            # フィルタ判定に使用したイベントID退避
+            if ret is True:
+                tmp_msg = "フィルタ判定結果　マッチ  FILTER_ID: {}".format(FilterId)
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+            else:
+                tmp_msg = "フィルタ判定結果　アンマッチ  FILTER_ID: {}".format(FilterId)
+                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        tmp_msg = "ルール内　フィルタ判定結果: {}".format(str(ret))
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         ret = self.checkFilterCondition(FilterResultDict)
         if ret is True:
@@ -548,13 +515,13 @@ class Judgement:
         return True
 
 
-def JudgeMain(objdbca, MongoDBCA, judgeTime):
+def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     IncidentDict = {}
 
     defObj = RuleJudgementConst()
 
     # イベントデータ取得
-    EventObj = ManageEvents(MongoDBCA, judgeTime)
+    # EventObj = ManageEvents(MongoDBCA, judgeTime)
 
     count = EventObj.count_events()
     if count == 0:
@@ -666,24 +633,67 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime):
 
                     if ret is True:
                         # ルール判定 マッチ
+                        # 評価結果に登録するアクション情報を取得
+                        action_id = ruleRow.get("ACTION_ID")
+                        action_name = ""
+                        conductor_class_id = None
+                        conductor_name = ""
+                        operation_id = None
+                        operation_name = ""
+                        if action_id is not None:
+                            # テーブル名
+                            t_oase_action = 'T_OASE_ACTION'  # アクション
+                            # 「アクション」からレコードを取得
+                            ret_action = objdbca.table_select(t_oase_action, 'WHERE DISUSE_FLAG = %s AND ACTION_ID = %s', [0, action_id])
+                            if not ret_action:
+                                tmp_msg = "処理対象レコードなし。Table:T_OASE_ACTION"
+                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            else:
+                                action_name = ret_action[0].get("ACTION_NAME")
+                                conductor_class_id = ret_action[0].get("CONDUCTOR_CLASS_ID")
+                                operation_id = ret_action[0].get("OPERATION_ID")
+
+                                if conductor_class_id is not None:
+                                    # テーブル名
+                                    t_comn_conductor_class = 'T_COMN_CONDUCTOR_CLASS'  # コンダクターインスタンス
+                                    # 「アクション」からレコードを取得
+                                    ret_conductor = objdbca.table_select(t_comn_conductor_class, 'WHERE DISUSE_FLAG = %s AND CONDUCTOR_CLASS_ID = %s', [0, conductor_class_id])
+                                    if not ret_conductor:
+                                        tmp_msg = "処理対象レコードなし。Table:T_COMN_CONDUCTOR_CLASS"
+                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    else:
+                                        conductor_name = ret_conductor[0].get("CONDUCTOR_NAME")
+
+                                if operation_id is not None:
+                                    # テーブル名
+                                    t_comn_operation = 'T_COMN_OPERATION'  # オペレーション
+                                    # 「アクション」からレコードを取得
+                                    ret_operation = objdbca.table_select(t_comn_operation, 'WHERE DISUSE_FLAG = %s AND OPERATION_ID = %s', [0, operation_id])
+                                    if not ret_operation:
+                                        tmp_msg = "処理対象レコードなし。Table:T_COMN_OPERATION"
+                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    else:
+                                        operation_name = ret_operation[0].get("OPERATION_NAME")
+
                         # 評価結果へ登録
                         if getattr(g, 'USER_ID', None) is None:
                             g.USER_ID = '110101'
                         # objdbca = DBConnectWs()
                         # objdbca.db_transaction_start()
                         Row = {
-                            "RULE_ID": "RULE_ID",
-                            "RULE_NAME": "RULE_NAME",
+                            "RULE_ID": ruleRow.get("RULE_ID"),
+                            "RULE_NAME": ruleRow.get("RULE_NAME"),
                             # 1:ルールマッチング済み
                             "STATUS_ID": "1",
-                            # "ACTION_ID": "ACTION_ID",
-                            "ACTION_ID": None,
-                            "ACTION_NAME": "ACTION_NAME",
-                            "CONDUCTOR_INSTANCE_ID": "CONDUCTOR_INSTANCE_ID",
-                            "CONDUCTOR_INSTANCE_NAME": "CONDUCTOR_INSTANCE_NAME",
-                            "OPERATION_ID": "OPERATION_ID",
-                            "OPERATION_NAME": "OPERATION_NAME",
-                            "EVENT_ID_LIST": json.dumps("['event_id_01', 'event_id_02']"),
+                            "ACTION_ID": action_id,
+                            # "ACTION_ID": None,
+                            "ACTION_NAME": action_name,
+                            "CONDUCTOR_INSTANCE_ID": conductor_class_id,
+                            "CONDUCTOR_INSTANCE_NAME": conductor_name,
+                            "OPERATION_ID": operation_id,
+                            "OPERATION_NAME": operation_name,
+                            # "EVENT_ID_LIST": json.dumps("['event_id_01', 'event_id_02']"),
+                            "EVENT_ID_LIST": UseEventIdList,
                             # Row["EXECUTION_USER"] = UserIDtoUserName(objdbca, g.USER_ID)
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
@@ -722,8 +732,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime):
                                 objdbca.table_update(t_oase_action_log, data_list, 'ACTION_LOG_ID')
 
                                 # conductor実行
-                                conductor_class_id = '80565c65-fe58-4a5c-abb5-34db406f8b51'
-                                operation_id = 'd7572d97-07c4-4e37-bb36-8ec4606eec82'
+                                conductor_class_id = action_log_row["CONDUCTOR_INSTANCE_ID"]
+                                operation_id = action_log_row["OPERATION_ID"]
                                 retBool, result = conductor_execute(objdbca, conductor_class_id, operation_id)
                                 if retBool is False:
                                     tmp_msg = "error [{}]".format(result)
@@ -733,6 +743,11 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime):
                                     conductor_instance_id = result['conductor_instance_id']
                                     tmp_msg = "conductor_instance_id [{}]".format(conductor_instance_id)
                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    data_list = {
+                                        "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
+                                        "CONDUCTOR_INSTANCE_ID": conductor_instance_id
+                                    }
+                                    objdbca.table_update(t_oase_action_log, data_list, 'ACTION_LOG_ID')
                                     objdbca.db_commit()
                             else:
                                 # アクションが設定されていない場合
@@ -891,9 +906,10 @@ class RuleJudgementConst():
 
 
 class ActionStatusMonitor():
-    def __init__(self, MariaDBCA, MongoEvts):
+    def __init__(self, MariaDBCA, MongoEvts, EventObj):
         self.MariaDBCA = MariaDBCA
         self.MongoEvts = MongoEvts
+        self.EventObj = EventObj
         # ラベルマスタ取得
         self.getLabelGroup()
         # OASE 評価履歴　ステータス値
@@ -923,7 +939,7 @@ class ActionStatusMonitor():
 
     def getLabelGroup(self):
         self.LabelMasterDict = {}
-        sql = "SELECT * FROM V_EVRL_LABEL_KEY_GROUP WHERE DISUSE_FLAG = '0'"
+        sql = "SELECT * FROM V_OASE_LABEL_KEY_GROUP WHERE DISUSE_FLAG = '0'"
         Rows = self.MariaDBCA.sql_execute(sql, [])
         for Row in Rows:
             self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY']
@@ -945,20 +961,20 @@ class ActionStatusMonitor():
                 TAB_C.RULE_NAME                   AS RULE_NAME,
                 TAB_C.LABELING_INFORMATION_JSON   AS LABELING_INFORMATION_JSON,
                 TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
-                TAB_C.EVENT_ID_JSON               AS EVENT_ID_JSON,
+                TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
                 TAB_C.REEVALUATE_TTL              AS REEVALUATE_TTL,
                 TAB_C.DISUSE_FLAG                 AS TAB_C_DISUSE_FLAG
             FROM
-                T_EVRL_ACTION_LOG                   TAB_A
+                T_OASE_ACTION_LOG                   TAB_A
                 LEFT JOIN T_COMN_CONDUCTOR_INSTANCE TAB_B ON (TAB_A.CONDUCTOR_INSTANCE_ID = TAB_B.CONDUCTOR_INSTANCE_ID)
-                LEFT JOIN T_EVRL_RULE               TAB_C ON (TAB_A.RULE_ID               = TAB_C.RULE_ID )
+                LEFT JOIN T_OASE_RULE               TAB_C ON (TAB_A.RULE_ID               = TAB_C.RULE_ID )
             WHERE
                 TAB_A.STATUS_ID in ("{}", "{}") AND
                 TAB_A.DISUSE_FLAG = '0'
             """.format(self.OSTS_Executing, self.OSTS_Completion_Conf)
         Rows = self.MariaDBCA.sql_execute(sql, [])
 
-        Log = "処理対象のT_EVRL_ACTION_LOG ({}件)".format(len(Rows))
+        Log = "処理対象のT_OASE_ACTION_LOG ({}件)".format(len(Rows))
         g.applogger.info(Log)
         for Row in Rows:
             Data_Error = False
@@ -975,14 +991,14 @@ class ActionStatusMonitor():
                     Data_Error = True
 
             if not Row['JOIN_RULE_ID']:
-                # T_EVRL_RULEに対象レコードなし
-                Log = "T_EVRL_RULEに対象レコードなし。(ACTION_LOG_ID: {} RULE_ID: {})".format(Row["ACTION_LOG_ID"], Row["RULE_ID"])
+                # T_OASE_RULEに対象レコードなし
+                Log = "T_OASE_RULEに対象レコードなし。(ACTION_LOG_ID: {} RULE_ID: {})".format(Row["ACTION_LOG_ID"], Row["RULE_ID"])
                 g.applogger.info(Log)
                 Data_Error = True
             else:
                 if Row['TAB_C_DISUSE_FLAG'] != '0':
-                    # T_EVRL_RULEの対象レコードが廃止
-                    Log = "T_EVRL_RULEの対象レコードが廃止。(ACTION_LOG_ID: {} RULE_ID: {})".format(Row["ACTION_LOG_ID"], Row["RULE_ID"])
+                    # T_OASE_RULEの対象レコードが廃止
+                    Log = "T_OASE_RULEの対象レコードが廃止。(ACTION_LOG_ID: {} RULE_ID: {})".format(Row["ACTION_LOG_ID"], Row["RULE_ID"])
                     g.applogger.info(Log)
                     Data_Error = True
 
@@ -1011,11 +1027,11 @@ class ActionStatusMonitor():
             for colname in ['ACTION_LOG_ID', 'STATUS_ID']:
                 UpdateRow[colname] = Row[colname]
 
-            Log = "T_EVRL_ACTION_LOG更新 (ACTION_LOG_ID: {} STATUS_ID: {})".format(Row["ACTION_LOG_ID"], Row["STATUS_ID"])
+            Log = "T_OASE_ACTION_LOG更新 (ACTION_LOG_ID: {} STATUS_ID: {})".format(Row["ACTION_LOG_ID"], Row["STATUS_ID"])
             g.applogger.info(Log)
             print(UpdateRow[colname])
 
-            self.MariaDBCA.table_update('T_EVRL_ACTION_LOG', UpdateRow, 'ACTION_LOG_ID', True)
+            self.MariaDBCA.table_update('T_OASE_ACTION_LOG', UpdateRow, 'ACTION_LOG_ID', True)
 
             # 結論イベント登録
             if Row['STATUS_ID'] in [self.OSTS_Completed, self.OSTS_Completed_Abend]:
@@ -1035,7 +1051,8 @@ class ActionStatusMonitor():
             addlabels[name] = value
             conclusion_ids[name] = key
 
-        NowTime = int(datetime.now().timestamp())
+        NowTime = int(datetime.datetime.now().timestamp())
+
         RaccEventDict = {}
 
         # RaccEventDict["_id"] = id
@@ -1053,11 +1070,12 @@ class ActionStatusMonitor():
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleInfo['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleInfo['RULE_NAME']
-        RaccEventDict["exastro_events"] = json.loads(RuleInfo['EVENT_ID_JSON'])
+        # RaccEventDict["exastro_events"] = json.loads(RuleInfo['EVENT_ID_LIST'])
+        RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST']
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = conclusion_ids
 
-        _id = self.MongoEvts.insert_event(RaccEventDict)
+        _id = self.EventObj.insert_event(RaccEventDict)
 
         Log = "結論イベント登録 (_id: {})".format(_id)
         g.applogger.info(Log)

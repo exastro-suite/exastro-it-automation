@@ -13,12 +13,12 @@
 #   limitations under the License.
 
 import connexion
-from flask import jsonify, g
+from flask import g
 import sys
 
 sys.path.append('../../')
 from common_libs.common import *  # noqa: F403
-from common_libs.loadtable.load_table import loadTable
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.api import api_filter
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import menu_maintenance

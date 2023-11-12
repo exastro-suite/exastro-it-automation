@@ -18,7 +18,6 @@ import json
 from flask import g
 from common_libs.common import *  # noqa F403
 from common_libs.loadtable import *  # noqa F403
-from common_libs.common.exception import *  # noqa F403
 
 
 class SubValueAutoReg():

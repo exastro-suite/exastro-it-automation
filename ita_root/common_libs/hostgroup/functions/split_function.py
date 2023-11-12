@@ -13,7 +13,6 @@
 #   limitations under the License.
 
 from flask import g
-from common_libs.common.dbconnect import DBConnectWs  # noqa: F401
 
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403

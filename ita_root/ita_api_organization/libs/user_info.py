@@ -14,10 +14,10 @@
 
 import json
 import datetime
-from common_libs.common import *  # noqa: F403
 from flask import g
+from common_libs.common import *  # noqa: F403
+
 from libs.organization_common import check_auth_menu, get_auth_menus
-from common_libs.common.exception import AppException
 
 
 def collect_menu_group_panels(objdbca):

@@ -16,6 +16,7 @@ import os
 from flask import g
 
 from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable import *
 from datetime import datetime

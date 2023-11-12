@@ -15,9 +15,8 @@ import json
 import re
 import ast
 from flask import g
-# from common_libs.common.exception import AppException
 from common_libs.common import *  # noqa: F403
-from common_libs.common.util import get_maintenance_mode_setting
+from common_libs.common.dbconnect import DBConnectWs
 
 
 def backyard_main(organization_id, workspace_id):

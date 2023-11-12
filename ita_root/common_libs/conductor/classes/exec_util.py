@@ -13,7 +13,21 @@
 #   limitations under the License.
 
 from flask import g
-from common_libs.common.dbconnect import DBConnectWs  # noqa: F401
+
+
+import json
+import uuid
+import copy
+import textwrap
+import sys
+import os
+import traceback
+import urllib
+import ssl
+import re
+import shutil
+# from pprint import pprint  # noqa: F401
+from datetime import datetime
 
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
@@ -29,22 +43,6 @@ from common_libs.terraform_driver.common.Execute import insert_execution_list as
 from common_libs.terraform_driver.cloud_ep.Execute import execution_scram as t_cloud_ep_execution_scram
 from common_libs.terraform_driver.cli.Execute import execution_scram as t_cli_execution_scram
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
-
-import json
-import uuid
-import copy
-import textwrap
-import sys
-import os
-import traceback
-import urllib
-import ssl
-import re
-
-from pprint import pprint  # noqa: F401
-import shutil
-
-from datetime import datetime
 
 
 bool_master_true = 'True'

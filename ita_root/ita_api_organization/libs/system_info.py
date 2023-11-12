@@ -13,9 +13,8 @@
 #   limitations under the License.
 
 import json
-from common_libs.common import *  # noqa: F403
 from flask import g
-from common_libs.common.exception import AppException
+from common_libs.common import *  # noqa: F403
 
 
 def collect_ita_version(objdbca, organization_id):

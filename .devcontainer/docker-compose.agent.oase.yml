@@ -25,8 +25,8 @@ services:
         - https_proxy=${HTTPS_PROXY}
     environment:
       - TZ=Asia/Tokyo
-      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - DEFAULT_LANGUAGE=en
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
     volumes:
       - vol-ita-storage:/storage
     networks:

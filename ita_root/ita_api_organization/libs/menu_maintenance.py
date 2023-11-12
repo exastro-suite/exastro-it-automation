@@ -12,9 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from flask import g  # noqa: F401
 import json
 import base64
+from flask import g  # noqa: F401
 
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403

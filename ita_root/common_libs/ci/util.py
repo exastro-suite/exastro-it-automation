@@ -508,7 +508,8 @@ def set_service_loglevel(common_db=None):
         ARGS:
             common_db=None
     """
-    loglevel = "INFO"
+    loglevel = os.environ.get('LOG_LEVEL', "INFO")
+
     try:
         # service_name
         service_name = os.environ.get("SERVICE_NAME")
@@ -537,7 +538,6 @@ def set_service_loglevel(common_db=None):
                 if loglevel is None:
                     raise Exception()
     except Exception:
-        loglevel = "INFO"
         if "SERVICE_LOGLEVEL_FLG" in g:
             g.SERVICE_LOGLEVEL_FLG = None
     finally:

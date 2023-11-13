@@ -95,7 +95,7 @@ def organization_create(body, organization_id):
             'DB_ADMIN_USER': os.environ.get('DB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': ky_encrypt(os.environ.get('DB_ADMIN_PASSWORD')),
             'MONGO_HOST': os.environ.get('MONGO_HOST'),
-            'MONGO_PORT': int(os.environ.get('MONGO_PORT')),
+            'MONGO_PORT': int(os.environ.get('MONGO_PORT', 0) or 0),
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }

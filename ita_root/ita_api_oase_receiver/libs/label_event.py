@@ -251,15 +251,20 @@ def comparison_values(comparison_method_id="1", comparative=None, referent=None)
 
     # リストの中にcomparison_method_idが存在するか確認
     if comparison_method_id in key_list:
-        # 正規表現処理
-        if comparison_method_id == "7":
-            regex_pattern = re.compile(referent)
-            result = regex_pattern.search(comparative)
-            if result is not None:
-                result = True
-        else:
-            comparison = comparison_operator[comparison_method_id]
-            result = comparison(comparative, referent)
+        try:
+            # 正規表現処理
+            if comparison_method_id == "7":
+                regex_pattern = re.compile(referent)
+                result = regex_pattern.search(comparative)
+                if result:
+                    result = True
+            else:
+                comparison = comparison_operator[comparison_method_id]
+                result = comparison(comparative, referent)
+        except Exception as e:
+            # 収集した値{comparative}に対して、比較方法{comparison_method_id}と比較値{referent}を実行し、エラーが{e}が発生したので、処理をスキップします。
+            err_msg = g.appmsg.get_log_message("499-00000", [comparative, referent, e])
+            g.applogger.info(err_msg)
 
     return result
 

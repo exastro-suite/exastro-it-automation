@@ -15,14 +15,15 @@
 
 from flask import g  # noqa: F401
 
-from common_libs.common import *  # noqa: F403
-from common_libs.loadtable import *  # noqa: F403
 import re
 import os
 import datetime
 import json
 import pathlib
-from common_libs.common.exception import AppException
+
+from common_libs.common import *  # noqa: F403
+from common_libs.loadtable import *  # noqa: F403
+
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst

@@ -15,11 +15,11 @@
 import json
 import ast
 import datetime
+from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
-from flask import g
-from libs.organization_common import check_auth_menu  # noqa: F401
 from common_libs.api import check_request_body_key
+from libs.organization_common import check_auth_menu  # noqa: F401
 
 
 def collect_menu_create_data(objdbca):

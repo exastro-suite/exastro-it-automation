@@ -15,10 +15,6 @@
 
 from flask import g  # noqa: F401
 
-from common_libs.common import *  # noqa: F403
-from common_libs.loadtable import *  # noqa: F403
-from common_libs.column import *  # noqa: F403
-
 import uuid  # noqa: F401
 import textwrap
 import sys
@@ -41,6 +37,10 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.styles.fonts import Font
 from openpyxl.utils.escape import *  # noqa: F403
+
+from common_libs.common import *  # noqa: F403
+from common_libs.loadtable import *  # noqa: F403
+from common_libs.column import *  # noqa: F403
 
 
 # 比較実行画面用情報取得(リスト情報、パラメータフォーマット)

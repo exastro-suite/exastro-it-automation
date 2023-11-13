@@ -18,7 +18,6 @@ from flask import g  # noqa: F401
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 
-
 from common_libs.conductor.classes.util import ConductorCommonLibs  # noqa: F401
 from common_libs.conductor.classes.exec_util import *  # noqa: F403
 

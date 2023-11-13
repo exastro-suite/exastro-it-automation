@@ -17,7 +17,7 @@ import os
 import time
 import sqlite3
 import datetime
-from common_libs.common.exception import AppException
+from common_libs.common import *
 from common_libs.ci.util import app_exception, exception
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event

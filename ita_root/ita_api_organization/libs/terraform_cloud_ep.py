@@ -14,14 +14,16 @@
 
 import json
 import base64
+from flask import g  # noqa: F401
+
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
-from flask import g  # noqa: F401
-from libs.organization_common import check_auth_menu  # noqa: F401
 from common_libs.api import check_request_body_key  # noqa: F401
 # from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
+
+from libs.organization_common import check_auth_menu  # noqa: F401
 
 
 def check_organization(objdbca, tf_organization_name):

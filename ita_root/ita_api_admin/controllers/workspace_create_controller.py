@@ -92,9 +92,13 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         ws_db_name, db_username, db_user_password = org_db.userinfo_generate("ITA_WS")
         connect_info = org_db.get_connect_info()
 
-        # make workspace-mongo connect infomation
-        root_mongo = MONGOConnectRoot()
-        ws_mongo_name, mongo_username, mongo_user_password = root_mongo.userinfo_generate("ITA_WS")
+        ws_mongo_name = None
+        mongo_username = None
+        mongo_user_password = None
+        if os.environ.get('MONGO_HOST') is not None:
+            # make workspace-mongo connect infomation
+            root_mongo = MONGOConnectRoot()
+            ws_mongo_name, mongo_username, mongo_user_password = root_mongo.userinfo_generate("ITA_WS")
 
         data = {
             'WORKSPACE_ID': workspace_id,
@@ -119,12 +123,13 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_root_db.user_create(db_username, db_user_password, ws_db_name)
         # print(db_username, db_user_password)
 
-        # create workspace-mongodb-user
-        root_mongo.create_user(
-            mongo_username,
-            mongo_user_password,
-            ws_mongo_name
-        )
+        if os.environ.get('MONGO_HOST') is not None:
+            # create workspace-mongodb-user
+            root_mongo.create_user(
+                mongo_username,
+                mongo_user_password,
+                ws_mongo_name
+            )
 
         g.applogger.debug("created db and db-user")
 
@@ -249,10 +254,11 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             org_root_db.database_drop(ws_db_name)
             org_root_db.user_drop(db_username)
 
-        if 'root_mongo' in locals():
-            root_mongo = MONGOConnectRoot()
-            root_mongo.drop_database(ws_mongo_name)
-            root_mongo.drop_user(mongo_username, ws_mongo_name)
+        if os.environ.get('MONGO_HOST') is not None:
+            if 'root_mongo' in locals():
+                root_mongo = MONGOConnectRoot()
+                root_mongo.drop_database(ws_mongo_name)
+                root_mongo.drop_user(mongo_username, ws_mongo_name)
 
         raise Exception(e)
 

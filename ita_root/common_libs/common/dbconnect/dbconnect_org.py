@@ -54,7 +54,7 @@ class DBConnectOrg(DBConnectCommon):
         self._inistial_data_ansible_if = connect_info.get('INITIAL_DATA_ANSIBLE_IF')
         self._no_install_driver = connect_info.get('NO_INSTALL_DRIVER')
         self._mongo_host = connect_info['MONGO_HOST']
-        self._mongo_port = int(connect_info['MONGO_PORT'])
+        self._mongo_port = int(connect_info['MONGO_PORT'] or 0)
 
         # connect database
         self.db_connect()

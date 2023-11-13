@@ -1787,7 +1787,7 @@ html: {
             + `<label for="${id}" class="radioTextLabel"><span class="radioTextMark"></span><span class="radioTextText">${( text )? text: value}</span></label>`
         + `</div>`;
     },
-    select: function( list, className, value, name, attrs = {}, option = {}) {console.log('value:' + value);console.log(list)
+    select: function( list, className, value, name, attrs = {}, option = {}) {
         const selectOption = [],
               attr = inputCommon( null, name, attrs );
         if ( option.select2 !== true ) {
@@ -1800,11 +1800,10 @@ html: {
         if ( option.idText !== true ) {
             // listを名称順にソートする
             let sortList;
-            console.log(cmn.typeof(list))
             if ( cmn.typeof(list) === 'object') {
                 sortList = Object.keys( list ).map(function(key){
                     return list[key];
-                });console.log(sortList)
+                });
             } else {
                 sortList = $.extend( true, [], list );
                 // リストにvalueが含まれてなければ追加する

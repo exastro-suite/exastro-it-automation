@@ -1279,8 +1279,10 @@ filterHtml( filterHeaderFlag = true ) {
     ];
 
     if ( tb.mode === 'view') {
-        menuList.push({ name: 'excel', title: getMessage.FTE00046, action: 'default', separate: true, disabled: true }),
-        menuList.push({ name: 'json', title: getMessage.FTE00047, action: 'default', disabled: true })
+        if ( tb.option.dataType === 'n') {
+            menuList.push({ name: 'excel', title: getMessage.FTE00046, action: 'default', separate: true, disabled: true });
+            menuList.push({ name: 'json', title: getMessage.FTE00047, action: 'default', disabled: true });
+        }
     };
 
     const filterMenuHtml = fn.html.cell( createFilterMenuHtml( menuList ),
@@ -3055,7 +3057,7 @@ setTbody() {
         tb.checkSelectStatus();
     }
 
-    tb.filterDownloadButtonCheck();
+    if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
     tb.stickyWidth();
 }
 /*
@@ -3711,7 +3713,7 @@ editCellHtml( item, columnKey ) {
             case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
                 return v;
             default:
-                return fn.cv( parameter[ columnName ], '', true );
+                return fn.cv( v, '', true );
         }
     };
     let value = setValue( parameter[ columnName ] );

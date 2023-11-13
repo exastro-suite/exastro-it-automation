@@ -1316,7 +1316,9 @@ defaultMenu( sheetType, dataType = 'n') {
     if ( mn.flag.history ) {
         contentTab.push({ name: 'changeHistory', title: getMessage.FTE10009, type: 'blank' });
     }
-    contentTab.push({ name: 'dataDownload', title: getMessage.FTE10010 });
+    if ( dataType === 'n') {
+        contentTab.push({ name: 'dataDownload', title: getMessage.FTE10010 });
+    }
 
     const menuInfo = fn.cv( mn.info.menu_info.menu_info, '', true );
 
@@ -1352,74 +1354,76 @@ defaultMenu( sheetType, dataType = 'n') {
     }
 
     // 全件ダウンロード・ファイル一括登録
-    const $download = mn.$.content.find('#dataDownload');
-    $download.find('.operationButton').on('click', function(){
-        const $button = $( this ),
-              type = $button.attr('data-type');
+    if ( dataType === 'n') {
+        const $download = mn.$.content.find('#dataDownload');
+        $download.find('.operationButton').on('click', function(){
+            const $button = $( this ),
+                type = $button.attr('data-type');
 
-        // File name
-        let fileName = '';
+            // File name
+            let fileName = '';
 
-        if ( mn.currentGroup && mn.currentGroup.title ) {
-            if ( mn.currentGroup.title.length > 64 ) {
-                fileName += mn.currentGroup.title.slice( 0, 61 ) + '..._';
-            } else {
-                fileName += mn.currentGroup.title + '_';
+            if ( mn.currentGroup && mn.currentGroup.title ) {
+                if ( mn.currentGroup.title.length > 64 ) {
+                    fileName += mn.currentGroup.title.slice( 0, 61 ) + '..._';
+                } else {
+                    fileName += mn.currentGroup.title + '_';
+                }
             }
-        }
 
-        if ( mn.title && mn.title.length > 64 ) {
-            fileName += mn.title.slice( 0, 61 ) + '..._';
-        } else {
-            fileName += mn.title + '_';
-        }
+            if ( mn.title && mn.title.length > 64 ) {
+                fileName += mn.title.slice( 0, 61 ) + '..._';
+            } else {
+                fileName += mn.title + '_';
+            }
 
-        const downloadFile = function( type, url, fileName ){
-            $button.prop('disabled', true );
-
-            fn.fetch( url ).then(function( result ){
-                fn.download( type, result, fileName );
-            }).catch(function( error ){
-                fn.gotoErrPage( error.message );
-            }).then(function(){
-                fn.disabledTimer( $button, false, 1000 );
-            });
-        };
-
-        switch ( type ) {
-            case 'allDwonloadExcel': {
+            const downloadFile = function( type, url, fileName ){
                 $button.prop('disabled', true );
 
-                fn.fetch(`/menu/${mn.params.menuNameRest}/filter/count/`).then(function( result ){
-                    const limit = mn.info.menu_info.xls_print_limit;
-                    if ( limit && mn.info.menu_info.xls_print_limit < result ) {
-                        alert( getMessage.FTE00085( result, limit) );
-                    } else {
-                        downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all');
-                    }
+                fn.fetch( url ).then(function( result ){
+                    fn.download( type, result, fileName );
                 }).catch(function( error ){
                     fn.gotoErrPage( error.message );
                 }).then(function(){
                     fn.disabledTimer( $button, false, 1000 );
                 });
-            } break;
-            case 'allDwonloadJson':
-                downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, fileName + 'all');
-            break;
-            case 'newDwonloadExcel':
-                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format');
-            break;
-            case 'excelUpload':
-                mn.fileRegister( $button, 'excel');
-            break;
-            case 'jsonUpload':
-                mn.fileRegister( $button, 'json');
-            break;
-            case 'allHistoryDwonloadExcel':
-                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal');
-            break;
-        }
-    });
+            };
+
+            switch ( type ) {
+                case 'allDwonloadExcel': {
+                    $button.prop('disabled', true );
+
+                    fn.fetch(`/menu/${mn.params.menuNameRest}/filter/count/`).then(function( result ){
+                        const limit = mn.info.menu_info.xls_print_limit;
+                        if ( limit && mn.info.menu_info.xls_print_limit < result ) {
+                            alert( getMessage.FTE00085( result, limit) );
+                        } else {
+                            downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all');
+                        }
+                    }).catch(function( error ){
+                        fn.gotoErrPage( error.message );
+                    }).then(function(){
+                        fn.disabledTimer( $button, false, 1000 );
+                    });
+                } break;
+                case 'allDwonloadJson':
+                    downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, fileName + 'all');
+                break;
+                case 'newDwonloadExcel':
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format');
+                break;
+                case 'excelUpload':
+                    mn.fileRegister( $button, 'excel');
+                break;
+                case 'jsonUpload':
+                    mn.fileRegister( $button, 'json');
+                break;
+                case 'allHistoryDwonloadExcel':
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal');
+                break;
+            }
+        });
+    }
 
     mn.setCommonEvents();
     mn.onReady();

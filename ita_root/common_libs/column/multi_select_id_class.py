@@ -25,7 +25,7 @@ class MultiSelectIDColumn(IDColumn):
     """
     def json_key_to_keyname_convart(self, column_value, search_candidates, master_row):
         """
-            JSON形式で格納されているKeyを名称リストに変換
+            SON形式で格納されているKey(DB)を名称リストに変換
             フィルタのプルダウン検索の表示する内容
             ARGS:
                 column_value:  JSON形式で格納されている{"id": ["key1", ..]}"
@@ -39,14 +39,14 @@ class MultiSelectIDColumn(IDColumn):
                 column_value = {}
                 column_value["id"] = []
                 column_value = json.dumps(column_value)
-            json_rows = json.loads(column_value)
-            if type(json_rows['id']) != list:
+            column_value = json.loads(column_value)
+            if type(column_value['id']) != list:
                 raise Exception("JSON format is abnormal")
         except Exception as e:
             raise Exception(e)
 
-        if isinstance(json_rows["id"], list):
-            keys = json_rows["id"]
+        if isinstance(column_value["id"], list):
+            keys = column_value["id"]
             for key in keys:
                 if key in master_row.keys():
                     val = master_row[key]
@@ -170,8 +170,9 @@ class MultiSelectIDColumn(IDColumn):
             msg_args = ["JSON format error(not list) data(%s)" % (str(val))]
             val = g.appmsg.get_api_message(status_code, msg_args)
             return False, msg, val,
-        value_list = json.dumps(search_candidates, ensure_ascii=False)
-        return True, msg, value_list,
+
+        # 全角文字対応　ensure_ascii=False
+        return True, msg, json.dumps(search_candidates, ensure_ascii=False),
 
     # [load_table] 値を入力用の値へ変換
     def convert_value_input(self, valnames=''):
@@ -187,10 +188,12 @@ class MultiSelectIDColumn(IDColumn):
         msg = ''
         try:
             if valnames is None:
-                 return True, [], valnames,
-            val = json.loads(valnames)
-            if type(val) != list:
+                return True, '', valnames,
+            val_decode = self.is_json_format(valnames)
+            if val_decode is False:
                 raise Exception("JSON format is abnormal")
+            if len(val_decode) == 0:
+                return True, '', None,
         except Exception as e:
             retBool = False
             status_code = '499-01701'
@@ -198,13 +201,15 @@ class MultiSelectIDColumn(IDColumn):
             msg = g.appmsg.get_api_message(status_code, msg_args)
             return retBool, msg
 
-        if valnames is not None:
-            for val in json.loads(valnames):
+        if val_decode is not None:
+            for val in val_decode:
                 return_values = self.get_values_by_value([val])
 
                 if len(return_values) == 1:
                     # val = list(return_values.keys())[0]
                     retdict["id"].append(list(return_values.keys())[0])
+                    # ユニーク判定をする為に、Key値をソートしてDBに保存
+                    retdict["id"].sort()
                 else:
                     retBool = False
                     status_code = 'MSG-00032'
@@ -227,7 +232,10 @@ class MultiSelectIDColumn(IDColumn):
 
         if valnames is not None:
             try:
-                vallist = json.loads(valnames)
+                val_decode = self.is_json_format(valnames)
+                if val_decode is False:
+                    raise Exception("JSON format is abnormal")
+
             except Exception:
                 retBool = False
                 status_code = '499-01701'
@@ -236,8 +244,8 @@ class MultiSelectIDColumn(IDColumn):
                 return retBool, msg
 
             set_Valses = []
-            if len(vallist) > 0:
-                for val in vallist:
+            if len(val_decode) > 0:
+                for val in val_decode:
                     return_values = self.get_values_by_value([val])
                     # 返却値が存在するか確認
                     if len(return_values) == 0:
@@ -278,11 +286,27 @@ class MultiSelectIDColumn(IDColumn):
                 msg_args = []
                 msg = g.appmsg.get_api_message(status_code, msg_args)
             else:
-                val_list = json.loads(val)
-                if len(val_list) == 0:
+                val_decode = self.is_json_format(val)
+                if val_decode is False:
                     retBool = False
-                    status_code = 'MSG-00030'
+                    status_code = '499-01701'
                     msg_args = []
                     msg = g.appmsg.get_api_message(status_code, msg_args)
+                else:
+                    if len(val_decode) == 0:
+                        retBool = False
+                        status_code = 'MSG-00030'
+                        msg_args = []
+                        msg = g.appmsg.get_api_message(status_code, msg_args)
 
         return retBool, msg,
+
+    # jsonフォーマットを確認
+    def is_json_format(self, val):
+        try:
+            val = json.loads(val)
+            if type(val) != list:
+                raise Exception("JSON format is abnormal")
+            return val
+        except Exception:
+            return False

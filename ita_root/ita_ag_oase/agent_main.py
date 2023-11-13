@@ -17,7 +17,7 @@ import os
 import time
 import sqlite3
 import datetime
-from common_libs.common import *
+from common_libs.common import *  # noqa F403
 from common_libs.ci.util import app_exception, exception
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
@@ -29,14 +29,22 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     count = 1
     max = int(loop_count)
 
+    # ループに入る前にevent_collection_settings.jsonを削除
+    setting_removed = remove_file()
+    if setting_removed is True:
+        g.applogger.info("json file removed")
+    else:
+        g.applogger.info("no json file to remove")
+
     g.applogger.info("loop starts")
+
     while True:
         print("")
         print("")
         try:
             collection_logic(organization_id, workspace_id)
             g.applogger.info(f"loop count: {count}")
-        except AppException as e:
+        except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
             # catch - other all error
@@ -48,10 +56,6 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
             break
         else:
             count = count + 1
-
-    # ループ終了後に設定ファイルを削除
-    remove_file()
-    g.applogger.info("json file removed")
 
 
 def collection_logic(organization_id, workspace_id):

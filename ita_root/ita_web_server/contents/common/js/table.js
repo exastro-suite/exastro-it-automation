@@ -1723,9 +1723,9 @@ setTableEvents() {
             // 必須
             if ( $input.attr('data-required') === '1') {
                 if ( value !== '') {
-                    $input.removeClass('tableEditRequiredError ');
+                    $input.removeClass('tableEditRequiredError');
                 } else {
-                    $input.addClass('tableEditRequiredError ');
+                    $input.addClass('tableEditRequiredError');
                 }
             }
         });
@@ -1890,6 +1890,49 @@ setTableEvents() {
             $text.text( value );
         });
 
+        // カラーピッカー クリックしたときに値をinputに入れる
+        let colorFlag = false;
+        const colorChange = function( $color ) {
+            const
+            $wrap = $color.closest('.inputColorEditWrap'),
+            $mark = $wrap.find('.inputColorEditSelect'),
+            $text = $wrap.find('.inputText'),
+            value = fn.checkHexColorCode( $color.val() );
+
+            $text.val( value ).change();
+            $mark.css('background-color', value );
+        };
+        tb.$.tbody.on({
+            'click': function(){
+                colorChange( $(this) );
+            },
+            'change': function(){
+                colorChange( $(this) );
+            }
+        }, '.inputColorEdit');
+
+        // テキスト入力をカラーピッカーに反映する
+        tb.$.tbody.on('change', '.tableEditSColorCode', function(){
+            const
+            $text = $( this ),
+            $wrap = $text.closest('.inputColorEditWrap'),
+            $mark = $wrap.find('.inputColorEditSelect'),
+            $color = $wrap.find('.inputColorEdit'),
+            value = fn.checkHexColorCode( $text.val(), false ),
+            text = fn.checkHexColorCode( $text.val() );
+
+            $color.val( value );
+            $mark.css('background-color', value );
+
+            $text.val( text ).change();
+        });
+
+        // tableEditFilterCondition
+        tb.$.tbody.on('click', '.tableEditFilterCondition', function(){
+            tb.oaseFilterSetting().then(function( result ){
+
+            });
+        });
     }
 
     /*
@@ -3487,6 +3530,19 @@ viewCellHtml( item, columnKey, journal ) {
                 return checkJournal( value );
             }
         
+        // カラーコード
+        case 'ColorCodeColumn':
+            const colorCode = fn.checkHexColorCode( value );
+            if ( colorCode ) {
+                return ''
+                + `<div class="tableColorCodeWrap">`
+                    + `<span class="tableColorCodeMark" style="background-color:${colorCode}"></span>`
+                    + checkJournal( colorCode )
+                + `</div>`;
+            } else {
+                return '';
+            }
+        
         // パラメータ集用
         case 'ParameterCollectionSheetType':
             if ( value === '1') {
@@ -3640,20 +3696,25 @@ editCellHtml( item, columnKey ) {
 
     const rowId = parameter[ tb.idNameRest ],
           columnInfo = tb.info.column_info[ columnKey ],
-          columnName = columnInfo.column_name_rest,
-          columnType = columnInfo.column_type,
+          columnName = fn.escape( columnInfo.column_name_rest ),
+          columnType = fn.escape( columnInfo.column_type ),
           inputClassName = [],
           inputRequired = fn.cv( columnInfo.required_item, '0'),
           autoInput = '<span class="tBodyAutoInput"></span>',
           inputItem = columnInfo.input_item,
-          name = '';
+          name = `${columnName}_${columnType}_${rowId}`;
 
-    let value;
-    if ( columnType === 'NotificationIDColumn') {
-        value = parameter[ columnName ];
-    } else {
-        value = fn.cv( parameter[ columnName ], '', true );
-    }
+    const setValue = function( v ) {
+        switch ( columnType ) {
+            // プルダウン選択はここでエスケープしない
+            case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
+            case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
+                return v;
+            default:
+                return fn.cv( parameter[ columnName ], '', true );
+        }
+    };
+    let value = setValue( parameter[ columnName ] );
 
     const attr = {
         key: columnName,
@@ -3669,14 +3730,9 @@ editCellHtml( item, columnKey ) {
     // 入力済みのデータがある？
     const inputData = tb.edit.input[ rowId ];
     if ( inputData !== undefined ) {
-
         const afterParameter = tb.edit.input[ rowId ]['after'].parameter[ columnName ];
         if ( afterParameter !== undefined ) {
-            if ( columnType === 'NotificationIDColumn') {
-                value = afterParameter;
-            } else {
-                value = fn.escape( afterParameter );
-            }
+            value = setValue( afterParameter );
 
             const beforeParameter = tb.edit.input[ rowId ]['before'].parameter[ columnName ];
             if ( afterParameter !== beforeParameter ) {
@@ -3780,22 +3836,23 @@ editCellHtml( item, columnKey ) {
         // プルダウン
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn': {
+            const displayValue = fn.cv( value, '', true );
             inputClassName.push('tableEditInputSelectContainer');
             return `<div class="${inputClassName.join(' ')}">`
-            + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${value}</span></div>`
-                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
+            + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${displayValue}</span></div>`
+                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], []), 'tableEditInputSelect', value, name, attr, { select2: true } )
             + `</div>`;
         }
 
         // 複数選択プルダウン
         case 'NotificationIDColumn':  {
             const displayValue = fn.cv( value, '', true );
-            value = fn.jsonParse( value );
+            value = fn.jsonParse( value, 'array');
             attr.multiple = 'multiple';
             inputClassName.push('tableEditInputMultipleSelectContainer');
             return `<div class="${inputClassName.join(' ')}">`
             + `<div class="tableEditInputMultipleSelectValue"><span class="tableEditInputMultipleSelectValueInner">${displayValue}</span></div>`
-                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], {}), 'tableEditInputSelect tableEditInputMultipleSelect', value, name, attr, { select2: true } )
+                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], []), 'tableEditInputSelect tableEditInputMultipleSelect', value, name, attr, { select2: true } )
             + `</div>`;
         }
 
@@ -3821,6 +3878,21 @@ editCellHtml( item, columnKey ) {
         // ボタン
         case 'ButtonColumn':
             return tb.buttonAction( columnInfo, item, columnKey );
+        
+        // カラーコード
+        case 'ColorCodeColumn':
+            inputClassName.push('tableEditSColorCode');
+            return fn.html.inputColor( inputClassName, value, name, attr, { mode: 'edit'});
+
+        // フィルター条件設定
+        case 'FilterConditionSettingColumn':
+            return `<div class="tableEditFilterCondition tableEditJsonColmun input">${value}</div>`
+            + fn.html.inputHidden( inputClassName, value, name, attr );
+
+        // ルール条件設定
+        case 'RuleConditionSettingColumn':
+            return `<div class="tableEditRuleCondition tableEditJsonColmun">${value}</div>`
+            + fn.html.inputHidden( inputClassName, value, name, attr );
 
         // 不明
         default:
@@ -3896,6 +3968,19 @@ editConfirmCellHtml( item, columnKey ) {
                     const fileHtml = [`<a href="${val}" class="tableViewDownload" data-type="${data}" data-id="${id}" data-rest="${columnName}">${val}</a>`];
                     if ( ['text', 'image'].indexOf( fn.fileTypeCheck( val ) ) !== -1 ) fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
                     return fileHtml.join('');
+                } else {
+                    return '';
+                }
+            
+            // カラーコード
+            case 'ColorCodeColumn':
+                const colorCode = fn.checkHexColorCode( val );
+                if ( colorCode ) {
+                    return ''
+                    + `<div class="tableColorCodeWrap">`
+                        + `<span class="tableColorCodeMark" style="background-color:${colorCode}"></span>`
+                        + colorCode
+                    + `</div>`;
                 } else {
                     return '';
                 }
@@ -4216,7 +4301,11 @@ changeEdtiMode( changeMode ) {
               && columnInfo.initial_value === null ) {
                 const select = tb.data.editSelectArray[ columnInfo.column_name_rest ];
                 if ( select !== undefined ) {
-                    tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[0];
+                    if ( columnInfo.column_type === 'NotificationIDColumn') {
+                        tb.edit.blank.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([select[0]]);
+                    } else {
+                        tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[0];
+                    }
                 }
             } else {
                 if ( info[ key ].column_name_rest !== 'discard') {
@@ -5521,6 +5610,48 @@ restApi( buttonText, method, endpoint, body, option = {}) {
     });
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   OASE
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+oaseFilterSetting() {
+    return new Promise(function( resolve ){
+        const settingData = {
+            title: 'ラベル設定',
+            info: [
+                {
+                    id: 'label_name',
+                    type: 'select',
+                    title: 'ラベル名',
+                    list: ['test1','test2'],
+                    width: '320px'
+                },
+                {
+                    id: 'condition_type',
+                    type: 'select',
+                    title: '条件',
+                    list: ['>', '>='],
+                    width: '80px'
+                },
+                {
+                    id: 'condition_value',
+                    type: 'text',
+                    title: '条件値'
+                },
+            ],
+            values: [
+                ['test2', '>=', 'AAAAA'],
+                ['test1', '>', 'BBBBB'],
+                ['test2', '>=', 'AAAAA']
+            ]
+        };
+        fn.settingListModalOpen( settingData ).then(function(result){
+            resolve( result )
+        });
+    });
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   パラメーター集

@@ -249,10 +249,28 @@ visibility: hidden;
 white-space: normal!important;
 }
 .inputColor {
-width: 80px; height: 100%;
+width: 80px;
 margin: 0; padding: 2px;
 background-color: var(--white100);
 border: 1px solid var(--black40);
+}
+.inputColorEditWrap {
+display: flex;
+gap: 4px;
+}
+.inputColorEditWrap > div {
+min-width: 0;
+}
+.inputColorEditSelect {
+overflow: hidden;
+width: 32px; height: 32px;
+border: 1px solid rgba(0,0,0,.5);
+border-radius: 4px;
+}
+.inputColorEdit {
+opacity: 0;
+width: 32px; height: 32px;
+cursor: pointer;
 }
 /* checkbox */
 .checkboxWrap,
@@ -2837,6 +2855,12 @@ cursor: no-drop;
 .tableEditInputMultipleSelectValueItem {
 display: inline-block;
 margin: 4px 4px 0;
+}
+.tableColorCodeMark {
+display: inline-block;
+width: 16px; height: 16px;
+margin-right: 8px;
+vertical-align: -2px;
 }
 
 /* Filter */

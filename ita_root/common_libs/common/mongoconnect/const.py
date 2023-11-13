@@ -26,11 +26,11 @@ class Const:
     LABELED_EVENT_COLLECTION = "labeled_event_collection"
 
     # テーブル名
-    T_EVENT_HISTORY = "T_EVRL_EVENT_HISTORY"
+    T_OASE_EVENT_HISTORY = "T_OASE_EVENT_HISTORY"
 
     # テーブル名とコレクション名のマッピング
     NAME_MAP: [str, str] = {
-        T_EVENT_HISTORY: LABELED_EVENT_COLLECTION
+        T_OASE_EVENT_HISTORY: LABELED_EVENT_COLLECTION
     }
 
     # ソート順

@@ -66,10 +66,10 @@ class LabeledEventCollection(CollectionBase):
         tmp_value = super()._create_search_value(collection_item_name, value)
 
         if collection_item_name == "labels._exastro_fetched_time":
-            return str(int(datetime.datetime.strptime(tmp_value, '%Y-%m-%dT%H:%M:%S%z').timestamp()))
+            return str(int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp()))
 
         if collection_item_name == "labels._exastro_end_time":
-            return str(int(datetime.datetime.strptime(tmp_value, '%Y-%m-%dT%H:%M:%S%z').timestamp()))
+            return str(int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp()))
 
         if collection_item_name == "labels._exastro_timeout":
             if value == "時間切れ":
@@ -208,7 +208,8 @@ class LabeledEventCollection(CollectionBase):
                 format_item["_exastro_rule_name"] = labels.pop("_exastro_rule_name")
 
             # 残項目はlabelsとして返却するため代入する。
-            format_item["labels"] = labels
+            # 画面返却時、配列やobjectは扱えないため文字列に変更する。
+            format_item["labels"] = json.dumps(labels, ensure_ascii=False)
 
         if "exastro_events" in item:
             exastro_events = list(item["exastro_events"])
@@ -219,11 +220,14 @@ class LabeledEventCollection(CollectionBase):
                 # そのままではJSONとして扱えないため_idと同じように変換する。
                 format_item["_exastro_events"].append(str(item))
 
+            # 画面返却時、配列やobjectは扱えないため文字列に変更する。
+            format_item["_exastro_events"] = json.dumps(format_item["_exastro_events"], ensure_ascii=False)
+
         # LABELS_PARAMETERがNoneではない場合、labelsに対する条件が指定されているため確認を行う。
         # labelsの検索の要件をMongoDBの検索時に満たそうとするとサブドキュメントに対してあいまい検索が必要となる。
         # しかし、確認した限りだと文字列型以外にあいまい検索は不可のためpython側での対応とした
         if self.LABELS_PARAMETER is not None:
-            tmp_str = json.dumps(format_item["labels"])
+            tmp_str = str(format_item["labels"])
             for type, value in self.LABELS_PARAMETER.items():
                 if type == "NORMAL":
                     value = [value]

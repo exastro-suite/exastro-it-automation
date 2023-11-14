@@ -817,37 +817,51 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
 
     search_candidates = []
     for item in result_list:
-        if column in item:
-            search_candidates.append(item[column])
+        if column in item["parameter"]:
+            search_candidates.append(item["parameter"][column])
 
     # 重複を排除したリストを作成
     # 値がobjectの可能性もあるため詰めなおす方式で実装
     result = []
     for item in search_candidates:
-        if isinstance(item, dict):
-            for key, value in item.items():
-                # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
-                # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
-                if isinstance(value, str):
-                    tmp_str = '"' + key + '": "' + str(value) + '"'
-                else:
-                    tmp_str = '"' + key + '": ' + json.dumps(value)
+        # jsonに変換を試みて変換できなければそのまま、変換できればlist or dictとして処理する
+        def is_json(item):
+            try:
+                json.loads(item)
+            except ValueError:
+                return False
+            else:
+                return True
 
-                if tmp_str not in result:
-                    result.append(tmp_str)
+        if item is None:
+            continue
 
-        elif isinstance(item, list):
-            for value in item:
-                if value not in result:
+        if is_json(item):
+            item = json.loads(item)
+            if isinstance(item, dict):
+                item = dict(item)
+                for key, value in item.items():
                     # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
                     # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
-                    if isinstance(value, dict):
-                        result.append(json.dumps(value))
-                    elif isinstance(value, list):
-                        result.append(json.dumps(value))
+                    if isinstance(value, str):
+                        tmp_str = '"' + key + '": "' + str(value) + '"'
                     else:
-                        result.append(value)
+                        tmp_str = '"' + key + '": ' + json.dumps(value)
 
+                    if tmp_str not in result:
+                        result.append(tmp_str)
+            elif isinstance(item, list):
+                item = list(item)
+                for value in item:
+                    if value not in result:
+                        # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                        # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                        if isinstance(value, dict):
+                            result.append(json.dumps(value))
+                        elif isinstance(value, list):
+                            result.append(json.dumps(value))
+                        else:
+                            result.append(value)
         else:
             if item not in result:
                 result.append(item)

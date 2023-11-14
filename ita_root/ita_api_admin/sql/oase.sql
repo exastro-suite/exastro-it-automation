@@ -142,6 +142,7 @@ CREATE TABLE T_OASE_LABEL_KEY_FIXED
 (
     LABEL_KEY_ID                    VARCHAR(40),                                -- ラベルキーID
     LABEL_KEY                       VARCHAR(255),                               -- ラベルキー
+    COLOR_CODE                      VARCHAR(40),                                -- カラーコード
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -183,14 +184,6 @@ CREATE TABLE T_OASE_LABEL_KEY_INPUT_JNL
 
 
 -- ラベルキー結合ビュー
-ALTER TABLE
-    T_OASE_LABEL_KEY_FIXED
-ADD
-    COLOR_CODE
-    VARCHAR(255)
-AFTER
-    LABEL_KEY
-;
 CREATE VIEW V_OASE_LABEL_KEY_GROUP AS
 SELECT
     LABEL_KEY_ID,

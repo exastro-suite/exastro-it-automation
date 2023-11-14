@@ -202,10 +202,19 @@ CREATE TABLE T_OASE_LABEL_KEY_INPUT_JNL
 
 
 -- ラベルキー結合ビュー
+ALTER TABLE
+    T_OASE_LABEL_KEY_FIXED
+ADD
+    COLOR_CODE
+    VARCHAR(255)
+AFTER
+    LABEL_KEY
+;
 CREATE VIEW V_OASE_LABEL_KEY_GROUP AS
 SELECT
     LABEL_KEY_ID,
     LABEL_KEY,
+    COLOR_CODE,
     NOTE,
     DISUSE_FLAG,
     LAST_UPDATE_TIMESTAMP,
@@ -216,12 +225,16 @@ UNION
 SELECT
     LABEL_KEY_ID,
     LABEL_KEY,
+    COLOR_CODE,
     NOTE,
     DISUSE_FLAG,
     LAST_UPDATE_TIMESTAMP,
     LAST_UPDATE_USER
 FROM
-    T_OASE_LABEL_KEY_FIXED;
+    T_OASE_LABEL_KEY_FIXED
+ORDER BY
+    LABEL_KEY_ID ASC
+;
 
 
 
@@ -266,8 +279,8 @@ CREATE TABLE T_OASE_LABELING_SETTINGS
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
     TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
     TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
-    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
     COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
+    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
     LABEL_KEY_ID                    VARCHAR(255),                               -- ラベルキーID
     LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
     NOTE                            TEXT,                                       -- 備考
@@ -287,8 +300,8 @@ CREATE TABLE T_OASE_LABELING_SETTINGS_JNL
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集設定名ID
     TARGET_KEY                      VARCHAR(255),                               -- ターゲットキー
     TARGET_TYPE_ID                  VARCHAR(2),                                 -- ターゲットタイプID
-    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
     COMPARISON_METHOD_ID            VARCHAR(2),                                 -- 比較方法ID
+    TARGET_VALUE                    TEXT,                                       -- ターゲットバリュー
     LABEL_KEY_ID                    VARCHAR(255),                               -- ラベルキーID
     LABEL_VALUE                     VARCHAR(255),                               -- ラベルバリュー
     NOTE                            TEXT,                                       -- 備考

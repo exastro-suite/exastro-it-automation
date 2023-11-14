@@ -332,7 +332,7 @@ class SubValueAutoReg():
         # 多次元変数を紐付けている紐付メニューの具体値からTPF変数を抽出する
         for varsAssRecord in lv_arrayVarsAssList.values():
             template_list, host_list = self.extract_tpl_vars(var_extractor, varsAssRecord, template_list, host_list)
-
+        
         return True, template_list, host_list
 
     def getAnsible_RolePackage_file(self, in_dir, in_pkey, in_filename):
@@ -905,6 +905,10 @@ class SubValueAutoReg():
 
         ina_vars_ass_list = {}
         ina_array_vars_ass_list = {}
+        
+        tmp_ary_data = {}
+        
+        dict_objmenu = {}
 
         idx = 0
         for table_name, sql in in_tableNameToSqlList.items():
@@ -970,28 +974,28 @@ class SubValueAutoReg():
                 col_row_id = row[AnscConst.DF_ITA_LOCAL_PKEY]
 
                 col_name = 'DATA_JSON'  # 2系からデータの持ち方変わった
-
-                # 再度カラムをチェック
-                if table_name in in_tabColNameToValAssRowList:
-                    if col_name not in in_tabColNameToValAssRowList[table_name]:
-                        continue
-
+                
+                tmp_ary_data[table_name] = row
+        
                 parameter = {}
-
-                for col_data in in_tabColNameToValAssRowList[table_name][col_name].values():
-                    col_val = ""
-                    exec_flag = False
-
-                    for tmp_table_name, value in in_tableNameToMenuNameRestList.items():
+            
+            for tmp_table_name, row in tmp_ary_data.items():
+                for table_name, ary_col_data in in_tabColNameToValAssRowList.items():
+                    for col_data in ary_col_data[col_name].values():
+                        col_val = ""
+                        exec_flag = False
+                        menu_name_rest = col_data["MENU_NAME_REST"]
+                        
                         if tmp_table_name == table_name:
                             # 縦メニューの場合
                             if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
                                 if row["INPUT_ORDER"] == col_data["COLUMN_ASSIGN_SEQ"]:
                                     # パラメータシートから値を取得
-                                    objmenu = load_table.loadTable(WS_DB, value)
+                                    if menu_name_rest not in dict_objmenu:
+                                        dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
                                     mode = "inner"
                                     filter_parameter = {"discard": {"LIST": ["0"]}}
-                                    status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
+                                    status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
                                     for parameters in tmp_result:
                                         parameter = parameters["parameter"]
                                         if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"]:
@@ -1015,7 +1019,7 @@ class SubValueAutoReg():
                                                     else:
                                                         exit_flag = True
                                                         continue
-
+                            
                                                 # TPF/CPF変数カラム判定
                                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
@@ -1026,32 +1030,31 @@ class SubValueAutoReg():
                                     # 項目が削除されていないか確認
                                     if exit_flag is True:
                                         continue
-
-                                    # オブジェクト解放
-                                    del objmenu
+                    
                                     exec_flag = True
                             else:
                                 # パラメータシートから値を取得
-                                objmenu = load_table.loadTable(WS_DB, value)
-
+                                if menu_name_rest not in dict_objmenu:
+                                    dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
+                            
                                 # ホスト名取得
                                 sql = "SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE SYSTEM_ID = %s"
-
+                            
                                 host_data_list = WS_DB.sql_execute(sql, [row['HOST_ID']])
                                 for host_data in host_data_list:
                                     host_name = host_data['HOST_NAME']
-
+                            
                                 # オペレーション名取得
                                 sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
-
+                            
                                 ope_data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
                                 for ope_data in ope_data_list:
                                     ope_name = ope_data['OPERATION_NAME']
                                 mode = "inner"
                                 filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]}, "discard": {"LIST": ["0"]}}
-                                status_code, tmp_result, msg = objmenu.rest_filter(filter_parameter, mode)
+                                status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
                                 parameter = tmp_result[0]['parameter']
-
+                            
                                 # 項目なしは対象外
                                 if col_data['COL_GROUP_ID'] is None:
                                     ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
@@ -1069,7 +1072,7 @@ class SubValueAutoReg():
                                         col_val = parameter[col_data['COLUMN_NAME_REST']]
                                     else:
                                         continue
-
+                            
                                 # TPF/CPF変数カラム判定
                                 if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                     if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
@@ -1078,86 +1081,85 @@ class SubValueAutoReg():
                                                 col_val = "'{{ " + col_val + " }}'"
                                             else:
                                                 continue
-                                # オブジェクト解放
-                                del objmenu
+                    
                                 exec_flag = True
-
-                    col_class = self.getColumnClass(col_data['COLUMN_CLASS'], WS_DB)
-                    col_name_rest = col_data['COLUMN_NAME_REST']
-                    col_filepath = ""
-                    col_file_md5 = ""
-                    if col_data['COL_TYPE'] == AnscConst.DF_COL_TYPE_VAL:
-                        if col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20":
-                            # メニューID取得
-                            upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
-                            col_filepath = ""
-                            if col_val is not None and not col_val == "":
-                                storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
-                                col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
-                                if not os.path.exists(col_filepath):
-                                    msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
-                                    frame = inspect.currentframe().f_back
-                                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
-                                    warning_flag = 1
-                                    # 次のデータへ
-                                    continue
-
-                                col_filepath = col_filepath + "/" + col_val
-                                col_file_md5 = self.md5_file(col_filepath)
-
-                    # 代入値管理の登録に必要な情報を生成
-                    if exec_flag == 1:
-                        # 同一登録データがある場合はスキップ
-                        skip_flag = False
-                        for ina_vars_ass_list_value in ina_vars_ass_list.values():
-                            if len(ina_vars_ass_list_value) > 0:
-                                if operation_id == ina_vars_ass_list_value['OPERATION_ID']:
-                                    if host_id == ina_vars_ass_list_value['SYSTEM_ID']:
-                                        if col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID']:
-                                            if col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID']:
-                                                if col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
-                                                    if col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
-                                                        skip_flag = True
-
-                        for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
-                            if len(ina_array_vars_ass_list_value) > 0:
-                                if operation_id == ina_array_vars_ass_list_value['OPERATION_ID']:
-                                    if host_id == ina_array_vars_ass_list_value['SYSTEM_ID']:
-                                        if col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID']:
-                                            if col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID']:
-                                                if col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
-                                                    if col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
-                                                        skip_flag = True
-
-                        if skip_flag == 0:
-                            ret = self.makeVarsAssignData(table_name,
-                                                col_name,
-                                                col_val,
-                                                col_row_id,
-                                                col_class,
-                                                col_filepath,
-                                                col_file_md5,
-                                                col_data['NULL_DATA_HANDLING_FLG'],
-                                                operation_id,
-                                                host_id,
-                                                col_data,
-                                                ina_vars_ass_list,
-                                                lv_varsAssChkList,
-                                                ina_array_vars_ass_list,
-                                                lv_arrayVarsAssChkList,
-                                                in_tableNameToMenuIdList[table_name],
-                                                row[AnscConst.DF_ITA_LOCAL_PKEY],
-                                                WS_DB)
-
-                            # NULL連携無効で処理対象外になった場合は追加しない
-                            if not ret[0] == 0:
-                                ina_vars_ass_list[idx] = ret[0]
-                            if not ret[2] == 0:
-                                ina_array_vars_ass_list[idx] = ret[2]
-
-                            idx += 1
+                        
+                        col_class = self.getColumnClass(col_data['COLUMN_CLASS'], WS_DB)
+                        col_name_rest = col_data['COLUMN_NAME_REST']
+                        col_filepath = ""
+                        col_file_md5 = ""
+                        if col_data['COL_TYPE'] == AnscConst.DF_COL_TYPE_VAL:
+                            if col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20":
+                                # メニューID取得
+                                upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
+                                col_filepath = ""
+                                if col_val is not None and not col_val == "":
+                                    storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
+                                    col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
+                                    if not os.path.exists(col_filepath):
+                                        msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
+                                        frame = inspect.currentframe().f_back
+                                        g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                        warning_flag = 1
+                                        # 次のデータへ
+                                        continue
+                        
+                                    col_filepath = col_filepath + "/" + col_val
+                                    col_file_md5 = self.md5_file(col_filepath)
+                        
+                        # 代入値管理の登録に必要な情報を生成
+                        if exec_flag == 1:
+                            # 同一登録データがある場合はスキップ
                             skip_flag = False
-
+                            for ina_vars_ass_list_value in ina_vars_ass_list.values():
+                                if len(ina_vars_ass_list_value) > 0:
+                                    if operation_id == ina_vars_ass_list_value['OPERATION_ID']:
+                                        if host_id == ina_vars_ass_list_value['SYSTEM_ID']:
+                                            if col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID']:
+                                                if col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID']:
+                                                    if col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
+                                                        if col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
+                                                            skip_flag = True
+                        
+                            for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
+                                if len(ina_array_vars_ass_list_value) > 0:
+                                    if operation_id == ina_array_vars_ass_list_value['OPERATION_ID']:
+                                        if host_id == ina_array_vars_ass_list_value['SYSTEM_ID']:
+                                            if col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID']:
+                                                if col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID']:
+                                                    if col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
+                                                        if col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
+                                                            skip_flag = True
+                        
+                            if skip_flag == 0:
+                                ret = self.makeVarsAssignData(table_name,
+                                                    col_name,
+                                                    col_val,
+                                                    col_row_id,
+                                                    col_class,
+                                                    col_filepath,
+                                                    col_file_md5,
+                                                    col_data['NULL_DATA_HANDLING_FLG'],
+                                                    operation_id,
+                                                    host_id,
+                                                    col_data,
+                                                    ina_vars_ass_list,
+                                                    lv_varsAssChkList,
+                                                    ina_array_vars_ass_list,
+                                                    lv_arrayVarsAssChkList,
+                                                    in_tableNameToMenuIdList[table_name],
+                                                    row[AnscConst.DF_ITA_LOCAL_PKEY],
+                                                    WS_DB)
+                        
+                                # NULL連携無効で処理対象外になった場合は追加しない
+                                if not ret[0] == 0:
+                                    ina_vars_ass_list[idx] = ret[0]
+                                if not ret[2] == 0:
+                                    ina_array_vars_ass_list[idx] = ret[2]
+                        
+                                idx += 1
+                                skip_flag = False
+                            
             # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
             if 'col_name' in locals():
                 for col_data in in_tabColNameToValAssRowList[table_name][col_name].values():
@@ -1172,6 +1174,9 @@ class SubValueAutoReg():
                         frame = inspect.currentframe().f_back
                         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                         warning_flag = 1
+        
+        # オブジェクト解放
+        del dict_objmenu
 
         return ina_vars_ass_list, ina_array_vars_ass_list, warning_flag
 
@@ -2062,7 +2067,8 @@ class SubValueAutoReg():
                                                                             'VALUE_SENSITIVE_FLAG': value_sensitive_flg,
                                                                             'KEY_VAR_TYPE': key_vars_attr,
                                                                             'NULL_DATA_HANDLING_FLG': data['NULL_DATA_HANDLING_FLG'],
-                                                                            'KEY_SENSITIVE_FLAG': key_sensitive_flg}
+                                                                            'KEY_SENSITIVE_FLAG': key_sensitive_flg,
+                                                                            'MENU_NAME_REST': data['MENU_NAME_REST']}
 
             # テーブルの主キー名退避
             pk_name = WS_DB.table_columns_get(data['TABLE_NAME'])

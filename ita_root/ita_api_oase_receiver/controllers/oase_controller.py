@@ -14,10 +14,11 @@
 
 from flask import g
 
-from common_libs.api import api_filter
-from common_libs.common.dbconnect.dbconnect_ws import DBConnectWs
+from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
-from common_libs.common.exception import AppException
+from common_libs.api import api_filter
+from libs.oase_receiver_common import check_menu_info, check_auth_menu
 from libs.label_event import label_event
 import json
 
@@ -37,9 +38,21 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
 
     :rtype: InlineResponse200
     """
+    # メンテナンスモードのチェック
+    if g.maintenance_mode.get('data_update_stop') == '1':
+        status_code = "498-00004"
+        raise AppException(status_code, [], [])  # noqa: F405
 
+    # DB接続
     wsDb = DBConnectWs(workspace_id)
 
+    menu = 'agent'
+    # メニューの存在確認
+    check_menu_info(menu, wsDb)
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, wsDb)
+
+    # 取得
     where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_SETTINGS_ID IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_ids"])))
     bind_values = tuple(body["event_collection_settings_ids"])
 
@@ -67,18 +80,29 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
     :rtype: InlineResponse2001
     """
-    # DB接続
-    wsDb = DBConnectWs(workspace_id)  # noqa: F405
-    wsMongo = MONGOConnectWs()
-
     # メンテナンスモードのチェック
     if g.maintenance_mode.get('data_update_stop') == '1':
         status_code = "498-00004"
         raise AppException(status_code, [], [])  # noqa: F405
 
+    # DB接続
+    wsDb = DBConnectWs(workspace_id)  # noqa: F405
+    wsMongo = MONGOConnectWs()
+
+    menu = 'event_history'
+    # メニューの存在確認
+    check_menu_info(menu, wsDb)
+    # メニューに対するロール権限をチェック
+    privilege = check_auth_menu(menu, wsDb)
+    if privilege == '2':
+        status_code = "401-00001"
+        log_msg_args = [menu]
+        api_msg_args = [menu]
+        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
     # 保存する、整形したイベント
     events = []
-    # 保存するイベント取得時間
+    # 保存する、イベント取得時間
     fetched_time_list = []
 
     # eventsデータを取り出す

@@ -19,8 +19,8 @@ import os
 import base64
 import textwrap
 
+from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.common.util import get_maintenance_mode_setting
@@ -205,38 +205,3 @@ def check_auth_menu(menu, wsdb_istc=None):
     return res
 
 
-def check_sheet_type(menu, sheet_type_list, wsdb_istc=None):
-    """
-    check_sheet_type
-
-    Arguments:
-        menu: menu_name_rest
-        sheet_type_list: (list)許容するシートタイプのリスト,falseの場合はシートタイプのチェックを行わない
-        wsdb_istc: (class)DBConnectWs Instance
-    Returns:
-        (dict)T_COMN_MENU_TABLE_LINKの該当レコード
-    """
-    if not wsdb_istc:
-        wsdb_istc = DBConnectWs(g.get('WORKSPACE_ID'))  # noqa: F405
-
-    query_str = textwrap.dedent("""
-        SELECT * FROM `T_COMN_MENU_TABLE_LINK` TAB_A
-            LEFT JOIN `T_COMN_MENU` TAB_B ON ( TAB_A.`MENU_ID` = TAB_B.`MENU_ID`)
-        WHERE TAB_B.`MENU_NAME_REST` = %s AND
-              TAB_A.`DISUSE_FLAG`='0' AND
-              TAB_B.`DISUSE_FLAG`='0'
-    """).strip()
-
-    menu_table_link_record = wsdb_istc.sql_execute(query_str, [menu])
-
-    if not menu_table_link_record:
-        log_msg_args = [menu]
-        api_msg_args = [menu]
-        raise AppException("499-00003", log_msg_args, api_msg_args)  # noqa: F405
-
-    if sheet_type_list and menu_table_link_record[0].get('SHEET_TYPE') not in sheet_type_list:
-        log_msg_args = [menu]
-        api_msg_args = [menu]
-        raise AppException("499-00001", log_msg_args, api_msg_args)  # noqa: F405
-
-    return menu_table_link_record

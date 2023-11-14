@@ -19,7 +19,8 @@ import textwrap
 import shutil
 import datetime
 from common_libs.common import *  # noqa: F403
-from common_libs.common.exception import AppException
+from common_libs.common.dbconnect import DBConnectWs
+
 
 """
   Excel共通モジュール

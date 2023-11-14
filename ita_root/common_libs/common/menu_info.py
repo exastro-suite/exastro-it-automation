@@ -17,9 +17,11 @@ import datetime
 import json
 import zipfile
 from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
 from flask import g
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 
 def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, privilege='1'):  # noqa: C901
@@ -632,8 +634,8 @@ def collect_pulldown_list(objdbca, menu, menu_record):
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
 
     pulldown_list = {}
-    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn)
-    id_column_list = ["7", "11", "18", "21", "22", "27"]
+    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn)
+    id_column_list = ["7", "11", "18", "21", "22", "27", "28"]
     for record in ret:
         column_class_id = str(record.get('COLUMN_CLASS'))
 
@@ -724,9 +726,20 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         return []
 
     search_candidates = []
-    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn)
-    id_column_list = ["7", "11", "14", "18", "21", "22"]
-    if save_type == "JSON":
+    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn)
+    id_column_list = ["7", "11", "14", "18", "21", "22", "28"]
+    # NotificationIDColumnの場合のプルダウンの一覧に合致するデータ抽出
+    if column_class_id == "28":
+        # プルダウンの一覧を取得
+        objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
+        objcolumn = objmenu.get_columnclass(column)
+        column_pulldown_list = objcolumn.get_values_by_key()
+
+        search_candidates = []
+        for record in ret:
+            search_candidates = objcolumn.json_key_to_keyname_convart(record.get(col_name), search_candidates, column_pulldown_list)
+
+    elif save_type == "JSON":
         for record in ret:
             target = record.get(col_name)
             try:
@@ -753,11 +766,17 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
             objcolumn = objmenu.get_columnclass(column)
             column_pulldown_list = objcolumn.get_values_by_key()
 
-            # レコードの中からプルダウンの一覧に合致するデータを抽出
-            for record in ret:
-                if record.get(col_name) in column_pulldown_list.keys():
-                    convert = column_pulldown_list[record.get(col_name)]
-                    search_candidates.append(convert)
+            # MultiSelectIDColumnの場合だけプルダウンの一覧に合致するデータを抽出方法を変更
+            if column_class_id == "28":
+                search_candidates = []
+                for record in ret:
+                    search_candidates = objcolumn.csvkey_to_keyname_convart(record.get(col_name), search_candidates, column_pulldown_list)
+            else:
+                # レコードの中からプルダウンの一覧に合致するデータを抽出
+                for record in ret:
+                    if record.get(col_name) in column_pulldown_list.keys():
+                        convert = column_pulldown_list[record.get(col_name)]
+                        search_candidates.append(convert)
         else:
             for record in ret:
                 target = record.get(col_name)
@@ -768,6 +787,72 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         search_candidates = list(dict.fromkeys(search_candidates))
 
     return search_candidates
+
+
+def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu_record, menu_table_link_record):
+    """
+    Args:
+        wsMongo (MONGOConnectWs): DB接続クラス  MONGOConnectWs()
+        column: REST API項目名
+        menu_record: メニュー管理のレコード
+        menu_table_link_record: メニュー-テーブル紐付管理のレコード
+    Returns:
+        search_candidates
+    """
+
+    # メニュー-テーブル紐付管理はMariaDBのテーブル名を保持するのでそのままでは利用できないため、MongoDBのコレクション名に変換する
+    mariadb_table_name = menu_table_link_record["TABLE_NAME"]
+    mondodb_collection_name = wsMongo.get_collection_name(mariadb_table_name)
+    collection = wsMongo.create_collection(mondodb_collection_name)
+
+    # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
+    sort_key = collection.create_sort_key(menu_record["SORT_KEY"])
+
+    # filter向けに用意した処理を流用し、python側で絞り込んだ方が実装工数が短くなるため一旦この実装とする。
+    # MongoDBから扱わない項目も取得しているため、その分のコストが重い場合は専用の実装を検討する。
+    tmp_result = (wsMongo.collection(mondodb_collection_name)
+                  .find()
+                  .sort(sort_key))
+    result_list = collection.create_result(tmp_result)
+
+    search_candidates = []
+    for item in result_list:
+        if column in item:
+            search_candidates.append(item[column])
+
+    # 重複を排除したリストを作成
+    # 値がobjectの可能性もあるため詰めなおす方式で実装
+    result = []
+    for item in search_candidates:
+        if isinstance(item, dict):
+            for key, value in item.items():
+                # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                if isinstance(value, str):
+                    tmp_str = '"' + key + '": "' + str(value) + '"'
+                else:
+                    tmp_str = '"' + key + '": ' + json.dumps(value)
+
+                if tmp_str not in result:
+                    result.append(tmp_str)
+
+        elif isinstance(item, list):
+            for value in item:
+                if value not in result:
+                    # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                    # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                    if isinstance(value, dict):
+                        result.append(json.dumps(value))
+                    elif isinstance(value, list):
+                        result.append(json.dumps(value))
+                    else:
+                        result.append(value)
+
+        else:
+            if item not in result:
+                result.append(item)
+
+    return sorted(result)
 
 
 def custom_check_sheet_type(menu, sheet_type_list, wsdb_istc=None):

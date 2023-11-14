@@ -94,6 +94,8 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             g.db_connect_info['ORGDB_ADMIN_USER'] = organization_info.get('DB_ADMIN_USER')
             g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
             g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
+            g.db_connect_info['ORGMONGO_HOST'] = organization_info.get('MONGO_HOST')
+            g.db_connect_info['ORGMONGO_PORT'] = str(organization_info.get('MONGO_PORT'))
             g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = organization_info.get('INITIAL_DATA_ANSIBLE_IF')
             g.db_connect_info['NO_INSTALL_DRIVER'] = organization_info.get('NO_INSTALL_DRIVER')
             # gitlab connect info
@@ -150,6 +152,11 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info["WSDB_USER"] = workspace_info["DB_USER"]
         g.db_connect_info["WSDB_PASSWORD"] = workspace_info["DB_PASSWORD"]
         g.db_connect_info["WSDB_DATABASE"] = workspace_info["DB_DATABASE"]
+        g.db_connect_info["WSMONGO_HOST"] = workspace_info["MONGO_HOST"]
+        g.db_connect_info["WSMONGO_PORT"] = str(workspace_info["MONGO_PORT"])
+        g.db_connect_info["WSMONGO_USER"] = workspace_info["MONGO_USER"]
+        g.db_connect_info["WSMONGO_PASSWORD"] = workspace_info["MONGO_PASSWORD"]
+        g.db_connect_info["WSMONGO_DATABASE"] = workspace_info["MONGO_DATABASE"]
 
         ws_db = DBConnectWs(workspace_id)  # noqa: F405
         g.applogger.debug("WS_DB:{} can be connected".format(workspace_id))
@@ -179,6 +186,11 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WSDB_USER")
         g.db_connect_info.pop("WSDB_PASSWORD")
         g.db_connect_info.pop("WSDB_DATABASE")
+        g.db_connect_info.pop("WSMONGO_HOST")
+        g.db_connect_info.pop("WSMONGO_PORT")
+        g.db_connect_info.pop("WSMONGO_USER")
+        g.db_connect_info.pop("WSMONGO_PASSWORD")
+        g.db_connect_info.pop("WSMONGO_DATABASE")
 
 
 def wrapper_job_all_org(main_logic, loop_count=500):
@@ -496,7 +508,8 @@ def set_service_loglevel(common_db=None):
         ARGS:
             common_db=None
     """
-    loglevel = "INFO"
+    loglevel = os.environ.get('LOG_LEVEL', "INFO")
+
     try:
         # service_name
         service_name = os.environ.get("SERVICE_NAME")
@@ -525,7 +538,6 @@ def set_service_loglevel(common_db=None):
                 if loglevel is None:
                     raise Exception()
     except Exception:
-        loglevel = "INFO"
         if "SERVICE_LOGLEVEL_FLG" in g:
             g.SERVICE_LOGLEVEL_FLG = None
     finally:

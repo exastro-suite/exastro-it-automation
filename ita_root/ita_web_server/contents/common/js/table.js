@@ -1110,7 +1110,7 @@ filterHtml( filterHeaderFlag = true ) {
                     case 'LastUpdateUserColumn': case 'AppIDColumn': case 'JsonColumn':
                     case 'FileUploadColumn': case 'FileUploadEncryptColumn':
                     case 'EnvironmentIDColumn': case 'TextColumn': case 'RoleIDColumn':
-                    case 'JsonIDColumn': case 'UserIDColumn':
+                    case 'JsonIDColumn': case 'UserIDColumn': case 'NotificationIDColumn':
                         return 'text';
                     break;
                     // 数値のFROM,TO
@@ -1279,8 +1279,10 @@ filterHtml( filterHeaderFlag = true ) {
     ];
 
     if ( tb.mode === 'view') {
-        menuList.push({ name: 'excel', title: getMessage.FTE00046, action: 'default', separate: true, disabled: true }),
-        menuList.push({ name: 'json', title: getMessage.FTE00047, action: 'default', disabled: true })
+        if ( tb.option.dataType === 'n') {
+            menuList.push({ name: 'excel', title: getMessage.FTE00046, action: 'default', separate: true, disabled: true });
+            menuList.push({ name: 'json', title: getMessage.FTE00047, action: 'default', disabled: true });
+        }
     };
 
     const filterMenuHtml = fn.html.cell( createFilterMenuHtml( menuList ),
@@ -1706,12 +1708,12 @@ setTableEvents() {
             if ( changeFlag ) {
                 $input.addClass('tableEditChange');
                 if ( $input.is('.tableEditInputSelect') ) {
-                    $input.parent('.tableEditInputSelectContainer').addClass('tableEditChange');
+                    $input.parent('.tableEditInputSelectContainer, .tableEditInputMultipleSelectContainer').addClass('tableEditChange');
                 }
             } else {
                 $input.removeClass('tableEditChange');
                 if ( $input.is('.tableEditInputSelect') ) {
-                    $input.parent('.tableEditInputSelectContainer').removeClass('tableEditChange');
+                    $input.parent('.tableEditInputSelectContainer, .tableEditInputMultipleSelectContainer').removeClass('tableEditChange');
                 }
             }
         });
@@ -1723,9 +1725,9 @@ setTableEvents() {
             // 必須
             if ( $input.attr('data-required') === '1') {
                 if ( value !== '') {
-                    $input.removeClass('tableEditRequiredError ');
+                    $input.removeClass('tableEditRequiredError');
                 } else {
-                    $input.addClass('tableEditRequiredError ');
+                    $input.addClass('tableEditRequiredError');
                 }
             }
         });
@@ -1832,17 +1834,24 @@ setTableEvents() {
         };
 
         // select欄クリック時にselect2を適用する
-        tb.$.tbody.on('click', '.tableEditInputSelectValue', function(){
-            const $value = $( this ),
-                  $select = $value.next('.tableEditInputSelect'),
-                  restName = $select.attr('data-key');
+        tb.$.tbody.on('click', '.tableEditInputSelectValue, .tableEditInputMultipleSelectValue', function(){
+            const
+            $value = $( this ),
+            $select = $value.next('.tableEditInputSelect'),
+            restName = $select.attr('data-key'),
+            required = $select.attr('data-required'),
+            multiple = $select.is('.tableEditInputMultipleSelect');
 
             if ( $value.is('.tableEditInputSelectValueDisabled') ) return false;
 
             const list = Object.keys( tb.data.editSelect[ restName ] ).map(function(key){
                 return tb.data.editSelect[ restName ][ key ];
             });
-            tb.setSelect2( null, $select, list, true, null, $value ).then(function(){
+
+            // 必須じゃない場合は空白を追加する
+            if ( required === '0' && multiple !== true ) list.unshift('');
+
+            tb.setSelect2( null, $select, list, true, null, $value, multiple ).then(function(){
                 $select.change();
             });      
         });
@@ -1862,24 +1871,17 @@ setTableEvents() {
         
         // select欄フォーカス時にselect2を適用する
         tb.$.tbody.on('focus.select2', '.tableEditInputSelect', function(){
-            const $select = $( this );           
+            const
+            $select = $( this ),
+            flag = $select.is('.tableEditInputMultipleSelect'),
+            container = ( flag )? '.tableEditInputMultipleSelectContainer': '.tableEditInputSelectContainer',
+            value = ( flag )? '.tableEditInputMultipleSelectValue': '.tableEditInputSelectValue';
 
-            if ( !$select.is('.select2-hidden-accessible') ) {
+            // フォーカス時のスクロールを0に
+            $select.closest( container ).scrollTop(0);
 
-                const $value = $select.prev('.tableEditInputSelectValue'),
-                      width = $value.outerWidth();
-
-                $select.off('focus.select2');
-                $value.remove();
-
-                $select.select2({
-                    dropdownAutoWidth: false,
-                    width: width
-                }).select2('open');
-
-                $select.change();
-                
-            }
+            // クリックイベント
+            $select.prev( value ).click();
         });
 
         // input hidden変更時にテキストも変更する
@@ -1890,6 +1892,49 @@ setTableEvents() {
             $text.text( value );
         });
 
+        // カラーピッカー クリックしたときに値をinputに入れる
+        let colorFlag = false;
+        const colorChange = function( $color ) {
+            const
+            $wrap = $color.closest('.inputColorEditWrap'),
+            $mark = $wrap.find('.inputColorEditSelect'),
+            $text = $wrap.find('.inputText'),
+            value = fn.checkHexColorCode( $color.val() );
+
+            $text.val( value ).change();
+            $mark.css('background-color', value );
+        };
+        tb.$.tbody.on({
+            'click': function(){
+                colorChange( $(this) );
+            },
+            'change': function(){
+                colorChange( $(this) );
+            }
+        }, '.inputColorEdit');
+
+        // テキスト入力をカラーピッカーに反映する
+        tb.$.tbody.on('change', '.tableEditSColorCode', function(){
+            const
+            $text = $( this ),
+            $wrap = $text.closest('.inputColorEditWrap'),
+            $mark = $wrap.find('.inputColorEditSelect'),
+            $color = $wrap.find('.inputColorEdit'),
+            value = fn.checkHexColorCode( $text.val(), false ),
+            text = fn.checkHexColorCode( $text.val() );
+
+            $color.val( value );
+            $mark.css('background-color', value );
+
+            $text.val( text ).change();
+        });
+
+        // tableEditFilterCondition
+        tb.$.tbody.on('click', '.tableEditFilterCondition', function(){
+            tb.oaseFilterSetting().then(function( result ){
+
+            });
+        });
     }
 
     /*
@@ -2250,6 +2295,22 @@ checkNewInputDataDelete( id ) {
 setInputData( value, id, rest, beforeData ) {
     const tb = this;
 
+    // 配列の場合文字列に変換する（複数選択セレクト）
+    if ( fn.typeof( value ) === 'array') {
+        value.sort(function( a, b ){
+            if ( a === null || a === undefined ) a = '';
+            if ( b === null || b === undefined ) b = '';
+            if ( fn.typeof( a ) === 'number') a = String( a );
+            if ( fn.typeof( b ) === 'number') b = String( b );
+            return a.localeCompare( b );
+        });
+        if ( value.length > 0 ) {
+            value = fn.jsonStringifyDelimiterSpace( value );
+        } else {
+            value = null;
+        }
+    }
+
     tb.checkNewInputDataSet( id, beforeData );
 
     // 変更があれば追加、なければ削除
@@ -2491,7 +2552,7 @@ filterSelectOpen( $button ) {
    select2
 ##################################################
 */
-setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $removeObj ) {
+setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $removeObj, multipel = false ) {
     return new Promise(function( resolve ){
         // listをソートする
         optionlist.sort(function( a, b ){
@@ -2518,7 +2579,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             }
 
             return data;
-        })
+        });
 
         $.fn.select2.amd.require([
             'select2/data/array',
@@ -2559,6 +2620,10 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
                 dataAdapter: CustomData
             };
 
+            if ( multipel ) {
+                select2Option.closeOnSelect = false;
+            } 
+
             // Filter or Data
             if ( $selectArea ) {
                 $selectArea.html( $selectBox );
@@ -2571,7 +2636,13 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             }
             if ( optionlist.length === 0 ) select2Option.width = 120;
             $selectBox.select2( select2Option );
-            
+
+            if ( multipel ) {
+                const $container = $selectBox.closest('.tableEditInputMultipleSelectContainer');
+                $container.addClass('tableEditInputMultipleSelectOpen');
+                $container.find('.select2').css('width', 'auto');
+            }
+
             if ( openFlag ) {
                 $selectBox.select2('open');
             }
@@ -2986,7 +3057,7 @@ setTbody() {
         tb.checkSelectStatus();
     }
 
-    tb.filterDownloadButtonCheck();
+    if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
     tb.stickyWidth();
 }
 /*
@@ -3403,7 +3474,7 @@ viewCellHtml( item, columnKey, journal ) {
         case 'EnvironmentIDColumn': case 'TextColumn':
         case 'DateColumn': case 'DateTimeColumn':
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
-        case 'UserIDColumn':
+        case 'UserIDColumn': case 'NotificationIDColumn':
             return checkJournal( value );
 
         // リンク
@@ -3459,6 +3530,19 @@ viewCellHtml( item, columnKey, journal ) {
                 }
             } else {
                 return checkJournal( value );
+            }
+        
+        // カラーコード
+        case 'ColorCodeColumn':
+            const colorCode = fn.checkHexColorCode( value );
+            if ( colorCode ) {
+                return ''
+                + `<div class="tableColorCodeWrap">`
+                    + `<span class="tableColorCodeMark" style="background-color:${colorCode}"></span>`
+                    + checkJournal( colorCode )
+                + `</div>`;
+            } else {
+                return '';
             }
         
         // パラメータ集用
@@ -3614,15 +3698,25 @@ editCellHtml( item, columnKey ) {
 
     const rowId = parameter[ tb.idNameRest ],
           columnInfo = tb.info.column_info[ columnKey ],
-          columnName = columnInfo.column_name_rest,
-          columnType = columnInfo.column_type,
+          columnName = fn.escape( columnInfo.column_name_rest ),
+          columnType = fn.escape( columnInfo.column_type ),
           inputClassName = [],
           inputRequired = fn.cv( columnInfo.required_item, '0'),
           autoInput = '<span class="tBodyAutoInput"></span>',
           inputItem = columnInfo.input_item,
-          name = '';
+          name = `${columnName}_${columnType}_${rowId}`;
 
-    let value = fn.cv( parameter[ columnName ], '', true );
+    const setValue = function( v ) {
+        switch ( columnType ) {
+            // プルダウン選択はここでエスケープしない
+            case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
+            case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
+                return v;
+            default:
+                return fn.cv( v, '', true );
+        }
+    };
+    let value = setValue( parameter[ columnName ] );
 
     const attr = {
         key: columnName,
@@ -3638,10 +3732,9 @@ editCellHtml( item, columnKey ) {
     // 入力済みのデータがある？
     const inputData = tb.edit.input[ rowId ];
     if ( inputData !== undefined ) {
-
         const afterParameter = tb.edit.input[ rowId ]['after'].parameter[ columnName ];
         if ( afterParameter !== undefined ) {
-            value =  fn.escape( afterParameter );
+            value = setValue( afterParameter );
 
             const beforeParameter = tb.edit.input[ rowId ]['before'].parameter[ columnName ];
             if ( afterParameter !== beforeParameter ) {
@@ -3745,9 +3838,23 @@ editCellHtml( item, columnKey ) {
         // プルダウン
         case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
         case 'EnvironmentIDColumn': case 'JsonIDColumn': {
-            return `<div class="tableEditInputSelectContainer ${inputClassName.join(' ')}">`
-            + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${value}</span></div>`
-                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], {}), 'tableEditInputSelect', value, name, attr, { select2: true } )
+            const displayValue = fn.cv( value, '', true );
+            inputClassName.push('tableEditInputSelectContainer');
+            return `<div class="${inputClassName.join(' ')}">`
+            + `<div class="tableEditInputSelectValue"><span class="tableEditInputSelectValueInner">${displayValue}</span></div>`
+                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], []), 'tableEditInputSelect', value, name, attr, { select2: true } )
+            + `</div>`;
+        }
+
+        // 複数選択プルダウン
+        case 'NotificationIDColumn':  {
+            const displayValue = fn.cv( value, '', true );
+            value = fn.jsonParse( value, 'array');
+            attr.multiple = 'multiple';
+            inputClassName.push('tableEditInputMultipleSelectContainer');
+            return `<div class="${inputClassName.join(' ')}">`
+            + `<div class="tableEditInputMultipleSelectValue"><span class="tableEditInputMultipleSelectValueInner">${displayValue}</span></div>`
+                + fn.html.select( fn.cv( tb.data.editSelectLength[ columnName ], []), 'tableEditInputSelect tableEditInputMultipleSelect', value, name, attr, { select2: true } )
             + `</div>`;
         }
 
@@ -3773,11 +3880,41 @@ editCellHtml( item, columnKey ) {
         // ボタン
         case 'ButtonColumn':
             return tb.buttonAction( columnInfo, item, columnKey );
+        
+        // カラーコード
+        case 'ColorCodeColumn':
+            inputClassName.push('tableEditSColorCode');
+            return fn.html.inputColor( inputClassName, value, name, attr, { mode: 'edit'});
+
+        // フィルター条件設定
+        case 'FilterConditionSettingColumn':
+            return `<div class="tableEditFilterCondition tableEditJsonColmun input">${value}</div>`
+            + fn.html.inputHidden( inputClassName, value, name, attr );
+
+        // ルール条件設定
+        case 'RuleConditionSettingColumn':
+            return `<div class="tableEditRuleCondition tableEditJsonColmun">${value}</div>`
+            + fn.html.inputHidden( inputClassName, value, name, attr );
 
         // 不明
         default:
             return '?';
     }
+}
+/*
+##################################################
+   複数選択セレクト表示用HTML
+##################################################
+*/
+multipleSelectDisplayHtml( list ) {
+    const html = [];
+    if ( fn.typeof( list ) === 'array') {
+        for ( const item of list ) {
+            const value = fn.cv( item, '', true );
+            html.push(`<li class="tableEditInputMultipleSelectValueItem">${value}</li>`);
+        }
+    }
+    return `<ul class="tableEditInputMultipleSelectValueList">${html.join('')}</ul>`;
 }
 /*
 ##################################################
@@ -3833,6 +3970,19 @@ editConfirmCellHtml( item, columnKey ) {
                     const fileHtml = [`<a href="${val}" class="tableViewDownload" data-type="${data}" data-id="${id}" data-rest="${columnName}">${val}</a>`];
                     if ( ['text', 'image'].indexOf( fn.fileTypeCheck( val ) ) !== -1 ) fileHtml.push(`<button class="button filePreview popup" title="${getMessage.FTE00176}">${fn.html.icon('search')}</button>`);
                     return fileHtml.join('');
+                } else {
+                    return '';
+                }
+            
+            // カラーコード
+            case 'ColorCodeColumn':
+                const colorCode = fn.checkHexColorCode( val );
+                if ( colorCode ) {
+                    return ''
+                    + `<div class="tableColorCodeWrap">`
+                        + `<span class="tableColorCodeMark" style="background-color:${colorCode}"></span>`
+                        + colorCode
+                    + `</div>`;
                 } else {
                     return '';
                 }
@@ -4054,6 +4204,7 @@ setPagingEvent() {
                 });
             } else {
                 $list.removeClass('pagingOnePageOpen');
+                $( window ).off('pointerdown.pagingOnePageNum');
             }
         }
     });
@@ -4146,13 +4297,17 @@ changeEdtiMode( changeMode ) {
             const columnInfo = info[ key ];
 
             // セレクト必須選択項目
-            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn'];
+            const selectTarget = ['IDColumn', 'LinkIDColumn', 'AppIDColumn', 'RoleIDColumn', 'JsonIDColumn', 'UserIDColumn', 'NotificationIDColumn'];
             if ( selectTarget.indexOf( columnInfo.column_type ) !== -1
               && columnInfo.required_item === '1'
               && columnInfo.initial_value === null ) {
                 const select = tb.data.editSelectArray[ columnInfo.column_name_rest ];
                 if ( select !== undefined ) {
-                    tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[0];
+                    if ( columnInfo.column_type === 'NotificationIDColumn') {
+                        tb.edit.blank.parameter[ columnInfo.column_name_rest ] = fn.jsonStringify([select[0]]);
+                    } else {
+                        tb.edit.blank.parameter[ columnInfo.column_name_rest ] = select[0];
+                    }
                 }
             } else {
                 if ( info[ key ].column_name_rest !== 'discard') {
@@ -5457,6 +5612,48 @@ restApi( buttonText, method, endpoint, body, option = {}) {
     });
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   OASE
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+oaseFilterSetting() {
+    return new Promise(function( resolve ){
+        const settingData = {
+            title: 'ラベル設定',
+            info: [
+                {
+                    id: 'label_name',
+                    type: 'select',
+                    title: 'ラベル名',
+                    list: ['test1','test2'],
+                    width: '320px'
+                },
+                {
+                    id: 'condition_type',
+                    type: 'select',
+                    title: '条件',
+                    list: ['>', '>='],
+                    width: '80px'
+                },
+                {
+                    id: 'condition_value',
+                    type: 'text',
+                    title: '条件値'
+                },
+            ],
+            values: [
+                ['test2', '>=', 'AAAAA'],
+                ['test1', '>', 'BBBBB'],
+                ['test2', '>=', 'AAAAA']
+            ]
+        };
+        fn.settingListModalOpen( settingData ).then(function(result){
+            resolve( result )
+        });
+    });
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //   パラメーター集

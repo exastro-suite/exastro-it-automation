@@ -12,11 +12,12 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from flask import g
 import connexion
 from common_libs.common import *  # noqa: F403
-from libs import user_info
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.api import api_filter
-from flask import g
+from libs import user_info
 
 
 @api_filter

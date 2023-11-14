@@ -13,7 +13,21 @@
 #   limitations under the License.
 
 from flask import g
-from common_libs.common.dbconnect import DBConnectWs  # noqa: F401
+
+
+import json
+import uuid
+import copy
+import textwrap
+import sys
+import os
+import traceback
+import urllib
+import ssl
+import re
+import shutil
+# from pprint import pprint  # noqa: F401
+from datetime import datetime
 
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
@@ -29,22 +43,6 @@ from common_libs.terraform_driver.common.Execute import insert_execution_list as
 from common_libs.terraform_driver.cloud_ep.Execute import execution_scram as t_cloud_ep_execution_scram
 from common_libs.terraform_driver.cli.Execute import execution_scram as t_cli_execution_scram
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
-
-import json
-import uuid
-import copy
-import textwrap
-import sys
-import os
-import traceback
-import urllib
-import ssl
-import re
-
-from pprint import pprint  # noqa: F401
-import shutil
-
-from datetime import datetime
 
 
 bool_master_true = 'True'
@@ -4866,6 +4864,87 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
         result = node_options
         return retBool, result,
+
+    def conductor_execute_no_transaction(self, parameter):
+        """
+            Conductor実行:トランザクションは、呼び出し元側で実施する場合に使用
+            ARGS:
+                parameter:パラメータ
+                    {"conductor_class_name": str, "operation_name": str, "schedule_date": str }
+            RETRUN:
+                retBool, result,
+                    True, {"conductor_instance_id": conductor_instance_id}
+                    False, {}
+        """
+        retBool = True
+        result = {}
+
+        g.applogger.debug(addline_msg('{}'.format(sys._getframe().f_code.co_name)))
+
+        conductor_class_name = parameter.get('conductor_class_name')
+        operation_name = parameter.get('operation_name')
+        schedule_date = parameter.get('schedule_date')
+
+        # 実行:パラメータチェック
+        try:
+            # 入力パラメータ フォーマットチェック
+            chk_parameter = self.chk_execute_parameter_format(parameter)
+        except Exception as e:
+            # raise AppException(e)  # noqa: F405
+            status_code = "499-00804"
+            log_msg_args = [conductor_class_name, operation_name, schedule_date]
+            msg = g.appmsg.get_log_message(status_code, log_msg_args)
+            result = addline_msg('{}'.format(msg))
+            retBool = False
+            return retBool, result
+        parameter = chk_parameter[2]
+
+        # 実行:パラメータ生成
+        try:
+            # Conductor実行　パラメータ生成
+            create_parameter = self.create_execute_register_parameter(parameter)
+            if create_parameter[0] != '000-00000':
+                raise Exception()
+        except Exception as e:
+            # raise AppException(e)  # noqa: F405
+            g.applogger.debug(addline_msg('{}'.format(e)))
+            status_code = "499-00804"
+            log_msg_args = [conductor_class_name, operation_name, schedule_date]
+            msg = g.appmsg.get_log_message(status_code, log_msg_args)
+            result = addline_msg('{}'.format(msg))
+            retBool = False
+            return retBool, result
+
+        # 実行:Instance登録 maintenance
+        try:
+            # conducror_instance_id発番、load_table用パラメータ
+            conductor_parameter = create_parameter[1].get('conductor')
+            node_parameters = create_parameter[1].get('node')
+            conductor_instance_id = create_parameter[1].get('conductor_instance_id')
+
+            # conductor instanceテーブルへのレコード追加
+            iem_result = self.conductor_instance_exec_maintenance(conductor_parameter)
+            if iem_result[0] is not True:
+                raise Exception()
+
+            # node instanceテーブルへのレコード追加
+            iem_result = self.node_instance_exec_maintenance(node_parameters)
+            if iem_result[0] is not True:
+                raise Exception()
+
+        except Exception:
+            status_code = "499-00804"
+            log_msg_args = [conductor_class_name, operation_name, schedule_date]
+            msg = g.appmsg.get_log_message(status_code, log_msg_args)
+            result = addline_msg('{}'.format(msg))
+            retBool = False
+            return retBool, result
+
+        result = {
+            "conductor_instance_id": conductor_instance_id
+        }
+
+        return retBool, result
 
 
 # 共通Lib

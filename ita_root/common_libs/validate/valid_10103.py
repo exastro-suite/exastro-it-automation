@@ -12,11 +12,9 @@
 # limitations under the License.
 from flask import g
 import os
-import base64
 import zipfile
 
 from common_libs.common import *  # noqa: F403
-from common_libs.common.exception import AppException
 
 
 def external_valid_menu_before(objdbca, objtable, option):

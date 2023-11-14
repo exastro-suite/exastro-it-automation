@@ -12,9 +12,9 @@
 # limitations under the License.
 #
 from flask import g  # noqa: F401
-from common_libs.common.exception import AppException  # noqa: F401
 
 from common_libs.common import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.loadtable import *  # noqa: F403
 
 from datetime import datetime

@@ -27,8 +27,8 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -61,8 +61,8 @@ services:
       - http_proxy=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
       - https_proxy=${HTTPS_PROXY}
-      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
-      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
@@ -87,6 +87,8 @@ services:
       - ../.volumes/phpmyadmin/sessions:/sessions
       - ../.vscode_extensions/phpmyadmin/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
       - ../.vscode_extensions/phpmyadmin/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    networks:
+      - exastro
 
   ita-by-ansible-execute:
     build:
@@ -725,3 +727,146 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
       - SSL_CERT_DIR=/etc/ssl/certs
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+
+  ita-api-oase-receiver:
+    build:
+      target: develop_build
+    command: "python3 -m debugpy --listen 5678 /exastro/api.py"
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_api_oase_receiver/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_api_oase_receiver/messages:cached
+      - ../ita_root/ita_api_oase_receiver:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/ita_api_oase_receiver/config/httpd.conf/httpd.conf:/etc/httpd/conf/httpd.conf:cached
+      - ../ita_root/ita_api_oase_receiver/config/httpd.conf/wsgi.conf:/etc/httpd/conf.d/wsgi.conf:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-api-oase-receiver/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.vscode_extensions/ita-api-oase-receiver/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-api-oase-receiver/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-auth,platform-api,ita-api-oase-receiver
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+
+  ita-by-oase-conclusion:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_by_oase_conclusion/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_by_oase_conclusion/messages:cached
+      - ../ita_root/backyard:/workspace/ita_root/ita_by_oase_conclusion/backyard:cached
+      - ../ita_root/ita_by_oase_conclusion:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/backyard:/exastro/backyard:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-by-oase-conclusion/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.vscode_extensions/ita-by-oase-conclusion/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-by-oase-conclusion/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-oase-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,ita-api-oase-receiver
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+  ita-oase-mailserver:
+    build:
+      dockerfile: ./ita_root/ita_oase_mailserver/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    hostname: ita-oase-mailserver
+    environment:
+      - TZ=Asia/Tokyo
+    volumes:
+      - ../ita_root/ita_oase_mailserver/conf/dovecot/dovecot.conf:/etc/dovecot/dovecot.conf
+      - ../ita_root/ita_oase_mailserver/conf/postfix/main.cf:/etc/postfix/main.cf
+    tty: true
+    privileged: true
+    command: /sbin/init
+    ports:
+      - "0.0.0.0:25:25" # SMTP
+      - "0.0.0.0:143:143" # IMAP
+      - "0.0.0.0:587:587" # StartTLS
+      - "0.0.0.0:993:993" # IMAPS
+    networks:
+      - exastro
+    profiles:
+      - ita-ag-oase
+
+  ita-ag-oase:
+    build:
+      target: develop_build
+    volumes:
+      - ..:/workspace:cached
+      - ../ita_root/common_libs:/workspace/ita_root/ita_ag_oase/common_libs:cached
+      - ../ita_root/messages:/workspace/ita_root/ita_ag_oase/messages:cached
+      - ../ita_root/agent:/workspace/ita_root/ita_ag_oase/agent:cached
+      - ../ita_root/ita_ag_oase:/exastro:cached
+      - ../ita_root/common_libs:/exastro/common_libs:cached
+      - ../ita_root/messages:/exastro/messages:cached
+      - ../ita_root/agent:/exastro/agent:cached
+      - ~/.netrc:/home/app_user/.netrc
+      - ~/.gitconfig:/home/app_user/.gitconfig
+      - ./ita-ag-oase/.vscode/launch.json:/workspace/.vscode/launch.json
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+      - /mnt/mainte/talisman/.talismanrc:/mnt/mainte/talisman/.talismanrc
+      - ~/.config/git/ignore:/home/app_user/.config/git/ignore
+      - ${TALISMAN_HOME}:${TALISMAN_HOME}
+      - ../.vscode_extensions/ita-ag-oase/.vscode-server/extensions:/home/app_user/.vscode-server/extensions
+      - ../.vscode_extensions/ita-ag-oase/.vscode-server-insiders/extensions:/home/app_user/.vscode-server-insiders/extensions
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-oase-receiver
+      - no_proxy=localhost,127.0.0.1,ita-api-organization,ita-api-admin,ita-web-server,platform-api,platform-auth,ita-api-oase-receiver
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
+      - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+
+  # mongo-express:
+  #   image: mongo-express
+  #   depends_on:
+  #     - ita-mongodb
+  #   environment:
+  #     - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_INITDB_ROOT_USERNAME}
+  #     - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+  #     - ME_CONFIG_MONGODB_SERVER=ita-mongodb
+  #   ports:
+  #     - "8080:8081"
+  #   profiles:
+  #     - ita-oase
+  #   networks:
+  #     - exastro

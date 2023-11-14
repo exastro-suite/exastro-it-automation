@@ -116,12 +116,14 @@ createMenuGroupList( infoData ) {
 
         parent.main_menu_rest = null;
         let subRest = null;
+        let count = 0;
         for ( const menu of parent.menus ) {
-            if ( menu.menu_name_rest && parent.main_menu_rest === null ) {
+            if ( menu.menu_name_rest && parent.main_menu_rest === null && count === 0 ) {
                 parent.main_menu_rest = menu.menu_name_rest;
             } else if ( menu.menus && menu.menus.length && menu.menus[0].menu_name_rest && subRest === null  ) {
                 subRest = menu.menus[0].menu_name_rest;
             }
+            count++;
         }
         if ( !parent.main_menu_rest && subRest ) parent.main_menu_rest = subRest;
     }

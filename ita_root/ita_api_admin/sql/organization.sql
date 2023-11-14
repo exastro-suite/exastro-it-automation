@@ -1,6 +1,5 @@
--- ORGANIZATION用DB WorkspaceDB管理テーブル
-DROP TABLE IF EXISTS `T_COMN_WORKSPACE_DB_INFO`;
-CREATE TABLE IF NOT EXISTS `T_COMN_WORKSPACE_DB_INFO`
+-- WorkspaceDB管理
+CREATE TABLE T_COMN_WORKSPACE_DB_INFO
 (
     PRIMARY_KEY                     VARCHAR(40),                                -- 主キー
     WORKSPACE_ID                    VARCHAR(255),                               -- workspaceのID
@@ -9,6 +8,11 @@ CREATE TABLE IF NOT EXISTS `T_COMN_WORKSPACE_DB_INFO`
     DB_DATABASE                     VARCHAR(255),                               -- DB名
     DB_USER                         VARCHAR(255),                               -- ユーザ
     DB_PASSWORD                     VARCHAR(255),                               -- パスワード
+    MONGO_HOST                      VARCHAR(255),                               -- MONGODBホスト
+    MONGO_PORT                      INT,                                        -- MONGODBポート
+    MONGO_DATABASE                  VARCHAR(255),                               -- MONGODBDB名
+    MONGO_USER                      VARCHAR(255),                               -- MONGODBユーザ
+    MONGO_PASSWORD                  VARCHAR(255),                               -- MONGODBパスワード
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時

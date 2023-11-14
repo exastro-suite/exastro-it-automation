@@ -21,13 +21,10 @@ import openpyxl
 import base64
 from pyrsistent import m
 
-import pytz
-import six
 import datetime
 import json
 
-from common_libs.common import *  # noqa: F403
-from flask import jsonify, session, g
+from flask import g
 from copy import copy
 from openpyxl import Workbook
 from openpyxl.cell.cell import MergedCell
@@ -36,8 +33,9 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import absolute_coordinate
-from common_libs.loadtable import *
+from common_libs.common import *  # noqa: F403
 from common_libs.common import menu_maintenance_all, menu_info
+from common_libs.loadtable import *
 from common_libs.api import check_request_body_key
 
 def collect_excel_all(

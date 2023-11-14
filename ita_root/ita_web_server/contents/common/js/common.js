@@ -94,7 +94,7 @@ const fn = ( function() {
 
         for ( const key in attrs ) {
             if ( attrs[key] !== undefined ) {
-                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class', 'readonly']; // dataをつけない
+                const attrName = ['checked', 'disabled', 'title', 'placeholder', 'style', 'class', 'readonly', 'multiple']; // dataをつけない
                 if ( attrName.indexOf( key ) !== -1) {
                     attr.push(`${key}="${attrs[key]}"`);
                 } else {
@@ -423,6 +423,28 @@ escape: function( value, br, space ) {
         value = '';
     }
     return value;
+},
+/*
+##################################################
+   JSON文字列変換（区切り文字「, 」）
+##################################################
+*/
+jsonStringifyDelimiterSpace: function(vContent) {
+    if (vContent instanceof Object) {
+      var sOutput = "";
+      if (vContent.constructor === Array) {
+        for (var nId = 0; nId < vContent.length; sOutput += this.jsonStringifyDelimiterSpace(vContent[nId]) + ", ", nId++);
+          return "[" + sOutput.substring(0, sOutput.length - 2) + "]";
+      }
+      if (vContent.toString !== Object.prototype.toString) {
+        return "\"" + vContent.toString().replace(/"/g, "\\$&") + "\"";
+      }
+      for (var sProp in vContent) {
+        sOutput += "\"" + sProp.replace(/"/g, "\\$&") + "\":" + this.jsonStringifyDelimiterSpace(vContent[sProp]) + ", ";
+      }
+      return "{" + sOutput.substring(0, sOutput.length - 2) + "}";
+   }
+   return typeof vContent === "string" ? "\"" + vContent.replace(/"/g, "\\$&") + "\"" : String(vContent);
 },
 /*
 ##################################################
@@ -1080,6 +1102,7 @@ datePicker: function( timeFlag, className, date, start, end ) {
             $date.val( inputDate );
         }
         if ( changeFlag ) $date.change();
+        $date.trigger('checkDate');
     };
 
     const $date = $datePicker.find('.datePickerDateInput'),
@@ -1262,7 +1285,7 @@ checkDate: function( date ) {
    Date picker dialog
 ##################################################
 */
-datePickerDialog: function( type, timeFlag, title, date ){
+datePickerDialog: function( type, timeFlag, title, date, required = false ){
     return new Promise(function( resolve ){
         const funcs = {
             ok: function() {
@@ -1292,6 +1315,10 @@ datePickerDialog: function( type, timeFlag, title, date ){
             ok: { text: getMessage.FTE10038, action: 'default', style: 'width:160px;'},
             cancel: { text: getMessage.FTE10026, action: 'normal'}
         };
+
+        if ( required === true ) {
+            buttons.ok.className = 'dialogPositive';
+        }
 
         const config = {
             mode: 'modeless',
@@ -1340,6 +1367,19 @@ datePickerDialog: function( type, timeFlag, title, date ){
         }
 
         dialog.open( $dataPicker );
+
+        // 必須の場合は値をチェックする
+        if ( required === true ) {
+            if ( type === 'fromTo') {
+                const
+                $from = $dataPicker.find('.datePickerFromDateText'),
+                $to = $dataPicker.find('.datePickerToDateText');
+                $from.add( $to ).on('checkDate', function(){
+                    const from = $from.val(), to = $to.val();
+                    dialog.buttonPositiveDisabled( !( from !== '' && to !== '' && from < to ) );
+                });
+            }
+        }
     });
 },
 /*
@@ -1622,20 +1662,34 @@ html: {
         return `<input type="number" ${attr.join(' ')}>`;
     },
     inputColor: function( className, value, name, attrs = {}, option = {}) {
-        const attr = inputCommon( value, name, attrs );
+        if ( option.mode === 'edit') {
+            const selectColor = cmn.checkHexColorCode( value, false );
+            return ``
+            + `<div class="inputColorEditWrap">`
+                + `<div class="inputColorEditSelect" style="background-color:${selectColor}">`
+                    + `<input type="color" class="inputColorEdit" value="${selectColor}">`
+                + `</div>`
+                + `<div class="inputColorEditText">`
+                    + cmn.html.inputText( className, value, name, attrs )
+                + `</div>`
+            + `</div>`;
+        } else {
+            const attr = inputCommon( value, name, attrs );
 
-        className = classNameCheck( className, 'inputColor');
-        attr.push(`class="${className.join(' ')}"` );
+            className = classNameCheck( className, 'inputColor');
+            attr.push(`class="${className.join(' ')}"` );
 
-        let input = `<input type="color" ${attr.join(' ')}>`;
+            let input = `<input type="color" ${attr.join(' ')}>`;
 
-        if ( option.before || option.after ) {
-          const before = ( option.before )? `<div class="inputColorBefore">${option.before}</div>`: '',
-                after =  ( option.after )? `<div class="inputColorAfter">${option.after}</div>`: '';
+            if ( option.before || option.after ) {
+            const
+            before = ( option.before )? `<div class="inputColorBefore">${option.before}</div>`: '',
+            after =  ( option.after )? `<div class="inputColorAfter">${option.after}</div>`: '';
 
-          input = `<div class="inputColorWrap">${before}<div class="inputColorBody">${input}</div>${after}</div>`;
+            input = `<div class="inputColorWrap">${before}<div class="inputColorBody">${input}</div>${after}</div>`;
+            }
+            return  input;
         }
-        return  input;
     },
     inputFader: function( className, value, name, attrs = {}, option = {}) {
         const attr = inputCommon( value, name, attrs );
@@ -1743,33 +1797,72 @@ html: {
         }
         attr.push(`class="${className.join(' ')}"`);
 
-        // 必須じゃない場合空白を追加
-        if ( attrs.required === '0') {
-            selectOption.push(`<option value=""></option>`);
-        }
-
-        // listを名称順にソートする
-        let sortList;
-        if ( cmn.typeof(list) === 'object') {
-            sortList = Object.keys( list ).map(function(key){
-                return list[key];
-            });
-        } else {
-            sortList = $.extend( true, [], list );
-            // リストにvalueが含まれてなければ追加する
-            if ( sortList.indexOf( value ) === -1 ) {
-                sortList.push( value );
+        if ( option.idText !== true ) {
+            // listを名称順にソートする
+            let sortList;
+            if ( cmn.typeof(list) === 'object') {
+                sortList = Object.keys( list ).map(function(key){
+                    return list[key];
+                });
+            } else {
+                sortList = $.extend( true, [], list );
+                // リストにvalueが含まれてなければ追加する
+                if ( fn.typeof( value ) === 'array') {
+                    for ( const val of value ) {
+                        if ( value !== null && sortList.indexOf( val ) === -1 ) {
+                            sortList.push( val );
+                        }
+                    }
+                } else {
+                    if ( value !== null && sortList.indexOf( value ) === -1 ) {
+                        sortList.push( value );
+                    }
+                }
             }
-        }
-        sortList.sort(function( a, b ){
-            return a.localeCompare( b );
-        });
 
-        for ( const item of sortList ) {
-            const val = cmn.escape( item ),
-                  optAttr = [`value="${val}"`];
-            if ( value === val ) optAttr.push('selected="selected"');
-            selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
+            sortList.sort(function( a, b ){
+                if ( a === null || a === undefined ) a = '';
+                if ( b === null || b === undefined ) b = '';
+                if ( fn.typeof( a ) === 'number') a = String( a );
+                if ( fn.typeof( b ) === 'number') b = String( b );
+                return a.localeCompare( b );
+            });
+
+            // option
+            for ( const item of sortList ) {
+                const
+                val = cmn.escape( item ),
+                optAttr = [`value="${val}"`];
+
+                // selected
+                if ( fn.typeof( value ) === 'array') {
+                    if ( value.indexOf( item ) !== -1 ) optAttr.push('selected="selected"');
+                } else {
+                    if ( value === item ) optAttr.push('selected="selected"');
+                }
+                selectOption.push(`<option ${optAttr.join(' ')}>${val}</option>`);
+            }
+        } else {
+            const optionHtml = function( item ) {
+                const
+                text = cmn.escape( item.text ),
+                id = cmn.escape( item.id ),
+                optAttr = [`value="${id}"`];
+                if ( cmn.escape( value ) === id ) optAttr.push('selected="selected"');
+                selectOption.push(`<option ${optAttr.join(' ')}>${text}</option>`);
+            };
+            for ( const item of list ) {
+                if ( option.group ) {
+                    const label = cmn.escape( item.label );
+                    selectOption.push(`<optgroup label="${label}" class="${item.className}">`);
+                    for ( const groupItem of item.list ) {
+                        optionHtml( groupItem );
+                    }
+                    selectOption.push(`</optgroup>`);
+                } else {
+                    optionHtml( item );
+                }
+            }
         }
 
         return ``
@@ -1924,6 +2017,17 @@ html: {
             itemHtml.push( cmn.html.inputText( inputClass, input.value, null, null, inputOption ) );
         }
 
+        // select
+        if ( item.select ) {
+            const input = item.select,
+                  inputClass = ['operationMenuSelect'],
+                  inputOption = { idText: true };
+            if ( !item.list ) item.list = [];
+            if ( input.className ) inputClass.push( input.className );
+            if ( input.group ) inputOption.group = input.group;
+            itemHtml.push( cmn.html.select( input.list, inputClass, input.value, '', {}, inputOption ) );
+        }
+
         // search
         if ( item.search ) {
             const placeholder = ( item.search.placeholder )? item.search.placeholder: '';
@@ -1966,6 +2070,11 @@ html: {
             + `<ul class="operationMenuRadioList">${listHtml.join('')}</ul></div>`)
         }
 
+        // HTML
+        if ( item.html ) {
+            itemHtml.push( item.html.html );
+        }
+
         return `<li ${itemAttrs.join(' ')}>${itemHtml.join('')}</li>`;
     },
     operationMenu: function( menu, className ) {
@@ -1989,6 +2098,20 @@ html: {
         }
 
         return `<div class="operationMenu">${html.join('')}</div>`;
+    }
+},
+/*
+##################################################
+   HEX colorチェック
+##################################################
+*/
+checkHexColorCode: function( code, nullCheckFlag = true ) {
+    if ( nullCheckFlag && ( code === '' || code === null || code === undefined ) ) return code;
+    const regex = new RegExp(/^#[a-fA-F0-9]{6}$/);
+    if ( regex.test( code ) ) {
+        return code.toUpperCase();
+    } else {
+        return '#000000';
     }
 },
 /*
@@ -2717,11 +2840,17 @@ jsonStringify: function( json ) {
     }
 },
 
-jsonParse: function( json ) {
+jsonParse: function( json, type = 'object') {
     try {
         return JSON.parse( json );
     } catch( error ) {
-        return {};
+        if ( type === 'object') {
+            return {};
+        } else if ( type === 'array') {
+            return [];
+        } else {
+            return null;
+        }
     }
 },
 
@@ -2881,6 +3010,255 @@ modalConductor: function( menu, mode, conductorId, option ) {
         cd.setup();
 
     }
+},
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  設定リストモーダル
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+   設定リストモーダルを開く
+##################################################
+*/
+settingListModalOpen: function( settingData ) {
+    const _this = this;
+
+    return new Promise(function( resolve ){
+        // モーダル作成
+        const modalFuncs = {
+            ok: function() {
+                console.log( getInputData() );
+                modal.close();
+                resolve();
+            },
+            cansel: function() {
+                modal.close();
+                resolve('cansel');
+            }
+        };
+        const modalConfig = {
+            mode: 'modeless',
+            height: '100%',
+            width: '960px',
+            header: {
+                title: _this.cv( settingData.title, '', true )
+            },
+            footer: {
+                button: {
+                    ok: { text: '決定', action: 'default', width: '200px'},
+                    cansel: { text: 'キャンセル', action: 'normal'}
+                }
+            }
+        };
+        // 入力値を取得
+        const getInputData = function() {
+            const inputDate = [];
+            modal.$.body.find('.settingListTr').each(function( index ){
+                const $tr = $( this );
+                inputDate[ index ] = [];
+                $tr.find('.input').each(function(){
+                    const $input = $( this );
+                    inputDate[ index ].push( $input.val() );
+                });
+            });
+            return inputDate;
+        };
+        const modal = new Dialog( modalConfig, modalFuncs );
+
+        // Head
+        const headHtml = [];
+        for ( const item of settingData.info ) {
+            const width = ( item.width )? item.width: 'auto';
+            headHtml.push(`<th class="settingListTh" style="width:${width}"><div class="settingListHeader">${_this.cv( item.title, '', true )}</div></th>`);
+        }
+
+        // Body
+        const bodyHtml = [];
+        if ( settingData.values.length > 0 ) {
+            const valueLength = settingData.values.length;
+            for ( let i = 0; i < valueLength; i++ ) {
+                bodyHtml.push( _this.settingListRowHtml( settingData, i, settingData.values[i] ) );
+            }
+        } else {
+            bodyHtml.push( _this.settingListRowHtml( settingData ) );
+        }
+
+        const settingListHtml = ``
+        + `<div class="commonSection settingList">`
+            + `<div class="commonBody">`
+                + `<table class="settingListTable">`
+                    + `<thead class="settingListThead">`
+                        + `<tr>`
+                            + `<th class="settingListTh settingListAction">`
+                                + _this.html.button( _this.html.icon('plus'), 'settingListAddButton itaButton popup', { action: 'default', title: '項目を追加する'})
+                            + `</th>`
+                            + headHtml.join('')
+                            + `<th class="settingListTh settingListAction">`
+                                + _this.html.button( _this.html.icon('clear'), 'settingListClearButton itaButton popup', { action: 'danger', title: '項目をリセットする'})
+                            + `</th>`
+                        + `</tr>`
+                    + `</thead>`
+                    + `<tbody class="settingListTbody">`
+                        + bodyHtml.join('')
+                    + `</tbody>`
+                + `</table>`
+            + `</div>`
+        + `</div>`;
+        
+        modal.open( settingListHtml );
+
+        _this.setSettingListEvents( modal, settingData );
+        _this.setSettingListSelect2( modal );
+    });
+},
+/*
+##################################################
+   設定リスト行HTML
+##################################################
+*/
+settingListRowHtml( settingData, index = 0, value = [] ) {    
+    const row = [`<tr class="settingListTr"><td class="settingListTd"><div class="settingListMove"></div></td>`];
+    
+    const infoLength = settingData.info.length;
+    for ( let i = 0; i < infoLength; i++ ) {
+        const item = settingData.info[i];
+        
+        const
+        width = ( item.width )? item.width: 'auto',
+        idName = `${item.id}_${item.type}_${Date.now()}_${index}`,
+        val = ( value[i] !== undefined )? value[i]: null,
+        input = ( item.type === 'text')? this.html.inputText('settingListInputText', val, idName ):
+            this.html.select( item.list, 'settingListInputSelect', val, idName );
+
+        row.push(``
+        + `<td class="settingListTd" style="width:${width}"><div class="settingListInput">`
+            + input
+        + `</div></td>`);
+    }
+    
+    row.push(`<td class="settingListTd"><div class="settingListDelete">${this.html.icon('cross')}</div></td></tr>`);
+    return row.join('');
+},
+/*
+##################################################
+   項目が１つの場合は移動と削除を無効化する
+##################################################
+*/
+settingListCheckListDisabled: function( modal ) {    
+    const $tr = modal.$.dbody.find('.settingListTr');
+
+    if ( $tr.length === 1 ) {
+        $tr.find('.settingListMove, .settingListDelete').addClass('disabled');
+    } else {
+        $tr.find('.settingListMove, .settingListDelete').removeClass('disabled');
+    }
+},
+/*
+##################################################
+   select2をセット
+##################################################
+*/
+setSettingListSelect2: function( modal ) {
+    modal.$.dbody.find('.settingListInputSelect').not('.select2-hidden-accessible').select2();
+},
+/*
+##################################################
+   設定リストイベント
+##################################################
+*/
+setSettingListEvents: function( modal, settingData ) {
+    const _this = this;    
+    modal.$.dbody.find('.settingList').each(function(){
+        const $listBlock = $( this );
+        
+        // 追加
+        $listBlock.find('.settingListAddButton').on('click', function(){
+            $listBlock.find('.settingListTbody').append( _this.settingListRowHtml( settingData) );
+            _this.settingListCheckListDisabled( modal );
+            _this.setSettingListSelect2( modal );
+        });
+
+        // クリア
+        $listBlock.find('.settingListClearButton').on('click', function(){
+            $listBlock.find('.settingListTbody').html( _this.settingListRowHtml( settingData ) );
+            _this.settingListCheckListDisabled( modal );
+            _this.setSettingListSelect2( modal );
+        });
+        
+        // 削除
+        $listBlock.on('click', '.settingListDelete', function(){
+            $( this ).closest('.settingListTr').remove();
+            _this.settingListCheckListDisabled( modal );
+        });
+        
+        // 移動
+        $listBlock.on('pointerdown', '.settingListMove', function( mde ){
+            const $move = $( this ),
+                  $window = $( window );
+                  
+            if ( !$move.is('.disabled') ) {
+                const $line = $move.closest('.settingListTr'),
+                      $list = $line.closest('.settingListTbody'),
+                      height = $line.outerHeight(),
+                      defaultY = $line.position().top,
+                      maxY = $list.outerHeight() - height,
+                      $dummy = $('<tr class="settingListDummy"></tr>'),
+                      $body = $move.closest('.commonBody'),
+                      defaultScroll = $body.scrollTop();
+                
+                // 幅を固定
+                $line.find('.settingListTd').each(function(){
+                    const $td = $( this );
+                    $td.css('width', $td.outerWidth() );
+                });
+                
+                $list.addClass('active');
+                $line.addClass('move').css('top', defaultY ).after( $dummy )
+                $dummy.css('height', height );
+                
+                cmn.deselection();
+
+                let positionY = defaultY;
+                const listPosition = function(){
+                    let setPostion = positionY - ( defaultScroll - $body.scrollTop() );
+                    if ( setPostion < 0 ) setPostion = 0;
+                    if ( setPostion > maxY ) setPostion = maxY;
+                    $line.css('top', setPostion );
+                };
+
+                $body.on('scroll.freeMove', function(){
+                    listPosition();
+                });
+                
+                $window.on({
+                    'pointermove.freeMove': function( mme ){
+                        positionY = defaultY + mme.pageY - mde.pageY;
+                        listPosition();
+                        if ( $( mme.target ).closest('.settingListTr').length ) {
+                            const $target = $( mme.target ).closest('.settingListTr'),
+                                  targetNo = $target.index(),
+                                  dummyNo = $dummy.index();
+                            if ( targetNo < dummyNo ) {
+                                $target.before( $dummy );
+                            } else {
+                                $target.after( $dummy );
+                            }
+                        }
+                    },
+                    'pointerup.freeUp': function(){
+                        $body.off('scroll.freeMove');
+                        $window.off('pointermove.freeMove pointerup.freeUp');
+                        $list.removeClass('active');
+                        $line.removeClass('move');
+                        $line.find('.settingListTd').removeAttr('style');
+                        $dummy.replaceWith( $line );
+                    }
+                });
+            }
+        });
+    });
 },
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

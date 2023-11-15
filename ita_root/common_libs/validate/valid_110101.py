@@ -24,8 +24,8 @@ def agent_setting_valid(objdbca, objtable, option):
 
     if cmd_type in ["Register", "Update", "Restore"]:
 
-        connection_method = entry_parameter['connection_method']
-        request_method = entry_parameter['request_method']
+        connection_method = entry_parameter['connection_method_name']
+        request_method = entry_parameter['request_method_name']
         password = entry_parameter.get("password")
 
         # パスワードカラムの入力があるかチェック

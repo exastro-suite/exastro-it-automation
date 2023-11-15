@@ -187,7 +187,7 @@ class MultiSelectIDColumn(IDColumn):
         retdict = {"id": []}
         msg = ''
         try:
-            if valnames is None:
+            if not valnames:
                 return True, '', valnames,
             val_decode = self.is_json_format(valnames)
             if val_decode is False:
@@ -230,7 +230,7 @@ class MultiSelectIDColumn(IDColumn):
         """
         retBool = True
 
-        if valnames is not None:
+        if valnames:
             try:
                 val_decode = self.is_json_format(valnames)
                 if val_decode is False:

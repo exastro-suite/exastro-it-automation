@@ -24,11 +24,11 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
 
     LANG = g.LANGUAGE.upper()
 
-    target_key = entry_parameter["target_key"]
-    target_type = entry_parameter["target_type"]
+    target_key = entry_parameter["search_key_name"]
+    target_type = entry_parameter["type_name"]
     comparison_method = entry_parameter["comparison_method"]
-    target_value = entry_parameter["target_value"]
-    label_value = entry_parameter["label_value"]
+    target_value = entry_parameter["search_value_name"]
+    label_value = entry_parameter["label_value_name"]
 
     # ターゲットキーがブランクの場合
     if target_key is None:

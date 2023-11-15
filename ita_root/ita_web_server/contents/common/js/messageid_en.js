@@ -944,6 +944,15 @@ getMessage = ( function() {
         // Custom menu
         'FTE12001': 'Failed to display custom menu.',
 
+        // OASE
+        'FTE13001': 'Label settings',
+        'FTE13002': 'Label name',
+        'FTE13003': 'Condition',
+        'FTE13004': 'Condition value',
+        'FTE13005': 'Conclusion label setting',
+        'FTE13006': 'Conclusion label name',
+        'FTE13007': 'Conclusion label value',
+
     };
 
     return message;

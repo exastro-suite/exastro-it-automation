@@ -218,6 +218,8 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
 
     let errorCount = 0;
 
+    const fetchController = ( option.controller )? option.controller: controller;
+
     const f = function( u ){
         return new Promise(function( resolve, reject ){
 
@@ -234,7 +236,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                 headers: {
                     Authorization: `Bearer ${token}`
                 },
-                signal: controller.signal
+                signal: fetchController.signal
             };
 
             // Content-Type ※マルチパートの場合は指定しない
@@ -284,7 +286,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                             case 401:
                                 response.json().then(function( result ){
                                     if ( !iframeFlag ) {
-                                        controller.abort();
+                                        fetchController.abort();
                                         alert(result.message);
                                         location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
                                     } else {
@@ -298,7 +300,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                             case 403:
                                 response.json().then(function( result ){
                                     if ( !iframeFlag ) {
-                                        controller.abort();
+                                        fetchController.abort();
                                         alert(result.message);
                                         window.location.href = `/${organization_id}/platform/workspaces`;
                                     } else {
@@ -1820,13 +1822,15 @@ html: {
                 }
             }
 
-            sortList.sort(function( a, b ){
-                if ( a === null || a === undefined ) a = '';
-                if ( b === null || b === undefined ) b = '';
-                if ( fn.typeof( a ) === 'number') a = String( a );
-                if ( fn.typeof( b ) === 'number') b = String( b );
-                return a.localeCompare( b );
-            });
+            if ( option.sort !== false ) {
+                sortList.sort(function( a, b ){
+                    if ( a === null || a === undefined ) a = '';
+                    if ( b === null || b === undefined ) b = '';
+                    if ( fn.typeof( a ) === 'number') a = String( a );
+                    if ( fn.typeof( b ) === 'number') b = String( b );
+                    return a.localeCompare( b );
+                });
+            }
 
             // option
             for ( const item of sortList ) {
@@ -3029,9 +3033,9 @@ settingListModalOpen: function( settingData ) {
         // モーダル作成
         const modalFuncs = {
             ok: function() {
-                console.log( getInputData() );
+                const data = getInputData();
                 modal.close();
-                resolve();
+                resolve( data );
             },
             cansel: function() {
                 modal.close();
@@ -3041,7 +3045,7 @@ settingListModalOpen: function( settingData ) {
         const modalConfig = {
             mode: 'modeless',
             height: '100%',
-            width: '960px',
+            width: settingData.width,
             header: {
                 title: _this.cv( settingData.title, '', true )
             },
@@ -3071,7 +3075,8 @@ settingListModalOpen: function( settingData ) {
         const headHtml = [];
         for ( const item of settingData.info ) {
             const width = ( item.width )? item.width: 'auto';
-            headHtml.push(`<th class="settingListTh" style="width:${width}"><div class="settingListHeader">${_this.cv( item.title, '', true )}</div></th>`);
+            const required = ( item.required )? _this.html.required(): '';
+            headHtml.push(`<th class="settingListTh" style="width:${width}"><div class="settingListHeader">${_this.cv( item.title, '', true )}${required}</div></th>`);
         }
 
         // Body
@@ -3119,7 +3124,12 @@ settingListModalOpen: function( settingData ) {
 ##################################################
 */
 settingListRowHtml( settingData, index = 0, value = [] ) {    
-    const row = [`<tr class="settingListTr"><td class="settingListTd"><div class="settingListMove"></div></td>`];
+    const row = [`<tr class="settingListTr">`];
+    if ( settingData.move ) {
+        row.push(`<td class="settingListTd"><div class="settingListMove"></div></td>`);
+    } else {
+        row.push(`<td class="settingListTd"><div class="settingListBlank"></div></td>`)
+    }
     
     const infoLength = settingData.info.length;
     for ( let i = 0; i < infoLength; i++ ) {
@@ -3130,7 +3140,7 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
         idName = `${item.id}_${item.type}_${Date.now()}_${index}`,
         val = ( value[i] !== undefined )? value[i]: null,
         input = ( item.type === 'text')? this.html.inputText('settingListInputText', val, idName ):
-            this.html.select( item.list, 'settingListInputSelect', val, idName );
+            this.html.select( item.list, 'settingListInputSelect', val, idName, {}, { sort: false } );
 
         row.push(``
         + `<td class="settingListTd" style="width:${width}"><div class="settingListInput">`
@@ -3192,72 +3202,74 @@ setSettingListEvents: function( modal, settingData ) {
             $( this ).closest('.settingListTr').remove();
             _this.settingListCheckListDisabled( modal );
         });
-        
+
         // 移動
-        $listBlock.on('pointerdown', '.settingListMove', function( mde ){
-            const $move = $( this ),
-                  $window = $( window );
-                  
-            if ( !$move.is('.disabled') ) {
-                const $line = $move.closest('.settingListTr'),
-                      $list = $line.closest('.settingListTbody'),
-                      height = $line.outerHeight(),
-                      defaultY = $line.position().top,
-                      maxY = $list.outerHeight() - height,
-                      $dummy = $('<tr class="settingListDummy"></tr>'),
-                      $body = $move.closest('.commonBody'),
-                      defaultScroll = $body.scrollTop();
-                
-                // 幅を固定
-                $line.find('.settingListTd').each(function(){
-                    const $td = $( this );
-                    $td.css('width', $td.outerWidth() );
-                });
-                
-                $list.addClass('active');
-                $line.addClass('move').css('top', defaultY ).after( $dummy )
-                $dummy.css('height', height );
-                
-                cmn.deselection();
+        if ( settingData.move ) {            
+            $listBlock.on('pointerdown', '.settingListMove', function( mde ){
+                const $move = $( this ),
+                    $window = $( window );
+                    
+                if ( !$move.is('.disabled') ) {
+                    const $line = $move.closest('.settingListTr'),
+                        $list = $line.closest('.settingListTbody'),
+                        height = $line.outerHeight(),
+                        defaultY = $line.position().top,
+                        maxY = $list.outerHeight() - height,
+                        $dummy = $('<tr class="settingListDummy"></tr>'),
+                        $body = $move.closest('.commonBody'),
+                        defaultScroll = $body.scrollTop();
+                    
+                    // 幅を固定
+                    $line.find('.settingListTd').each(function(){
+                        const $td = $( this );
+                        $td.css('width', $td.outerWidth() );
+                    });
+                    
+                    $list.addClass('active');
+                    $line.addClass('move').css('top', defaultY ).after( $dummy )
+                    $dummy.css('height', height );
+                    
+                    cmn.deselection();
 
-                let positionY = defaultY;
-                const listPosition = function(){
-                    let setPostion = positionY - ( defaultScroll - $body.scrollTop() );
-                    if ( setPostion < 0 ) setPostion = 0;
-                    if ( setPostion > maxY ) setPostion = maxY;
-                    $line.css('top', setPostion );
-                };
+                    let positionY = defaultY;
+                    const listPosition = function(){
+                        let setPostion = positionY - ( defaultScroll - $body.scrollTop() );
+                        if ( setPostion < 0 ) setPostion = 0;
+                        if ( setPostion > maxY ) setPostion = maxY;
+                        $line.css('top', setPostion );
+                    };
 
-                $body.on('scroll.freeMove', function(){
-                    listPosition();
-                });
-                
-                $window.on({
-                    'pointermove.freeMove': function( mme ){
-                        positionY = defaultY + mme.pageY - mde.pageY;
+                    $body.on('scroll.freeMove', function(){
                         listPosition();
-                        if ( $( mme.target ).closest('.settingListTr').length ) {
-                            const $target = $( mme.target ).closest('.settingListTr'),
-                                  targetNo = $target.index(),
-                                  dummyNo = $dummy.index();
-                            if ( targetNo < dummyNo ) {
-                                $target.before( $dummy );
-                            } else {
-                                $target.after( $dummy );
+                    });
+                    
+                    $window.on({
+                        'pointermove.freeMove': function( mme ){
+                            positionY = defaultY + mme.pageY - mde.pageY;
+                            listPosition();
+                            if ( $( mme.target ).closest('.settingListTr').length ) {
+                                const $target = $( mme.target ).closest('.settingListTr'),
+                                    targetNo = $target.index(),
+                                    dummyNo = $dummy.index();
+                                if ( targetNo < dummyNo ) {
+                                    $target.before( $dummy );
+                                } else {
+                                    $target.after( $dummy );
+                                }
                             }
+                        },
+                        'pointerup.freeUp': function(){
+                            $body.off('scroll.freeMove');
+                            $window.off('pointermove.freeMove pointerup.freeUp');
+                            $list.removeClass('active');
+                            $line.removeClass('move');
+                            $line.find('.settingListTd').removeAttr('style');
+                            $dummy.replaceWith( $line );
                         }
-                    },
-                    'pointerup.freeUp': function(){
-                        $body.off('scroll.freeMove');
-                        $window.off('pointermove.freeMove pointerup.freeUp');
-                        $list.removeClass('active');
-                        $line.removeClass('move');
-                        $line.find('.settingListTd').removeAttr('style');
-                        $dummy.replaceWith( $line );
-                    }
-                });
-            }
-        });
+                    });
+                }
+            });
+        }
     });
 },
 

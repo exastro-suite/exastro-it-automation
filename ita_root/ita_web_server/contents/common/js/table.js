@@ -1111,6 +1111,7 @@ filterHtml( filterHeaderFlag = true ) {
                     case 'FileUploadColumn': case 'FileUploadEncryptColumn':
                     case 'EnvironmentIDColumn': case 'TextColumn': case 'RoleIDColumn':
                     case 'JsonIDColumn': case 'UserIDColumn': case 'NotificationIDColumn':
+                    case 'FilterConditionSettingColumn': case 'RuleConditionSettingColumn':
                         return 'text';
                     break;
                     // 数値のFROM,TO
@@ -1710,10 +1711,16 @@ setTableEvents() {
                 if ( $input.is('.tableEditInputSelect') ) {
                     $input.parent('.tableEditInputSelectContainer, .tableEditInputMultipleSelectContainer').addClass('tableEditChange');
                 }
+                if ( $input.is('.tableEditMultipleHiddenColmun') ) {
+                    $input.prev('.tableEditMultipleColmun').addClass('tableEditChange');
+                }
             } else {
                 $input.removeClass('tableEditChange');
                 if ( $input.is('.tableEditInputSelect') ) {
                     $input.parent('.tableEditInputSelectContainer, .tableEditInputMultipleSelectContainer').removeClass('tableEditChange');
+                }
+                if ( $input.is('.tableEditMultipleHiddenColmun') ) {
+                    $input.prev('.tableEditMultipleColmun').removeClass('tableEditChange');
                 }
             }
         });
@@ -1929,10 +1936,21 @@ setTableEvents() {
             $text.val( text ).change();
         });
 
-        // tableEditFilterCondition
-        tb.$.tbody.on('click', '.tableEditFilterCondition', function(){
-            tb.oaseFilterSetting().then(function( result ){
+        // tableEditMultipleColmun
+        tb.$.tbody.on('click', '.tableEditMultipleColmun', function(){
+            const
+            $block = $( this ),
+            $input = $block.next('.inputHidden'),
+            restName = $input.attr('data-key'),
+            columnType = $input.attr('data-column-type'),
+            value = $input.val();
 
+            tb.multipleColmunSetting( columnType, restName, value ).then(function( result ){console.log(result)
+                if ( fn.typeof( result ) === 'array' && result.length ) {
+                    const resultValue = fn.jsonStringifyDelimiterSpace( result );
+                    $input.val( resultValue ).change();
+                    $block.text( resultValue );
+                }
             });
         });
     }
@@ -3475,6 +3493,7 @@ viewCellHtml( item, columnKey, journal ) {
         case 'DateColumn': case 'DateTimeColumn':
         case 'FileUploadEncryptColumn': case 'JsonIDColumn':
         case 'UserIDColumn': case 'NotificationIDColumn':
+        case 'FilterConditionSettingColumn': case 'RuleConditionSettingColumn':
             return checkJournal( value );
 
         // リンク
@@ -3886,15 +3905,12 @@ editCellHtml( item, columnKey ) {
             inputClassName.push('tableEditSColorCode');
             return fn.html.inputColor( inputClassName, value, name, attr, { mode: 'edit'});
 
-        // フィルター条件設定
-        case 'FilterConditionSettingColumn':
-            return `<div class="tableEditFilterCondition tableEditJsonColmun input">${value}</div>`
-            + fn.html.inputHidden( inputClassName, value, name, attr );
-
-        // ルール条件設定
-        case 'RuleConditionSettingColumn':
-            return `<div class="tableEditRuleCondition tableEditJsonColmun">${value}</div>`
-            + fn.html.inputHidden( inputClassName, value, name, attr );
+        // 特殊複数選択
+        case 'FilterConditionSettingColumn': case 'RuleConditionSettingColumn': {
+            attr['column-type'] = columnType;
+            inputClassName.push('tableEditMultipleHiddenColmun');
+            return `<div class="tableEditFilterCondition tableEditMultipleColmun input">${value}</div>`
+            + fn.html.inputHidden( inputClassName, value, name, attr ); }
 
         // 不明
         default:
@@ -4266,6 +4282,8 @@ changeEdtiMode( changeMode ) {
         for ( const restName in result ) {
             tb.data.editSelectArray[ restName ] = [];
             for ( const id in result[ restName ] ) {
+                const data = result[ restName ][ id ];
+                if ( fn.typeof ( data ) === 'object') continue;
                 tb.data.editSelectArray[ restName ].push( result[ restName ][ id ] );
             }
             // ソート
@@ -5618,41 +5636,88 @@ restApi( buttonText, method, endpoint, body, option = {}) {
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-oaseFilterSetting() {
+multipleColmunSetting( columnType, restName, value ) {
+    const tb = this;
+
     return new Promise(function( resolve ){
-        const settingData = {
-            title: 'ラベル設定',
-            info: [
-                {
-                    id: 'label_name',
-                    type: 'select',
-                    title: 'ラベル名',
-                    list: ['test1','test2'],
-                    width: '320px'
-                },
-                {
-                    id: 'condition_type',
-                    type: 'select',
-                    title: '条件',
-                    list: ['>', '>='],
-                    width: '80px'
-                },
-                {
-                    id: 'condition_value',
-                    type: 'text',
-                    title: '条件値'
-                },
-            ],
-            values: [
-                ['test2', '>=', 'AAAAA'],
-                ['test1', '>', 'BBBBB'],
-                ['test2', '>=', 'AAAAA']
-            ]
-        };
-        fn.settingListModalOpen( settingData ).then(function(result){
-            resolve( result )
+        // プルダウンセレクトリスト
+        const multipleList = tb.data.editSelect[ restName ];
+        
+        // 配列に変換
+        const multipleArray = [];
+        for ( const type in multipleList ) {
+            multipleArray[type] = [];
+            for ( const id in multipleList[type]) {
+                multipleArray[type].push(multipleList[type][id]);
+            }
+        }
+
+        const settingData = tb.columnTypeSettingData( columnType, multipleArray );
+        settingData.values = fn.jsonParse( value, 'array');
+
+        fn.settingListModalOpen( settingData ).then(function( result ){
+            if ( result !== 'cancel') {
+                resolve( result )
+            } else {
+                resolve( null );
+            }
         });
     });
+}
+
+columnTypeSettingData( columnType, list ) {
+    switch ( columnType ) {
+        case 'FilterConditionSettingColumn':
+            return {
+                title: getMessage.FTE13001,
+                width: '960px',
+                move: false,
+                info: [
+                    {
+                        id: 'label_name',
+                        type: 'select',
+                        title: getMessage.FTE13002,
+                        list: list.label_name,
+                        width: '340px',
+                    },
+                    {
+                        id: 'condition_type',
+                        type: 'select',
+                        title: getMessage.FTE13003,
+                        list: list.condition_type,
+                        width: '80px',
+                    },
+                    {
+                        id: 'condition_value',
+                        type: 'text',
+                        title: getMessage.FTE13004,
+                        required: true
+                    },
+                ]
+            };
+        case 'RuleConditionSettingColumn':
+            return {
+                title: getMessage.FTE13005,
+                width: '640px',
+                move: false,
+                info: [
+                    {
+                        id: 'conclusion_label_name',
+                        type: 'select',
+                        title: getMessage.FTE13006,
+                        list: list.conclusion_label_name,
+                        width: '50%',
+                    },
+                    {
+                        id: 'conclusion_label_value',
+                        type: 'select',
+                        title: getMessage.FTE13007,
+                        list: list.conclusion_label_value,
+                        width: '50%',
+                    },
+                ]
+            };
+    }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //

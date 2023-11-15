@@ -48,19 +48,6 @@ class FilterConditionSettingColumn(IndividualDialogColumn):
         """
         values = {}
         values = super().search_id_data_list()
-
-        values = {}
-        values["key01"] = 'Ｋｅｙ1'
-        values["key02"] = 'Ｋｅｙ2'
-        values["key03"] = 'Ｋｅｙ3'
-        values["key04"] = 'Ｋｅｙ4'
-        values["key05"] = 'Ｋｅｙ5'
-        values["key06"] = 'Ｋｅｙ6'
-        values["key07"] = 'Ｋｅｙ7'
-        values["key08"] = 'Ｋｅｙ8'
-        values["key09"] = 'Ｋｅｙ9'
-        values["key10"] = 'Ｋｅｙ10'
-
         return values
 
     def search_comparison_id_data_list(self):
@@ -162,8 +149,7 @@ class FilterConditionSettingColumn(IndividualDialogColumn):
         values = {}
 
         # データリストを取得
-        id_data_list = self.get_master_label_name(self.get_id_data_list())
-
+        id_data_list = self.get_master_label_name(self.search_id_data_list())
         # 一致検索
         if len(where_equal) > 0:
             for where_value in where_equal:

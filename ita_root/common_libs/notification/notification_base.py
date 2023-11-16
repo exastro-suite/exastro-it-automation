@@ -145,7 +145,7 @@ class Notification(ABC):
         pass
 
     @staticmethod
-    def call_setting_notification_api(event_type_true: list = None, event_type_false: list = None):
+    def _call_setting_notification_api(event_type_true: list = None, event_type_false: list = None):
         """
         通知先取得APIを呼び出し、結果を返却する
         Args:
@@ -286,3 +286,14 @@ class Notification(ABC):
             必要な設定を施したdict
         """
         return {}
+
+    @classmethod
+    def fetch_notification_destination_dict(cls):
+        fetch_data = cls._call_setting_notification_api()
+        data = fetch_data["data"]
+
+        result = {}
+        for item in data:
+            result[item["id"]] = item["name"]
+
+        return result

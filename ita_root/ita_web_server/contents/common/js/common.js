@@ -3116,6 +3116,7 @@ settingListModalOpen: function( settingData ) {
 
         _this.setSettingListEvents( modal, settingData );
         _this.setSettingListSelect2( modal );
+        _this.settingListCheckListDisabled( modal );
     });
 },
 /*

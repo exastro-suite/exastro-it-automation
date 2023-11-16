@@ -1476,10 +1476,9 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     "last_update_date_time": last_update_date_time  # 最終更新日時
                 }
 
-                # カラムグループがある場合
+                # カラムグループを挿入(無い場合はNoneにする)
                 column_group = column_data.get('column_group')
-                if column_group:
-                    parameter["column_group"] = column_group  # カラムグループ(「カラムグループ作成情報」のフルカラムグループ名)
+                parameter["column_group"] = column_group if column_group else None  # カラムグループ(「カラムグループ作成情報」のフルカラムグループ名)
 
                 # 各カラムクラスに対応するparameterにNoneを挿入
                 parameter["single_string_maximum_bytes"] = None  # 文字列(単一行) 最大バイト数

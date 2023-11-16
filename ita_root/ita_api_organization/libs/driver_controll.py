@@ -167,6 +167,11 @@ def get_execution_info(objdbca, target, execution_no):
     execution_info = {}
     # 作業管理
     execution_info['execution_list'] = tmp_result[1][0]
+    # 投入データと結果データは返さない
+    if 'populated_data' in execution_info['execution_list']['file']:
+        del execution_info['execution_list']['file']['populated_data']
+    if 'result_data' in execution_info['execution_list']['file']:
+        del execution_info['execution_list']['file']['result_data']
     # ステータスIDはコード値も返却
     execution_info['status_id'] = table_row['STATUS_ID']
 

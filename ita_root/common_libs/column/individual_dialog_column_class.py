@@ -146,7 +146,8 @@ class IndividualDialogColumn(IDColumn):
 
             str_where = ""
             for bindkey in bindkeys:
-                tmp_where = " JSON_EXTRACT(`VARS_DESCRIPTION`, \"$[*].{label_name}\") like {bindkey} ".format(
+                tmp_where = " JSON_UNQUOTE(JSON_EXTRACT(`{col_name}`, \"$[*].{label_name}\")) like {bindkey} ".format(
+                    col_name = self.get_col_name(),
                     label_name = self.tag_label,
                     bindkey = bindkey
                 )
@@ -159,7 +160,7 @@ class IndividualDialogColumn(IDColumn):
         result.setdefault("bindkey", bindkeys)
         result.setdefault("bindvalue", bindvalues)
         result.setdefault("where", str_where)
-
+        print(str_where)
         return result
 
 

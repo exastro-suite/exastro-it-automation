@@ -118,10 +118,10 @@ class OASE(Notification):
 
     # OASENotificationTypeと通知先取得のAPIに指定する条件の対応表
     DESTINATION_ID_FETCH_CONDITION = {
-        OASENotificationType.NEW: "new",
-        OASENotificationType.EVALUATED: "evaluated",
-        OASENotificationType.TIMEOUT: "timeout",
-        OASENotificationType.UNDETECTED: "undetected",
+        OASENotificationType.NEW: "ita.event_type.new",
+        OASENotificationType.EVALUATED: "ita.event_type.evaluated",
+        OASENotificationType.TIMEOUT: "ita.event_type.timeout",
+        OASENotificationType.UNDETECTED: "ita.event_type.undetected",
     }
 
     DATA_CONVERT_MAP = {
@@ -167,7 +167,7 @@ class OASE(Notification):
         path = get_upload_file_path(workspace_id, menu_id, uuid, rest_name, file_name, "")
         g.applogger.info(f"取得するテンプレートのパス:\n{path}")
 
-        with open(path["file_path"], 'r') as f:
+        with open(path["file_path"], 'r', encoding='utf_8') as f:
             template = f.read()
 
         return template
@@ -178,13 +178,12 @@ class OASE(Notification):
 
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION]:
             return fetch_data.get("NOTIFICATION_DESTINATION").split(",")
-        else:
 
-            response = cls.call_setting_notification_api()
-            filtered_list = ([item.get("id") for item in response
-                              if item.get("conditions").get("ita").get("event_type").get(cls.DESTINATION_ID_FETCH_CONDITION[notification_type])])
+        event_type_true_list = [cls.DESTINATION_ID_FETCH_CONDITION[notification_type]]
+        response = cls.call_setting_notification_api(event_type_true=event_type_true_list)
+        filtered_list = [item.get("id") for item in response["data"]]
 
-            return filtered_list
+        return filtered_list
 
     @classmethod
     def _convert_message(cls, item):
@@ -198,3 +197,11 @@ class OASE(Notification):
         item["labels"]["_exastro_type"] = cls.DATA_CONVERT_MAP["_exastro_type"][item["labels"]["_exastro_type"]]
 
         return item
+
+    @staticmethod
+    def _get_data():
+        data = {}
+        data["func_id"] = "1102"
+        data["func_informations"] = {"menu_group_name": "OASE"}
+
+        return data

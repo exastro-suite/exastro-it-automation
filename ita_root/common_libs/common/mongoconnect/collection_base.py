@@ -171,10 +171,14 @@ class CollectionBase():
 
         format_result = []
         for item in result:
-            format_item = self._format_result_value(item)
-
-            if format_item is not None:
-                format_result.append(format_item)
+            tmp = self._format_result_value(item)
+            if tmp is not None:
+                format_result.append(
+                    {
+                        "file": {},
+                        "parameter": tmp
+                    }
+                )
 
         return format_result
 

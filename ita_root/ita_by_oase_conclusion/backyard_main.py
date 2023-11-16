@@ -398,17 +398,18 @@ class Judgement:
         return False
 
     def putRaccEvent(self, RuleRow, UseEventIdList):
-        conclusion_ids = {}
         addlabels = {}
+        label_key_inputs = {}
         RuleRow["LABELING_INFORMATION_JSON"] = json.loads(RuleRow["LABELING_INFORMATION_JSON"])
-        for key, value in RuleRow["LABELING_INFORMATION_JSON"].items():
-            name = self.getIDtoName(key)
+        for row in RuleRow["LABELING_INFORMATION_JSON"]:
+            label_key = row.get('label_key')
+            name = self.getIDtoName(label_key)
             if name is False:
-                tmp_msg = "ラベル結論マスタ 未登録 LABEL_KEY_ID:{}>>".format(key)
-                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                Log = "ラベルマスタ 未登録 (LABEL_KEY_ID: {})".format(label_key)
+                g.applogger.info(Log)
                 return False, {}
-            addlabels[name] = value
-            conclusion_ids[name] = key
+            label_key_inputs[name] = label_key
+            addlabels[name] = row.get('label_value')
 
         RaccEventDict = {}
 
@@ -435,7 +436,7 @@ class Judgement:
         RaccEventDict["exatsro_rule"]['name'] = RuleRow['RULE_NAME']
         RaccEventDict["exastro_events"] = UseEventIdList
         RaccEventDict["exastro_label_key_inputs"] = {}
-        RaccEventDict["exastro_label_key_inputs"] = conclusion_ids
+        RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
 
         # MongoDBに結論イベント登録
         _id = self.EventObj.insert_event(RaccEventDict)
@@ -447,7 +448,7 @@ class Judgement:
     def ConclusionLabelUsedInFilter(self, FilterCheckLabelDict, FilterList):
         DebugMode = False
         UsedFilterIdList = []
-        # FilterCheckLabelDict = {'i_11': 'down', 'i_100': 'ap11'}
+        # FilterCheckLabelDict = [{'i_11': 'down', 'i_100': 'ap11'}]
         for FilterRow in FilterList:
             FilterId = FilterRow["FILTER_ID"]
             ret = self.ConclusionFilterJudge(FilterCheckLabelDict, FilterRow)
@@ -471,17 +472,23 @@ class Judgement:
 
         tmp_msg = "{} 結論イベント 判定 JSON: {}".format(DebugMode, str(FilterCheckLabelDict))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        FilterRow['FILTER_CONDITION_JSON'] = [{'key': 'c_01_name', 'condition': '0', 'value': 'c_01'}, {'key': 'c_02_name', 'condition': '0', 'value': 'c_02'}]
+        # FilterRow['FILTER_CONDITION_JSON'] = [{'key': 'c_01_name', 'condition': '0', 'value': 'c_01'}, {'key': 'c_02_name', 'condition': '0', 'value': 'c_02'}]
 
+        FilterRow['FILTER_CONDITION_JSON'] = json.loads(FilterRow['FILTER_CONDITION_JSON'])
         LabelHitCount = 0
         for FilterLabels in FilterRow['FILTER_CONDITION_JSON']:
-            FilterName = FilterLabels['key']
-            FilterValue = FilterLabels['value']
-            FilterCondition = str(FilterLabels['condition'])
+            FilterName = FilterLabels['label_name']
+            FilterValue = FilterLabels['condition_value']
+            FilterCondition = str(FilterLabels['condition_type'])
             tmp_msg = "{} Filter FilterName:{} FilterValues:{} FilterCondition:{}".format(DebugMode, FilterName, FilterValue, FilterCondition)
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             LabelHit = False
-            for LabelName, LabelValue in FilterCheckLabelDict.items():
+            labeldict = {}
+            for row in FilterCheckLabelDict:
+                label_key = row.get('label_key')
+                labeldict[label_key] = row.get('label_value')
+
+            for LabelName, LabelValue in labeldict.items():
                 tmp_msg = "{} check LabelName:{} LabelValue:{}".format(DebugMode, LabelName, LabelValue)
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 if (FilterName == LabelName and FilterValue == LabelValue and FilterCondition == defObj.DF_TEST_EQ) or\
@@ -519,9 +526,6 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     IncidentDict = {}
 
     defObj = RuleJudgementConst()
-
-    # イベントデータ取得
-    # EventObj = ManageEvents(MongoDBCA, judgeTime)
 
     count = EventObj.count_events()
     if count == 0:
@@ -678,8 +682,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         # 評価結果へ登録
                         if getattr(g, 'USER_ID', None) is None:
                             g.USER_ID = '110101'
-                        # objdbca = DBConnectWs()
-                        # objdbca.db_transaction_start()
+
                         Row = {
                             "RULE_ID": ruleRow.get("RULE_ID"),
                             "RULE_NAME": ruleRow.get("RULE_NAME"),
@@ -692,15 +695,12 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             "CONDUCTOR_INSTANCE_NAME": conductor_name,
                             "OPERATION_ID": operation_id,
                             "OPERATION_NAME": operation_name,
-                            # "EVENT_ID_LIST": json.dumps("['event_id_01', 'event_id_02']"),
                             "EVENT_ID_LIST": UseEventIdList,
-                            # Row["EXECUTION_USER"] = UserIDtoUserName(objdbca, g.USER_ID)
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
                             "DISUSE_FLAG": "0"
                         }
                         RegistrActionLog(objdbca, Row)
-                        # objdbca.db_transaction_end(True)
 
                         # 使用済みインシデントフラグを立てる  _exastro_evaluated='1'
                         update_Flag_Dict = {"_exastro_evaluated": '1'}
@@ -876,7 +876,6 @@ def conductor_execute(objdbca, conductor_class_id, operation_id):
     RETURN:
     """
     objcbkl = ConductorExecuteBkyLibs(objdbca)  # noqa: F405
-    # parameter = {"conductor_class_name": "test", "operation_name": "ope"}
     parameter = {"conductor_class_id": conductor_class_id, "operation_id": operation_id}
     _res = objcbkl.conductor_execute_no_transaction(parameter)
     return _res
@@ -1039,17 +1038,18 @@ class ActionStatusMonitor():
                 self.InsertConclusionEvent(Row)
 
     def InsertConclusionEvent(self, RuleInfo):
-        conclusion_ids = {}
+        label_key_inputs = {}
         addlabels = {}
         RuleInfo["LABELING_INFORMATION_JSON"] = json.loads(RuleInfo["LABELING_INFORMATION_JSON"])
-        for key, value in RuleInfo["LABELING_INFORMATION_JSON"].items():
-            name = self.getIDtoName(key)
+        for row in RuleInfo["LABELING_INFORMATION_JSON"]:
+            label_key = row.get('label_key')
+            name = self.getIDtoName(label_key)
             if name is False:
-                Log = "ラベルマスタ 未登録 (LABEL_KEY_ID: {})".format(key)
+                Log = "ラベルマスタ 未登録 (LABEL_KEY_ID: {})".format(label_key)
                 g.applogger.info(Log)
                 return False, {}
-            addlabels[name] = value
-            conclusion_ids[name] = key
+            label_key_inputs[name] = label_key
+            addlabels[name] = row.get('label_value')
 
         NowTime = int(datetime.datetime.now().timestamp())
 
@@ -1073,7 +1073,7 @@ class ActionStatusMonitor():
         # RaccEventDict["exastro_events"] = json.loads(RuleInfo['EVENT_ID_LIST'])
         RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST']
         RaccEventDict["exastro_label_key_inputs"] = {}
-        RaccEventDict["exastro_label_key_inputs"] = conclusion_ids
+        RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
 
         _id = self.EventObj.insert_event(RaccEventDict)
 

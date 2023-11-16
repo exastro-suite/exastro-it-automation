@@ -821,6 +821,22 @@ background-image: linear-gradient(rgba(255,255,255,0), rgba(0,0,0,.075), rgba(25
 border: 1px solid var(--black50)!important;
 }
 
+.tableEditMultipleColmun {
+position: relative;
+width: auto; min-width: 120px;
+padding: 4px 32px 4px 8px;
+word-break: break-all;
+white-space: normal;
+cursor: pointer;
+}
+.tableEditMultipleColmun::after {
+font-family: 'exastro-ui-icons';
+content: "\e924";
+display: block;
+position: absolute;
+right: 8px; top: 50%;
+transform: translateY(-50%);
+}
 
 /*
 ##################################################
@@ -5221,6 +5237,7 @@ border-right-color: #000;
 .settingListAction {
 width: 8px;
 }
+.settingListBlank,
 .settingListMove,
 .settingListDelete {
 display: flex;
@@ -5233,6 +5250,20 @@ user-select: none;
 .darkmode .settingListMove,
 .darkmode .settingListDelete {
 border-color: #000;
+}
+.settingListBlank {
+overflow: hidden;
+position: relative;
+}
+.settingListBlank::after {
+content: '';
+display: block;
+width: 1px; height: 200px;
+background-color: #CCC;
+transform: rotate(-45deg);
+}
+.darkmode .settingListBlank::after {
+background-color: #000;
 }
 .settingListMove {
 border-right: none;

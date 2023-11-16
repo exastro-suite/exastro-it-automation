@@ -14,6 +14,7 @@
 
 from flask import g
 import requests
+from common_libs.common.exception import AppException
 
 
 class Exastro_API:
@@ -30,15 +31,24 @@ class Exastro_API:
         """
             method: "GET" or "POST"
         """
-        response = requests.request(
-            method=method,
-            url=url,
-            headers=self.headers,
-            auth=(self.username, self.password),
-            json=body
-        )
+        response = None
+        status_code = None
 
-        status_code = response.status_code
+        try:
+            response = requests.request(
+                method=method,
+                url=url,
+                headers=self.headers,
+                auth=(self.username, self.password),
+                json=body
+            )
+
+            status_code = response.status_code
+
+            if status_code != 200:
+                return status_code, response.text
+        except Exception as e:
+            raise AppException("BKY-70002", ["Failed to establish a connection with IT Automation", e])
 
         return status_code, response.json()
 

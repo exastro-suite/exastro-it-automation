@@ -180,7 +180,7 @@ class OASE(Notification):
             return fetch_data.get("NOTIFICATION_DESTINATION").split(",")
 
         event_type_true_list = [cls.DESTINATION_ID_FETCH_CONDITION[notification_type]]
-        response = cls.call_setting_notification_api(event_type_true=event_type_true_list)
+        response = cls._call_setting_notification_api(event_type_true=event_type_true_list)
         filtered_list = [item.get("id") for item in response["data"]]
 
         return filtered_list

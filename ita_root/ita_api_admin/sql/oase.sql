@@ -337,7 +337,7 @@ CREATE TABLE T_OASE_FILTER
 (
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
-    FILTER_CONDITION_JSON           LONGTEXT,                                   -- フィルター条件
+    FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -353,7 +353,7 @@ CREATE TABLE T_OASE_FILTER_JNL
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
-    FILTER_CONDITION_JSON           LONGTEXT,                                   -- フィルター条件
+    FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -420,15 +420,17 @@ CREATE TABLE T_OASE_RULE
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
-    FILTER_COMBINATION_JSON         LONGTEXT,                                   -- フィルター組み合わせ情報
+    FILTER_A                        VARCHAR(40),                                -- フィルターA
+    FILTER_OPERATOR                 VARCHAR(2),                                 -- フィルター演算子
+    FILTER_B                        VARCHAR(40),                                -- フィルターB
     BEFORE_NOTIFICATION             VARCHAR(255),                               -- 作業前_通知
     BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 作業前_承認待ち
-    BEFORE_NOTIFICATION_DESTINATION LONGTEXT,                                   -- 作業前_通知先
+    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 作業前_通知先
     ACTION_ID                       VARCHAR(40),                                -- アクションID
-    AFTER__NOTIFICATION             VARCHAR(255),                               -- 作業後_通知
+    AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
-    AFTER_NOTIFICATION_DESTINATION  LONGTEXT,                                   -- 作業後_通知先
-    LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
+    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
+    CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
@@ -448,15 +450,17 @@ CREATE TABLE T_OASE_RULE_JNL
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
-    FILTER_COMBINATION_JSON         LONGTEXT,                                   -- フィルター組み合わせ情報
+    FILTER_A                        VARCHAR(40),                                -- フィルターA
+    FILTER_OPERATOR                 VARCHAR(2),                                 -- フィルター演算子
+    FILTER_B                        VARCHAR(40),                                -- フィルターB
     BEFORE_NOTIFICATION             VARCHAR(255),                               -- 作業前_通知
     BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 作業前_承認待ち
-    BEFORE_NOTIFICATION_DESTINATION LONGTEXT,                                   -- 作業前_通知先
+    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 作業前_通知先
     ACTION_ID                       VARCHAR(40),                                -- アクションID
-    AFTER__NOTIFICATION             VARCHAR(255),                               -- 作業後_通知
+    AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
-    AFTER_NOTIFICATION_DESTINATION  LONGTEXT,                                   -- 作業後_通知先
-    LABELING_INFORMATION_JSON       LONGTEXT,                                   -- ラベリング情報
+    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
+    CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
     REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用

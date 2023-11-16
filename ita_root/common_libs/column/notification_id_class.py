@@ -17,6 +17,7 @@ from common_libs.common import *
 
 # import column_class
 from .multi_select_id_class import MultiSelectIDColumn  # noqa: F401
+from common_libs.notification.notification_base import Notification
 
 
 class NotificationIDColumn(MultiSelectIDColumn):
@@ -31,17 +32,7 @@ class NotificationIDColumn(MultiSelectIDColumn):
             RETRUN:
                 データリスト
         """
-        values = {}
-        values[str(1)] = 'Ｋｅｙ1'
-        values[str(2)] = 'Ｋｅｙ2'
-        values[str(3)] = 'Ｋｅｙ3'
-        values[str(4)] = 'Ｋｅｙ4'
-        values[str(5)] = 'Ｋｅｙ5'
-        values[str(6)] = 'Ｋｅｙ6'
-        values[str(7)] = 'Ｋｅｙ7'
-        values[str(8)] = 'Ｋｅｙ8'
-        values[str(9)] = 'Ｋｅｙ9'
-        values[str(10)] = 'Ｋｅｙ10'
+        values = Notification.fetch_notification_destination_dict()
 
         return values
 

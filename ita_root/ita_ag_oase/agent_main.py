@@ -97,17 +97,14 @@ def collection_logic(organization_id, workspace_id):
                 settings = get_settings()
             else:
                 g.applogger.info("Failed to get event collection settings from Exastro IT Automation.")
+                g.applogger.debug(status_code)
                 g.applogger.debug(response)
                 settings = False
         except AppException as e:  # noqa E405
-            # g.applogger.error("Failed to establish a connection with Exastro IT Automation. ({})".format(baseUrl))
             app_exception(e)
-            # g.applogger.debug(status_code)
-            # g.applogger.debug(response)
 
     # 最終取得日時
-    # current_timestamp = int(datetime.datetime.now().timestamp())
-    current_timestamp = 1111111111
+    current_timestamp = int(datetime.datetime.now().timestamp())
     timestamp_data = {}
     timestamp_dict = {key: current_timestamp for key in id_list}
     try:

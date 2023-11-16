@@ -28,7 +28,7 @@ class APIClientCommon:
             "2": "POST"
         }
 
-        self.request_method = self.request_methods[event_settings["REQUEST_METHOD"]] if event_settings["REQUEST_METHOD"] in ["1", "2"] else None
+        self.request_method = self.request_methods[event_settings["REQUEST_METHOD_ID"]] if event_settings["REQUEST_METHOD_ID"] in ["1", "2"] else None
         self.url = event_settings["URL"]
         self.port = event_settings["PORT"]
         self.headers = json.loads(event_settings["REQUEST_HEADER"]) if event_settings["REQUEST_HEADER"] else None

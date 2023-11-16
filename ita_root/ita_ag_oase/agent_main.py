@@ -32,27 +32,22 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     # ループに入る前にevent_collection_settings.jsonを削除
     setting_removed = remove_file()
     if setting_removed is True:
-        g.applogger.info("json file removed")
+        g.applogger.debug("Removed JSON file 'event_collection_settings.json'.")
     else:
-        g.applogger.info("no json file to remove")
-
-    g.applogger.info("loop starts")
+        g.applogger.debug("No Json file to remove.")
 
     while True:
         print("")
         print("")
         try:
             collection_logic(organization_id, workspace_id)
-            g.applogger.info(f"loop count: {count}")
         except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
             # catch - other all error
             exception(e)
-
         time.sleep(interval)
         if count >= max:
-            g.applogger.info("loop ends")
             break
         else:
             count = count + 1
@@ -78,34 +73,41 @@ def collection_logic(organization_id, workspace_id):
 
     # SQLiteモジュール
     sqliteDB = sqliteConnect(organization_id, workspace_id)
-    g.applogger.info("sqlite connected")
+    g.applogger.debug("Connected to the SQLite database.")
 
     # イベント収集設定ファイルからイベント収集設定の取得
     settings = get_settings()
-    g.applogger.info("getting settings from json file")
+    g.applogger.debug("Getting event collection settings from JSON file 'event_collection_settings.json'.")
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
-        g.applogger.info("no json file exists")
 
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
 
-        status_code, response = exastro_api.api_request(
-            "POST",
-            endpoint,
-            {
-                "event_collection_settings_ids": id_list
-            }
-        )
-        g.applogger.info("getting settings from ita")
-        # g.applogger.debug(status_code)
-        # g.applogger.debug(response)
-        create_file(response["data"])
-        g.applogger.info("json file created")
-        settings = get_settings()
+        g.applogger.info("Getting settings from IT Automation. (Organization ID: {}, Workspace ID: {})".format(organization_id, workspace_id))
+        try:
+            status_code, response = exastro_api.api_request(
+                "POST",
+                endpoint,
+                {"event_collection_settings_ids": id_list}
+            )
+            if status_code == 200:
+                create_file(response["data"])
+                g.applogger.debug("Created the JSON file 'event_collection_settings.json'.")
+                settings = get_settings()
+            else:
+                g.applogger.info("Failed to get event collection settings from Exastro IT Automation.")
+                g.applogger.debug(response)
+                settings = False
+        except AppException as e:  # noqa E405
+            # g.applogger.error("Failed to establish a connection with Exastro IT Automation. ({})".format(baseUrl))
+            app_exception(e)
+            # g.applogger.debug(status_code)
+            # g.applogger.debug(response)
 
     # 最終取得日時
-    current_timestamp = int(datetime.datetime.now().timestamp())
+    # current_timestamp = int(datetime.datetime.now().timestamp())
+    current_timestamp = 1111111111
     timestamp_data = {}
     timestamp_dict = {key: current_timestamp for key in id_list}
     try:
@@ -120,17 +122,27 @@ def collection_logic(organization_id, workspace_id):
         pass
 
     # イベント収集
-    g.applogger.info("getting events")
-    events = collect_event(sqliteDB, settings, timestamp_dict)
-    g.applogger.info(f"got {len(events)} events")
+    events = []
+    if settings is not False:
+        g.applogger.info("Collecting events.")
+        events = collect_event(sqliteDB, settings, timestamp_dict)
+        g.applogger.info(f"Retrived {len(events)} events.")
+    else:
+        g.applogger.debug("Cannot collect events as no event collection settings exists.")
 
     # 収集したイベント, 取得時間をSQLiteに保存
     if events != []:
-        sqliteDB.insert_events(events)
-        g.applogger.info("events saved")
+        try:
+            sqliteDB.db_connect.execute("BEGIN")
+            sqliteDB.insert_events(events)
+            g.applogger.debug("Events and fetched time saved to SQLite database.")
+        except AppException as e:  # noqa E405
+            sqliteDB.db_connect.rollback()
+            g.applogger.error("Failed to save events and fetched time to SQLite database.")
+            app_exception(e)
 
     # ITAに送信するデータを取得
-    g.applogger.info("searching unsent events")
+    g.applogger.debug("Searching unsent events.")
     post_body = {
         "events": []
     }
@@ -155,6 +167,7 @@ def collection_logic(organization_id, workspace_id):
         else:
             send_to_ita_flag = True
 
+        # 作成した辞書を使用してイベントを検索
         for item in unsent_timestamp:
             unsent_event = {}
             event_collection_settings_id = item[1]
@@ -162,42 +175,54 @@ def collection_logic(organization_id, workspace_id):
             unsent_event["fetched_time"] = fetched_time
             unsent_event["event_collection_settings_id"] = event_collection_settings_id
             unsent_event["event"] = []
+
             sqliteDB.db_cursor.execute(
                 "SELECT rowid, event_collection_settings_id, event, fetched_time FROM events WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?",  # noqa E501
                 (event_collection_settings_id, fetched_time, 0)
             )
             unsent_events = sqliteDB.db_cursor.fetchall()
+
             unsent_event["event"].extend([row[2] for row in unsent_events])
             unsent_event_rowids.extend([row[0] for row in unsent_event])
             post_body["events"].append(unsent_event)
 
     # ITAにデータを送信
     if send_to_ita_flag is True:
-        g.applogger.info("sending events to IT Automation")
+        status_code = None
+        response = None
+        event_count = 0
+        for event in post_body["events"]:
+            event_count = event_count + len(event["event"])
+        g.applogger.info(f"Sending {event_count} events to IT Automation")
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
-        status_code, response = exastro_api.api_request(
-            "POST",
-            endpoint,
-            post_body
-        )
+        try:
+            status_code, response = exastro_api.api_request(
+                "POST",
+                endpoint,
+                post_body
+            )
+        except AppException as e:  # noqa E405
+            app_exception(e)
 
         # データ送信に成功した場合、sent_flagカラムの値をtrueにアップデート
         if status_code == 200:
-            g.applogger.info("events sent to ITA")
+            g.applogger.info("Successfully sent events to Exastro IT Automation")
             for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
-                sqliteDB.db_cursor.execute(
-                    """
-                        UPDATE {}
-                        SET sent_flag = {}
-                        WHERE rowid IN ({})
-                    """.format(table_name, 1, ", ".join("?" for id in list)),
-                    list
-                )
-                sqliteDB.db_connect.commit()
-            g.applogger.info("sent flag updated")
+                try:
+                    sqliteDB.db_connect.execute("BEGIN")
+                    sqliteDB.update_sent_flag(table_name, list)
+                except AppException as e:  # noqa E405
+                    sqliteDB.db_connect.rollback()
+                    sqliteDB.db_close()
+                    app_exception(e)
+
+            g.applogger.debug("Updated sent status flag in SQLite database.")
+        else:
+            g.applogger.info("Failed to send events to IT Automamtion")
+            g.applogger.debug(response)
         sqliteDB.db_close()
 
     else:
-        g.applogger.info("No events sent to ITA")
+        g.applogger.info("No events sent to IT Automation")
 
     return

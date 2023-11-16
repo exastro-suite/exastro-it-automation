@@ -15,6 +15,7 @@
 import sqlite3
 import json
 from flask import g
+from common_libs.common.exception import AppException
 
 
 class sqliteConnect:
@@ -32,25 +33,46 @@ class sqliteConnect:
 
         timestamp_info = []
         processed = set()
-        for event in events:
-            self.insert_event(event)
-            # sent_timestampテーブルにデータを重複して保存しないようにリストを作成
-            check_key = (event["_exastro_event_collection_settings_id"], event["_exastro_fetched_time"])
-            if check_key not in processed:
-                processed.add(check_key)
-                timestamp_info.append(
-                    {
-                        "id": event["_exastro_event_collection_settings_id"],
-                        "timestamp": event["_exastro_fetched_time"]
-                    }
+        try:
+            for event in events:
+                self.insert_event(event)
+                # sent_timestampテーブルにデータを重複して保存しないようにリストを作成
+                check_key = (event["_exastro_event_collection_settings_id"], event["_exastro_fetched_time"])
+                if check_key not in processed:
+                    processed.add(check_key)
+                    timestamp_info.append(
+                        {
+                            "id": event["_exastro_event_collection_settings_id"],
+                            "timestamp": event["_exastro_fetched_time"]
+                        }
+                    )
+            for info in timestamp_info:
+                self.insert_timestamp(
+                    info["id"],
+                    info["timestamp"]
                 )
-        for info in timestamp_info:
-            self.insert_timestamp(
-                info["id"],
-                info["timestamp"]
-            )
+                self.insert_last_fetched_time(
+                    info["id"],
+                    info["timestamp"]
+                )
 
-        self.db_connect.commit()
+            self.db_connect.commit()
+        except Exception as e:
+            raise AppException("BKY-70002", ["SQLite error", e])
+
+    def update_sent_flag(self, table_name, timestamp_list):
+        try:
+            self.db_cursor.execute(
+                """
+                    UPDATE {}
+                    SET sent_flag = {}
+                    WHERE rowid IN ({})
+                """.format(table_name, 1, ", ".join("?" for id in timestamp_list)),
+                timestamp_list
+            )
+            self.db_connect.commit()
+        except Exception as e:
+            raise AppException("BKY-70002", ["SQLite error", e])
 
     def insert_event(self, event):
         table_name = "events"

@@ -20,6 +20,11 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
     retBool = True
     msg = []
     cmd_type = option.get("cmd_type") # noqa F841
+
+    # 廃止の場合、バリデーションチェックを行わない。
+    if cmd_type == 'Discard':
+        return retBool, msg, option,
+
     entry_parameter = option.get('entry_parameter').get('parameter')
 
     LANG = g.LANGUAGE.upper()

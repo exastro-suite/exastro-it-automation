@@ -1977,13 +1977,23 @@ setTableEvents() {
             $input = $block.next('.inputHidden'),
             restName = $input.attr('data-key'),
             columnType = $input.attr('data-column-type'),
+            required = $input.attr('data-required'),
             value = $input.val();
 
-            tb.multipleColmunSetting( columnType, restName, value ).then(function( result ){console.log(result)
-                if ( fn.typeof( result ) === 'array' && result.length ) {
-                    const resultValue = fn.jsonStringifyDelimiterSpace( result );
+            tb.multipleColmunSetting( columnType, restName, value, required ).then(function( result ){
+                if ( result !== undefined ) {
+                    const resultValue = ( fn.typeof( result ) === 'array' && result.length )? fn.jsonStringifyDelimiterSpace( result ): '';
                     $input.val( resultValue ).change();
                     $block.text( resultValue );
+
+                    // 表示欄の幅の調整
+                    if ( !tb.partsFlag ) {
+                        if ( $block.outerWidth() >= 632 ) {
+                            $block.addClass('textOverWrap').css('width', 632 );
+                        } else {
+                            $block.removeClass('textOverWrap').css('width', 'auto');
+                        }
+                    }
                 }
             });
         });
@@ -2366,7 +2376,9 @@ setInputData( value, id, rest, beforeData ) {
     tb.checkNewInputDataSet( id, beforeData );
 
     // 変更があれば追加、なければ削除
-    const beforeValue = tb.edit.input[id]['before'].parameter[rest];
+    const beforeParamter = tb.edit.input[id]['before'].parameter[rest];
+    const beforeValue = ( beforeParamter === undefined )? null: beforeParamter;
+
     let changeFlag = false;
     if ( beforeValue !== value ) {
         tb.edit.input[id]['after'].parameter[rest] = value;
@@ -2677,22 +2689,30 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             } 
 
             // Filter or Data
+            let width;
             if ( $selectArea ) {
                 $selectArea.html( $selectBox );
                 select2Option.data = selectedData;
                 select2Option.placeholder = 'Pulldown select';
-                select2Option.width = $selectArea.width();
+                width = $selectArea.width();
             } else if ( $removeObj ) {
-                select2Option.width = $removeObj.outerWidth();
+                width = $removeObj.outerWidth();
                 $removeObj.remove();
             }
-            if ( optionlist.length === 0 ) select2Option.width = 120;
+            if ( optionlist.length === 0 ) {
+                select2Option.width = 120;
+            } else if ( !multipel ) {
+                select2Option.width = width;
+            }
             $selectBox.select2( select2Option );
 
             if ( multipel ) {
                 const $container = $selectBox.closest('.tableEditInputMultipleSelectContainer');
                 $container.addClass('tableEditInputMultipleSelectOpen');
-                $container.find('.select2').css('width', 'auto');
+                $container.find('.select2').css({
+                    'min-width': width,
+                    'width': 'auto'
+                });
             }
 
             if ( openFlag ) {
@@ -3110,6 +3130,7 @@ setTbody() {
         if ( tb.mode !== 'edit') {
             tb.tableMaxWidthCheck('tbody');
         } else {
+            tb.tableInputMaxWidthCheck('tbody');
             tb.$.tbody.find('.textareaAdjustment').each( fn.textareaAdjustment );
             tb.editModeMenuCheck();
         }
@@ -3260,6 +3281,39 @@ tableMaxWidthCheck( target ) {
 
     });
 }
+/*
+##################################################
+   編集時　特殊入力欄の幅をチェック
+##################################################
+*/
+tableInputMaxWidthCheck( target ) {
+    const tb = this;
+    tb.$[ target ].find('.tableEditMultipleColmun, .tableEditInputMultipleSelectValueInner').each(function(){
+        const $culumn = $( this ),
+        culumn = $culumn.get(0);
+
+        if ( $culumn.is('.textOverWrap') ) {
+            $culumn.css('width', 'auto').removeClass('textOverWrap');
+            if ( $culumn.is('.tableEditInputMultipleSelectValueInner') ) {
+                $culumn.closest('.tableEditInputMultipleSelectContainer').css('height', 'auto');
+            }
+        }
+
+        if ( culumn.clientWidth < culumn.scrollWidth ) {
+            $culumn.css('width', culumn.clientWidth ).addClass('textOverWrap');
+            if ( $culumn.is('.tableEditInputMultipleSelectValueInner') ) {
+                $culumn.closest('.tableEditInputMultipleSelectContainer').css('height', $culumn.closest('.tableEditInputMultipleSelectValue').outerHeight() );
+            }
+        }
+
+    });
+}
+/*
+##################################################
+   Table width check
+   > 最大幅を超えた場合調整する
+##################################################
+*/
 /*
 ##################################################
    Body HTML
@@ -3954,7 +4008,9 @@ editCellHtml( item, columnKey ) {
         case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn': {
             attr['column-type'] = columnType;
             inputClassName.push('tableEditMultipleHiddenColmun');
-            return `<div class="tableEditFilterCondition tableEditMultipleColmun input">${value}</div>`
+            const viewClassName = ['tableEditFilterCondition', 'tableEditMultipleColmun', 'input'];
+            if ( inputClassName.indexOf('tableEditChange') !== -1 ) viewClassName.push('tableEditChange');
+            return `<div class="${viewClassName.join(' ')}">${value}</div>`
             + fn.html.inputHidden( inputClassName, value, name, attr ); }
 
         // 不明
@@ -4519,7 +4575,7 @@ reflectEdits() {
         };
 
         // メニューボタン
-        modalTable.$.header.find('.itaButton ').on('click', function(){
+        modalTable.$.header.find('.itaButton').on('click', function(){
             if ( !tb.checkWork ) {
                 const $button = $( this ),
                     type = $button.attr('data-type');
@@ -5687,7 +5743,7 @@ restApi( buttonText, method, endpoint, body, option = {}) {
    複数選択項目設定モーダルを開く
 ##################################################
 */
-multipleColmunSetting( columnType, restName, value ) {
+multipleColmunSetting( columnType, restName, value, required ) {
     const tb = this;
 
     return new Promise(function( resolve ){
@@ -5709,6 +5765,7 @@ multipleColmunSetting( columnType, restName, value ) {
 
         const settingData = tb.columnTypeSettingData( columnType, multipleArray );
         settingData.values = fn.jsonParse( value, 'array');
+        settingData.required = required;
 
         fn.settingListModalOpen( settingData ).then(function( result ){
             if ( result !== 'cancel') {

@@ -3037,9 +3037,9 @@ settingListModalOpen: function( settingData ) {
                 modal.close();
                 resolve( data );
             },
-            cansel: function() {
+            cancel: function() {
                 modal.close();
-                resolve('cansel');
+                resolve( undefined );
             }
         };
         const modalConfig = {
@@ -3052,7 +3052,7 @@ settingListModalOpen: function( settingData ) {
             footer: {
                 button: {
                     ok: { text: '決定', action: 'default', width: '200px'},
-                    cansel: { text: 'キャンセル', action: 'normal'}
+                    cancel: { text: 'キャンセル', action: 'normal'}
                 }
             }
         };
@@ -3064,10 +3064,13 @@ settingListModalOpen: function( settingData ) {
                 inputDate[ index ] = [];
                 $tr.find('.input').each(function(){
                     const $input = $( this );
-                    inputDate[ index ].push( $input.val() );
+                    const val = fn.cv( $input.val(), '');
+                    inputDate[ index ].push( val );
                 });
+                // 全ての入力が空ならnull
+                if ( inputDate[ index ].join('') === '') inputDate[ index ] = null;
             });
-            return inputDate;
+            return inputDate.filter( Boolean );
         };
         const modal = new Dialog( modalConfig, modalFuncs );
 
@@ -3077,6 +3080,11 @@ settingListModalOpen: function( settingData ) {
             const width = ( item.width )? item.width: 'auto';
             const required = ( item.required )? _this.html.required(): '';
             headHtml.push(`<th class="settingListTh" style="width:${width}"><div class="settingListHeader">${_this.cv( item.title, '', true )}${required}</div></th>`);
+
+            // 必須じゃない場合は空白を追加する
+            if ( item.type === 'select' && settingData.required === '0') {
+                item.list.unshift('');
+            }
         }
 
         // Body
@@ -3135,7 +3143,7 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
     const infoLength = settingData.info.length;
     for ( let i = 0; i < infoLength; i++ ) {
         const item = settingData.info[i];
-        
+
         const
         width = ( item.width )? item.width: 'auto',
         idName = `${item.id}_${item.type}_${Date.now()}_${index}`,

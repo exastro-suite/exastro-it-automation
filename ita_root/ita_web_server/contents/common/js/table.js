@@ -58,6 +58,9 @@ constructor( tableId, mode, info, params, option = {}) {
     // REST API URLs
     tb.rest = {};
 
+    // パーツ用テーブルフラグ
+    tb.partsFlag = ( tb.option.parts !== undefined );
+
     // Filter
     tb.rest.filter = ( tb.params.restFilter )?
          tb.params.restFilter:
@@ -278,7 +281,7 @@ mainHtml() {
 
     tb.option.sheetType = fn.cv( tb.option.sheetType, 'standard');
     if ( tb.mode !== 'parameter') {
-        if ( tb.option.sheetType !== 'parts') {
+        if ( !tb.partsFlag ) {
             // Default table
             return `<div id="${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
                 + `<div class="tableHeader">`
@@ -300,10 +303,10 @@ mainHtml() {
             + `</div>`;
         } else {
             // Parts table
-            return `<div id="${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
-                + `<div class="tableBody"></div>`    
+            return `<div id="parts${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
+                + tb.partsBlockHtml()
                 + `<div class="tableLoading"></div>`
-            + `</div>`
+            + `</div>`;
         }
     } else {
         // Parameter collection
@@ -347,6 +350,11 @@ setup() {
     tb.$.style = tb.$.container.find('.tableStyle');
     tb.$.custom = tb.$.container.find('.tableCustomStyle');
 
+    // パーツテーブル
+    if ( tb.partsFlag ) {
+        tb.$.thead = tb.$.tbody = tb.$.message = tb.$.container.find('.eventFlowPartsBlockBody');
+    }
+
     // 固有ID
     tb.idNameRest = tb.info.menu_info.pk_column_name_rest;
 
@@ -382,7 +390,7 @@ setup() {
     tb.setPagingEvent(); // イベント
 
     // 1頁に表示する数
-    if ( tb.mode !== 'parameter') {
+    if ( tb.mode !== 'parameter' && !tb.partsFlag ) {
         const onePageNum = fn.storage.get('onePageNum', 'local', false );
         if ( onePageNum ) {
             tb.paging.onePageNum = onePageNum;
@@ -443,6 +451,11 @@ setup() {
         break;
     }
 
+    // パーツテーブル用
+    if ( tb.partsFlag ) {
+        tb.flag.initFilter = true;
+    }
+
     tb.setTable( tb.mode );
 
     return tb.$.container;
@@ -480,6 +493,13 @@ setInitSort() {
 */
 setTable( mode ) {
     const tb = this;
+
+    // パーツテーブル
+    if ( tb.partsFlag ) {
+        tb.setPartsTable( mode );
+        return;
+    }
+
     tb.mode = mode;
 
     tb.$.table.attr('table-mode', tb.tableMode );
@@ -1839,6 +1859,8 @@ setTableEvents() {
 
         // select2が隠れている場合スクロールで調整する
         const select2ScrollCheck = function( $element ) {
+            if ( tb.partsFlag ) return;
+
             const
             width = $element.closest('.ci').width(),
             left = $element.closest('.ci').offset().left,
@@ -2747,7 +2769,11 @@ requestTbody() {
     const tb = this;
 
     if ( tb.mode !== 'parameter') {
-        tb.filterParams = tb.getFilterParameter();
+        if ( !tb.partsFlag ) {
+            tb.filterParams = tb.getFilterParameter();
+        } else {
+            tb.filterParams = {};
+        }
     } else {
         // パラメータ集フィルタ設定
         tb.filterParams = {
@@ -3058,8 +3084,12 @@ setTbody() {
     }
 
     if ( tb.mode !== 'parameter') {
-        tb.$.tbody.html( tb.tbodyHtml() );
-        tb.updateFooterStatus();
+        if ( !tb.partsFlag ) {
+            tb.$.tbody.html( tb.tbodyHtml() );
+            tb.updateFooterStatus();
+        } else {
+            tb.$.tbody.html( tb.tbodyPartsHtml() );
+        }
     } else {
         const body = tb.parameterBody();
         if ( body !== '') {
@@ -3075,19 +3105,21 @@ setTbody() {
 
     tb.$.table.addClass('tableReady');
 
-    if ( tb.mode !== 'edit') {
-        tb.tableMaxWidthCheck('tbody');
-    } else {
-        tb.$.tbody.find('.textareaAdjustment').each( fn.textareaAdjustment );
-        tb.editModeMenuCheck();
-    }
+    if ( !tb.partsFlag ) {
+        if ( tb.mode !== 'edit') {
+            tb.tableMaxWidthCheck('tbody');
+        } else {
+            tb.$.tbody.find('.textareaAdjustment').each( fn.textareaAdjustment );
+            tb.editModeMenuCheck();
+        }
 
-    if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'edit' || tb.mode === 'view') {
-        tb.checkSelectStatus();
-    }
+        if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'edit' || tb.mode === 'view') {
+            tb.checkSelectStatus();
+        }
 
-    if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
-    tb.stickyWidth();
+        if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
+        tb.stickyWidth();
+    }
 }
 /*
 ##################################################
@@ -3838,7 +3870,8 @@ editCellHtml( item, columnKey ) {
         case 'SingleTextColumn': case 'HostInsideLinkTextColumn': case 'JsonColumn':
         case 'TextColumn': case 'SensitiveSingleTextColumn':
             inputClassName.push('tableEditInputText');
-            return fn.html.inputText( inputClassName, value, name, attr, { widthAdjustment: true });
+            const widthAdjustment = ( tb.partsFlag )? {}: { widthAdjustment: true };
+            return fn.html.inputText( inputClassName, value, name, attr, widthAdjustment );
 
         // 文字列入力（複数行）
         case 'MultiTextColumn': case 'NoteColumn': case 'SensitiveMultiTextColumn':
@@ -4267,15 +4300,17 @@ changeEdtiMode( changeMode ) {
     tb.$.container.addClass('editTable');
 
     // フィルタの入力を取得
-    const filterParameter = tb.getFilterParameter(),
-          filterLength = Object.keys( filterParameter ).length;
+    if ( !tb.partsFlag ) {
+        const filterParameter = tb.getFilterParameter(),
+            filterLength = Object.keys( filterParameter ).length;
 
-    if ( ( filterLength === 1 && filterParameter.discard !== undefined )
-         || filterLength === 0 ) {
-        // tb.flag.initFilter = (tb.info.menu_info.initial_filter_flg === '1');
-        tb.option.initSetFilter = undefined;
-    } else {
-        tb.option.initSetFilter = tb.getFilterParameter();
+        if ( ( filterLength === 1 && filterParameter.discard !== undefined )
+            || filterLength === 0 ) {
+            // tb.flag.initFilter = (tb.info.menu_info.initial_filter_flg === '1');
+            tb.option.initSetFilter = undefined;
+        } else {
+            tb.option.initSetFilter = tb.getFilterParameter();
+        }
     }
 
     // 編集から戻った際はinitial_filter_flgに関係なく表示
@@ -4552,6 +4587,7 @@ editOk() {
             };
 
             tb.data.editOrder.push( itemId );
+            if ( !tb.data.regiColumnKeys ) tb.data.regiColumnKeys = tb.data.columnKeys;
 
             for ( const columnKey of tb.data.regiColumnKeys ) {
                 const columnNameRest = info[ columnKey ].column_name_rest,
@@ -5720,7 +5756,7 @@ columnTypeSettingData( columnType, list ) {
         case 'ConclusionEventSettingColumn':
             return {
                 title: getMessage.FTE13005,
-                width: '640px',
+                width: '808px',
                 move: false,
                 info: [
                     {
@@ -5732,9 +5768,9 @@ columnTypeSettingData( columnType, list ) {
                     },
                     {
                         id: 'conclusion_label_value',
-                        type: 'select',
+                        type: 'text',
                         title: getMessage.FTE13007,
-                        list: ['True','False'],
+                        required: true
                     },
                 ]
             };
@@ -6264,6 +6300,216 @@ scheduleSettingOpen( itemId, buttonText ) {
             });
         });
     });
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   パーツ管理テーブル
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+setPartsTable( mode ) {
+    const tb = this;
+    tb.mode = mode;
+
+    tb.$.container.attr('table-mode', tb.tableMode );
+
+    if ( tb.mode === 'view') {
+
+        // メニューボタン
+        tb.$.container.find('.eventFlowPartsBlockMenuButton').on('click', function(){console.log('!')
+            if ( !tb.checkWork ) {
+                const $button = $( this ),
+                    type = $button.attr('data-type');
+                switch ( type ) {
+                    // 編集確認
+                    case 'tableNew':
+                        tb.changeEdtiMode.call( tb, 'changeEditRegi');
+                    break;
+                    case 'tableOk':
+                        tb.editOk.call( tb ).then(function( result ){
+                            fn.resultModal( result ).then(function(){
+                                tb.changeViewMode.call( tb );
+                            });
+                        }).catch(function( result ){
+                            if ( result !== null ) {
+                                tb.editError( result );
+                            }
+                        });
+                    break;
+                }
+            }
+        });
+
+        tb.requestTbody();
+    } else if ( tb.mode === 'edit') {
+        tb.workerPost('edit', tb.select.view );
+    }
+
+    // Table内各種イベントセット
+    tb.setTableEvents();
+}
+/*
+##################################################
+   Body HTML
+##################################################
+*/
+tbodyPartsHtml() {
+    const tb = this,
+          list = tb.data.body;
+
+    const html = [];
+
+    if ( tb.mode === 'view') {
+        
+
+    } else if ( tb.mode === 'edit') {
+        for ( const item of list ) {
+            const rowHtml = [],
+                rowParameter = item.parameter,
+                rowId = String( rowParameter[ tb.idNameRest ] ),
+                rowClassName = ['tBodyTr'],
+                journal = item.journal;
+
+            // 廃止Class
+            if ( tb.discardCheck( rowId ) === '1') {
+                rowClassName.push('tBodyTrDiscard');
+            }
+
+            for ( const columnKey of tb.data.columnKeys ) {
+                rowHtml.push( tb.cellPartsHtml( item, columnKey, journal ) );
+            }
+            html.push( fn.html.row( rowHtml.join(''), rowClassName ) );
+
+        }
+    }
+    return html.join('');
+}
+/*
+##################################################
+   Cell HTML
+##################################################
+*/
+cellPartsHtml( item, columnKey, journal ) {
+    const tb = this;
+
+    const columnInfo = tb.info.column_info[ columnKey ],
+          columnName = columnInfo.column_name_rest,
+          columnType = columnInfo.column_type;
+
+    const className = [];
+    if ( columnType === 'NumColumn') className.push('tBodyTdNumber');
+    if ( columnName === 'discard') className.push('tBodyTdMark discardCell');
+
+    switch ( tb.mode ) {
+        case 'view': case 'parameter':
+            if ( columnInfo.column_type === 'ButtonColumn') {
+                className.push('tBodyTdButton');
+            }
+            return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td');
+        case 'select': case 'execute':
+            return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td');
+        case 'edit':
+            if ( ( columnName !== 'discard' && item.discard === '1' ) && columnName !== 'remarks' ) {
+                return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td');
+            } else {
+                className.push('tBodyTdInput');
+                return fn.html.cell( tb.editCellHtml( item, columnKey ), className, 'td');
+            }
+    }
+}
+
+/*
+##################################################
+  パーツブロックHTML
+##################################################
+*/
+partsBlockHtml( type ) {
+    const er = this;
+    return ``
+    + `<div class="eventFlowPartsBlock eventFlowPartsBlock${type}">`
+        + `<div class="eventFlowPartsBlockHeader">`
+            + `<div class="eventFlowPartsBlockName">${type}</div>`
+            + `<div class="eventFlowPartsBlockMenu">`
+                + `<ul class="eventFlowPartsBlockMenuList">`
+                    + `<li class="eventFlowPartsBlockMenuItem">`
+                        + `<button class="eventFlowPartsBlockMenuButton" data-type="tableNew"><span class="icon icon-plus"></span></button>`
+                    + `</li>`
+                    + `<li class="eventFlowPartsBlockMenuItem">`
+                        + `<button class="eventFlowPartsBlockMenuButton" data-type="tableOk"><span class="icon icon-plus"></span></button>`
+                    + `</li>`
+                + `</ul>`
+            + `</div>`
+        + `</div>`
+        + `<div class="eventFlowPartsBlockBody">`
+            + er.partsNoDataHtml( type )
+        + `</div>`
+    + `</div>`;
+}
+/*
+##################################################
+  登録なしHTML
+##################################################
+*/
+partsNoDataHtml( type ) {
+    return ``
+    + `<div class="eventFlowPartsNoDate"><p class="eventFlowPartsNoDateInner">${type}の登録がありません。</p></div>`
+}
+/*
+##################################################
+  パーツリストHTML
+##################################################
+*/
+partsListHtml( type ) {
+    return `<ul class="eventFlowPartsList">${this.partsItemHtml( type )}</ul>`;
+}
+/*
+##################################################
+  パーツリストHTML
+##################################################
+*/
+partsItemHtml( type ) {
+    return ``
+    + `<li class="eventFlowPartsItem eventFlowParts${type}">`
+        + `<div class="eventFlowPartsHeader">`
+            + `<div class="eventFlowPartsName">${type}</div>`
+            + `<div class="eventFlowPartsMenu"></div>`
+        + `</div>`
+        + `<div class="eventFlowPartsBody">`
+            + this.partsBodyHtml( type )
+        + `</div>`
+    + `</li>`;
+}
+/*
+##################################################
+  パーツボディHTML
+##################################################
+*/
+partsBodyHtml( type ) {
+    return '';
+}
+/*
+##################################################
+  フィルターHTML
+##################################################
+*/
+filterHtml() {
+
+}
+/*
+##################################################
+  アクションHTML
+##################################################
+*/
+actionHtml() {
+    
+}
+/*
+##################################################
+  ルールHTML
+##################################################
+*/
+ruleHtml() {
+
 }
 
 }

@@ -110,13 +110,16 @@ def collection_logic(organization_id, workspace_id):
     try:
         # 各設定の最終取得日時を取得
         timestamp_data = {key: value for key, value in sqliteDB.select_all("last_fetched_time")}
-        for key, value in timestamp_data.items():
-            if key in timestamp_dict:
-                timestamp_dict[key] = value
+        for id in id_list:
+            if id in timestamp_data:
+                timestamp_dict[id] = timestamp_data[id]
             else:
-                timestamp_dict[key] = current_timestamp
+                sqliteDB.insert_last_fetched_time(id, current_timestamp)
+                sqliteDB.db_connect.commit()
     except sqlite3.OperationalError:
-        pass
+        for id in id_list:
+            sqliteDB.insert_last_fetched_time(id, current_timestamp)
+            sqliteDB.db_connect.commit()
 
     # イベント収集
     events = []

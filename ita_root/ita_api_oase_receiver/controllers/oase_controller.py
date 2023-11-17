@@ -150,21 +150,21 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 err_code = "499-01801"
                 log_msg_args = [e, json.dumps(single_event)]
                 api_msg_args = [json.dumps(single_event)]
-                raise AppException(err_code, log_msg_args, api_msg_args)
+                raise AppException(err_code, log_msg_args, api_msg_args)  # noqa: F405
             # 辞書化したイベントをリストに格納
             events.append(event_dict)
 
     if len(events) == 0:
         # "eventsデータが取得できませんでした。"
         err_code = "499-01802"
-        raise AppException(err_code)
+        raise AppException(err_code)  # noqa: F405
 
     # そのまま/ラベリングしてMongoDBに保存
     err_code, err_msg = label_event(wsDb, wsMongo, events)  # noqa: F841
     if err_code != "":
         g.applogger.info(err_msg)
         err_code = "499-01803"
-        raise AppException(err_code)
+        raise AppException(err_code)  # noqa: F405
 
     # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
     wsDb.db_transaction_start()

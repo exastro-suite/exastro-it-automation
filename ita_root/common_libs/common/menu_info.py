@@ -634,8 +634,8 @@ def collect_pulldown_list(objdbca, menu, menu_record):
     ret = objdbca.table_select(t_common_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
 
     pulldown_list = {}
-    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn)
-    id_column_list = ["7", "11", "18", "21", "22", "27", "28"]
+    # 7(IDColumn), 11(LinkIDColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
+    id_column_list = ["7", "11", "18", "21", "22", "27", "28", "30", "31"]
     for record in ret:
         column_class_id = str(record.get('COLUMN_CLASS'))
 
@@ -726,10 +726,11 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
         return []
 
     search_candidates = []
-    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn)
-    id_column_list = ["7", "11", "14", "18", "21", "22", "28"]
-    # NotificationIDColumnの場合のプルダウンの一覧に合致するデータ抽出
-    if column_class_id == "28":
+    # 7(IDColumn), 11(LinkIDColumn), 14(LastUpdateUserColumn), 18(RoleIDColumn), 21(JsonIDColumn), 22(EnvironmentIDColumn), 28(NotificationIDColumn), 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
+    id_column_list = ["7", "11", "14", "18", "21", "22", "28", "30", "31"]
+    # 28(NotificationIDColumn), , 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
+    # の場合のプルダウンの一覧に合致するデータ抽出
+    if column_class_id in ["28", "30", "31"]:
         # プルダウンの一覧を取得
         objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
         objcolumn = objmenu.get_columnclass(column)
@@ -766,8 +767,9 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
             objcolumn = objmenu.get_columnclass(column)
             column_pulldown_list = objcolumn.get_values_by_key()
 
-            # MultiSelectIDColumnの場合だけプルダウンの一覧に合致するデータを抽出方法を変更
-            if column_class_id == "28":
+            # 28(NotificationIDColumn), , 30(FilterConditionDialogColumn), 31(RuleConditionDialogColumn)
+            # の場合だけプルダウンの一覧に合致するデータを抽出方法を変更
+            if column_class_id in ["28", "30", "31"]:
                 search_candidates = []
                 for record in ret:
                     search_candidates = objcolumn.csvkey_to_keyname_convart(record.get(col_name), search_candidates, column_pulldown_list)
@@ -817,37 +819,51 @@ def collect_search_candidates_from_mongodb(wsMongo: MONGOConnectWs, column, menu
 
     search_candidates = []
     for item in result_list:
-        if column in item:
-            search_candidates.append(item[column])
+        if column in item["parameter"]:
+            search_candidates.append(item["parameter"][column])
 
     # 重複を排除したリストを作成
     # 値がobjectの可能性もあるため詰めなおす方式で実装
     result = []
     for item in search_candidates:
-        if isinstance(item, dict):
-            for key, value in item.items():
-                # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
-                # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
-                if isinstance(value, str):
-                    tmp_str = '"' + key + '": "' + str(value) + '"'
-                else:
-                    tmp_str = '"' + key + '": ' + json.dumps(value)
+        # jsonに変換を試みて変換できなければそのまま、変換できればlist or dictとして処理する
+        def is_json(item):
+            try:
+                json.loads(item)
+            except ValueError:
+                return False
+            else:
+                return True
 
-                if tmp_str not in result:
-                    result.append(tmp_str)
+        if item is None:
+            continue
 
-        elif isinstance(item, list):
-            for value in item:
-                if value not in result:
+        if is_json(item):
+            item = json.loads(item)
+            if isinstance(item, dict):
+                item = dict(item)
+                for key, value in item.items():
                     # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
                     # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
-                    if isinstance(value, dict):
-                        result.append(json.dumps(value))
-                    elif isinstance(value, list):
-                        result.append(json.dumps(value))
+                    if isinstance(value, str):
+                        tmp_str = '"' + key + '": "' + str(value) + '"'
                     else:
-                        result.append(value)
+                        tmp_str = '"' + key + '": ' + json.dumps(value)
 
+                    if tmp_str not in result:
+                        result.append(tmp_str)
+            elif isinstance(item, list):
+                item = list(item)
+                for value in item:
+                    if value not in result:
+                        # 一旦入れ子のdictやlistの値は取得せず、単純に文字列に変換する実装とする
+                        # 入れ子の値も分解してプルダウンの項目にする場合は要追加実装
+                        if isinstance(value, dict):
+                            result.append(json.dumps(value))
+                        elif isinstance(value, list):
+                            result.append(json.dumps(value))
+                        else:
+                            result.append(value)
         else:
             if item not in result:
                 result.append(item)

@@ -14,20 +14,21 @@
 
 import json
 import os
-import requests
 
 file_name = "./event_collection_settings.json"
-
-# def fetch_settings():
 
 
 def create_file(settings):
     with open(file_name, "x") as f:
-        update = json.dump(settings, f)
+        update = json.dump(settings, f)  # noqa F841
 
 
 def remove_file():
-    os.remove(file_name)
+    try:
+        os.remove(file_name)
+        return True
+    except FileNotFoundError:
+        return False
 
 
 def get_settings():

@@ -24,11 +24,11 @@ def agent_setting_valid(objdbca, objtable, option):
 
     if cmd_type in ["Register", "Update", "Restore"]:
 
-        connection_method = entry_parameter['connection_method']
-        request_method = entry_parameter['request_method']
+        connection_method = entry_parameter['connection_method_name']
+        request_method = entry_parameter['request_method_name']
         password = entry_parameter.get("password")
 
-        # パスワードに入力があるかチェック
+        # パスワードカラムの入力があるかチェック
         password_entered = False
         if password:
             password_entered = True
@@ -43,6 +43,18 @@ def agent_setting_valid(objdbca, objtable, option):
                 msg.append("Password is required if Connection method is IMAP Password Auth.")
             # レスポンスリストフラグをTrueに自動設定
             entry_parameter["response_list_flag"] = "1"
+
+        # 編集時に対象レコードの接続方式が変更され、パスワードカラムに入力が無い場合、値をnullに設定
+        if cmd_type == "Update":
+            setting_id = entry_parameter["event_collection_settings_id"]
+            record = objdbca.table_select(
+                "T_OASE_EVENT_COLLECTION_SETTINGS",
+                "WHERE EVENT_COLLECTION_SETTINGS_ID=%s",
+                [setting_id]
+            )
+            if connection_method != record[0]["CONNECTION_METHOD_ID"]:
+                if password_entered is False:
+                    entry_parameter["password"] = None
 
         # msg に値がある場合は個別バリデエラー
         if len(msg) >= 1:

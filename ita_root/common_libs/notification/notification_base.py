@@ -22,6 +22,8 @@ from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException
 from flask import g
 from jinja2 import Template
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 
 class Notification(ABC):
@@ -53,7 +55,9 @@ class Notification(ABC):
         result = {
             "success": 0,
             "failure": 0,
-            "failure_info": []
+            "failure_info": [],
+            "success_notification_count": 0,
+            "failure_notification_count": 0
         }
 
         for index, item in enumerate(event_list):
@@ -65,6 +69,8 @@ class Notification(ABC):
             result["success"] = result["success"] + tmp_result["success"]
             result["failure"] = result["failure"] + tmp_result["failure"]
             result["failure_info"].extend(tmp_result["failure_info"])
+            result["success_notification_count"] = result["success_notification_count"] + tmp_result["success_notification_count"]
+            result["failure_notification_count"] = result["failure_notification_count"] + tmp_result["failure_notification_count"]
 
             g.applogger.info(f"{index + 1}件目のイベントの処理終了")
 
@@ -111,7 +117,7 @@ class Notification(ABC):
 
         result = {
             "title": split_message[1].strip("\n"),
-            "text": split_message[2].strip("\n")
+            "message": split_message[2].strip("\n")
         }
 
         return result
@@ -139,8 +145,18 @@ class Notification(ABC):
         pass
 
     @staticmethod
-    def call_setting_notification_api():
-        """_summary_
+    def _call_setting_notification_api(event_type_true: list = None, event_type_false: list = None):
+        """
+        通知先取得APIを呼び出し、結果を返却する
+        Args:
+            event_type_true (list, optional): 指定したevent_typeがtrueのデータを抽出したい場合に指定する。 Defaults to None.
+            event_type_false (list, optional): 指定したevent_typeがfalseのデータを抽出したい場合に指定する。 Defaults to None.
+
+        Raises:
+            AppException: _description_
+
+        Returns:
+            _type_: _description_
         """
 
         organization_id = g.get('ORGANIZATION_ID')
@@ -156,9 +172,31 @@ class Notification(ABC):
             "Language": language
         }
 
+        event_type_false = []
+        event_type_false.append("ita.event_type.evaluated")
+        query_params = {}
+        if event_type_true is not None and len(event_type_true) > 0:
+            # query_params["event_type_true"] = ",".join(event_type_true)
+            # 現状はこの設定だが上で動くように修正される予定（区切り文字が|から,に変わる）
+            query_params["event_type_true"] = "|".join(event_type_true)
+
+        if event_type_false is not None and len(event_type_false) > 0:
+            # query_params["event_type_false"] = ",".join(event_type_false)
+            # 現状はこの設定だが上で動くように修正される予定（区切り文字が|から,に変わる）
+            query_params["event_type_false"] = "|".join(event_type_false)
+
         # API呼出
-        api_url = f"http://{host_name}:{port}/api/{organization_id}/platform/workspaces/{workspace_id}/settings/notifications"
-        request_response = requests.get(api_url, headers=header_para)
+        api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/settings/notifications"
+
+        s = requests.Session()
+
+        retries = Retry(total=5,
+                        backoff_factor=1)
+
+        s.mount('http://', HTTPAdapter(max_retries=retries))
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+
+        request_response = s.request(method='GET', url=api_url, timeout=2, headers=header_para, params=query_params)
 
         response_data = request_response.json()
 
@@ -166,14 +204,14 @@ class Notification(ABC):
             raise AppException('999-00005', [api_url, response_data])
 
         g.applogger.info("通知先取得APIの呼び出し結果")
-        g.applogger.info(f"合計取得件数:{len(response_data)}")
-        for index, item in enumerate(response_data):
+        g.applogger.info(f"合計取得件数:{len(response_data['data'])}")
+        for index, item in enumerate(response_data["data"]):
             g.applogger.info(f"{index + 1}件目　id:{item.get('id')}, name:{item.get('name')}")
 
         return response_data
 
-    @staticmethod
-    def __call_notification_api(message, notification_destination):
+    @classmethod
+    def __call_notification_api(cls, message, notification_destination):
         """
         Platformの通知APIをコールする
         Args:
@@ -195,35 +233,67 @@ class Notification(ABC):
             "Language": language
         }
 
-        data = {}
-        data["message_informations"] = message
-        data["func_id"] = "1102"
-        data["func_informations"] = {"name": "OASE"}
+        body_data_list = []
+        # 通知先の件数分データを作成する
+        for item in notification_destination:
+            data = cls._get_data()
+            data["message"] = message
+            data["destination_id"] = item
+            body_data_list.append(data)
+
+        data_encode = json.dumps(body_data_list)
 
         # API呼出
-        api_url = f"http://{host_name}:{port}/api/{organization_id}/platform/workspaces/{workspace_id}/notifications"
+        api_url = f"http://{host_name}:{port}/internal-api/{organization_id}/platform/workspaces/{workspace_id}/notifications"
+
+        s = requests.Session()
+
+        retries = Retry(total=5,
+                        backoff_factor=1)
+
+        s.mount('http://', HTTPAdapter(max_retries=retries))
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+
+        request_response = s.request(method='POST', url=api_url, timeout=2, headers=header_para, data=data_encode)
 
         result = {
             "success": 0,
             "failure": 0,
-            "failure_info": []
+            "failure_info": [],
+            "success_notification_count": 0,
+            "failure_notification_count": 0
         }
 
-        # 通知先の件数分Platformの通知APIをコールする
-        for item in notification_destination:
-            data["destination_id"] = item
-            data_encode = json.dumps(data)
-
-            request_response = requests.post(url=api_url, headers=header_para, data=data_encode)
-
-            if request_response.status_code != 200:
-                # ループで処理する都合エラーが発生してもその瞬間に例外は発生させない
-                # 代わりにエラー件数とエラーが発生した際のリクエスト内容を記録し、呼び出し元に返却するようにする。
-                result["failure"] += 1
-                result["failure_info"].append(data)
-            else:
-                result["success"] += 1
+        if request_response.status_code != 200:
+            # ループで処理する都合エラーが発生してもその瞬間に例外は発生させない
+            # 代わりにエラー件数とエラーが発生した際のリクエスト内容を記録し、呼び出し元に返却するようにする。
+            result["failure"] = 1
+            result["failure_info"].append(data)
+            result["failure_notification_count"] = len(body_data_list)
+        else:
+            result["success"] = 1
+            result["success_notification_count"] = len(body_data_list)
 
         g.applogger.info(f"通知APIの呼び出し結果:\n{result}")
+
+        return result
+
+    @staticmethod
+    def _get_data():
+        """
+        通知APIに個別の値を設定する場合、オーバーライドして必要な設定を記載すること
+        Returns:
+            必要な設定を施したdict
+        """
+        return {}
+
+    @classmethod
+    def fetch_notification_destination_dict(cls):
+        fetch_data = cls._call_setting_notification_api()
+        data = fetch_data["data"]
+
+        result = {}
+        for item in data:
+            result[item["id"]] = item["name"]
 
         return result

@@ -3433,6 +3433,126 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/populated_data:
+    get:
+      tags:
+        - Driver Controll
+      description: 作業実行の投入データ取得
+      operationId: getExecutePopulatedData
+      x-openapi-router-controller: controllers.driver_controll_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+        - name: execution_no
+          in: path
+          description: 実行No
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/result_data:
+    get:
+      tags:
+        - Driver Controll
+      description: 作業実行の結果データ取得
+      operationId: getExecuteResultData
+      x-openapi-router-controller: controllers.driver_controll_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+        - name: execution_no
+          in: path
+          description: 実行No
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/driver/{execution_no}/cancel/:
     patch:
       tags:

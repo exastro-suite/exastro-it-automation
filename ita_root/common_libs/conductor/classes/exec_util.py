@@ -4949,7 +4949,12 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
 # 共通Lib
 def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
-    dt = datetime.now().strftime(format)
+    # 呼び出し元によってdatetimeの型が違う場合があるため判定する
+    if 'now' in dir(datetime):
+        dt = datetime.now().strftime(format)
+    elif 'datetime' in dir(datetime):
+        dt = datetime.datetime.now().strftime(format)
+
     if type == 'str':
         return '{}'.format(dt)
     else:

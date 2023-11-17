@@ -1,7 +1,8 @@
+from flask import g
 from common_libs.oase.api_client_common import APIClientCommon
-from imapclient import IMAPClient
+from imapclient import imapclient, IMAPClient
 import ssl
-import json
+from common_libs.common.exception import AppException
 from datetime import datetime
 
 
@@ -10,78 +11,99 @@ class IMAPAuthClient(APIClientCommon):
         super().__init__(auth_settings)
 
     def imap_login(self):
-        self.ssl = False
-        self.ssl_context = None
+        result = False
+        try:
+            self.ssl = False
+            self.ssl_context = None
 
-        # SSL/TLSの場合
-        if self.request_method == "3":
-            self.ssl = True
-            self.ssl_context = ssl.create_default_context()
+            # SSL/TLSの場合
+            if self.request_method == "3":
+                self.ssl = True
+                self.ssl_context = ssl.create_default_context()
 
-        # IMAPサーバに接続
-        self.client = IMAPClient(
-            host=self.url,
-            port=self.port,
-            ssl=self.ssl,
-            ssl_context=self.ssl_context
-        )
+            # IMAPサーバに接続
+            self.client = IMAPClient(
+                host=self.url,
+                port=self.port,
+                ssl=self.ssl,
+                ssl_context=self.ssl_context
+            )
 
-        # StartTLSの場合
-        if self.request_method == "4":
-            self.ssl_context = ssl.create_default_context()
-            self.client.starttls(self.ssl_context)
+            # StartTLSの場合
+            if self.request_method == "4":
+                self.ssl_context = ssl.create_default_context()
+                self.client.starttls(self.ssl_context)
 
-        # LOGIN
-        self.client.login(
-            username=self.username,
-            password=self.password
-        )
+            # LOGIN
+            self.client.login(
+                username=self.username,
+                password=self.password
+            )
+
+            result = True
+            return result
+
+        except imapclient.exceptions.LoginError:
+            g.applogger.info("Failed to login to mailserver. Check login settings.")
+            return result
+        except Exception as e:
+            raise AppException("BKY-70002", ["IMAP Client Error", e])
 
     def call_api(self, parameter=None):
 
+        response = []
+
         # IMAPサーバにログイン
-        self.imap_login()
+        logged_in = self.imap_login()
+
+        if logged_in is False:
+            return response
 
         # メールボックスの選択
         if self.mailbox_name is None:
             self.mailbox_name = "INBOX"
-        mailbox = self.client.select_folder(self.mailbox_name)
 
-        # 最後の取得時間以降に受信したメールのIDを取得
-        datetime_obj = datetime.utcfromtimestamp(self.last_fetched_timestamp)
-        target_datetime = datetime_obj.strftime("%d-%b-%Y")
-        message_ids = self.client.search(["SINCE", target_datetime])
+        try:
+            mailbox = self.client.select_folder(self.mailbox_name)
 
-        # 取得したIDのメールの内容を取得
-        mail_dict = self.client.fetch(message_ids, ['ENVELOPE', 'RFC822.HEADER', 'RFC822.TEXT'])
-        response = []
+            # 最後の取得時間以降に受信したメールのIDを取得
+            datetime_obj = datetime.utcfromtimestamp(self.last_fetched_timestamp)
+            target_datetime = datetime_obj.strftime("%d-%b-%Y")
+            message_ids = self.client.search(["SINCE", target_datetime])
 
-        # メールの内容を辞書型にまとめる
-        for mid, d in mail_dict.items():
-            e = d[b'ENVELOPE']
-            h = d[b'RFC822.HEADER']
-            b = d[b'RFC822.TEXT']
+            # 取得したIDのメールの内容を取得
+            mail_dict = self.client.fetch(message_ids, ['ENVELOPE', 'RFC822.HEADER', 'RFC822.TEXT'])
+            if mail_dict == {}:
+                return response
 
-            ef = e.from_[0] if isinstance(e.from_, tuple) and len(e.from_) > 0 else None
-            et = e.to[0] if isinstance(e.to, tuple) and len(e.to) > 0 else None
+            # メールの内容を辞書型にまとめる
+            for mid, d in mail_dict.items():
+                e = d[b'ENVELOPE']
+                h = d[b'RFC822.HEADER']
+                b = d[b'RFC822.TEXT']
 
-            info = {}
-            info['message_id'] = e.message_id.decode()
-            info['envelope_from'] = '%s@%s' % (ef.mailbox.decode(), ef.host.decode()) if ef else ''
-            info['envelope_to'] = '%s@%s' % (et.mailbox.decode(), et.host.decode()) if et else ''
-            info['header_from'] = self._parser(h.decode(), 'Return-Path: ')
-            info['header_to'] = self._parser(h.decode(), 'Delivered-To: ')
-            info['mailaddr_from'] = self._parser(h.decode(), 'From: ')
-            info['mailaddr_to'] = self._parser(h.decode(), 'To: ')
-            info['date'] = int(e.date.timestamp())
-            # info['date'] = e.date.strftime('%Y-%m-%d %H:%M:%S')
-            info['lastchange'] = e.date.timestamp()
-            info['subject'] = e.subject.decode() if e.subject else ''
-            info['body'] = b.decode()
+                ef = e.from_[0] if isinstance(e.from_, tuple) and len(e.from_) > 0 else None
+                et = e.to[0] if isinstance(e.to, tuple) and len(e.to) > 0 else None
 
-            response.append(info)
+                info = {}
+                info['message_id'] = e.message_id.decode()
+                info['envelope_from'] = '%s@%s' % (ef.mailbox.decode(), ef.host.decode()) if ef else ''
+                info['envelope_to'] = '%s@%s' % (et.mailbox.decode(), et.host.decode()) if et else ''
+                info['header_from'] = self._parser(h.decode(), 'Return-Path: ')
+                info['header_to'] = self._parser(h.decode(), 'Delivered-To: ')
+                info['mailaddr_from'] = self._parser(h.decode(), 'From: ')
+                info['mailaddr_to'] = self._parser(h.decode(), 'To: ')
+                info['date'] = int(e.date.timestamp())
+                # info['date'] = e.date.strftime('%Y-%m-%d %H:%M:%S')
+                info['lastchange'] = e.date.timestamp()
+                info['subject'] = e.subject.decode() if e.subject else ''
+                info['body'] = b.decode()
 
-        response = [item for item in response if item["date"] >= self.last_fetched_timestamp]
+                response.append(info)
+
+                response = [item for item in response if item["date"] >= self.last_fetched_timestamp]
+        except Exception as e:
+            raise AppException("BKY-70002", ["IMAP Client Error", e])
 
         return response
 

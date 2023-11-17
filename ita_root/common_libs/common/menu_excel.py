@@ -995,6 +995,9 @@ def collect_excel_journal(
     # IDColumn項目のプルダウン一覧の取得
     pulldown_list = menu_info.collect_pulldown_list(objdbca, menu, menu_record)
 
+    # 特殊カラムクラスのプルダウン一覧の加工
+    pulldown_list = get_special_column_pulldown_list(column_list, pulldown_list)
+
     # 色の設定
     # 背景色
     fill_bl = PatternFill(fill_type='solid', fgColor='00459D')
@@ -1218,6 +1221,9 @@ def collect_excel_filter(
 
     # IDColumn項目のプルダウン一覧の取得
     pulldown_list = menu_info.collect_pulldown_list(objdbca, menu, menu_record)
+
+    # 特殊カラムクラスのプルダウン一覧の加工
+    pulldown_list = get_special_column_pulldown_list(column_list, pulldown_list)
 
     # 色の設定
     # 背景色
@@ -1859,3 +1865,33 @@ def create_title_info(column_info, column_group_info, columns, title_info, exec_
                 pos)
 
     return title_info, pos
+
+def get_special_column_pulldown_list(column_list, pulldown_list):
+    """
+        collect_pulldown_listで取得した特殊カラムクラスにプルダウン一覧について
+        加工
+        カラムクラス　FilterConditionSettingColumn
+            加工前
+              'filter_condition_json': {'label_name': {'key': 'val', ...},
+                                        'condition_type': {'key': 'val', ...}}
+            加工後
+              'filter_condition_json': {'key': 'val', ...}
+
+        ARGS:
+        column_list: カラム一覧
+        pulldown_list: プルダウン一覧
+        RETURN:
+            加工後のプルダウン一覧
+    """
+    tgt_rest_name = {}
+    for column_row in column_list:
+        if column_row['column_type'] == 'FilterConditionSettingColumn':
+            if column_row['column_name_rest'] in pulldown_list:
+                tgt_rest_name[column_row['column_name_rest']] = column_row['column_type']
+
+    for column_name_rest, column_type in tgt_rest_name.items():
+        if column_type == 'FilterConditionSettingColumn':
+            if column_name_rest in pulldown_list:
+                if 'label_name' in pulldown_list[column_name_rest]:
+                    pulldown_list[column_name_rest] = pulldown_list[column_name_rest]['label_name']
+    return pulldown_list

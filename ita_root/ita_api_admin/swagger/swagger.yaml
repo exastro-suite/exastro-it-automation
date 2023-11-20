@@ -37,6 +37,8 @@ tags:
   description: ログレベル設定
 - name: Backyard Execute Check
   description: バックヤード実行状態一括取得
+- name: Menu Info
+  description: メニュー情報の取得(Exastro Platform連携用) ※利用不可
 paths:
   /api/organizations/{organization_id}/ita/:
     post:
@@ -390,6 +392,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.backyard_execute_check_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/notifications/destinations/{column}/:
+    get:
+      tags:
+      - Menu Info
+      description: 指定のメニューのカラムで利用している通知先を取得する
+      operationId: get_notification_destination
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: menu
+        in: path
+        description: メニュー名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: column
+        in: path
+        description: REST用項目名
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.menu_info_controller
 components:
   schemas:
     ERROR_TEMPLATE:
@@ -807,6 +868,27 @@ components:
                 last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
                 status_name: 未実行
                 id: (uuid)
+        message: message
+    inline_response_200_5:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: array
+          example:
+          - id1
+          - id2
+          - id3
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data:
+        - id1
+        - id2
+        - id3
         message: message
     inline_response_200_1_data_organization_id_initial_data_parameter:
       type: object

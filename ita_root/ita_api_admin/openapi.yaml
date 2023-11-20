@@ -39,6 +39,8 @@ tags:
     description: ログレベル設定
   - name: Backyard Execute Check
     description: バックヤード実行状態一括取得
+  - name: Menu Info
+    description: メニュー情報の取得(Exastro Platform連携用) ※利用不可
 
 paths:
   /api/organizations/{organization_id}/ita/:
@@ -734,6 +736,67 @@ paths:
                                     last_update_timestamp:
                                       type: string
                                       example: "YYYY-MM-DD hh:mm:ss.xxxxxx"
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/notifications/destinations/{column}/:
+    get:
+      tags:
+        - Menu Info
+      description: 指定のメニューのカラムで利用している通知先を取得する
+      operationId: getNotificationDestination
+      x-openapi-router-controller: controllers.menu_info_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+        - name: column
+          in: path
+          description: REST用項目名
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: array
+                    example: ["id1", "id2", "id3"]
                   message:
                     type: string
         '401':

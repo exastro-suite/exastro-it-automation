@@ -32,9 +32,9 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     # ループに入る前にevent_collection_settings.jsonを削除
     setting_removed = remove_file()
     if setting_removed is True:
-        g.applogger.debug("Removed JSON file 'event_collection_settings.json'.")
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10004", []))
     else:
-        g.applogger.debug("No Json file to remove.")
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10005", []))
 
     while True:
         print("")
@@ -73,18 +73,18 @@ def collection_logic(organization_id, workspace_id):
 
     # SQLiteモジュール
     sqliteDB = sqliteConnect(organization_id, workspace_id)
-    g.applogger.debug("Connected to the SQLite database.")
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10006", []))
 
     # イベント収集設定ファイルからイベント収集設定の取得
     settings = get_settings()
-    g.applogger.debug("Getting event collection settings from JSON file 'event_collection_settings.json'.")
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10007", []))
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
 
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
 
-        g.applogger.info("Getting settings from IT Automation. (Organization ID: {}, Workspace ID: {})".format(organization_id, workspace_id))
+        g.applogger.info(g.appmsg.get_log_message("AGT-10008", []))
         try:
             status_code, response = exastro_api.api_request(
                 "POST",
@@ -93,10 +93,10 @@ def collection_logic(organization_id, workspace_id):
             )
             if status_code == 200:
                 create_file(response["data"])
-                g.applogger.debug("Created the JSON file 'event_collection_settings.json'.")
+                g.applogger.debug(g.appmsg.get_log_message("AGT-10009", []))
                 settings = get_settings()
             else:
-                g.applogger.info("Failed to get event collection settings from Exastro IT Automation.")
+                g.applogger.info(g.appmsg.get_log_message("AGT-10010", []))
                 g.applogger.debug(status_code)
                 g.applogger.debug(response)
                 settings = False
@@ -124,25 +124,25 @@ def collection_logic(organization_id, workspace_id):
     # イベント収集
     events = []
     if settings is not False:
-        g.applogger.info("Collecting events.")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10011", []))
         events = collect_event(sqliteDB, settings, timestamp_dict)
-        g.applogger.info(f"Retrived {len(events)} events.")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10012", [len(events)]))
     else:
-        g.applogger.debug("Cannot collect events as no event collection settings exists.")
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10013", []))
 
     # 収集したイベント, 取得時間をSQLiteに保存
     if events != []:
         try:
             sqliteDB.db_connect.execute("BEGIN")
             sqliteDB.insert_events(events)
-            g.applogger.debug("Events and fetched time saved to SQLite database.")
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
         except AppException as e:  # noqa E405
             sqliteDB.db_connect.rollback()
-            g.applogger.error("Failed to save events and fetched time to SQLite database.")
+            g.applogger.error(g.appmsg.get_log_message("AGT-10015", []))
             app_exception(e)
 
     # ITAに送信するデータを取得
-    g.applogger.debug("Searching unsent events.")
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10016", []))
     post_body = {
         "events": []
     }
@@ -193,7 +193,7 @@ def collection_logic(organization_id, workspace_id):
         event_count = 0
         for event in post_body["events"]:
             event_count = event_count + len(event["event"])
-        g.applogger.info(f"Sending {event_count} events to IT Automation")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10017", [event_count]))
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
         try:
             status_code, response = exastro_api.api_request(
@@ -206,7 +206,7 @@ def collection_logic(organization_id, workspace_id):
 
         # データ送信に成功した場合、sent_flagカラムの値をtrueにアップデート
         if status_code == 200:
-            g.applogger.info("Successfully sent events to Exastro IT Automation")
+            g.applogger.info(g.appmsg.get_log_message("AGT-10018", []))
             for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
                 try:
                     sqliteDB.db_connect.execute("BEGIN")
@@ -216,13 +216,13 @@ def collection_logic(organization_id, workspace_id):
                     sqliteDB.db_close()
                     app_exception(e)
 
-            g.applogger.debug("Updated sent status flag in SQLite database.")
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10019", []))
         else:
-            g.applogger.info("Failed to send events to IT Automamtion")
+            g.applogger.info(g.appmsg.get_log_message("AGT-10020", []))
             g.applogger.debug(response)
         sqliteDB.db_close()
 
     else:
-        g.applogger.info("No events sent to IT Automation")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))
 
     return

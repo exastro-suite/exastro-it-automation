@@ -25,7 +25,6 @@ from common_libs.ci.util import app_exception
 # イベント収集
 ######################################################
 def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=None):
-    debug_msg = ""
 
     # ドット区切りの文字列で辞書を指定して値を取得
     def get_value_from_jsonpath(jsonpath=None, data=None):
@@ -47,7 +46,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         try:
             json_data = api_client.call_api(parameter=api_parameter)
         except AppException as e:
-            g.applogger.info("Failed to collect events. (Event Collection Settings ID: {})".format(setting["EVENT_COLLECTION_SETTINGS_ID"]))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)
 
         # イベントが0件の場合はスキップ
@@ -57,8 +56,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         # 設定で指定したキーの値を取得
         json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
         if json_data is None:
-            debug_msg = "RESPONSE KEY does not exist."
-            g.applogger.info(debug_msg)
+            g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             continue
 
         # RESPONSE_KEYの値がリスト形式ではない場合、そのまま辞書に格納する
@@ -70,8 +68,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         else:
             # 値がリスト形式かチェック
             if isinstance(json_data, list) is False:
-                debug_msg = "The value of RESPONSE KEY is not array type."
-                g.applogger.info(debug_msg)
+                g.applogger.info(g.appmsg.get_log_message("AGT-10003", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
                 continue
             for data in json_data:
                 event = init_label(data, fetched_time, setting)

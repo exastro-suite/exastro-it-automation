@@ -137,6 +137,7 @@
     "499-01705": "Label is required.",
     "499-01706": "Condition is required.",
     "499-01707": "Value is required.",
+    "499-01708": "Invalid json format.  Json data:{}",
     "499-01801": "Invalid format for receive data.",
     "499-01802": "Failed to get events data.",
     "499-01803": "Could not save to MongoDB.",

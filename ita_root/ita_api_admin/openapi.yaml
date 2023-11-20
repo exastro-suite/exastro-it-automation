@@ -751,10 +751,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
 
-  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/notification/destination/{column}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/notifications/destinations/{column}/:
     get:
       tags:
-        - Backyard Execute Check
+        - Menu Info
       description: 指定のメニューのカラムで利用している通知先を取得する
       operationId: getNotificationDestination
       x-openapi-router-controller: controllers.menu_info_controller
@@ -795,9 +795,8 @@ paths:
                     type: string
                     example: 000-00000
                   data:
-                    type: object
-                    items: {}
-                    example: {"id1": "name1", "id2": "name2", "id3": "name3"}
+                    type: array
+                    example: ["id1", "id2", "id3"]
                   message:
                     type: string
         '401':

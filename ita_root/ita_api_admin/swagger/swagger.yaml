@@ -392,7 +392,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.backyard_execute_check_controller
-  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/notification/destination/{column}/:
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/notifications/destinations/{column}/:
     get:
       tags:
       - Menu Info
@@ -876,19 +876,19 @@ components:
           type: string
           example: 000-00000
         data:
-          type: object
+          type: array
           example:
-            id1: name1
-            id2: name2
-            id3: name3
+          - id1
+          - id2
+          - id3
         message:
           type: string
       example:
         result: 000-00000
         data:
-          id1: name1
-          id2: name2
-          id3: name3
+        - id1
+        - id2
+        - id3
         message: message
     inline_response_200_1_data_organization_id_initial_data_parameter:
       type: object

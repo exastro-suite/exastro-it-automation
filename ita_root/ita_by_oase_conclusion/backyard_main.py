@@ -21,6 +21,7 @@ from common_libs.common.util import ky_decrypt, get_timestamp, get_all_execution
 from common_libs.conductor.classes.exec_util import *
 from common_libs.ci.util import log_err
 from common_libs.oase.manage_events import ManageEvents
+from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 import datetime
 import inspect
 import json
@@ -147,7 +148,7 @@ class Judgement:
         sql = "SELECT * FROM V_OASE_LABEL_KEY_GROUP WHERE DISUSE_FLAG = '0'"
         Rows = self.MariaDBCA.sql_execute(sql, [])
         for Row in Rows:
-            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY']
+            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY_NAME']
 
     def getIDtoName(self, uuid):
         uuid = str(uuid)
@@ -548,9 +549,11 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         tmp_msg = "イベント更新  タイムアウト({}) ids: {}".format(str(update_Flag_Dict), str(timeout_Event_Id_List))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    # PFから通知先一覧取得（既知(時間切れ)がTrue）
+        # 通知処理（既知(時間切れ)）
+        OASE.send(objdbca, timeout_Event_Id_List, {"notification_type": OASENotificationType.TIMEOUT})
 
-    # PFから通知先一覧取得（新規がTrue）
+    # 通知処理（新規）
+    OASE.send(objdbca, EventObj.labeled_events_dict, {"notification_type": OASENotificationType.NEW})
 
     # テーブル名
     t_oase_filter = 'T_OASE_FILTER'  # フィルター管理
@@ -723,7 +726,9 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         for action_log_row in ret_action_log:
                             if action_log_row["ACTION_ID"]:
                                 # アクションが設定されている場合
-                                # 通知処理
+                                # 通知処理(作業前)
+                                OASE.send(objdbca, UseEventIdList, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": action_log_row["RULE_ID"]})
+
                                 # 評価結果の更新（実行中）
                                 data_list = {
                                     "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
@@ -832,9 +837,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         tmp_msg = "未知イベントなし"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    # PFから通知先一覧取得（未知がTrue）
-    # 最後の通知先ではない or 通知先が0件ではない
-    # TrueでPFへ通知メッセージ送付（未知）
+    # 通知処理（未知）
+    OASE.send(objdbca, UnusedEventIdList, {"notification_type": OASENotificationType.UNDETECTED})
 
 
 def UserIDtoUserName(objdbca, UserId):
@@ -941,7 +945,7 @@ class ActionStatusMonitor():
         sql = "SELECT * FROM V_OASE_LABEL_KEY_GROUP WHERE DISUSE_FLAG = '0'"
         Rows = self.MariaDBCA.sql_execute(sql, [])
         for Row in Rows:
-            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY']
+            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY_NAME']
 
     def getIDtoName(self, uuid):
         uuid = str(uuid)

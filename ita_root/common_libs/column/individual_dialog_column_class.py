@@ -167,9 +167,11 @@ class IndividualDialogColumn(IDColumn):
     # [load_table] 値を入力用の値へ変換
     def convert_value_input(self, valnames=''):
         """
-            値を入力用の値へ変換
+            値を出力用の値へ変換 (DB->UI)
+            DB: [{"label_key": "key01", "label_value": "True"}....]
+            UI: [[key01に対応した名称, "True"]....]
             ARGS:
-                vallist:値 "key name1, ..."
+                val:値
             RETRUN:
                 retBool, msg, val
         """
@@ -186,7 +188,6 @@ class IndividualDialogColumn(IDColumn):
                 return True, '', None,
         except Exception:
             retBool = False
-            # todo
             status_code = '499-01703'
             msg_args = []
             msg = g.appmsg.get_api_message(status_code, msg_args)
@@ -217,6 +218,7 @@ class IndividualDialogColumn(IDColumn):
                 ( True / False , メッセージ )
         """
         retBool = True
+        val_decode = None
 
         if valnames:
             try:
@@ -240,6 +242,33 @@ class IndividualDialogColumn(IDColumn):
                         return False, msg
 
                     # 同じ値が複数あるか判定
+
+        min_length = 0
+        max_length = None
+
+        if val_decode:
+            # カラムの閾値を取得
+            objcols = self.get_objcols()
+            if objcols is not None:
+                if self.get_rest_key_name() in objcols:
+                    dict_valid = self.get_dict_valid()
+                    # 閾値(文字列長)
+                    max_length = dict_valid.get('max_length')
+                    min_length = dict_valid.get('min_length')
+                    if min_length is None:
+                        min_length = 0
+                    if max_length is None:
+                        min_length = 1024 * 10
+            # 文字列長
+            if max_length is not None:
+                check_val = len(str(val_decode).encode('utf-8'))
+                if check_val != 0:
+                    if int(min_length) <= check_val <= int(max_length):
+                        retBool = True
+                    else:
+                        retBool = False
+                        msg = g.appmsg.get_api_message('MSG-00008', [max_length, check_val])
+                        return retBool, msg
 
         return retBool,
 
@@ -265,7 +294,6 @@ class IndividualDialogColumn(IDColumn):
             else:
                 val_decode = self.is_json_format(val)
                 if val_decode is False:
-                    # todo
                     retBool = False
                     status_code = '499-01703'
                     msg_args = []
@@ -292,17 +320,22 @@ class IndividualDialogColumn(IDColumn):
         try:
             val = json.loads(val)
             if type(val) is not list:
-                raise Exception("JSON format is abnormal")
+                raise Exception("JSON format is abnormal (1) json data:{}".format(str(val)))
             else:
                 if len(val) > 0:
                     for val_line in val:
                         if type(val) is not list:
-                            raise Exception("JSON format is abnormal")
+                            raise Exception("JSON format is abnormal (2) json data:{}".format(str(val)))
                         else:
                             if len(val_line) != len(self.json_tag):
-                                raise Exception("JSON format is abnormal")
+                                raise Exception("JSON format is abnormal (3) json data:{}".format(str(val)))
             return val
-        except Exception:
+        except Exception as e:
+            import inspect, os
+            file_name = os.path.basename(inspect.currentframe().f_code.co_filename)
+            line_no = str(inspect.currentframe().f_lineno)
+            msg = "Exception: {} ({}:{})".format(str(e), file_name, line_no)
+            g.applogger.info(msg) # 外部アプリへの処理開始・終了ログ
             return False
 
     # DBに登録するデータをユニーク制約用にKey値でソートする

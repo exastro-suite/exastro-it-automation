@@ -142,15 +142,14 @@ class MultiSelectIDColumn(IDColumn):
             json_val = json.loads(val)
             if type(json_val["id"]) != list:
                 status_code = 'MSG-00001'
-                msg_args = ["JSON format error(not list) data(%s)" % (str(val))]
-                val = g.appmsg.get_api_message(status_code, msg_args)
-                return False, msg, val,
+                exp_args = "Not in JSON list format data(%s)" % (str(val))
+                raise Exception(exp_args)
         except Exception as e:
-            retBool = False
-            status_code = '499-01701'
-            msg_args = []
+            # エラーでリターンの処理がないのでException
+            status_code = '499-01708'
+            msg_args = [str(val)]
             msg = g.appmsg.get_api_message(status_code, msg_args)
-            return retBool, msg
+            raise Exception(status_code, msg)
 
         search_candidates = []
         if isinstance(json_val["id"], list):
@@ -230,6 +229,7 @@ class MultiSelectIDColumn(IDColumn):
         """
         retBool = True
 
+        val_decode = None
         if valnames:
             try:
                 val_decode = self.is_json_format(valnames)
@@ -263,6 +263,33 @@ class MultiSelectIDColumn(IDColumn):
                         msg = g.appmsg.get_api_message(status_code, msg_args)
                         return retBool, msg
                     set_Valses.append(return_values)
+
+        min_length = 0
+        max_length = None
+
+        if val_decode:
+            # カラムの閾値を取得
+            objcols = self.get_objcols()
+            if objcols is not None:
+                if self.get_rest_key_name() in objcols:
+                    dict_valid = self.get_dict_valid()
+                    # 閾値(文字列長)
+                    max_length = dict_valid.get('max_length')
+                    min_length = dict_valid.get('min_length')
+                    if min_length is None:
+                        min_length = 0
+                    if max_length is None:
+                        min_length = 1024 * 10
+            # 文字列長
+            if max_length is not None:
+                check_val = len(str(val_decode).encode('utf-8'))
+                if check_val != 0:
+                    if int(min_length) <= check_val <= int(max_length):
+                        retBool = True
+                    else:
+                        retBool = False
+                        msg = g.appmsg.get_api_message('MSG-00008', [max_length, check_val])
+                        return retBool, msg
 
         return retBool,
 
@@ -309,4 +336,9 @@ class MultiSelectIDColumn(IDColumn):
                 raise Exception("JSON format is abnormal")
             return val
         except Exception:
+            import inspect, os
+            file_name = os.path.basename(inspect.currentframe().f_code.co_filename)
+            line_no = str(inspect.currentframe().f_lineno)
+            msg = "Exception: {} ({}:{})".format(str(e), file_name, line_no)
+            g.applogger.info(msg) # 外部アプリへの処理開始・終了ログ
             return False

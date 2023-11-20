@@ -112,17 +112,16 @@ class ConclusionEventSettingColumn(IndividualDialogColumn):
                 val = []
                 val = json.dumps(val)
             json_val = json.loads(val)
-            # todo 通知先も同じように修正
             if type(json_val) is not list:
                 exp_args = "Not in JSON list format data(%s)" % (str(val))
                 raise Exception(exp_args)
         except Exception:
-            # todo
-            # JSONフォーマットが不正
-            status_code = '499-01703'
-            msg_args = []
+            # エラーでリターンの処理がないのでException
+            status_code = '499-01708'
+            msg_args = [str(val)]
             msg = g.appmsg.get_api_message(status_code, msg_args)
             raise Exception(status_code, msg)
+
         search_candidates = []
         if isinstance(json_val, list):
             if len(json_val) > 0:

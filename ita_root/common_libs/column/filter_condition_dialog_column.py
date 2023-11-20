@@ -175,7 +175,7 @@ class FilterConditionSettingColumn(IndividualDialogColumn):
         """
             値を出力用の値へ変換 (DB->UI)
             DB: [{"label_name": "key01", "condition_type": "0", "condition_value": "True"}....]
-            UI: [[key01に対応した名称, 0に対応した名称, "True"]....]
+            UI: [[key01に対応した名称, "True"]....]
             ARGS:
                 val:値
             RETRUN:
@@ -192,16 +192,16 @@ class FilterConditionSettingColumn(IndividualDialogColumn):
                 val = []
                 val = json.dumps(val)
             json_val = json.loads(val)
-            # todo 通知先も同じように修正
             if type(json_val) is not list:
                 exp_args = "Not in JSON list format data(%s)" % (str(val))
                 raise Exception(exp_args)
-        except Exception:
-            # todo 通知先も同じように修正
-            status_code = '499-01703'
-            msg_args = []
+        except Exception as e:
+            # エラーでリターンの処理がないのでException
+            status_code = '499-01708'
+            msg_args = [str(val)]
             msg = g.appmsg.get_api_message(status_code, msg_args)
             raise Exception(status_code, msg)
+
         search_candidates = []
         if isinstance(json_val, list):
             if len(json_val) > 0:

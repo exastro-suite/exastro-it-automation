@@ -31,7 +31,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         "WHERE DISUSE_FLAG=0"
     )
     if len(labeling_settings) == 0:
-        err_code = "499-00000"
+        err_code = "499-01804"
         err_msg = "ラベル付与設定を取得できませんでした。"
         return err_code, err_msg
 
@@ -41,7 +41,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         "WHERE DISUSE_FLAG=0"
     )
     if len(label_keys) == 0:
-        err_code = "499-00000"
+        err_code = "499-01805"
         err_msg = "ラベルのマスタを取得できませんでした。"
         return err_code, err_msg
     # ラベルのマスタデータをIDで引けるように整形
@@ -85,7 +85,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     # exastro用ラベルを貼った後のデータをイベント単位でループ
     for event_collection_data in labeled_events:
         event_collection_data["exastro_labeling_settings"] = {}
-        event_collection_data["exastro_label_key_input_ids"] = {}
+        event_collection_data["exastro_label_key_inputs"] = {}
 
         # ラベル付与設定に該当するデータにはラベルを貼る
         # パターンの説明
@@ -100,59 +100,65 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                 if event_collection_data["labels"]["_exastro_event_collection_settings_id"] != setting["EVENT_COLLECTION_SETTINGS_ID"]:
                     continue
 
-                if (setting["TARGET_KEY"] in event_collection_data["event"]):
-                    settings = event_collection_data["event"]
+                # ラベル付与内target_keyが収集したデータの中の"event"内と"label"内のどちらにあるかチェックする
+                # setting_flag：target_keyが、"event"か"labels"の1階層下にあればTrue、2階層以下ならFalse、どこにもなければNoneを代入する
+                if (setting["SEARCH_KEY_NAME"] in event_collection_data["event"]):
+                    event_collection_data_location = event_collection_data["event"]
                     setting_flag = True
-                elif (setting["TARGET_KEY"] in event_collection_data["labels"]):
-                    settings = event_collection_data["labels"]
+                elif (setting["SEARCH_KEY_NAME"] in event_collection_data["labels"]):
+                    event_collection_data_location = event_collection_data["labels"]
                     setting_flag = True
+                # "event"内と"label"のどちらからも見つからない場合は2階層下以下までチェックする
                 else:
-                    if setting["TARGET_KEY"] is None:
+                    if setting["SEARCH_KEY_NAME"] is None:
                         setting_flag = None
                     else:
-                        query = create_jmespath_query(setting["TARGET_KEY"])
+                        query, = create_jmespath_query(setting["SEARCH_KEY_NAME"])
+
                         if query is None:
-                            setting_flag = None
-                            continue
-                        settings = event_collection_data["event"]
+                            if setting["TYPE_ID"] == "7" and setting["COMPARISON_METHOD_ID"] == "1":
+                                event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE
+                            else:
+                                continue
+                        event_collection_data_location = event_collection_data["event"]
                         setting_flag = False
 
                 # ラベル付与設定内にtarget_keyが存在するか確認(パターンC用)
                 if setting_flag is None:
-                    # ラベル付与設定内target_typeが"空関数"、かつ取得してきたイベント内"event"のvalueがラベル付与設定内target_keyの中に存在しない場合
-                    if setting["TARGET_TYPE_ID"] is None and setting["TARGET_VALUE"] is None:
+                    # ラベル付与設定内target_typeが"空関数"、かつ取得してきたイベント内のvalueがラベル付与設定内target_keyの中に存在しない場合
+                    if setting["TYPE_ID"] is None and setting["SEARCH_VALUE_NAME"] is None:
                         event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンC
 
                 # ラベル付与設定内にtarget_keyが存在する、かつ取得してきたJSONデータ内にラベル付与設定内で指定したtarget_keyが存在するか確認（パターンA,B,D,E用）
-                if setting["TARGET_KEY"] and setting_flag is not None:
-                    # ラベル付与設定内target_typeが"空関数"以外、かつラベル付与設定内にtarget_type_id、Target_valueのどちらも存在しない場合(パターンD用)
-                    if ((setting["TARGET_TYPE_ID"] and setting["TARGET_VALUE"]) is None) and setting["TARGET_TYPE_ID"] != "7":
+                if setting["SEARCH_KEY_NAME"] and setting_flag is not None:
+                    # ラベル付与設定内target_typeが"空関数"以外、かつラベル付与設定内にtarget_type_id、target_valueのどちらも存在しない場合(パターンD用)
+                    if ((setting["TYPE_ID"] and setting["SEARCH_VALUE_NAME"]) is None) and setting["TYPE_ID"] != "7":
                         if setting_flag is None:
                             continue
-                        if get_value_from_jsonpath(setting["TARGET_KEY"], settings):
+                        if get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location):
                             event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンD
 
                     # パターンA,B,E
                     else:
-                        # 取得してきたイベント,event_inside_key内にラベル付与設定内target_keyが一致するものを取得
-                        target_value_collection = get_value_from_jsonpath(setting["TARGET_KEY"], settings)
+                        # 取得してきたイベント、event_collection_data_location内にラベル付与設定内target_keyが一致するものを取得する
+                        target_value_collection = get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location)
                         # label_valueが空の場合、target_valueをlabel_valueに流用する（パターンB,E用）
-                        if setting["LABEL_VALUE"] is None:
-                            setting["LABEL_VALUE"] = setting["TARGET_VALUE"]
+                        if setting["LABEL_VALUE_NAME"] is None:
+                            setting["LABEL_VALUE_NAME"] = setting["SEARCH_VALUE_NAME"]
                         # target_keyに対応する値が取得できたか確認(パターンA,B,E)
                         if target_value_collection is None:
                             continue
                         if setting_flag is False:
-                            # queryが取得してきたイベント,inside_keyの中に存在する場合
-                            if get_value_from_jsonpath(setting["TARGET_KEY"], settings) is None:
+                            # queryが取得してきたイベント内event_collection_data_locationの中に存在する場合
+                            if get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location) is None:
                                 continue
-                            if setting["TARGET_TYPE_ID"] == "7":  # 空判定(パターンE用)
+                            if setting["TYPE_ID"] == "7":  # 空判定(パターンE用)
                                 if setting["COMPARISON_METHOD_ID"] == "1":  # ==
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在するか確認
+                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在するか確認
                                     if (target_value_collection in ["", [], {}, 0, False, None]) is True:
                                         event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'==')
                                 elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在しないか確認
+                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在しないか確認
                                     if (target_value_collection in ["", [], {}, 0, False, None]) is False:
                                         event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'≠')
                                 else:
@@ -163,14 +169,14 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
 
                         elif setting_flag is True:  # パターンA,B,E
                             # ラベル付与設定内target_valueをラベル付与設定内target_typeに合わせて変換
-                            target_value_setting = target_value_type[setting["TARGET_TYPE_ID"]](setting["TARGET_VALUE"])
-                            if setting["TARGET_TYPE_ID"] == "7":  # 空判定(パターンE用)
+                            target_value_setting = target_value_type[setting["TYPE_ID"]](setting["SEARCH_VALUE_NAME"])
+                            if setting["TYPE_ID"] == "7":  # 空判定(パターンE用)
                                 if setting["COMPARISON_METHOD_ID"] == "1":  # ==
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在するか確認
+                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在するか確認
                                     if (target_value_collection in ["", [], {}, 0, False, None]) is True:
                                         event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'==')
                                 elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_inside_keyの中に存在するものの中でvalueがFalseのものが存在しないか確認
+                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在しないか確認
                                     if (target_value_collection in ["", [], {}, 0, False, None]) is False:
                                         event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'≠')
                                 else:
@@ -179,7 +185,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                             elif comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting) is True:
                                 event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンA,B
             except Exception as e:
-                err_code = "499-00000"
+                err_code = "499-01806"
                 err_msg = "ラベル付与に失敗しました"
                 g.applogger.error(e)
                 g.applogger.error(event_collection_data)
@@ -263,7 +269,7 @@ def comparison_values(comparison_method_id="1", comparative=None, referent=None)
                 result = comparison(comparative, referent)
         except Exception as e:
             # 収集した値{comparative}に対して、比較方法{comparison_method_id}と比較値{referent}を実行し、エラーが{e}が発生したので、処理をスキップします。
-            err_msg = g.appmsg.get_log_message("499-00000", [comparative, referent, e])
+            err_msg = g.appmsg.get_log_message("499-01807", [comparative, comparison_method_id, referent, e])
             g.applogger.info(err_msg)
 
     return result
@@ -281,9 +287,9 @@ def add_label(label_key_map, event_collection_data, setting):
     label_key_data = label_key_map[setting["LABEL_KEY_ID"]]
 
     label_key_id = label_key_data["LABEL_KEY_ID"]
-    label_key_string = label_key_data["LABEL_KEY"]
+    label_key_string = label_key_data["LABEL_KEY_NAME"]
 
-    event_collection_data["labels"][label_key_string] = setting["LABEL_VALUE"]
+    event_collection_data["labels"][label_key_string] = setting["LABEL_VALUE_NAME"]
     event_collection_data["exastro_labeling_settings"][label_key_string] = setting["LABELING_SETTINGS_ID"]
-    event_collection_data["exastro_label_key_input_ids"][label_key_string] = label_key_id
+    event_collection_data["exastro_label_key_inputs"][label_key_string] = label_key_id
     return event_collection_data

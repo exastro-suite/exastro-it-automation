@@ -401,8 +401,8 @@ class Judgement:
     def putRaccEvent(self, RuleRow, UseEventIdList):
         addlabels = {}
         label_key_inputs = {}
-        RuleRow["LABELING_INFORMATION_JSON"] = json.loads(RuleRow["LABELING_INFORMATION_JSON"])
-        for row in RuleRow["LABELING_INFORMATION_JSON"]:
+        RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
+        for row in RuleRow["CONCLUSION_LABEL_NAME"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -550,10 +550,10 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 通知処理（既知(時間切れ)）
-        OASE.send(objdbca, timeout_Event_Id_List, {"notification_type": OASENotificationType.TIMEOUT})
+        # OASE.send(objdbca, timeout_Event_Id_List, {"notification_type": OASENotificationType.TIMEOUT})
 
     # 通知処理（新規）
-    OASE.send(objdbca, EventObj.labeled_events_dict, {"notification_type": OASENotificationType.NEW})
+    # OASE.send(objdbca, EventObj.labeled_events_dict, {"notification_type": OASENotificationType.NEW})
 
     # テーブル名
     t_oase_filter = 'T_OASE_FILTER'  # フィルター管理
@@ -727,7 +727,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             if action_log_row["ACTION_ID"]:
                                 # アクションが設定されている場合
                                 # 通知処理(作業前)
-                                OASE.send(objdbca, UseEventIdList, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": action_log_row["RULE_ID"]})
+                                # OASE.send(objdbca, UseEventIdList, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": action_log_row["RULE_ID"]})
 
                                 # 評価結果の更新（実行中）
                                 data_list = {
@@ -762,7 +762,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 # 結論イベントに処理で必要なラベル情報を追加
                                 ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, defObj.DF_LOCAL_LABLE_NAME, defObj.DF_LOCAL_LABLE_STATUS, defObj.DF_PROC_EVENT)
 
-                                FilterCheckLabelDict = ruleRow["LABELING_INFORMATION_JSON"]
+                                FilterCheckLabelDict = ruleRow["CONCLUSION_LABEL_NAME"]
 
                                 # 結論イベントに対応するフィルタ確認
                                 ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(FilterCheckLabelDict, filterList)
@@ -838,7 +838,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 通知処理（未知）
-    OASE.send(objdbca, UnusedEventIdList, {"notification_type": OASENotificationType.UNDETECTED})
+    # OASE.send(objdbca, UnusedEventIdList, {"notification_type": OASENotificationType.UNDETECTED})
 
 
 def UserIDtoUserName(objdbca, UserId):
@@ -962,7 +962,7 @@ class ActionStatusMonitor():
                 TAB_B.DISUSE_FLAG                 AS TAB_B_DISUSE_FLAG,
                 TAB_C.RULE_ID                     AS JOIN_RULE_ID,
                 TAB_C.RULE_NAME                   AS RULE_NAME,
-                TAB_C.LABELING_INFORMATION_JSON   AS LABELING_INFORMATION_JSON,
+                TAB_C.CONCLUSION_LABEL_NAME       AS CONCLUSION_LABEL_NAME,
                 TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
                 TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
                 TAB_C.REEVALUATE_TTL              AS REEVALUATE_TTL,
@@ -1044,8 +1044,8 @@ class ActionStatusMonitor():
     def InsertConclusionEvent(self, RuleInfo):
         label_key_inputs = {}
         addlabels = {}
-        RuleInfo["LABELING_INFORMATION_JSON"] = json.loads(RuleInfo["LABELING_INFORMATION_JSON"])
-        for row in RuleInfo["LABELING_INFORMATION_JSON"]:
+        RuleInfo["CONCLUSION_LABEL_NAME"] = json.loads(RuleInfo["CONCLUSION_LABEL_NAME"])
+        for row in RuleInfo["CONCLUSION_LABEL_NAME"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:

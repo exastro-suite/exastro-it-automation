@@ -20,40 +20,45 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
     retBool = True
     msg = []
     cmd_type = option.get("cmd_type") # noqa F841
+    entry_parameter = option.get('entry_parameter').get('parameter')
+    LANG = g.LANGUAGE.upper()
 
     # 廃止の場合、バリデーションチェックを行わない。
     if cmd_type == 'Discard':
         return retBool, msg, option,
 
-    entry_parameter = option.get('entry_parameter').get('parameter')
-
-    LANG = g.LANGUAGE.upper()
-
-    # 必要なキーの存在チェック
-    required_keys = [
-        "search_key_name",
-        "type_name",
-        "comparison_method",
-        "search_value_name",
-        "label_value_name"
-    ]
-    for key in required_keys:
-        if key not in entry_parameter:
-            msg.append("The required key '{}' is missing.")
-
-    # msg に値がある場合は個別バリデエラー
-    if len(msg) >= 1:
-        retBool = False
-        return retBool, msg, option,
-
-    setting_name = entry_parameter["labeling_settings_name"]
-    search_key = entry_parameter["search_key_name"]
-    target_type = entry_parameter["type_name"]
-    comparison_method = entry_parameter["comparison_method"]
-    search_value = entry_parameter["search_value_name"]
-    label_value = entry_parameter["label_value_name"]
-
     if cmd_type in ["Register", "Update"]:
+        # 必要なキーの存在チェック
+        required_keys = [
+            "search_key_name",
+            "type_name",
+            "comparison_method",
+            "search_value_name",
+            "label_value_name"
+        ]
+        missing_keys = []
+        for key in required_keys:
+            if key not in entry_parameter:
+                missing_keys.append(key)
+        if len(missing_keys) > 0:
+            if len(missing_keys) == 1:
+                missing_str = f"Required key '{missing_keys[0]}' is"
+            else:
+                missing_str = f"Required keys {str(missing_keys)} are"
+
+            msg.append(f"{missing_str} missing.")
+
+        # msg に値がある場合は個別バリデエラー
+        if len(msg) >= 1:
+            retBool = False
+            return retBool, msg, option,
+
+        setting_name = entry_parameter["labeling_settings_name"]
+        search_key = entry_parameter["search_key_name"]
+        target_type = entry_parameter["type_name"]
+        comparison_method = entry_parameter["comparison_method"]
+        search_value = entry_parameter["search_value_name"]
+        label_value = entry_parameter["label_value_name"]
 
         # ターゲットキーがブランクの場合
         if search_key is None:

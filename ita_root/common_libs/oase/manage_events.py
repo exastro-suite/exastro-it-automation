@@ -36,8 +36,8 @@ class ManageEvents:
             "DF_NOT_PROC_EVENT": '3',       # 対象外
             # ルール・フィルタ管理　JSON内の演算子・条件
             # 条件
-            "DF_TEST_EQ": '0',  # =
-            "DF_TEST_NE": '1',  # !=
+            "DF_TEST_EQ": '1',  # =
+            "DF_TEST_NE": '2',  # !=
             # 演算子
             "DF_OPE_NONE": '',  # None
             "DF_OPE_OR": '1',  # OR

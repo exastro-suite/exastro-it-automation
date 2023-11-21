@@ -99,11 +99,7 @@ class OASE(Notification):
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION] and rule_id is None:
             raise Exception("rule_id is required if notification_type is OASENotificationType.BEFORE_ACTION or OASENotificationType.AFTER_ACTION")
 
-        values = cls.__get_table_search_condition(notification_type)
-
-        # ルールIDは実行時に確定するため、処理内で値を設定する
-        if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION]:
-            values["condition_value"].append(rule_id)
+        values = cls.__get_table_search_condition(notification_type, rule_id)
 
         query = f"SELECT {values['display_column']} FROM {values['table']} WHERE DISUSE_FLAG=0 AND {values['condition_column']}"
 
@@ -168,7 +164,7 @@ class OASE(Notification):
 
         return data
 
-    def __get_table_search_condition(notification_type: OASENotificationType):
+    def __get_table_search_condition(notification_type: OASENotificationType, rule_id):
         # OASENotificationTypeとDB検索で必要な情報の対応表
         # テーブル間の差分を吸収するためID列には別名を定義
         # BEFORE_ACTIONおよびAFTER_ACTIONは条件を動的に追加するため、実装の都合でクラス変数として扱わないこととした。
@@ -204,13 +200,13 @@ class OASE(Notification):
                 RULE_ID AS UUID, BEFORE_NOTIFICATION AS TEMPLATE_FILE, BEFORE_NOTIFICATION_DESTINATION AS NOTIFICATION_DESTINATION
                 """,
                 "condition_column": "RULE_ID=%s",
-                "condition_value": []
+                "condition_value": [rule_id]
             },
             OASENotificationType.AFTER_ACTION: {
                 "table": "T_OASE_RULE",
                 "display_column": "RULE_ID AS UUID, AFTER_NOTIFICATION AS TEMPLATE_FILE, AFTER_NOTIFICATION_DESTINATION AS NOTIFICATION_DESTINATION",
                 "condition_column": "RULE_ID=%s",
-                "condition_value": []
+                "condition_value": [rule_id]
             }
         }
 

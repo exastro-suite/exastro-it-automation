@@ -237,6 +237,11 @@ def get_execution_info(objdbca, target, execution_no):
     execution_info = {}
     # 作業管理
     execution_info['execution_list'] = tmp_result[1][0]
+    # 投入データと結果データは返さない
+    if 'populated_data' in execution_info['execution_list']['file']:
+        del execution_info['execution_list']['file']['populated_data']
+    if 'result_data' in execution_info['execution_list']['file']:
+        del execution_info['execution_list']['file']['result_data']
     # ステータスIDはコード値も返却
     execution_info['status_id'] = table_row['STATUS_ID']
 
@@ -279,6 +284,49 @@ def get_execution_info(objdbca, target, execution_no):
         execution_info['number_of_rows_to_display_progress_status'] = tmp_row['TERRAFORM_TAILLOG_LINES']
 
     return execution_info
+
+
+def get_populated_result_data(objdbca, target, execution_no, type):
+    """
+        投入データ取得
+        ARGS:
+            objdbca:DB接続クラス  DBConnectWs()
+            target: 作業実行メニューのRest名(execution_list)とテーブル名(table_name)
+            execution_no: 作業実行No
+        RETRUN:
+            data
+    """
+
+    # 該当の作業管理を取得(ID変換のためloadTableで取得)
+    objmenu = load_table.loadTable(objdbca, target['execution_list'])
+    filter_parameter = {
+        "execution_no": {"LIST": [execution_no]}
+    }
+    result = objmenu.rest_filter(filter_parameter)
+
+    # 該当する作業管理が存在しない
+    if len(result[1]) != 1:
+        log_msg_args = [execution_no]
+        api_msg_args = [execution_no]
+        raise AppException("499-00903", log_msg_args, api_msg_args)
+
+    # 隠しカラムを取得するために作業管理をSQLでも検索
+    where = "WHERE EXECUTION_NO = %s"
+    data_list = objdbca.table_select(target['table_name'], where, [execution_no])
+    # 該当する作業管理が存在しない
+    if len(data_list) is None or len(data_list) == 0:
+        log_msg_args = [execution_no]
+        api_msg_args = [execution_no]
+        raise AppException("499-00903", log_msg_args, api_msg_args)
+
+    if type == 'populated':
+        # 投入データ取得
+        base64_data = result[1][0]['file']['populated_data']
+    else:
+        # 結果データ取得
+        base64_data = result[1][0]['file']['result_data']
+
+    return base64_data
 
 
 def search_user_list(objdbca):

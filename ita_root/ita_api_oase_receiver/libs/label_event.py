@@ -166,7 +166,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                             else:
                                 continue
                         else:
-                            # ラベル付与設定内target_valueをラベル付与設定内target_typeに合わせて変換 [パターンA,B用]
+                            # ラベル付与設定内search_value_nameをラベル付与設定内type_idに合わせて変換 [パターンA,B用]
                             target_value_setting = target_value_type[setting["TYPE_ID"]](setting["SEARCH_VALUE_NAME"])
                             # 収集してきたJSONデータのvalueとラベル付与設定内search_value_nameをcomparison_method_idを使用して比較
                             if comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting) is True:
@@ -202,7 +202,7 @@ def create_jmespath_query(json_path):
 
 
 # ラベル付与設定内で比較方法として真偽値を使用した場合に、値をpythonで解釈できるようにする
-# _value ラベル付与設定内でのtarget_value
+# _value: ラベル付与設定内でのsearch_value_name
 def returns_bool(_value):
     value = _value.lower()
     if value == "true":
@@ -213,7 +213,7 @@ def returns_bool(_value):
         return None
 
 
-# 収集してきたイベントのtarget_valueとラベル付与設定内target_valueを比較
+# 収集してきたイベントのvalueとラベル付与設定内search_value_nameを比較
 def comparison_values(comparison_method_id="1", comparative=None, referent=None):
     result = False
 

@@ -715,7 +715,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             "CONDUCTOR_INSTANCE_NAME": conductor_name,
                             "OPERATION_ID": operation_id,
                             "OPERATION_NAME": operation_name,
-                            "EVENT_ID_LIST": UseEventIdList,
+                            "EVENT_ID_LIST": ','.join(map(str, UseEventIdList)),
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
                             "DISUSE_FLAG": "0"

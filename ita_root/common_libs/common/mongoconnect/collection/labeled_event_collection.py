@@ -66,10 +66,10 @@ class LabeledEventCollection(CollectionBase):
         tmp_value = super()._create_search_value(collection_item_name, value)
 
         if collection_item_name == "labels._exastro_fetched_time":
-            return str(int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp()))
+            return int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp())
 
         if collection_item_name == "labels._exastro_end_time":
-            return str(int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp()))
+            return int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp())
 
         if collection_item_name == "labels._exastro_timeout":
             if value == "時間切れ":

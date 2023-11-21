@@ -33,6 +33,8 @@ tags:
     description: Organization作成(Exastro Platform連携用) ※利用不可
   - name: Workspace Create
     description: Workspace作成(Exastro Platform連携用) ※利用不可
+  - name: ITA Settings
+    description: Organizationに関連するITAの情報
   - name: Initial Settings Ansible
     description: 初期データ設定(Ansible)
   - name: LogLevel Settings
@@ -44,6 +46,61 @@ tags:
 
 paths:
   /api/organizations/{organization_id}/ita/:
+    get:
+      tags:
+        - Organization Create
+      description: Organization情報を取得する
+      operationId: organizationInfo
+      x-openapi-router-controller: controllers.organization_create_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    properties:
+                      optionsIta:
+                        type: object
+                        properties:
+                          drivers:
+                            type: object
+                            properties:
+                              terraform_cloud_ep:
+                                type: boolean
+                              terraform_cli:
+                                type: boolean
+                              ci_cd:
+                                type: boolean
+                              oase:
+                                type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
     post:
       tags:
         - Organization Create
@@ -58,7 +115,7 @@ paths:
           schema:
             type: string
       requestBody:
-        description: "（任意項目）インストールしないドライバを選択する。"
+        description: "インストールするドライバはtrueを選択する"
         required: false
         content:
           application/json:
@@ -66,18 +123,85 @@ paths:
               nullable: true
               type: object
               properties:
-                no_install_driver:
-                  type: array
-                  items:
-                    description: "terraform_cloud_ep: Terraform-Cloud/EPドライバ,
-                    <br/>terraform_cli: Terraform-CLIドライバ,
-                    <br/>ci_cd: CI/CD for IaC
-                    "
-                    type: "string"
-                    enum:
-                     - "terraform_cloud_ep"
-                     - "terraform_cli"
-                     - "ci_cd"
+                drivers:
+                  type: object
+                  properties:
+                    terraform_cloud_ep:
+                      type: boolean
+                    terraform_cli:
+                      type: boolean
+                    ci_cd:
+                      type: boolean
+                    oase:
+                      type: boolean
+                  description: "terraform_cloud_ep: Terraform-Cloud/EPドライバ
+                  <br/>terraform_cli: Terraform-CLIドライバ,
+                  <br/>ci_cd: CI/CD for IaC,
+                  <br/>oase: OASE,
+                  "
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+    patch:
+      tags:
+        - Organization Create
+      description: Organizationにドライバを追加する
+      operationId: organizationUpdate
+      x-openapi-router-controller: controllers.organization_create_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: "追加でインストールするドライバはtrueを選択する"
+        required: false
+        content:
+          application/json:
+            schema:
+              nullable: true
+              type: object
+              properties:
+                drivers:
+                  type: object
+                  properties:
+                    terraform_cloud_ep:
+                      type: boolean
+                    terraform_cli:
+                      type: boolean
+                    ci_cd:
+                      type: boolean
+                    oase:
+                      type: boolean
+                  description: "terraform_cloud_ep: Terraform-Cloud/EPドライバ
+                  <br/>terraform_cli: Terraform-CLIドライバ,
+                  <br/>ci_cd: CI/CD for IaC,
+                  <br/>oase: OASE,
+                  "
       responses:
         '200':
           description: Success
@@ -222,6 +346,57 @@ paths:
                   result:
                     type: string
                     example: 000-00000
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/ita/settings/:
+    get:
+      tags:
+        - ITA Settings
+      description: Organizationで選択可能なドライバの一覧を取得する
+      operationId: getItaSettings
+      x-openapi-router-controller: controllers.ita_settings
+      parameters: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    properties:
+                      drivers:
+                        type: object
+                        properties:
+                          options:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                name:
+                                  type: string
+                            example: [{id: terraform_cloud_ep, name: Terraform Cloud/EP driver}, {id: terraform_cli, name: Terraform CLI driver}, {id: ci_cd, name: CI/CD for IaC}, {id: oase, name: OASE}]
+
+
                   message:
                     type: string
         '401':
@@ -796,6 +971,8 @@ paths:
                     example: 000-00000
                   data:
                     type: array
+                    items:
+                      type: "string"
                     example: ["id1", "id2", "id3"]
                   message:
                     type: string

@@ -25,6 +25,18 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     err_code = ""
     err_msg = ""
 
+    # ラベル付与設定内target_valueを取得してきたイベントのタイプに合わせて比較するためのマスタ
+    target_value_type = {
+        "1": str,  # string
+        "2": int,  # integer
+        "3": float,  # float
+        "4": returns_bool,  # bool
+        "5": json.loads,  # dict
+        "6": json.loads,  # list
+        "7": lambda X: X,  # falsey
+        "10": lambda X: X  # any
+    }
+
     # ラベル付与の設定を取得
     labeling_settings = wsDb.table_select(
         "T_OASE_LABELING_SETTINGS",
@@ -87,103 +99,79 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         event_collection_data["exastro_labeling_settings"] = {}
         event_collection_data["exastro_label_key_inputs"] = {}
 
-        # ラベル付与設定に該当するデータにはラベルを貼る
+        # ラベル付与設定に該当するデータにはラベルを追加する
         # パターンの説明
-        # パターンA：収集したJSONデータのtarget_keyに対応する値とtarget_valueをcompare_methodで比較し、trueの場合、label_key: label_valueのラベルを追加
-        # パターンB：収集したJSONデータのtarget_keyに対応する値とtarget_valueをcompare_methodで比較し、trueの場合、label_key: target_valueのラベルを追加（label_valueが空の場合、target_valueをlabel_valueに流用する）# noqa: E501
-        # パターンC：すべてのイベントに対してlabel_key: label_valueのラベルを追加
-        # パターンD：target_keyが存在するデータに対してlabel_key: label_valueのラベルを追加
-        # パターンE：target_type_idが7であり、target_keyに対応する値がFalseの値（空文字、[]、{}、0、False）である際、label_key: label_valueのラベルを追加
+        # パターンA：収集したJSONデータのsearch_key_nameに対応する値とsearch_value_nameをcomparison_methodで比較し、trueの場合、labelのkey: labelのvalueのラベルを追加
+        # パターンB：収集したJSONデータのsearch_key_nameに対応する値とsearch_value_nameをcomparison_methodで比較し、trueの場合、labelのkey: targetのvalueのラベルを追加（labelのvalueが空の場合、search_value_nameをlabelのvalueに流用する）# noqa: E501
+        # パターンC：すべてのイベントに対してlabelのkey: labelのvalueのラベルを追加
+        # パターンD：search_key_nameが存在するデータに対してlabelのkey: labelのvalueのラベルを追加
+        # パターンE：type_idが7であり、search_key_nameに対応する値がFalseの値（空文字、[]、{}、0、False）である際、labelのkey: labelのvalueのラベルを追加
         for setting in labeling_settings:
             try:
                 # 収集した_exastro_event_collection_settings_idとイベント収集設定IDが一致しないものはスキップ
                 if event_collection_data["labels"]["_exastro_event_collection_settings_id"] != setting["EVENT_COLLECTION_SETTINGS_ID"]:
                     continue
-
-                # ラベル付与内target_keyが収集したデータの中の"event"内と"label"内のどちらにあるかチェックする
-                # setting_flag：target_keyが、"event"か"labels"の1階層下にあればTrue、2階層以下ならFalse、どこにもなければNoneを代入する
-                if (setting["SEARCH_KEY_NAME"] in event_collection_data["event"]):
-                    event_collection_data_location = event_collection_data["event"]
-                    setting_flag = True
-                elif (setting["SEARCH_KEY_NAME"] in event_collection_data["labels"]):
-                    event_collection_data_location = event_collection_data["labels"]
-                    setting_flag = True
-                # "event"内と"label"のどちらからも見つからない場合は2階層下以下までチェックする
-                else:
-                    if setting["SEARCH_KEY_NAME"] is None:
-                        setting_flag = None
-                    else:
-                        query, = create_jmespath_query(setting["SEARCH_KEY_NAME"])
-
-                        if query is None:
-                            if setting["TYPE_ID"] == "7" and setting["COMPARISON_METHOD_ID"] == "1":
-                                event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE
-                            else:
-                                continue
-                        event_collection_data_location = event_collection_data["event"]
-                        setting_flag = False
-
-                # ラベル付与設定内にtarget_keyが存在するか確認(パターンC用)
-                if setting_flag is None:
-                    # ラベル付与設定内target_typeが"空関数"、かつ取得してきたイベント内のvalueがラベル付与設定内target_keyの中に存在しない場合
+                # ラベル付与内search_key_nameが収集したデータの中の"event"と"labels"のどちらの配下に存在するか確認する
+                # ラベル付与設定内にsearch_key_nameが存在しない(パターンC用)
+                if setting["SEARCH_KEY_NAME"] is None:
+                    # ラベル付与設定内type_id、ラベル付与設定内search_key_nameがともに存在しない場合
                     if setting["TYPE_ID"] is None and setting["SEARCH_VALUE_NAME"] is None:
                         event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンC
 
-                # ラベル付与設定内にtarget_keyが存在する、かつ取得してきたJSONデータ内にラベル付与設定内で指定したtarget_keyが存在するか確認（パターンA,B,D,E用）
-                if setting["SEARCH_KEY_NAME"] and setting_flag is not None:
-                    # ラベル付与設定内target_typeが"空関数"以外、かつラベル付与設定内にtarget_type_id、target_valueのどちらも存在しない場合(パターンD用)
-                    if ((setting["TYPE_ID"] and setting["SEARCH_VALUE_NAME"]) is None) and setting["TYPE_ID"] != "7":
-                        if setting_flag is None:
-                            continue
-                        if get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location):
-                            event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンD
+                elif (setting["SEARCH_KEY_NAME"] in event_collection_data["event"]):
+                    event_collection_data_location = event_collection_data["event"]
+                elif (setting["SEARCH_KEY_NAME"] in event_collection_data["labels"]):
+                    event_collection_data_location = event_collection_data["labels"]
 
-                    # パターンA,B,E
+                # "event"と"labels"のどちらからも見つからない場合は2階層下以下までチェックする
+                else:
+                    query = create_jmespath_query(setting["SEARCH_KEY_NAME"])
+                    event_collection_data_location = event_collection_data["event"]
+                    try:
+                        is_key_exists = get_value_from_jsonpath(query, event_collection_data_location)
+                    except:  # noqa: E722
+                        is_key_exists = False
+                    # "event"か"labels"配下にラベル付与内search_key_nameが存在しない場合
+                    if is_key_exists is False:
+                        # ラベル付与内type_idが7("真偽値")、かつラベル付与内comparison_method_idが1（==）の場合
+                        if setting["TYPE_ID"] == "7" and setting["COMPARISON_METHOD_ID"] == "1":
+                            event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE
+                        continue
+
+                # ラベル付与設定内にsearch_key_nameが存在するか確認 [パターンA,B,D,E用]
+                if setting["SEARCH_KEY_NAME"]:
+                    # ラベル付与設定内にtarget_type_id、target_valueのどちらも存在しなく、ラベル付与設定内type_idが7("空関数")以外の場合 [パターンD用]
+                    if ((setting["TYPE_ID"] and setting["SEARCH_VALUE_NAME"]) is None) and setting["TYPE_ID"] != "7":
+                        query = create_jmespath_query(setting["SEARCH_KEY_NAME"])
+                        # "event"か"labels"配下のデータの中にラベル付与設定内search_key_nameがなければスキップ
+                        if get_value_from_jsonpath(query, event_collection_data_location) is not True:
+                            continue
+                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンD
+                    # [パターンA,B,E用]
                     else:
-                        # 取得してきたイベント、event_collection_data_location内にラベル付与設定内target_keyが一致するものを取得する
-                        target_value_collection = get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location)
-                        # label_valueが空の場合、target_valueをlabel_valueに流用する（パターンB,E用）
+                        # label_valueが空の場合、target_valueをlabel_valueに流用する [パターンB,E用]
                         if setting["LABEL_VALUE_NAME"] is None:
                             setting["LABEL_VALUE_NAME"] = setting["SEARCH_VALUE_NAME"]
-                        # target_keyに対応する値が取得できたか確認(パターンA,B,E)
-                        if target_value_collection is None:
-                            continue
-                        if setting_flag is False:
-                            # queryが取得してきたイベント内event_collection_data_locationの中に存在する場合
-                            if get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location) is None:
-                                continue
-                            if setting["TYPE_ID"] == "7":  # 空判定(パターンE用)
-                                if setting["COMPARISON_METHOD_ID"] == "1":  # ==
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在するか確認
-                                    if (target_value_collection in ["", [], {}, 0, False, None]) is True:
-                                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'==')
-                                elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在しないか確認
-                                    if (target_value_collection in ["", [], {}, 0, False, None]) is False:
-                                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'≠')
-                                else:
-                                    continue
-                            # 取得したJSONデータのtarget_valueとラベル付与設定内target_valueを比較
+                        # 取得してきたイベントの"event"か"labels"配下にラベル付与設定内search_key_nameが一致するものを取得する
+                        target_value_collection = get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location)
+                        if setting["TYPE_ID"] == "7":  # 空判定 [パターンE用]
+                            if setting["COMPARISON_METHOD_ID"] == "1":  # ==
+                                # ラベル付与設定内search_key_nameが収集してきたイベント内"event"か"labels"配下に存在するものの中でvalueが空判定のものが存在するか確認
+                                if (target_value_collection in ["", [], {}, 0, False, None]) is True:
+                                    event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'==')
+                            elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
+                                # ラベル付与設定内search_key_nameが収集してきたイベント内"event"か"labels"配下に存在するものの中でvalueが空判定のものが存在しないか確認
+                                if (target_value_collection in ["", [], {}, 0, False, None]) is False:
+                                    event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'≠')
                             else:
+                                continue
+                        else:
+                            # ラベル付与設定内search_value_nameをラベル付与設定内type_idに合わせて変換 [パターンA,B用]
+                            target_value_setting = target_value_type[setting["TYPE_ID"]](setting["SEARCH_VALUE_NAME"])
+                            # 収集してきたJSONデータのvalueとラベル付与設定内search_value_nameをcomparison_method_idを使用して比較
+                            if comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting) is True:
                                 event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンA,B
 
-                        elif setting_flag is True:  # パターンA,B,E
-                            # ラベル付与設定内target_valueをラベル付与設定内target_typeに合わせて変換
-                            target_value_setting = target_value_type[setting["TYPE_ID"]](setting["SEARCH_VALUE_NAME"])
-                            if setting["TYPE_ID"] == "7":  # 空判定(パターンE用)
-                                if setting["COMPARISON_METHOD_ID"] == "1":  # ==
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在するか確認
-                                    if (target_value_collection in ["", [], {}, 0, False, None]) is True:
-                                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'==')
-                                elif setting["COMPARISON_METHOD_ID"] == "2":  # ≠
-                                    # ラベル付与設定内target_keyが取得してきたイベント内event_collection_data_locationの中に存在するものの中でvalueがFalseのものが存在しないか確認
-                                    if (target_value_collection in ["", [], {}, 0, False, None]) is False:
-                                        event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンE(比較方法が'≠')
-                                else:
-                                    continue
-                            # 取得したJSONデータのtarget_valueとラベル付与設定内target_valueを比較
-                            elif comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting) is True:
-                                event_collection_data = add_label(label_key_map, event_collection_data, setting)  # パターンA,B
             except Exception as e:
                 err_code = "499-01806"
                 err_msg = "ラベル付与に失敗しました"
@@ -214,7 +202,7 @@ def create_jmespath_query(json_path):
 
 
 # ラベル付与設定内で比較方法として真偽値を使用した場合に、値をpythonで解釈できるようにする
-# _value ラベル付与設定内でのtarget_value
+# _value: ラベル付与設定内でのsearch_value_name
 def returns_bool(_value):
     value = _value.lower()
     if value == "true":
@@ -225,20 +213,7 @@ def returns_bool(_value):
         return None
 
 
-# ラベル付与設定内target_valueを取得してきたイベントのタイプに合わせて比較するためのマスタ
-target_value_type = {
-    "1": str,  # string
-    "2": int,  # integer
-    "3": float,  # float
-    "4": returns_bool,  # bool
-    "5": json.loads,  # dict
-    "6": json.loads,  # list
-    "7": lambda X: X,  # falsey
-    "10": lambda X: X  # any
-}
-
-
-# 収集してきたイベントのtarget_valueとラベル付与設定内target_valueを比較
+# 収集してきたイベントのvalueとラベル付与設定内search_value_nameを比較
 def comparison_values(comparison_method_id="1", comparative=None, referent=None):
     result = False
 
@@ -276,6 +251,8 @@ def comparison_values(comparison_method_id="1", comparative=None, referent=None)
 
 
 # ドット区切りの文字列で辞書を指定して値を取得
+# 1.get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location) →　条件に合わせて値を返却
+# 2.get_value_from_jsonpath(query, event_collection_data_location) → 条件に合わせて真偽値を返却
 def get_value_from_jsonpath(jsonpath, data):
     value = jmespath.search(jsonpath, data)
     return value

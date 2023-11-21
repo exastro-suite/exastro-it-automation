@@ -13,6 +13,7 @@
 #
 
 import datetime
+import json
 from enum import Enum
 
 from common_libs.common.dbconnect import DBConnectWs
@@ -47,47 +48,6 @@ class OASE(Notification):
     ・rule_id：ルールのID（ルールに関する通知を行う場合必須）
     """
 
-    # OASENotificationTypeとDB検索で必要な情報の対応表
-    # テーブル間の差分を吸収するためID列には別名を定義
-    TABLE_SEARCH_CONDITION = {
-        OASENotificationType.NEW: {
-            "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
-            "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
-            "condition_column": "EVENT_TYPE=%s",
-            "condition_value": ["新規"]
-        },
-        OASENotificationType.EVALUATED: {
-            "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
-            "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
-            "condition_column": "EVENT_TYPE=%s",
-            "condition_value": ["既知（判定済）"]
-        },
-        OASENotificationType.TIMEOUT: {
-            "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
-            "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
-            "condition_column": "EVENT_TYPE=%s",
-            "condition_value": ["既知（時間切れ）"]
-        },
-        OASENotificationType.UNDETECTED: {
-            "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
-            "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
-            "condition_column": "EVENT_TYPE=%s",
-            "condition_value": ["未知"]
-        },
-        OASENotificationType.BEFORE_ACTION: {
-            "table": "T_OASE_RULE",
-            "display_column": "RULE_ID AS UUID, BEFORE_NOTIFICATION, BEFORE_NOTIFICATION_DESTINATION AS NOTIFICATION_DESTINATION",
-            "condition_column": "RULE_ID=%s",
-            "condition_value": []
-        },
-        OASENotificationType.AFTER_ACTION: {
-            "table": "T_OASE_RULE",
-            "display_column": "RULE_ID AS UUID, AFTER__NOTIFICATION, AFTER_NOTIFICATION_DESTINATION AS NOTIFICATION_DESTINATION",
-            "condition_column": "RULE_ID=%s",
-            "condition_value": []
-        }
-    }
-
     # OASENotificationTypeとテンプレートファイルを取得する際に必要な情報の対応表
     TEMPLATE_SEARCH_CONDITION = {
         OASENotificationType.NEW: {
@@ -107,11 +67,11 @@ class OASE(Notification):
             "rest_name": "template_file"
         },
         OASENotificationType.BEFORE_ACTION: {
-            "menu_id": "110108",
+            "menu_id": "110109",
             "rest_name": "before_notification"
         },
         OASENotificationType.AFTER_ACTION: {
-            "menu_id": "110108",
+            "menu_id": "110109",
             "rest_name": "after_notification"
         }
     }
@@ -139,7 +99,7 @@ class OASE(Notification):
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION] and rule_id is None:
             raise Exception("rule_id is required if notification_type is OASENotificationType.BEFORE_ACTION or OASENotificationType.AFTER_ACTION")
 
-        values = cls.TABLE_SEARCH_CONDITION[notification_type]
+        values = cls.__get_table_search_condition(notification_type)
 
         # ルールIDは実行時に確定するため、処理内で値を設定する
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION]:
@@ -177,7 +137,9 @@ class OASE(Notification):
         notification_type = decision_information.get("notification_type")
 
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION]:
-            return fetch_data.get("NOTIFICATION_DESTINATION").split(",")
+            notification_destination_str = fetch_data.get("NOTIFICATION_DESTINATION")
+            notification_destination_dict = json.loads(notification_destination_str)
+            return notification_destination_dict["id"]
 
         event_type_true_list = [cls.DESTINATION_ID_FETCH_CONDITION[notification_type]]
         response = cls._call_setting_notification_api(event_type_true=event_type_true_list)
@@ -205,3 +167,51 @@ class OASE(Notification):
         data["func_informations"] = {"menu_group_name": "OASE"}
 
         return data
+
+    def __get_table_search_condition(notification_type: OASENotificationType):
+        # OASENotificationTypeとDB検索で必要な情報の対応表
+        # テーブル間の差分を吸収するためID列には別名を定義
+        # BEFORE_ACTIONおよびAFTER_ACTIONは条件を動的に追加するため、実装の都合でクラス変数として扱わないこととした。
+
+        table_search_condition = {
+            OASENotificationType.NEW: {
+                "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
+                "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
+                "condition_column": "EVENT_TYPE=%s",
+                "condition_value": ["新規"]
+            },
+            OASENotificationType.EVALUATED: {
+                "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
+                "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
+                "condition_column": "EVENT_TYPE=%s",
+                "condition_value": ["既知（判定済）"]
+            },
+            OASENotificationType.TIMEOUT: {
+                "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
+                "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
+                "condition_column": "EVENT_TYPE=%s",
+                "condition_value": ["既知（時間切れ）"]
+            },
+            OASENotificationType.UNDETECTED: {
+                "table": "T_OASE_NOTIFICATION_TEMPLATE_COMMON",
+                "display_column": "NOTIFICATION_TEMPLATE_ID AS UUID, TEMPLATE_FILE",
+                "condition_column": "EVENT_TYPE=%s",
+                "condition_value": ["未知"]
+            },
+            OASENotificationType.BEFORE_ACTION: {
+                "table": "T_OASE_RULE",
+                "display_column": """
+                RULE_ID AS UUID, BEFORE_NOTIFICATION AS TEMPLATE_FILE, BEFORE_NOTIFICATION_DESTINATION AS NOTIFICATION_DESTINATION
+                """,
+                "condition_column": "RULE_ID=%s",
+                "condition_value": []
+            },
+            OASENotificationType.AFTER_ACTION: {
+                "table": "T_OASE_RULE",
+                "display_column": "RULE_ID AS UUID, AFTER_NOTIFICATION AS TEMPLATE_FILE, AFTER_NOTIFICATION_DESTINATION AS NOTIFICATION_DESTINATION",
+                "condition_column": "RULE_ID=%s",
+                "condition_value": []
+            }
+        }
+
+        return table_search_condition[notification_type]

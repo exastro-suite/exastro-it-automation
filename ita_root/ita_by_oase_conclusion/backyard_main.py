@@ -187,27 +187,42 @@ class Judgement:
         # FiltersUsedinRulesDict[フィルタID] = { 'rule_id': RULE_ID, 'rule_priority': RULE_PRIORITY, 'count': フィルタ使用数 }
         FiltersUsedinRulesDict = {}
         for RuleRow in RuleList:
-            # for FilterId in RuleRow['FILTER_COMBINATION_JSON']['filter_key']:
-            filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
-            for FilterId in filter_combination_json['filter_key']:
-                if FilterId in FiltersUsedinRulesDict:
-                    FiltersUsedinRulesDict[FilterId]['count'] += 1
-                else:
-                    FiltersUsedinRulesDict[FilterId] = {}
-                    FiltersUsedinRulesDict[FilterId]['rule_id'] = RuleRow['RULE_ID']
-                    FiltersUsedinRulesDict[FilterId]['rule_priority'] = RuleRow['RULE_PRIORITY']
-                    FiltersUsedinRulesDict[FilterId]['count'] = 1
+            FilterA = RuleRow['FILTER_A']
+            if FilterA in FiltersUsedinRulesDict:
+                FiltersUsedinRulesDict[FilterA]['count'] += 1
+            else:
+                FiltersUsedinRulesDict[FilterA] = {}
+                FiltersUsedinRulesDict[FilterA]['rule_id'] = RuleRow['RULE_ID']
+                FiltersUsedinRulesDict[FilterA]['rule_priority'] = RuleRow['RULE_PRIORITY']
+                FiltersUsedinRulesDict[FilterA]['count'] = 1
+
+            FilterB = RuleRow.get('FILTER_B')
+            if FilterB is None:
+                # FilterBは必須項目ではないのでNoneの場合はスキップする
+                continue
+
+            if FilterB in FiltersUsedinRulesDict:
+                FiltersUsedinRulesDict[FilterB]['count'] += 1
+            else:
+                FiltersUsedinRulesDict[FilterB] = {}
+                FiltersUsedinRulesDict[FilterB]['rule_id'] = RuleRow['RULE_ID']
+                FiltersUsedinRulesDict[FilterB]['rule_priority'] = RuleRow['RULE_PRIORITY']
+                FiltersUsedinRulesDict[FilterB]['count'] = 1
 
         return FiltersUsedinRulesDict
 
     def TargetRuleExtraction(self, TargetLevel, RuleList, FiltersUsedinRulesDict, IncidentDict):
         DebugMode = True
         TargetRuleList = []
+        FilterList = []
         defObj = RuleJudgementConst()
         for RuleRow in RuleList:
             hit = True
-            filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
-            for FilterId in filter_combination_json['filter_key']:
+            FilterList.append(RuleRow['FILTER_A'])
+            if RuleRow.get('FILTER_B') is not None:
+                FilterList.append(RuleRow['FILTER_B'])
+
+            for FilterId in FilterList:
                 if FilterId not in FiltersUsedinRulesDict:
                     tmp_msg = "対象フィルタ未登録  RULE_ID {} FILTER_ID {}>>".format(RuleRow['RULE_ID'], FilterId)
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -253,7 +268,7 @@ class Judgement:
                 if hit is True:
                     hit = False
                     # フィルタを利用しているルールが複数ある事を確認
-                    for FilterId in filter_combination_json['filter_key']:
+                    for FilterId in FilterList:
                         if FiltersUsedinRulesDict[FilterId]['count'] != 1:
                             hit = True
                             break
@@ -267,7 +282,7 @@ class Judgement:
 
         tmp_msg = "=========================================================================================================================="
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = "ルール判定開始 RULE_ID:{} RULE_NAME:{}  JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+        tmp_msg = "ルール判定開始 RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         # ルール内のフィルタ条件判定用辞書初期化
         FilterResultDict = {}
@@ -277,20 +292,22 @@ class Judgement:
         FilterResultDict['EventList'] = []
         FilterResultDict['Operator'] = ''
 
-        filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
+        if not RuleRow['FILTER_OPERATOR']:
+            RuleRow['FILTER_OPERATOR'] = ''
 
-        if not filter_combination_json['filter_operator']:
-            filter_combination_json['filter_operator'] = ''
-
-        FilterResultDict['Operator'] = str(filter_combination_json['filter_operator'])
+        FilterResultDict['Operator'] = str(RuleRow['FILTER_OPERATOR'])
 
         # 論理演算子「operator」設定確認
         if self.checkRuleOperatorId(FilterResultDict['Operator']) is False:
-            tmp_msg = "ルール管理　論理演算子「operator」が不正 RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+            tmp_msg = "ルール管理　論理演算子「operator」が不正 RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # フィルタ毎のループ
-        for FilterId in filter_combination_json['filter_key']:
+        FilterList = []
+        FilterList.append(RuleRow['FILTER_A'])
+        if RuleRow['FILTER_B'] is not None:
+            FilterList.append(RuleRow['FILTER_B'])
+        for FilterId in FilterList:
             tmp_msg = "フィルタ管理判定開始  FILTER_ID: {}".format(FilterId)
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -319,10 +336,10 @@ class Judgement:
 
         ret = self.checkFilterCondition(FilterResultDict)
         if ret is True:
-            tmp_msg = "ルール判定結果: マッチ RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+            tmp_msg = "ルール判定結果: マッチ RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         else:
-            tmp_msg = "ルール判定結果: アンマッチ RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+            tmp_msg = "ルール判定結果: アンマッチ RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         if ret is False:
@@ -899,8 +916,8 @@ class RuleJudgementConst():
 
     # ルール・フィルタ管理　JSON内の演算子・条件
     # 条件
-    DF_TEST_EQ = '0'    # =
-    DF_TEST_NE = '1'    # !=
+    DF_TEST_EQ = '1'    # =
+    DF_TEST_NE = '2'    # !=
     # 演算子
     DF_OPE_NONE = ''    # None
     DF_OPE_OR = '1'     # OR

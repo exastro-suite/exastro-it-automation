@@ -946,6 +946,11 @@ sheetType() {
             case '27':
                 mn.eventFlow();
             break;
+            // 28 : 標準メニュー（ファイル）
+            case '28':
+                mn.$.content.addClass('tabContent');
+                mn.defaultMenu('standard', 'n', false);
+            break;
             // 99 : 独自メニュー
             case '99':
                 mn.customMenu();
@@ -1308,7 +1313,7 @@ contentTabOpen( openTab ) {
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-defaultMenu( sheetType, dataType = 'n') {
+defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
     const mn = this;
 
     const contentTab = [{ name: 'dataList', title: getMessage.FTE10008, type: 'blank' }];
@@ -1328,7 +1333,7 @@ defaultMenu( sheetType, dataType = 'n') {
     // 一覧
     const $dataList = mn.$.content.find('#dataList'),
           initSetFilter = fn.getParams().filter,
-          option = { sheetType: sheetType, dataType: dataType };
+          option = { sheetType: sheetType, dataType: dataType, fileFlag: fileFlag };
     if ( initSetFilter !== undefined ) option.initSetFilter = initSetFilter;
     mn.mainTable = new DataTable('MT', 'view', mn.info, mn.params, option );
     $dataList.find('.sectionBody').html( mn.mainTable.setup() );

@@ -43,29 +43,39 @@ def organization_create(body, organization_id):
 
     :rtype: InlineResponse200
     """
-
-    # Bodyのチェック
+    # Bodyのチェック用
     driver_list = [
         'terraform_cloud_ep',
         'terraform_cli',
-        'ci_cd'
+        'ci_cd',
+        'oase'
     ]
 
-    no_install_driver = None
+    # driversから適用するドライバを選定する。key(driver名)がない場合はTrueとする。
+    additional_drivers = {
+        "terraform_cloud_ep": True,
+        "terraform_cli": True,
+        "ci_cd": True,
+        "oase": True
+    }
     if body is not None and len(body) > 0:
-        no_install_driver_flg = False
-        for key, value in body.items():
-            if key != "no_install_driver":
-                return '', "Body is invalid.", "499-00003", 499
+        drivers = body.get('drivers')
+        if drivers is not None:
+            for driver_name, bool in drivers.items():
+                if driver_name not in driver_list:
+                    return '', "Value of key[drivers] is invalid.", "499-00004", 499
 
-            no_install_driver_flg = True
-            for driver in value:
-                if driver not in driver_list:
-                    return '', "Value of key[no_install_driver] is invalid.", "499-00004", 499
+                if bool is False:
+                    additional_drivers[driver_name] = False
 
-        if no_install_driver_flg is False:
-            return '', "Body is invalid.", "499-00003", 499
-        no_install_driver = json.dumps(body['no_install_driver'])
+    no_install_driver = None
+    no_install_driver_list = []
+    for driver_name, bool in additional_drivers.items():
+        if bool is False:
+            no_install_driver_list.append(driver_name)
+
+    if len(no_install_driver_list) > 0:
+        no_install_driver = json.dumps(no_install_driver_list)
 
     common_db = DBConnectCommon()  # noqa: F405
     connect_info = common_db.get_orgdb_connect_info(organization_id)
@@ -268,6 +278,65 @@ def organization_delete(organization_id):  # noqa: E501
             org_root_db.db_disconnect()
 
             return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
+    return '',
+
+
+@api_filter_admin
+def organization_info(organization_id):  # noqa: E501
+    """organization_info
+
+    Organization情報を取得する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+
+    :rtype: InlineResponse200
+    """
+    # ITA_DB connect
+    common_db = DBConnectCommon()  # noqa: F405
+    connect_info = common_db.get_orgdb_connect_info(organization_id)
+    if connect_info is False:
+        return '', "Organization does not exist", "499-00005", 499
+
+    # ドライバのインストール状態を取得する
+    drivers = {
+        "terraform_cloud_ep": True,
+        "terraform_cli": True,
+        "ci_cd": True,
+        "oase": True,
+    }
+    no_install_driver_json = connect_info.get('NO_INSTALL_DRIVER')
+    if no_install_driver_json is not None:
+        # no_install_driverの対象をFalseにする。
+        no_install_driver = json.loads(no_install_driver_json)
+        for driver_name in no_install_driver:
+            drivers[driver_name] = False
+
+    result_data = {
+        "optionsita": {
+            "drivers": drivers
+        }
+    }
+
+    return result_data,
+
+
+@api_filter_admin
+def organization_update(organization_id, body=None):  # noqa: E501
+    """organization_update
+
+    Organizationにドライバを追加する # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param body: 追加でインストールするドライバはtrueを選択する
+    :type body: dict | bytes
+
+    :rtype: InlineResponse2001
+    """
+    # ####未実装
+
+
     return '',
 
 

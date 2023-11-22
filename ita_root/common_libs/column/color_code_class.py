@@ -67,10 +67,13 @@ class ColorCodeColumn(Column):
             RETRUN:
                 ( True / False , メッセージ )
         """
+
+        retBool = False
+        msg = ""
+
         # 値が無ければ処理を終了する
         if val is None:
             retBool = True
-            return retBool,
         else:
             # regex: カラーコードの正規表現
             regex = "^#([0-9a-fA-F]{6})$"
@@ -79,10 +82,8 @@ class ColorCodeColumn(Column):
             if result:
                 retBool = True
             else:
-                retBool = False
                 status_code = '499-01709'
                 msg_args = [val]
                 msg = g.appmsg.get_api_message(status_code, msg_args)
-                return retBool, msg
 
-        return retBool,
+        return retBool, msg

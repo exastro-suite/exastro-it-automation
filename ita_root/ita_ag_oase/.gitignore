@@ -3,3 +3,4 @@ common_libs/
 messages/
 agent/
 .env
+event_collection_settings.json

@@ -160,10 +160,8 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         raise AppException(err_code)  # noqa: F405
 
     # そのまま/ラベリングしてMongoDBに保存
-    err_code, err_msg = label_event(wsDb, wsMongo, events)  # noqa: F841
+    err_code = label_event(wsDb, wsMongo, events)  # noqa: F841
     if err_code != "":
-        g.applogger.info(err_msg)
-        err_code = "499-01803"
         raise AppException(err_code)  # noqa: F405
 
     # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う

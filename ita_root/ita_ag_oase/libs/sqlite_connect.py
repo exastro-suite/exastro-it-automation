@@ -74,6 +74,18 @@ class sqliteConnect:
         except Exception as e:
             raise AppException("BKY-70002", ["SQLite error", e])
 
+    def delete_unnecessary_records(self, dict):
+        try:
+            for table_name, record_info in dict.items():
+                rowid_list = [rowid for rowid in record_info]
+                delete_placeholders = ", ".join("?" for _ in rowid_list)
+                where_str = f"WHERE NOT (rowid IN ({delete_placeholders}) OR sent_flag=0)"
+                # where_str = f"WHERE rowid NOT IN ({delete_placeholders}) OR (rowid IN sent_flag=0)"
+                self.delete(table_name, where_str, rowid_list)
+            self.db_connect.commit()
+        except Exception as e:
+            raise AppException("BKY-70002", ["SQLite error", e])
+
     def insert_event(self, event):
         table_name = "events"
         self.db_cursor.execute(
@@ -142,11 +154,24 @@ class sqliteConnect:
 
         if bind_value is not None:
             self.db_cursor.execute(sql_str, tuple(bind_value))
-        self.db_cursor.execute(sql_str)
+        else:
+            self.db_cursor.execute(sql_str)
 
         records = self.db_cursor.fetchall()
 
         return records
+
+    def delete(self, table_name, where_str=None, bind_value=None):
+        sql_str = f"DELETE FROM {table_name}"
+        if where_str is not None:
+            sql_str = sql_str + " " + where_str
+
+        if bind_value is not None:
+            result = self.db_cursor.execute(sql_str, tuple(bind_value))
+        else:
+            result = self.db_cursor.execute(sql_str)
+
+        return result
 
     def db_close(self):
         self.db_cursor.close()

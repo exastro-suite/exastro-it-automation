@@ -149,7 +149,6 @@ class ManageEvents:
                 timeout_event_id_list.append(event_id)
         return timeout_event_id_list
 
-
     def update_label_flag(self, event_id_list, update_flag_dict):
         for event_id in event_id_list:
             if event_id not in self.labeled_events_dict:

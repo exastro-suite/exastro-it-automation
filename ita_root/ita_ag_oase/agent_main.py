@@ -28,6 +28,7 @@ from libs.event_collection_settings import create_file, remove_file, get_setting
 def agent_main(organization_id, workspace_id, loop_count, interval):
     count = 1
     max = int(loop_count)
+    sqliteDB = sqliteConnect(organization_id, workspace_id)
 
     # ループに入る前にevent_collection_settings.jsonを削除
     setting_removed = remove_file()
@@ -39,8 +40,9 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     while True:
         print("")
         print("")
+        # SQLiteモジュール
         try:
-            collection_logic(organization_id, workspace_id)
+            collection_logic(sqliteDB, organization_id, workspace_id)
         except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
@@ -52,8 +54,16 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         else:
             count = count + 1
 
+    # SQLiteファイルの空き容量を解放
+    try:
+        g.applogger.debug("Executing VACUUM operation on SQLite database to optimize space.")
+        sqliteDB.db_connect.execute("VACUUM")
+        sqliteDB.db_close()
+    except Exception:
+        g.applogger.error("Failed to execute VACUUM operation.")
 
-def collection_logic(organization_id, workspace_id):
+
+def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # 環境変数の取得
     username = os.environ["USERNAME"]
@@ -71,8 +81,6 @@ def collection_logic(organization_id, workspace_id):
         user_id
     )
 
-    # SQLiteモジュール
-    sqliteDB = sqliteConnect(organization_id, workspace_id)
     g.applogger.debug(g.appmsg.get_log_message("AGT-10006", []))
 
     # イベント収集設定ファイルからイベント収集設定の取得
@@ -154,7 +162,10 @@ def collection_logic(organization_id, workspace_id):
     for id in id_list:
         try:
             sqliteDB.db_cursor.execute(
-                "SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp WHERE event_collection_settings_id=? AND sent_flag=?",
+                """
+                SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp
+                WHERE event_collection_settings_id=? AND sent_flag=?
+                """,
                 (id, 0)
             )
             unsent_timestamp = sqliteDB.db_cursor.fetchall()
@@ -177,13 +188,16 @@ def collection_logic(organization_id, workspace_id):
             unsent_event["event"] = []
 
             sqliteDB.db_cursor.execute(
-                "SELECT rowid, event_collection_settings_id, event, fetched_time FROM events WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?",  # noqa E501
+                """
+                SELECT rowid, event_collection_settings_id, event, fetched_time FROM events
+                WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?
+                """,
                 (event_collection_settings_id, fetched_time, 0)
             )
             unsent_events = sqliteDB.db_cursor.fetchall()
-
             unsent_event["event"].extend([row[2] for row in unsent_events])
-            unsent_event_rowids.extend([row[0] for row in unsent_event])
+            for row in unsent_events:
+                unsent_event_rowids.append(row[0])
             post_body["events"].append(unsent_event)
 
     # ITAにデータを送信
@@ -220,9 +234,53 @@ def collection_logic(organization_id, workspace_id):
         else:
             g.applogger.info(g.appmsg.get_log_message("AGT-10020", []))
             g.applogger.debug(response)
-        sqliteDB.db_close()
 
     else:
         g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))
+
+    # レコードのDELETE
+    # 最新のレコードと1ループ前のレコードを残す
+    remain_timestamp_dict = {}  # sent_timestampテーブルに残すレコードの{rowid: {id: xxx, fetched_time: nnn}}
+    remain_event_rowids = []  # eventsテーブルに残すレコードのrowid
+    for id in id_list:
+        try:
+            sqliteDB.db_cursor.execute(
+                """
+                SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp
+                WHERE event_collection_settings_id=? and sent_flag=1
+                ORDER BY fetched_time DESC LIMIT 2
+                """,
+                (id, )
+            )
+            remain_timestamp = sqliteDB.db_cursor.fetchall()
+        except sqlite3.OperationalError:
+            # テーブルが作られていない（イベントが無い）場合、処理を終了
+            sqliteDB.db_close()
+            return
+
+        if len(remain_timestamp) < 2:
+            continue
+        for item in remain_timestamp:
+            remain_timestamp_dict[item[0]] = {"event_collection_settings_id": item[1], "fetched_time": item[2]}
+
+    # 削除対象イベントが無い場合、削除処理をスキップ
+    if len(remain_timestamp_dict) >= 1:
+        for rowid, item in remain_timestamp_dict.items():
+            sqliteDB.db_cursor.execute(
+                """
+                SELECT rowid FROM events
+                WHERE ((event_collection_settings_id=? AND fetched_time=?) OR sent_flag=0)
+                """,
+                (item["event_collection_settings_id"], item["fetched_time"])
+            )
+            remain_event = sqliteDB.db_cursor.fetchall()
+            for item in remain_event:
+                remain_event_rowids.append(item[0])
+        try:
+            g.applogger.debug("Deleting unnecessary records from SQLite database.")
+            sqliteDB.db_connect.execute("BEGIN")
+            sqliteDB.delete_unnecessary_records({"events": remain_event_rowids, "sent_timestamp": remain_timestamp_dict})
+        except AppException as e:  # noqa F405
+            app_exception(e)
 
     return

@@ -12,6 +12,7 @@
 # limitations under the License.
 #
 
+import copy
 import json
 import os
 import re
@@ -61,9 +62,11 @@ class Notification(ABC):
         }
 
         for index, item in enumerate(event_list):
+            # _convert_messageでitemを直接書き換えると再実行時にエラーが発生する可能性があるため、複製したデータをベースに処理を行う。
+            tmp_item = copy.deepcopy(item)
             g.applogger.info(f"{index + 1}件目のイベントの処理開始")
 
-            message = cls._create_notise_message(item, template)
+            message = cls._create_notise_message(tmp_item, template)
             tmp_result = cls.__call_notification_api(message, notification_destination)
 
             result["success"] = result["success"] + tmp_result["success"]
@@ -168,7 +171,6 @@ class Notification(ABC):
 
         header_para = {
             "User-Id": user_id,
-            "Roles": json.dumps(g.ROLES),
             "Language": language
         }
 
@@ -229,7 +231,6 @@ class Notification(ABC):
         header_para = {
             "Content-Type": "application/json",
             "User-Id": user_id,
-            "Roles": json.dumps(g.ROLES),
             "Language": language
         }
 
@@ -289,6 +290,11 @@ class Notification(ABC):
 
     @classmethod
     def fetch_notification_destination_dict(cls):
+        """
+        通知先IDと通知先名称のdictを取得する
+        Returns:
+           Key: 通知先ID, Value: 通知先名のdict
+        """
         fetch_data = cls._call_setting_notification_api()
         data = fetch_data["data"]
 

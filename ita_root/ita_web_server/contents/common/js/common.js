@@ -285,12 +285,16 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                             // 権限無しの場合、トップページに戻す
                             case 401:
                                 response.json().then(function( result ){
-                                    if ( !iframeFlag ) {
-                                        fetchController.abort();
-                                        alert(result.message);
-                                        location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
+                                    if ( option.authorityErrMove !== false ) {
+                                        if ( !iframeFlag ) {
+                                            fetchController.abort();
+                                            alert(result.message);
+                                            location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
+                                        } else {
+                                            cmn.iframeMessage( result.message );
+                                        }
                                     } else {
-                                        cmn.iframeMessage( result.message );
+                                        reject( result );
                                     }
                                 }).catch(function( e ) {
                                     cmn.systemErrorAlert();
@@ -2102,6 +2106,53 @@ html: {
         }
 
         return `<div class="operationMenu">${html.join('')}</div>`;
+    },
+    labelListHtml: function( labels, labelData ) {
+        const html = [];
+
+        if ( !labelData ) labelData = [];
+        
+        // ラベルリストの形式
+        if ( cmn.typeof( labels ) === 'string') {
+            labels = cmn.jsonParse( labels, 'array');
+            for ( const label of labels ) {
+                if ( label.length === 2 ) {
+                    html.push( this.labelHtml( labelData, label[0], label[1] ) );    
+                } else {
+                    html.push( this.labelHtml( labelData, label[0], label[2], label[1] ) );
+                }
+            }
+        } else {   
+            for ( const key in labels ) {
+                html.push( this.labelHtml( labelData, key, labels[ key ] ) );
+            }
+        }
+    
+        return ``
+        + `<ul class="eventFlowLabelList">`
+            + html.join('')
+        + `</ul>`;
+    },
+    labelHtml: function( labelData, key, value, condition ) {
+        // 色の取得
+        const label = labelData.find(function( item ){
+            return key === item.parameter.label_key_name;
+        });
+    
+        const
+        color = ( label )? label.parameter.color_code: '#002B62',
+        keyColor = cmn.blackOrWhite( color, 1 ),
+        conColor = cmn.blackOrWhite( color, 1 ),
+        valColor = cmn.blackOrWhite( color, .5 );
+    
+        return ``
+        + `<li class="eventFlowLabelItem">`
+            + `<div class="eventFlowLabel" style="background-color:${color}">`
+                + `<div class="eventFlowLabelKey"><span class="eventFlowLabelText" style="color:${keyColor}">${fn.cv( key, '', true )}</span></div>`
+                + ( ( condition )? `<div class="eventFlowLabelCondition" style="color:${conColor}">${fn.cv( condition, '', true )}</div>`: ``)
+                + `<div class="eventFlowLabelValue"><span class="eventFlowLabelText" style="color:${valColor}">${fn.cv( value, '', true )}</span></div>`
+            + `</div>`
+        + `</li>`;
     }
 },
 /*
@@ -2117,6 +2168,19 @@ checkHexColorCode: function( code, nullCheckFlag = true ) {
     } else {
         return '#000000';
     }
+},
+/*
+##################################################
+  背景色からテキストカラーを判定
+##################################################
+*/
+blackOrWhite: function( hexcolor, num ) {
+	const
+    r = parseInt( hexcolor.substring( 1, 3 ), 16 ),
+    g = parseInt( hexcolor.substring( 3, 5 ), 16 ),
+    b = parseInt( hexcolor.substring( 5, 7 ), 16 );
+
+	return (((( r * 299 ) + ( g * 587 ) + ( b * 114 )) / 1000 ) < 180 * num )? '#FFFFFF': '#333333';
 },
 /*
 ##################################################
@@ -2800,7 +2864,7 @@ gotoErrPage: function( message ) {
         } else {
             window.alert('Unknown error.');
         }
-        window.location.href = './system_error/';
+        //window.location.href = './system_error/';
     } else {
         if ( message ) {
             console.error( message );

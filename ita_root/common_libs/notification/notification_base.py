@@ -50,6 +50,10 @@ class Notification(ABC):
 
         # 負荷を考慮して通知先は1回のみ取得することとする
         notification_destination = cls._fetch_notification_destination(fetch_data, decision_information)
+        if len(notification_destination) == 0:
+            g.applogger.info("条件を満たす通知先が0件のため処理を終了します。")
+            return
+
 
         g.applogger.info(f"合計で通知する件数：{len(notification_destination) * len(event_list)}")
 
@@ -174,8 +178,6 @@ class Notification(ABC):
             "Language": language
         }
 
-        event_type_false = []
-        event_type_false.append("ita.event_type.evaluated")
         query_params = {}
         if event_type_true is not None and len(event_type_true) > 0:
             # query_params["event_type_true"] = ",".join(event_type_true)

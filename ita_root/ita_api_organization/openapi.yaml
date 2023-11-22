@@ -6202,11 +6202,11 @@ paths:
                 start_time:
                   type: string
                   format: date-time
-                  example: "2017-07-21T17:32:28Z"
+                  example: "2017/07/21 17:32:28"
                 end_time:
                   type: string
                   format: date-time
-                  example: "2017-07-21T17:32:28Z"
+                  example: "2017/07/21 17:32:28"
                 evaluted:
                   type: boolean
                   example: "true"

@@ -437,6 +437,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルダウンロード指定
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: Success
@@ -559,6 +565,74 @@ paths:
         - name: uuid
           in: path
           description: UUID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    items: {
+                      $ref: '#/components/schemas/FILTER_PARAMETERS',
+                    }
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+  
+  /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{id}/{column}/file/:
+    get:
+      tags:
+        - Menu Filter
+      description: アップロードファイルをダウンロードする
+      operationId: downloadFile
+      x-openapi-router-controller: controllers.menu_filter_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+        - name: menu
+          in: path
+          description: メニュー名
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: UUID
+          required: true
+          schema:
+            type: string
+        - name: column
+          in: path
+          description: カラムREST名
           required: true
           schema:
             type: string

@@ -289,6 +289,11 @@ class Notification(ABC):
 
     @classmethod
     def fetch_notification_destination_dict(cls):
+        """
+        通知先IDと通知先名称のdictを取得する
+        Returns:
+           Key: 通知先ID, Value: 通知先名のdict
+        """
         fetch_data = cls._call_setting_notification_api()
         data = fetch_data["data"]
 

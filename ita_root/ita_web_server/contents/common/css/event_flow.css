@@ -1,0 +1,741 @@
+@charset "utf-8";
+/* CSS Document */
+
+/*
+レイアウト
+*/
+.nowLoading > div {
+display: none;
+}
+.eventFlowContainer {
+display: flex;
+gap: 2px;
+width: 100%; height: 100%;
+padding: 0 2px;
+background-color: #DDD;
+}
+.eventFlow > div {
+min-width: 0;
+}
+.eventFlow {
+flex: 1 1 auto;
+display: flex;
+flex-direction: column;
+padding: 2px 0;
+}
+.eventFlow > div {
+min-height: 0;
+}
+.eventFlowWidthResizeBar {
+flex: 0 0 5px;
+background-color: #FFF;
+}
+.eventFlowParts {
+flex: 0 0 400px;
+}
+
+
+
+
+
+
+
+
+
+
+
+.eventFlowHeader {
+z-index: 5;
+flex: 0 0 auto;
+padding: 8px;
+background-color: #F5F5F6;
+}
+.eventFlowBody {
+position: relative;
+flex: 1 1 auto;
+}
+.eventFlowBodyInner {
+display: flex;
+flex-wrap: wrap;
+flex-direction: row;
+width: 100%; height: 100%;
+padding: 0 16px 8px;
+background-color: #F5F5F6;
+}
+.eventFlowBodyInner > div {
+min-height: 0;
+}
+.eventFlowFooter {
+flex: 0 0 32px;
+background-color: #F5F5F6;
+border-top: 1px solid #CCC;
+}
+
+.eventFlowChartRange {
+position: relative;
+display: flex;
+align-items: center;
+height: 100%;
+border: 1px solid #CCC;
+border-radius: 4px;
+}
+.eventFlowChartRangeDate {
+padding: 0 32px 0 28px;
+}
+.eventFlowChartRange > .icon-search {
+position: absolute;
+left: 8px; top: 50%;
+transform: translateY(-50%);
+font-size: 14px;
+color: #888;
+}
+.eventFlowChartRangeClear {
+position: absolute;
+right: 4px; top: 50%;
+transform: translateY(-50%);
+width: 25px; height: 25px;
+background-color: transparent;
+border: none;
+color: #888;
+cursor: pointer;
+font-size: 12px;
+outline: none;
+}
+.eventFlowChartRangeClear:hover,
+.eventFlowChartRangeClear:focus {
+color: #CCC;
+}
+
+
+
+/*
+選択ボタン
+*/
+.eventFlowSelectWrap {
+position: relative;
+}
+.eventFlowSelectButton {
+overflow: hidden;
+position: relative;
+display: block;
+max-width: 100%; height: 32px;
+margin: 0; padding: 0 20px 0 8px;
+background-color: var(--white100);
+border: 1px solid var(--black40);
+border-radius: 4px;
+letter-spacing: .75px;
+font-size: 14px;
+text-overflow: ellipsis;
+outline: none;
+white-space: nowrap;
+cursor: pointer;
+}
+.eventFlowSelectButton:focus {
+background-color: var(--focusBackgroundColor);
+border-color: var(--focusColor);
+}
+.eventFlowSelectButton::after {
+content: '';
+position: absolute;
+right: 6px; top: 50%;
+transform: translateY(-50%);
+width: 0; height: 0;
+border-color: #888 transparent transparent transparent;
+border-style: solid;
+border-width: 5px 4px 0 4px;
+}
+.eventFlowOpenBlock {
+display: none;
+position: absolute;
+left: 0; top: 34px;
+background-color: #FFF;
+box-shadow: 0 0 8px rgba( 0,0,0,.2 );
+border-radius: 4px;
+border: 1px solid var(--black40);
+}
+
+
+
+
+.eventFlowDateRangeItem,
+.eventFlowPatternSelectItem {
+white-space: nowrap;
+}
+.eventFlowPatternSelectBar {
+display: inline-block;
+width: 16px; height: 8px;
+margin-right: 8px;
+vertical-align: 2px;
+}
+.eventFlowDateRangeBlockInner {
+display: flex;
+}
+.eventFlowDateRangeLogWrap {
+display: none;
+min-width: 64px;
+border-left: 1px solid #CCC;
+}
+.eventFlowDateRangeLogWrap.setDate {
+display: block;
+}
+.eventFlowDateRangeLogTitle {
+padding: 8px;
+background-color: rgba(0,0,0,.05);
+border-bottom: 1px solid #CCC;
+white-space: nowrap;
+font-size: 14px;
+}
+
+
+
+/*
+##################################################
+  Date canvas
+##################################################
+*/
+.eventFlowDate {
+overflow: hidden;
+flex: 1 1 100%;
+position: relative;
+z-index: 0;
+height: 48px;
+margin-right: 24px;
+}
+.eventFlowDateCanvas {
+position: absolute;
+left: 0; top: 0;
+}
+/*
+##################################################
+  Chart canvas
+##################################################
+*/
+.eventFlowChart {
+overflow: hidden;
+flex: 1 1 auto;
+position: relative;
+z-index: 0;
+height: calc( 100% - 72px );
+background-color: #FFF;
+border: 1px solid #CCC;
+box-shadow: 0 0 32px rgba(0,0,0,.075) inset;
+user-select: none;
+}
+.eventFlowChartCanvas {
+position: absolute;
+left: -1px; top: -1px;
+width: calc( 100% + 2px ); height: calc( 100% + 2px );
+user-select: none;
+}
+.eventFlowChartPositionLineCanvas,
+.eventFlowChartBlockCanvas,
+.eventFlowChartIncidentCanvas {
+position: absolute;
+left: 0; top: 0;
+user-select: none;
+pointer-events: none;
+}
+.eventFlowPositionBorder {
+display: none;
+position: absolute;
+left: -1px; top: 0;
+width: 1px; height: 100%;
+border-left: 1px dashed rgba(0,0,0,.5);
+user-select: none;
+pointer-events: none;
+}
+.eventFlowPositionBorder.dateRangeSelect {
+background-color: rgba(0,0,0,.1);
+border-right: 1px dashed rgba(0,0,0,.5);
+}
+.eventFlowPositionDate {
+display: none;
+position: fixed;
+z-index: 9999;
+padding: 4px 8px;
+background-color: #FFF;
+border: 1px solid #CCC;
+user-select: none;
+pointer-events: none;
+}
+
+.eventFlowEventInformation {
+display: none;
+align-items: center;
+position: absolute;
+left: 0; top: 0;
+z-index: 1;
+width: 50%; height: 100%;
+padding: 8px;
+pointer-events: none;
+}
+.eventFlowEventInformationInner {
+overflow: auto;
+width: 100%;
+padding: 8px;
+background-color: #FFF;
+box-shadow: 0 0 16px rgba(0,0,0,.3);
+border-radius: 4px;
+pointer-events: auto;
+line-height: 1.5;
+font-size: 16px;
+word-break: break-all;
+}
+
+/*
+##################################################
+   Scroll bar
+##################################################
+*/
+.eventFlowChartBar {
+position: relative;
+background-color: rgba(0,0,0,.1);
+user-select: none;
+}
+.eventFlowChartBar[data-type="vertical"] {
+flex: 0 0 16px;
+height: calc( 100% - 72px );
+margin-left: 8px;
+}
+.eventFlowChartBar[data-type="horizontal"] {
+flex: 0 0 calc( 100% - 24px );
+height: 16px;
+margin-top: 8px;
+}
+.eventFlowRange {
+position: absolute;
+top: 0; left: 0;
+width: 100%; height: 100%;
+background-color: var(--mainColor50);
+cursor: pointer;
+}
+.eventFlowChartBar[data-type="vertical"] .eventFlowRange {
+background-image: linear-gradient(90deg,rgba(0,0,0,0),rgba(0,0,0,.2));
+}
+.eventFlowChartBar[data-type="horizontal"] .eventFlowRange {
+background-image: linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.2));
+}
+.eventFlowRangeStart,
+.eventFlowRangeEnd {
+position: absolute;
+background-color: #BBB;
+border-left: 1px solid rgba(255,255,255,.3);
+border-top: 1px solid rgba(255,255,255,.3);
+border-right: 1px solid rgba(0,0,0,.2);
+border-bottom: 1px solid rgba(0,0,0,.2);
+box-shadow: 0 0 0 1px rgba(0,0,0,.6);
+}
+.eventFlowChartBar[data-type="vertical"] .eventFlowRangeStart {
+left: 0; top: 0;
+width: 100%; height: 8px;
+cursor: row-resize;
+}
+.eventFlowChartBar[data-type="vertical"] .eventFlowRangeEnd {
+left: 0; bottom: 0;
+width: 100%; height: 8px;
+cursor: row-resize;
+}
+.eventFlowChartBar[data-type="horizontal"] .eventFlowRangeStart {
+top: 0; left: 0;
+width: 8px; height: 100%;
+cursor: col-resize;
+}
+.eventFlowChartBar[data-type="horizontal"] .eventFlowRangeEnd {
+top: 0; right: 0;
+width: 8px; height: 100%;
+cursor: col-resize;
+}
+.eventFlowRangeStart::after,
+.eventFlowRangeEnd::after {
+content: '';
+position: absolute;
+left: 50%; top: 50%;
+transform: translate(-50%,-50%);
+}
+.eventFlowChartBar[data-type="vertical"] .eventFlowRangeStart::after,
+.eventFlowChartBar[data-type="vertical"] .eventFlowRangeEnd::after {
+width: 60%; height: 2px;
+border-bottom: 1px solid rgba(255,255,255,.5);
+border-top: 1px solid rgba(0,0,0,.3);
+}
+.eventFlowChartBar[data-type="horizontal"] .eventFlowRangeStart::after,
+.eventFlowChartBar[data-type="horizontal"] .eventFlowRangeEnd::after {
+width: 2px; height: 60%;
+border-right: 1px solid rgba(255,255,255,.5);
+border-left: 1px solid rgba(0,0,0,.3);
+}
+
+
+.eventFlowParts {
+display: flex;
+gap: 3px;
+flex-direction: column;
+min-width: 0;
+padding: 2px 0;
+}
+.eventFlowPartsBlock {
+flex: 1 1 100%;
+display: flex;
+flex-direction: column;
+background-color: #F5F5F6;
+min-height: 0;
+}
+.eventFlowPartsTableBlock {
+display: flex;
+flex-direction: column;
+height: 100%;
+}
+.eventFlowPartsBlockHeader {
+display: flex;
+position: relative;
+height: 32px;
+padding: 0 8px 0 28px;
+background-image: linear-gradient(rgba(255,255,255,1), rgba(255,255,255,0) 40% );
+line-height: 34px;
+letter-spacing: .25px;
+font-size: 14px;
+font-weight: bold;
+color: #666D74;
+}
+.eventFlowPartsBlockHeader::before,
+.eventFlowPartsBlockHeader::after {
+content: '';
+display: block;
+position: absolute;
+left: 8px; top: 50%;
+transform: translateY(-50%);
+width: 12px; height: 12px;
+}
+.eventFlowPartsBlockHeader::before {
+background-color: var(--mainColor40);
+}
+.eventFlowPartsBlockHeader::after {
+background-image: linear-gradient( transparent 5px, #F5F5F6 5px, #F5F5F6 7px, transparent 7px ),
+linear-gradient( 90deg, transparent 5px,#F5F5F6 5px, #F5F5F6 7px, transparent 7px );
+}
+.eventFlowPartsBlockBody {
+flex: 1 1 auto;
+height: 100%;
+min-height: 0;
+padding: 0 2px 2px;
+}
+.eventFlowPartsBlockBodyInner {
+height: 100%;
+}
+.eventFlowPartsBlockName {
+flex: 1 1 auto;
+}
+.eventFlowPartsBlockMenuButton,
+.eventFlowPartsMenuButton {
+padding: 0;
+background-color: transparent;
+border: none;
+cursor: pointer;
+}
+.eventFlowPartsBlockMenuList,
+.eventFlowPartsMenuList {
+display: flex;
+gap: 8px;
+align-items: center;
+height: 100%;
+padding-right: 8px;
+}
+.eventFlowPartsBlockMenuButton,
+.eventFlowPartsMenuButton {
+color: #666;
+opacity: .5;
+}
+.eventFlowPartsMenuButton {
+color: #FFF;
+}
+.eventFlowPartsBlockMenuButton:hover,
+.eventFlowPartsMenuButton:hover {
+opacity: 1;
+}
+.eventFlowPartsBlockMenuButton:disabled,
+.eventFlowPartsBlockMenuButton:disabled:hover {
+opacity: .2;
+cursor: no-drop;
+}
+.eventFlowPartsBody {
+padding: 0 1px 1px;
+}
+.eventFlowPartsInfo {
+display: none;
+overflow: auto;
+height: 100%;
+background-color: #FFF;
+border: 1px solid rgba(0,0,0,.1);
+}
+.eventFlowPartsTableClose {
+flex: 0 0 auto;
+}
+.eventFlowPartsTableClose .eventFlowPartsBlockBody {
+display: none;
+}
+.eventFlowPartsItemOpen .eventFlowPartsInfo {
+display: block;
+}
+.eventFlowPartsTableClose .icon-arrow02_top,
+.eventFlowPartsItemOpen .icon-arrow02_bottom {
+display: inline-block;
+transform: rotate(180deg);
+}
+
+
+.filterEventFlowEditMode .eventFlowPartsBlockAction,
+.filterEventFlowEditMode .eventFlowPartsBlockRule,
+.actionEventFlowEditMode .eventFlowPartsBlockFilter,
+.actionEventFlowEditMode .eventFlowPartsBlockRule,
+.ruleEventFlowEditMode .eventFlowPartsBlockFilter,
+.ruleEventFlowEditMode .eventFlowPartsBlockAction {
+display: none;
+}
+.teblePartsEditTextArea {
+resize: vertical;
+}
+
+
+.eventFlowPartsList,
+.eventFlowPartsNoDate {
+overflow: auto;
+height: 100%;
+padding: 8px 4px;
+background-color: #EBECED;
+border: 1px solid rgba(0,0,0,.1);
+}
+.eventFlowPartsNoDateInner {
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100%;
+opacity: .5;
+}
+.eventFlowPartsItem {
+margin-bottom: 8px;
+border-radius: 4px;
+}
+.eventFlowPartsFilter { background-color: #647B93; }
+.eventFlowPartsAction { background-color: #005BAC; }
+.eventFlowPartsRule { background-color: #009C7D; }
+
+.eventFlowPartsItem:last-child {
+margin-bottom: 0;
+}
+.eventFlowPartsHeader {
+display: flex;
+background-image: linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,0) );
+}
+.eventFlowPartsName {
+position: relative;
+flex: 1 1 auto;
+padding: 4px 16px 4px 20px;
+text-shadow: 1px 1px 0 rgba(0,0,0,.1), -1px -1px 0 rgba(0,0,0,.1), -1px 0 0 rgba(0,0,0,.1), 0 -1px 0 rgba(0,0,0,.1);
+letter-spacing: 0.25px;
+line-height: 1.3;
+font-size: 14px;
+color: #EEE;
+}
+.eventFlowPartsName::before {
+content: '';
+position: absolute;
+left: 8px; top: 6px;
+width: 2px; height: calc( 100% - 12px );
+background-color: #FFF;
+opacity: .5;
+}
+.eventFlowPartsNameText {
+word-break: break-all;
+white-space: normal;
+}
+
+/* Event info table */
+.eventInfoTable {
+width: 100%;
+}
+.eventInfoTableTh,
+.eventInfoTableTd {
+padding: 4px 8px;
+border: 1px solid #CCC;
+}
+.eventInfoTableTh {
+width: 8px;
+background-color: #EFEFEF;
+white-space: nowrap;
+}
+.eventInfoTableLabels {
+border-top: none;
+}
+.eventInfoTableLabelsBlank {
+border-bottom: none;
+}
+
+
+/* Label List */
+.eventFlowLabelList {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+padding: 8px;
+background-color: #FFF;
+border-radius: 4px;
+}
+.eventFlowLabelItem {
+max-width: 100%;
+}
+
+
+.eventFlowLabel {
+position: relative;
+z-index: 0;
+display: flex;
+border-radius: 4px;
+/*clip-path: polygon( 8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%);*/
+color: #FFF;
+}
+/*
+.eventFlowLabel::after {
+content: '';
+position: absolute;
+left: 8px; top: 50%;
+transform: translateY(-50%);
+width: 4px; height: 4px;
+background-color: rgba(255,255,255,.6);
+border-radius: 50%;
+}
+*/
+.eventFlowLabel > div {
+flex: 1 1 auto;
+display: flex;
+align-items: center;
+min-width: 0;
+line-height: 1.3;
+font-size: 12px;
+}
+.eventFlowLabelKey {
+z-index: 2;
+padding: 4px 8px;
+}
+.eventFlowLabelCondition {
+background-color: rgba(255,255,255,.25);
+justify-content: center;
+padding: 4px;
+}
+.eventFlowLabelValue {
+z-index: 1;
+padding: 4px 8px;
+background-color: rgba(255,255,255,.5);
+border-radius: 0 4px 4px 0;
+color: #FFF;
+}
+.eventFlowLabelText {
+display: block;
+word-break: break-all;
+}
+
+.eventFlowPartsRuleContainer,
+.eventFlowPartsActionTableWrap {
+padding: 4px;
+background-color: #F5F5F6;
+}
+.eventFlowPartsRuleBlock {
+position: relative;
+margin-bottom: 16px;
+padding: 4px;
+background-color: #FFF;
+border: 1px solid #CCC;
+border-radius: 4px;
+}
+.eventFlowPartsRuleBlock::after {
+content: '';
+position: absolute;
+right: 50%; bottom: -17px;
+transform: translateX(-50%);
+border: 6px solid transparent;
+border-top-color: #FFAA00;
+}
+.eventFlowPartsRuleBlock:last-child {
+margin-bottom: 0;
+}
+.eventFlowPartsRuleBlock:last-child::after {
+display: none;
+}
+.eventFlowPartsRuleOperatorMode .eventFlowPartsRuleBlockBody {
+position: relative;
+padding-right: 88px;
+}
+.eventFlowPartsRuleOperator {
+display: flex;
+justify-content: center;
+align-items: center;
+position: absolute;
+right: 0; top: 0;
+width: 80px; height: 100%;
+background-color: #91aac5;
+border-radius: 4px;
+color: #FFF;
+}
+.eventFlowPartsRuleLabel .eventFlowLabelList {
+padding: 0;
+}
+.eventFlowPartsActionTable {
+width: 100%;
+}
+.eventFlowPartsActionTh,
+.eventFlowPartsActionTd {
+padding: 6px 12px;
+border: 1px solid #005BAC;
+}
+.eventFlowPartsActionTh {
+width: 8px;
+background-color: #94b9da;
+white-space: nowrap;
+color: #FFF;
+}
+.eventFlowPartsActionTd {
+word-break: break-all;
+background-color: #FFF;
+}
+
+
+.eventFlowPartsTableWrap {
+overflow: auto;
+width: 100%; height: 100%;
+}
+.eventFlowPartsTable {
+width: 100%;
+}
+.eventFlowPartsTable .ci {
+font-size: 12px;
+}
+.eventFlowPartsTable .tHeadTh {
+width: 128px;
+}
+.eventFlowPartsTable .tHeadTh .ci {
+white-space: normal;
+word-break: break-all;
+}
+.eventFlowPartsTableWrap select {
+width: 100%!important;
+}
+.eventFlowPartsTableGroupTd {
+padding-bottom: 8px;
+background-color: #DDD;
+}
+.eventFlowPartsTable .td {
+height: 40px;
+}
+.eventFlowPartsGroupTable {
+border-left: 1px solid var(--mainColor40);
+border-bottom: 1px solid var(--mainColor40);
+}
+.eventFlowPartsTable .tableEditMultipleColmun {
+white-space: normal;
+word-break: break-all;
+}
+.partsRquired {
+color: #FF0;
+margin-left: 2px;
+display: inline-block;
+transform: translateY(-4px);
+}

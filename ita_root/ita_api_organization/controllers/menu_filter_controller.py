@@ -49,6 +49,8 @@ def get_filter_count(organization_id, workspace_id, menu):  # noqa: E501
     # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
     # 26 : MongoDBを利用するシートタイプ
     sheet_type_list.append('26')
+    # 28 : 作業管理のシートタイプ追加
+    sheet_type_list.append('28')
     check_sheet_type(menu, sheet_type_list, objdbca)
 
     # メニューに対するロール権限をチェック
@@ -60,7 +62,7 @@ def get_filter_count(organization_id, workspace_id, menu):  # noqa: E501
 
 
 @api_filter
-def get_filter(organization_id, workspace_id, menu):  # noqa: E501
+def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
     """get_filter
 
     レコードを全件取得する # noqa: E501
@@ -71,6 +73,8 @@ def get_filter(organization_id, workspace_id, menu):  # noqa: E501
     :type workspace_id: str
     :param menu: メニュー名
     :type menu: str
+    :param file: ファイルデータ指定
+    :type file: str
 
     :rtype: InlineResponse2003
     """
@@ -85,6 +89,8 @@ def get_filter(organization_id, workspace_id, menu):  # noqa: E501
     # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
     # 26 : MongoDBを利用するシートタイプ
     sheet_type_list.append('26')
+    # 28 : 作業管理のシートタイプ追加
+    sheet_type_list.append('28')
     check_sheet_type(menu, sheet_type_list, objdbca)
 
     # メニューに対するロール権限をチェック
@@ -92,6 +98,12 @@ def get_filter(organization_id, workspace_id, menu):  # noqa: E501
 
     filter_parameter = {}
     result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
+    
+    # ファイルデータなしの場合
+    if file == 'no':
+        for value in result_data:
+            value['file'] = {}
+    
     return result_data,
 
 
@@ -121,6 +133,8 @@ def get_journal(organization_id, workspace_id, menu, uuid):  # noqa: E501
 
     # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
     sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+    # 28 : 作業管理のシートタイプ追加
+    sheet_type_list.append('28')
     check_sheet_type(menu, sheet_type_list, objdbca)
 
     # メニューに対するロール権限をチェック
@@ -159,6 +173,8 @@ def post_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
     # 26 : MongoDBを利用するシートタイプ
     sheet_type_list.append('26')
+    # 28 : 作業管理のシートタイプ追加
+    sheet_type_list.append('28')
     check_sheet_type(menu, sheet_type_list, objdbca)
 
     # メニューに対するロール権限をチェック
@@ -202,6 +218,8 @@ def post_filter_count(organization_id, workspace_id, menu, body=None):  # noqa: 
     # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
     # 26 : MongoDBを利用するシートタイプ
     sheet_type_list.append('26')
+    # 28 : 作業管理のシートタイプ追加
+    sheet_type_list.append('28')
     check_sheet_type(menu, sheet_type_list, objdbca)
 
     # メニューに対するロール権限をチェック
@@ -214,4 +232,43 @@ def post_filter_count(organization_id, workspace_id, menu, body=None):  # noqa: 
 
     # メニューのカラム情報を取得
     result_data = menu_filter.rest_count(objdbca, menu, filter_parameter)
+    return result_data,
+
+
+@api_filter
+def download_file(organization_id, workspace_id, menu, id, column):
+    """download_file
+
+    アップロードされているファイルをダウンロードする # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param menu: メニュー名
+    :type menu: str
+    :param uuid: uuid
+    :type uuid: str
+    :param column: カラムREST名
+    :type column: str
+
+    :rtype: InlineResponse2005
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6', '26', '28']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    filter_parameter = {}
+
+    # ファイルデータ取得
+    result_data = menu_filter.get_file_data(objdbca, menu, filter_parameter, id, column)
     return result_data,

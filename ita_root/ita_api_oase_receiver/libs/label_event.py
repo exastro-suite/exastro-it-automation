@@ -200,7 +200,7 @@ def create_jmespath_query(json_path):
 
 
 # ラベル付与設定内で比較方法として真偽値を使用した場合に、値をpythonで解釈できるようにする
-# _value ラベル付与設定内でのtarget_value
+# _value: ラベル付与設定内でのsearch_value_name
 def returns_bool(_value):
     value = _value.lower()
     if value == "true":

@@ -22,6 +22,7 @@ from common_libs.conductor.classes.exec_util import *
 from common_libs.ci.util import log_err
 from common_libs.oase.manage_events import ManageEvents
 from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
+from bson import ObjectId
 import datetime
 import inspect
 import json
@@ -431,13 +432,9 @@ class Judgement:
 
         RaccEventDict = {}
 
-        # 単体テスト用
-        # 本来はinsert時の戻り値(uuid)を設定
-        id = 'e_' + RuleRow["RULE_ID"]
         t1 = int(time.time())
         ttl = int(RuleRow['REEVALUATE_TTL'])
 
-        RaccEventDict["_id"] = id
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = t1
@@ -567,10 +564,17 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # 通知処理（既知(時間切れ)）
-        # OASE.send(objdbca, timeout_Event_Id_List, {"notification_type": OASENotificationType.TIMEOUT})
+        timeout_notification_list = []
+        for event_id in timeout_Event_Id_List:
+            ret, EventRow = EventObj.get_events(event_id)
+            if ret is True:
+                timeout_notification_list.append(EventRow)
+        OASE.send(objdbca, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 
+    new_Event_List = []
+    new_Event_List = list(EventObj.labeled_events_dict.values())
     # 通知処理（新規）
-    # OASE.send(objdbca, EventObj.labeled_events_dict, {"notification_type": OASENotificationType.NEW})
+    OASE.send(objdbca, new_Event_List, {"notification_type": OASENotificationType.NEW})
 
     # テーブル名
     t_oase_filter = 'T_OASE_FILTER'  # フィルター管理
@@ -715,7 +719,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             "CONDUCTOR_INSTANCE_NAME": conductor_name,
                             "OPERATION_ID": operation_id,
                             "OPERATION_NAME": operation_name,
-                            "EVENT_ID_LIST": ','.join(map(str, UseEventIdList)),
+                            "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
                             "DISUSE_FLAG": "0"
@@ -744,7 +748,23 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             if action_log_row["ACTION_ID"]:
                                 # アクションが設定されている場合
                                 # 通知処理(作業前)
-                                # OASE.send(objdbca, UseEventIdList, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": action_log_row["RULE_ID"]})
+                                rule_id = action_log_row["RULE_ID"]
+                                # 「ルール管理」からレコードを取得
+                                ret_rule = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                                if not ret_rule:
+                                    tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
+                                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    return False
+
+                                if ret_rule[0].get('BEFORE_NOTIFICATION_DESTINATION'):
+                                    # 通知先が設定されている場合、通知処理(作業前)を実行する
+                                    before_Action_Event_List = []
+                                    for event_id in action_log_row["EVENT_ID_LIST"].split(','):
+                                        ret, EventRow = EventObj.get_events(eval(event_id))
+                                        if ret is True:
+                                            before_Action_Event_List.append(EventRow)
+
+                                    OASE.send(objdbca, before_Action_Event_List, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": action_log_row["RULE_ID"]})
 
                                 # 評価結果の更新（実行中）
                                 data_list = {
@@ -855,7 +875,12 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 通知処理（未知）
-    # OASE.send(objdbca, UnusedEventIdList, {"notification_type": OASENotificationType.UNDETECTED})
+    unused_notification_list = []
+    for event_id in UnusedEventIdList:
+        ret, EventRow = EventObj.get_events(event_id)
+        if ret is True:
+            unused_notification_list.append(EventRow)
+    OASE.send(objdbca, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
 
 
 def UserIDtoUserName(objdbca, UserId):
@@ -1031,6 +1056,23 @@ class ActionStatusMonitor():
             TargetStatusList.append(self.CSTS_Unexpected_Error)  # 想定外エラー
             # CONDUCTORの状態判定
             if Row['CONDUCTOR_STATUS_ID'] in TargetStatusList:
+                # 通知処理(作業後)
+                rule_id = Row["RULE_ID"]
+                # 「ルール管理」からレコードを取得
+                ret_rule = self.MariaDBCA.table_select('T_OASE_RULE', 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                if not ret_rule:
+                    tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                elif ret_rule[0].get('AFTER_NOTIFICATION_DESTINATION'):
+                    # 通知先が設定されている場合、通知処理(作業後)を実行する
+                    after_Action_Event_List = []
+                    for event_id in Row["EVENT_ID_LIST"].split(','):
+                        ret, EventRow = self.EventObj.get_events(eval(event_id))
+                        if ret is True:
+                            after_Action_Event_List.append(EventRow)
+
+                    OASE.send(self.MariaDBCA, after_Action_Event_List, {"notification_type": OASENotificationType.AFTER_ACTION, "rule_id": Row["RULE_ID"]})
+
                 if Row['CONDUCTOR_STATUS_ID'] == self.CSTS_Completed:
                     Row['STATUS_ID'] = self.OSTS_Completed
                 else:
@@ -1054,11 +1096,12 @@ class ActionStatusMonitor():
             self.MariaDBCA.table_update('T_OASE_ACTION_LOG', UpdateRow, 'ACTION_LOG_ID', True)
 
             # 結論イベント登録
-            if Row['STATUS_ID'] in [self.OSTS_Completed, self.OSTS_Completed_Abend]:
+            if Row['STATUS_ID'] in [self.OSTS_Completed]:
                 # 結論イベント登録
                 self.InsertConclusionEvent(Row)
 
     def InsertConclusionEvent(self, RuleInfo):
+        # 結論イベント登録
         label_key_inputs = {}
         addlabels = {}
         RuleInfo["CONCLUSION_LABEL_NAME"] = json.loads(RuleInfo["CONCLUSION_LABEL_NAME"])
@@ -1076,7 +1119,6 @@ class ActionStatusMonitor():
 
         RaccEventDict = {}
 
-        # RaccEventDict["_id"] = id
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = NowTime
@@ -1091,7 +1133,6 @@ class ActionStatusMonitor():
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleInfo['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleInfo['RULE_NAME']
-        # RaccEventDict["exastro_events"] = json.loads(RuleInfo['EVENT_ID_LIST'])
         RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST']
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = label_key_inputs

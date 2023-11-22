@@ -7127,11 +7127,9 @@ components:
         start_time:
           type: string
           format: date-time
-          example: 2017-07-21T17:32:28Z
         end_time:
           type: string
           format: date-time
-          example: 2017-07-21T17:32:28Z
         evaluted:
           type: boolean
           example: true

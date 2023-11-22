@@ -234,7 +234,12 @@ def create_history_list(event_history: list, action_log: list):
         append_data["type"] = "action"
 
         tr = action["TIME_REGISTER"]
-        append_data["datetime"] = tr.strftime("%Y-%m-%d %H:%M:%S")
+        tr_time = tr.strftime("%Y/%m/%d %H:%M:%S")
+        append_data["datetime"] = tr_time
+        action["TIME_REGISTER"] = tr_time
+
+        lut = action["LAST_UPDATE_TIMESTAMP"]
+        action["LAST_UPDATE_TIMESTAMP"] = lut.strftime("%Y/%m/%d %H:%M:%S.%f")
 
         append_data["item"] = action
 

@@ -56,11 +56,12 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
 
     # SQLiteファイルの空き容量を解放
     try:
-        g.applogger.debug("Executing VACUUM operation on SQLite database to optimize space.")
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10024", []))
         sqliteDB.db_connect.execute("VACUUM")
         sqliteDB.db_close()
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10025", []))
     except Exception:
-        g.applogger.error("Failed to execute VACUUM operation.")
+        g.applogger.error(g.appmsg.get_log_message("AGT-10026", []))
 
 
 def collection_logic(sqliteDB, organization_id, workspace_id):

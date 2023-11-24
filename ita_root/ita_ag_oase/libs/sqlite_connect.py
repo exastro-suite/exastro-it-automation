@@ -58,7 +58,7 @@ class sqliteConnect:
 
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("AGT-10024", [e])
+            raise AppException("AGT-10027", [e])
 
     def update_sent_flag(self, table_name, timestamp_list):
         try:
@@ -72,7 +72,7 @@ class sqliteConnect:
             )
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("AGT-10024", [e])
+            raise AppException("AGT-10027", [e])
 
     def delete_unnecessary_records(self, dict):
         try:
@@ -83,7 +83,7 @@ class sqliteConnect:
                 self.delete(table_name, where_str, rowid_list)
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("AGT-10024", [e])
+            raise AppException("AGT-10027", [e])
 
     def insert_event(self, event):
         table_name = "events"

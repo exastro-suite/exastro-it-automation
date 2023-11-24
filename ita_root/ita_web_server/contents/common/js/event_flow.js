@@ -470,6 +470,8 @@ getPatternColor( pattern, opacity = 1 ) {
 updateCanvas( initFlag = false ) {
     const er = this;
 
+    er.colorMode = ( $('body').is('.darkmode') )? 'darkmode': '';
+
     if ( er.controller ) er.controller.abort();
     er.controller = new AbortController();    
 
@@ -671,6 +673,22 @@ getFloorPositonY( floor ) {
 }
 /*
 ##################################################
+  線の色
+##################################################
+*/
+getBorderColor() {
+    return ( this.colorMode === 'darkmode')? '#666': '#CCC';
+}
+/*
+##################################################
+  テキストの色
+##################################################
+*/
+getTextColor() {
+    return ( this.colorMode === 'darkmode')? '#AAA': '#666';
+}
+/*
+##################################################
   タイムスケールを描画する
 ##################################################
 */
@@ -682,11 +700,11 @@ setTimeScale() {
     
     ctx.beginPath();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#CCC';
+    ctx.strokeStyle = er.getBorderColor();
     
     // テキスト共通
     ctx.textBaseline = 'top';
-    ctx.fillStyle = "#666" ;
+    ctx.fillStyle = er.getTextColor();
     
     // 左端の線
     ctx.moveTo( .5, .5 );
@@ -815,7 +833,7 @@ setLine() {
     
     ctx.beginPath();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#CCC';
+    ctx.strokeStyle = er.getBorderColor();
     ctx.setLineDash([]);
     for ( let i = 0; i <= length; i++ ) {
         const y = ( i * er.lineSpacing * er.vRate ) - er.vPosition;
@@ -825,7 +843,7 @@ setLine() {
     
     ctx.beginPath();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#DDD';
+    ctx.strokeStyle = er.getBorderColor();
     ctx.setLineDash([4,4]);
     for ( let i = 0; i <= length; i++ ) {
         const y = ( ( i * er.lineSpacing ) - ( er.lineSpacing / 2 ) ) * er.vRate - er.vPosition;
@@ -1367,6 +1385,7 @@ viewEventInfo( x ) {
     html.push( er.eventInfoRowHtml('ID', d.id ) );
 
     if ( d.type === 'action') {
+        html.push( er.eventInfoRowHtml('Action Name', fn.cv( d.item.ACTION_NAME, '')));
         html.push( er.eventInfoRowHtml('Conductor', fn.cv( d.item.CONDUCTOR_INSTANCE_NAME, '')));
         html.push( er.eventInfoRowHtml('Operation', fn.cv( d.item.OPERATION_NAME, '')));
     } else {

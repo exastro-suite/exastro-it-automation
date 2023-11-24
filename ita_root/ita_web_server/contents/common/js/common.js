@@ -3386,16 +3386,19 @@ setFilter: function( filterList ) {
     for ( const type in filterList ) {
         const value = filterList[ type ];
         switch ( type ) {
-            case 'grayscale': case 'invert': case 'saturate': case 'sepia':
-            case 'brightness': case 'contrast':
-              if ( value !== 0 ) style.push(`${type}(${value/100})`);
+            case 'brightness': case 'contrast': case 'saturate':
+                if ( value !== 100 ) style.push(`${type}(${value/100})`);
+            break;
+            case 'grayscale': case 'invert': case 'sepia':
+                if ( value !== 0 ) style.push(`${type}(${value/100})`);
             break;
             case 'huerotate':
-              if ( value !== 0 ) style.push(`hue-rotate(${value}deg)`);
+                if ( value !== 0 ) style.push(`hue-rotate(${value}deg)`);
             break;
         }
     }
-    $('body').css('filter', style.join(' ') );
+    const filter = ( style.length )? { filter: style.join(' ')}: { filter: 'none'};
+    $('body').css( filter );
 },
 
 uiSetting: function() {

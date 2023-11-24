@@ -1502,15 +1502,18 @@ background-image: linear-gradient(rgba(0,0,0,.0),rgba(0,0,0,.1));
 }
 .menuNavi::-webkit-scrollbar,
 .pagingOnePageNumSelectList::-webkit-scrollbar {
-width: 12px;
+width: 10px;
+border-radius: 5px;
+background: #222;
 }
 .menuNavi::-webkit-scrollbar-track,
 .pagingOnePageNumSelectList::-webkit-scrollbar-track {
-background: #222;
+
 }
 .menuNavi::-webkit-scrollbar-thumb,
 .pagingOnePageNumSelectList::-webkit-scrollbar-thumb {
 background: #999;
+border-radius: 5px;
 }
 /* Firefox */
 .menuNavi,
@@ -5256,6 +5259,7 @@ width: 48px; height: 48px;
 border: 1px solid #CCC;
 user-select: none;
 }
+.darkmode .settingListBlank,
 .darkmode .settingListMove,
 .darkmode .settingListDelete {
 border-color: #000;

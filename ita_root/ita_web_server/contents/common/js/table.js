@@ -1990,11 +1990,7 @@ setTableEvents() {
 
                     // 表示欄の幅の調整
                     if ( !tb.partsFlag ) {
-                        if ( $block.outerWidth() >= 632 ) {
-                            $block.addClass('textOverWrap').css('width', 632 );
-                        } else {
-                            $block.removeClass('textOverWrap').css('width', 'auto');
-                        }
+                        tb.tableInputMaxWidthCheck( $block );
                     }
                 }
             });
@@ -2717,10 +2713,12 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             if ( multipel ) {
                 const $container = $selectBox.closest('.tableEditInputMultipleSelectContainer');
                 $container.addClass('tableEditInputMultipleSelectOpen');
-                $container.find('.select2').css({
-                    'min-width': width,
-                    'width': 'auto'
-                });
+                if ( optionlist.length !== 0 ) {
+                    $container.find('.select2').css({
+                        'min-width': width,
+                        'width': 'auto'
+                    });
+                }
             }
 
             if ( openFlag ) {
@@ -3296,7 +3294,10 @@ tableMaxWidthCheck( target ) {
 */
 tableInputMaxWidthCheck( target ) {
     const tb = this;
-    tb.$[ target ].find('.tableEditMultipleColmun, .tableEditInputMultipleSelectValueInner').each(function(){
+
+    const $target = ( target instanceof jQuery )? target: tb.$[ target ].find('.tableEditMultipleColmun, .tableEditInputMultipleSelectValueInner');
+
+    $target.each(function(){
         const $culumn = $( this ),
         culumn = $culumn.get(0);
 
@@ -5819,7 +5820,7 @@ columnTypeSettingData( columnType, list ) {
                         type: 'select',
                         title: getMessage.FTE13002,
                         list: list.label_name,
-                        width: '340px',
+                        width: '360px',
                     },
                     {
                         id: 'condition_type',
@@ -5847,7 +5848,7 @@ columnTypeSettingData( columnType, list ) {
                         type: 'select',
                         title: getMessage.FTE13006,
                         list: list,
-                        width: '340px',
+                        width: '360px',
                     },
                     {
                         id: 'conclusion_label_value',

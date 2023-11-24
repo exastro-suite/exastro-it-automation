@@ -331,13 +331,6 @@ border-left: 1px solid #111;
 border-right: 1px solid #111;
 z-index: 99999;
 }
-
-.menu-column-title-dummy {
-display: inline-block;
-width: auto;
-}
-
-
 .menu-column-title-input,
 .menu-column-title-rest-input,
 .menu-column-title-dummy {
@@ -362,6 +355,7 @@ display: none;
 }
 .menu-column-title-dummy {
 display: inline-block;
+transform: translateY(8px);
 width: auto;
 }
 .menu-column-title.hover .menu-column-title-input,

@@ -1,9 +1,6 @@
 @charset "utf-8";
 /* CSS Document */
 
-/*
-レイアウト
-*/
 .nowLoading > div {
 display: none;
 }
@@ -13,6 +10,9 @@ gap: 2px;
 width: 100%; height: 100%;
 padding: 0 2px;
 background-color: #DDD;
+}
+.darkmode .eventFlowContainer {
+background-color: #393D43;
 }
 .eventFlow > div {
 min-width: 0;
@@ -33,17 +33,6 @@ background-color: #FFF;
 .eventFlowParts {
 flex: 0 0 400px;
 }
-
-
-
-
-
-
-
-
-
-
-
 .eventFlowHeader {
 z-index: 5;
 flex: 0 0 auto;
@@ -70,6 +59,19 @@ flex: 0 0 32px;
 background-color: #F5F5F6;
 border-top: 1px solid #CCC;
 }
+.darkmode .eventFlowWidthResizeBar {
+background-color: rgba(0,0,0,.0);
+}
+
+.darkmode .eventFlowHeader,
+.darkmode .eventFlowBodyInner,
+.darkmode .eventFlowFooter {
+background-color: rgba(0,0,0,.2);
+border-color: rgba(0,0,0,.5);
+}
+.darkmode .eventFlowPartsBlock {
+background-color: rgba(0,0,0,.1);
+}
 
 .eventFlowChartRange {
 position: relative;
@@ -79,8 +81,14 @@ height: 100%;
 border: 1px solid #CCC;
 border-radius: 4px;
 }
+.darkmode .eventFlowChartRange {
+border-color: rgba(255,255,255,.1);
+}
 .eventFlowChartRangeDate {
 padding: 0 32px 0 28px;
+}
+.darkmode .eventFlowChartRangeDate {
+color: #EEE;
 }
 .eventFlowChartRange > .icon-search {
 position: absolute;
@@ -130,6 +138,11 @@ outline: none;
 white-space: nowrap;
 cursor: pointer;
 }
+.darkmode .eventFlowSelectButton {
+background-color: #393D43;
+border: 1px solid rgba(255,255,255,.1);
+color: #EEE;
+}
 .eventFlowSelectButton:focus {
 background-color: var(--focusBackgroundColor);
 border-color: var(--focusColor);
@@ -153,7 +166,10 @@ box-shadow: 0 0 8px rgba( 0,0,0,.2 );
 border-radius: 4px;
 border: 1px solid var(--black40);
 }
-
+.darkmode .eventFlowOpenBlock {
+background-color: #393D43;
+border-color: rgba(0,0,0,.1);
+}
 
 
 
@@ -221,6 +237,10 @@ border: 1px solid #CCC;
 box-shadow: 0 0 32px rgba(0,0,0,.075) inset;
 user-select: none;
 }
+.darkmode .eventFlowChart {
+background-color: rgba(0,0,0,.2);
+border-color: #666;
+}
 .eventFlowChartCanvas {
 position: absolute;
 left: -1px; top: -1px;
@@ -244,6 +264,9 @@ border-left: 1px dashed rgba(0,0,0,.5);
 user-select: none;
 pointer-events: none;
 }
+.eventFlowPositionBorder {
+border-color: rgba(255,255,255,.3);
+}
 .eventFlowPositionBorder.dateRangeSelect {
 background-color: rgba(0,0,0,.1);
 border-right: 1px dashed rgba(0,0,0,.5);
@@ -257,6 +280,11 @@ background-color: #FFF;
 border: 1px solid #CCC;
 user-select: none;
 pointer-events: none;
+}
+.darkmode .eventFlowPositionDate {
+background-color: #393D43;
+border-color: rgba(255,255,255,.1);
+color: #EEE;
 }
 
 .eventFlowEventInformation {
@@ -280,6 +308,9 @@ pointer-events: auto;
 line-height: 1.5;
 font-size: 16px;
 word-break: break-all;
+}
+.darkmode .eventFlowEventInformationInner {
+background-color: #393D43;
 }
 
 /*
@@ -397,6 +428,10 @@ font-size: 14px;
 font-weight: bold;
 color: #666D74;
 }
+.darkmode .eventFlowPartsBlockHeader {
+background-image: linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,0) 40% );
+color: #EEE;
+}
 .eventFlowPartsBlockHeader::before,
 .eventFlowPartsBlockHeader::after {
 content: '';
@@ -412,6 +447,13 @@ background-color: var(--mainColor40);
 .eventFlowPartsBlockHeader::after {
 background-image: linear-gradient( transparent 5px, #F5F5F6 5px, #F5F5F6 7px, transparent 7px ),
 linear-gradient( 90deg, transparent 5px,#F5F5F6 5px, #F5F5F6 7px, transparent 7px );
+}
+.darkmode .eventFlowPartsBlockHeader::before {
+background-color: var(--accentColor40);
+}
+.darkmode .eventFlowPartsBlockHeader::after {
+background-image: linear-gradient( transparent 5px, #393d43 5px, #393d43 7px, transparent 7px ),
+linear-gradient( 90deg, transparent 5px,#393d43 5px, #393d43 7px, transparent 7px );
 }
 .eventFlowPartsBlockBody {
 flex: 1 1 auto;
@@ -445,6 +487,7 @@ padding-right: 8px;
 color: #666;
 opacity: .5;
 }
+.darkmode .eventFlowPartsBlockMenuButton,
 .eventFlowPartsMenuButton {
 color: #FFF;
 }
@@ -466,6 +509,9 @@ overflow: auto;
 height: 100%;
 background-color: #FFF;
 border: 1px solid rgba(0,0,0,.1);
+}
+.darkmode .eventFlowPartsInfo {
+background-color: #393d43;
 }
 .eventFlowPartsTableClose {
 flex: 0 0 auto;
@@ -503,6 +549,10 @@ height: 100%;
 padding: 8px 4px;
 background-color: #EBECED;
 border: 1px solid rgba(0,0,0,.1);
+}
+.darkmode .eventFlowPartsList,
+.darkmode .eventFlowPartsNoDate {
+background-color: rgba(255,255,255,.05);
 }
 .eventFlowPartsNoDateInner {
 display: flex;
@@ -569,7 +619,15 @@ border-top: none;
 .eventInfoTableLabelsBlank {
 border-bottom: none;
 }
-
+.darkmode .eventInfoTableTh {
+background-color: rgba(0,0,0,.2);
+border-color: #666;
+color: #EEE;
+}
+.darkmode .eventInfoTableTd {
+border-color: #666;
+color: #EEE;
+}
 
 /* Label List */
 .eventFlowLabelList {
@@ -578,12 +636,14 @@ flex-wrap: wrap;
 gap: 8px;
 padding: 8px;
 background-color: #FFF;
-border-radius: 4px;
+border-radius: 0 0 4px 4px;
 }
 .eventFlowLabelItem {
 max-width: 100%;
 }
-
+.darkmode .eventFlowLabelList {
+background-color: rgba(0,0,0,.1);
+}
 
 .eventFlowLabel {
 position: relative;
@@ -638,6 +698,10 @@ word-break: break-all;
 padding: 4px;
 background-color: #F5F5F6;
 }
+.darkmode .eventFlowPartsRuleContainer,
+.darkmode .eventFlowPartsActionTableWrap {
+background-color: rgba(0,0,0,.1);
+}
 .eventFlowPartsRuleBlock {
 position: relative;
 margin-bottom: 16px;
@@ -645,6 +709,10 @@ padding: 4px;
 background-color: #FFF;
 border: 1px solid #CCC;
 border-radius: 4px;
+}
+.darkmode .eventFlowPartsRuleBlock {
+background-color: #393D43;
+border-color: rgba(255,255,255,.1);
 }
 .eventFlowPartsRuleBlock::after {
 content: '';
@@ -696,7 +764,13 @@ color: #FFF;
 word-break: break-all;
 background-color: #FFF;
 }
-
+.darkmode .eventFlowPartsActionTh {
+background-color: #00325e;
+}
+.darkmode .eventFlowPartsActionTd {
+background-color: rgba(0,0,0,.5);
+color: #EEE;
+}
 
 .eventFlowPartsTableWrap {
 overflow: auto;

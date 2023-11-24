@@ -449,7 +449,7 @@ class Judgement:
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleRow['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleRow['RULE_NAME']
-        RaccEventDict["exastro_events"] = UseEventIdList
+        RaccEventDict["exastro_events"] = list(map(repr, UseEventIdList))
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
 

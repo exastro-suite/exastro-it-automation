@@ -187,8 +187,8 @@ class ManageEvents:
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
             # フィルタにマッチしていないイベント
-            if event["_id"] not in incident_dict:
-                unused_event_ids.append(event_id)
+            if event["_id"] not in incident_dict.values():
+                unused_event_ids.append(event["_id"])
         return unused_event_ids
 
     def insert_event(self, dict):

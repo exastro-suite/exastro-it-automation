@@ -1133,7 +1133,7 @@ class ActionStatusMonitor():
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleInfo['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleInfo['RULE_NAME']
-        RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST']
+        RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST'].split(',')
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
 

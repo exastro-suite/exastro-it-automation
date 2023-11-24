@@ -1442,5 +1442,8 @@
     "AGT-10019": "Updated sent status flag in SQLite database.",
     "AGT-10020": "Failed to send events to Exastro IT Automamtion.",
     "AGT-10021": "No events sent to Exastro IT Automation.",
-    "AGT-10022": "IMAPClient Error: {}"
+    "AGT-10022": "Deleting unnecessary sent events from SQLite database.",
+    "AGT-10023": "Deleted unnecessary sent events.",
+    "AGT-10024": "SQLite Error: {}",
+    "AGT-10025": "IMAPClient Error: {}"
 }

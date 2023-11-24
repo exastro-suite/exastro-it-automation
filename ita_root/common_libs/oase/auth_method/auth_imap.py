@@ -47,7 +47,7 @@ class IMAPAuthClient(APIClientCommon):
             g.applogger.info("Failed to login to mailserver. Check login settings.")
             return result
         except Exception as e:
-            raise AppException("AGT-10022", [e])
+            raise AppException("AGT-10025", [e])
 
     def call_api(self, parameter=None):
 
@@ -103,7 +103,7 @@ class IMAPAuthClient(APIClientCommon):
 
                 response = [item for item in response if item["date"] >= self.last_fetched_timestamp]
         except Exception as e:
-            raise AppException("AGT-10022", [e])
+            raise AppException("AGT-10025", [e])
 
         return response
 

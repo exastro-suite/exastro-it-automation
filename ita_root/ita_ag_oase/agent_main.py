@@ -242,6 +242,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     # 最新のレコードと1ループ前のレコードを残す
     remain_timestamp_dict = {}  # sent_timestampテーブルに残すレコードの{rowid: {id: xxx, fetched_time: nnn}}
     remain_event_rowids = []  # eventsテーブルに残すレコードのrowid
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
     for id in id_list:
         try:
             sqliteDB.db_cursor.execute(
@@ -277,9 +278,9 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             for item in remain_event:
                 remain_event_rowids.append(item[0])
         try:
-            g.applogger.debug("Deleting unnecessary records from SQLite database.")
             sqliteDB.db_connect.execute("BEGIN")
             sqliteDB.delete_unnecessary_records({"events": remain_event_rowids, "sent_timestamp": remain_timestamp_dict})
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10023", []))
         except AppException as e:  # noqa F405
             app_exception(e)
 

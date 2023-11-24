@@ -58,7 +58,7 @@ class sqliteConnect:
 
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("BKY-70002", ["SQLite error", e])
+            raise AppException("AGT-10024", [e])
 
     def update_sent_flag(self, table_name, timestamp_list):
         try:
@@ -72,7 +72,7 @@ class sqliteConnect:
             )
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("BKY-70002", ["SQLite error", e])
+            raise AppException("AGT-10024", [e])
 
     def delete_unnecessary_records(self, dict):
         try:
@@ -80,11 +80,10 @@ class sqliteConnect:
                 rowid_list = [rowid for rowid in record_info]
                 delete_placeholders = ", ".join("?" for _ in rowid_list)
                 where_str = f"WHERE NOT (rowid IN ({delete_placeholders}) OR sent_flag=0)"
-                # where_str = f"WHERE rowid NOT IN ({delete_placeholders}) OR (rowid IN sent_flag=0)"
                 self.delete(table_name, where_str, rowid_list)
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("BKY-70002", ["SQLite error", e])
+            raise AppException("AGT-10024", [e])
 
     def insert_event(self, event):
         table_name = "events"

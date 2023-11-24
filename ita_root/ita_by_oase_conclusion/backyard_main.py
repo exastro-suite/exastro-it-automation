@@ -56,10 +56,8 @@ def backyard_main(organization_id, workspace_id):
     # connect MariaDB
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # UnImplementLog("処理時間固定")
-    # 単体テスト用
-    # judgeTime = int(time.time())
-    judgeTime = 10000
+    # 処理時間
+    judgeTime = int(time.time())
     EventObj = ManageEvents(mongodbca, judgeTime)
 
     objdbca.db_transaction_start()

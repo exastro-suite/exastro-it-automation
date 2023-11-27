@@ -75,22 +75,23 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         labeled_event = {}
         original_event = single_event
         labeled_event["event"] = original_event
-
         # exastro用ラベルを貼る
-        exastro_labels = {
+        labeled_event["labels"] = {
             "_exastro_event_collection_settings_id": single_event["_exastro_event_collection_settings_id"],
             "_exastro_fetched_time": single_event["_exastro_fetched_time"],
             "_exastro_end_time": single_event["_exastro_end_time"],
             "_exastro_type": "event",
             "_exastro_evaluated": "0",
             "_exastro_undetected": "0",
-            "_exastro_timeout": "0"
+            "_exastro_timeout": "0",
         }
+        labeled_event["exastro_created_at"] = single_event["_exastro_created_at"]
         # 重複して不要なexastro用ラベルを削除
-        labeled_event["labels"] = exastro_labels
         del labeled_event["event"]["_exastro_event_collection_settings_id"]
         del labeled_event["event"]["_exastro_fetched_time"]
         del labeled_event["event"]["_exastro_end_time"]
+        del labeled_event["event"]["_exastro_type"]
+        del labeled_event["event"]["_exastro_created_at"]
         labeled_events.append(labeled_event)
 
     # exastro用ラベルを貼った後のデータをイベント単位でループ

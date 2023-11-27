@@ -12,7 +12,6 @@
 # limitations under the License.
 #
 
-from flask import g
 import requests
 from common_libs.common.exception import AppException
 
@@ -48,7 +47,7 @@ class Exastro_API:
             if status_code != 200:
                 return status_code, response.text
         except Exception as e:
-            raise AppException("BKY-70002", ["Failed to establish a connection with IT Automation", e])
+            raise AppException("AGT-00004", [e])
 
         return status_code, response.json()
 

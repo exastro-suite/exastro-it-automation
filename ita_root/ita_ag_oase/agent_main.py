@@ -28,19 +28,21 @@ from libs.event_collection_settings import create_file, remove_file, get_setting
 def agent_main(organization_id, workspace_id, loop_count, interval):
     count = 1
     max = int(loop_count)
+    sqliteDB = sqliteConnect(organization_id, workspace_id)
 
     # ループに入る前にevent_collection_settings.jsonを削除
     setting_removed = remove_file()
     if setting_removed is True:
-        g.applogger.debug("Removed JSON file 'event_collection_settings.json'.")
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10004", []))
     else:
-        g.applogger.debug("No Json file to remove.")
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10005", []))
 
     while True:
         print("")
         print("")
+        # SQLiteモジュール
         try:
-            collection_logic(organization_id, workspace_id)
+            collection_logic(sqliteDB, organization_id, workspace_id)
         except AppException as e:  # noqa F405
             app_exception(e)
         except Exception as e:
@@ -52,8 +54,17 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         else:
             count = count + 1
 
+    # SQLiteファイルの空き容量を解放
+    try:
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10024", []))
+        sqliteDB.db_connect.execute("VACUUM")
+        sqliteDB.db_close()
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10025", []))
+    except Exception:
+        g.applogger.error(g.appmsg.get_log_message("AGT-10026", []))
 
-def collection_logic(organization_id, workspace_id):
+
+def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # 環境変数の取得
     username = os.environ["USERNAME"]
@@ -71,20 +82,18 @@ def collection_logic(organization_id, workspace_id):
         user_id
     )
 
-    # SQLiteモジュール
-    sqliteDB = sqliteConnect(organization_id, workspace_id)
-    g.applogger.debug("Connected to the SQLite database.")
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10006", []))
 
     # イベント収集設定ファイルからイベント収集設定の取得
     settings = get_settings()
-    g.applogger.debug("Getting event collection settings from JSON file 'event_collection_settings.json'.")
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10007", []))
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
 
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
 
-        g.applogger.info("Getting settings from IT Automation. (Organization ID: {}, Workspace ID: {})".format(organization_id, workspace_id))
+        g.applogger.info(g.appmsg.get_log_message("AGT-10008", []))
         try:
             status_code, response = exastro_api.api_request(
                 "POST",
@@ -93,10 +102,10 @@ def collection_logic(organization_id, workspace_id):
             )
             if status_code == 200:
                 create_file(response["data"])
-                g.applogger.debug("Created the JSON file 'event_collection_settings.json'.")
+                g.applogger.debug(g.appmsg.get_log_message("AGT-10009", []))
                 settings = get_settings()
             else:
-                g.applogger.info("Failed to get event collection settings from Exastro IT Automation.")
+                g.applogger.info(g.appmsg.get_log_message("AGT-10010", []))
                 g.applogger.debug(status_code)
                 g.applogger.debug(response)
                 settings = False
@@ -110,36 +119,39 @@ def collection_logic(organization_id, workspace_id):
     try:
         # 各設定の最終取得日時を取得
         timestamp_data = {key: value for key, value in sqliteDB.select_all("last_fetched_time")}
-        for key, value in timestamp_data.items():
-            if key in timestamp_dict:
-                timestamp_dict[key] = value
+        for id in id_list:
+            if id in timestamp_data:
+                timestamp_dict[id] = timestamp_data[id]
             else:
-                timestamp_dict[key] = current_timestamp
+                sqliteDB.insert_last_fetched_time(id, current_timestamp)
+                sqliteDB.db_connect.commit()
     except sqlite3.OperationalError:
-        pass
+        for id in id_list:
+            sqliteDB.insert_last_fetched_time(id, current_timestamp)
+            sqliteDB.db_connect.commit()
 
     # イベント収集
     events = []
     if settings is not False:
-        g.applogger.info("Collecting events.")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10011", []))
         events = collect_event(sqliteDB, settings, timestamp_dict)
-        g.applogger.info(f"Retrived {len(events)} events.")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10012", [len(events)]))
     else:
-        g.applogger.debug("Cannot collect events as no event collection settings exists.")
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10013", []))
 
     # 収集したイベント, 取得時間をSQLiteに保存
     if events != []:
         try:
             sqliteDB.db_connect.execute("BEGIN")
             sqliteDB.insert_events(events)
-            g.applogger.debug("Events and fetched time saved to SQLite database.")
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
         except AppException as e:  # noqa E405
             sqliteDB.db_connect.rollback()
-            g.applogger.error("Failed to save events and fetched time to SQLite database.")
+            g.applogger.error(g.appmsg.get_log_message("AGT-10015", []))
             app_exception(e)
 
     # ITAに送信するデータを取得
-    g.applogger.debug("Searching unsent events.")
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10016", []))
     post_body = {
         "events": []
     }
@@ -151,7 +163,10 @@ def collection_logic(organization_id, workspace_id):
     for id in id_list:
         try:
             sqliteDB.db_cursor.execute(
-                "SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp WHERE event_collection_settings_id=? AND sent_flag=?",
+                """
+                SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp
+                WHERE event_collection_settings_id=? AND sent_flag=?
+                """,
                 (id, 0)
             )
             unsent_timestamp = sqliteDB.db_cursor.fetchall()
@@ -174,13 +189,16 @@ def collection_logic(organization_id, workspace_id):
             unsent_event["event"] = []
 
             sqliteDB.db_cursor.execute(
-                "SELECT rowid, event_collection_settings_id, event, fetched_time FROM events WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?",  # noqa E501
+                """
+                SELECT rowid, event_collection_settings_id, event, fetched_time FROM events
+                WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?
+                """,
                 (event_collection_settings_id, fetched_time, 0)
             )
             unsent_events = sqliteDB.db_cursor.fetchall()
-
             unsent_event["event"].extend([row[2] for row in unsent_events])
-            unsent_event_rowids.extend([row[0] for row in unsent_event])
+            for row in unsent_events:
+                unsent_event_rowids.append(row[0])
             post_body["events"].append(unsent_event)
 
     # ITAにデータを送信
@@ -190,7 +208,7 @@ def collection_logic(organization_id, workspace_id):
         event_count = 0
         for event in post_body["events"]:
             event_count = event_count + len(event["event"])
-        g.applogger.info(f"Sending {event_count} events to IT Automation")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10017", [event_count]))
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
         try:
             status_code, response = exastro_api.api_request(
@@ -203,7 +221,7 @@ def collection_logic(organization_id, workspace_id):
 
         # データ送信に成功した場合、sent_flagカラムの値をtrueにアップデート
         if status_code == 200:
-            g.applogger.info("Successfully sent events to Exastro IT Automation")
+            g.applogger.info(g.appmsg.get_log_message("AGT-10018", []))
             for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
                 try:
                     sqliteDB.db_connect.execute("BEGIN")
@@ -213,13 +231,58 @@ def collection_logic(organization_id, workspace_id):
                     sqliteDB.db_close()
                     app_exception(e)
 
-            g.applogger.debug("Updated sent status flag in SQLite database.")
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10019", []))
         else:
-            g.applogger.info("Failed to send events to IT Automamtion")
+            g.applogger.info(g.appmsg.get_log_message("AGT-10020", []))
             g.applogger.debug(response)
-        sqliteDB.db_close()
 
     else:
-        g.applogger.info("No events sent to IT Automation")
+        g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))
+
+    # レコードのDELETE
+    # 最新のレコードと1ループ前のレコードを残す
+    remain_timestamp_dict = {}  # sent_timestampテーブルに残すレコードの{rowid: {id: xxx, fetched_time: nnn}}
+    remain_event_rowids = []  # eventsテーブルに残すレコードのrowid
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
+    for id in id_list:
+        try:
+            sqliteDB.db_cursor.execute(
+                """
+                SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp
+                WHERE event_collection_settings_id=? and sent_flag=1
+                ORDER BY fetched_time DESC LIMIT 2
+                """,
+                (id, )
+            )
+            remain_timestamp = sqliteDB.db_cursor.fetchall()
+        except sqlite3.OperationalError:
+            # テーブルが作られていない（イベントが無い）場合、処理を終了
+            sqliteDB.db_close()
+            return
+
+        if len(remain_timestamp) < 2:
+            continue
+        for item in remain_timestamp:
+            remain_timestamp_dict[item[0]] = {"event_collection_settings_id": item[1], "fetched_time": item[2]}
+
+    # 削除対象イベントが無い場合、削除処理をスキップ
+    if len(remain_timestamp_dict) >= 1:
+        for rowid, item in remain_timestamp_dict.items():
+            sqliteDB.db_cursor.execute(
+                """
+                SELECT rowid FROM events
+                WHERE ((event_collection_settings_id=? AND fetched_time=?) OR sent_flag=0)
+                """,
+                (item["event_collection_settings_id"], item["fetched_time"])
+            )
+            remain_event = sqliteDB.db_cursor.fetchall()
+            for item in remain_event:
+                remain_event_rowids.append(item[0])
+        try:
+            sqliteDB.db_connect.execute("BEGIN")
+            sqliteDB.delete_unnecessary_records({"events": remain_event_rowids, "sent_timestamp": remain_timestamp_dict})
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10023", []))
+        except AppException as e:  # noqa F405
+            app_exception(e)
 
     return

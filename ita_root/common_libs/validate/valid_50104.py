@@ -171,20 +171,20 @@ def menu_column_valid(objdbca, objtable, option):
             if int(single_string_maximum_bytes) < int(len(hex_value)) / 2:
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-20037", [])
-            # 正規表現と初期値の条件一致をチェック
-            if retBool and single_string_regular_expression:
-                pattern = single_string_regular_expression
-                try:
-                    pattern = re.compile(r'{}'.format(pattern), re.DOTALL)
-                except Exception:
+        # 正規表現と初期値の条件一致をチェック
+        if retBool and single_string_regular_expression:
+            pattern = single_string_regular_expression
+            try:
+                pattern = re.compile(r'{}'.format(pattern), re.DOTALL)
+            except Exception:
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-20038", [])
+                return retBool, msg, option
+            if single_string_default_value:
+                tmp_result = pattern.fullmatch(single_string_default_value)
+                if tmp_result is None:
                     retBool = False
-                    msg = g.appmsg.get_api_message("MSG-20038", [])
-                    return retBool, msg, option
-                if single_string_default_value:
-                    tmp_result = pattern.fullmatch(single_string_default_value)
-                    if tmp_result is None:
-                        retBool = False
-                        msg = g.appmsg.get_api_message("MSG-20039", [])
+                    msg = g.appmsg.get_api_message("MSG-20039", [])
 
     # 入力方式が文字列(複数行)の場合
     elif column_class == "2":
@@ -281,20 +281,20 @@ def menu_column_valid(objdbca, objtable, option):
             if int(multi_string_maximum_bytes) < int(len(hex_value)) / 2:
                 retBool = False
                 msg = g.appmsg.get_api_message("MSG-20061", [])
-            # 正規表現と初期値の条件一致をチェック
-            if retBool and multi_string_regular_expression:
-                pattern = multi_string_regular_expression
-                try:
-                    pattern = re.compile(r'{}'.format(pattern), re.DOTALL)
-                except Exception:
+        # 正規表現と初期値の条件一致をチェック
+        if retBool and multi_string_regular_expression:
+            pattern = multi_string_regular_expression
+            try:
+                pattern = re.compile(r'{}'.format(pattern), re.DOTALL)
+            except Exception:
+                retBool = False
+                msg = g.appmsg.get_api_message("MSG-20062", [])
+                return retBool, msg, option
+            if multi_string_default_value:
+                tmp_result = pattern.fullmatch(multi_string_default_value)
+                if tmp_result is None:
                     retBool = False
-                    msg = g.appmsg.get_api_message("MSG-20062", [])
-                    return retBool, msg, option
-                if multi_string_default_value:
-                    tmp_result = pattern.fullmatch(multi_string_default_value)
-                    if tmp_result is None:
-                        retBool = False
-                        msg = g.appmsg.get_api_message("MSG-20063", [])
+                    msg = g.appmsg.get_api_message("MSG-20063", [])
 
     # 入力方式が整数の場合
     elif column_class == "3":

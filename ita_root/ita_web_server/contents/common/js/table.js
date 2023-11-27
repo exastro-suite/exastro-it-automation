@@ -58,6 +58,9 @@ constructor( tableId, mode, info, params, option = {}) {
     // REST API URLs
     tb.rest = {};
 
+    // パーツ用テーブルフラグ
+    tb.partsFlag = ( tb.option.parts !== undefined );
+
     // Filter
     tb.rest.filter = ( tb.params.restFilter )?
          tb.params.restFilter:
@@ -96,7 +99,10 @@ constructor( tableId, mode, info, params, option = {}) {
 */
 workStart( type, time = 50 ) {
     const tb = this;
-    if ( tb.workType ) window.console.warn('"table.js" workStart() warning.');
+    if ( tb.workType ) {
+        // window.console.warn('"table.js" workStart() warning.');
+        return;
+    }
 
     // 読み込み中になったら
     tb.$.window.trigger( tb.id + '__tableStandBy');
@@ -278,7 +284,7 @@ mainHtml() {
 
     tb.option.sheetType = fn.cv( tb.option.sheetType, 'standard');
     if ( tb.mode !== 'parameter') {
-        if ( tb.option.sheetType !== 'parts') {
+        if ( !tb.partsFlag ) {
             // Default table
             return `<div id="${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
                 + `<div class="tableHeader">`
@@ -300,10 +306,10 @@ mainHtml() {
             + `</div>`;
         } else {
             // Parts table
-            return `<div id="${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
-                + `<div class="tableBody"></div>`    
+            return `<div id="parts${tb.id}" class="tableContainer ${tb.mode}Table ${tb.option.sheetType}Table">`
+                + tb.partsBlockHtml()
                 + `<div class="tableLoading"></div>`
-            + `</div>`
+            + `</div>`;
         }
     } else {
         // Parameter collection
@@ -347,6 +353,11 @@ setup() {
     tb.$.style = tb.$.container.find('.tableStyle');
     tb.$.custom = tb.$.container.find('.tableCustomStyle');
 
+    // パーツテーブル
+    if ( tb.partsFlag ) {
+        tb.$.thead = tb.$.container.find('.eventFlowPartsBlockHeader');
+    }
+
     // 固有ID
     tb.idNameRest = tb.info.menu_info.pk_column_name_rest;
 
@@ -382,7 +393,7 @@ setup() {
     tb.setPagingEvent(); // イベント
 
     // 1頁に表示する数
-    if ( tb.mode !== 'parameter') {
+    if ( tb.mode !== 'parameter' && !tb.partsFlag ) {
         const onePageNum = fn.storage.get('onePageNum', 'local', false );
         if ( onePageNum ) {
             tb.paging.onePageNum = onePageNum;
@@ -443,6 +454,11 @@ setup() {
         break;
     }
 
+    // パーツテーブル用
+    if ( tb.partsFlag ) {
+        tb.flag.initFilter = true;
+    }
+
     tb.setTable( tb.mode );
 
     return tb.$.container;
@@ -480,6 +496,13 @@ setInitSort() {
 */
 setTable( mode ) {
     const tb = this;
+
+    // パーツテーブル
+    if ( tb.partsFlag ) {
+        tb.setPartsTable( mode );
+        return;
+    }
+
     tb.mode = mode;
 
     tb.$.table.attr('table-mode', tb.tableMode );
@@ -1839,6 +1862,8 @@ setTableEvents() {
 
         // select2が隠れている場合スクロールで調整する
         const select2ScrollCheck = function( $element ) {
+            if ( tb.partsFlag ) return;
+
             const
             width = $element.closest('.ci').width(),
             left = $element.closest('.ci').offset().left,
@@ -1954,13 +1979,19 @@ setTableEvents() {
             $input = $block.next('.inputHidden'),
             restName = $input.attr('data-key'),
             columnType = $input.attr('data-column-type'),
+            required = $input.attr('data-required'),
             value = $input.val();
 
-            tb.multipleColmunSetting( columnType, restName, value ).then(function( result ){console.log(result)
-                if ( fn.typeof( result ) === 'array' && result.length ) {
-                    const resultValue = fn.jsonStringifyDelimiterSpace( result );
+            tb.multipleColmunSetting( columnType, restName, value, required ).then(function( result ){
+                if ( result !== undefined ) {
+                    const resultValue = ( fn.typeof( result ) === 'array' && result.length )? fn.jsonStringifyDelimiterSpace( result ): '';
                     $input.val( resultValue ).change();
                     $block.text( resultValue );
+
+                    // 表示欄の幅の調整
+                    if ( !tb.partsFlag ) {
+                        tb.tableInputMaxWidthCheck( $block );
+                    }
                 }
             });
         });
@@ -2343,7 +2374,9 @@ setInputData( value, id, rest, beforeData ) {
     tb.checkNewInputDataSet( id, beforeData );
 
     // 変更があれば追加、なければ削除
-    const beforeValue = tb.edit.input[id]['before'].parameter[rest];
+    const beforeParamter = tb.edit.input[id]['before'].parameter[rest];
+    const beforeValue = ( beforeParamter === undefined )? null: beforeParamter;
+
     let changeFlag = false;
     if ( beforeValue !== value ) {
         tb.edit.input[id]['after'].parameter[rest] = value;
@@ -2538,13 +2571,19 @@ editModeMenuCheck() {
         if ( selectCount === discardCount ) restoreFlag = false;
         if ( selectCount === addCount ) deleteFlag = false;
     }
-    const $button = tb.$.header.find('.operationMenuButton');
-    // $button.filter('[data-type="tableOk"]').prop('disabled', confirmFlag );
-    $button.filter('[data-type="tableDup"]').prop('disabled', duplicatFlag );
-    $button.filter('[data-type="tableDel"]').prop('disabled', deleteFlag );
 
-    $button.filter('[data-type="tableDiscard"]').prop('disabled', discardFlag );
-    $button.filter('[data-type="tableRestore"]').prop('disabled', restoreFlag );
+    if ( tb.partsFlag ) {
+        const $button =  tb.$.thead.find('.eventFlowPartsBlockMenuButton');
+        $button.filter('[data-type="tableOk"]').prop('disabled', confirmFlag );
+    } else {
+        const $button = tb.$.header.find('.operationMenuButton');
+        // $button.filter('[data-type="tableOk"]').prop('disabled', confirmFlag );
+        $button.filter('[data-type="tableDup"]').prop('disabled', duplicatFlag );
+        $button.filter('[data-type="tableDel"]').prop('disabled', deleteFlag );
+
+        $button.filter('[data-type="tableDiscard"]').prop('disabled', discardFlag );
+        $button.filter('[data-type="tableRestore"]').prop('disabled', restoreFlag );
+    }    
 }
 /*
 ##################################################
@@ -2654,22 +2693,32 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             } 
 
             // Filter or Data
+            let width;
             if ( $selectArea ) {
                 $selectArea.html( $selectBox );
                 select2Option.data = selectedData;
                 select2Option.placeholder = 'Pulldown select';
-                select2Option.width = $selectArea.width();
+                width = $selectArea.width();
             } else if ( $removeObj ) {
-                select2Option.width = $removeObj.outerWidth();
+                width = $removeObj.outerWidth();
                 $removeObj.remove();
             }
-            if ( optionlist.length === 0 ) select2Option.width = 120;
+            if ( optionlist.length === 0 ) {
+                select2Option.width = 120;
+            } else if ( !multipel ) {
+                select2Option.width = width;
+            }
             $selectBox.select2( select2Option );
 
             if ( multipel ) {
                 const $container = $selectBox.closest('.tableEditInputMultipleSelectContainer');
                 $container.addClass('tableEditInputMultipleSelectOpen');
-                $container.find('.select2').css('width', 'auto');
+                if ( optionlist.length !== 0 ) {
+                    $container.find('.select2').css({
+                        'min-width': width,
+                        'width': 'auto'
+                    });
+                }
             }
 
             if ( openFlag ) {
@@ -2747,7 +2796,11 @@ requestTbody() {
     const tb = this;
 
     if ( tb.mode !== 'parameter') {
-        tb.filterParams = tb.getFilterParameter();
+        if ( !tb.partsFlag ) {
+            tb.filterParams = tb.getFilterParameter();
+        } else {
+            tb.filterParams = {};
+        }
     } else {
         // パラメータ集フィルタ設定
         tb.filterParams = {
@@ -3044,7 +3097,7 @@ setTbody() {
     + `</div>`;
 
     // 表示するものがない
-    if ( tb.mode !== 'edit' && tb.data.body.length === 0 ) {
+    if ( tb.mode !== 'edit' && tb.data.body.length === 0 && !tb.partsFlag ) {
         tb.$.container.addClass('noData');
         tb.$.message.html( nodataHtml );
     } else {
@@ -3058,8 +3111,12 @@ setTbody() {
     }
 
     if ( tb.mode !== 'parameter') {
-        tb.$.tbody.html( tb.tbodyHtml() );
-        tb.updateFooterStatus();
+        if ( !tb.partsFlag ) {
+            tb.$.tbody.html( tb.tbodyHtml() );
+            tb.updateFooterStatus();
+        } else {
+            tb.$.tbody.html( tb.tbodyPartsHtml() );
+        }
     } else {
         const body = tb.parameterBody();
         if ( body !== '') {
@@ -3075,19 +3132,22 @@ setTbody() {
 
     tb.$.table.addClass('tableReady');
 
-    if ( tb.mode !== 'edit') {
-        tb.tableMaxWidthCheck('tbody');
-    } else {
-        tb.$.tbody.find('.textareaAdjustment').each( fn.textareaAdjustment );
-        tb.editModeMenuCheck();
-    }
+    if ( !tb.partsFlag ) {
+        if ( tb.mode !== 'edit') {
+            tb.tableMaxWidthCheck('tbody');
+        } else {
+            tb.tableInputMaxWidthCheck('tbody');
+            tb.$.tbody.find('.textareaAdjustment').each( fn.textareaAdjustment );
+            tb.editModeMenuCheck();
+        }
 
-    if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'edit' || tb.mode === 'view') {
-        tb.checkSelectStatus();
-    }
+        if ( ( tb.mode === 'select' && tb.params.selectType === 'multi') || tb.mode === 'edit' || tb.mode === 'view') {
+            tb.checkSelectStatus();
+        }
 
-    if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
-    tb.stickyWidth();
+        if ( tb.option.dataType === 'n') tb.filterDownloadButtonCheck();
+        tb.stickyWidth();
+    }
 }
 /*
 ##################################################
@@ -3227,6 +3287,42 @@ tableMaxWidthCheck( target ) {
 
     });
 }
+/*
+##################################################
+   編集時　特殊入力欄の幅をチェック
+##################################################
+*/
+tableInputMaxWidthCheck( target ) {
+    const tb = this;
+
+    const $target = ( target instanceof jQuery )? target: tb.$[ target ].find('.tableEditMultipleColmun, .tableEditInputMultipleSelectValueInner');
+
+    $target.each(function(){
+        const $culumn = $( this ),
+        culumn = $culumn.get(0);
+
+        if ( $culumn.is('.textOverWrap') ) {
+            $culumn.css('width', 'auto').removeClass('textOverWrap');
+            if ( $culumn.is('.tableEditInputMultipleSelectValueInner') ) {
+                $culumn.closest('.tableEditInputMultipleSelectContainer').css('height', 'auto');
+            }
+        }
+
+        if ( culumn.clientWidth < culumn.scrollWidth ) {
+            $culumn.css('width', culumn.clientWidth ).addClass('textOverWrap');
+            if ( $culumn.is('.tableEditInputMultipleSelectValueInner') ) {
+                $culumn.closest('.tableEditInputMultipleSelectContainer').css('height', $culumn.closest('.tableEditInputMultipleSelectValue').outerHeight() );
+            }
+        }
+
+    });
+}
+/*
+##################################################
+   Table width check
+   > 最大幅を超えた場合調整する
+##################################################
+*/
 /*
 ##################################################
    Body HTML
@@ -3838,12 +3934,15 @@ editCellHtml( item, columnKey ) {
         case 'SingleTextColumn': case 'HostInsideLinkTextColumn': case 'JsonColumn':
         case 'TextColumn': case 'SensitiveSingleTextColumn':
             inputClassName.push('tableEditInputText');
-            return fn.html.inputText( inputClassName, value, name, attr, { widthAdjustment: true });
+            const widthAdjustment = ( tb.partsFlag )? {}: { widthAdjustment: true };
+            return fn.html.inputText( inputClassName, value, name, attr, widthAdjustment );
 
         // 文字列入力（複数行）
         case 'MultiTextColumn': case 'NoteColumn': case 'SensitiveMultiTextColumn':
             inputClassName.push('tebleEditTextArea');
-            return fn.html.textarea( inputClassName, value, name, attr, true );
+            const sizeChangeFlag = ( tb.partsFlag )? false: true;
+            if ( tb.partsFlag ) inputClassName.push('teblePartsEditTextArea');
+            return fn.html.textarea( inputClassName, value, name, attr, sizeChangeFlag );
 
         // 整数値
         case 'NumColumn':
@@ -3920,7 +4019,9 @@ editCellHtml( item, columnKey ) {
         case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn': {
             attr['column-type'] = columnType;
             inputClassName.push('tableEditMultipleHiddenColmun');
-            return `<div class="tableEditFilterCondition tableEditMultipleColmun input">${value}</div>`
+            const viewClassName = ['tableEditFilterCondition', 'tableEditMultipleColmun', 'input'];
+            if ( inputClassName.indexOf('tableEditChange') !== -1 ) viewClassName.push('tableEditChange');
+            return `<div class="${viewClassName.join(' ')}">${value}</div>`
             + fn.html.inputHidden( inputClassName, value, name, attr ); }
 
         // 不明
@@ -4267,15 +4368,21 @@ changeEdtiMode( changeMode ) {
     tb.$.container.addClass('editTable');
 
     // フィルタの入力を取得
-    const filterParameter = tb.getFilterParameter(),
-          filterLength = Object.keys( filterParameter ).length;
+    if ( !tb.partsFlag ) {
+        const filterParameter = tb.getFilterParameter(),
+            filterLength = Object.keys( filterParameter ).length;
 
-    if ( ( filterLength === 1 && filterParameter.discard !== undefined )
-         || filterLength === 0 ) {
-        // tb.flag.initFilter = (tb.info.menu_info.initial_filter_flg === '1');
-        tb.option.initSetFilter = undefined;
-    } else {
-        tb.option.initSetFilter = tb.getFilterParameter();
+        if ( ( filterLength === 1 && filterParameter.discard !== undefined )
+            || filterLength === 0 ) {
+            // tb.flag.initFilter = (tb.info.menu_info.initial_filter_flg === '1');
+            tb.option.initSetFilter = undefined;
+        } else {
+            tb.option.initSetFilter = tb.getFilterParameter();
+        }
+    }
+
+    if ( tb.partsFlag ) {
+        tb.$.container.trigger('changePartsEditMode', tb.option.parts.id );
     }
 
     // 編集から戻った際はinitial_filter_flgに関係なく表示
@@ -4400,6 +4507,10 @@ changeViewMode() {
     } else {
         tb.setTable('view');
     }
+
+    if ( tb.partsFlag ) {
+        tb.$.container.trigger('changePartsViewMode', tb.option.parts.id );
+    }
 }
 /*
 ##################################################
@@ -4483,7 +4594,7 @@ reflectEdits() {
         };
 
         // メニューボタン
-        modalTable.$.header.find('.itaButton ').on('click', function(){
+        modalTable.$.header.find('.itaButton').on('click', function(){
             if ( !tb.checkWork ) {
                 const $button = $( this ),
                     type = $button.attr('data-type');
@@ -4552,6 +4663,7 @@ editOk() {
             };
 
             tb.data.editOrder.push( itemId );
+            if ( !tb.data.regiColumnKeys ) tb.data.regiColumnKeys = tb.data.columnKeys;
 
             for ( const columnKey of tb.data.regiColumnKeys ) {
                 const columnNameRest = info[ columnKey ].column_name_rest,
@@ -4861,16 +4973,16 @@ editError( error ) {
             if(param[item] != null) {
                 editRowNum = param[item];
                 errorHtml.push(`<tr class="tBodyTr tr">`
-                    + fn.html.cell( auto_input, ['tBodyTh', 'tBodyLeftSticky'], 'th')
-                    + fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th')
+                    + (( tb.partsFlag )? ``: fn.html.cell( auto_input, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
+                    + (( tb.partsFlag )? ``: fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
                     + fn.html.cell( name, 'tBodyTh', 'th')
                     + fn.html.cell( body, 'tBodyTd')
                 + `</tr>`);
             }else{
                 editRowNum = '<span class="tBodyAutoInput"></span>';
                 errorHtml.push(`<tr class="tBodyTr tr">`
-                    + fn.html.cell( newRowNum + 1, ['tBodyTh', 'tBodyLeftSticky'], 'th')
-                    + fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th')
+                    + (( tb.partsFlag )? ``:fn.html.cell( newRowNum + 1, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
+                    + (( tb.partsFlag )? ``:fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
                     + fn.html.cell( name, 'tBodyTh', 'th')
                     + fn.html.cell( body, 'tBodyTd')
                 + `</tr>`);
@@ -4879,24 +4991,31 @@ editError( error ) {
     }
 
     tb.$.container.addClass('tableError');
-    tb.$.errorMessage.html(`
-    <div class="errorBorder"></div>
-    <div class="errorTableContainer">
-        <div class="errorTitle"><span class="errorTitleInner">${fn.html.icon('circle_exclamation')}` + getMessage.FTE00065 + `</span></div>
-        <table class="table errorTable">
-            <thead class="thead">
-                <tr class="tHeadTr tr">
-                <th class="tHeadTh tHeadLeftSticky th"><div class="ci">${getMessage.FTE00069}</div></th>
-                <th class="tHeadTh tHeadLeftSticky th"><div class="ci">${id_name}</div></th>
-                <th class="tHeadTh th tHeadErrorColumn"><div class="ci">${getMessage.FTE00070}</div></th>
-                <th class="tHeadTh th tHeadErrorBody"><div class="ci">${getMessage.FTE00071}</div></th>
-                </tr>
-            </thead>
-            <tbody class="tbody">
-                ${errorHtml.join('')}
-            </tbody>
-        </table>
-    </div>`);
+
+    const errorTable = ``
+    + `<table class="table errorTable">`
+        + `<thead class="thead">`
+            + `<tr class="tHeadTr tr">`
+                + (( tb.partsFlag )? ``:`<th class="tHeadTh tHeadLeftSticky th"><div class="ci">${getMessage.FTE00069}</div></th>`)
+                + (( tb.partsFlag )? ``:`<th class="tHeadTh tHeadLeftSticky th"><div class="ci">${id_name}</div></th>`)
+                + `<th class="tHeadTh th tHeadErrorColumn"><div class="ci">${getMessage.FTE00070}</div></th>`
+                + `<th class="tHeadTh th tHeadErrorBody"><div class="ci">${getMessage.FTE00071}</div></th>`
+            + `</tr>`
+        + `</thead>`
+        + `<tbody class="tbody">`
+            + errorHtml.join('')
+        + `</tbody>`
+    + `</table>`;
+
+    if ( tb.partsFlag ) {
+        return errorTable;
+    } else {
+        tb.$.errorMessage.html(`<div class="errorBorder"></div>`
+        + `<div class="errorTableContainer">`
+            + `<div class="errorTitle"><span class="errorTitleInner">${fn.html.icon('circle_exclamation')}` + getMessage.FTE00065 + `</span></div>`
+            + errorTable
+        + `</div>`);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -5650,7 +5769,7 @@ restApi( buttonText, method, endpoint, body, option = {}) {
    複数選択項目設定モーダルを開く
 ##################################################
 */
-multipleColmunSetting( columnType, restName, value ) {
+multipleColmunSetting( columnType, restName, value, required ) {
     const tb = this;
 
     return new Promise(function( resolve ){
@@ -5672,6 +5791,7 @@ multipleColmunSetting( columnType, restName, value ) {
 
         const settingData = tb.columnTypeSettingData( columnType, multipleArray );
         settingData.values = fn.jsonParse( value, 'array');
+        settingData.required = required;
 
         fn.settingListModalOpen( settingData ).then(function( result ){
             if ( result !== 'cancel') {
@@ -5700,7 +5820,7 @@ columnTypeSettingData( columnType, list ) {
                         type: 'select',
                         title: getMessage.FTE13002,
                         list: list.label_name,
-                        width: '340px',
+                        width: '360px',
                     },
                     {
                         id: 'condition_type',
@@ -5720,7 +5840,7 @@ columnTypeSettingData( columnType, list ) {
         case 'ConclusionEventSettingColumn':
             return {
                 title: getMessage.FTE13005,
-                width: '640px',
+                width: '808px',
                 move: false,
                 info: [
                     {
@@ -5728,13 +5848,13 @@ columnTypeSettingData( columnType, list ) {
                         type: 'select',
                         title: getMessage.FTE13006,
                         list: list,
-                        width: '340px',
+                        width: '360px',
                     },
                     {
                         id: 'conclusion_label_value',
-                        type: 'select',
+                        type: 'text',
                         title: getMessage.FTE13007,
-                        list: ['True','False'],
+                        required: true
                     },
                 ]
             };
@@ -6263,6 +6383,456 @@ scheduleSettingOpen( itemId, buttonText ) {
                 }
             });
         });
+    });
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   パーツ管理テーブル
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+##################################################
+   Parts table
+##################################################
+*/
+setPartsTable( mode ) {
+    const tb = this;
+    tb.mode = mode;
+
+    tb.$.container.attr('table-mode', tb.tableMode );
+
+    // メニュー
+    tb.$.thead.find('.eventFlowPartsBlockMenu').html( tb.partsBlockMenuHtml() );
+    tb.$.container.find('.eventFlowPartsBlockBody').html('<div class="eventFlowPartsBlockBodyInner"></div>');
+
+    tb.$.tbody = tb.$.container.find('.eventFlowPartsBlockBodyInner');
+
+    if ( tb.mode === 'view') {
+        // メニューボタン
+        tb.$.container.find('.eventFlowPartsBlockMenuButton').on('click', function(){
+            if ( !tb.checkWork ) {
+                const $button = $( this ),
+                    type = $button.attr('data-type');
+                switch ( type ) {
+                    // 追加
+                    case 'tableNew':
+                        tb.changeEdtiMode.call( tb, 'changeEditRegi');
+                        $button.closest('.eventFlowPartsBlock').removeClass('eventFlowPartsTableClose');
+                    break;
+                    // 開閉
+                    case 'tableToggle':
+                        $button.closest('.eventFlowPartsBlock').toggleClass('eventFlowPartsTableClose');
+                    break
+                }
+            }
+        });
+        // パーツメニューボタン
+        tb.$.tbody.on('click', '.eventFlowPartsMenuButton', function(){
+            if ( !tb.checkWork ) {
+                const
+                $button = $( this ),
+                type = $button.attr('data-type'),
+                itemId = $button.attr('data-id');
+
+                tb.select.view = [ itemId ];
+                        
+                switch ( type ) {
+                    // 追加
+                    case 'tableEdit':
+                        tb.changeEdtiMode.call( tb );
+                    break;
+                    // 開閉
+                    case 'tableToggle':
+                        $button.closest('.eventFlowPartsItem').toggleClass('eventFlowPartsItemOpen');
+                    break
+                }
+            }
+        });
+        tb.requestTbody();
+    } else if ( tb.mode === 'edit') {
+        // メニューボタン
+        tb.$.container.find('.eventFlowPartsBlockMenuButton').on('click', function(){
+            if ( !tb.checkWork ) {
+                const $button = $( this ),
+                    type = $button.attr('data-type');
+                switch ( type ) {
+                    // 登録
+                    case 'tableOk':
+                        $button.prop('disabled', true );
+                        tb.workStart('table', 0 );
+                        tb.editOk.call( tb ).then(function( result ){
+                            fn.resultModal( result ).then(function(){
+                                tb.workEnd();
+                                tb.changeViewMode.call( tb );
+                            });
+                        }).catch(function( result ){
+                            if ( result !== null ) {
+                                tb.partsEditError( getMessage.FTE00065, tb.editError( result ) ).then(function(){
+                                    tb.workEnd();
+                                });
+                            }
+                        });
+                    break;
+                    // キャンセル
+                    case 'tableCancel':
+                        if ( Object.keys( tb.edit.input ).length ) {
+                            fn.alert(
+                                getMessage.FTE00018,
+                                getMessage.FTE00019,
+                                'confirm', {
+                                    ok: { text: getMessage.FTE00020, action: 'danger'},
+                                    cancel: { text: getMessage.FTE00021, action: 'normal'}
+                                }).then(function( flag ){
+                                if ( flag ) {
+                                    tb.changeViewMode.call( tb );
+                                }
+                            });
+                        } else {
+                            tb.changeViewMode.call( tb );
+                        }
+                    break;
+                }
+            }
+        });
+        tb.workerPost('edit', tb.select.view );
+    }
+
+    // Table内各種イベントセット
+    tb.setTableEvents();
+}
+/*
+##################################################
+   Body HTML
+##################################################
+*/
+tbodyPartsHtml() {
+    const tb = this;
+
+    const html = [];
+
+    if ( tb.mode === 'view') {
+        const
+        list = tb.data.body,
+        parts = tb.option.parts;
+
+        if ( list.length ) {
+            for ( const item of list ) {
+                html.push( tb.partsItemHtml( parts.id, parts.name, parts.partsRestId, parts.partsRestName, item ) );
+            }
+            return tb.partsListHtml( html.join('') );
+        } else {
+            const name = fn.cv( parts.name, '', true );
+            return `<div class="eventFlowPartsNoDate"><div class="eventFlowPartsNoDateInner">${getMessage.FTE13018(name)}</div></div>`;
+        }
+    } else if ( tb.mode === 'edit') {
+        //
+        const
+        itemData = tb.data.body[0],
+        columnInfo = tb.info.column_info,
+        groupInfo = tb.info.column_group_info;
+
+        const displayNone = [ tb.idNameRest, 'discard', 'last_update_date_time', 'last_updated_user'];
+
+        const editTable = function( list ){
+            for ( const columnKey of list ) {
+                const
+                type = columnKey.slice(0,1);
+                if ( type === 'c') {
+                    const column = columnInfo[columnKey];
+                    if ( displayNone.indexOf( columnInfo[columnKey].column_name_rest ) !== -1 ) continue;
+                    let columnName = fn.cv( columnInfo[columnKey].column_name, '', true );
+                    // 必須
+                    if ( tb.mode === 'edit' && columnInfo[columnKey].required_item === '1') {
+                        columnName += `<span class="partsRquired">*</span>`;
+                    }
+                    const attr = {};
+                    if ( column.column_name_rest ) attr.rest = column.column_name_rest;
+                    if ( column.description ) attr.title = fn.cv( column.description, '', true );
+                    html.push( fn.html.row( fn.html.cell( columnName, 'tHeadTh popup popupScroll', 'th', 1, 1, attr) + tb.cellPartsHtml( itemData, columnKey ) ) );
+                } else {
+                    const groupName = fn.cv( groupInfo[columnKey].column_group_name, '', true );
+                    html.push( fn.html.row( fn.html.cell( groupName, 'tHeadGroup tHeadTh', 'th', 1, 2 ) ) );
+
+                    html.push('<tr><td class="eventFlowPartsTableGroupTd" colspan="2"><table class="eventFlowPartsTable eventFlowPartsGroupTable"><tbody>');
+                    editTable( groupInfo[columnKey].columns_view);
+                    html.push('</tbody></table></td></tr>');
+                }
+            }
+        };
+        html.push('<div class="eventFlowPartsTableWrap"><table class="eventFlowPartsTable"><tbody>');
+        editTable( tb.info.menu_info.columns_view );
+        html.push('</tbody></table></div>');
+
+        return html.join('');
+    }
+}
+/*
+##################################################
+   Cell HTML
+##################################################
+*/
+cellPartsHtml( item, columnKey ) {
+    const tb = this;
+
+    const columnInfo = tb.info.column_info[ columnKey ],
+          columnName = columnInfo.column_name_rest,
+          columnType = columnInfo.column_type;
+
+    const className = [];
+    if ( columnType === 'NumColumn') className.push('tBodyTdNumber');
+    if ( columnName === 'discard') className.push('tBodyTdMark discardCell');
+
+    switch ( tb.mode ) {
+        case 'view':
+            if ( columnInfo.column_type === 'ButtonColumn') {
+                className.push('tBodyTdButton');
+            }
+            return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td');
+        case 'edit':
+            if ( ( columnName !== 'discard' && item.discard === '1' ) && columnName !== 'remarks' ) {
+                return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td');
+            } else {
+                className.push('tBodyTdInput');
+                return fn.html.cell( tb.editCellHtml( item, columnKey ), className, 'td');
+            }
+    }
+}
+/*
+##################################################
+  パーツブロックHTML
+##################################################
+*/
+partsBlockHtml( type ) {
+    const tb = this;
+
+    const name = fn.cv( tb.option.parts.className, '', true );
+    return ``
+    + `<div class="eventFlowPartsTableBlock eventFlowPartsTableBlock${name}">`
+        + `<div class="eventFlowPartsBlockHeader">`
+            + `<div class="eventFlowPartsBlockName">${name}</div>`
+            + `<div class="eventFlowPartsBlockMenu"></div>`
+        + `</div>`
+        + `<div class="eventFlowPartsBlockBody">`
+        + `</div>`
+    + `</div>`;
+}
+/*
+##################################################
+  パーツブロックメニューHTML
+##################################################
+*/
+partsBlockMenuHtml() {
+    const tb = this;
+
+    const html = [`<ul class="eventFlowPartsBlockMenuList">`];
+    if ( tb.mode === 'view') {
+        html.push( tb.partsBlockMenuItemHtml('tableNew', 'plus') );
+        html.push( tb.partsBlockMenuItemHtml('tableToggle', 'arrow02_top') );
+    } else if ( tb.mode === 'edit') {
+        html.push( tb.partsBlockMenuItemHtml('tableOk', 'download', true ) );
+        html.push( tb.partsBlockMenuItemHtml('tableCancel', 'cross') );
+    }
+    html.push(`</ul>`);
+
+    return html.join('');
+}
+/*
+##################################################
+  パーツブロックメニューアイテムHTML
+##################################################
+*/
+partsBlockMenuItemHtml( type, icon, disabledFlag = false ) {
+    const disabled = ( disabledFlag )? ' disabled="disabled"': '';
+    return `<li class="eventFlowPartsBlockMenuItem">`
+        + `<button class="eventFlowPartsBlockMenuButton" data-type="${type}"${disabled}><span class="icon icon-${icon}"></span></button>`
+    + `</li>`;
+}
+/*
+##################################################
+  パーツリストHTML
+##################################################
+*/
+partsListHtml( items ) {
+    return `<ul class="eventFlowPartsList">${items}</ul>`;
+}
+/*
+##################################################
+  パーツアイテムHTML
+##################################################
+*/
+partsItemHtml( type, name, idRest, nameRest, item ) {
+    const tb = this;
+
+    const parameter = item.parameter;
+
+    const
+    partsName = fn.cv( parameter[nameRest], '', true ),
+    partsId = fn.cv( parameter[idRest], '', true );
+    
+    return ``
+    + `<li class="eventFlowPartsItem eventFlowParts${name}">`
+        + `<div class="eventFlowPartsHeader">`
+            + `<div class="eventFlowPartsName"><span class="eventFlowPartsNameText">${partsName}</span></div>`
+            + `<div class="eventFlowPartsMenu">${tb.partsMenuHtml( partsId )}</div>`
+        + `</div>`
+        + `<div class="eventFlowPartsBody">`
+            + tb.partsBodyHtml( type, parameter )
+        + `</div>`
+    + `</li>`;
+}
+/*
+##################################################
+  パーツメニューHTML
+##################################################
+*/
+partsMenuHtml( id ) {
+    const tb = this;
+
+    const html = [];
+    html.push( tb.partsMenuItemHtml('tableEdit', 'edit', id ) );
+    html.push( tb.partsMenuItemHtml('tableToggle', 'arrow02_bottom') );
+
+    return `<ul class="eventFlowPartsMenuList">${html.join('')}</ul>`;
+}
+/*
+##################################################
+  パーツメニューアイテムHTML
+##################################################
+*/
+partsMenuItemHtml( type, icon, id ) {
+    const attr = [];
+    if ( type ) attr.push(`data-type="${type}"`);
+    if ( id ) attr.push(`data-id="${id}"`);
+    return `<li class="eventFlowPartsMenuItem">`
+        + `<button class="eventFlowPartsMenuButton" ${attr.join(' ')}><span class="icon icon-${icon}"></span></button>`
+    + `</li>`;
+}
+/*
+##################################################
+  パーツボディHTML
+##################################################
+*/
+partsBodyHtml( type, parameter ) {
+    switch ( type ) {
+        case 'filter':
+            return `<div class="eventFlowPartsInfo">${this.partsFilterHtml( parameter )}</div>`;
+        case 'action':
+            return `<div class="eventFlowPartsInfo">${this.partsActionHtml( parameter )}</div>`;
+        case 'rule':
+            return `<div class="eventFlowPartsInfo">${this.partsRuleHtml( parameter )}</div>`;
+        default:
+            return `<div class="eventFlowPartsInfo"></div>`;
+    }
+}
+/*
+##################################################
+  フィルターHTML
+##################################################
+*/
+partsFilterHtml( parameter ) {
+    const labelList = parameter.filter_condition_json;
+    return fn.html.labelListHtml( labelList, this.label );
+}
+/*
+##################################################
+  アクションHTML
+##################################################
+*/
+partsActionHtml( parameter ) {
+    const
+    conductor = fn.cv( parameter.conductor_class_id, '', true ),
+    operation = fn.cv( parameter.operation_id, '', true );
+    return `<div class="eventFlowPartsActionTableWrap"><table class="eventFlowPartsActionTable">`
+        + `<tr><th class="eventFlowPartsActionTh">Conductor</th><td class="eventFlowPartsActionTd">${conductor}</td></tr>`
+        + `<tr><th class="eventFlowPartsActionTh">Operation</th><td class="eventFlowPartsActionTd">${operation}</td></tr>`
+    + `</table></div>`;
+}
+/*
+##################################################
+  ルールHTML
+##################################################
+*/
+partsRuleHtml( parameter ) {
+    const tb = this;
+
+    const
+    filterA = fn.cv( parameter.filter_a, '', true ),
+    filterB = fn.cv( parameter.filter_b, null, true ),
+    operator = fn.cv( parameter.filter_operator, null, true ),
+    actionName = fn.cv( parameter.action_id, null, true ),
+    labels = fn.cv( parameter.conclusion_label_name, null );
+    
+    const html = [];
+
+    // Filter
+    const filterHtml = [];
+    let filterAddClass = null;
+    filterHtml.push( tb.partsRuleListHtml('Filter', filterA ) );
+    if ( filterB ) {
+        filterHtml.push(`<div class="eventFlowPartsRuleOperator">${operator}</div>`);
+        filterHtml.push( tb.partsRuleListHtml('Filter', filterB ) );
+        filterAddClass = 'eventFlowPartsRuleOperatorMode';
+    }
+
+    html.push( tb.partsRuleBlockHtml('Filter', filterHtml.join(''), filterAddClass ) );
+
+    // Action
+    if ( actionName ) {
+        const actionHtml = tb.partsRuleListHtml('Action', actionName );
+        html.push( tb.partsRuleBlockHtml('Action', actionHtml ) );
+    }
+
+    // Label
+    if ( labels ) {
+        const listHtml = fn.html.labelListHtml( labels, tb.label );
+        html.push( tb.partsRuleBlockHtml('Label', listHtml ) );
+    }
+
+    return `<div class="eventFlowPartsRuleContainer">${html.join('')}</div>`;
+}
+partsRuleBlockHtml( name, body, addClassName ) {
+    const className = [`eventFlowPartsRule${name}`];
+    if ( addClassName ) className.push( addClassName );
+    return `<div class="eventFlowPartsRuleBlock ${className.join(' ')}">`
+        //+ `<div class="eventFlowPartsRuleBlockHeader">${name}</div>`
+        + `<div class="eventFlowPartsRuleBlockBody">`
+        + body
+    + `</div></div>`;
+}
+partsRuleListHtml( type, name ) {
+    return `<div class="eventFlowPartsItem eventFlowParts${type}">`
+        + `<div class="eventFlowPartsHeader">`
+            + `<div class="eventFlowPartsName"><span class="eventFlowPartsNameText">${name}</span></div>`
+        + `</div>`
+    + `</div>`;
+}
+/*
+##################################################
+  ルールHTML
+##################################################
+*/
+partsEditError ( title, elements ) {
+    return new Promise(function( resolve ){
+        const funcs = {};
+
+        funcs.ok = function(){
+            dialog.close();
+            dialog = null;
+            resolve( true );
+        };
+        const config = {
+            position: 'center',
+            header: {
+                title: title
+            },
+            footer: {
+                button: {
+                    ok: { text: getMessage.FTE10043, action: 'normal'}
+                }
+            }
+        };
+        let dialog = new Dialog( config, funcs );
+        dialog.open( elements );
     });
 }
 

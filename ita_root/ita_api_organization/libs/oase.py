@@ -104,8 +104,8 @@ def collect_event_history(wsMongo: MONGOConnectWs, parameter: dict):
             fix_value = None
             # MongoDBのデータに合わせるため、時刻項目の場合UNIX時間に変換する。
             if key in TIME_PARAM:
-                dt = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S%z')
-                fix_value = str(int(dt.timestamp()))
+                dt = datetime.strptime(value, '%Y/%m/%d %H:%M:%S')
+                fix_value = int(dt.timestamp())
             # MongoDBのデータに合わせるため、Bool値の場合は一旦intに変換し、その後文字に変換する。
             elif key in BOOL_PARAM:
                 fix_value = str(int(value))
@@ -131,6 +131,14 @@ def collect_event_history(wsMongo: MONGOConnectWs, parameter: dict):
     result = []
     for item in event_history:
         item["_id"] = str(item["_id"])
+
+        if "exastro_events" in item:
+            item["exastro_events"] = [str(event) for event in item["exastro_events"]]
+
+        if "event" in item:
+            if "_id" in item["event"]:
+                item["event"]["_id"] = str(item["event"]["_id"])
+
         result.append(item)
 
     return result
@@ -209,7 +217,12 @@ def create_history_list(event_history: list, action_log: list):
 
         ts = int(event["labels"]["_exastro_fetched_time"])
         dt = datetime.fromtimestamp(ts)
-        append_data["datetime"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+        append_data["datetime"] = dt.strftime("%Y/%m/%d %H:%M:%S")
+        event["labels"]["_exastro_fetched_time"] = dt.strftime("%Y/%m/%d %H:%M:%S")
+
+        ts = int(event["labels"]["_exastro_end_time"])
+        dt = datetime.fromtimestamp(ts)
+        event["labels"]["_exastro_end_time"] = dt.strftime("%Y/%m/%d %H:%M:%S")
 
         append_data["item"] = event
 
@@ -221,7 +234,12 @@ def create_history_list(event_history: list, action_log: list):
         append_data["type"] = "action"
 
         tr = action["TIME_REGISTER"]
-        append_data["datetime"] = tr.strftime("%Y-%m-%d %H:%M:%S")
+        tr_time = tr.strftime("%Y/%m/%d %H:%M:%S")
+        append_data["datetime"] = tr_time
+        action["TIME_REGISTER"] = tr_time
+
+        lut = action["LAST_UPDATE_TIMESTAMP"]
+        action["LAST_UPDATE_TIMESTAMP"] = lut.strftime("%Y/%m/%d %H:%M:%S.%f")
 
         append_data["item"] = action
 

@@ -21,6 +21,8 @@ from common_libs.common.util import ky_decrypt, get_timestamp, get_all_execution
 from common_libs.conductor.classes.exec_util import *
 from common_libs.ci.util import log_err
 from common_libs.oase.manage_events import ManageEvents
+from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
+from bson import ObjectId
 import datetime
 import inspect
 import json
@@ -54,10 +56,8 @@ def backyard_main(organization_id, workspace_id):
     # connect MariaDB
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # UnImplementLog("処理時間固定")
-    # 単体テスト用
-    # judgeTime = int(time.time())
-    judgeTime = 10000
+    # 処理時間
+    judgeTime = int(time.time())
     EventObj = ManageEvents(mongodbca, judgeTime)
 
     objdbca.db_transaction_start()
@@ -147,7 +147,7 @@ class Judgement:
         sql = "SELECT * FROM V_OASE_LABEL_KEY_GROUP WHERE DISUSE_FLAG = '0'"
         Rows = self.MariaDBCA.sql_execute(sql, [])
         for Row in Rows:
-            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY']
+            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY_NAME']
 
     def getIDtoName(self, uuid):
         uuid = str(uuid)
@@ -186,27 +186,42 @@ class Judgement:
         # FiltersUsedinRulesDict[フィルタID] = { 'rule_id': RULE_ID, 'rule_priority': RULE_PRIORITY, 'count': フィルタ使用数 }
         FiltersUsedinRulesDict = {}
         for RuleRow in RuleList:
-            # for FilterId in RuleRow['FILTER_COMBINATION_JSON']['filter_key']:
-            filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
-            for FilterId in filter_combination_json['filter_key']:
-                if FilterId in FiltersUsedinRulesDict:
-                    FiltersUsedinRulesDict[FilterId]['count'] += 1
-                else:
-                    FiltersUsedinRulesDict[FilterId] = {}
-                    FiltersUsedinRulesDict[FilterId]['rule_id'] = RuleRow['RULE_ID']
-                    FiltersUsedinRulesDict[FilterId]['rule_priority'] = RuleRow['RULE_PRIORITY']
-                    FiltersUsedinRulesDict[FilterId]['count'] = 1
+            FilterA = RuleRow['FILTER_A']
+            if FilterA in FiltersUsedinRulesDict:
+                FiltersUsedinRulesDict[FilterA]['count'] += 1
+            else:
+                FiltersUsedinRulesDict[FilterA] = {}
+                FiltersUsedinRulesDict[FilterA]['rule_id'] = RuleRow['RULE_ID']
+                FiltersUsedinRulesDict[FilterA]['rule_priority'] = RuleRow['RULE_PRIORITY']
+                FiltersUsedinRulesDict[FilterA]['count'] = 1
+
+            FilterB = RuleRow.get('FILTER_B')
+            if FilterB is None:
+                # FilterBは必須項目ではないのでNoneの場合はスキップする
+                continue
+
+            if FilterB in FiltersUsedinRulesDict:
+                FiltersUsedinRulesDict[FilterB]['count'] += 1
+            else:
+                FiltersUsedinRulesDict[FilterB] = {}
+                FiltersUsedinRulesDict[FilterB]['rule_id'] = RuleRow['RULE_ID']
+                FiltersUsedinRulesDict[FilterB]['rule_priority'] = RuleRow['RULE_PRIORITY']
+                FiltersUsedinRulesDict[FilterB]['count'] = 1
 
         return FiltersUsedinRulesDict
 
     def TargetRuleExtraction(self, TargetLevel, RuleList, FiltersUsedinRulesDict, IncidentDict):
         DebugMode = True
         TargetRuleList = []
+        FilterList = []
         defObj = RuleJudgementConst()
         for RuleRow in RuleList:
             hit = True
-            filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
-            for FilterId in filter_combination_json['filter_key']:
+            FilterList.append(RuleRow['FILTER_A'])
+            if RuleRow.get('FILTER_B') is not None:
+                FilterList.append(RuleRow['FILTER_B'])
+
+            for FilterId in FilterList:
                 if FilterId not in FiltersUsedinRulesDict:
                     tmp_msg = "対象フィルタ未登録  RULE_ID {} FILTER_ID {}>>".format(RuleRow['RULE_ID'], FilterId)
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -252,7 +267,7 @@ class Judgement:
                 if hit is True:
                     hit = False
                     # フィルタを利用しているルールが複数ある事を確認
-                    for FilterId in filter_combination_json['filter_key']:
+                    for FilterId in FilterList:
                         if FiltersUsedinRulesDict[FilterId]['count'] != 1:
                             hit = True
                             break
@@ -266,7 +281,7 @@ class Judgement:
 
         tmp_msg = "=========================================================================================================================="
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        tmp_msg = "ルール判定開始 RULE_ID:{} RULE_NAME:{}  JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+        tmp_msg = "ルール判定開始 RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         # ルール内のフィルタ条件判定用辞書初期化
         FilterResultDict = {}
@@ -276,20 +291,22 @@ class Judgement:
         FilterResultDict['EventList'] = []
         FilterResultDict['Operator'] = ''
 
-        filter_combination_json = json.loads(RuleRow.get('FILTER_COMBINATION_JSON'))
+        if not RuleRow['FILTER_OPERATOR']:
+            RuleRow['FILTER_OPERATOR'] = ''
 
-        if not filter_combination_json['filter_operator']:
-            filter_combination_json['filter_operator'] = ''
-
-        FilterResultDict['Operator'] = str(filter_combination_json['filter_operator'])
+        FilterResultDict['Operator'] = str(RuleRow['FILTER_OPERATOR'])
 
         # 論理演算子「operator」設定確認
         if self.checkRuleOperatorId(FilterResultDict['Operator']) is False:
-            tmp_msg = "ルール管理　論理演算子「operator」が不正 RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+            tmp_msg = "ルール管理　論理演算子「operator」が不正 RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # フィルタ毎のループ
-        for FilterId in filter_combination_json['filter_key']:
+        FilterList = []
+        FilterList.append(RuleRow['FILTER_A'])
+        if RuleRow['FILTER_B'] is not None:
+            FilterList.append(RuleRow['FILTER_B'])
+        for FilterId in FilterList:
             tmp_msg = "フィルタ管理判定開始  FILTER_ID: {}".format(FilterId)
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -318,10 +335,10 @@ class Judgement:
 
         ret = self.checkFilterCondition(FilterResultDict)
         if ret is True:
-            tmp_msg = "ルール判定結果: マッチ RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+            tmp_msg = "ルール判定結果: マッチ RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         else:
-            tmp_msg = "ルール判定結果: アンマッチ RULE_ID:{} RULE_NAME:{} JSON:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], str(RuleRow["FILTER_COMBINATION_JSON"]))
+            tmp_msg = "ルール判定結果: アンマッチ RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         if ret is False:
@@ -400,8 +417,8 @@ class Judgement:
     def putRaccEvent(self, RuleRow, UseEventIdList):
         addlabels = {}
         label_key_inputs = {}
-        RuleRow["LABELING_INFORMATION_JSON"] = json.loads(RuleRow["LABELING_INFORMATION_JSON"])
-        for row in RuleRow["LABELING_INFORMATION_JSON"]:
+        RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
+        for row in RuleRow["CONCLUSION_LABEL_NAME"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -413,13 +430,9 @@ class Judgement:
 
         RaccEventDict = {}
 
-        # 単体テスト用
-        # 本来はinsert時の戻り値(uuid)を設定
-        id = 'e_' + RuleRow["RULE_ID"]
         t1 = int(time.time())
         ttl = int(RuleRow['REEVALUATE_TTL'])
 
-        RaccEventDict["_id"] = id
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = t1
@@ -434,7 +447,7 @@ class Judgement:
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleRow['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleRow['RULE_NAME']
-        RaccEventDict["exastro_events"] = UseEventIdList
+        RaccEventDict["exastro_events"] = list(map(repr, UseEventIdList))
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
 
@@ -548,9 +561,18 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         tmp_msg = "イベント更新  タイムアウト({}) ids: {}".format(str(update_Flag_Dict), str(timeout_Event_Id_List))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    # PFから通知先一覧取得（既知(時間切れ)がTrue）
+        # 通知処理（既知(時間切れ)）
+        timeout_notification_list = []
+        for event_id in timeout_Event_Id_List:
+            ret, EventRow = EventObj.get_events(event_id)
+            if ret is True:
+                timeout_notification_list.append(EventRow)
+        OASE.send(objdbca, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 
-    # PFから通知先一覧取得（新規がTrue）
+    new_Event_List = []
+    new_Event_List = list(EventObj.labeled_events_dict.values())
+    # 通知処理（新規）
+    OASE.send(objdbca, new_Event_List, {"notification_type": OASENotificationType.NEW})
 
     # テーブル名
     t_oase_filter = 'T_OASE_FILTER'  # フィルター管理
@@ -695,7 +717,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             "CONDUCTOR_INSTANCE_NAME": conductor_name,
                             "OPERATION_ID": operation_id,
                             "OPERATION_NAME": operation_name,
-                            "EVENT_ID_LIST": UseEventIdList,
+                            "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
                             "DISUSE_FLAG": "0"
@@ -723,7 +745,25 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         for action_log_row in ret_action_log:
                             if action_log_row["ACTION_ID"]:
                                 # アクションが設定されている場合
-                                # 通知処理
+                                # 通知処理(作業前)
+                                rule_id = action_log_row["RULE_ID"]
+                                # 「ルール管理」からレコードを取得
+                                ret_rule = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                                if not ret_rule:
+                                    tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
+                                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    return False
+
+                                if ret_rule[0].get('BEFORE_NOTIFICATION_DESTINATION'):
+                                    # 通知先が設定されている場合、通知処理(作業前)を実行する
+                                    before_Action_Event_List = []
+                                    for event_id in action_log_row["EVENT_ID_LIST"].split(','):
+                                        ret, EventRow = EventObj.get_events(eval(event_id))
+                                        if ret is True:
+                                            before_Action_Event_List.append(EventRow)
+
+                                    OASE.send(objdbca, before_Action_Event_List, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": action_log_row["RULE_ID"]})
+
                                 # 評価結果の更新（実行中）
                                 data_list = {
                                     "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
@@ -757,7 +797,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 # 結論イベントに処理で必要なラベル情報を追加
                                 ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, defObj.DF_LOCAL_LABLE_NAME, defObj.DF_LOCAL_LABLE_STATUS, defObj.DF_PROC_EVENT)
 
-                                FilterCheckLabelDict = ruleRow["LABELING_INFORMATION_JSON"]
+                                FilterCheckLabelDict = ruleRow["CONCLUSION_LABEL_NAME"]
 
                                 # 結論イベントに対応するフィルタ確認
                                 ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(FilterCheckLabelDict, filterList)
@@ -832,9 +872,13 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         tmp_msg = "未知イベントなし"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    # PFから通知先一覧取得（未知がTrue）
-    # 最後の通知先ではない or 通知先が0件ではない
-    # TrueでPFへ通知メッセージ送付（未知）
+    # 通知処理（未知）
+    unused_notification_list = []
+    for event_id in UnusedEventIdList:
+        ret, EventRow = EventObj.get_events(event_id)
+        if ret is True:
+            unused_notification_list.append(EventRow)
+    OASE.send(objdbca, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
 
 
 def UserIDtoUserName(objdbca, UserId):
@@ -895,8 +939,8 @@ class RuleJudgementConst():
 
     # ルール・フィルタ管理　JSON内の演算子・条件
     # 条件
-    DF_TEST_EQ = '0'    # =
-    DF_TEST_NE = '1'    # !=
+    DF_TEST_EQ = '1'    # =
+    DF_TEST_NE = '2'    # !=
     # 演算子
     DF_OPE_NONE = ''    # None
     DF_OPE_OR = '1'     # OR
@@ -941,7 +985,7 @@ class ActionStatusMonitor():
         sql = "SELECT * FROM V_OASE_LABEL_KEY_GROUP WHERE DISUSE_FLAG = '0'"
         Rows = self.MariaDBCA.sql_execute(sql, [])
         for Row in Rows:
-            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY']
+            self.LabelMasterDict[str(Row['LABEL_KEY_ID'])] = Row['LABEL_KEY_NAME']
 
     def getIDtoName(self, uuid):
         uuid = str(uuid)
@@ -958,7 +1002,7 @@ class ActionStatusMonitor():
                 TAB_B.DISUSE_FLAG                 AS TAB_B_DISUSE_FLAG,
                 TAB_C.RULE_ID                     AS JOIN_RULE_ID,
                 TAB_C.RULE_NAME                   AS RULE_NAME,
-                TAB_C.LABELING_INFORMATION_JSON   AS LABELING_INFORMATION_JSON,
+                TAB_C.CONCLUSION_LABEL_NAME       AS CONCLUSION_LABEL_NAME,
                 TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
                 TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
                 TAB_C.REEVALUATE_TTL              AS REEVALUATE_TTL,
@@ -1010,6 +1054,23 @@ class ActionStatusMonitor():
             TargetStatusList.append(self.CSTS_Unexpected_Error)  # 想定外エラー
             # CONDUCTORの状態判定
             if Row['CONDUCTOR_STATUS_ID'] in TargetStatusList:
+                # 通知処理(作業後)
+                rule_id = Row["RULE_ID"]
+                # 「ルール管理」からレコードを取得
+                ret_rule = self.MariaDBCA.table_select('T_OASE_RULE', 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                if not ret_rule:
+                    tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                elif ret_rule[0].get('AFTER_NOTIFICATION_DESTINATION'):
+                    # 通知先が設定されている場合、通知処理(作業後)を実行する
+                    after_Action_Event_List = []
+                    for event_id in Row["EVENT_ID_LIST"].split(','):
+                        ret, EventRow = self.EventObj.get_events(eval(event_id))
+                        if ret is True:
+                            after_Action_Event_List.append(EventRow)
+
+                    OASE.send(self.MariaDBCA, after_Action_Event_List, {"notification_type": OASENotificationType.AFTER_ACTION, "rule_id": Row["RULE_ID"]})
+
                 if Row['CONDUCTOR_STATUS_ID'] == self.CSTS_Completed:
                     Row['STATUS_ID'] = self.OSTS_Completed
                 else:
@@ -1033,15 +1094,16 @@ class ActionStatusMonitor():
             self.MariaDBCA.table_update('T_OASE_ACTION_LOG', UpdateRow, 'ACTION_LOG_ID', True)
 
             # 結論イベント登録
-            if Row['STATUS_ID'] in [self.OSTS_Completed, self.OSTS_Completed_Abend]:
+            if Row['STATUS_ID'] in [self.OSTS_Completed]:
                 # 結論イベント登録
                 self.InsertConclusionEvent(Row)
 
     def InsertConclusionEvent(self, RuleInfo):
+        # 結論イベント登録
         label_key_inputs = {}
         addlabels = {}
-        RuleInfo["LABELING_INFORMATION_JSON"] = json.loads(RuleInfo["LABELING_INFORMATION_JSON"])
-        for row in RuleInfo["LABELING_INFORMATION_JSON"]:
+        RuleInfo["CONCLUSION_LABEL_NAME"] = json.loads(RuleInfo["CONCLUSION_LABEL_NAME"])
+        for row in RuleInfo["CONCLUSION_LABEL_NAME"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -1055,7 +1117,6 @@ class ActionStatusMonitor():
 
         RaccEventDict = {}
 
-        # RaccEventDict["_id"] = id
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = NowTime
@@ -1070,8 +1131,7 @@ class ActionStatusMonitor():
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleInfo['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleInfo['RULE_NAME']
-        # RaccEventDict["exastro_events"] = json.loads(RuleInfo['EVENT_ID_LIST'])
-        RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST']
+        RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST'].split(',')
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
 

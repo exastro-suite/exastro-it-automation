@@ -47,7 +47,7 @@ class IMAPAuthClient(APIClientCommon):
             g.applogger.info("Failed to login to mailserver. Check login settings.")
             return result
         except Exception as e:
-            raise AppException("BKY-70002", ["IMAP Client Error", e])
+            raise AppException("AGT-10028", [e])
 
     def call_api(self, parameter=None):
 
@@ -64,7 +64,7 @@ class IMAPAuthClient(APIClientCommon):
             self.mailbox_name = "INBOX"
 
         try:
-            mailbox = self.client.select_folder(self.mailbox_name)
+            mailbox = self.client.select_folder(self.mailbox_name)  # noqa F841
 
             # 最後の取得時間以降に受信したメールのIDを取得
             datetime_obj = datetime.utcfromtimestamp(self.last_fetched_timestamp)
@@ -103,7 +103,7 @@ class IMAPAuthClient(APIClientCommon):
 
                 response = [item for item in response if item["date"] >= self.last_fetched_timestamp]
         except Exception as e:
-            raise AppException("BKY-70002", ["IMAP Client Error", e])
+            raise AppException("AGT-10028", [e])
 
         return response
 

@@ -825,9 +825,12 @@ border: 1px solid var(--black50)!important;
 position: relative;
 width: auto; min-width: 120px;
 padding: 4px 32px 4px 8px;
-word-break: break-all;
-white-space: normal;
 cursor: pointer;
+}
+.tableEditMultipleColmun.textOverWrap,
+.tableEditInputMultipleSelectValueInner.textOverWrap {
+word-break: break-all!important;
+white-space: normal!important;
 }
 .tableEditMultipleColmun::after {
 font-family: 'exastro-ui-icons';
@@ -837,7 +840,6 @@ position: absolute;
 right: 8px; top: 50%;
 transform: translateY(-50%);
 }
-
 /*
 ##################################################
    html body
@@ -1500,15 +1502,18 @@ background-image: linear-gradient(rgba(0,0,0,.0),rgba(0,0,0,.1));
 }
 .menuNavi::-webkit-scrollbar,
 .pagingOnePageNumSelectList::-webkit-scrollbar {
-width: 12px;
+width: 10px;
+border-radius: 5px;
+background: #222;
 }
 .menuNavi::-webkit-scrollbar-track,
 .pagingOnePageNumSelectList::-webkit-scrollbar-track {
-background: #222;
+
 }
 .menuNavi::-webkit-scrollbar-thumb,
 .pagingOnePageNumSelectList::-webkit-scrollbar-thumb {
 background: #999;
+border-radius: 5px;
 }
 /* Firefox */
 .menuNavi,
@@ -2776,6 +2781,7 @@ outline: none;
 .tableEditInputMultipleSelectValue {
 width: auto; max-width: 640px;
 padding-top: 4px;
+padding-bottom: 4px;
 cursor: pointer;
 }
 .tableEditInputSelectValueInner,
@@ -2798,17 +2804,14 @@ cursor: no-drop;
 .tBodyTrDiscard .noSelect {
 opacity: .5;
 }
-.tableEditInputSelectContainer {
+.tableEditInputSelectContainer,
+.tableEditInputMultipleSelectContainer {
 overflow: hidden;
 position: relative;
 height: 32px;
 }
-.tableEditInputMultipleSelectContainer {
-overflow: hidden;
-height: 32px;
-}
 .tableEditInputMultipleSelectOpen {
-height: auto;
+height: auto!important;
 }
 .tBodyTrDiscard .tableEditInputSelectContainer,
 .tBodyTrDiscard .tableEditInputMultipleSelectContainer {
@@ -2822,13 +2825,19 @@ width: auto;
 padding-right: 20px;
 cursor: pointer;
 }
+.tableEditInputMultipleSelectValue,
+.tableEditInputMultipleSelectContainer .select2-selection--multiple {
+padding-right: 20px;
+}
 .tBodyTrDiscard .tableEditInputSelectValue {
 border-color: var(--black30);
 color: var(--rowDiscardTextColor)!important;
 opacity: .5!important;
 }
 .noSelect::after,
-.tableEditInputSelectValue::after {
+.tableEditInputSelectValue::after,
+.tableEditInputMultipleSelectValue::after,
+.tableEditInputMultipleSelectContainer .select2-selection--multiple::after {
 content: '';
 position: absolute;
 right: 6px; top: 50%;
@@ -2837,6 +2846,9 @@ width: 0; height: 0;
 border-color: #888 transparent transparent transparent;
 border-style: solid;
 border-width: 5px 4px 0 4px;
+}
+.tableEditInputMultipleSelectContainer .select2-container--open .select2-selection--multiple::after {
+transform: translateY(-50%) rotate(180deg);
 }
 .noSelect::after {
 border-top-color: var(--black25);
@@ -5247,6 +5259,7 @@ width: 48px; height: 48px;
 border: 1px solid #CCC;
 user-select: none;
 }
+.darkmode .settingListBlank,
 .darkmode .settingListMove,
 .darkmode .settingListDelete {
 border-color: #000;

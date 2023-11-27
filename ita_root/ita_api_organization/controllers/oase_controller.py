@@ -55,6 +55,7 @@ def get_oase_filter(organization_id, workspace_id, menu):  # noqa: E501
     result_data = oase.rest_filter(objdbca, menu, filter_parameter)
     return result_data,
 
+
 @api_filter
 def post_oase_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """post_oase_filter
@@ -93,6 +94,7 @@ def post_oase_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
 
     result_data = oase.rest_filter(objdbca, menu, filter_parameter)
     return result_data,
+
 
 @api_filter
 def post_oase_history(organization_id, workspace_id, body=None):  # noqa: E501

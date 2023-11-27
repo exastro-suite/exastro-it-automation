@@ -29,6 +29,7 @@ from flask import g
 import requests
 import json
 import shutil
+import traceback
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
 
@@ -190,6 +191,11 @@ def datetime_to_str(p_datetime):
 
     utc_datetime = aware_datetime.astimezone(timezone.utc)
     return utc_datetime.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+
+
+def stacktrace():
+    t = traceback.format_exc()
+    return arrange_stacktrace_format(t)
 
 
 def arrange_stacktrace_format(t):

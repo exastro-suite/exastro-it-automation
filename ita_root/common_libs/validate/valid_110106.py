@@ -21,28 +21,51 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
     msg = []
     cmd_type = option.get("cmd_type") # noqa F841
     entry_parameter = option.get('entry_parameter').get('parameter')
-
     LANG = g.LANGUAGE.upper()
 
-    target_key = entry_parameter["search_key_name"]
-    target_type = entry_parameter["type_name"]
-    comparison_method = entry_parameter["comparison_method"]
-    target_value = entry_parameter["search_value_name"]
-    label_value = entry_parameter["label_value_name"]
+    # 廃止の場合、バリデーションチェックを行わない。
+    if cmd_type == 'Discard':
+        return retBool, msg, option,
 
-    if cmd_type == "Restore":
-        entry_parameter = option.get("current_parameter").get("parameter")
+    if cmd_type in ["Register", "Update"]:
+        # 必要なキーの存在チェック
+        required_keys = [
+            "search_key_name",
+            "type_name",
+            "comparison_method",
+            "search_value_name",
+            "label_value_name"
+        ]
+        missing_keys = []
+        for key in required_keys:
+            if key not in entry_parameter:
+                missing_keys.append(key)
+        if len(missing_keys) > 0:
+            if len(missing_keys) == 1:
+                missing_str = f"Required key '{missing_keys[0]}' is"
+            else:
+                missing_str = f"Required keys {str(missing_keys)} are"
 
-    if cmd_type in ["Register", "Update", "Restore"]:
+            msg.append(f"{missing_str} missing.")
+
+        # msg に値がある場合は個別バリデエラー
+        if len(msg) >= 1:
+            retBool = False
+            return retBool, msg, option,
+
+        setting_name = entry_parameter["labeling_settings_name"]
+        search_key = entry_parameter["search_key_name"]
+        target_type = entry_parameter["type_name"]
+        comparison_method = entry_parameter["comparison_method"]
+        search_value = entry_parameter["search_value_name"]
+        label_value = entry_parameter["label_value_name"]
 
         # ターゲットキーがブランクの場合
-        if target_key is None:
-            if target_type or comparison_method or target_value:
-                # 1 If Target key is blank, all of Target Type, Comparison Method and Target Value must also be blank.
-                msg.append("If Target Key is blank, all of Target Type, Comparison Method and Target Value must also be blank.")
+        if search_key is None:
+            if target_type or comparison_method or search_value:
+                msg.append(g.appmsg.get_api_message("MSG-130001", [setting_name]))
             if label_value is None:
-                # 3 If Target Key is blank, Label Value must have an entry.
-                msg.append("If Target Key is blank, Label Value must have an entry.")
+                msg.append(g.appmsg.get_api_message("MSG-130002", [setting_name]))
             # msg に値がある場合は個別バリデエラー
             if len(msg) >= 1:
                 retBool = False
@@ -50,137 +73,116 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
 
         if target_type in ["4", "5", "6", "7"]:
             if comparison_method not in ["1", "2"]:
-                # 4 If Target Type is {}, Comparison Method must be == or ≠.
                 type = get_target_type(objdbca, target_type, LANG)
-                msg.append("If Target Type is {}, Comparison Method must be == or ≠.".format(type))
+                msg.append(g.appmsg.get_api_message("MSG-130003", [setting_name, type]))
         else:
             pass
 
         # ターゲットタイプがfalsyの場合
         if target_type == "7":
-            if target_value:
-                # 5 If Target Type is Falsy, Target Value must be blank.
-                msg.append("If Target Type is Falsy, Target Value must be blank.")
+            if search_value:
+                msg.append(g.appmsg.get_api_message("MSG-130004", [setting_name]))
 
         # ターゲットタイプが整数の場合
         if target_type == "2":
             try:
-                int(target_value)
+                int(search_value)
             except Exception:
-                # 6 If Target Type is int, Target Value must also be int type.
-                msg.append("If Target Type is int, Target Value must also be int type.")
+                msg.append(g.appmsg.get_api_message("MSG-130005", [setting_name]))
 
         # ターゲットタイプが小数の場合
         if target_type == "3":
             try:
-                float(target_value)
+                float(search_value)
             except Exception:
-                # 7 If Target Type is float, Target Value must also be float type.
-                msg.append("If Target Type is float, Target Value must also be float type.")
+                msg.append(g.appmsg.get_api_message("MSG-130006", [setting_name]))
 
         # ターゲットタイプが真偽値の時
         if target_type == "4":
             try:
-                if target_value.lower() not in ["true", "false"]:
+                if search_value.lower() not in ["true", "false"]:
                     raise
             except Exception:
-                # 8 If Target Type is boolean, Target Value must be 'true' or 'false'
-                msg.append("If Target Type is boolean, Target Value must be 'true' or 'false'")
+                msg.append(g.appmsg.get_api_message("MSG-130007", [setting_name]))
 
         # ターゲットタイプがオブジェクト・配列の場合
         if target_type in ["5", "6"]:
             # ターゲットタイプがオブジェクトの場合
             try:
                 if target_type == "5":
-                    if (target_value.startswith("{") and target_value.endswith("}")) is False:
+                    if (search_value.startswith("{") and search_value.endswith("}")) is False:
                         raise
                 if target_type == "6":
-                    if (target_value.startswith("[") and target_value.endswith("]")) is False:
+                    if (search_value.startswith("[") and search_value.endswith("]")) is False:
                         raise
-                json.loads(target_value)
+                json.loads(search_value)
             except Exception:
-                # 9 If Target Type is object or array, Target Value must match the type.
-                msg.append("If Target Type is object or array, Target Value must match the type.")
+                msg.append(g.appmsg.get_api_message("MSG-130008", [setting_name]))
 
         # ターゲットタイプがその他の時
         if target_type == "10":
             if comparison_method != "7":
-                # 10 If Target Type is any, Comparison Method must be RegExp.
-                msg.append("If Target Type is any, Comparison Method must be RegExp")
-            if target_value is None:
-                # 11 If Target Type is any, Target Value must have an entry.
-                msg.append("If Comparison Method is RegExp, Target Value must have an entry.")
+                msg.append(g.appmsg.get_api_message("MSG-130009", [setting_name]))
+            if search_value is None:
+                msg.append(g.appmsg.get_api_message("MSG-130010", [setting_name]))
 
         # 比較方法が==もしくは≠の場合
         if comparison_method in ["1", "2"]:
             method = get_comparison_method(objdbca, comparison_method)
             if target_type == "10":
-                # 12 If Comparison Method is {}, Target Type cannot be any.
-                msg.append("If Comparison Method is {}, Target Type cannot be any.".format(method))
+                msg.append(g.appmsg.get_api_message("MSG-130011", [setting_name, method]))
             if target_type is None:
-                # 13 If Comparison Method is {}, Target Type cannot be blank.
-                msg.append("If Comparison Method is {}, Target Type cannot be blank.".format(method))
+                msg.append(g.appmsg.get_api_message("MSG-130012", [setting_name, method]))
 
         # 比較方法が<, <=, >, >=の場合
         if comparison_method in ["3", "4", "5", "6"]:
             if target_type not in ["1", "2", "3"]:
-                # 14 If Comparision Method is {}, Target Type must be string, int or float.
                 method = get_comparison_method(objdbca, comparison_method)
-                msg.append("If Comparision Method is {}, Target Type must be string, int or float.".format(method))
+                msg.append(g.appmsg.get_api_message("MSG-130013", [setting_name, method]))
 
         # 比較方法が正規表現の時
         if comparison_method == "7":
             if target_type != "10":
-                # 15 If Comparison Method is RegExp, Target Type must be any.
-                msg.append("If Comparison Method is RegExp, Target Type must be any.")
-            if target_value is None:
-                # 16 If Comparison Method RegExp, Target Value must have an entry.
-                msg.append("If Comparison Method RegExp, Target Value must have an entry.")
+                msg.append(g.appmsg.get_api_message("MSG-130014", [setting_name]))
+            if search_value is None:
+                msg.append(g.appmsg.get_api_message("MSG-130015", [setting_name]))
 
         # ターゲットタイプ, 比較方法, ターゲットバリューのすべてがブランクの場合
-        if target_type is None and comparison_method is None and target_value is None:
+        if target_type is None and comparison_method is None and search_value is None:
             if label_value is None:
-                # 17 If all of Target Type, Comparison Method, Target Value are blank, Label Value must have an entry.
-                msg.append("If Target Type, Comparison Method and Target Value are blank, Label Value must have an entry.")
+                msg.append(g.appmsg.get_api_message("MSG-130016", [setting_name]))
 
         # ラベルバリューがブランクの場合
         if label_value is None:
             if target_type is None or comparison_method is None:
-                # 18 If Label Value is blank, both Target Type and Comparison Method must have entries.
-                msg.append("If Label Value is blank, both Target Type and Comparison Method must have entries.")
+                msg.append(g.appmsg.get_api_message("MSG-130017", [setting_name]))
 
         # ターゲットタイプがブランクの場合
         if target_type is None:
-            if comparison_method or target_value:
-                # 19 If Target Type is blank, both Comparison Method and Target Value must also be blank.
-                msg.append("If Target Type is blank, both Comparison Method and Target Value must also be blank.")
+            if comparison_method or search_value:
+                msg.append(g.appmsg.get_api_message("MSG-130018", [setting_name]))
 
         # 比較方法がブランクの場合
         if comparison_method is None:
-            if target_type or target_value:
-                # 20 If Comparison Method is blank, both Target Type and Target Value must also be blank.
-                msg.append("If Comparison Method is blank, both Target Type and Target Value must also be blank.")
+            if target_type or search_value:
+                msg.append(g.appmsg.get_api_message("MSG-130019", [setting_name]))
 
         # ターゲットバリューがブランクの場合
-        if target_value is None:
+        if search_value is None:
             if target_type not in ["7", None]:
-                # 21 If Target Value is blank, Target Type must be Falsy or blank.
-                msg.append("If Target Value is blank, Target Type must be Falsy or blank.")
+                msg.append(g.appmsg.get_api_message("MSG-130020", [setting_name]))
             if comparison_method not in ["1", "2", None]:
-                # 22 If Target Value is blank, Comparison Method must be ==, ≠ or blank.
-                msg.append("If Target Value is blank, Comparison Method must be ==, ≠ or blank.")
+                msg.append(g.appmsg.get_api_message("MSG-130021", [setting_name]))
 
         # ターゲットタイプがfalsyかつターゲットタイプが≠の場合
         if target_type == "7" and comparison_method == "2":
             if label_value is None:
-                # 23 If Target Value is falsy and Comparison Method is ≠, Label Value must have an entry.
-                msg.append("If Target Value is falsy and Comparison Method is ≠, Label Value must have an entry.")
+                msg.append(g.appmsg.get_api_message("MSG-130022", [setting_name]))
 
         # ターゲットタイプがFalsyもしくは未入力以外かつ比較方法に入力がある場合
         if target_type not in ["7", None] and comparison_method:
-            if target_value is None:
-                # 24 If Target Type and Comparison Method have an entries, Target Value must also have an entry. (except Comparison Method is falsy.)
-                msg.append("If Target Type and Comparison Method have an entries, Target Value must also have an entry. (except Comparison Method is falsy.)")
+            if search_value is None:
+                msg.append(g.appmsg.get_api_message("MSG-130023", [setting_name]))
 
         # msg に値がある場合は個別バリデエラー
         if len(msg) >= 1:
@@ -191,14 +193,13 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
 
 def get_target_type(objdbca, typeid, lang):
     target_type_table = "t_oase_target_type"
-    print(type(typeid))
     record = objdbca.table_select(
         target_type_table,
         "WHERE DISUSE_FLAG=0 AND TYPE_ID=%s",
         [typeid]
     )
 
-    return record[0][f"TYPE_{lang}"]
+    return record[0][f"TYPE_NAME_{lang}"]
 
 
 def get_comparison_method(objdbca, methodid):

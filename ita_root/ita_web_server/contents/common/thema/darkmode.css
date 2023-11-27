@@ -110,7 +110,9 @@ color: var(--black30);
 .select2-container--default .select2-selection--single,
 .noSelect, .tableEditInputSelectValue,
 .checkboxLabel, .radioLabel,
-.checkboxTextMark, .radioTextMark {
+.checkboxTextMark, .radioTextMark,
+.tableEditInputSelectValue,
+.tableEditInputMultipleSelectValue {
 background-color: #000;
 border-color: #111;
 color: #DDD;

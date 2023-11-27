@@ -235,14 +235,30 @@ class DBConnectOrgRoot(DBConnectOrg):
         """
         kill connection
         """
-        # DBとユーザを指定して、すべてのコネクションを削除する
+        # DBとユーザを指定して、すべてのコネクションを取得する
         sql = "SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST WHERE DB=%s AND USER=%s"
         proccess_list = self.sql_execute(sql, [db_name, user_name])
 
+        # procedureの一覧を取得する
+        sql = "SHOW PROCEDURE STATUS WHERE NAME IN (%s, %s)"
+        procedure_list = self.sql_execute(sql, ['az_kill', 'rds_kill'])
+
+        # killコマンドを特定する
+        kill_sql = "KILL CONNECTION %s"
+        for procedure_data in procedure_list:
+            if procedure_data.get('Name') == 'az_kill':
+                # AzureのMySQL用killコマンド
+                kill_sql = "CALL mysql.az_kill(%s)"
+                break
+            elif procedure_data.get('Name') == 'rds_kill':
+                # AWSのMySQL用killコマンド
+                kill_sql = "CALL mysql.rds_kill(%s)"
+                break
+
+        # コネクションを削除する
         for proccess in proccess_list:
-            sql = "KILL CONNECTION %s"
             try:
-                proccess_list = self.sql_execute(sql, [proccess['ID']])
+                self.sql_execute(kill_sql, [proccess['ID']])
             except Exception:
                 # プロセスが無くなっている場合はエラーになるので、エラーは無視する
                 pass

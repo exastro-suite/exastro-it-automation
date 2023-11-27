@@ -36,8 +36,8 @@ class ManageEvents:
             "DF_NOT_PROC_EVENT": '3',       # 対象外
             # ルール・フィルタ管理　JSON内の演算子・条件
             # 条件
-            "DF_TEST_EQ": '0',  # =
-            "DF_TEST_NE": '1',  # !=
+            "DF_TEST_EQ": '1',  # =
+            "DF_TEST_NE": '2',  # !=
             # 演算子
             "DF_OPE_NONE": '',  # None
             "DF_OPE_OR": '1',  # OR
@@ -149,7 +149,6 @@ class ManageEvents:
                 timeout_event_id_list.append(event_id)
         return timeout_event_id_list
 
-
     def update_label_flag(self, event_id_list, update_flag_dict):
         for event_id in event_id_list:
             if event_id not in self.labeled_events_dict:
@@ -188,8 +187,8 @@ class ManageEvents:
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
             # フィルタにマッチしていないイベント
-            if event["_id"] not in incident_dict:
-                unused_event_ids.append(event_id)
+            if event["_id"] not in incident_dict.values():
+                unused_event_ids.append(event["_id"])
         return unused_event_ids
 
     def insert_event(self, dict):

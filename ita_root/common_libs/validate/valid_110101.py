@@ -12,6 +12,9 @@
 # limitations under the License.
 #
 
+from flask import g
+
+
 def agent_setting_valid(objdbca, objtable, option):
 
     retBool = True
@@ -19,10 +22,7 @@ def agent_setting_valid(objdbca, objtable, option):
     cmd_type = option.get("cmd_type")
     entry_parameter = option.get('entry_parameter').get('parameter')
 
-    if cmd_type == "Restore":
-        entry_parameter = option.get("current_parameter").get("parameter")
-
-    if cmd_type in ["Register", "Update", "Restore"]:
+    if cmd_type in ["Register", "Update"]:
 
         connection_method = entry_parameter['connection_method_name']
         request_method = entry_parameter['request_method_name']
@@ -36,11 +36,11 @@ def agent_setting_valid(objdbca, objtable, option):
         # 接続方式がIMAPパスワードの場合
         if connection_method == "4":
             if request_method not in ["3", "4", "5"]:
-                msg.append("Request method must be IMAP method if Connection method is IMAP Auth.")
+                msg.append(g.appmsg.get_api_message("MSG-120001"))
             if entry_parameter['username'] is None:
-                msg.append("Username is required if Connection method is IMAP Password Auth.")
+                msg.append(g.appmsg.get_api_message("MSG-120002"))
             if password_entered is False and cmd_type == "Register":
-                msg.append("Password is required if Connection method is IMAP Password Auth.")
+                msg.append(g.appmsg.get_api_message("MSG-120003"))
             # レスポンスリストフラグをTrueに自動設定
             entry_parameter["response_list_flag"] = "1"
 

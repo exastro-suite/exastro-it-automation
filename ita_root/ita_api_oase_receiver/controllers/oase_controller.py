@@ -27,7 +27,7 @@ import json
 def post_event_collection_settings(body, organization_id, workspace_id):  # noqa: E501
     """post_event_collection_settings
 
-    対象のイベント収集設定と最新のイベント取得時間を取得 # noqa: E501
+    対象のイベント収集設定を取得 # noqa: E501
 
     :param body:
     :type body: dict | bytes
@@ -53,8 +53,8 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
     check_auth_menu(menu, wsDb)
 
     # 取得
-    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_SETTINGS_ID IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_ids"])))
-    bind_values = tuple(body["event_collection_settings_ids"])
+    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_NAME IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_names"])))
+    bind_values = tuple(body["event_collection_settings_names"])
 
     data = wsDb.table_select(
         "T_OASE_EVENT_COLLECTION_SETTINGS",

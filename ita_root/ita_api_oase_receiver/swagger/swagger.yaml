@@ -34,7 +34,7 @@ paths:
     post:
       tags:
       - OASE
-      description: 対象のイベント収集設定と最新のイベント取得時間を取得
+      description: 対象のイベント収集設定を取得
       operationId: post_event_collection_settings
       parameters:
       - name: organization_id
@@ -140,11 +140,11 @@ components:
           type: string
     event_collection_settings_body:
       properties:
-        event_collection_settings_ids:
+        event_collection_settings_names:
           type: array
           items:
             type: string
-      description: 対象のイベント収集設定のUUIDを記載
+      description: 対象のイベント収集名を記載
     inline_response_200:
       type: object
       properties:

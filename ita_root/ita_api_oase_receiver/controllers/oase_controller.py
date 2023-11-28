@@ -14,13 +14,15 @@
 
 from flask import g
 
+import json
+import datetime
+
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.api import api_filter
 from libs.oase_receiver_common import check_menu_info, check_auth_menu
 from libs.label_event import label_event
-import json
 
 
 @api_filter
@@ -145,6 +147,9 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             # tryの中で文字列から辞書化する
             try:
                 event_dict = json.loads(event_str, strict=False)
+                # db.event_collection.createIndex({'_exastro_created_at': 1}, {expireAfterSeconds: 1})
+                # db.labeled_event_collection.createIndex({'exastro_created_at': 1}, {expireAfterSeconds: 1})
+                event_dict['_exastro_created_at'] = datetime.datetime.utcnow()
             except Exception as e:
                 # "イベントのデータ形式に不備があります"
                 err_code = "499-01801"

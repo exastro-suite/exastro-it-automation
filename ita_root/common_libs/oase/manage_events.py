@@ -105,6 +105,12 @@ class ManageEvents:
         used_event_list = []
 
         for event_id, event in self.labeled_events_dict.items():
+            # タイムアウトイベント判定
+            if str(event['labels']['_exastro_timeout']) != '0':
+                continue
+            # 処理済みイベント判定
+            if str(event['labels']['_exastro_evaluated']) != '0':
+                continue
             labels = event["labels"]
             judge_result = {}
             judge_result["count"] = 0

@@ -18,6 +18,7 @@ chardet = ">=0.0.0"
 pycryptodome = ">=0.0.0"
 jmespath = ">=0.0.0"
 imapclient = ">=0.0.0"
+pysocks = ">=0.0.0"
 
 
 [tool.poetry.group.first_install.dependencies]

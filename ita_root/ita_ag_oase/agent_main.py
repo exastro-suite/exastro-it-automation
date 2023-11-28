@@ -69,23 +69,21 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     # 環境変数の取得
     username = os.environ["USERNAME"]
     password = os.environ["PASSWORD"]
-    roles = os.environ["ROLES"]
-    user_id = os.environ["USER_ID"]
-    id_list = os.environ["EVENT_COLLECTION_SETTINGS_IDS"].split(",")
+    setting_name_list = os.environ["EVENT_COLLECTION_SETTINGS_NAMES"].split(",")
     baseUrl = os.environ["URL"]
-
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
         username,
-        password,
-        roles,
-        user_id
+        password
     )
 
     g.applogger.debug(g.appmsg.get_log_message("AGT-10006", []))
 
     # イベント収集設定ファイルからイベント収集設定の取得
     settings = get_settings()
+    id_list = []
+    if settings is not False:
+        id_list = [setting["EVENT_COLLECTION_SETTINGS_ID"] for setting in settings]
     g.applogger.debug(g.appmsg.get_log_message("AGT-10007", []))
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
@@ -98,12 +96,14 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             status_code, response = exastro_api.api_request(
                 "POST",
                 endpoint,
-                {"event_collection_settings_ids": id_list}
+                {"event_collection_settings_names": setting_name_list}
             )
             if status_code == 200:
                 create_file(response["data"])
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10009", []))
                 settings = get_settings()
+                if settings is not False:
+                    id_list = [setting["EVENT_COLLECTION_SETTINGS_ID"] for setting in settings]
             else:
                 g.applogger.info(g.appmsg.get_log_message("AGT-10010", []))
                 g.applogger.debug(status_code)
@@ -257,7 +257,6 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             remain_timestamp = sqliteDB.db_cursor.fetchall()
         except sqlite3.OperationalError:
             # テーブルが作られていない（イベントが無い）場合、処理を終了
-            sqliteDB.db_close()
             return
 
         if len(remain_timestamp) < 2:

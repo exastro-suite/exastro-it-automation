@@ -14,6 +14,7 @@
 
 import requests
 import json
+from urllib.parse import urlparse
 from common_libs.common.util import ky_decrypt
 
 
@@ -32,10 +33,9 @@ class APIClientCommon:
         self.url = event_settings["URL"]
         self.port = event_settings["PORT"]
         self.headers = json.loads(event_settings["REQUEST_HEADER"]) if event_settings["REQUEST_HEADER"] else None
-        self.proxy = {
-            "http": event_settings["PROXY"],
-            "https": event_settings["PROXY"]
-        }
+        parsed_url = urlparse(event_settings["PROXY"]) if event_settings["PROXY"] else None
+        self.proxy_host = parsed_url.hostname if parsed_url else None
+        self.proxy_port = parsed_url.port if parsed_url else None
         self.auth_token = ky_decrypt(event_settings["AUTH_TOKEN"])
         self.username = event_settings["USERNAME"]
         self.password = ky_decrypt(event_settings["PASSWORD"])
@@ -53,7 +53,10 @@ class APIClientCommon:
             headers=self.headers,
             params=parameter if self.request_method == "1" else None,
             data=json.dumps(self.parameter) if self.request_method == "2" else None,
-            proxies=self.proxy
+            proxies={
+                "http": f"{self.proxy_host}:{self.proxy_port}",
+                "https": f"{self.proxy_host}:{self.proxy_port}"
+            }
         )
         API_response = response.json()
 

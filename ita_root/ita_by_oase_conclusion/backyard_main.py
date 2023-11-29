@@ -429,6 +429,7 @@ class Judgement:
         t1 = int(time.time())
         ttl = int(RuleRow['REEVALUATE_TTL'])
 
+        RaccEventDict["_exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = t1
@@ -1118,6 +1119,7 @@ class ActionStatusMonitor():
 
         RaccEventDict = {}
 
+        RaccEventDict["_exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = NowTime

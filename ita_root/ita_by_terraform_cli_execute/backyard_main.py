@@ -16,7 +16,7 @@ import subprocess
 import time
 import re
 import os
-from datetime import datetime
+import datetime
 
 from flask import g
 from common_libs.common.dbconnect import DBConnectWs
@@ -219,7 +219,7 @@ def get_running_process(wsDb):
 
 
 def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
-    dt = datetime.now().strftime(format)
+    dt = datetime.datetime.now().strftime(format)
     if type == 'str':
         return '{}'.format(dt)
     else:

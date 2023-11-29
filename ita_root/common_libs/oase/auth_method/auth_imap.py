@@ -2,6 +2,8 @@ from flask import g
 from common_libs.oase.api_client_common import APIClientCommon
 from imapclient import imapclient, IMAPClient
 import ssl
+import socket
+import socks
 from common_libs.common.exception import AppException
 from datetime import datetime
 
@@ -50,6 +52,10 @@ class IMAPAuthClient(APIClientCommon):
             raise AppException("AGT-10028", [e])
 
     def call_api(self, parameter=None):
+
+        if self.proxy_host:
+            socks.setdefaultproxy(socks.SOCKS5, self.proxy_host, self.proxy_port)
+            socket.socket = socks.socksocket
 
         response = []
 
@@ -103,7 +109,10 @@ class IMAPAuthClient(APIClientCommon):
 
                 response = [item for item in response if item["date"] >= self.last_fetched_timestamp]
         except Exception as e:
+            socks.setdefaultproxy()
             raise AppException("AGT-10028", [e])
+
+        socks.setdefaultproxy()
 
         return response
 

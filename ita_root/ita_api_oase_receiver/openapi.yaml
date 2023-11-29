@@ -37,7 +37,7 @@ paths:
     post:
       tags:
         - OASE
-      description: 対象のイベント収集設定と最新のイベント取得時間を取得
+      description: 対象のイベント収集設定を取得
       operationId: postEventCollectionSettings
       x-openapi-router-controller: controllers.oase_controller
       parameters:
@@ -58,9 +58,9 @@ paths:
         content:
           application/json:
             schema:
-              description: 対象のイベント収集設定のUUIDを記載
+              description: 対象のイベント収集名を記載
               properties:
-                event_collection_settings_ids:
+                event_collection_settings_names:
                   type: array
                   items:
                     type: string

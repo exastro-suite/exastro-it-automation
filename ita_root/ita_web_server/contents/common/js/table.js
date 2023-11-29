@@ -3837,7 +3837,7 @@ editCellHtml( item, columnKey ) {
             // プルダウン選択はここでエスケープしない
             case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
             case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
-                return v;
+                return fn.cv( v, '');
             default:
                 return fn.cv( v, '', true );
         }

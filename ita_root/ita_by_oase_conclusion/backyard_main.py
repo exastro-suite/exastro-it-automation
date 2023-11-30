@@ -39,7 +39,7 @@ def backyard_main(organization_id, workspace_id):
         RETURN:
     """
     # DB接続
-    g.applogger.set_level('DEBUG')
+    # g.applogger.set_level('DEBUG')
     tmp_msg = 'db connect'
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
@@ -60,8 +60,6 @@ def backyard_main(organization_id, workspace_id):
     judgeTime = int(time.time())
     EventObj = ManageEvents(mongodbca, judgeTime)
 
-    objdbca.db_transaction_start()
-
     # ①ルールマッチ
     tmp_msg = '①ルールマッチ Start'
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -78,8 +76,6 @@ def backyard_main(organization_id, workspace_id):
     obj.Monitor()
     tmp_msg = '②アクション実行後通知と結論イベント登録 end'
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-    objdbca.db_transaction_end(True)
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
@@ -433,6 +429,7 @@ class Judgement:
         t1 = int(time.time())
         ttl = int(RuleRow['REEVALUATE_TTL'])
 
+        RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = t1
@@ -702,6 +699,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                         operation_name = ret_operation[0].get("OPERATION_NAME")
 
                         # 評価結果へ登録
+                        # トランザクション開始
+                        objdbca.db_transaction_start()
                         if getattr(g, 'USER_ID', None) is None:
                             g.USER_ID = '110101'
 
@@ -730,6 +729,9 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         EventObj.update_label_flag(UseEventIdList, update_Flag_Dict)
                         tmp_msg = "使用済みインシデントフラグを立てる ({}) ids: {}".format(str(update_Flag_Dict), str(UseEventIdList))
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+                        # コミット  トランザクション終了
+                        objdbca.db_transaction_end(True)
 
                         # 評価結果からルールマッチング済みのレコードを取得
                         # テーブル名
@@ -1117,6 +1119,7 @@ class ActionStatusMonitor():
 
         RaccEventDict = {}
 
+        RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = NowTime

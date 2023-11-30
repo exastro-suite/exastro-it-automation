@@ -19,7 +19,7 @@ import os
 import hashlib
 import requests
 import json
-from datetime import datetime
+import datetime
 from operator import itemgetter
 
 from flask import g
@@ -453,7 +453,7 @@ def get_running_process(common_db, target_shema):
 
 
 def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
-    dt = datetime.now().strftime(format)
+    dt = datetime.datetime.now().strftime(format)
     if type == 'str':
         return '{}'.format(dt)
     else:

@@ -14,7 +14,7 @@
 from flask import g
 import os
 import re
-from datetime import datetime
+import datetime
 
 
 def external_valid_menu_before(objdbca, objtable, option):
@@ -35,8 +35,8 @@ def external_valid_menu_before(objdbca, objtable, option):
                 raise Exception()
 
             # 有効削除日数を取得
-            now_time = datetime.now()
-            _unix_s_time = datetime.strptime("1970-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
+            now_time = datetime.datetime.now()
+            _unix_s_time = datetime.datetime.strptime("1970-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
             _allow_days = now_time - _unix_s_time
             allow_days = _allow_days.days
             deletion_days = entry_parameter.get('parameter').get('deletion_days')

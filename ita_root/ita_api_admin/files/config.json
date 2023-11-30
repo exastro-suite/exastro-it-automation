@@ -18,7 +18,9 @@
         {"host_group.png":["/menu_group_icon/701/_old/701/","/menu_group_icon/701/"]},
         {"terraform_cloud_ep.png":["/menu_group_icon/801/_old/801/","/menu_group_icon/801/"]},
         {"terraform_cli.png":["/menu_group_icon/901/_old/901/","/menu_group_icon/901/"]},
-        {"cicd.png":["/menu_group_icon/1001/_old/1001/","/menu_group_icon/1001/"]}
+        {"cicd.png":["/menu_group_icon/1001/_old/1001/","/menu_group_icon/1001/"]},
+        {"oase.png":["/menu_group_icon/1102/_old/1102/","/menu_group_icon/1102/"]},
+        {"oase_agent.png":["/menu_group_icon/1101/_old/1101/","/menu_group_icon/1101/"]}
     ],
     "110102":
     [

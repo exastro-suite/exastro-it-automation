@@ -13,7 +13,7 @@
 #
 
 import re
-from datetime import datetime
+import datetime
 from .column_class import Column
 from flask import g
 from common_libs.common.exception import AppException
@@ -80,9 +80,9 @@ class DateTimeColumn(Column):
         retBool = True
 
         # 閾値(最小値)
-        min_datetime = datetime.strptime(self.min_value, self.format_datetime)
+        min_datetime = datetime.datetime.strptime(self.min_value, self.format_datetime)
         # 閾値(最大値)
-        max_datetime = datetime.strptime(self.max_value, self.format_datetime)
+        max_datetime = datetime.datetime.strptime(self.max_value, self.format_datetime)
 
         if len(str(val)) == 0:
             return retBool,
@@ -104,7 +104,7 @@ class DateTimeColumn(Column):
 
         # 日付形式に変換
         try:
-            dt_val = datetime.strptime(val, self.format_datetime)
+            dt_val = datetime.datetime.strptime(val, self.format_datetime)
         except ValueError as msg:
             msg = g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])
             retBool = False

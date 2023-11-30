@@ -31,8 +31,7 @@ import copy
 
 from pprint import pprint  # noqa: F401
 import shutil
-from datetime import date
-from datetime import datetime
+import datetime
 
 hostgroup_const = hostGroupConst()  # noqa: F405
 
@@ -1708,7 +1707,7 @@ def json_serial(obj):
     Returns:
         xxxx :
     """
-    if isinstance(obj, (datetime, date)):
+    if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
 
 
@@ -1756,7 +1755,7 @@ def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
     Returns:
         dt : datetime. Defaults to str(%Y/%m/%d %H:%M:%S).
     """
-    dt = datetime.now().strftime(format)
+    dt = datetime.datetime.now().strftime(format)
     if type == 'str':
         return '{}'.format(dt)
     else:

@@ -12,14 +12,14 @@
 # limitations under the License.
 #
 from flask import g
-from datetime import date, datetime
+import datetime
 
 from common_libs.common.exception import AppException
 
 
 def json_serial(obj):
 
-    if isinstance(obj, (datetime, date)):
+    if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
     raise TypeError(f'Type {obj} not serializable')
 

@@ -92,10 +92,15 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         ws_db_name, db_username, db_user_password = org_db.userinfo_generate("ITA_WS")
         connect_info = org_db.get_connect_info()
 
+        mongo_host = None
+        mongo_port = None
         ws_mongo_name = None
         mongo_username = None
         mongo_user_password = None
-        if os.environ.get('MONGO_HOST') is not None:
+        # OrganizationにてOASEがインストール対象外ではない場合は、Workspace毎のMongoDBユーザ情報を追加する。
+        if 'oase' not in no_install_driver:
+            mongo_host = connect_info['MONGO_HOST']
+            mongo_port = connect_info['MONGO_PORT']
             # make workspace-mongo connect infomation
             root_mongo = MONGOConnectRoot()
             ws_mongo_name, mongo_username, mongo_user_password = root_mongo.userinfo_generate("ITA_WS")
@@ -107,8 +112,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             'DB_USER': db_username,
             'DB_PASSWORD': ky_encrypt(db_user_password),
             'DB_DATABASE': ws_db_name,
-            'MONGO_HOST': connect_info['MONGO_HOST'],
-            'MONGO_PORT': connect_info['MONGO_PORT'],
+            'MONGO_HOST': mongo_host,
+            'MONGO_PORT': mongo_port,
             'MONGO_USER': mongo_username,
             'MONGO_PASSWORD': ky_encrypt(mongo_user_password),
             'MONGO_DATABASE': ws_mongo_name,
@@ -123,7 +128,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_root_db.user_create(db_username, db_user_password, ws_db_name)
         # print(db_username, db_user_password)
 
-        if os.environ.get('MONGO_HOST') is not None:
+        if 'oase' not in no_install_driver:
             # create workspace-mongodb-user
             root_mongo.create_user(
                 mongo_username,
@@ -254,7 +259,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             org_root_db.database_drop(ws_db_name)
             org_root_db.user_drop(db_username)
 
-        if os.environ.get('MONGO_HOST') is not None:
+        if 'oase' not in no_install_driver:
             if 'root_mongo' in locals():
                 root_mongo = MONGOConnectRoot()
                 root_mongo.drop_database(ws_mongo_name)

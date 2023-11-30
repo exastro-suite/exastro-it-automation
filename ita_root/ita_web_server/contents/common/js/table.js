@@ -1442,11 +1442,23 @@ setTableEvents() {
                   id = $a.attr('data-id'),
                   rest = $a.attr('data-rest'),
                   type = $a.attr('data-type');
+            
+            // ファイルダウンロードタイプ
+            if ( tb.option.fileFlag === false ) {
+                if ( $a.is('.nowDownload') ) return;
+                $a.addClass('nowDownload');
 
-            const file = tb.getFileData( id, rest, type );
+                const endPoint = `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`;
+                console.log(endPoint)
+                fn.download('base64', null, fileName, endPoint ).then(function(){
+                    $a.removeClass('nowDownload');
+                });
+            } else {
+                const file = tb.getFileData( id, rest, type );
 
-            if ( file !== undefined && file !== null ) {
-                fn.download('base64', file, fileName );
+                if ( file !== undefined && file !== null ) {
+                    fn.download('base64', file, fileName );
+                }
             }
         });
 

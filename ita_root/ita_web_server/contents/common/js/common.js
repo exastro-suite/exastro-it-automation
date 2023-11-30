@@ -613,70 +613,84 @@ arrayCopy( array ) {
    ダウンロード
 ##################################################
 */
-download: function( type, data, fileName = 'noname') {
+download: function( type, data, fileName = 'noname', endPoint ) {
 
-    let url;
+    if ( endPoint ) {
+        const _this = this;
 
-    // URL形式に変換
-    try {
-        switch ( type ) {
+        return new Promise(function( resolve ){
+            _this.fetch( endPoint ).then(function( result ){
+                _this.download('base64', result, fileName );
+            }).catch(function( error ){
+                window.console.error( error );
+                if ( error.message ) window.alert( error.message );
+            }).then(function(){
+                resolve();
+            });
+        });
+    } else {
+        let url;
 
-            // エクセル
-            case 'excel': {
-                // BASE64 > Binary > Unicode変換
-                const binary = window.atob( data ),
-                      decode = new Uint8Array( Array.prototype.map.call( binary, function( c ){ return c.charCodeAt(); }));
+        // URL形式に変換
+        try {
+            switch ( type ) {
 
-                const blob = new Blob([ decode ], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-                fileName += '.xlsx';
-                url = URL.createObjectURL( blob );
-            } break;
+                // エクセル
+                case 'excel': {
+                    // BASE64 > Binary > Unicode変換
+                    const binary = window.atob( data ),
+                        decode = new Uint8Array( Array.prototype.map.call( binary, function( c ){ return c.charCodeAt(); }));
 
-            // テキスト
-            case 'text': {
-                const blob = new Blob([ data ], {'type': 'text/plain'});
-                fileName += '.txt';
-                url = URL.createObjectURL( blob );
-            } break;
+                    const blob = new Blob([ decode ], {
+                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    });
+                    fileName += '.xlsx';
+                    url = URL.createObjectURL( blob );
+                } break;
 
-            // JSON
-            case 'json': {
-                const blob = new Blob([ JSON.stringify( data, null, '\t') ], {'type': 'application/json'});
-                fileName += '.json';
-                url = URL.createObjectURL( blob );
-            } break;
+                // テキスト
+                case 'text': {
+                    const blob = new Blob([ data ], {'type': 'text/plain'});
+                    fileName += '.txt';
+                    url = URL.createObjectURL( blob );
+                } break;
 
-            // BASE64
-            case 'base64': {
-                url = 'data:;base64,' + data;
-            } break;
+                // JSON
+                case 'json': {
+                    const blob = new Blob([ JSON.stringify( data, null, '\t') ], {'type': 'application/json'});
+                    fileName += '.json';
+                    url = URL.createObjectURL( blob );
+                } break;
 
-            // Exceljs
-            case 'exceljs': {
-                const blob = new Blob([ data ], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-                fileName += '.xlsx';
-                url = URL.createObjectURL( blob );
-            } break;
+                // BASE64
+                case 'base64': {
+                    url = 'data:;base64,' + data;
+                } break;
 
+                // Exceljs
+                case 'exceljs': {
+                    const blob = new Blob([ data ], {
+                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    });
+                    fileName += '.xlsx';
+                    url = URL.createObjectURL( blob );
+                } break;
+
+            }
+        } catch ( e ) {
+            window.console.error( e );
         }
-    } catch ( e ) {
-        window.console.error( e );
+
+        const a = document.createElement('a');
+
+        fileName = cmn.fileNameCheck( fileName );
+
+        a.href = url;
+        a.download = fileName;
+        a.click();
+
+        if ( type !== 'base64') URL.revokeObjectURL( url );
     }
-
-    const a = document.createElement('a');
-
-    fileName = cmn.fileNameCheck( fileName );
-
-    a.href = url;
-    a.download = fileName;
-    a.click();
-
-    if ( type !== 'base64') URL.revokeObjectURL( url );
-
 },
 /*
 ##################################################

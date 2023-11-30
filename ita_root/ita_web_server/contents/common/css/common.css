@@ -68,6 +68,13 @@ img{max-width:100%;vertical-align: top;}
 	color: #E09433;
 }
 
+.link.nowDownload,
+.tableViewDownload.nowDownload {
+text-decoration: none!important;
+color: #AAA!important;
+cursor: default!important;
+}
+
 /* input common */
 .input {
 display: block;
@@ -1051,7 +1058,7 @@ background-image: linear-gradient( rgba(0,0,0,0), rgba(0,0,0,.1) );
 position: relative;
 overflow: hidden;
 }
-.headerMenuInfoBody .icon {
+.headerMenuInfoBody > .icon {
 position: absolute;
 right: 8px;
 bottom: -8px;
@@ -1138,7 +1145,6 @@ color: rgba(0,0,0,.4);
 .headerMenuInfoCurrent .headerMenuInfoWorkspaceButton::after {
 display: none;
 }
-
 .headerMenuInfoWorkspaceItem {
 border-top: 1px solid var(--black10);
 }
@@ -1173,10 +1179,10 @@ text-align: left;
 font-size: 13px;
 }
 .headerMenuInfoMenuButton > .inner {
-padding: 0 16px;
+padding: 0 12px;
 }
 .headerMenuInfoMenuButton .icon {
-margin-right: 12px;
+margin-right: 10px;
 vertical-align: -2px;
 font-size: 16px;
 opacity: .7;
@@ -1505,10 +1511,6 @@ background-image: linear-gradient(rgba(0,0,0,.0),rgba(0,0,0,.1));
 width: 10px;
 border-radius: 5px;
 background: #222;
-}
-.menuNavi::-webkit-scrollbar-track,
-.pagingOnePageNumSelectList::-webkit-scrollbar-track {
-
 }
 .menuNavi::-webkit-scrollbar-thumb,
 .pagingOnePageNumSelectList::-webkit-scrollbar-thumb {

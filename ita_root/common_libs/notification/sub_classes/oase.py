@@ -135,13 +135,43 @@ class OASE(Notification):
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION]:
             notification_destination_str = fetch_data.get("NOTIFICATION_DESTINATION")
             notification_destination_dict = json.loads(notification_destination_str)
-            return notification_destination_dict["id"]
+
+            g.applogger.info(f"ルールから取得した通知先：\n{notification_destination_dict['id']}")
+
+            notification_destination_list = cls.__exists_notification_destination(notification_destination_dict["id"])
+
+            g.applogger.info(f"最終的に使用する通知先：\n{notification_destination_list}")
+
+            return notification_destination_list
 
         event_type_true_list = [cls.DESTINATION_ID_FETCH_CONDITION[notification_type]]
         response = cls._call_setting_notification_api(event_type_true=event_type_true_list)
         filtered_list = [item.get("id") for item in response["data"]]
 
         return filtered_list
+
+    @classmethod
+    def __exists_notification_destination(cls, notification_destination_list):
+        """
+        引数で渡された通知先が存在するか確認する
+        Args:
+            notification_destination_dict (_type_): ルールから取得した通知先
+
+        Returns:
+            存在しない通知先を間引いた通知先の一覧
+        """
+
+        response = cls._call_setting_notification_api()
+        feched_notification_destination_list = [item.get("id") for item in response["data"]]
+
+        result = []
+        for item in notification_destination_list:
+            if item in feched_notification_destination_list:
+                result.append(item)
+            else:
+                g.applogger.info(f"通知先ID：{item}は通知先に登録されていないため除外します。")
+
+        return result
 
     @classmethod
     def _convert_message(cls, item):

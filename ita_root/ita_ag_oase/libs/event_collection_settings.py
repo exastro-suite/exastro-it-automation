@@ -15,7 +15,7 @@
 import json
 import os
 
-file_name = "./event_collection_settings.json"
+file_name = "/tmp/event_collection_settings.json"
 
 
 def create_file(settings):

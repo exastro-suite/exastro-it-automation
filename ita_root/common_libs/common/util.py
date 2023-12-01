@@ -22,7 +22,6 @@ import codecs
 from pathlib import Path
 import pytz
 import datetime
-from datetime import timezone
 import re
 import os
 from flask import g
@@ -189,7 +188,7 @@ def datetime_to_str(p_datetime):
     else:
         aware_datetime = p_datetime
 
-    utc_datetime = aware_datetime.astimezone(timezone.utc)
+    utc_datetime = aware_datetime.astimezone(datetime.timezone.utc)
     return utc_datetime.isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 

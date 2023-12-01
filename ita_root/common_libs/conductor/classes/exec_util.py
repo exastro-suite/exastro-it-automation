@@ -27,7 +27,7 @@ import ssl
 import re
 import shutil
 # from pprint import pprint  # noqa: F401
-from datetime import datetime
+import datetime
 
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
@@ -334,7 +334,7 @@ class ConductorExecuteLibs():
                                 tmp_schedule_date = tmp_result[0] + ':00'
                         else:
                             tmp_schedule_date = tmp_result[0]
-                        datetime.strptime(tmp_schedule_date, '%Y/%m/%d %H:%M:%S')
+                        datetime.datetime.strptime(tmp_schedule_date, '%Y/%m/%d %H:%M:%S')
                     except Exception:
                         retBool = False
                         tmp_msg_ags = '{}:{}'.format('schedule_date', schedule_date)
@@ -1773,10 +1773,10 @@ class ConductorExecuteLibs():
 
                 # 抑止の設定
                 if bool(def_item["suppress_start"]):
-                    suppress_start_date = datetime.strptime(str(def_item["suppress_start"]), "%Y/%m/%d %H:%M:%S")
+                    suppress_start_date = datetime.datetime.strptime(str(def_item["suppress_start"]), "%Y/%m/%d %H:%M:%S")
                 if bool(def_item["suppress_end"]):
-                    suppress_end_date = datetime.strptime(str(def_item["suppress_end"]), "%Y/%m/%d %H:%M:%S")
-                today = datetime.now()
+                    suppress_end_date = datetime.datetime.strptime(str(def_item["suppress_end"]), "%Y/%m/%d %H:%M:%S")
+                today = datetime.datetime.now()
 
                 if bool(suppress_start_date) and bool(suppress_end_date):
                     if suppress_start_date < today and today < suppress_end_date:
@@ -4949,11 +4949,8 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
 # 共通Lib
 def get_now_datetime(format='%Y/%m/%d %H:%M:%S', type='str'):
-    # 呼び出し元によってdatetimeの型が違う場合があるため判定する
-    if 'now' in dir(datetime):
-        dt = datetime.now().strftime(format)
-    elif 'datetime' in dir(datetime):
-        dt = datetime.datetime.now().strftime(format)
+
+    dt = datetime.datetime.now().strftime(format)
 
     if type == 'str':
         return '{}'.format(dt)

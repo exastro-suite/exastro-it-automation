@@ -17,8 +17,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.loadtable import *  # noqa: F403
 
-from datetime import datetime
-from datetime import timedelta
+import datetime
 import os
 import inspect
 import shutil
@@ -63,10 +62,10 @@ def backyard_main(organization_id, workspace_id):
             return retBool, result,
 
         # 現在時刻を取得
-        now_time = datetime.now()
+        now_time = datetime.datetime.now()
 
         # 有効削除日数を取得
-        _unix_s_time = datetime.strptime("1970-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
+        _unix_s_time = datetime.datetime.strptime("1970-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
         _allow_days = now_time - _unix_s_time
         allow_days = _allow_days.days
 
@@ -137,7 +136,7 @@ def backyard_main(organization_id, workspace_id):
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                 # 削除対象時刻
-                target_time = now_time - timedelta(days=int(del_days))
+                target_time = now_time - datetime.timedelta(days=int(del_days))
 
                 for target_path in target_df_list:
                     tmp_msg = g.appmsg.get_log_message("BKY-60006", ['target file', target_path])
@@ -151,7 +150,7 @@ def backyard_main(organization_id, workspace_id):
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                     # 対象のタイムスタンプ取得
-                    target_timestamp = datetime.fromtimestamp(os.path.getmtime(target_path))  # noqa: F405
+                    target_timestamp = datetime.datetime.fromtimestamp(os.path.getmtime(target_path))  # noqa: F405
                     tmp_msg = g.appmsg.get_log_message("BKY-60008", [target_timestamp < target_time, target_timestamp, target_time])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 

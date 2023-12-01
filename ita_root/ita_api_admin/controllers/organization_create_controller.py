@@ -20,11 +20,12 @@ from flask import g
 import os
 import shutil
 import json
+import re
 
 from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectRoot
-from common_libs.common.util import ky_encrypt
+from common_libs.common.util import ky_encrypt, get_timestamp
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
 from common_libs.api import app_exception_response, exception_response
@@ -68,6 +69,16 @@ def organization_create(body, organization_id):
                 if bool is False:
                     additional_drivers[driver_name] = False
 
+    mongo_host = None
+    mongo_port = 0
+    # OASEが有効な場合は環境変数からMONGO_HOSTとMONGO_PORTの値を取得する.
+    if additional_drivers["oase"] is True:
+        mongo_host = os.environ.get('MONGO_HOST')
+        mongo_port = os.environ.get('MONGO_PORT', 0)
+        if not mongo_host:
+            # OASEが有効かつ、環境変数「MONGO_HOST」に値が無い場合は、Organization作成をできないようにする。
+            return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
+
     no_install_driver = None
     no_install_driver_list = []
     for driver_name, bool in additional_drivers.items():
@@ -104,8 +115,8 @@ def organization_create(body, organization_id):
             'DB_DATABASE': org_db_name,
             'DB_ADMIN_USER': os.environ.get('DB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': ky_encrypt(os.environ.get('DB_ADMIN_PASSWORD')),
-            'MONGO_HOST': os.environ.get('MONGO_HOST'),
-            'MONGO_PORT': int(os.environ.get('MONGO_PORT', 0) or 0),
+            'MONGO_HOST': mongo_host,
+            'MONGO_PORT': int(mongo_port or 0),
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
@@ -334,8 +345,170 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
     :rtype: InlineResponse2001
     """
-    # ####未実装
 
+    # Bodyのチェック用
+    driver_list = [
+        'terraform_cloud_ep',
+        'terraform_cli',
+        'ci_cd',
+        'oase'
+    ]
+
+    # bodyから「drivers」keyの値を取得
+    if body is not None and len(body) > 0:
+        drivers = body.get('drivers')
+        # bodyのdriversに指定のドライバ名以外のkeyがないかをチェック
+        for driver_name, bool in drivers.items():
+            if driver_name not in driver_list:
+                return '', "Value of key[add_install_driver] is invalid.", "499-00004", 499
+    else:
+        drivers = {
+            'terraform_cloud_ep': True,
+            'terraform_cli': True,
+            'ci_cd': True,
+            'oase': True
+        }
+
+    # keyの指定がない対象はTrueを設定する
+    for driver_name in driver_list:
+        if driver_name not in drivers:
+            drivers[driver_name] = True
+
+    # Common DB connect
+    common_db = DBConnectCommon()  # noqa: F405
+    connect_info = common_db.get_orgdb_connect_info(organization_id)
+
+    # インストールされていないドライバ一覧を取得
+    no_install_driver_json = connect_info.get('NO_INSTALL_DRIVER')
+    if no_install_driver_json:
+        no_install_driver = json.loads(no_install_driver_json)
+    else:
+        no_install_driver = []
+    update_no_install_driver = no_install_driver.copy()
+
+    # 追加するドライバの対象が、no_install_driverに含まれていない（すでにインストール済み）場合は追加対象から除外する
+    add_drivers = []
+    for driver_name, bool in drivers.items():
+        if driver_name in no_install_driver and bool is True:
+            add_drivers.append(driver_name)
+            update_no_install_driver.remove(driver_name)
+
+    # Terraformについて、terraform_cloud_ep, terraform_cliどちらもインストールされていない状態の場合、terraform_commonをインストール対象に追加する。
+    if "terraform_cloud_ep" in add_drivers or "terraform_cli" in add_drivers:
+        if "terraform_cloud_ep" in no_install_driver and "terraform_cli" in no_install_driver:
+            add_drivers.insert(0, "terraform_common")
+
+    # Organization DB connect
+    org_db = DBConnectOrg(organization_id)  # noqa: F405
+
+    # OrganizationのWorkspace一覧を取得
+    workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
+
+    # インストール時に利用するSQLファイル名の一覧
+    driver_sql = {
+        "terraform_common": ['terraform_common.sql', 'terraform_common_master.sql'],
+        "terraform_cloud_ep": ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
+        "terraform_cli": ['terraform_cli.sql', 'terraform_cli_master.sql'],
+        "ci_cd": ['cicd.sql', 'cicd_master.sql'],
+        "oase": ['oase.sql', 'oase_master.sql'],
+    }
+
+    # 環境変数からMongoDBのホストとポートを取得
+    mongo_host = os.environ.get('MONGO_HOST')
+    mongo_port = os.environ.get('MONGO_PORT')
+
+    # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
+    for workspace_data in workspace_data_list:
+        workspace_id = workspace_data['WORKSPACE_ID']
+        role_id = f'_{workspace_id}-admin'
+
+        # Workspace DB connect
+        ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
+        last_update_timestamp = str(get_timestamp())
+
+        # 追加インストール対象にoaseが含まれている場合、MongoDBに関する処理を実行。
+        if "oase" in add_drivers:
+            # MongoDBのホスト情報が環境変数に設定されている場合のみ実施
+            if mongo_host:
+                # make workspace-mongo connect infomation
+                root_mongo = MONGOConnectRoot()
+                ws_mongo_name, mongo_username, mongo_user_password = root_mongo.userinfo_generate("ITA_WS")
+
+                # create workspace-mongodb-user
+                root_mongo.create_user(
+                    mongo_username,
+                    mongo_user_password,
+                    ws_mongo_name
+                )
+
+                # get workspace-db connect infomation
+                where_str = "WHERE `WORKSPACE_ID` = '{}'".format(workspace_id)
+                ret = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", where_str)
+                ws_info_primary_key = ret[0].get(("PRIMARY_KEY"))
+
+                # update workspace-db connect infomation
+                update_data = {
+                    "PRIMARY_KEY": ws_info_primary_key,
+                    "MONGO_HOST": mongo_host,
+                    "MONGO_PORT": mongo_port,
+                    "MONGO_DATABASE": ws_mongo_name,
+                    "MONGO_USER": mongo_username,
+                    "MONGO_PASSWORD": ky_encrypt(mongo_user_password)
+                }
+                org_db.db_transaction_start()
+                org_db.table_update("T_COMN_WORKSPACE_DB_INFO", update_data, "PRIMARY_KEY")
+                org_db.db_commit()
+
+            else:
+                # MongoDBの環境変数がないため、OASEドライバを追加できない。
+                return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
+
+        # 追加対象のドライバをループし、SQLファイルを実行する。
+        for install_driver in add_drivers:
+            # SQLファイルを特定する。
+            sql_files = driver_sql[install_driver]
+            ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
+            dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
+
+            # create table of workspace-db
+            ws_db.sqlfile_execute(ddl_file)
+            g.applogger.debug("executed " + ddl_file)
+
+            # insert initial data of workspace-db
+            ws_db.db_transaction_start()
+            with open(dml_file, "r") as f:
+                sql_list = f.read().split(";\n")
+                for sql in sql_list:
+                    if re.fullmatch(r'[\s\n\r]*', sql):
+                        continue
+
+                    sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
+
+                    prepared_list = []
+                    trg_count = sql.count('__ROLE_ID__')
+                    if trg_count > 0:
+                        prepared_list = list(map(lambda a: role_id, range(trg_count)))
+                        sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
+
+                    ws_db.sql_execute(sql, prepared_list)
+            g.applogger.debug("executed " + dml_file)
+            ws_db.db_commit()
+
+    # t_comn_organization_db_infoテーブルのMONGO_HOST, MONGO_PORT, NO_INSTALL_DRIVERを更新する
+    if len(update_no_install_driver) > 0:
+        update_no_install_driver_json = json.dumps(update_no_install_driver)
+    else:
+        update_no_install_driver_json = None
+    common_db.db_transaction_start()
+    data = {
+        'PRIMARY_KEY': connect_info['PRIMARY_KEY'],
+        'NO_INSTALL_DRIVER': update_no_install_driver_json,
+    }
+    if "oase" in add_drivers:
+        data['MONGO_HOST'] = mongo_host
+        data['MONGO_PORT'] = mongo_port
+    common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', data, 'PRIMARY_KEY')
+    common_db.db_commit()
 
     return '',
 

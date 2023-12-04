@@ -745,7 +745,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
-                            "DISUSE_FLAG": "0"
+                            "DISUSE_FLAG": "0",
+                            "LAST_UPDATE_USER": g.get('USER_ID')
                         }
                         RegistrActionLog(objdbca, Row)
 

@@ -272,7 +272,7 @@ class Judgement:
 
         return TargetRuleList
 
-    def RuleJudge(self, RuleRow, IncidentDict):
+    def RuleJudge(self, RuleRow, IncidentDict, actionIdList):
         UseEventIdList = []
 
         tmp_msg = "=========================================================================================================================="
@@ -289,6 +289,19 @@ class Judgement:
 
         if not RuleRow['FILTER_OPERATOR']:
             RuleRow['FILTER_OPERATOR'] = ''
+
+        # ルールに設定されているアクションIDが異常ではないかチェック
+        action_id = RuleRow['ACTION_ID']
+        if action_id is not None and action_id not in actionIdList:
+            return False, UseEventIdList
+
+        # ルールに設定されている結論ラベルが異常ではないかチェック
+        conclusion_label_name = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
+        for row in conclusion_label_name:
+            label_key = row.get('label_key')
+            name = self.getIDtoName(label_key)
+            if name is False:
+                return False, UseEventIdList
 
         FilterResultDict['Operator'] = str(RuleRow['FILTER_OPERATOR'])
 
@@ -413,7 +426,8 @@ class Judgement:
     def putRaccEvent(self, RuleRow, UseEventIdList):
         addlabels = {}
         label_key_inputs = {}
-        RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
+        if type(RuleRow["CONCLUSION_LABEL_NAME"]) is str:
+            RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
         for row in RuleRow["CONCLUSION_LABEL_NAME"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
@@ -429,7 +443,6 @@ class Judgement:
         t1 = int(time.time())
         ttl = int(RuleRow['REEVALUATE_TTL'])
 
-        RaccEventDict["_exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = t1
@@ -441,6 +454,7 @@ class Judgement:
         RaccEventDict["labels"]["_exastro_rule_name"] = RuleRow['RULE_LABEL_NAME']
         for name, value in addlabels.items():
             RaccEventDict["labels"][name] = value
+        RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleRow['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleRow['RULE_NAME']
@@ -484,7 +498,8 @@ class Judgement:
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         # FilterRow['FILTER_CONDITION_JSON'] = [{'key': 'c_01_name', 'condition': '0', 'value': 'c_01'}, {'key': 'c_02_name', 'condition': '0', 'value': 'c_02'}]
 
-        FilterRow['FILTER_CONDITION_JSON'] = json.loads(FilterRow['FILTER_CONDITION_JSON'])
+        if type(FilterRow["FILTER_CONDITION_JSON"]) is str:
+            FilterRow['FILTER_CONDITION_JSON'] = json.loads(FilterRow['FILTER_CONDITION_JSON'])
         LabelHitCount = 0
         for FilterLabels in FilterRow['FILTER_CONDITION_JSON']:
             FilterName = FilterLabels['label_name']
@@ -626,6 +641,18 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     tmp_msg = "ルールマッチ開始"
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+    # テーブル名
+    t_oase_action = 'T_OASE_ACTION'  # アクション
+    actionIdList = []
+    # 「アクション」からレコードを取得
+    ret_action = objdbca.table_select(t_oase_action, 'WHERE DISUSE_FLAG = %s', [0])
+    if not ret_action:
+        tmp_msg = "処理対象レコードなし。Table:T_OASE_ACTION"
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    else:
+        for actionRow in ret_action:
+            actionIdList.append(actionRow['ACTION_ID'])
+
     # Level1:複数のルールで使用していないフィルタを使用しているルール
     # Level2:複数のルールで使用しているフィルタで優先順位が最上位のルール
     # Level3:複数のルールで使用しているフィルタでタイムアウトを迎えるフィルタを使用しているルール
@@ -652,7 +679,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                 for ruleRow in TargetRuleList:
 
                     # ルール判定
-                    ret, UseEventIdList = judgeObj.RuleJudge(ruleRow, IncidentDict)
+                    ret, UseEventIdList = judgeObj.RuleJudge(ruleRow, IncidentDict, actionIdList)
 
                     if ret is True:
                         # ルール判定 マッチ
@@ -710,7 +737,6 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             # 1:ルールマッチング済み
                             "STATUS_ID": "1",
                             "ACTION_ID": action_id,
-                            # "ACTION_ID": None,
                             "ACTION_NAME": action_name,
                             "CONDUCTOR_INSTANCE_ID": conductor_class_id,
                             "CONDUCTOR_INSTANCE_NAME": conductor_name,
@@ -719,7 +745,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
-                            "DISUSE_FLAG": "0"
+                            "DISUSE_FLAG": "0",
+                            "LAST_UPDATE_USER": g.get('USER_ID')
                         }
                         RegistrActionLog(objdbca, Row)
 
@@ -1119,7 +1146,7 @@ class ActionStatusMonitor():
 
         RaccEventDict = {}
 
-        RaccEventDict["_exastro_created_at"] = datetime.datetime.utcnow()
+        RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = NowTime
@@ -1131,6 +1158,7 @@ class ActionStatusMonitor():
         RaccEventDict["labels"]["_exastro_rule_name"] = RuleInfo['RULE_LABEL_NAME']
         for name, value in addlabels.items():
             RaccEventDict["labels"][name] = value
+        RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
         RaccEventDict["exatsro_rule"] = {}
         RaccEventDict["exatsro_rule"]['id'] = RuleInfo['RULE_ID']
         RaccEventDict["exatsro_rule"]['name'] = RuleInfo['RULE_NAME']

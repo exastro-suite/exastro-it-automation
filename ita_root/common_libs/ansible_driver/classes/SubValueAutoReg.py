@@ -932,6 +932,7 @@ class SubValueAutoReg():
                 # 次のテーブルへ
                 continue
 
+            index = 0
             for row in data_list:
                 # 代入値紐付メニューに登録されているオペレーションIDを確認
                 if row['OPERATION_ID'] is None or len(row['OPERATION_ID']) == 0:
@@ -967,198 +968,201 @@ class SubValueAutoReg():
                     # 次のデータへ
                     continue
 
-                host_id = row['HOST_ID']
-
                 # 代入値自動登録設定に登録されている変数に対応する具体値を取得する
                 # パラメータシート側の項番取得
                 col_row_id = row[AnscConst.DF_ITA_LOCAL_PKEY]
 
                 col_name = 'DATA_JSON'  # 2系からデータの持ち方変わった
                 
-                tmp_ary_data[table_name] = row
+                if table_name not in tmp_ary_data:
+                    tmp_ary_data[table_name] = {}
+                tmp_ary_data[table_name][index] = row
+                index += 1
         
                 parameter = {}
             
-            for tmp_table_name, row in tmp_ary_data.items():
-                for table_name, ary_col_data in in_tabColNameToValAssRowList.items():
-                    for col_data in ary_col_data[col_name].values():
-                        col_val = ""
-                        exec_flag = False
-                        menu_name_rest = col_data["MENU_NAME_REST"]
+            for tmp_table_name, tmp_value in tmp_ary_data.items():
+                for row in tmp_value.values():
+                    for table_name, ary_col_data in in_tabColNameToValAssRowList.items():
+                        for col_data in ary_col_data[col_name].values():
+                            col_val = ""
+                            exec_flag = False
+                            menu_name_rest = col_data["MENU_NAME_REST"]
+                            host_id = row['HOST_ID']
+                            
+                            if tmp_table_name == table_name:
+                                # 縦メニューの場合
+                                if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
+                                    if row["INPUT_ORDER"] == col_data["COLUMN_ASSIGN_SEQ"]:
+                                        # パラメータシートから値を取得
+                                        if menu_name_rest not in dict_objmenu:
+                                            dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
+                                        mode = "inner"
+                                        filter_parameter = {"discard": {"LIST": ["0"]}}
+                                        status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
+                                        for parameters in tmp_result:
+                                            parameter = parameters["parameter"]
+                                            if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"]:
+                                                if row["INPUT_ORDER"] == parameter["input_order"]:
+                                                    # 項目なしは対象外
+                                                    if col_data['COL_GROUP_ID'] is None:
+                                                        ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
+                                                                                'OPERATION_ID': operation_id,
+                                                                                'MOVEMENT_ID': col_data['MOVEMENT_ID'],
+                                                                                'SYSTEM_ID': host_id,
+                                                                                'VARS_ENTRY': None,
+                                                                                'MVMT_VAR_LINK_ID': None,
+                                                                                'STATUS': 'skip'}
+                                                        idx += 1
+                                                        continue
+                                                    else:
+                                                        # 項目が削除されていないか確認
+                                                        exit_flag = False
+                                                        if col_data['COLUMN_NAME_REST'] in parameter:
+                                                            col_val = parameter[col_data['COLUMN_NAME_REST']]
+                                                        else:
+                                                            exit_flag = True
+                                                            continue
+                                
+                                                    # TPF/CPF変数カラム判定
+                                                    if col_data['REF_TABLE_NAME'] in VariableColumnAry:
+                                                        if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
+                                                            if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
+                                                                col_val = "'{{ " + col_val + " }}'"
+                                                            else:
+                                                                continue
+                                        # 項目が削除されていないか確認
+                                        if exit_flag is True:
+                                            continue
                         
-                        if tmp_table_name == table_name:
-                            # 縦メニューの場合
-                            if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
-                                if row["INPUT_ORDER"] == col_data["COLUMN_ASSIGN_SEQ"]:
+                                        exec_flag = True
+                                else:
                                     # パラメータシートから値を取得
                                     if menu_name_rest not in dict_objmenu:
                                         dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
+                                
+                                    # ホスト名取得
+                                    sql = "SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE SYSTEM_ID = %s"
+                                
+                                    host_data_list = WS_DB.sql_execute(sql, [row['HOST_ID']])
+                                    for host_data in host_data_list:
+                                        host_name = host_data['HOST_NAME']
+                                
+                                    # オペレーション名取得
+                                    sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
+                                
+                                    ope_data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
+                                    for ope_data in ope_data_list:
+                                        ope_name = ope_data['OPERATION_NAME']
                                     mode = "inner"
-                                    filter_parameter = {"discard": {"LIST": ["0"]}}
+                                    filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]}, "discard": {"LIST": ["0"]}}
                                     status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
-                                    for parameters in tmp_result:
-                                        parameter = parameters["parameter"]
-                                        if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"]:
-                                            if row["INPUT_ORDER"] == parameter["input_order"]:
-                                                # 項目なしは対象外
-                                                if col_data['COL_GROUP_ID'] is None:
-                                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
-                                                                            'OPERATION_ID': operation_id,
-                                                                            'MOVEMENT_ID': col_data['MOVEMENT_ID'],
-                                                                            'SYSTEM_ID': host_id,
-                                                                            'VARS_ENTRY': None,
-                                                                            'MVMT_VAR_LINK_ID': None,
-                                                                            'STATUS': 'skip'}
-                                                    idx += 1
-                                                    continue
-                                                else:
-                                                    # 項目が削除されていないか確認
-                                                    exit_flag = False
-                                                    if col_data['COLUMN_NAME_REST'] in parameter:
-                                                        col_val = parameter[col_data['COLUMN_NAME_REST']]
-                                                    else:
-                                                        exit_flag = True
-                                                        continue
-                            
-                                                # TPF/CPF変数カラム判定
-                                                if col_data['REF_TABLE_NAME'] in VariableColumnAry:
-                                                    if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                                        if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
-                                                            col_val = "'{{ " + col_val + " }}'"
-                                                        else:
-                                                            continue
-                                    # 項目が削除されていないか確認
-                                    if exit_flag is True:
+                                    parameter = tmp_result[0]['parameter']
+                                
+                                    # 項目なしは対象外
+                                    if col_data['COL_GROUP_ID'] is None:
+                                        ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
+                                                                'OPERATION_ID': operation_id,
+                                                                'MOVEMENT_ID': col_data['MOVEMENT_ID'],
+                                                                'SYSTEM_ID': host_id,
+                                                                'VARS_ENTRY': None,
+                                                                'MVMT_VAR_LINK_ID': None,
+                                                                'STATUS': 'skip'}
+                                        idx += 1
                                         continue
-                    
-                                    exec_flag = True
-                            else:
-                                # パラメータシートから値を取得
-                                if menu_name_rest not in dict_objmenu:
-                                    dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
-                            
-                                # ホスト名取得
-                                sql = "SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE SYSTEM_ID = %s"
-                            
-                                host_data_list = WS_DB.sql_execute(sql, [row['HOST_ID']])
-                                for host_data in host_data_list:
-                                    host_name = host_data['HOST_NAME']
-                            
-                                # オペレーション名取得
-                                sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
-                            
-                                ope_data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
-                                for ope_data in ope_data_list:
-                                    ope_name = ope_data['OPERATION_NAME']
-                                mode = "inner"
-                                filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]}, "discard": {"LIST": ["0"]}}
-                                status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
-                                parameter = tmp_result[0]['parameter']
-                            
-                                # 項目なしは対象外
-                                if col_data['COL_GROUP_ID'] is None:
-                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
-                                                            'OPERATION_ID': operation_id,
-                                                            'MOVEMENT_ID': col_data['MOVEMENT_ID'],
-                                                            'SYSTEM_ID': host_id,
-                                                            'VARS_ENTRY': None,
-                                                            'MVMT_VAR_LINK_ID': None,
-                                                            'STATUS': 'skip'}
-                                    idx += 1
-                                    continue
-                                else:
-                                    # 項目が削除されていないか確認
-                                    if col_data['COLUMN_NAME_REST'] in parameter:
-                                        col_val = parameter[col_data['COLUMN_NAME_REST']]
                                     else:
-                                        continue
+                                        # 項目が削除されていないか確認
+                                        if col_data['COLUMN_NAME_REST'] in parameter:
+                                            col_val = parameter[col_data['COLUMN_NAME_REST']]
+                                        else:
+                                            continue
+                                
+                                    # TPF/CPF変数カラム判定
+                                    if col_data['REF_TABLE_NAME'] in VariableColumnAry:
+                                        if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
+                                            if col_val is not None:
+                                                if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
+                                                    col_val = "'{{ " + col_val + " }}'"
+                                                else:
+                                                    continue
+                        
+                                    exec_flag = True
                             
-                                # TPF/CPF変数カラム判定
-                                if col_data['REF_TABLE_NAME'] in VariableColumnAry:
-                                    if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                        if col_val is not None:
-                                            if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
-                                                col_val = "'{{ " + col_val + " }}'"
-                                            else:
-                                                continue
-                    
-                                exec_flag = True
-                        
-                        col_class = self.getColumnClass(col_data['COLUMN_CLASS'], WS_DB)
-                        col_name_rest = col_data['COLUMN_NAME_REST']
-                        col_filepath = ""
-                        col_file_md5 = ""
-                        if col_data['COL_TYPE'] == AnscConst.DF_COL_TYPE_VAL:
-                            if col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20":
-                                # メニューID取得
-                                upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
-                                col_filepath = ""
-                                if col_val is not None and not col_val == "":
-                                    storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
-                                    col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
-                                    if not os.path.exists(col_filepath):
-                                        msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
-                                        frame = inspect.currentframe().f_back
-                                        g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
-                                        warning_flag = 1
-                                        # 次のデータへ
-                                        continue
-                        
-                                    col_filepath = col_filepath + "/" + col_val
-                                    col_file_md5 = self.md5_file(col_filepath)
-                        
-                        # 代入値管理の登録に必要な情報を生成
-                        if exec_flag == 1:
-                            # 同一登録データがある場合はスキップ
-                            skip_flag = False
-                            for ina_vars_ass_list_value in ina_vars_ass_list.values():
-                                if len(ina_vars_ass_list_value) > 0:
-                                    if operation_id == ina_vars_ass_list_value['OPERATION_ID']:
-                                        if host_id == ina_vars_ass_list_value['SYSTEM_ID']:
-                                            if col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID']:
-                                                if col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID']:
-                                                    if col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
-                                                        if col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
-                                                            skip_flag = True
-                        
-                            for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
-                                if len(ina_array_vars_ass_list_value) > 0:
-                                    if operation_id == ina_array_vars_ass_list_value['OPERATION_ID']:
-                                        if host_id == ina_array_vars_ass_list_value['SYSTEM_ID']:
-                                            if col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID']:
-                                                if col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID']:
-                                                    if col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
-                                                        if col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
-                                                            skip_flag = True
-                        
-                            if skip_flag == 0:
-                                ret = self.makeVarsAssignData(table_name,
-                                                    col_name,
-                                                    col_val,
-                                                    col_row_id,
-                                                    col_class,
-                                                    col_filepath,
-                                                    col_file_md5,
-                                                    col_data['NULL_DATA_HANDLING_FLG'],
-                                                    operation_id,
-                                                    host_id,
-                                                    col_data,
-                                                    ina_vars_ass_list,
-                                                    lv_varsAssChkList,
-                                                    ina_array_vars_ass_list,
-                                                    lv_arrayVarsAssChkList,
-                                                    in_tableNameToMenuIdList[table_name],
-                                                    row[AnscConst.DF_ITA_LOCAL_PKEY],
-                                                    WS_DB)
-                        
-                                # NULL連携無効で処理対象外になった場合は追加しない
-                                if not ret[0] == 0:
-                                    ina_vars_ass_list[idx] = ret[0]
-                                if not ret[2] == 0:
-                                    ina_array_vars_ass_list[idx] = ret[2]
-                        
-                                idx += 1
+                            col_class = self.getColumnClass(col_data['COLUMN_CLASS'], WS_DB)
+                            col_name_rest = col_data['COLUMN_NAME_REST']
+                            col_filepath = ""
+                            col_file_md5 = ""
+                            if col_data['COL_TYPE'] == AnscConst.DF_COL_TYPE_VAL:
+                                if col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20":
+                                    # メニューID取得
+                                    upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
+                                    col_filepath = ""
+                                    if col_val is not None and not col_val == "":
+                                        storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
+                                        col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
+                                        if not os.path.exists(col_filepath):
+                                            msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
+                                            frame = inspect.currentframe().f_back
+                                            g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                            warning_flag = 1
+                                            # 次のデータへ
+                                            continue
+                            
+                                        col_filepath = col_filepath + "/" + col_val
+                                        col_file_md5 = self.md5_file(col_filepath)
+                            
+                            # 代入値管理の登録に必要な情報を生成
+                            if exec_flag == 1:
+                                # 同一登録データがある場合はスキップ
                                 skip_flag = False
+                                for ina_vars_ass_list_value in ina_vars_ass_list.values():
+                                    if len(ina_vars_ass_list_value) > 0:
+                                        if operation_id == ina_vars_ass_list_value['OPERATION_ID']:
+                                            if host_id == ina_vars_ass_list_value['SYSTEM_ID']:
+                                                if col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID']:
+                                                    if col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID']:
+                                                        if col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
+                                                            if col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
+                                                                skip_flag = True
+                            
+                                for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
+                                    if len(ina_array_vars_ass_list_value) > 0:
+                                        if operation_id == ina_array_vars_ass_list_value['OPERATION_ID']:
+                                            if host_id == ina_array_vars_ass_list_value['SYSTEM_ID']:
+                                                if col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID']:
+                                                    if col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID']:
+                                                        if col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
+                                                            if col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
+                                                                skip_flag = True
+                            
+                                if skip_flag == 0:
+                                    ret = self.makeVarsAssignData(table_name,
+                                                        col_name,
+                                                        col_val,
+                                                        col_row_id,
+                                                        col_class,
+                                                        col_filepath,
+                                                        col_file_md5,
+                                                        col_data['NULL_DATA_HANDLING_FLG'],
+                                                        operation_id,
+                                                        host_id,
+                                                        col_data,
+                                                        ina_vars_ass_list,
+                                                        lv_varsAssChkList,
+                                                        ina_array_vars_ass_list,
+                                                        lv_arrayVarsAssChkList,
+                                                        in_tableNameToMenuIdList[table_name],
+                                                        row[AnscConst.DF_ITA_LOCAL_PKEY],
+                                                        WS_DB)
+                            
+                                    # NULL連携無効で処理対象外になった場合は追加しない
+                                    if not ret[0] == 0:
+                                        ina_vars_ass_list[idx] = ret[0]
+                                    if not ret[2] == 0:
+                                        ina_array_vars_ass_list[idx] = ret[2]
+                            
+                                    idx += 1
+                                    skip_flag = False
                             
             # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
             if 'col_name' in locals():

@@ -229,7 +229,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                 return;
             }
 
-            if ( windowFlag ) u = cmn.getRestApiUrl( u );            
+            if ( windowFlag ) u = cmn.getRestApiUrl( u );
 
             const init = {
                 method: method,
@@ -1983,7 +1983,7 @@ html: {
                 + cmn.html.button( cmn.html.icon('edit'), 'itaButton inputFileEditButton popup', Object.assign( attrs, { action: 'positive', title: getMessage.FTE00175 }))
             + `</div>`
         }
-        
+
         file += `<div class="inputFileClear">`
             + cmn.html.button( cmn.html.icon('clear'), 'itaButton inputFileClearButton popup', { action: 'restore', title: getMessage.FTE00076 })
         + `</div>`;
@@ -2125,23 +2125,23 @@ html: {
         const html = [];
 
         if ( !labelData ) labelData = [];
-        
+
         // ラベルリストの形式
         if ( cmn.typeof( labels ) === 'string') {
             labels = cmn.jsonParse( labels, 'array');
             for ( const label of labels ) {
                 if ( label.length === 2 ) {
-                    html.push( this.labelHtml( labelData, label[0], label[1] ) );    
+                    html.push( this.labelHtml( labelData, label[0], label[1] ) );
                 } else {
                     html.push( this.labelHtml( labelData, label[0], label[2], label[1] ) );
                 }
             }
-        } else {   
+        } else {
             for ( const key in labels ) {
                 html.push( this.labelHtml( labelData, key, labels[ key ] ) );
             }
         }
-    
+
         return ``
         + `<ul class="eventFlowLabelList">`
             + html.join('')
@@ -2152,13 +2152,13 @@ html: {
         const label = labelData.find(function( item ){
             return key === item.parameter.label_key_name;
         });
-    
+
         const
         color = ( label )? label.parameter.color_code: '#002B62',
         keyColor = cmn.blackOrWhite( color, 1 ),
         conColor = cmn.blackOrWhite( color, 1 ),
         valColor = cmn.blackOrWhite( color, .5 );
-    
+
         return ``
         + `<li class="eventFlowLabelItem">`
             + `<div class="eventFlowLabel" style="background-color:${color}">`
@@ -2417,11 +2417,11 @@ setCommonEvents: function() {
                   tL = r.left,
                   tT = ( type === 'parameterCollection')? r.top - 92: r.top,
                   tB = wH - tT - tH,
-                  pW = $p.outerWidth(),
+                  pW = Math.ceil( $p.outerWidth() ) + 2,
                   wsL = $window.scrollLeft();
 
             let pL = ( tL + tW / 2 ) - ( pW / 2 ) - wsL,
-                pH = $p.outerHeight(),
+                pH = Math.ceil( $p.outerHeight() ) + 2,
                 pT = tT - pH;
 
             // 上か下か
@@ -3197,7 +3197,7 @@ settingListModalOpen: function( settingData ) {
                 + `</table>`
             + `</div>`
         + `</div>`;
-        
+
         modal.open( settingListHtml );
 
         _this.setSettingListEvents( modal, settingData );
@@ -3210,14 +3210,14 @@ settingListModalOpen: function( settingData ) {
    設定リスト行HTML
 ##################################################
 */
-settingListRowHtml( settingData, index = 0, value = [] ) {    
+settingListRowHtml( settingData, index = 0, value = [] ) {
     const row = [`<tr class="settingListTr">`];
     if ( settingData.move ) {
         row.push(`<td class="settingListTd"><div class="settingListMove"></div></td>`);
     } else {
         row.push(`<td class="settingListTd"><div class="settingListBlank"></div></td>`)
     }
-    
+
     const infoLength = settingData.info.length;
     for ( let i = 0; i < infoLength; i++ ) {
         const item = settingData.info[i];
@@ -3234,7 +3234,7 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
             + input
         + `</div></td>`);
     }
-    
+
     row.push(`<td class="settingListTd"><div class="settingListDelete">${this.html.icon('cross')}</div></td></tr>`);
     return row.join('');
 },
@@ -3243,7 +3243,7 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
    項目が１つの場合は移動と削除を無効化する
 ##################################################
 */
-settingListCheckListDisabled: function( modal ) {    
+settingListCheckListDisabled: function( modal ) {
     const $tr = modal.$.dbody.find('.settingListTr');
 
     if ( $tr.length === 1 ) {
@@ -3266,10 +3266,10 @@ setSettingListSelect2: function( modal ) {
 ##################################################
 */
 setSettingListEvents: function( modal, settingData ) {
-    const _this = this;    
+    const _this = this;
     modal.$.dbody.find('.settingList').each(function(){
         const $listBlock = $( this );
-        
+
         // 追加
         $listBlock.find('.settingListAddButton').on('click', function(){
             $listBlock.find('.settingListTbody').append( _this.settingListRowHtml( settingData) );
@@ -3283,7 +3283,7 @@ setSettingListEvents: function( modal, settingData ) {
             _this.settingListCheckListDisabled( modal );
             _this.setSettingListSelect2( modal );
         });
-        
+
         // 削除
         $listBlock.on('click', '.settingListDelete', function(){
             $( this ).closest('.settingListTr').remove();
@@ -3291,11 +3291,11 @@ setSettingListEvents: function( modal, settingData ) {
         });
 
         // 移動
-        if ( settingData.move ) {            
+        if ( settingData.move ) {
             $listBlock.on('pointerdown', '.settingListMove', function( mde ){
                 const $move = $( this ),
                     $window = $( window );
-                    
+
                 if ( !$move.is('.disabled') ) {
                     const $line = $move.closest('.settingListTr'),
                         $list = $line.closest('.settingListTbody'),
@@ -3305,17 +3305,17 @@ setSettingListEvents: function( modal, settingData ) {
                         $dummy = $('<tr class="settingListDummy"></tr>'),
                         $body = $move.closest('.commonBody'),
                         defaultScroll = $body.scrollTop();
-                    
+
                     // 幅を固定
                     $line.find('.settingListTd').each(function(){
                         const $td = $( this );
                         $td.css('width', $td.outerWidth() );
                     });
-                    
+
                     $list.addClass('active');
                     $line.addClass('move').css('top', defaultY ).after( $dummy )
                     $dummy.css('height', height );
-                    
+
                     cmn.deselection();
 
                     let positionY = defaultY;
@@ -3329,7 +3329,7 @@ setSettingListEvents: function( modal, settingData ) {
                     $body.on('scroll.freeMove', function(){
                         listPosition();
                     });
-                    
+
                     $window.on({
                         'pointermove.freeMove': function( mme ){
                             positionY = defaultY + mme.pageY - mde.pageY;

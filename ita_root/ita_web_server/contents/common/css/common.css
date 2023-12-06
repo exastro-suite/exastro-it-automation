@@ -1297,10 +1297,6 @@ opacity: .5;
 .headerMenuInformation {
 max-width: 320px;
 }
-.workspaceInfo,
-.userInfo {
-overflow: hidden;
-}
 .headerMenuButtonName {
 min-width: 0;
 font-size: 12px;

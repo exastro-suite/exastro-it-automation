@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "ita-by-menu-export-import"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+setuptools = ">=0.0.0"
+flask = ">=0.0.0"
+requests = ">=0.0.0"
+pyyaml = ">=0.0.0"
+pytz = ">=0.0.0"
+pymysql = ">=0.0.0"
+python-dotenv = ">=0.0.0"
+pycryptodome = ">=0.0.0"
+cryptography = ">=0.0.0"
+pymongo = ">=0.0.0"
+
+
+[tool.poetry.group.first_install.dependencies]
+certifi = ">=0.0.0"
+
+
+[tool.poetry.group.develop_build.dependencies]
+debugpy = ">=0.0.0"
+flake8 = ">=0.0.0"
+autopep8 = ">=0.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

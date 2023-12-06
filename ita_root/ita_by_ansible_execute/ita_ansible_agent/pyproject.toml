@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "ita-ansible-agent"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+setuptools = ">=0.0.0"
+ansible = ">=0.0.0"
+pexpect = ">=0.0.0"
+pywinrm = ">=0.0.0"
+boto3 = ">=0.0.0"
+paramiko = ">=0.0.0"
+boto = ">=0.0.0"
+
+
+[tool.poetry.group.first_install.dependencies]
+certifi = ">=0.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

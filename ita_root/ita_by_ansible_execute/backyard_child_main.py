@@ -575,10 +575,12 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
         # マルチログか判定
         if multiple_log_mark and str(execute_data['MULTIPLELOG_MODE']) != multiple_log_mark:
             execute_data['MULTIPLELOG_MODE'] = multiple_log_mark
+            db_update_need = True
             db_update_need_no_jnl = True
         # マルチログファイルリスト
         if multiple_log_file_json_ary and execute_data['LOGFILELIST_JSON'] != multiple_log_file_json_ary:
             execute_data['LOGFILELIST_JSON'] = multiple_log_file_json_ary
+            db_update_need = True
             db_update_need_no_jnl = True
 
         # 5:正常終了時

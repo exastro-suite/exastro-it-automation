@@ -1297,10 +1297,6 @@ opacity: .5;
 .headerMenuInformation {
 max-width: 320px;
 }
-.workspaceInfo,
-.userInfo {
-overflow: hidden;
-}
 .headerMenuButtonName {
 min-width: 0;
 font-size: 12px;
@@ -3992,10 +3988,11 @@ letter-spacing: .75px;
 line-height: 1.5;
 word-break: break-all;
 font-size: 14px;
+font-family: "Osaka-mono", "MS Gothic", "monospace";
 color: var(--black90);
 }
 @keyframes popup {
-0% { transform: translateY(-8px); opacity: 0; }
+0% { transform: translateY(-8px); opacity: .1; }
 100% { transform: translateY(0); opacity: 1; }
 }
 .popupBlock.popupHide {

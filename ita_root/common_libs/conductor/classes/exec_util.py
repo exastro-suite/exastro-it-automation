@@ -867,9 +867,9 @@ class ConductorExecuteLibs():
                                             for node_name, node_msg in tmp_node_err_json.items():
                                                 msg_json.setdefault(node_name, node_msg.splitlines())
                                         except Exception:
-                                            msg_json.setdefault(g.appmsg.get_api_message("MSG-00004", []), tmp_node_err)
+                                            msg_json.setdefault(g.appmsg.get_api_message("MSG-00004", []), [tmp_node_err])
                                 except Exception:
-                                    msg_json.setdefault(g.appmsg.get_api_message("MSG-00004", []), node_err)
+                                    msg_json.setdefault(g.appmsg.get_api_message("MSG-00004", []), [node_err])
                 result = json.dumps(msg_json, ensure_ascii=False)
             except Exception:
                 result = msg
@@ -3470,7 +3470,6 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             g.applogger.debug(msg)
             retBool = False
         return retBool, result,
-
 
     # conductor instanceの更新
     def conductor_status_update(self, conductor_instance_id):

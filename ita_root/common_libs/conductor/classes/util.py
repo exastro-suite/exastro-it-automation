@@ -246,7 +246,9 @@ class ConductorCommonLibs():
             err_msg_args.append('extra block is existed')
 
         if len(err_msg_args) != 0:
+            tmp_msg_key = g.appmsg.get_api_message('MSG-00004')
             msg = g.appmsg.get_api_message('MSG-40004')
+            msg = json.dumps([json.dumps({tmp_msg_key: msg}, ensure_ascii=False)], ensure_ascii=False)
             return False, msg,
             # return False, [','.join(err_msg_args)]
         else:
@@ -284,7 +286,9 @@ class ConductorCommonLibs():
                 err_msg_args.append('config.edgeNumber')
 
         if len(err_msg_args) != 0:
+            tmp_msg_key = g.appmsg.get_api_message('MSG-00004')
             msg = g.appmsg.get_api_message('MSG-40005', [','.join(err_msg_args)])
+            msg = json.dumps([json.dumps({tmp_msg_key: msg}, ensure_ascii=False)], ensure_ascii=False)
             return False, msg,
             # return False, [','.join(err_msg_args)]
         else:
@@ -338,7 +342,9 @@ class ConductorCommonLibs():
                 err_msg_args.append('conductor.notice_info not exists')
 
         if len(err_msg_args) != 0:
+            tmp_msg_key = g.appmsg.get_api_message('MSG-00004')
             msg = g.appmsg.get_api_message('MSG-40006')
+            msg = json.dumps([json.dumps({tmp_msg_key: msg}, ensure_ascii=False)], ensure_ascii=False)
             return False, msg,
             # return False, [','.join(err_msg_args)]
         else:

@@ -14,6 +14,7 @@
 
 from flask import g
 import json
+import re
 
 def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
 
@@ -146,43 +147,48 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
                 msg.append(g.appmsg.get_api_message("MSG-130014", [setting_name]))
             if search_value is None:
                 msg.append(g.appmsg.get_api_message("MSG-130015", [setting_name]))
+            # 正規表現の文法チェック
+            try:
+                pattern = re.compile(r'{}'.format(search_value))
+            except Exception:
+                msg.append(g.appmsg.get_api_message("MSG-130016", [setting_name]))
 
         # ターゲットタイプ, 比較方法, ターゲットバリューのすべてがブランクの場合
         if target_type is None and comparison_method is None and search_value is None:
             if label_value is None:
-                msg.append(g.appmsg.get_api_message("MSG-130016", [setting_name]))
+                msg.append(g.appmsg.get_api_message("MSG-130017", [setting_name]))
 
         # ラベルバリューがブランクの場合
         if label_value is None:
             if target_type is None or comparison_method is None:
-                msg.append(g.appmsg.get_api_message("MSG-130017", [setting_name]))
+                msg.append(g.appmsg.get_api_message("MSG-130018", [setting_name]))
 
         # ターゲットタイプがブランクの場合
         if target_type is None:
             if comparison_method or search_value:
-                msg.append(g.appmsg.get_api_message("MSG-130018", [setting_name]))
+                msg.append(g.appmsg.get_api_message("MSG-130019", [setting_name]))
 
         # 比較方法がブランクの場合
         if comparison_method is None:
             if target_type or search_value:
-                msg.append(g.appmsg.get_api_message("MSG-130019", [setting_name]))
+                msg.append(g.appmsg.get_api_message("MSG-130020", [setting_name]))
 
         # ターゲットバリューがブランクの場合
         if search_value is None:
             if target_type not in ["7", None]:
-                msg.append(g.appmsg.get_api_message("MSG-130020", [setting_name]))
-            if comparison_method not in ["1", "2", None]:
                 msg.append(g.appmsg.get_api_message("MSG-130021", [setting_name]))
+            if comparison_method not in ["1", "2", None]:
+                msg.append(g.appmsg.get_api_message("MSG-130022", [setting_name]))
 
         # ターゲットタイプがfalsyかつターゲットタイプが≠の場合
         if target_type == "7" and comparison_method == "2":
             if label_value is None:
-                msg.append(g.appmsg.get_api_message("MSG-130022", [setting_name]))
+                msg.append(g.appmsg.get_api_message("MSG-130023", [setting_name]))
 
         # ターゲットタイプがFalsyもしくは未入力以外かつ比較方法に入力がある場合
         if target_type not in ["7", None] and comparison_method:
             if search_value is None:
-                msg.append(g.appmsg.get_api_message("MSG-130023", [setting_name]))
+                msg.append(g.appmsg.get_api_message("MSG-130024", [setting_name]))
 
         # msg に値がある場合は個別バリデエラー
         if len(msg) >= 1:

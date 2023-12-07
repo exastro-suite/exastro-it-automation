@@ -296,8 +296,10 @@ class Judgement:
             return False, UseEventIdList
 
         # ルールに設定されている結論ラベルが異常ではないかチェック
-        conclusion_label_name = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
-        for row in conclusion_label_name:
+        if type(RuleRow["CONCLUSION_LABEL_NAME"]) is str:
+            RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
+
+        for row in RuleRow["CONCLUSION_LABEL_NAME"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -1140,7 +1142,8 @@ class ActionStatusMonitor():
         # 結論イベント登録
         label_key_inputs = {}
         addlabels = {}
-        RuleInfo["CONCLUSION_LABEL_NAME"] = json.loads(RuleInfo["CONCLUSION_LABEL_NAME"])
+        if type(RuleInfo["CONCLUSION_LABEL_NAME"]) is str:
+            RuleInfo["CONCLUSION_LABEL_NAME"] = json.loads(RuleInfo["CONCLUSION_LABEL_NAME"])
         for row in RuleInfo["CONCLUSION_LABEL_NAME"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)

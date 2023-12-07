@@ -799,6 +799,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                     "STATUS_ID": "2"
                                 }
                                 objdbca.table_update(t_oase_action_log, data_list, 'ACTION_LOG_ID')
+                                objdbca.db_commit()
 
                                 # conductor実行
                                 conductor_class_id = action_log_row["CONDUCTOR_INSTANCE_ID"]
@@ -807,7 +808,13 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 if retBool is False:
                                     tmp_msg = "error [{}]".format(result)
                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                                    objdbca.db_rollback()
+                                    # 評価結果の更新（完了（異常））
+                                    data_list = {
+                                        "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
+                                        "STATUS_ID": "7"
+                                    }
+                                    objdbca.table_update(t_oase_action_log, data_list, 'ACTION_LOG_ID')
+                                    objdbca.db_commit()
                                 else:
                                     conductor_instance_id = result['conductor_instance_id']
                                     tmp_msg = "conductor_instance_id [{}]".format(conductor_instance_id)
@@ -850,6 +857,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                     "STATUS_ID": "6"
                                 }
                                 objdbca.table_update(t_oase_action_log, data_list, 'ACTION_LOG_ID')
+                                objdbca.db_commit()
 
                     else:
                         # ルール判定 アンマッチ
@@ -984,7 +992,7 @@ class ActionStatusMonitor():
         self.EventObj = EventObj
         # ラベルマスタ取得
         self.getLabelGroup()
-        # OASE 評価履歴　ステータス値
+        # OASE 評価結果　ステータス値
         self.OSTS_Rule_Match = "1"               # ルールマッチング済み
         self.OSTS_Executing = "2"                # 実行中
         self.OSTS_Wait_Approval = "3"            # 承認待ち
@@ -1107,11 +1115,11 @@ class ActionStatusMonitor():
             else:
                 continue
 
-            # 結論履歴にリンクするデータベースのレコードが不正の場合
+            # 評価結果にリンクするデータベースのレコードが不正の場合
             if Data_Error is True:
                 Row['STATUS_ID'] = self.OSTS_Completed_Abend
 
-            # アクション履歴更新
+            # 評価結果更新
             UpdateRow = {}
             for colname in ['ACTION_LOG_ID', 'STATUS_ID']:
                 UpdateRow[colname] = Row[colname]
@@ -1121,6 +1129,7 @@ class ActionStatusMonitor():
             print(UpdateRow[colname])
 
             self.MariaDBCA.table_update('T_OASE_ACTION_LOG', UpdateRow, 'ACTION_LOG_ID', True)
+            self.MariaDBCA.db_commit()
 
             # 結論イベント登録
             if Row['STATUS_ID'] in [self.OSTS_Completed]:

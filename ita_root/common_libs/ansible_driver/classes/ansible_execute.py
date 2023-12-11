@@ -91,7 +91,7 @@ class AnsibleExecute():
             execute_user:      実行ユーザー
                                空白(2.0以降用)
             ansible_path:      ansibleインストールパス:
-                               /usr/local/bin固定
+                               /指定無し
             vault_password:    vaultパスワード:
                                T_ANSC_IF_INFO.ANSIBLE_VAULT_PASSWORD
             run_mode:          実行種別:
@@ -188,7 +188,7 @@ class AnsibleExecute():
             strEngineVirtualenvName = "__undefine__"
             ansible_path += "/"
 
-        playbook_command = ansible_path + "/ansible-playbook"
+        playbook_command = "ansible-playbook"
         # Ansible実行するshellを作成
         strBuildCommand = "{} -i {} {} --vault-password-file {} {}".format(
             shlex.quote(playbook_command),

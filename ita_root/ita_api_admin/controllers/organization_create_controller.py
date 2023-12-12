@@ -354,13 +354,37 @@ def organization_update(organization_id, body=None):  # noqa: E501
         'oase'
     ]
 
+    # Common DB connect
+    common_db = DBConnectCommon()  # noqa: F405
+    connect_info = common_db.get_orgdb_connect_info(organization_id)
+
+    # インストールされていないドライバ一覧を取得
+    no_install_driver_json = connect_info.get('NO_INSTALL_DRIVER')
+    if no_install_driver_json:
+        no_install_driver = json.loads(no_install_driver_json)
+    else:
+        no_install_driver = []
+    update_no_install_driver = no_install_driver.copy()
+
     # bodyから「drivers」keyの値を取得
     if body is not None and len(body) > 0:
         drivers = body.get('drivers')
         # bodyのdriversに指定のドライバ名以外のkeyがないかをチェック
         for driver_name, bool in drivers.items():
             if driver_name not in driver_list:
-                return '', "Value of key[add_install_driver] is invalid.", "499-00004", 499
+                return '', "Value of key[drivers] is invalid.", "499-00004", 499
+
+        # インストール済みのドライバをfalseに指定した際にエラーとする。
+        to_false_driver = []
+        for driver_name, bool in drivers.items():
+            print(driver_name)
+            print(bool)
+            if driver_name not in no_install_driver and bool is False:
+                to_false_driver.append(driver_name)
+
+        if len(to_false_driver) > 0:
+            return '', "Installed drivers cannot be set to false. {}".format(json.dumps(to_false_driver)), "499-00007", 499
+
     else:
         drivers = {
             'terraform_cloud_ep': True,
@@ -373,18 +397,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
     for driver_name in driver_list:
         if driver_name not in drivers:
             drivers[driver_name] = True
-
-    # Common DB connect
-    common_db = DBConnectCommon()  # noqa: F405
-    connect_info = common_db.get_orgdb_connect_info(organization_id)
-
-    # インストールされていないドライバ一覧を取得
-    no_install_driver_json = connect_info.get('NO_INSTALL_DRIVER')
-    if no_install_driver_json:
-        no_install_driver = json.loads(no_install_driver_json)
-    else:
-        no_install_driver = []
-    update_no_install_driver = no_install_driver.copy()
 
     # 追加するドライバの対象が、no_install_driverに含まれていない（すでにインストール済み）場合は追加対象から除外する
     add_drivers = []

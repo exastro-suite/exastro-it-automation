@@ -13,6 +13,11 @@
 #
 
 
+from flask import g
+import inspect
+import os
+
+
 class ManageEvents:
     def __init__(self, WsMongo, judgeTime):
         self.labeled_event_collection = WsMongo.collection("labeled_event_collection")
@@ -200,3 +205,35 @@ class ManageEvents:
     def insert_event(self, dict):
         result = self.labeled_event_collection.insert_one(dict)
         return result.inserted_id
+
+    def print_event(self):
+        for event_id, event in self.labeled_events_dict.items():
+            id = str(event['_id'])
+            evaluated = str(event['labels']['_exastro_evaluated'])
+            undetected = str(event['labels']['_exastro_undetected'])
+            timeout = str(event["labels"]["_exastro_timeout"])
+            localsts = str(event[self.rule_const["DF_LOCAL_LABLE_NAME"]][self.rule_const["DF_LOCAL_LABLE_STATUS"]])
+            status = "不明"
+            if evaluated == '0' and undetected == '1' and timeout == '0':
+                status = "未知        "
+            elif evaluated == '0' and undetected == '0' and timeout == '1':
+                status = "タイムアウト"
+            elif evaluated == '0' and undetected == '0' and timeout == '0':
+                status = "今は対応不要"
+            elif evaluated == '1' and undetected == '0' and timeout == '0':
+                status = "要対応      "
+            if localsts == self.rule_const["DF_PROC_EVENT"]:
+                localsts = "処理対象:〇"
+            elif localsts == self.rule_const["DF_POST_PROC_TIMEOUT_EVENT"]:
+                localsts = "処理対象　処理後タイムアウト:●"
+            elif localsts == self.rule_const["DF_TIMEOUT_EVENT"]:
+                localsts = "タイムアウト"
+            elif localsts == self.rule_const["DF_NOT_PROC_EVENT"]:
+                localsts = "対象外"
+            tmp_msg = "id:{} 状態:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(id, status, evaluated, undetected, timeout, localsts)
+            g.applogger.info(self.addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+    def addline_msg(self, msg=''):
+        info = inspect.getouterframes(inspect.currentframe())[1]
+        msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
+        return msg_line

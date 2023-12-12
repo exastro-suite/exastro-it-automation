@@ -59,6 +59,7 @@ def backyard_main(organization_id, workspace_id):
     # 処理時間
     judgeTime = int(time.time())
     EventObj = ManageEvents(mongodbca, judgeTime)
+    EventObj.print_event()
 
     # ①ルールマッチ
     tmp_msg = '①ルールマッチ Start'
@@ -918,6 +919,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         if ret is True:
             unused_notification_list.append(EventRow)
     OASE.send(objdbca, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
+
+    EventObj.print_event()
 
 
 def UserIDtoUserName(objdbca, UserId):

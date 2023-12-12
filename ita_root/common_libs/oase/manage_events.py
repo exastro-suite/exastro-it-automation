@@ -230,7 +230,6 @@ class ManageEvents:
                 localsts = "タイムアウト"
             elif localsts == self.rule_const["DF_NOT_PROC_EVENT"]:
                 localsts = "対象外"
-            # DebugLog(DebugMode, "id:%10s 状態:%s  _exastro_evaluated:%s  _exastro_undetected:%s  _exastro_timeout:%s local_status:%s" % (event['_id'], status, event['labels']['_exastro_evaluated'], event['labels']['_exastro_undetected'], event['labels']['_exastro_timeout'], localsts))
             tmp_msg = "id:{} 状態:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(id, status, evaluated, undetected, timeout, localsts)
             g.applogger.info(self.addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 

@@ -33,7 +33,7 @@ from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
 
 
-def ky_encrypt(lcstr):
+def ky_encrypt(lcstr, input_encrypt_key=None):
     """
     Encode a string
 
@@ -48,10 +48,10 @@ def ky_encrypt(lcstr):
     if len(lcstr) == 0:
         return ""
 
-    return encrypt_str(lcstr)
+    return encrypt_str(lcstr, input_encrypt_key)
 
 
-def ky_decrypt(lcstr):
+def ky_decrypt(lcstr, input_encrypt_key=None):
     """
     Decode a string
 
@@ -66,7 +66,7 @@ def ky_decrypt(lcstr):
     if len(lcstr) == 0:
         return ""
 
-    return decrypt_str(lcstr)
+    return decrypt_str(lcstr, input_encrypt_key)
 
 
 def ky_file_encrypt(src_file, dest_file):

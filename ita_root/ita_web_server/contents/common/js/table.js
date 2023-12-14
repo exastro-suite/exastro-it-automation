@@ -406,7 +406,7 @@ setup() {
     }
 
     // ソート
-    tb.sort = [];
+    if ( !tb.sort ) tb.sort = [];
 
     // ドライバータイプ
     tb.driver = null;
@@ -2727,7 +2727,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
                 $container.addClass('tableEditInputMultipleSelectOpen');
                 if ( optionlist.length !== 0 ) {
                     $container.find('.select2').css({
-                        'min-width': width,
+                        'min-width': width + 20, // ×分の幅
                         'width': 'auto'
                     });
                 }
@@ -3329,12 +3329,6 @@ tableInputMaxWidthCheck( target ) {
 
     });
 }
-/*
-##################################################
-   Table width check
-   > 最大幅を超えた場合調整する
-##################################################
-*/
 /*
 ##################################################
    Body HTML
@@ -6464,6 +6458,7 @@ setPartsTable( mode ) {
     } else if ( tb.mode === 'edit') {
         // メニューボタン
         tb.$.container.find('.eventFlowPartsBlockMenuButton').on('click', function(){
+            if ( tb.flag.dragAndDrop === true ) return;
             if ( !tb.checkWork ) {
                 const $button = $( this ),
                     type = $button.attr('data-type');

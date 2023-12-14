@@ -2154,7 +2154,7 @@ html: {
         });
 
         const
-        color = ( label )? label.parameter.color_code: '#002B62',
+        color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code: '#002B62',
         keyColor = cmn.blackOrWhite( color, 1 ),
         conColor = cmn.blackOrWhite( color, 1 ),
         valColor = cmn.blackOrWhite( color, .5 );
@@ -2189,6 +2189,7 @@ checkHexColorCode: function( code, nullCheckFlag = true ) {
 ##################################################
 */
 blackOrWhite: function( hexcolor, num ) {
+    if ( !hexcolor ) return '';
 	const
     r = parseInt( hexcolor.substring( 1, 3 ), 16 ),
     g = parseInt( hexcolor.substring( 3, 5 ), 16 ),

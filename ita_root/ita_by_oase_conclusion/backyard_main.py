@@ -444,7 +444,7 @@ class Judgement:
         RaccEventDict = {}
 
         t1 = int(time.time())
-        ttl = int(RuleRow['REEVALUATE_TTL'])
+        ttl = int(RuleRow['TTL'])
 
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
@@ -1047,7 +1047,7 @@ class ActionStatusMonitor():
                 TAB_C.CONCLUSION_LABEL_NAME       AS CONCLUSION_LABEL_NAME,
                 TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
                 TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
-                TAB_C.REEVALUATE_TTL              AS REEVALUATE_TTL,
+                TAB_C.TTL                         AS TTL,
                 TAB_C.DISUSE_FLAG                 AS TAB_C_DISUSE_FLAG
             FROM
                 T_OASE_ACTION_LOG                   TAB_A
@@ -1165,7 +1165,7 @@ class ActionStatusMonitor():
         RaccEventDict["labels"] = {}
         RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
         RaccEventDict["labels"]["_exastro_fetched_time"] = NowTime
-        RaccEventDict["labels"]["_exastro_end_time"] = NowTime + int(RuleInfo['REEVALUATE_TTL'])
+        RaccEventDict["labels"]["_exastro_end_time"] = NowTime + int(RuleInfo['TTL'])
         RaccEventDict["labels"]["_exastro_evaluated"] = "0"
         RaccEventDict["labels"]["_exastro_undetected"] = "0"
         RaccEventDict["labels"]["_exastro_timeout"] = "0"

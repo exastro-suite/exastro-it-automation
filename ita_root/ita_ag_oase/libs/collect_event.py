@@ -19,25 +19,24 @@ import json
 from common_libs.oase.get_api_client import get_auth_client
 from common_libs.common.exception import AppException
 from common_libs.ci.util import app_exception
+from common_libs.oase.encrypt import agent_decrypt
 
 
 ######################################################
 # イベント収集
 ######################################################
 def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=None):
-
-    # ドット区切りの文字列で辞書を指定して値を取得
-    def get_value_from_jsonpath(jsonpath=None, data=None):
-        if jsonpath is None:
-            return data
-
-        value = jmespath.search(jsonpath, data)
-        return value
-
     events = []
+    pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
+
     for setting in event_collection_settings:
         setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_ID"]]
         fetched_time = datetime.datetime.now()  # API取得時間
+
+        # パスワードカラムを複合化しておく
+        setting['AUTH_TOKEN'] = agent_decrypt(setting['AUTH_TOKEN'], pass_phrase)
+        setting['PASSWORD'] = agent_decrypt(setting['PASSWORD'], pass_phrase)
+        setting['SECRET_ACCESS_KEY'] = agent_decrypt(setting['SECRET_ACCESS_KEY'], pass_phrase)
 
         # APIの呼び出し
         api_client = get_auth_client(setting)  # noqa: F405
@@ -86,3 +85,12 @@ def init_label(data, fetched_time, setting):
     event["_exastro_type"] = "event"
 
     return event
+
+
+# ドット区切りの文字列で辞書を指定して値を取得
+def get_value_from_jsonpath(jsonpath=None, data=None):
+    if jsonpath is None:
+        return data
+
+    value = jmespath.search(jsonpath, data)
+    return value

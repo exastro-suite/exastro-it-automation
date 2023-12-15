@@ -431,7 +431,7 @@ CREATE TABLE T_OASE_RULE
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
     CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
-    REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    TTL                             INT,                                        -- TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考
@@ -461,7 +461,7 @@ CREATE TABLE T_OASE_RULE_JNL
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
     CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
-    REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    TTL                             INT,                                        -- TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考

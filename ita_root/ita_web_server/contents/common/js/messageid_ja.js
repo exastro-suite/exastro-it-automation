@@ -36,7 +36,7 @@
 // 独自メニュー         12001～13000
 
 
-export function messageid_en() {
+export function messageid_ja() {
 
     const message = {
         // 標準メニュー

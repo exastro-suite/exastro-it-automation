@@ -32,7 +32,7 @@
 // Ui common           10001～11000
 
 
-getMessage = ( function() {
+export function messageid_en() {
 
     const message = {
         // Default menu
@@ -948,4 +948,4 @@ getMessage = ( function() {
 
     return message;
 
-}());
+}

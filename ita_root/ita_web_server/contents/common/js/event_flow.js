@@ -36,7 +36,7 @@ constructor( id ) {
 */
 setInitCanvasValue() {
     const er = this;
-    
+
     const now = Date.now();
     er.loadStart = er.start = new Date( now - ( 60 * 60 * 1000 ) );
     er.loadEnd = er.end = new Date( now );
@@ -44,19 +44,19 @@ setInitCanvasValue() {
     er.initRange = '1h'; // 初期表示範囲
 
     er.intervalTime = 10000; // 更新間隔
-    
+
     er.blockMargin = 16; // ブロックごとの重なり判定マージン
     er.minFloor = 16; // 最小段数
     er.maxRate = 50; // 最大拡大倍数
-    
+
     // 倍率
     er.vRate = 1;
     er.hRate = 1;
-    
+
     // 位置
     er.vPosition = 0;
     er.hPosition = 0;
-    
+
     // 色
     er.patternColor = {
         conclusion: '255,170,0', // 再評価
@@ -79,22 +79,23 @@ setInitCanvasValue() {
 
     // パターンリスト
     er.patternList = {
+        newEvent: getMessage.FTE13012,
+        evaluated: getMessage.FTE13010,
         unknown: getMessage.FTE13008,
         timeout: getMessage.FTE13009,
-        evaluated: getMessage.FTE13010,
         conclusion: getMessage.FTE13011,
-        newEvent: getMessage.FTE13012,
         action: getMessage.FTE13013
     };
 
     // 各種フラグ
     er.flag = {
-        rangeSelect: false
+        rangeSelect: false,
+        buttonInvalid: false
     } ;
 
-    // 履歴用
+    // 履歴データ用
     er.history = [];
-    
+
 }
 /*
 ##################################################
@@ -103,15 +104,15 @@ setInitCanvasValue() {
 */
 setup( target ) {
     const er = this;
-    
+
     er.target = target;
-    
+
     // Canvas初期値設定
     er.setInitCanvasValue();
-    
+
     const $target = $( er.target );
     $target.html( er.mainHtml( er.id ) ).addClass('nowLoading');
-    
+
     // jQuery object
     er.$ = {
         target: $target,
@@ -127,20 +128,20 @@ setup( target ) {
         info: $target.find('.eventFlowEventInformation'),
         parts: $target.find('.eventFlowParts'),
     };
-    
+
     // Chart canvas
     er.chartCanvas = {
         line: er.$.body.find('.eventFlowChartPositionLineCanvas').get(0),
         block: er.$.body.find('.eventFlowChartBlockCanvas').get(0),
         incident: er.$.body.find('.eventFlowChartIncidentCanvas').get(0),
     };
-    
+
     // Chart canvas context
     er.chartContext = {};
     for ( const type in er.chartCanvas ) {
         er.chartContext[ type ] = er.chartCanvas[ type ].getContext('2d');
     }
-    
+
     // Date canvas
     er.dateCanvas = er.$.body.find('.eventFlowDateCanvas').get(0);
     er.dateContext = er.dateCanvas.getContext('2d');
@@ -167,7 +168,7 @@ setup( target ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  HTML
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
@@ -183,7 +184,7 @@ mainHtml( id ) {
         + `<div class="eventFlowChartRangeDate"></div>`
         + `<button class="eventFlowChartRangeClear"><span class="icon icon-cross"></span></button>`
     + `</div>`;
-    
+
     const menuList = {
         Main: [
             { html: { html: er.dateRangeSelectHTML() }},
@@ -195,7 +196,7 @@ mainHtml( id ) {
             //{ button: { icon: 'gear', text: getMessage.FTE13015, type: 'setting', action: 'default'}}
         ]
     };
-    
+
     return ``
     + `<div id="${id}_eventFlow" class="eventFlowContainer">`
         + `<div class="eventFlow">`
@@ -343,8 +344,8 @@ patternSelectHTML() {
         listHtml.push(`<li class="${commonClassName}Item">`
             + fn.html.checkboxText(`${commonClassName}Checkbox`, key, name, id, checked, text )
         + `</li>`);
-    }    
-    
+    }
+
     return ``
     + `<div class="${commonClassName} eventFlowSelectWrap">`
         + `<button class="${commonClassName}Button eventFlowSelectButton">${getMessage.FTE13017}</button>`
@@ -358,7 +359,7 @@ patternSelectHTML() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Canvas
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
@@ -367,14 +368,14 @@ patternSelectHTML() {
 */
 createCanvasData() {
     const er = this;
-    
-    er.canvasData = [];    
-    
+
+    er.canvasData = [];
+
     // 幅とマージンから何段目に表示できるかチェック
     const floor = [];
     const floorCheck = function( x1, x2, f ) {
         if ( !floor[f] ) floor[f] = [];
-        
+
         const l = floor[f].length;
         if ( l === 0 || floor[f][ l - 1 ] + er.blockMargin < x1 ) {
             floor[f].push( x1 );
@@ -388,7 +389,7 @@ createCanvasData() {
     er.history.sort(function( a, b ){
         return a.datetime.localeCompare( b.datetime );
     });
-    
+
     for ( const item of er.history ) {
         const data = {
             id: item.id,
@@ -406,7 +407,7 @@ createCanvasData() {
 
         // 表示パターンチェック
         if ( er.displayFlag[ data.pattern ] === false ) continue;
-        
+
         // X座標
         if ( item.type === 'event') {
             data.x1 = er.getDateWidthPositionX( item.item.labels._exastro_fetched_time );
@@ -418,10 +419,10 @@ createCanvasData() {
 
         // 表示範囲内かチェック
         if ( ( data.x1 < 0 && x2 < 0 ) || ( data.x1 > er.w && x2 > er.w ) ) continue;
-        
+
         // 何段目に表示するか
-        data.floor = floorCheck( data.x1, x2, 0 );        
-        
+        data.floor = floorCheck( data.x1, x2, 0 );
+
         er.canvasData.push( data );
     }
 
@@ -473,7 +474,7 @@ updateCanvas( initFlag = false ) {
     er.colorMode = ( $('body').is('.darkmode') )? 'darkmode': '';
 
     if ( er.controller ) er.controller.abort();
-    er.controller = new AbortController();    
+    er.controller = new AbortController();
 
     // 時間を再セット
     const selectDate = er.$.header.find('.eventFlowDateRangeRadio:checked').val();
@@ -486,13 +487,13 @@ updateCanvas( initFlag = false ) {
         er.loadStart = newDate[0];
         er.loadEnd = newDate[1];
     }
-    
+
     const postData = {
         start_time: fn.date( er.loadStart, 'yyyy/MM/dd HH:mm:ss'),
         end_time: fn.date( er.loadEnd, 'yyyy/MM/dd HH:mm:ss')
     };
     fn.fetch('/oase/event_flow/history/', null, 'POST', postData, { controller: er.controller } ).then(function( history ){
-        
+
         if ( initFlag ) {
             er.$.target.removeClass('nowLoading');
             er.setEvents();
@@ -507,7 +508,7 @@ updateCanvas( initFlag = false ) {
         er.timerId = setTimeout(function(){
             er.updateCanvas();
         }, er.intervalTime );
-        
+
         er.resetCanvas();
     }).catch(function(error){
         console.error( error );
@@ -571,30 +572,30 @@ checkAutoUpdate() {
 */
 resetCanvas( canvasSizeChangeFlag = false ) {
     const er = this;
-    
+
     er.period = er.end.getTime() - er.start.getTime();
-    
+
     // Chart canvasサイズ
     er.w = er.$.chart.outerWidth();
     er.h = er.$.chart.outerHeight();
-    
+
     for ( const type in er.chartCanvas ) {
         er.chartCanvas[ type ].width = er.w;
         er.chartCanvas[ type ].height = er.h;
     }
-    
+
     // Date canvasサイズ
     er.dateCanvas.width = er.w;
-    
+
     // 表示用データ
     if ( canvasSizeChangeFlag === false ) {
         er.createCanvasData();
     }
-    
+
     // 描画
     er.setTimeScale();
     er.setLine();
-    
+
     // 各種イベントブロック
     er.setEventBlock();
 }
@@ -605,7 +606,7 @@ resetCanvas( canvasSizeChangeFlag = false ) {
 */
 changeDateReset( startDate, endDate, rangeFlag = false ) {
     const er = this;
-    
+
     if ( rangeFlag ) {
         er.start = startDate;
         er.end = endDate;
@@ -613,21 +614,21 @@ changeDateReset( startDate, endDate, rangeFlag = false ) {
         er.loadStart = er.start = startDate;
         er.loadEnd= er.end = endDate;
     }
-    
+
     er.hRate = 1;
     er.hPosition = 0;
     er.$.hScroll.find('.eventFlowRange').css({
         width: '100%',
         left: 0
     });
-    
+
     er.vRate = 1;
     er.vPosition = 0;
     er.$.vScroll.find('.eventFlowRange').css({
         height: '100%',
         top: 0
     });
-    
+
     if ( rangeFlag ) {
         er.resetCanvas();
     } else {
@@ -641,7 +642,7 @@ changeDateReset( startDate, endDate, rangeFlag = false ) {
 */
 getPositionDate( x ) {
     const er = this;
-    
+
     return new Date( er.start.getTime() + er.period * ( ( x + er.hPosition ) / ( er.w * er.hRate ) ) );
 }
 /*
@@ -694,32 +695,32 @@ getTextColor() {
 */
 setTimeScale() {
     const er = this;
-    
+
     const ctx = er.dateContext;
     ctx.clearRect( 0, 0, er.dateCanvas.width, er.dateCanvas.height );
-    
+
     ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.strokeStyle = er.getBorderColor();
-    
+
     // テキスト共通
     ctx.textBaseline = 'top';
     ctx.fillStyle = er.getTextColor();
-    
+
     // 左端の線
     ctx.moveTo( .5, .5 );
     ctx.lineTo( .5, er.dateCanvas.height + .5 );
     ctx.textAlign = 'left';
     ctx.font = 'bold 14px Consolas';
-    
+
     const start = er.getPositionDate( 0 );
     ctx.fillText( fn.date( start, 'yyyy/MM/dd HH:mm:ss'), 8, 0 );
-    
+
     // 右端の線
     ctx.moveTo( er.dateCanvas.width - .5, .5 );
     ctx.lineTo( er.dateCanvas.width - .5, er.dateCanvas.height + .5 );
     ctx.textAlign = 'right';
-    
+
     const end = er.getPositionDate( er.w );
     ctx.fillText( fn.date( end, 'yyyy/MM/dd HH:mm:ss'), er.w - 8, 0 );
 
@@ -786,9 +787,9 @@ setTimeScale() {
             ctx.fillText( text, x, 20 );
             beforeTextX = x + size.width / 2 + 24;
             y = 34;
-        }        
+        }
         er.line( ctx, x, y, x, 48 );
-        
+
     }
     ctx.stroke();
 }
@@ -825,12 +826,12 @@ checkTimeScaleMode( rangeDate ) {
 */
 setLine() {
     const er = this;
-    
+
     const ctx = er.chartContext.line;
     er.clear( ctx );
-    
+
     const length = Math.floor( er.h / er.lineSpacing ) + 1;
-    
+
     ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.strokeStyle = er.getBorderColor();
@@ -840,7 +841,7 @@ setLine() {
         er.line( ctx, 0, y , er.w, y );
     }
     ctx.stroke();
-    
+
     ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.strokeStyle = er.getBorderColor();
@@ -858,16 +859,16 @@ setLine() {
 */
 setEventBlock() {
     const er = this;
-    
+
     const
     ctxB = er.chartContext.block,
     ctxE = er.chartContext.incident;
-    
+
     er.clear( ctxB );
     er.clear( ctxE );
 
     ctxE.strokeStyle = '#FFF';
-    
+
     for ( const event of er.canvasData ) {
         ctxE.beginPath();
 
@@ -875,29 +876,29 @@ setEventBlock() {
         x1 = event.x1 * er.hRate - er.hPosition,
         x2 = ( event.type === 'event')? event.x2 * er.hRate - er.hPosition: x1,
         y = er.getFloorPositonY( event.floor );
-        
+
         const height = er.lineSpacing * er.vRate;
-        
+
         const eventHeight = height - height * .4;
-        
+
         const rectHeight = height - height * .2;
-        
+
         event.block = {
             x: x1 - 8,
             y: y - rectHeight / 2,
             w: x2 - x1 + 16,
             h: rectHeight
         };
-        
+
         const pattern = ( event.type === 'event')? event.pattern: 'action';
-        
+
         // ブロック
         if ( er.currentBlock && er.currentBlock.id === event.id ) {
             er.rect( ctxB, event.block, er.getPatternColor( pattern, 0.5 ) );
         } else {
             er.rect( ctxB, event.block, er.getPatternColor( pattern ) );
         }
-        
+
         if ( event.type === 'event') {
             er.line( ctxE, x1, y, x2, y ); // 開始終了線
             er.line( ctxE, x1, y - eventHeight / 2, x1, y + eventHeight / 2 ); // 開始線
@@ -941,12 +942,12 @@ clearRect( canvas, position ) {
 */
 line( canvas, x1, y1, x2, y2 ) {
     const er = this;
-    
+
     // 範囲外は描画しない
     if (( x1 >= er.w && x2 >= er.w ) || ( x1 <= 0 && x2 <= 0 )) return;
     if (( y1 >= er.h && y2 >= er.h ) || ( y1 <= 0 && y2 <= 0 )) return;
-    
-    // 1px線の描画がボケるため、位置を調整する    
+
+    // 1px線の描画がボケるため、位置を調整する
     canvas.moveTo( x1 + .5, y1 + .5 );
     canvas.lineTo( x2 + .5, y2 + .5 );
 }
@@ -962,7 +963,7 @@ arc( canvas, x, y, color ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  パーツ管理
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
@@ -993,10 +994,13 @@ fetchParts( type ) {
 
         er[ partsData.id ].table = new DataTable( partsData.id, 'view', er[ partsData.id ].info, params, { parts: partsData } );
 
+        // ソートセット
+        er[ partsData.id ].table.sort = [{ ASC: partsData.partsRestName }];
+
         er.$.parts.find( partsData.target ).html( er[ partsData.id ].table.setup() );
 
-        // Filterの場合ラベルデータを渡す
-        if ( type == 'filter' || type === 'rule') {
+        // Filter及びRule場合ラベルデータを渡す
+        if ( type === 'filter' || type === 'rule') {
             er[ partsData.id ].table.label = er.label;
         }
 
@@ -1004,12 +1008,18 @@ fetchParts( type ) {
         er[ partsData.id ].table.$.container.on({
             'changePartsEditMode': function( e, type ){
                 er.$.target.addClass( type + 'EventFlowEditMode');
+                if ( type === 'rule') {
+                    //er.ruleEditEventOn();
+                }
             },
             'changePartsViewMode': function( e, type ){
                 er.$.target.removeClass( type + 'EventFlowEditMode');
+                if ( type === 'rule') {
+                    //er.ruleEditEventOff();
+                }
             }
         });
-        
+
     }).catch(function( error ){
         if ( error.message ) {
             const message = `<div class="eventFlowPartsNoDate"><div class="eventFlowPartsNoDateInner">${error.message}</div></div>`;
@@ -1071,7 +1081,7 @@ setPartsEvents() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Events
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
@@ -1080,7 +1090,7 @@ setPartsEvents() {
 */
 setEvents() {
     const er = this;
-    
+
     er.setChartEvents();
     er.setSelectButtonToggleEvent();
     er.setPatternSelectEvent();
@@ -1123,7 +1133,7 @@ blockEnterCheck( block, pointer ) {
 */
 viewCurrentInfo( dateX, x, y ) {
     const er = this;
-    
+
     const positionDate = er.getPositionDate( dateX );
     er.$.positionDate.css({
         left: x + 16,
@@ -1137,38 +1147,38 @@ viewCurrentInfo( dateX, x, y ) {
 */
 setChartEvents() {
     const er = this;
-    
+
     er.currentBlock = null;
-    
+
     const
     $window = $( window ),
     $rangeDate = er.$.header.find('.eventFlowChartRangeItem'),
     $hRange = er.$.hScroll.find('.eventFlowRange');
-    
+
     // leave
     const blockLeave = function() {
         er.rect( er.chartContext.block, er.currentBlock.block, er.getPatternColor( er.currentBlock.pattern ) );
         er.currentBlock = null;
         er.$.chart.css('cursor', 'default');
     };
-    
+
     // 範囲指定モードフラグ
     let dateRangeSelectMode = false;
-    
+
     er.$.chart.on({
         'wheel': function( e ) {
             e.preventDefault();
-            
+
             const
             chart = $( this ).get(0),
             x = e.pageX - chart.getBoundingClientRect().left;
-            
+
             // 位置割合
             const positionRate = ( x + er.hPosition ) / ( er.w * er.hRate );
-            
+
             // ホイール向き
             const delta = e.originalEvent.deltaY ? - ( e.originalEvent.deltaY ) : e.originalEvent.wheelDelta ? e.originalEvent.wheelDelta : - ( e.originalEvent.detail );
-            
+
             // 拡大縮小
             const rateNumber = Math.floor( er.hRate * 0.2 * 10 ) / 10;
             if ( delta < 0 ) {
@@ -1181,19 +1191,19 @@ setChartEvents() {
 
             // 拡縮後サイズ
             const afterWidth = er.w * er.hRate;
-            
+
             // 拡縮後の位置
             const right = afterWidth - ( afterWidth * positionRate );
             er.hPosition = afterWidth - right - x;
-            
+
             // はみ出る場合の調整
             if ( er.hPosition < 0 ) er.hPosition = 0;
             if ( afterWidth - er.hPosition < er.w ) er.hPosition = afterWidth - er.w;
-            
+
             // Canvas更新
             er.setTimeScale();
             er.setEventBlock();
-            
+
             // スクロールバーサイズ
             $hRange.css({
                 width: ( 100 / er.hRate ) + '%',
@@ -1204,7 +1214,7 @@ setChartEvents() {
             const
             chart = $( this ).get(0),
             x = e.pageX - chart.getBoundingClientRect().left;
-            
+
             fn.deselection();
 
             // 自動更新ストップ
@@ -1216,7 +1226,7 @@ setChartEvents() {
                     let moveX = moveEvent.pageX - chart.getBoundingClientRect().left;
                     if ( moveX <= 0 ) moveX = 0;
                     if ( moveX >= er.w ) moveX = er.w;
-                    
+
                     pX = ( moveX > x )? x: moveX,
                     pW = ( moveX > x )? moveX - x: x - moveX;
                     er.$.positionBorder.css({
@@ -1233,23 +1243,23 @@ setChartEvents() {
                 },
                 'pointerup.dateRangeSelect': function(){
                     $window.off('pointermove.dateRangeSelect pointerup.dateRangeSelect');
-                    
+
                     if ( dateRangeSelectMode ) {
                         er.$.positionBorder.removeClass('dateRangeSelect').css('width', 1 );
                         dateRangeSelectMode = false;
-                        
+
                         const end = er.getPositionDate( pX + pW );
                         let start = er.getPositionDate( pX );
-                        
+
                         // 範囲が1秒未満の場合は１秒にする
                         const diff = ( er.end.getTime() - er.start.getTime() ) / 1000;
                         if ( diff <= 1 ) start = new Date( end.getTime() - 1000 );
-                        
+
                         const
                         startText = fn.date( start, 'yyyy/MM/dd HH:mm:ss'),
                         endText = fn.date( end, 'yyyy/MM/dd HH:mm:ss');
                         $rangeDate.show().find('.eventFlowChartRangeDate').text(`${startText} to ${endText}`);
-                        
+
                         er.changeDateReset( start, end, true );
                         er.flag.rangeSelect = true;
                     }
@@ -1282,7 +1292,7 @@ setChartEvents() {
                 er.$.positionBorder.css('display', 'none');
                 er.$.positionDate.css('display', 'none');
             }
-            
+
             // Block leave
             if ( er.currentBlock ) {
                 blockLeave();
@@ -1293,20 +1303,20 @@ setChartEvents() {
             chart = $( this ).get(0),
             x = e.pageX - chart.getBoundingClientRect().left,
             y = e.pageY - chart.getBoundingClientRect().top;
-            
+
             if ( !dateRangeSelectMode ) {
                 // ポインター位置Xバー
                 er.$.positionBorder.css({
                     transform: `translateX(${x-1}px)`
                 });
-                
+
                 er.viewCurrentInfo( x, e.pageX, e.pageY );
-                
+
                 const pointerPosition = {
                     x: x,
                     y: y
                 };
-                
+
                 // Block leave
                 if ( er.currentBlock && !er.blockEnterCheck( er.currentBlock, pointerPosition ) ) {
                     blockLeave();
@@ -1333,15 +1343,15 @@ setChartEvents() {
     const
     $dateRange = er.$.header.find('.eventFlowDateRangeBlock'),
     $dataRangeRadio = er.$.header.find('.eventFlowDateRangeRadio'),
-    $dateRangeButton = er.$.header.find('.eventFlowDateRangeButton');    
-    
+    $dateRangeButton = er.$.header.find('.eventFlowDateRangeButton');
+
     // 絞り込みクリア
     $rangeDate.find('.eventFlowChartRangeClear').on('click', function(){
         $rangeDate.hide().find('.eventFlowChartRangeDate').text('');
         er.updateDataRange( $dataRangeRadio.filter(':checked').val(), true );
         er.flag.rangeSelect = false;
     });
-    
+
     // 表示範囲切替
     $dateRange.on('change', '.eventFlowDateRangeRadio', function(){
         const $input = $( this );
@@ -1355,6 +1365,97 @@ setChartEvents() {
             $dateRangeButton.click();
         }
     });
+}
+/*
+##################################################
+  Drag and Drop
+##################################################
+*/
+ruleEditEventOn() {
+    const er = this;
+
+    const $window = $( window );
+
+    // Rule Edit Tableの準備ができたら
+    $window.on('rule__tableReady.setFilter', function(){
+        er.$.parts.find('.eventFlowPartsTableBlockFilter, .eventFlowPartsTableBlockAction')
+            .on('mousedown.setFilter', '.eventFlowPartsName', function( pde ){
+            if ( pde.button !== 0 || er.rule.table.flag.dragAndDrop === true ) return;
+            er.rule.table.flag.dragAndDrop = true;
+
+            const $item = $( this ).closest('.eventFlowPartsItem');
+            $item.addClass('nowMoving');
+
+            const type = ( $( this ).closest('.eventFlowPartsTableBlockFilter').length )? 'filter': 'action';
+            const selectKey = ( type === 'filter')? '[data-key="filter_a"], [data-key="filter_b"]': '[data-key="action_id"]';
+
+            const $targetArea = er.rule.table.$.tbody.find('.tableEditInputSelect').filter( selectKey ).closest('.ci');
+            $targetArea.addClass('dragAndDropArea');
+
+            const
+            $filter = $( this ),
+            value = $filter.find('.eventFlowPartsNameText').text();
+
+            // 移動用ダミー
+            const className = ( type === 'filter')? 'eventFlowPartsFilter': 'eventFlowPartsAction';
+            const $dummy = $('<div/>', {
+                text: value,
+                class: 'eventFlowPartsMove eventFlowPartsName ' + className
+            }).css({
+                top: pde.pageY,
+                left: pde.pageX
+            });
+            er.$.body.append( $dummy );
+
+            fn.deselection();
+
+            $window.on({
+                'mousemove.setFilter': function( pme ){
+                    const
+                    x = pme.pageX - pde.pageX,
+                    y = pme.pageY - pde.pageY;
+                    $dummy.css({
+                        transform: `translate( ${x}px, ${y}px )`
+                    });
+                },
+                'mouseup.setFilter': function( pme ){
+                    $window.off('mousemove.setFilter mouseup.setFilter');
+                    er.rule.table.flag.dragAndDrop = false;
+
+                    // mouseupしたのが対象の上かどうか
+                    const $target = $( pme.target ).closest('.dragAndDropArea');
+                    if ( $target.length ) {
+                        const $select = $target.find('.tableEditInputSelect');
+
+                        // select2が適用されているか
+                        if ( $select.is('.select2-hidden-accessible') ) {
+                            $select.select2('trigger', 'select', { data: { id: value, text: value }});
+                        } else {
+                            $select.val([value]);
+
+                            // 値が無い場合は追加する
+                            if ( !$select.val() ) {
+                                $select.append( $('<option/>', { value: value, text: value }) ).val([value]);
+                            }
+                            $select.change();
+                            $select.prev('.tableEditInputSelectValue').find('.tableEditInputSelectValueInner').text( value );
+                        }
+                    }
+
+                    $dummy.remove();
+                    $item.removeClass('nowMoving');
+                    $targetArea.removeClass('dragAndDropArea');
+                }
+            });
+
+        });
+    });
+}
+ruleEditEventOff() {
+    const er = this;
+
+    $( window ).off('rule__tableReady.setFilter');
+    er.$.parts.find('.eventFlowPartsTableBlockFilter, .eventFlowPartsBlockAction').off('mousedown.setFilter');
 }
 /*
 ##################################################
@@ -1479,7 +1580,7 @@ setSelectButtonToggleEvent() {
 
         $button.toggleClass('open');
         $block.toggle();
-        
+
         if ( $button.is('.open') ) {
             $window.on('pointerdown.eventFlowSelect', function( e ){
                 if ( !$( e.target ).closest( $wrap ).length ) {
@@ -1502,7 +1603,7 @@ setSelectButtonToggleEvent() {
                 let height = wH - y - margin;
                 if ( height < 160 ) height = 160;
                 $block.outerHeight( height );
-            }            
+            }
         } else {
             $window.off('pointerdown.eventFlowSelect');
         }
@@ -1524,12 +1625,12 @@ setPatternSelectEvent() {
             $check = $( this ),
             value = $check.val(),
             flag = $check.prop('checked');
-            
+
             er.displayFlag[ value ] = flag;
 
             er.resetCanvas();
         });
-    });   
+    });
 }
 /*
 ##################################################
@@ -1539,7 +1640,7 @@ setPatternSelectEvent() {
 setMenuButtonEvent() {
     const er = this;
     er.$.header.find('.operationMenuButton').on('click', function(){
-        const  
+        const
         $button = $( this ),
         type = $button.attr('data-type');
 
@@ -1568,7 +1669,7 @@ selectDateRange() {
     }
 
     fn.datePickerDialog('fromTo', true, getMessage.FTE13014, date, true ).then(function( date ){
-        if ( date !== 'cancel') {          
+        if ( date !== 'cancel') {
             const
             id = Date.now(),
             value = `${date.from} to ${date.to}`;
@@ -1594,17 +1695,17 @@ selectDateRange() {
 */
 setScrollBarEvent() {
     const er = this;
-    
+
     er.$.scroll.on('pointerdown.eventFlow', function( downEvent ){
-        
+
         // 選択を解除
         getSelection().removeAllRanges();
-        
+
         const
         $bar = $( this ),
         $range = $bar.find('.eventFlowRange'),
         $window = $( window );
-        
+
         const
         barType = $bar.attr('data-type'),
         partsType = downEvent.target.className;
@@ -1618,7 +1719,7 @@ setScrollBarEvent() {
         let
         afterWidth = rangeWidth,
         afterPosittion = rangePosition;
-        
+
         const widthCheck = function( width, max ) {
            if ( max < width ) width = max;
            if ( rangeMinWidth > width ) width = rangeMinWidth;
@@ -1631,16 +1732,16 @@ setScrollBarEvent() {
            return position;
         };
 
-        const updateCanvasPosition = function() {            
+        const updateCanvasPosition = function() {
             if ( barType === 'vertical') {
                 er.vRate = 1 / ( afterWidth / barWidth );
                 er.vPosition = er.h * ( afterPosittion / barWidth ) * er.vRate;
-                
+
                 er.setLine();
             } else {
                 er.hRate = 1 / ( afterWidth / barWidth );
                 er.hPosition = er.w * ( afterPosittion / barWidth ) * er.hRate;
-                
+
                 er.setTimeScale();
             }
             er.setEventBlock();
@@ -1656,7 +1757,7 @@ setScrollBarEvent() {
                     // 開始位置移動
                     afterWidth = widthCheck( rangeWidth - move, barWidth - ( barWidth - afterPosittion - afterWidth ) );
                     afterPosittion = positionCheck( rangePosition + move, barWidth - ( barWidth - rangeWidth - rangePosition + rangeMinWidth ) );
-                    
+
                     if ( barType === 'vertical') {
                         $range.css({
                             top: afterPosittion,
@@ -1671,7 +1772,7 @@ setScrollBarEvent() {
                 } else if ( partsType === 'eventFlowRangeEnd') {
                     // 終了位置移動
                     afterWidth = widthCheck( rangeWidth + move, barWidth - afterPosittion );
-                    
+
                     if ( barType === 'vertical') {
                         $range.css({
                             height: afterWidth
@@ -1684,7 +1785,7 @@ setScrollBarEvent() {
                 } else {
                     // 位置移動
                     afterPosittion = positionCheck( rangePosition + move, barWidth - afterWidth );
-                    
+
                     if ( barType === 'vertical') {
                         $range.css({
                             top: afterPosittion
@@ -1695,9 +1796,9 @@ setScrollBarEvent() {
                         });
                     }
                 }
-                
+
                 updateCanvasPosition();
-                
+
             },
             'pointerup.eventFlow': function(){
                 $window.off('pointermove.eventFlow pointerup.eventFlow');

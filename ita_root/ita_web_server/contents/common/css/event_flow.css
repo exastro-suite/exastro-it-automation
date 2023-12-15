@@ -264,7 +264,7 @@ border-left: 1px dashed rgba(0,0,0,.5);
 user-select: none;
 pointer-events: none;
 }
-.eventFlowPositionBorder {
+.darkmode .eventFlowPositionBorder {
 border-color: rgba(255,255,255,.3);
 }
 .eventFlowPositionBorder.dateRangeSelect {
@@ -399,7 +399,7 @@ border-left: 1px solid rgba(0,0,0,.3);
 
 .eventFlowParts {
 display: flex;
-gap: 3px;
+gap: 4px;
 flex-direction: column;
 min-width: 0;
 padding: 2px 0;
@@ -528,7 +528,6 @@ display: inline-block;
 transform: rotate(180deg);
 }
 
-
 .filterEventFlowEditMode .eventFlowPartsBlockAction,
 .filterEventFlowEditMode .eventFlowPartsBlockRule,
 .actionEventFlowEditMode .eventFlowPartsBlockFilter,
@@ -541,6 +540,63 @@ display: none;
 resize: vertical;
 }
 
+/* Rule edit mode */
+/*
+.ruleEventFlowEditMode .eventFlowParts {
+flex: 0 0 800px;
+flex-wrap: wrap;
+}
+.ruleEventFlowEditMode .eventFlowPartsBlock {
+width: calc( 50% - 2px );
+}
+.ruleEventFlowEditMode .eventFlowPartsBlockFilter,
+.ruleEventFlowEditMode .eventFlowPartsBlockAction {
+flex: 0 0 calc( 50% - 2px );
+}
+.ruleEventFlowEditMode .eventFlowPartsMenuItem:first-child,
+.ruleEventFlowEditMode .eventFlowPartsBlockFilter .eventFlowPartsBlockMenu,
+.ruleEventFlowEditMode .eventFlowPartsBlockAction .eventFlowPartsBlockMenu {
+display: none;
+}
+.ruleEventFlowEditMode .eventFlowPartsName {
+padding-left: 24px;
+cursor: grab;
+user-select: none;
+}
+.ruleEventFlowEditMode .eventFlowPartsName::before {
+width: 8px;
+background-color: transparent;
+background-image: linear-gradient( rgba( 255,255,255,.5 ) 50%, transparent 50% );
+background-size: 4px 4px;
+}
+.dragAndDropArea .tableEditInputSelectValue,
+.dragAndDropArea .tableEditInputSelectContainer .select2-selection {
+background-color: var(--accentColor10) !important;
+border-color: var(--accentColor100) !important;
+}
+.dragAndDropArea:hover .tableEditInputSelectValue,
+.dragAndDropArea:hover .tableEditInputSelectContainer .select2-selection {
+background-color: var(--focusBackgroundColor) !important;
+border-color: var(--focusColor) !important;
+}
+.eventFlowPartsMove {
+user-select: none;
+pointer-events: none;
+position: fixed!important;
+z-index: 9999;
+max-width: 320px;
+background-image: linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,0) );
+border-radius: 4px;
+box-shadow: 2px 2px 4px rgba(0,0,0,.3);
+word-break: break-all;
+}
+.nowMoving {
+opacity: .3!important;
+}
+.nowMoving .eventFlowPartsName {
+cursor: grabbing!important;
+}
+*/
 
 .eventFlowPartsList,
 .eventFlowPartsNoDate {
@@ -812,4 +868,7 @@ color: #FF0;
 margin-left: 2px;
 display: inline-block;
 transform: translateY(-4px);
+}
+.eventFlowPartsTable .tableEditInputSelectValueInner {
+max-width: 208px;
 }

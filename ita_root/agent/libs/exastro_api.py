@@ -14,6 +14,9 @@
 
 import requests
 from common_libs.common.exception import AppException
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
+urllib3.disable_warnings(InsecureRequestWarning)
 
 
 class Exastro_API:
@@ -39,7 +42,8 @@ class Exastro_API:
                 url=url,
                 headers=self.headers,
                 auth=(self.username, self.password),
-                json=body
+                json=body,
+                verify=False
             )
 
             status_code = response.status_code

@@ -54,7 +54,6 @@ class Notification(ABC):
             g.applogger.info("条件を満たす通知先が0件のため処理を終了します。")
             return
 
-
         g.applogger.info(f"合計で通知する件数：{len(notification_destination) * len(event_list)}")
 
         result = {
@@ -71,6 +70,12 @@ class Notification(ABC):
             g.applogger.info(f"{index + 1}件目のイベントの処理開始")
 
             message = cls._create_notise_message(tmp_item, template)
+            # messageがNoneの場合、テンプレートの変換に失敗しているので次のループに進む
+            if message is None:
+                result["failure_info"].append(f"テンプレートの変換に失敗。item:\n{tmp_item}, template:\n{template}")
+                result["failure"] = result["failure"] + 1
+                continue
+
             tmp_result = cls.__call_notification_api(message, notification_destination)
 
             result["success"] = result["success"] + tmp_result["success"]
@@ -116,15 +121,34 @@ class Notification(ABC):
         """
         g.applogger.info(f"テンプレートのレンダリングに利用するオブジェクトのID:{item.get('_id')}")
 
-        item = cls._convert_message(item)
+        # item = cls._convert_message(item)
 
         jinja_template = Template(template)
-        tmp_message = jinja_template.render(item)
-        split_message = re.split(r"\[TITLE\]|\[BODY\]", tmp_message)
+        try:
+            tmp_message = jinja_template.render(item)
+        except Exception as e:
+            g.applogger.error(e)
+            g.applogger.error("テンプレートの変換に失敗しました。")
+            return None
+
+        # [TITLE]の次の1行をtitleとして抽出する
+        # バリデーションチェックで[TITLE]無しは弾くので、存在チェックは不要
+        search_title = re.search(r"\[TITLE\]\s(.*)", tmp_message)
+        title = search_title.group(1) if search_title is not None else ""
+
+        # [BODY]の次の1行から終端をmessageとして抽出する
+        # バリデーションチェックで[BODY]無しは弾くので、存在チェックは不要
+        search_body = re.search(r"\[BODY\]\s([\s\S]*)", tmp_message)
+        text = search_body.group(1) if search_body is not None else ""
+
+        # [BODY]と[TITLE]の記載位置で結果が変わるのを防ぐため、
+        # [TITLE]が[BODY]の後に定義された場合を考慮して、取り除く処理を実施
+        # [TITLE]に関しては次の1行を抽出するため対処不要
+        text = re.sub(r"\[TITLE\]([\s\S]*)", "", text)
 
         result = {
-            "title": split_message[1].strip("\n"),
-            "message": split_message[2].strip("\n")
+            "title": title.strip("\n"),
+            "message": text.strip("\n")
         }
 
         return result
@@ -210,7 +234,7 @@ class Notification(ABC):
         g.applogger.info("通知先取得APIの呼び出し結果")
         g.applogger.info(f"合計取得件数:{len(response_data['data'])}")
         for index, item in enumerate(response_data["data"]):
-            g.applogger.info(f"{index + 1}件目　id:{item.get('id')}, name:{item.get('name')}")
+            g.applogger.info(f"{index + 1}件目\nid:{item.get('id')}, name:{item.get('name')}")
 
         return response_data
 

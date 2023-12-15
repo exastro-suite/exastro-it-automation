@@ -275,7 +275,10 @@ class loadTable():
                 if len(err_info) != 0:
                     for err_megs in err_info:
                         tmp_errs.setdefault(err_key, [])
-                        tmp_errs[err_key].append(err_megs.get('msg'))
+                        if isinstance(err_megs.get('msg'), list):
+                            tmp_errs[err_key] = err_megs.get('msg')
+                        else:
+                            tmp_errs[err_key].append(err_megs.get('msg'))
                     err_all[eno] = tmp_errs.copy()
         msg = json.dumps(err_all, ensure_ascii=False)
 

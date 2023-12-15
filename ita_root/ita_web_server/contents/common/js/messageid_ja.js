@@ -36,7 +36,7 @@
 // 独自メニュー         12001～13000
 
 
-getMessage = ( function() {
+export function messageid_en() {
 
     const message = {
         // 標準メニュー
@@ -953,4 +953,4 @@ getMessage = ( function() {
 
     return message;
 
-}());
+}

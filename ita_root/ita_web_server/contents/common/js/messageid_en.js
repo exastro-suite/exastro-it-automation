@@ -32,7 +32,7 @@
 // Ui common           10001～11000
 
 
-getMessage = ( function() {
+export function messageid_en() {
 
     const message = {
         // Default menu
@@ -952,12 +952,12 @@ getMessage = ( function() {
         'FTE13005': 'Conclusion label setting',
         'FTE13006': 'Conclusion label name',
         'FTE13007': 'Conclusion label value',
-        'FTE13008': 'Unknown',
-        'FTE13009': 'Known(Timeout)',
-        'FTE13010': 'Known(Determined)',
-        'FTE13011': 'Reassessment',
-        'FTE13012': 'New',
-        'FTE13013': 'Action',
+        'FTE13008': 'Unknown events',
+        'FTE13009': 'Timeout events',
+        'FTE13010': 'Known events',
+        'FTE13011': 'Results',
+        'FTE13012': 'New events',
+        'FTE13013': 'Actions',
         'FTE13014': 'Range specification',
         'FTE13015': 'Setting',
         'FTE13016': 'Range specification history',
@@ -979,4 +979,4 @@ getMessage = ( function() {
 
     return message;
 
-}());
+}

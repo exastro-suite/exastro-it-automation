@@ -23,8 +23,9 @@
 let getMessage;
 (function () {
     const ui = new CommonUi();
-    ui.init();
-    CommonAuth.onAuthSuccess(() => {
-        ui.setUi();
+    ui.init().then(function(){
+        CommonAuth.onAuthSuccess(() => {
+            ui.setUi();
+        });
     });
 }());

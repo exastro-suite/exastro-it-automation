@@ -45,6 +45,8 @@ def external_valid_menu_before(objdbca, objtable, option):
         before_notice_dest = entry_parameter.get('before_notification_destination') # 通知先
         after_notice = entry_parameter.get('after_notification') # 通知
         after_notice_dest = entry_parameter.get('after_notification_destination') # 通知先
+        before_rule_label_name = entry_parameter.get('rule_label_name')  # 変更後　ルールラベル名
+        after_rule_label_name = current_parameter.get('rule_label_name') # 変更前　ルールラベル名
 
     # 「復活」の場合、currrent_parameterから各値を取得
     elif cmd_type == 'Restore':
@@ -83,5 +85,13 @@ def external_valid_menu_before(objdbca, objtable, option):
         retBool = False
         msg = g.appmsg.get_api_message("499-01812")
         return retBool, msg, option,
+
+    # 更新の場合、ルールラベル名が変更されていない事を確認
+    if cmd_type == 'Update':
+        if before_rule_label_name != after_rule_label_name:
+            retBool = False
+            msg = g.appmsg.get_api_message("499-01813")
+            return retBool, msg, option,
+
 
     return retBool, msg, option,

@@ -13,10 +13,8 @@
 #
 
 import base64
-import re
 
-import chardet
-import jinja2
+from common_libs.notification import validator
 from flask import g
 
 
@@ -33,8 +31,15 @@ def external_valid_menu_before(objdbca, objtable, option):
         option :受け取ったもの
     """
 
+    target_column_name = {
+        "ja": objtable["COLINFO"]["template_file"]["COLUMN_NAME_JA"],
+        "en": objtable["COLINFO"]["template_file"]["COLUMN_NAME_EN"],
+    }
+
+    target_lang = g.LANGUAGE if g.LANGUAGE is not None else "ja"
+
     retBool = True
-    msg = ''
+    msg = []
 
     # 対象のメニューは更新の操作のみ実施可能なため「cmd_type」はチェックしない
 
@@ -42,34 +47,29 @@ def external_valid_menu_before(objdbca, objtable, option):
     template_data_binary = base64.b64decode(template_data)
 
     # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
-    encode = chardet.detect(template_data_binary)
-    if encode['encoding'] is None:
+    if validator.is_binary_file(template_data_binary):
         retBool = False
-        msg_tmp = g.appmsg.get_api_message("499-01901")
-        msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+        msg_tmp = g.appmsg.get_api_message("499-01814", [target_column_name[target_lang]])
+        msg.append(msg_tmp)
 
     template_data_decoded = template_data_binary.decode('utf-8', 'ignore')
     if retBool:
         # jinja2の形式として問題無いか確認する
-        try:
-            jinja2.Template(template_data_decoded)
-        except Exception:
+        if not validator.is_jinja2_template(template_data_decoded):
             retBool = False
-            msg_tmp = g.appmsg.get_api_message("499-01902")
-            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+            msg_tmp = g.appmsg.get_api_message("499-01815", [target_column_name[target_lang]])
+            msg.append(msg_tmp)
 
     if retBool:
         # 特有の構文チェック
-        title_count = len(re.findall(r'\[TITLE\]', template_data_decoded))
-        if title_count != 1:
+        if not validator.contains_title(template_data_decoded):
             retBool = False
-            msg_tmp = g.appmsg.get_api_message("499-01903")
-            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+            msg_tmp = g.appmsg.get_api_message("499-01816", [target_column_name[target_lang]])
+            msg.append(msg_tmp)
 
-        title_body = len(re.findall(r'\[BODY\]', template_data_decoded))
-        if title_body != 1:
+        if not validator.contains_body(template_data_decoded):
             retBool = False
-            msg_tmp = g.appmsg.get_api_message("499-01904")
-            msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
+            msg_tmp = g.appmsg.get_api_message("499-01817", [target_column_name[target_lang]])
+            msg.append(msg_tmp)
 
     return retBool, msg, option,

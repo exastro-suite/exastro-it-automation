@@ -1,4 +1,9 @@
 {
+    "10102":
+    [
+        {"oase.png":["/menu_group_icon/1102/_old/1102/","/menu_group_icon/1102/"]},
+        {"oase_agent.png":["/menu_group_icon/1101/_old/1101/","/menu_group_icon/1101/"]}
+    ],
     "110102":
     [
         {"新規.j2":["/template_file/1/old/1/","/template_file/1/"]},

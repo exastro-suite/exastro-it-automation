@@ -10,6 +10,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import base64
+
+from common_libs.notification import validator
 from flask import g
 
 
@@ -93,5 +97,96 @@ def external_valid_menu_before(objdbca, objtable, option):
             msg = g.appmsg.get_api_message("499-01813")
             return retBool, msg, option,
 
+    # 以降通知テンプレートのチェック
+    if cmd_type == 'Register' or cmd_type == 'Update':
+        before_notification = option.get('entry_parameter', {}).get('file', {}).get('before_notification', '')
+        after_notification = option.get('entry_parameter', {}).get('file', {}).get('after_notification', '')
+    elif cmd_type == 'Restore':
+        before_notification = option.get('current_parameter', {}).get('file', {}).get('before_notification', '')
+        after_notification = option.get('current_parameter', {}).get('file', {}).get('after_notification', '')
+
+    target = {}
+    if before_notification != '':
+        target["before_notification"] = before_notification
+    if after_notification != '':
+        target["after_notification"] = after_notification
+
+    # テンプレートのアップロードが無い場合は以降のチェックが不要となるためこの時点で返却する
+    if len(target) == 0:
+        return retBool, msg, option,
+
+    target_lang = g.LANGUAGE if g.LANGUAGE is not None else "ja"
+
+    # ここまで処理が流れた時点で、前段のチェックは通過しているので上書きで問題なしと判断
+    msg = []
+
+    for key, value in target.items():
+        target_column_name = {
+            "ja": objtable["COLINFO"][key]["COLUMN_NAME_JA"],
+            "en": objtable["COLINFO"][key]["COLUMN_NAME_EN"],
+        }
+
+        target_column_group_id = objtable["COLINFO"][key]["COL_GROUP_ID"]
+
+        # 後続のチェックが不要になる場合を考慮し、ループ継続の判定に使用するのboolを定義
+        tmp_bool = True
+        # 複数メッセージの返却を考慮し、配列で定義し直す。
+
+        template_data_binary = base64.b64decode(value)
+
+        # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
+        if validator.is_binary_file(template_data_binary):
+            tmp_bool = False
+            retBool = False
+            msg_tmp = g.appmsg.get_api_message("499-01814",
+                                               [__fetch_column_group_name(objdbca, target_column_group_id)[target_lang] + ' ' +
+                                                target_column_name[target_lang]])
+            msg.append(msg_tmp)
+
+        template_data_decoded = template_data_binary.decode('utf-8', 'ignore')
+        if tmp_bool:
+            # jinja2の形式として問題無いか確認する
+            if not validator.is_jinja2_template(template_data_decoded):
+                tmp_bool = False
+                retBool = False
+                msg_tmp = g.appmsg.get_api_message("499-01815",
+                                                   [__fetch_column_group_name(objdbca, target_column_group_id)[target_lang] + ' ' +
+                                                    target_column_name[target_lang]])
+                msg.append(msg_tmp)
+
+        if tmp_bool:
+            # 特有の構文チェック
+            if not validator.contains_title(template_data_decoded):
+                retBool = False
+                msg_tmp = g.appmsg.get_api_message("499-01816",
+                                                   [__fetch_column_group_name(objdbca, target_column_group_id)[target_lang] + ' ' +
+                                                    target_column_name[target_lang]])
+                msg.append(msg_tmp)
+
+            if not validator.contains_body(template_data_decoded):
+                retBool = False
+                msg_tmp = g.appmsg.get_api_message("499-01817",
+                                                   [__fetch_column_group_name(objdbca, target_column_group_id)[target_lang] + ' ' +
+                                                    target_column_name[target_lang]])
+                msg.append(msg_tmp)
 
     return retBool, msg, option,
+
+
+def __fetch_column_group_name(objdbca, col_group_id):
+    """カラムグループの日本語名、英語名を取得する
+
+    Args:
+        objdbca :DB接続クラスインスタンス
+    """
+
+    sql = "SELECT COL_GROUP_NAME_JA,COL_GROUP_NAME_EN FROM t_comn_column_group WHERE COL_GROUP_ID = '%s' and DISUSE_FLAG = '0'" % (col_group_id)
+    fetch_result = objdbca.sql_execute(sql, [])
+
+    return dict(
+        {
+            "ja": fetch_result[0]["COL_GROUP_NAME_JA"],
+            "en": fetch_result[0]["COL_GROUP_NAME_EN"]
+        }
+    )
+

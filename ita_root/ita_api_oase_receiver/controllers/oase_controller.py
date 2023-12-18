@@ -56,7 +56,7 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
     check_auth_menu(menu, wsDb)
 
     # 取得
-    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_NAME IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_names"])))
+    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_SETTINGS_NAME IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_names"])))  # noqa: E501
     bind_values = tuple(body["event_collection_settings_names"])
 
     data = wsDb.table_select(

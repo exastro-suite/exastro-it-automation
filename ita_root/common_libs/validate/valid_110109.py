@@ -106,9 +106,9 @@ def external_valid_menu_before(objdbca, objtable, option):
         after_notification = option.get('current_parameter', {}).get('file', {}).get('after_notification', '')
 
     target = {}
-    if before_notification != '':
+    if before_notification != '' and before_notification is not None:
         target["before_notification"] = before_notification
-    if after_notification != '':
+    if after_notification != '' and after_notification is not None:
         target["after_notification"] = after_notification
 
     # テンプレートのアップロードが無い場合は以降のチェックが不要となるためこの時点で返却する
@@ -189,4 +189,3 @@ def __fetch_column_group_name(objdbca, col_group_id):
             "en": fetch_result[0]["COL_GROUP_NAME_EN"]
         }
     )
-

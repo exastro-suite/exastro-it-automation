@@ -46,13 +46,20 @@ class Notification(ABC):
         g.applogger.info(f"通知に関する情報：{decision_information}")
 
         fetch_data = cls._fetch_table(objdbca, decision_information)
+        if fetch_data is None:
+            g.applogger.info("テーブルにデータが存在しないため処理を終了します。")
+            return {}
+
         template = cls._get_template(fetch_data, decision_information)
+        if template is None:
+            g.applogger.info("テンプレートが存在しないため処理を終了します。")
+            return {}
 
         # 負荷を考慮して通知先は1回のみ取得することとする
         notification_destination = cls._fetch_notification_destination(fetch_data, decision_information)
         if len(notification_destination) == 0:
             g.applogger.info("条件を満たす通知先が0件のため処理を終了します。")
-            return
+            return {}
 
         g.applogger.info(f"合計で通知する件数：{len(notification_destination) * len(event_list)}")
 
@@ -121,7 +128,7 @@ class Notification(ABC):
         """
         g.applogger.info(f"テンプレートのレンダリングに利用するオブジェクトのID:{item.get('_id')}")
 
-        # item = cls._convert_message(item)
+        item = cls._convert_message(item)
 
         jinja_template = Template(template)
         try:

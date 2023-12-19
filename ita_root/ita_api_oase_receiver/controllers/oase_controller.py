@@ -66,16 +66,17 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
     )
 
     # エージェント用にパスワードカラムを暗号化しなおす
-    auth_token = ky_decrypt(data[0]["AUTH_TOKEN"])
-    password = ky_decrypt(data[0]['PASSWORD'])
-    secret_access_key = ky_decrypt(data[0]['SECRET_ACCESS_KEY'])
+    for data in data_list:
+        auth_token = ky_decrypt(data["AUTH_TOKEN"])
+        password = ky_decrypt(data['PASSWORD'])
+        secret_access_key = ky_decrypt(data['SECRET_ACCESS_KEY'])
 
-    pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
-    data[0]['AUTH_TOKEN'] = agent_encrypt(auth_token, pass_phrase)
-    data[0]['PASSWORD'] = agent_encrypt(password, pass_phrase)
-    data[0]['SECRET_ACCESS_KEY'] = agent_encrypt(secret_access_key, pass_phrase)
+        pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
+        data['AUTH_TOKEN'] = agent_encrypt(auth_token, pass_phrase)
+        data['PASSWORD'] = agent_encrypt(password, pass_phrase)
+        data['SECRET_ACCESS_KEY'] = agent_encrypt(secret_access_key, pass_phrase)
 
-    return data,
+    return data_list,
 
 
 @api_filter

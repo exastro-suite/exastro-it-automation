@@ -111,6 +111,7 @@
     "499-01109": "The target Workspace is not registered in the linked Terraform. (Terraform Workspace: {})",
     "499-01110": "The target Policy is not registered in the linked Terraform. (Terraform Policy: {})",
     "499-01111": "The target Policy set is not registered in the linked Terraform. (Terraform Policy set: {})",
+    "499-01112": "Hostname in interface information is invalid. (Hostname: {})",
     "499-01201": "Could not identify the record in the resuming remote repository (Remote Repository Item number:{})",
     "499-01202": "An disuse record cannot be resumed. (Remote Repository Item number:{})",
     "499-01203": "The synchronization status of the Repository is not abnormal and cannot be resumed. Please refresh the list and check the synchronization status.(Remote Repository Item number:{})",

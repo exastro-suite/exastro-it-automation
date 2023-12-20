@@ -945,12 +945,12 @@ export function messageid_en() {
         'FTE12001': 'Failed to display custom menu.',
 
         // OASE
-        'FTE13001': 'Label settings',
-        'FTE13002': 'Label name',
+        'FTE13001': 'Filter Condition',
+        'FTE13002': 'Label Key',
         'FTE13003': 'Condition',
         'FTE13004': 'Condition value',
         'FTE13005': 'Conclusion label setting',
-        'FTE13006': 'Conclusion label name',
+        'FTE13006': 'Conclusion label key',
         'FTE13007': 'Conclusion label value',
         'FTE13008': 'Unknown events',
         'FTE13009': 'Timeout events',

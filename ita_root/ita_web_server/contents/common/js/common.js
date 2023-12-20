@@ -3130,8 +3130,8 @@ settingListModalOpen: function( settingData ) {
             },
             footer: {
                 button: {
-                    ok: { text: '決定', action: 'default', width: '200px'},
-                    cancel: { text: 'キャンセル', action: 'normal'}
+                    ok: { text: getMessage.FTE00143, action: 'default', width: '200px'},
+                    cancel: { text: getMessage.FTE00144, action: 'normal'}
                 }
             }
         };

@@ -34,21 +34,16 @@ RUN dnf install -y \
     langpacks-en \
     wget \
     unzip \
-&&  pip3.9 install --upgrade pip \
-&&  pip3.9 install --upgrade setuptools \
-&&  pip3.9 install --upgrade Flask \
-&&  pip3.9 install --upgrade requests \
-&&  pip3.9 install --upgrade pyyaml \
-&&  pip3.9 install --upgrade pytz \
-&&  pip3.9 install --upgrade pymysql \
-&&  pip3.9 install --upgrade python-dotenv \
-&&  pip3.9 install --upgrade chardet \
-&&  pip3.9 install --upgrade dictknife \
-&&  pip3.9 install --upgrade pycryptodome \
-&&  pip3.9 install --upgrade python-hcl2 \
-&&  pip3.9 install --upgrade cryptography \
+&&  pip3.9 install poetry==1.6.0 \
+&&  poetry config virtualenvs.create false \
 &&  groupadd $GROUPNAME \
 &&  useradd -m -s /bin/bash -g $GROUPNAME $USERNAME
+
+WORKDIR $APP_PATH
+
+COPY ./ita_root/ita_by_terraform_cloud_ep_vars_listup/pyproject.toml ./ita_root/ita_by_terraform_cloud_ep_vars_listup/poetry.lock $APP_PATH/
+RUN poetry install --only first_install
+RUN poetry install --without develop_build
 
 #
 # Build for development
@@ -66,11 +61,10 @@ RUN dnf install -y \
     diffutils \
     bind-utils \
     iputils \
-&&  pip3.9 install --upgrade debugpy \
-&&  pip3.9 install --upgrade flake8 \
-&&  pip3.9 install --upgrade autopep8 \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+RUN poetry install --with develop_build
 
 USER $USERNAME
 

@@ -36,9 +36,10 @@ def conductor_notice_valid(objdbca, objtable, option):  # noqa: C901
         # url正規表現
         url_regex = re.compile(r"https?://[\W\w]+")
 
-        check_notice_url = url_regex.fullmatch(notice_url)
-        if check_notice_url is None:
-            msg.append(g.appmsg.get_api_message("MSG-40042"))
+        if notice_url:
+            check_notice_url = url_regex.fullmatch(notice_url)
+            if check_notice_url is None:
+                msg.append(g.appmsg.get_api_message("MSG-40042"))
         if proxy_url:
             check_proxy_url = url_regex.fullmatch(proxy_url)
             if check_proxy_url is None:

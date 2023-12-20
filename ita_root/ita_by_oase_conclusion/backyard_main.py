@@ -582,12 +582,9 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
             ret, EventRow = EventObj.get_events(event_id)
             if ret is True:
                 timeout_notification_list.append(EventRow)
+
         OASE.send(objdbca, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 
-    new_Event_List = []
-    new_Event_List = list(EventObj.labeled_events_dict.values())
-    # 通知処理（新規）
-    OASE.send(objdbca, new_Event_List, {"notification_type": OASENotificationType.NEW})
 
     # テーブル名
     t_oase_filter = 'T_OASE_FILTER'  # フィルター管理
@@ -599,7 +596,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         return False
 
     tmp_msg = "フィルター管理取得 件数: {}".format(str(len(filterList)))
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # テーブル名
     t_oase_rule = 'T_OASE_RULE'  # ルール管理
@@ -611,10 +608,22 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         return False
 
     tmp_msg = "ルール管理取得 件数: {}".format(str(len(ruleList)))
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # ルール判定　クラス生成
     judgeObj = Judgement(objdbca, MongoDBCA, EventObj)
+
+    new_Event_List = []
+
+    for Event_id, EventRow in EventObj.labeled_events_dict.items():
+        # 結論イベントは通知対象外にする。
+        if EventRow['labels']['_exastro_type'] == 'conclusion':
+            continue
+        # ここでマッチするフィルタがあるか判定
+        new_Event_List.append(EventRow)
+
+    # 通知処理（新規）
+    OASE.send(objdbca, new_Event_List, {"notification_type": OASENotificationType.NEW})
 
     tmp_msg = "フィルタリング開始"
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -663,6 +672,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
 
     # 全レベルループ -----
     newIncidentCount = {}
+    newConclusionEventList = []
+
     while True:
         # レベル毎のループ -----
         for TargetLevel in JudgeLevelList:
@@ -760,6 +771,16 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         tmp_msg = "使用済みインシデントフラグを立てる ({}) ids: {}".format(str(update_Flag_Dict), str(UseEventIdList))
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+                        NotificationEventList = []
+                        for event_id in UseEventIdList:
+                            g.applogger.info(addline_msg('event id: {}'.format(event_id)))  # noqa: F405
+                            ret, EventRow = EventObj.get_events(event_id)
+                            if ret is True:
+                                NotificationEventList.append(EventRow)
+
+                        # 通知処理（既知（判定済み））
+                        OASE.send(objdbca, NotificationEventList, {"notification_type": OASENotificationType.EVALUATED})
+
                         # コミット  トランザクション終了
                         objdbca.db_transaction_end(True)
 
@@ -832,6 +853,9 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 # アクションが設定されていない場合
                                 # 結論イベント登録
                                 ret, ConclusionEventRow = judgeObj.putRaccEvent(ruleRow, UseEventIdList)
+
+                                # 新規イベントの通知用に結論イベント登録
+                                newConclusionEventList.append(ConclusionEventRow)
 
                                 # 結論イベントに処理で必要なラベル情報を追加
                                 ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, defObj.DF_LOCAL_LABLE_NAME, defObj.DF_LOCAL_LABLE_STATUS, defObj.DF_PROC_EVENT)
@@ -912,12 +936,28 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         tmp_msg = "未知イベントなし"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+    # 通知処理（新規イベント）
+    new_notification_list = []
+    for event_row in newConclusionEventList:
+        # 結論イベントが未知イベントか判定
+        if UnusedEventIdList.count(event_row['_id']) == 0:
+            ret, EventRow = EventObj.get_events(event_row['_id'])
+            if ret is True:
+                new_notification_list.append(EventRow)
+
+    OASE.send(objdbca, new_notification_list, {"notification_type": OASENotificationType.NEW})
+
     # 通知処理（未知）
     unused_notification_list = []
-    for event_id in UnusedEventIdList:
-        ret, EventRow = EventObj.get_events(event_id)
+    for Event_id in UnusedEventIdList:
+        ret, EventRow = EventObj.get_events(Event_id)
         if ret is True:
+            # 未知の結論イベントは通知対象外にする。
+            if EventRow['labels']['_exastro_type'] == 'conclusion':
+                continue
+
             unused_notification_list.append(EventRow)
+
     OASE.send(objdbca, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
 
     EventObj.print_event()

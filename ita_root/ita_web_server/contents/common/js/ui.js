@@ -449,13 +449,13 @@ createMenuGroupList() {
                 if ( child.menus && child.menus.length ) {
                     ui.dispSeqSort( child.menus );
                     if ( child.menus[0].menu_name_rest ) {
-                         child.main_menu_rest = child.menus[0].menu_name_rest;
+                        child.main_menu_rest = child.menus[0].menu_name_rest;
                     }
                     if ( ui.menuSecondary.indexOf( child.id ) !== -1 ) {
                         child.secondary_open_flag = true;
                     }
                     for ( const menu of child.menus ) {
-                        if ( ui.params.menuNameRest === menu.menu_name_rest ) {
+                        if ( ui.params.menuNameRest !== undefined && ui.params.menuNameRest === menu.menu_name_rest ) {
                             child.secondary_open_flag = true;
                             ui.currentMenuGroupList = parent;
                         }
@@ -475,7 +475,7 @@ createMenuGroupList() {
             } else if ( menu.menus && menu.menus.length && menu.menus[0].menu_name_rest && subRest === null ) {
                 subRest = menu.menus[0].menu_name_rest;
             }
-            if ( ui.currentMenuGroupList === null && ui.params.menuNameRest === menu.menu_name_rest ) {
+            if ( ui.currentMenuGroupList === null && ui.params.menuNameRest !== undefined && ui.params.menuNameRest === menu.menu_name_rest ) {
                 ui.currentMenuGroupList = parent;
             }
             count++;

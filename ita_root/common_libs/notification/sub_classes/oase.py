@@ -185,13 +185,19 @@ class OASE(Notification):
     @classmethod
     def _convert_message(cls, item):
 
-        item["labels"]["_exastro_fetched_time"] = datetime.datetime.fromtimestamp(int(
-            item["labels"]["_exastro_fetched_time"])).strftime("%Y/%m/%d %H:%M:%S")
+        if "labels" not in item:
+            return item
 
-        item["labels"]["_exastro_end_time"] = datetime.datetime.fromtimestamp(int(
-            item["labels"]["_exastro_end_time"])).strftime("%Y/%m/%d %H:%M:%S")
+        if "_exastro_fetched_time" in item["labels"]:
+            item["labels"]["_exastro_fetched_time"] = datetime.datetime.fromtimestamp(int(
+                item["labels"]["_exastro_fetched_time"])).strftime("%Y/%m/%d %H:%M:%S")
 
-        item["labels"]["_exastro_type"] = cls.DATA_CONVERT_MAP["_exastro_type"][item["labels"]["_exastro_type"]]
+        if "_exastro_end_time" in item["labels"]:
+            item["labels"]["_exastro_end_time"] = datetime.datetime.fromtimestamp(int(
+                item["labels"]["_exastro_end_time"])).strftime("%Y/%m/%d %H:%M:%S")
+
+        if "_exastro_type" in item["labels"]:
+            item["labels"]["_exastro_type"] = cls.DATA_CONVERT_MAP["_exastro_type"][item["labels"]["_exastro_type"]]
 
         return item
 

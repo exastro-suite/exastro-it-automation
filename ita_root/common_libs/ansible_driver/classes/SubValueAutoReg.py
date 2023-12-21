@@ -140,6 +140,7 @@ class SubValueAutoReg():
         lv_tabColNameToValAssRowList = ret[2]
         lv_tableNameToPKeyNameList = ret[3]
         lv_tableNameToMenuNameRestList = ret[4]
+        data_cnt_ary = ret[5]
 
         # 紐付メニューへのSELECT文を生成する。
         ret = self.createQuerySelectCMDB(lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToPKeyNameList)
@@ -152,7 +153,7 @@ class SubValueAutoReg():
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
         warning_flag = 0
-        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, operation_id, warning_flag, self.ws_db)
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, operation_id, warning_flag, self.ws_db, data_cnt_ary)
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]
@@ -303,6 +304,7 @@ class SubValueAutoReg():
         lv_tabColNameToValAssRowList = ret[2]
         lv_tableNameToPKeyNameList = ret[3]
         lv_tableNameToMenuNameRestList = ret[4]
+        data_cnt_ary = ret[5]
 
         # 紐付メニューへのSELECT文を生成する。
         ret = self.createQuerySelectCMDB(lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToPKeyNameList)
@@ -315,7 +317,7 @@ class SubValueAutoReg():
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
         warning_flag = 0
-        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, self.ws_db)
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, self.ws_db, data_cnt_ary)
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]
@@ -871,7 +873,7 @@ class SubValueAutoReg():
 
         return True, ina_if_info, err_code
 
-    def getCMDBdata(self, in_tableNameToSqlList, in_tableNameToMenuIdList, in_tabColNameToValAssRowList, in_tableNameToMenuNameRestList, operation_id, warning_flag, WS_DB):
+    def getCMDBdata(self, in_tableNameToSqlList, in_tableNameToMenuIdList, in_tabColNameToValAssRowList, in_tableNameToMenuNameRestList, operation_id, warning_flag, WS_DB, data_cnt_ary):
         """
         CMDB代入値紐付対象メニューから具体値を取得する。
 
@@ -982,6 +984,8 @@ class SubValueAutoReg():
                 parameter = {}
             
             for tmp_table_name, tmp_value in tmp_ary_data.items():
+                registered_data_cnt = 0
+                break_flg = False
                 for row in tmp_value.values():
                     for table_name, ary_col_data in in_tabColNameToValAssRowList.items():
                         for col_data in ary_col_data[col_name].values():
@@ -1158,11 +1162,18 @@ class SubValueAutoReg():
                                     # NULL連携無効で処理対象外になった場合は追加しない
                                     if not ret[0] == 0:
                                         ina_vars_ass_list[idx] = ret[0]
+                                        registered_data_cnt += 1
                                     if not ret[2] == 0:
                                         ina_array_vars_ass_list[idx] = ret[2]
                             
                                     idx += 1
                                     skip_flag = False
+
+                        if registered_data_cnt == data_cnt_ary[table_name]:
+                            break_flg = True
+                            break
+                    if break_flg is True:
+                        break
                             
             # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
             if 'col_name' in locals():
@@ -1941,6 +1952,7 @@ class SubValueAutoReg():
         inout_tableNameToMenuIdList = {}
         inout_tabColNameToValAssRowList = {}
         inout_tableNameToMenuNameRestList = {}
+        data_cnt_ary = {}
         idx = 0
 
         for data in data_list:
@@ -2049,6 +2061,12 @@ class SubValueAutoReg():
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']] = {}
             if data['COL_NAME'] not in inout_tabColNameToValAssRowList[data['TABLE_NAME']]:
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']][data['COL_NAME']] = {}
+            
+            # 各パラメータシートごとのデータ数
+            if data['TABLE_NAME'] not in data_cnt_ary:
+                data_cnt_ary[data['TABLE_NAME']] = 1
+            else:
+                data_cnt_ary[data['TABLE_NAME']] += 1
 
             inout_tabColNameToValAssRowList[data['TABLE_NAME']][data['COL_NAME']][idx] = {
                                                                             'COLUMN_ID': data['COLUMN_ID'],
@@ -2080,7 +2098,7 @@ class SubValueAutoReg():
             inout_tableNameToPKeyNameList[data['TABLE_NAME']] = pk_name[1][0]
             idx += 1
 
-        return True, inout_tableNameToMenuIdList, inout_tabColNameToValAssRowList, inout_tableNameToPKeyNameList, inout_tableNameToMenuNameRestList
+        return True, inout_tableNameToMenuIdList, inout_tabColNameToValAssRowList, inout_tableNameToPKeyNameList, inout_tableNameToMenuNameRestList, data_cnt_ary
 
     def valAssColumnValidate(self,
                             in_col_type,

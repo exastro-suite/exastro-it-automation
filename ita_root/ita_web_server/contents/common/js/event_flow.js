@@ -371,25 +371,12 @@ createCanvasData() {
 
     er.canvasData = [];
 
-    // 幅とマージンから何段目に表示できるかチェック
-    const floor = [];
-    const floorCheck = function( x1, x2, f ) {
-        if ( !floor[f] ) floor[f] = [];
-
-        const l = floor[f].length;
-        if ( l === 0 || floor[f][ l - 1 ] + er.blockMargin < x1 ) {
-            floor[f].push( x1 );
-            floor[f].push( x2 );
-            return f;
-        } else {
-            return floorCheck( x1, x2, ++f );
-        }
-    };
-
     er.history.sort(function( a, b ){
         return a.datetime.localeCompare( b.datetime );
     });
 
+    const floor = [];
+    let f = 0;
     for ( const item of er.history ) {
         const data = {
             id: item.id,
@@ -415,13 +402,29 @@ createCanvasData() {
         } else {
             data.x1 = er.getDateWidthPositionX( item.datetime );
         }
-        const x2 = ( data.x2 )? data.x2: data.x1;
+        const
+        x1 = data.x1,
+        x2 = ( data.x2 )? data.x2: data.x1;
 
         // 表示範囲内かチェック
         if ( ( data.x1 < 0 && x2 < 0 ) || ( data.x1 > er.w && x2 > er.w ) ) continue;
 
+        // 一番上の段に表示できるか？
+        const floorTopLength = ( floor[0] )? floor[0].length - 1: 0;
+        if ( floor[0] && floor[0][floorTopLength] + er.blockMargin < x1 ) f = 0;
+
         // 何段目に表示するか
-        data.floor = floorCheck( data.x1, x2, 0 );
+        while ( data.floor === undefined ) {
+            if ( !floor[f] ) floor[f] = [];
+
+            const l = floor[f].length;
+            if ( l === 0 || ( floor[f][ l - 1 ] && floor[f][ l - 1 ] + er.blockMargin < x1 ) ) {
+                floor[f].push( x1 );
+                floor[f].push( x2 );
+                data.floor = f;
+            }
+            f++;
+        }
 
         er.canvasData.push( data );
     }
@@ -504,7 +507,6 @@ updateCanvas( initFlag = false ) {
         er.controller = null;
         er.updateDate = Date.now();
 
-        er.$.footer.text('自動更新:ON');
         er.timerId = setTimeout(function(){
             er.updateCanvas();
         }, er.intervalTime );
@@ -830,6 +832,9 @@ setLine() {
     const ctx = er.chartContext.line;
     er.clear( ctx );
 
+    const lineSpacingWidth = er.lineSpacing * er.vRate;
+    if ( lineSpacingWidth < 8 ) return;
+
     const length = Math.floor( er.h / er.lineSpacing ) + 1;
 
     ctx.beginPath();
@@ -837,7 +842,7 @@ setLine() {
     ctx.strokeStyle = er.getBorderColor();
     ctx.setLineDash([]);
     for ( let i = 0; i <= length; i++ ) {
-        const y = ( i * er.lineSpacing * er.vRate ) - er.vPosition;
+        const y = ( i * lineSpacingWidth ) - er.vPosition;
         er.line( ctx, 0, y , er.w, y );
     }
     ctx.stroke();
@@ -1489,6 +1494,8 @@ viewEventInfo( x ) {
         html.push( er.eventInfoRowHtml('Action Name', fn.cv( d.item.ACTION_NAME, '')));
         html.push( er.eventInfoRowHtml('Conductor', fn.cv( d.item.CONDUCTOR_INSTANCE_NAME, '')));
         html.push( er.eventInfoRowHtml('Operation', fn.cv( d.item.OPERATION_NAME, '')));
+        html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.RULE_ID, '')));
+        html.push( er.eventInfoRowHtml('Rule Name', fn.cv( d.item.RULE_NAME, '')));
     } else {
         html.push( er.eventInfoRowHtml('Pattern', fn.cv( er.patternList[ er.currentBlock.pattern ], '')));
         html.push( er.eventInfoRowHtml('Labels', '', 'eventInfoTableLabelsBlank') );

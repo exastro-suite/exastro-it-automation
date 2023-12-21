@@ -115,7 +115,10 @@ class Judgement:
         tmp_msg = "ラベルマスタ 件数: {}".format(str(len(labelList)))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        filter_condition_json = json.loads(FilterRow.get('FILTER_CONDITION_JSON'))
+        if type(FilterRow["FILTER_CONDITION_JSON"]) is str:
+            filter_condition_json = json.loads(FilterRow.get('FILTER_CONDITION_JSON'))
+        else:
+            filter_condition_json = FilterRow.get('FILTER_CONDITION_JSON')
 
         for LabelRow in filter_condition_json:
             # ラベル毎のループ
@@ -407,10 +410,10 @@ class Judgement:
                         f_time = EventRow['labels']['_exastro_fetched_time']
                     else:
                         # イベント発生順の確認
-                        tmp_msg = "{} timr[0] {} time[1] {}".format(DebugMode, f_time, EventRow['labels']['_exastro_fetched_time'])
-                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                         # 発生順　A => B
                         if EventRow['labels']['_exastro_fetched_time'] > f_time:
+                            return True
+                        else:
                             return False
             return True
         else:
@@ -619,7 +622,17 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         # 結論イベントは通知対象外にする。
         if EventRow['labels']['_exastro_type'] == 'conclusion':
             continue
-        # ここでマッチするフィルタがあるか判定
+#            FilterCheckLabelDict = []
+#            for LableName, LabkeKey in EventRow['exastro_label_key_inputs'].items():
+#                FilyerKeys = {}
+#                FilyerKeys['label_key'] = LabkeKey
+#                FilyerKeys['label_value'] = EventRow['labels'][LableName]
+#                FilterCheckLabelDict.append(FilyerKeys)
+#            # 結論イベントに対応するフィルタ確認
+#            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(FilterCheckLabelDict, filterList)
+#            print("結論イベントに対応するフィルタ確認: " + str(ret))
+#            if ret is False:
+#                continue
         new_Event_List.append(EventRow)
 
     # 通知処理（新規）

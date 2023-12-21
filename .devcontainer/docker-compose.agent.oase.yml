@@ -26,7 +26,6 @@ services:
     environment:
       - TZ=Asia/Tokyo
       - DEFAULT_LANGUAGE=en
-      - ENCRYPT_KEY=${ENCRYPT_KEY}
       - AGENT_NAME=${AG_OASE_AGENT_NAME}
       - ORGANIZATION_ID=${AG_OASE_ORGANIZATION_ID}
       - WORKSPACE_ID=${AG_OASE_WORKSPACE_ID}

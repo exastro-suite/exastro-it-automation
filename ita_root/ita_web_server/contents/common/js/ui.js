@@ -62,49 +62,59 @@ constructor() {
 init() {
     const ui = this;
 
-    // UI設定読み込み
-    fn.setUiSetting();
+    return new Promise(function( resolve ){
 
-    // UIモード
-    if ( window.parent === window ) {
-        ui.$.container.addClass('windowMode');
+        // UIモード
+        if ( window.parent === window ) {
+            ui.$.container.addClass('windowMode');
 
-        // サイドメニュー開閉チェック
-        const sideMenu = fn.storage.get('sideMenuClose');
-        if ( sideMenu === true ) {
-            ui.$.container.addClass('menuClose');
+            // サイドメニュー開閉チェック
+            const sideMenu = fn.storage.get('sideMenuClose');
+            if ( sideMenu === true ) {
+                ui.$.container.addClass('menuClose');
+            }
+
+            // サイドメニューイベントのセット
+            ui.setSideMenuEvents();
+
+            // Session storageにデータがある場合は先に表示する
+            ui.storageLang = fn.storage.get('lang', 'session');
+            ui.storageMenuGroups = fn.storage.get('restMenuGroups', 'session');
+            ui.storagePanel = fn.storage.get('restPanel', 'session');
+            ui.storageUser = fn.storage.get('restUser', 'session');
+
+            if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel && ui.storageUser ) {
+                ui.lang = ui.storageLang;
+                import(`/_/ita/js/messageid_${ui.lang}.js`).then(function( module ){
+                    if ( ui.lang === 'ja') {
+                        getMessage = module.messageid_ja();
+                    } else {
+                        getMessage = module.messageid_en();
+                    }
+                    ui.rest.menuGroups = ui.storageMenuGroups;
+                    ui.rest.panel = ui.storagePanel;
+                    ui.rest.user = ui.storageUser;
+
+                    ui.setSideMenu();
+                    ui.maintenanceMode();
+                    ui.headerMenu( false );
+
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+
+        } else {
+            ui.$.container.addClass('iframeMode');
+
+            const iframeMode = fn.getParams().iframeMode;
+            if ( iframeMode ) {
+                ui.$.container.attr('data-iframeMode', iframeMode );
+            }
+            resolve();
         }
-
-        // サイドメニューイベントのセット
-        ui.setSideMenuEvents();
-
-        // Session storageにデータがある場合は先に表示する
-        ui.storageLang = fn.storage.get('lang', 'session');
-        ui.storageMenuGroups = fn.storage.get('restMenuGroups', 'session');
-        ui.storagePanel = fn.storage.get('restPanel', 'session');
-        ui.storageUser = fn.storage.get('restUser', 'session');
-
-        if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel && ui.storageUser ) {
-            ui.lang = ui.storageLang;
-            fn.loadAssets({type:'js', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
-                ui.rest.menuGroups = ui.storageMenuGroups;
-                ui.rest.panel = ui.storagePanel;
-                ui.rest.user = ui.storageUser;
-
-                ui.setSideMenu();
-                ui.maintenanceMode();
-                ui.headerMenu( false );
-            });
-        }
-
-    } else {
-        ui.$.container.addClass('iframeMode');
-
-        const iframeMode = fn.getParams().iframeMode;
-        if ( iframeMode ) {
-            ui.$.container.attr('data-iframeMode', iframeMode );
-        }
-    }
+    });
 }
 /*
 ##################################################
@@ -133,7 +143,12 @@ setUi() {
         ui.lang = tmpLang;
 
         if ( $lang.length ) $('#lang').remove();
-        fn.loadAssets({type:'js', url:`/_/ita/js/messageid_${ui.lang}.js`, id: 'lang'}).then(function(){
+        import(`/_/ita/js/messageid_${ui.lang}.js`).then(function( module ){
+            if ( ui.lang === 'ja') {
+                getMessage = module.messageid_ja();
+            } else {
+                getMessage = module.messageid_en();
+            }
             set();
         });
     } else {
@@ -434,13 +449,13 @@ createMenuGroupList() {
                 if ( child.menus && child.menus.length ) {
                     ui.dispSeqSort( child.menus );
                     if ( child.menus[0].menu_name_rest ) {
-                         child.main_menu_rest = child.menus[0].menu_name_rest;
+                        child.main_menu_rest = child.menus[0].menu_name_rest;
                     }
                     if ( ui.menuSecondary.indexOf( child.id ) !== -1 ) {
                         child.secondary_open_flag = true;
                     }
                     for ( const menu of child.menus ) {
-                        if ( ui.params.menuNameRest === menu.menu_name_rest ) {
+                        if ( ui.params.menuNameRest !== undefined && ui.params.menuNameRest === menu.menu_name_rest ) {
                             child.secondary_open_flag = true;
                             ui.currentMenuGroupList = parent;
                         }
@@ -460,7 +475,7 @@ createMenuGroupList() {
             } else if ( menu.menus && menu.menus.length && menu.menus[0].menu_name_rest && subRest === null ) {
                 subRest = menu.menus[0].menu_name_rest;
             }
-            if ( ui.currentMenuGroupList === null && ui.params.menuNameRest === menu.menu_name_rest ) {
+            if ( ui.currentMenuGroupList === null && ui.params.menuNameRest !== undefined && ui.params.menuNameRest === menu.menu_name_rest ) {
                 ui.currentMenuGroupList = parent;
             }
             count++;
@@ -970,7 +985,7 @@ headerMenu( readyFlag = true ) {
     const workspaces = fn.cv( mn.rest.user.workspaces, []),
           workspaceId = mn.params.workspaceId,
           workspaceName = workspaces[ workspaceId ];
-    
+
 
     const html = `<ul class="headerMenuList">`
         + `<li class="headerMenuInformation headerMenuItem">${mn.workspaceInfo()}</li>`

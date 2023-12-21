@@ -15,7 +15,7 @@
 import requests
 import json
 from urllib.parse import urlparse
-from common_libs.common.util import ky_decrypt
+
 
 
 class APIClientCommon:
@@ -36,11 +36,11 @@ class APIClientCommon:
         parsed_url = urlparse(event_settings["PROXY"]) if event_settings["PROXY"] else None
         self.proxy_host = parsed_url.hostname if parsed_url else None
         self.proxy_port = parsed_url.port if parsed_url else None
-        self.auth_token = ky_decrypt(event_settings["AUTH_TOKEN"])
+        self.auth_token = event_settings["AUTH_TOKEN"]
         self.username = event_settings["USERNAME"]
-        self.password = ky_decrypt(event_settings["PASSWORD"])
+        self.password = event_settings["PASSWORD"]
         self.access_key_id = event_settings["ACCESS_KEY_ID"]
-        self.secret_access_key = ky_decrypt(event_settings["SECRET_ACCESS_KEY"])
+        self.secret_access_key = event_settings["SECRET_ACCESS_KEY"]
         self.mailbox_name = event_settings["MAILBOXNAME"]
         self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
 

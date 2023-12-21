@@ -158,7 +158,7 @@ tableStructuralData() {
                 'base_datetime', 'operation_date', 'last_execute_timestamp',
                 'remarks', 'last_update_date_time', 'last_updated_user'
             ];
-            
+
             if ( tb.info.column_info[key] ) {
                 return hideItem.indexOf( tb.info.column_info[key].column_name_rest ) === -1;
             } else {
@@ -406,7 +406,7 @@ setup() {
     }
 
     // ソート
-    tb.sort = [];
+    if ( !tb.sort ) tb.sort = [];
 
     // ドライバータイプ
     tb.driver = null;
@@ -1442,7 +1442,7 @@ setTableEvents() {
                   id = $a.attr('data-id'),
                   rest = $a.attr('data-rest'),
                   type = $a.attr('data-type');
-            
+
             // ファイルダウンロードタイプ
             if ( tb.option.fileFlag === false ) {
                 if ( $a.is('.nowDownload') ) return;
@@ -1683,7 +1683,7 @@ setTableEvents() {
             id = $button.attr('data-id'),
             key = $button.attr('data-key'),
             maxSize = $button.attr('data-upload-max-size');
-            
+
             $button.prop('disabled', true );
 
             fn.fileSelect('file', maxSize ).then(function( result ){
@@ -1908,7 +1908,7 @@ setTableEvents() {
 
             tb.setSelect2( null, $select, list, true, null, $value, multiple ).then(function(){
                 $select.change();
-            });      
+            });
         });
 
         // select2が開いているときはスクロールさせない
@@ -1923,7 +1923,7 @@ setTableEvents() {
                 $( this ).closest('.tableWrap').off('wheel.select2Scroll');
             }
         });
-        
+
         // select欄フォーカス時にselect2を適用する
         tb.$.tbody.on('focus.select2', '.tableEditInputSelect', function(){
             const
@@ -2425,8 +2425,8 @@ setInputFile( fileName, fileData, id, rest, beforeData ) {
         if ( tb.edit.input[id]['after'].parameter[rest] !== undefined ) {
             delete tb.edit.input[id]['after'].parameter[rest];
         }
-        
-    }    
+
+    }
 
     tb.checkNewInputDataDelete( id );
 
@@ -2595,7 +2595,7 @@ editModeMenuCheck() {
 
         $button.filter('[data-type="tableDiscard"]').prop('disabled', discardFlag );
         $button.filter('[data-type="tableRestore"]').prop('disabled', restoreFlag );
-    }    
+    }
 }
 /*
 ##################################################
@@ -2668,7 +2668,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
             function CustomData ( $element, options ) {
                 CustomData.__super__.constructor.call( this, $element, options );
             }
-        
+
             Utils.Extend( CustomData, ArrayData );
 
             CustomData.prototype.query = function ( params, callback ) {
@@ -2690,10 +2690,10 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
                         more: ( params.page * pageSize < options.length )
                     }
                 };
-                
+
                 callback( results );
             };
-            
+
             const select2Option = {
                 dropdownAutoWidth: false,
                 ajax: {},
@@ -2702,7 +2702,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
 
             if ( multipel ) {
                 select2Option.closeOnSelect = false;
-            } 
+            }
 
             // Filter or Data
             let width;
@@ -2727,7 +2727,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
                 $container.addClass('tableEditInputMultipleSelectOpen');
                 if ( optionlist.length !== 0 ) {
                     $container.find('.select2').css({
-                        'min-width': width,
+                        'min-width': width + 20, // ×分の幅
                         'width': 'auto'
                     });
                 }
@@ -2775,7 +2775,7 @@ filterSelectParamsOpen( filterParams ) {
                     $button = tb.$.thead.find(`.filterPulldownOpenButton[data-rest="${filterKeys[i]}"]`),
                     name = $button.attr('data-type') + '_RF',
                     $selectArea = $button.parent('.filterSelectArea');
-                    
+
                     const $selectBox = $('<select/>' , {
                         'class': 'filterSelect filterInput',
                         'name': name,
@@ -2783,7 +2783,7 @@ filterSelectParamsOpen( filterParams ) {
                         'data-rest': filterKeys[i],
                         'multiple': 'multiple'
                     });
-                    
+
                     tb.setSelect2( $selectArea, $selectBox, result[i], false, filterList[ filterKeys[i] ] ).then(function(){
                         // 全てのselect2の適用が終わったら
                         if ( ++count === length ) {
@@ -2842,7 +2842,7 @@ requestTbody() {
             if ( tb.option.parameterSheetType !== '3') {
                 tb.filterParams.host_name = {
                     LIST: tb.option.parameterHostList
-                }   
+                }
             }
         }
     }
@@ -2992,10 +2992,10 @@ workerPost( type, data ) {
                 tb.rest.filter,
                 tb.params.orgId,
                 tb.params.wsId );
-            
+
             const token = ( fn.getCmmonAuthFlag() )? CommonAuth.getToken():
                 ( window.parent && window.parent.getToken )? window.parent.getToken(): null;
-            
+
             post.rest = {
                 token: token,
                 url: url,
@@ -3331,12 +3331,6 @@ tableInputMaxWidthCheck( target ) {
 }
 /*
 ##################################################
-   Table width check
-   > 最大幅を超えた場合調整する
-##################################################
-*/
-/*
-##################################################
    Body HTML
 ##################################################
 */
@@ -3357,7 +3351,7 @@ tbodyHtml() {
         if ( tb.discardCheck( rowId ) === '1') {
             rowClassName.push('tBodyTrDiscard');
         }
-        
+
         // モード別列
         const rowCheckInput = function( type = 'check') {
             // チェック状態
@@ -3669,7 +3663,7 @@ viewCellHtml( item, columnKey, journal ) {
             } else {
                 return checkJournal( value );
             }
-        
+
         // カラーコード
         case 'ColorCodeColumn':
             const colorCode = fn.checkHexColorCode( value );
@@ -3682,7 +3676,7 @@ viewCellHtml( item, columnKey, journal ) {
             } else {
                 return '';
             }
-        
+
         // パラメータ集用
         case 'ParameterCollectionSheetType':
             if ( value === '1') {
@@ -3692,7 +3686,7 @@ viewCellHtml( item, columnKey, journal ) {
             } else {
                 return '';
             }
-        
+
         case 'ParameterCollectionUse':
             if ( value === '1') {
                 return getMessage.FTE11043;
@@ -4012,7 +4006,7 @@ editCellHtml( item, columnKey ) {
         case 'FileUploadColumn':
             inputClassName.push('tableEditSelectFile');
             return fn.html.fileSelect( value, inputClassName, attr );
-        
+
         // ファイルアップロード（機器一覧：ssh秘密鍵ファイルなど）
         case 'FileUploadEncryptColumn':
             inputClassName.push('tableEditSelectFile');
@@ -4021,7 +4015,7 @@ editCellHtml( item, columnKey ) {
         // ボタン
         case 'ButtonColumn':
             return tb.buttonAction( columnInfo, item, columnKey );
-        
+
         // カラーコード
         case 'ColorCodeColumn':
             inputClassName.push('tableEditSColorCode');
@@ -4113,7 +4107,7 @@ editConfirmCellHtml( item, columnKey ) {
                 } else {
                     return '';
                 }
-            
+
             // カラーコード
             case 'ColorCodeColumn':
                 const colorCode = fn.checkHexColorCode( val );
@@ -4422,7 +4416,7 @@ changeEdtiMode( changeMode ) {
                 b = fn.cv( b, '');
                 return a.localeCompare( b );
             });
-            
+
             // バイト数の多い順に並べる
             tb.data.editSelectLength[ restName ] = $.extend( true, [], tb.data.editSelectArray[ restName ] );
             tb.data.editSelectLength[ restName ].sort(function( a, b ) {
@@ -4430,7 +4424,7 @@ changeEdtiMode( changeMode ) {
             });
             tb.data.editSelectLength[ restName ] = tb.data.editSelectLength[ restName ].slice( 0, 5 );
         }
-        
+
 
         // 追加用空データ
         tb.edit.blank = {
@@ -4680,7 +4674,7 @@ editOk() {
             for ( const columnKey of tb.data.regiColumnKeys ) {
                 const columnNameRest = info[ columnKey ].column_name_rest,
                       columnType = info[ columnKey ].column_type;
-                
+
                 // ファイルがフォームデータではない場合は変換する
                 const fileCheck = function( file ) {
                     if ( fn.typeof( file ) === 'file') {
@@ -4977,27 +4971,32 @@ editError( error ) {
         newRowNum = parseInt(item);
         for ( const error in errorMessage[item] ) {
             const name = fn.cv( tb.data.restNames[ error ], error, true );
-            let   body = fn.cv( errorMessage[item][error].join(''), '?', true );
+            const errorArray = errorMessage[item][error];
 
-            if ( fn.typeof( body ) === 'string') body = body.replace(/\r?\n/g, '<br>');
+            if ( fn.typeof( errorArray ) === 'array') {
+                for ( const errorText of errorArray ) {
+                    let body = fn.cv( errorText, '?', true );
+                    body = body.replace(/\r?\n/g, '<br>');
 
-            // 編集項目か否か
-            if(param[item] != null) {
-                editRowNum = param[item];
-                errorHtml.push(`<tr class="tBodyTr tr">`
-                    + (( tb.partsFlag )? ``: fn.html.cell( auto_input, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
-                    + (( tb.partsFlag )? ``: fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
-                    + fn.html.cell( name, 'tBodyTh', 'th')
-                    + fn.html.cell( body, 'tBodyTd')
-                + `</tr>`);
-            }else{
-                editRowNum = '<span class="tBodyAutoInput"></span>';
-                errorHtml.push(`<tr class="tBodyTr tr">`
-                    + (( tb.partsFlag )? ``:fn.html.cell( newRowNum + 1, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
-                    + (( tb.partsFlag )? ``:fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
-                    + fn.html.cell( name, 'tBodyTh', 'th')
-                    + fn.html.cell( body, 'tBodyTd')
-                + `</tr>`);
+                    // 編集項目か否か
+                    if ( param[item] !== null ) {
+                        editRowNum = param[item];
+                        errorHtml.push(`<tr class="tBodyTr tr">`
+                            + (( tb.partsFlag )? ``: fn.html.cell( auto_input, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
+                            + (( tb.partsFlag )? ``: fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
+                            + fn.html.cell( name, 'tBodyTh', 'th')
+                            + fn.html.cell( body, 'tBodyTd')
+                        + `</tr>`);
+                    } else {
+                        editRowNum = '<span class="tBodyAutoInput"></span>';
+                        errorHtml.push(`<tr class="tBodyTr tr">`
+                            + (( tb.partsFlag )? ``:fn.html.cell( newRowNum + 1, ['tBodyTh', 'tBodyLeftSticky'], 'th') )
+                            + (( tb.partsFlag )? ``:fn.html.cell( editRowNum, ['tBodyTh', 'tBodyErrorId'], 'th') )
+                            + fn.html.cell( name, 'tBodyTh', 'th')
+                            + fn.html.cell( body, 'tBodyTd')
+                        + `</tr>`);
+                    }
+                }
             }
         }
     }
@@ -5225,7 +5224,7 @@ tableSettingOk() {
             unCheckList.push( $( this ).val() );
         });
         settingData.individual[ tb.tableMode ].hideItem = unCheckList;
-    
+
         tb.saveTableSetting().then(function(){
             resolve();
         });
@@ -5263,7 +5262,7 @@ saveTableSetting() {
                 tb.resetTable();
             }).catch(function( error ){
                 if ( fn.typeof( error ) === 'object') {
-                    if ( fn.typeof( error.message ) === 'string') alert( error.message );   
+                    if ( fn.typeof( error.message ) === 'string') alert( error.message );
                 } else {
                     fn.alert( getMessage.FTE10092, getMessage.FTE10093 );
                 }
@@ -5479,7 +5478,7 @@ tableSettingOpen() {
             tb.tableSettingModal[ tb.tableMode ].open( html );
 
             tb.tableSettingGroupCheck();
-            tb.tableSettingEvents();        
+            tb.tableSettingEvents();
             fn.commonTab( tb.tableSettingModal[ tb.tableMode ].$.dbody.find(`.commonTab`) );
         }
     });
@@ -5567,7 +5566,7 @@ tableSettingListHtml() {
 */
 tableSettingGroupCheck() {
     const tb = this;
-    
+
     const $dBody = tb.tableSettingModal[ tb.tableMode ].$.dbody;
     $dBody.find('.tableSettingCheckGroup:checked').each(function(){
         const
@@ -5787,7 +5786,7 @@ multipleColmunSetting( columnType, restName, value, required ) {
     return new Promise(function( resolve ){
         // プルダウンセレクトリスト
         const multipleList = tb.data.editSelect[ restName ];
-        
+
         // 配列に変換
         const multipleArray = [];
         for ( const key in multipleList ) {
@@ -6447,7 +6446,7 @@ setPartsTable( mode ) {
                 itemId = $button.attr('data-id');
 
                 tb.select.view = [ itemId ];
-                        
+
                 switch ( type ) {
                     // 追加
                     case 'tableEdit':
@@ -6464,6 +6463,7 @@ setPartsTable( mode ) {
     } else if ( tb.mode === 'edit') {
         // メニューボタン
         tb.$.container.find('.eventFlowPartsBlockMenuButton').on('click', function(){
+            if ( tb.flag.dragAndDrop === true ) return;
             if ( !tb.checkWork ) {
                 const $button = $( this ),
                     type = $button.attr('data-type');
@@ -6680,7 +6680,7 @@ partsItemHtml( type, name, idRest, nameRest, item ) {
     const
     partsName = fn.cv( parameter[nameRest], '', true ),
     partsId = fn.cv( parameter[idRest], '', true );
-    
+
     return ``
     + `<li class="eventFlowPartsItem eventFlowParts${name}">`
         + `<div class="eventFlowPartsHeader">`
@@ -6773,7 +6773,7 @@ partsRuleHtml( parameter ) {
     operator = fn.cv( parameter.filter_operator, null, true ),
     actionName = fn.cv( parameter.action_id, null, true ),
     labels = fn.cv( parameter.conclusion_label_name, null );
-    
+
     const html = [];
 
     // Filter

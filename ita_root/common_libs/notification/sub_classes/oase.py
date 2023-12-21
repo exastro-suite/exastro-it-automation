@@ -106,7 +106,11 @@ class OASE(Notification):
         g.applogger.info(f"_fetch_tableで実行するクエリの内容:\n{query}")
         g.applogger.info(f"_fetch_tableで実行するクエリの変数に渡す値:\n{values['condition_value']}")
 
-        return objdbca.sql_execute(query, values['condition_value']).pop()
+        query_result = objdbca.sql_execute(query, values['condition_value'])
+        if len(query_result) == 0:
+            return None
+
+        return query_result.pop()
 
     @classmethod
     def _get_template(cls, fetch_data, decision_information: dict):
@@ -119,6 +123,8 @@ class OASE(Notification):
         menu_id = values["menu_id"]
         rest_name = values["rest_name"]
         file_name = fetch_data["TEMPLATE_FILE"]
+        if file_name is None or file_name == '':
+            return None
 
         path = get_upload_file_path(workspace_id, menu_id, uuid, rest_name, file_name, "")
         g.applogger.info(f"取得するテンプレートのパス:\n{path}")
@@ -134,6 +140,9 @@ class OASE(Notification):
 
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION]:
             notification_destination_str = fetch_data.get("NOTIFICATION_DESTINATION")
+            if notification_destination_str is None or notification_destination_str == '':
+                return []
+
             notification_destination_dict = json.loads(notification_destination_str)
 
             g.applogger.info(f"ルールから取得した通知先：\n{notification_destination_dict['id']}")

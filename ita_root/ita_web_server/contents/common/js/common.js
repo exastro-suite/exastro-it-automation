@@ -2154,7 +2154,7 @@ html: {
         });
 
         const
-        color = ( label )? label.parameter.color_code: '#002B62',
+        color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code: '#002B62',
         keyColor = cmn.blackOrWhite( color, 1 ),
         conColor = cmn.blackOrWhite( color, 1 ),
         valColor = cmn.blackOrWhite( color, .5 );
@@ -2189,6 +2189,7 @@ checkHexColorCode: function( code, nullCheckFlag = true ) {
 ##################################################
 */
 blackOrWhite: function( hexcolor, num ) {
+    if ( !hexcolor ) return '';
 	const
     r = parseInt( hexcolor.substring( 1, 3 ), 16 ),
     g = parseInt( hexcolor.substring( 3, 5 ), 16 ),
@@ -3129,8 +3130,8 @@ settingListModalOpen: function( settingData ) {
             },
             footer: {
                 button: {
-                    ok: { text: '決定', action: 'default', width: '200px'},
-                    cancel: { text: 'キャンセル', action: 'normal'}
+                    ok: { text: getMessage.FTE00143, action: 'default', width: '200px'},
+                    cancel: { text: getMessage.FTE00144, action: 'normal'}
                 }
             }
         };

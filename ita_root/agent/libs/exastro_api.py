@@ -1,4 +1,4 @@
-# Copyright 2022 NEC Corporation#
+# Copyright 2023 NEC Corporation#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,6 +14,9 @@
 
 import requests
 from common_libs.common.exception import AppException
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
+urllib3.disable_warnings(InsecureRequestWarning)
 
 
 class Exastro_API:
@@ -39,7 +42,8 @@ class Exastro_API:
                 url=url,
                 headers=self.headers,
                 auth=(self.username, self.password),
-                json=body
+                json=body,
+                verify=False
             )
 
             status_code = response.status_code

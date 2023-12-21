@@ -1067,7 +1067,7 @@ font-size: 87px;
 opacity: .05;
 }
 .headerMenuInfoType {
-position: relative;  
+position: relative;
 display: inline-block;
 padding: 0 28px 4px 16px;
 background-color: var(--mainColor100);
@@ -1898,6 +1898,9 @@ min-width: 0;
 width: 100%; height: 100%;
 background-color: #F2F2F2;
 }
+.darkmode #content {
+background-color: #393D43;
+}
 .contentInner {
 width: 100%; height: 100%;
 }
@@ -2150,6 +2153,15 @@ animation: loading 1s infinite;
 .pageContentLoading::after {
   border: 8px solid rgba( 255,255,255,.1 );
   border-bottom-color: rgba( 255,255,255,.2 );
+}
+.darkmode .containerLoading,
+.darkmode .tableLoading {
+background-color: rgba( 0,0,0,.2 );
+}
+.darkmode .containerLoading::after,
+.darkmode .tableLoading::after {
+border: 24px solid rgba(255,255,255,.1);
+border-bottom-color: rgba(255,255,255,.3);
 }
 /* StandBy */
 .tableMessage,
@@ -2825,7 +2837,7 @@ cursor: pointer;
 }
 .tableEditInputMultipleSelectValue,
 .tableEditInputMultipleSelectContainer .select2-selection--multiple {
-padding-right: 20px;
+padding-right: 14px;
 }
 .tBodyTrDiscard .tableEditInputSelectValue {
 border-color: var(--black30);
@@ -3178,7 +3190,7 @@ white-space: nowrap;
 text-overflow: ellipsis;
 }
 .tableFooterTitle {
-padding-left: 16px; 
+padding-left: 16px;
 }
 .tableFooterData {
 margin-left: 12px; padding: 12px;
@@ -3430,7 +3442,7 @@ border-bottom-color: rgba( 0,0,0,.3 );
 }
 .errorTableContainer {
 overflow: auto;
-height: 100%;
+height: calc( 100% - 6px );
 }
 .errorTitle {
 height: 40px;
@@ -3621,7 +3633,7 @@ opacity: .5;
 .fileEditor {
 display: flex;
 flex-direction: column;
-height: 100%; 
+height: 100%;
 }
 .fileEditor > div {
 min-height: 0;
@@ -4061,7 +4073,7 @@ display: none;
 
 /*
 ##################################################
-   Other input 
+   Other input
 ##################################################
 */
 .inputFaderWrap {
@@ -4616,7 +4628,7 @@ white-space: nowrap;
 text-overflow: ellipsis;
 }
 .operationLogFooterTitle {
-padding-left: 16px; 
+padding-left: 16px;
 }
 .operationLogFooterItem {
 margin-left: 12px; padding: 12px;
@@ -4663,7 +4675,7 @@ line-height: 1.5;
 letter-spacing: .5px;
 font-size: 16px;
 animation: messageShow .2s linear forwards;
-} 
+}
 @keyframes messageShow {
 to { transform: translateY(0); }
 }
@@ -4915,7 +4927,7 @@ justify-content: flex-end;
 gap: 16px;
 }
 .commonMenuItem {
-flex: 1 1 100%; 
+flex: 1 1 100%;
 max-width: 50%;
 }
 .commonButton {
@@ -4951,7 +4963,7 @@ letter-spacing: .25px;
 line-height: 1.75;
 word-break: break-all;
 font-size: 16px;
-} 
+}
 .alertMessageIconBlock {
 display: flex;
 align-items: center;

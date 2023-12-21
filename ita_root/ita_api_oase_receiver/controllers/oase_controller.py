@@ -21,6 +21,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.api import api_filter
+from common_libs.oase.encrypt import agent_encrypt
 from libs.oase_receiver_common import check_menu_info, check_auth_menu
 from libs.label_event import label_event
 
@@ -55,16 +56,27 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
     check_auth_menu(menu, wsDb)
 
     # 取得
-    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_NAME IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_names"])))
+    where_str = "WHERE DISUSE_FLAG=0 AND EVENT_COLLECTION_SETTINGS_NAME IN ({})".format(", ".join(["%s"] * len(body["event_collection_settings_names"])))  # noqa: E501
     bind_values = tuple(body["event_collection_settings_names"])
 
-    data = wsDb.table_select(
+    data_list = wsDb.table_select(
         "T_OASE_EVENT_COLLECTION_SETTINGS",
         where_str,
         bind_values
     )
 
-    return data,
+    # エージェント用にパスワードカラムを暗号化しなおす
+    for data in data_list:
+        auth_token = ky_decrypt(data["AUTH_TOKEN"])
+        password = ky_decrypt(data['PASSWORD'])
+        secret_access_key = ky_decrypt(data['SECRET_ACCESS_KEY'])
+
+        pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
+        data['AUTH_TOKEN'] = agent_encrypt(auth_token, pass_phrase)
+        data['PASSWORD'] = agent_encrypt(password, pass_phrase)
+        data['SECRET_ACCESS_KEY'] = agent_encrypt(secret_access_key, pass_phrase)
+
+    return data_list,
 
 
 @api_filter

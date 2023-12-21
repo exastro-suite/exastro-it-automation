@@ -924,7 +924,7 @@ def make_host_data(hgsp_config, hgsp_data):
                     raise Exception()
 
                 # ファイルコピー情報設定
-                copy_file_array = chk_file_file_columns(file_columns_info, output_table, alone_data, {}, copy_file_array)
+                copy_file_array = chk_file_file_columns(file_columns_info, output_table, alone_data, {}, result[0], copy_file_array)
 
                 insert_cnt += 1
 
@@ -1426,7 +1426,7 @@ def chk_file_file_columns(file_columns_info, output_table, input_data, file_info
         copy_file_array
     """
     for rest_key in file_columns_info['target_rest_name']:
-        alone_data_json = get_json_loads(target_data.get("DATA_JSON"))
+        alone_data_json = get_json_loads(target_data.get("DATA_JSON")) if isinstance(target_data, dict) else {}
         alone_file_name = alone_data_json.get(rest_key) if rest_key in alone_data_json else None
         if alone_file_name:
             input_file_path = file_columns_info['input'][rest_key].get_file_data_path(alone_file_name, input_data['ROW_ID'], None, False)

@@ -33,7 +33,7 @@ CREATE TABLE T_OASE_REQUEST_METHOD
 CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS
 (
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集ID
-    EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
+    EVENT_COLLECTION_SETTINGS_NAME  VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
     REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
     URL                             VARCHAR(1024),                              -- URL
@@ -63,7 +63,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     EVENT_COLLECTION_SETTINGS_ID    VARCHAR(40),                                -- イベント収集ID
-    EVENT_COLLECTION_NAME           VARCHAR(255),                               -- イベント収集名
+    EVENT_COLLECTION_SETTINGS_NAME  VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
     REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
     URL                             VARCHAR(1024),                              -- URL
@@ -431,7 +431,7 @@ CREATE TABLE T_OASE_RULE
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
     CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
-    REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    TTL                             INT,                                        -- TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考
@@ -461,7 +461,7 @@ CREATE TABLE T_OASE_RULE_JNL
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
     CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
-    REEVALUATE_TTL                  INT,                                        -- 再評価用TTL
+    TTL                             INT,                                        -- TTL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考

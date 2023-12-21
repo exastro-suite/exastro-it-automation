@@ -48,10 +48,18 @@ def get_ita_settings():  # noqa: E501
     # descriptionの言語を選定
     for driver_data in additional_driver:
         if g.LANGUAGE == "ja":
-            driver_data["description"] = driver_data.pop("description_ja")
+            if driver_data.get("description_ja"):
+                driver_data["description"] = driver_data.pop("description_ja")
+            else:
+                # descriptionの中身がない場合はkeyごと削除
+                del driver_data["description_ja"]
             del driver_data["description_en"]
         else:
-            driver_data["description"] = driver_data.pop("description_en")
+            if driver_data.get("description_en"):
+                driver_data["description"] = driver_data.pop("description_en")
+            else:
+                # descriptionの中身がない場合はkeyごと削除
+                del driver_data["description_en"]
             del driver_data["description_ja"]
 
     result_data = {

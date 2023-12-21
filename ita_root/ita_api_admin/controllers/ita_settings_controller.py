@@ -16,7 +16,7 @@ controller
 ita_settings
 """
 # import connexion
-# from flask import g
+from flask import g
 import json
 
 from common_libs.api import api_filter_admin
@@ -44,6 +44,23 @@ def get_ita_settings():  # noqa: E501
     additional_driver = []
     if additional_driver_json is not None:
         additional_driver = json.loads(additional_driver_json)
+
+    # descriptionの言語を選定
+    for driver_data in additional_driver:
+        if g.LANGUAGE == "ja":
+            if driver_data.get("description_ja"):
+                driver_data["description"] = driver_data.pop("description_ja")
+            else:
+                # descriptionの中身がない場合はkeyごと削除
+                del driver_data["description_ja"]
+            del driver_data["description_en"]
+        else:
+            if driver_data.get("description_en"):
+                driver_data["description"] = driver_data.pop("description_en")
+            else:
+                # descriptionの中身がない場合はkeyごと削除
+                del driver_data["description_en"]
+            del driver_data["description_ja"]
 
     result_data = {
         'drivers': {

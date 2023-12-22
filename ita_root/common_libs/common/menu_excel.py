@@ -47,27 +47,32 @@ def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  
     # 実行処理種別
     msg = g.appmsg.get_api_message('MSG-30002')
     ws_master.cell(row=1, column=startClm_master, value=msg)
+    ws_master.cell(row=1, column=startClm_master).data_type = 's'
 
     cnt = 0
     if menu_table_link_record[0].get('ROW_INSERT_FLAG') == '1':
         # 登録
         msg = g.appmsg.get_api_message('MSG-30004')
         ws_master.cell(row=cnt + 2, column=startClm_master, value=msg)
+        ws_master.cell(row=cnt + 2, column=startClm_master).data_type = 's'
         cnt += 1
     if menu_table_link_record[0].get('ROW_UPDATE_FLAG') == '1':
         # 更新
         msg = g.appmsg.get_api_message('MSG-30005')
         ws_master.cell(row=cnt + 2, column=startClm_master, value=msg)
+        ws_master.cell(row=cnt + 2, column=startClm_master).data_type = 's'
         cnt += 1
     if menu_table_link_record[0].get('ROW_DISUSE_FLAG') == '1':
         # 廃止
         msg = g.appmsg.get_api_message('MSG-30006')
         ws_master.cell(row=cnt + 2, column=startClm_master, value=msg)
+        ws_master.cell(row=cnt + 2, column=startClm_master).data_type = 's'
         cnt += 1
     if menu_table_link_record[0].get('ROW_REUSE_FLAG') == '1':
         # 復活
         msg = g.appmsg.get_api_message('MSG-30007')
         ws_master.cell(row=cnt + 2, column=startClm_master, value=msg)
+        ws_master.cell(row=cnt + 2, column=startClm_master).data_type = 's'
         cnt += 1
 
     if cnt >= 1:
@@ -83,6 +88,7 @@ def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  
     # 廃止
     msg = g.appmsg.get_api_message('MSG-30006')
     ws_master.cell(row=1, column=startClm_master, value=msg)
+    ws_master.cell(row=1, column=startClm_master).data_type = 's'
     startClm_master += 1
 
     # プルダウンリストをソートする
@@ -97,6 +103,8 @@ def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  
             row=startRow_master,
             column=startClm_master + i,
             value=dict_menu_column.get('column_name'))
+        ws_master.cell(row=startRow_master, column=startClm_master + i).data_type = 's'
+
         column_name_rest = dict_menu_column.get('column_name_rest')
         if column_name_rest in pulldown_list:
             # 名前の定義開始、終了位置
@@ -108,6 +116,14 @@ def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  
                     row=startRow_master + j,
                     column=startClm_master + i,
                     value=value)
+
+                ws_master.cell(
+                    row=startRow_master + j,
+                    column=startClm_master + i).number_format = openpyxl.styles.numbers.FORMAT_TEXT
+
+                ws_master.cell(
+                    row=startRow_master + j,
+                    column=startClm_master + i).data_type = 's'
 
                 if j == 1:
                     startCell = ws_master.cell(
@@ -174,12 +190,14 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=1, column=1).fill = fill_bl
     ws.cell(row=1, column=1).border = border_r
     ws.cell(row=1, column=1, value=msg)
+    ws.cell(row=1, column=1).data_type = 's'
 
     ws.cell(row=1, column=2).font = font_wh
     ws.cell(row=1, column=2).alignment = al_cc
     ws.cell(row=1, column=2).fill = fill_bl
     ws.cell(row=1, column=2).border = border_l
     ws.cell(row=1, column=2, value='')
+    ws.cell(row=1, column=2).data_type = 's'
 
     # 実行処理種別
     msg = g.appmsg.get_api_message('MSG-30002')
@@ -188,6 +206,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=1, column=3).fill = fill_bl
     ws.cell(row=1, column=3).border = border
     ws.cell(row=1, column=3, value=msg)
+    ws.cell(row=1, column=3).data_type = 's'
 
     # 固定部分の結合
     alphaOrd = ord('A')
@@ -202,6 +221,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow, column=1).alignment = al_ltw
     ws.cell(row=startRow, column=1).border = borderDash_r
     ws.cell(row=startRow, column=1, value=msg)
+    ws.cell(row=startRow, column=1).data_type = 's'
     ws.merge_cells('A' + str(startRow) + ':' + 'A' + str(startRow + 3))
 
     # 登録更新廃止復活
@@ -211,6 +231,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow, column=2).alignment = al_cc
     ws.cell(row=startRow, column=2).border = borderDash_ltb
     ws.cell(row=startRow, column=2, value=msg)
+    ws.cell(row=startRow, column=2).data_type = 's'
 
     msg = g.appmsg.get_api_message('MSG-30005')
     ws.cell(row=startRow + 1, column=2).font = font
@@ -218,6 +239,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 1, column=2).alignment = al_cc
     ws.cell(row=startRow + 1, column=2).border = borderDash_ltb
     ws.cell(row=startRow + 1, column=2, value=msg)
+    ws.cell(row=startRow + 1, column=2).data_type = 's'
 
     msg = g.appmsg.get_api_message('MSG-30006')
     ws.cell(row=startRow + 2, column=2).font = font
@@ -225,6 +247,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 2, column=2).alignment = al_cc
     ws.cell(row=startRow + 2, column=2).border = borderDash_ltb
     ws.cell(row=startRow + 2, column=2, value=msg)
+    ws.cell(row=startRow + 2, column=2).data_type = 's'
 
     msg = g.appmsg.get_api_message('MSG-30007')
     ws.cell(row=startRow + 3, column=2).font = font
@@ -232,6 +255,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 3, column=2).alignment = al_cc
     ws.cell(row=startRow + 3, column=2).border = borderDash_ltb
     ws.cell(row=startRow + 3, column=2, value=msg)
+    ws.cell(row=startRow + 3, column=2).data_type = 's'
 
     # 実行処理種別
     for i in range(4):
@@ -240,6 +264,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
         ws.cell(row=startRow + i, column=3).alignment = al_cc
         ws.cell(row=startRow + i, column=3).border = borderDash
         ws.cell(row=startRow + i, column=3, value='')
+        ws.cell(row=startRow + i, column=3).data_type = 's'
 
     # 改行
     msg = g.appmsg.get_api_message('MSG-30008')
@@ -248,6 +273,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 4, column=1).alignment = al_ltw
     ws.cell(row=startRow + 4, column=1).border = border
     ws.cell(row=startRow + 4, column=1, value=msg)
+    ws.cell(row=startRow + 4, column=1).data_type = 's'
     ws.merge_cells('A' + str(startRow + 4) + ':' + 'B' + str(startRow + 4))
 
     ws.cell(row=startRow + 4, column=3).font = font
@@ -255,6 +281,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 4, column=3).alignment = al_ltw
     ws.cell(row=startRow + 4, column=3).border = border
     ws.cell(row=startRow + 4, column=3, value='')
+    ws.cell(row=startRow + 4, column=3).data_type = 's'
 
     msg = g.appmsg.get_api_message('MSG-30009')
     ws.cell(row=startRow + 5, column=1).font = font
@@ -262,6 +289,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 5, column=1).alignment = al_rt
     ws.cell(row=startRow + 5, column=1).border = border
     ws.cell(row=startRow + 5, column=1, value=msg)
+    ws.cell(row=startRow + 5, column=1).data_type = 's'
     ws.merge_cells('A' + str(startRow + 5) + ':' + 'B' + str(startRow + 5))
 
     msg = g.appmsg.get_api_message('MSG-30010')
@@ -270,18 +298,21 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 5, column=3).alignment = al_ltw
     ws.cell(row=startRow + 5, column=3).border = border
     ws.cell(row=startRow + 5, column=3, value=msg)
+    ws.cell(row=startRow + 5, column=3).data_type = 's'
 
     ws.cell(row=startRow + 6, column=1).font = font_wh
     ws.cell(row=startRow + 6, column=1).fill = fill_bl
     ws.cell(row=startRow + 6, column=1).alignment = al_cc
     ws.cell(row=startRow + 6, column=1).border = border_r
     ws.cell(row=startRow + 6, column=1, value='')
+    ws.cell(row=startRow + 6, column=1).data_type = 's'
 
     ws.cell(row=startRow + 6, column=2).font = font_wh
     ws.cell(row=startRow + 6, column=2).fill = fill_bl
     ws.cell(row=startRow + 6, column=2).alignment = al_cc
     ws.cell(row=startRow + 6, column=2).border = border_l
     ws.cell(row=startRow + 6, column=2, value='')
+    ws.cell(row=startRow + 6, column=2).data_type = 's'
 
     # 実行処理種別
     msg = g.appmsg.get_api_message('MSG-30002')
@@ -290,6 +321,7 @@ def make_template(ws, startRow, font, fill, borderDash, depth):
     ws.cell(row=startRow + 6, column=3).alignment = al_cc
     ws.cell(row=startRow + 6, column=3).border = border
     ws.cell(row=startRow + 6, column=3, value=msg)
+    ws.cell(row=startRow + 6, column=3).data_type = 's'
 
     return ws
 
@@ -317,12 +349,14 @@ def make_template_trace_history(ws, depth):
     ws.cell(row=1, column=1).fill = fill_bl
     ws.cell(row=1, column=1).border = border
     ws.cell(row=1, column=1, value=msg)
+    ws.cell(row=1, column=1).data_type = 's'
 
     ws.cell(row=depth + 2, column=1).font = font_wh
     ws.cell(row=depth + 2, column=1).alignment = al_cc
     ws.cell(row=depth + 2, column=1).fill = fill_bl
     ws.cell(row=depth + 2, column=1).border = border
     ws.cell(row=depth + 2, column=1, value=msg)
+    ws.cell(row=depth + 2, column=1).data_type = 's'
 
     # 変更日時
     msg = g.appmsg.get_api_message('MSG-30021')
@@ -331,12 +365,14 @@ def make_template_trace_history(ws, depth):
     ws.cell(row=1, column=2).fill = fill_bl
     ws.cell(row=1, column=2).border = border
     ws.cell(row=1, column=2, value=msg)
+    ws.cell(row=1, column=2).data_type = 's'
 
     ws.cell(row=depth + 2, column=2).font = font_wh
     ws.cell(row=depth + 2, column=2).alignment = al_cc
     ws.cell(row=depth + 2, column=2).fill = fill_bl
     ws.cell(row=depth + 2, column=2).border = border
     ws.cell(row=depth + 2, column=2, value=msg)
+    ws.cell(row=depth + 2, column=2).data_type = 's'
     # 変更日時はマイクロ秒部分を見えないように幅を設定する
     ws.column_dimensions[get_column_letter(2)].width = 15.7
 
@@ -353,12 +389,14 @@ def make_template_trace_history(ws, depth):
     ws.cell(row=depth + 1, column=1).alignment = al_cc
     ws.cell(row=depth + 1, column=1).border = border
     ws.cell(row=depth + 1, column=1, value='')
+    ws.cell(row=depth + 1, column=1).data_type = 's'
 
     ws.cell(row=depth + 1, column=2).font = font_wh
     ws.cell(row=depth + 1, column=2).fill = fill_gr
     ws.cell(row=depth + 1, column=2).alignment = al_cc
     ws.cell(row=depth + 1, column=2).border = border
     ws.cell(row=depth + 1, column=2, value='')
+    ws.cell(row=depth + 1, column=2).data_type = 's'
 
     return ws
 
@@ -492,6 +530,7 @@ def create_excel_header_firstline(
             ws.cell(row=cell_row, column=cell_col).border = border
 
             ws.cell(row=cell_row, column=cell_col, value=data)
+            ws.cell(row=cell_row, column=cell_col).data_type = 's'
 
             # 縦の結合チェック
             # 下のCellがNoneの場合
@@ -597,6 +636,7 @@ def create_column_info(
         ws.cell(row=startRow + 6, column=column_num).fill = fill_bl
         ws.cell(row=startRow + 6, column=column_num).border = border
         ws.cell(row=startRow + 6, column=column_num, value=column_name)
+        ws.cell(row=startRow + 6, column=column_num).data_type = 's'
 
         # 項目名に合わせて幅の調整をする
         column_len = len(str(column_name))
@@ -630,12 +670,14 @@ def create_column_info(
         ws.cell(row=startRow, column=column_num).alignment = al_cc
         ws.cell(row=startRow, column=column_num).border = borderDash
         ws.cell(row=startRow, column=column_num, value=tmp)
+        ws.cell(row=startRow, column=column_num).data_type = 's'
 
         ws.cell(row=startRow + 1, column=column_num).font = font_bl
         ws.cell(row=startRow + 1, column=column_num).fill = fill_gr
         ws.cell(row=startRow + 1, column=column_num).alignment = al_cc
         ws.cell(row=startRow + 1, column=column_num).border = borderDash
         ws.cell(row=startRow + 1, column=column_num, value=tmp)
+        ws.cell(row=startRow + 1, column=column_num).data_type = 's'
 
         tmp = '×'
         # カラムクラスが12（NoteColumn）の場合は任意を設定する
@@ -647,6 +689,7 @@ def create_column_info(
         ws.cell(row=startRow + 2, column=column_num).alignment = al_cc
         ws.cell(row=startRow + 2, column=column_num).border = borderDash
         ws.cell(row=startRow + 2, column=column_num, value=tmp)
+        ws.cell(row=startRow + 2, column=column_num).data_type = 's'
 
         # 復活(×固定)
         ws.cell(row=startRow + 3, column=column_num).font = font_bl
@@ -654,6 +697,7 @@ def create_column_info(
         ws.cell(row=startRow + 3, column=column_num).alignment = al_cc
         ws.cell(row=startRow + 3, column=column_num).border = borderDash
         ws.cell(row=startRow + 3, column=column_num, value=tmp)
+        ws.cell(row=startRow + 3, column=column_num).data_type = 's'
 
         # 改行
         # 改行OK：MultiTextColumn、NoteColumn、SensitiveMultiTextColumnのもの
@@ -666,6 +710,7 @@ def create_column_info(
         ws.cell(row=startRow + 4, column=column_num).alignment = al_cc
         ws.cell(row=startRow + 4, column=column_num).border = border
         ws.cell(row=startRow + 4, column=column_num, value=new_line)
+        ws.cell(row=startRow + 4, column=column_num).data_type = 's'
 
         # その他注意事項
         ws.cell(row=startRow + 5, column=column_num).font = font_bl
@@ -676,6 +721,7 @@ def create_column_info(
             row=startRow + 5,
             column=column_num,
             value=dict_menu_column.get('description'))
+        ws.cell(row=startRow + 5, column=column_num).data_type = 's'
 
     # フィルター設定
     st = ws.cell(row=startRow + 6, column=3).coordinate
@@ -751,6 +797,7 @@ def create_column_info_trace_history(
         ws.cell(row=startRow + 1, column=column_num).fill = fill_bl
         ws.cell(row=startRow + 1, column=column_num).border = border
         ws.cell(row=startRow + 1, column=column_num, value=column_name)
+        ws.cell(row=startRow + 1, column=column_num).data_type = 's'
 
         # 項目名に合わせて幅の調整をする
         column_len = len(str(column_name))
@@ -772,6 +819,7 @@ def create_column_info_trace_history(
             row=startRow,
             column=column_num,
             value=dict_menu_column.get('description'))
+        ws.cell(row=startRow, column=column_num).data_type = 's'
 
         # 最後に列をグレーにするために登録不可の行を記憶しておく
         if auto_input == '1' or input_item == '0':
@@ -807,18 +855,21 @@ def create_footer(ws, font_wh, al_lt, al_cc, fill_bl):
             ws.cell(row=footer_row, column=1).fill = fill_bl
             ws.cell(row=footer_row, column=1).border = border_r
             ws.cell(row=footer_row, column=1, value=msg)
+            ws.cell(row=footer_row, column=1).data_type = 's'
         elif i == ws.max_column - 1:
             ws.cell(row=footer_row, column=i + 1).font = font_wh
             ws.cell(row=footer_row, column=i + 1).alignment = al_cc
             ws.cell(row=footer_row, column=i + 1).fill = fill_bl
             ws.cell(row=footer_row, column=i + 1).border = border_l
             ws.cell(row=footer_row, column=i + 1, value='')
+            ws.cell(row=footer_row, column=i + 1).data_type = 's'
         else:
             ws.cell(row=footer_row, column=i + 1).font = font_wh
             ws.cell(row=footer_row, column=i + 1).alignment = al_cc
             ws.cell(row=footer_row, column=i + 1).fill = fill_bl
             ws.cell(row=footer_row, column=i + 1).border = border_rl
             ws.cell(row=footer_row, column=i + 1, value='')
+            ws.cell(row=footer_row, column=i + 1).data_type = 's'
 
     return ws
 
@@ -840,15 +891,18 @@ def detail_first_line_format(ws, startRow, dataVaridationDict):
 
     ws.cell(row=startRow + 7, column=1).fill = fill_wh
     ws.cell(row=startRow + 7, column=1, value='')
+    ws.cell(row=startRow + 7, column=1).data_type = 's'
 
     ws.cell(row=startRow + 7, column=2).fill = fill_wh
     ws.cell(row=startRow + 7, column=2, value='')
+    ws.cell(row=startRow + 7, column=2).data_type = 's'
 
     # 実行処理種別
     ws.cell(row=startRow + 7, column=3).font = font_bl
     ws.cell(row=startRow + 7, column=3).alignment = al_cc
     ws.cell(row=startRow + 7, column=3).border = border
     ws.cell(row=startRow + 7, column=3, value='-')
+    ws.cell(row=startRow + 7, column=3).data_type = 's'
 
     # 入力規則の設定
     dv = DataValidation(type='list', formula1='FILTER_ROW_EDIT_BY_FILE')
@@ -864,6 +918,7 @@ def detail_first_line_format(ws, startRow, dataVaridationDict):
         ws.cell(row=startRow + 7, column=col_i).font = font_bl
         ws.cell(row=startRow + 7, column=col_i).border = border
         ws.cell(row=startRow + 7, column=col_i, value='')
+        ws.cell(row=startRow + 7, column=col_i).data_type = 's'
 
     return ws, dataVaridationDict
 
@@ -893,6 +948,7 @@ def detail_first_line_format_trace_history(ws, startRow, dataVaridationDict):
         ws.cell(row=startRow, column=col_i).font = font_bl
         ws.cell(row=startRow, column=col_i).border = border
         ws.cell(row=startRow, column=col_i, value='')
+        ws.cell(row=startRow, column=col_i).data_type = 's'
 
     return ws, dataVaridationDict
 
@@ -1083,6 +1139,7 @@ def collect_excel_journal(
                         ws.cell(row=startDetailRow, column=3).alignment = al_cc
                         ws.cell(row=startDetailRow, column=3).border = border
                         ws.cell(row=startDetailRow, column=3, value='')
+                        ws.cell(row=startDetailRow, column=3).data_type = 's'
                         # 入力規則の設定
                         dv = DataValidation(
                             type='list', formula1='FILTER_ROW_EDIT_BY_FILE')
@@ -1094,6 +1151,7 @@ def collect_excel_journal(
                             # 廃止
                             msg = g.appmsg.get_api_message('MSG-30006')
                             ws.cell(row=startDetailRow, column=3, value=msg)
+                            ws.cell(row=startDetailRow, column=3).data_type = 's'
                     elif key == 'journal_action':
                         continue
                     else:
@@ -1119,6 +1177,9 @@ def collect_excel_journal(
                             row=startDetailRow,
                             column=column_num,
                             value=value)
+                        ws.cell(
+                            row=startDetailRow,
+                            column=column_num).data_type = 's'
 
                         if key in name_define_list:
                             dv = DataValidation(type='list', formula1=key)
@@ -1310,15 +1371,18 @@ def collect_excel_filter(
                     if i == 0:
                         ws.cell(row=startRow + 7, column=1).fill = fill_wh
                         ws.cell(row=startRow + 7, column=1, value='')
+                        ws.cell(row=startRow + 7, column=1).data_type = 's'
 
                         ws.cell(row=startRow + 7, column=2).fill = fill_wh
                         ws.cell(row=startRow + 7, column=2, value='')
+                        ws.cell(row=startRow + 7, column=2).data_type = 's'
 
                         # 実行処理種別
                         ws.cell(row=startRow + 7, column=3).font = font_bl
                         ws.cell(row=startRow + 7, column=3).alignment = al_cc
                         ws.cell(row=startRow + 7, column=3).border = border
                         ws.cell(row=startRow + 7, column=3, value='-')
+                        ws.cell(row=startRow + 7, column=3).data_type = 's'
                         # 入力規則の設定
                         dv = DataValidation(
                             type='list', formula1='FILTER_ROW_EDIT_BY_FILE')
@@ -1352,6 +1416,8 @@ def collect_excel_filter(
                         row=startRow + 7,
                         column=column_num).border = border
                     ws.cell(row=startRow + 7, column=column_num, value=value)
+                    ws.cell(row=startRow + 7, column=column_num).data_type = 's'
+
                     if key in name_define_list:
                         dv = DataValidation(type='list', formula1=key)
                         dv.add(ws.cell(row=startRow + 7, column=column_num))
@@ -1398,32 +1464,39 @@ def collect_excel_filter(
             if key in column_name_list:
                 filter_name = column_name_list[key]
             ws_filter.cell(row=1, column=4 + i, value=filter_name)
+            ws_filter.cell(row=1, column=4 + i).data_type = 's'
             if key.lower() == 'discard':
                 if tmp == '0':
                     # 廃止含まず
                     msg = g.appmsg.get_api_message('MSG-30016')
                     ws_filter.cell(row=2, column=4 + i, value=msg)
+                    ws_filter.cell(row=2, column=4 + i).data_type = 's'
                 elif tmp == '1':
                     # 廃止のみ
                     msg = g.appmsg.get_api_message('MSG-30019')
                     ws_filter.cell(row=2, column=4 + i, value=msg)
+                    ws_filter.cell(row=2, column=4 + i).data_type = 's'
                 else:
                     # 全レコード
                     msg = g.appmsg.get_api_message('MSG-30018')
                     ws_filter.cell(row=2, column=4 + i, value=msg)
+                    ws_filter.cell(row=2, column=4 + i).data_type = 's'
             else:
                 work_row = 2
                 for filter_mode, filter in value.items():
                     if filter_mode == 'NORMAL' and isinstance(filter, str):
                         ws_filter.cell(row=work_row, column=4 + i, value=filter)
+                        ws_filter.cell(row=work_row, column=4 + i).data_type = 's'
                         work_row += 1
                     elif filter_mode == 'LIST' and isinstance(filter, list):
                         for list_value in filter:
                             ws_filter.cell(row=work_row, column=4 + i, value=list_value)
+                            ws_filter.cell(row=work_row, column=4 + i).data_type = 's'
                             work_row += 1
                     elif filter_mode == 'RANGE' and isinstance(filter, dict):
                         filter_range = filter.get('START', '') + '～' + filter.get('END', '')
                         ws_filter.cell(row=work_row, column=4 + i, value=filter_range)
+                        ws_filter.cell(row=work_row, column=4 + i).data_type = 's'
                         work_row += 1
 
     wb.save(file_path)  # noqa: E303

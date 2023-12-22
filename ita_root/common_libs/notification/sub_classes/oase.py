@@ -103,8 +103,8 @@ class OASE(Notification):
 
         query = f"SELECT {values['display_column']} FROM {values['table']} WHERE DISUSE_FLAG=0 AND {values['condition_column']}"
 
-        g.applogger.info(f"_fetch_tableで実行するクエリの内容:\n{query}")
-        g.applogger.info(f"_fetch_tableで実行するクエリの変数に渡す値:\n{values['condition_value']}")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80019", [query]))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80020", [values['condition_value']]))
 
         query_result = objdbca.sql_execute(query, values['condition_value'])
         if len(query_result) == 0:
@@ -127,7 +127,7 @@ class OASE(Notification):
             return None
 
         path = get_upload_file_path(workspace_id, menu_id, uuid, rest_name, file_name, "")
-        g.applogger.info(f"取得するテンプレートのパス:\n{path}")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80021", [path]))
 
         with open(path["file_path"], 'r', encoding='utf_8') as f:
             template = f.read()
@@ -145,11 +145,11 @@ class OASE(Notification):
 
             notification_destination_dict = json.loads(notification_destination_str)
 
-            g.applogger.info(f"ルールから取得した通知先：\n{notification_destination_dict['id']}")
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80022", [notification_destination_dict['id']]))
 
             notification_destination_list = cls.__exists_notification_destination(notification_destination_dict["id"])
 
-            g.applogger.info(f"最終的に使用する通知先：\n{notification_destination_list}")
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80023", [notification_destination_list]))
 
             return notification_destination_list
 

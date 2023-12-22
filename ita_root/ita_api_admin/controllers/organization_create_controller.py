@@ -250,7 +250,7 @@ def organization_delete(organization_id):  # noqa: E501
             # drop ws-db and ws-db-user
             org_root_db.connection_kill(workspace_data['DB_DATABASE'], workspace_data['DB_USER'])
             org_root_db.database_drop(workspace_data['DB_DATABASE'])
-            org_root_db.user_drop(workspace_data['DB_USER'], workspace_data['DB_DATABASE'])
+            org_root_db.user_drop(workspace_data['DB_USER'])
             # drop ws-mongodb and ws-mongodb-user
             root_mongo.drop_database(workspace_data['MONGO_DATABASE'])
             root_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])

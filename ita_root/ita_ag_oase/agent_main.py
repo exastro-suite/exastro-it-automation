@@ -14,9 +14,10 @@
 
 from flask import g
 import os
+import datetime
 import time
 import sqlite3
-import datetime
+
 from common_libs.common import *  # noqa F403
 from common_libs.ci.util import app_exception, exception
 from agent.libs.exastro_api import Exastro_API
@@ -28,6 +29,11 @@ from libs.event_collection_settings import create_file, remove_file, get_setting
 def agent_main(organization_id, workspace_id, loop_count, interval):
     count = 1
     max = int(loop_count)
+
+    # storageにdbの保存場所を作成
+    db_dir = "/storage/{}/{}/sqlite".format(organization_id, workspace_id)
+    os.makedirs(db_dir, exist_ok=True)
+    # SQLiteモジュール
     sqliteDB = sqliteConnect(organization_id, workspace_id)
 
     # ループに入る前にevent_collection_settings.jsonを削除
@@ -40,7 +46,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     while True:
         print("")
         print("")
-        # SQLiteモジュール
+
         try:
             collection_logic(sqliteDB, organization_id, workspace_id)
         except AppException as e:  # noqa F405
@@ -48,6 +54,8 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         except Exception as e:
             # catch - other all error
             exception(e)
+
+        # インターバルを置いて、max数までループする
         time.sleep(interval)
         if count >= max:
             break

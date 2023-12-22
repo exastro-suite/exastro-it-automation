@@ -40,28 +40,28 @@ class Notification(ABC):
             event_list (list): 通知の条件を満たしたイベントのlist\n
             decision_information (dict): 何かしら判定が必要な場合はここに必要な情報を詰めて渡す\n
         """
-        g.applogger.info("通知処理開始")
-        g.applogger.info(f"通知サブクラス名：{cls.__qualname__}")
-        g.applogger.info(f"通知するイベントの件数：{len(event_list)}")
-        g.applogger.info(f"通知に関する情報：{decision_information}")
+        g.applogger.info(g.appmsg.get_log_message("BKY-80000"))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80008", [len(event_list)]))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80009", [decision_information]))
 
         fetch_data = cls._fetch_table(objdbca, decision_information)
         if fetch_data is None:
-            g.applogger.info("テーブルにデータが存在しないため処理を終了します。")
+            g.applogger.info(g.appmsg.get_log_message("BKY-80002"))
             return {}
 
         template = cls._get_template(fetch_data, decision_information)
         if template is None:
-            g.applogger.info("テンプレートが存在しないため処理を終了します。")
+            g.applogger.info(g.appmsg.get_log_message("BKY-80003"))
             return {}
 
         # 負荷を考慮して通知先は1回のみ取得することとする
         notification_destination = cls._fetch_notification_destination(fetch_data, decision_information)
         if len(notification_destination) == 0:
-            g.applogger.info("条件を満たす通知先が0件のため処理を終了します。")
+            g.applogger.info(g.appmsg.get_log_message("BKY-80004"))
             return {}
 
-        g.applogger.info(f"合計で通知する件数：{len(notification_destination) * len(event_list)}")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80010", [len(notification_destination) * len(event_list)]))
 
         result = {
             "success": 0,
@@ -74,12 +74,12 @@ class Notification(ABC):
         for index, item in enumerate(event_list):
             # _convert_messageでitemを直接書き換えると再実行時にエラーが発生する可能性があるため、複製したデータをベースに処理を行う。
             tmp_item = copy.deepcopy(item)
-            g.applogger.info(f"{index + 1}件目のイベントの処理開始")
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80011", [index + 1]))
 
             message = cls._create_notise_message(tmp_item, template)
             # messageがNoneの場合、テンプレートの変換に失敗しているので次のループに進む
             if message is None:
-                result["failure_info"].append(f"テンプレートの変換に失敗。item:\n{tmp_item}, template:\n{template}")
+                result["failure_info"].append(g.appmsg.get_log_message("BKY-80024", [tmp_item, template]))
                 result["failure"] = result["failure"] + 1
                 continue
 
@@ -91,10 +91,10 @@ class Notification(ABC):
             result["success_notification_count"] = result["success_notification_count"] + tmp_result["success_notification_count"]
             result["failure_notification_count"] = result["failure_notification_count"] + tmp_result["failure_notification_count"]
 
-            g.applogger.info(f"{index + 1}件目のイベントの処理終了")
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80012", [index + 1]))
 
-        g.applogger.info(f"最終的な通知APIの呼び出し結果:\n{result}")
-        g.applogger.info("通知処理終了")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80013", [result]))
+        g.applogger.info(g.appmsg.get_log_message("BKY-80001"))
 
         return result
 
@@ -126,7 +126,7 @@ class Notification(ABC):
             item: 通知するイベント
             template: メッセージのテンプレート
         """
-        g.applogger.info(f"テンプレートのレンダリングに利用するオブジェクトのID:{item.get('_id')}")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80014", [item.get('_id')]))
 
         item = cls._convert_message(item)
 
@@ -135,7 +135,7 @@ class Notification(ABC):
             tmp_message = jinja_template.render(item)
         except Exception as e:
             g.applogger.error(e)
-            g.applogger.error("テンプレートの変換に失敗しました。")
+            g.applogger.error(g.appmsg.get_log_message("BKY-80006"))
             return None
 
         # [TITLE]の次の1行をtitleとして抽出する
@@ -238,10 +238,10 @@ class Notification(ABC):
         if request_response.status_code != 200:
             raise AppException('999-00005', [api_url, response_data])
 
-        g.applogger.info("通知先取得APIの呼び出し結果")
-        g.applogger.info(f"合計取得件数:{len(response_data['data'])}")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80015"))
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80016", [len(response_data['data'])]))
         for index, item in enumerate(response_data["data"]):
-            g.applogger.info(f"{index + 1}件目\nid:{item.get('id')}, name:{item.get('name')}")
+            g.applogger.debug(g.appmsg.get_log_message("BKY-80017", [index + 1, item.get('id'), item.get('name')]))
 
         return response_data
 
@@ -308,7 +308,7 @@ class Notification(ABC):
             result["success"] = 1
             result["success_notification_count"] = len(body_data_list)
 
-        g.applogger.info(f"通知APIの呼び出し結果:\n{result}")
+        g.applogger.debug(g.appmsg.get_log_message("BKY-80018", [result]))
 
         return result
 

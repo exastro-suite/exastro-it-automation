@@ -46,7 +46,7 @@ def backyard_main(organization_id, workspace_id):
 
     # メイン処理開始
     debug_msg = g.appmsg.get_log_message("BKY-20001", [])
-    g.applogger.debug(debug_msg)
+    g.applogger.info(debug_msg)
 
     strage_path = os.environ.get('STORAGEPATH')
     workspace_path = strage_path + "/".join([organization_id, workspace_id])
@@ -63,24 +63,24 @@ def backyard_main(organization_id, workspace_id):
 
     # ①ルールマッチ
     tmp_msg = '①ルールマッチ Start'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     ret = JudgeMain(objdbca, mongodbca, judgeTime, EventObj)
     if ret is False:
-        g.applogger.debug("JudgeMain False")
+        g.applogger.info("JudgeMain False")
     tmp_msg = '①ルールマッチ end'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # ②アクション実行後通知と結論イベント登録
     tmp_msg = '②アクション実行後通知と結論イベント登録 Start'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     obj = ActionStatusMonitor(objdbca, mongodbca, EventObj)
     obj.Monitor()
     tmp_msg = '②アクション実行後通知と結論イベント登録 end'
-    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # メイン処理終了
     debug_msg = g.appmsg.get_log_message("BKY-20002", [])
-    g.applogger.debug(debug_msg)
+    g.applogger.info(debug_msg)
     return
 
 
@@ -110,7 +110,7 @@ class Judgement:
         labelList = objdbca.table_select(t_oase_label_key_input, 'WHERE DISUSE_FLAG = %s', [0])
         if not labelList:
             tmp_msg = "処理対象レコードなし。Table:T_OASE_LABEL_KEY_INPUT"
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False
         tmp_msg = "ラベルマスタ 件数: {}".format(str(len(labelList)))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -314,7 +314,7 @@ class Judgement:
         # 論理演算子「operator」設定確認
         if self.checkRuleOperatorId(FilterResultDict['Operator']) is False:
             tmp_msg = "ルール管理　論理演算子「operator」が不正 RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # フィルタ毎のループ
         FilterList = []
@@ -586,6 +586,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
             if ret is True:
                 timeout_notification_list.append(EventRow)
 
+        g.applogger.info(addline_msg('{}'.format("通知処理（既知(時間切れ)）")))  # noqa: F405
         OASE.send(objdbca, timeout_notification_list, {"notification_type": OASENotificationType.TIMEOUT})
 
 
@@ -599,7 +600,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         return False
 
     tmp_msg = "フィルター管理取得 件数: {}".format(str(len(filterList)))
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # テーブル名
     t_oase_rule = 'T_OASE_RULE'  # ルール管理
@@ -611,7 +612,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         return False
 
     tmp_msg = "ルール管理取得 件数: {}".format(str(len(ruleList)))
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # ルール判定　クラス生成
     judgeObj = Judgement(objdbca, MongoDBCA, EventObj)
@@ -636,6 +637,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
         new_Event_List.append(EventRow)
 
     # 通知処理（新規）
+    g.applogger.info(addline_msg('{}'.format("通知処理（新規）")))  # noqa: F405
     OASE.send(objdbca, new_Event_List, {"notification_type": OASENotificationType.NEW})
 
     tmp_msg = "フィルタリング開始"
@@ -724,7 +726,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                             ret_action = objdbca.table_select(t_oase_action, 'WHERE DISUSE_FLAG = %s AND ACTION_ID = %s', [0, action_id])
                             if not ret_action:
                                 tmp_msg = "処理対象レコードなし。Table:T_OASE_ACTION"
-                                g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             else:
                                 action_name = ret_action[0].get("ACTION_NAME")
                                 conductor_class_id = ret_action[0].get("CONDUCTOR_CLASS_ID")
@@ -737,7 +739,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                     ret_conductor = objdbca.table_select(t_comn_conductor_class, 'WHERE DISUSE_FLAG = %s AND CONDUCTOR_CLASS_ID = %s', [0, conductor_class_id])
                                     if not ret_conductor:
                                         tmp_msg = "処理対象レコードなし。Table:T_COMN_CONDUCTOR_CLASS"
-                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                     else:
                                         conductor_name = ret_conductor[0].get("CONDUCTOR_NAME")
 
@@ -748,7 +750,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                     ret_operation = objdbca.table_select(t_comn_operation, 'WHERE DISUSE_FLAG = %s AND OPERATION_ID = %s', [0, operation_id])
                                     if not ret_operation:
                                         tmp_msg = "処理対象レコードなし。Table:T_COMN_OPERATION"
-                                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                     else:
                                         operation_name = ret_operation[0].get("OPERATION_NAME")
 
@@ -785,13 +787,13 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
                         NotificationEventList = []
-                        for event_id in UseEventIdList:
-                            g.applogger.info(addline_msg('event id: {}'.format(event_id)))  # noqa: F405
-                            ret, EventRow = EventObj.get_events(event_id)
+                        for Event_id in UseEventIdList:
+                            ret, EventRow = EventObj.get_events(Event_id)
                             if ret is True:
                                 NotificationEventList.append(EventRow)
 
                         # 通知処理（既知（判定済み））
+                        g.applogger.info(addline_msg('{}'.format("通知処理（既知（判定済み））")))  # noqa: F405
                         OASE.send(objdbca, NotificationEventList, {"notification_type": OASENotificationType.EVALUATED})
 
                         # コミット  トランザクション終了
@@ -804,7 +806,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         ret_action_log = objdbca.table_select(t_oase_action_log, 'WHERE DISUSE_FLAG = %s AND STATUS_ID = %s', [0, 1])
                         if not ret_action_log:
                             tmp_msg = "処理対象レコードなし。Table:T_OASE_ACTION_LOG"
-                            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                             return False
 
                         # ルールにアクションが設定してあるか判定する
@@ -817,17 +819,15 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 ret_rule = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
                                 if not ret_rule:
                                     tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
-                                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                     return False
 
                                 if ret_rule[0].get('BEFORE_NOTIFICATION_DESTINATION'):
                                     # 通知先が設定されている場合、通知処理(作業前)を実行する
-                                    before_Action_Event_List = []
-                                    for event_id in action_log_row["EVENT_ID_LIST"].split(','):
-                                        ret, EventRow = EventObj.get_events(eval(event_id))
-                                        if ret is True:
-                                            before_Action_Event_List.append(EventRow)
+                                    # 2.3の時点では、イベントの情報は空にしておく
+                                    before_Action_Event_List = [{}]
 
+                                    g.applogger.info(addline_msg('{}'.format("通知処理(作業前)")))  # noqa: F405
                                     OASE.send(objdbca, before_Action_Event_List, {"notification_type": OASENotificationType.BEFORE_ACTION, "rule_id": action_log_row["RULE_ID"]})
 
                                 # 評価結果の更新（実行中）
@@ -843,8 +843,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 operation_id = action_log_row["OPERATION_ID"]
                                 retBool, result = conductor_execute(objdbca, conductor_class_id, operation_id)
                                 if retBool is False:
-                                    tmp_msg = "error [{}]".format(result)
-                                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                                    tmp_msg = "conductor execute error [{}]".format(result)
+                                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                                     # 評価結果の更新（完了（異常））
                                     data_list = {
                                         "ACTION_LOG_ID": action_log_row["ACTION_LOG_ID"],
@@ -958,6 +958,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
             if ret is True:
                 new_notification_list.append(EventRow)
 
+    g.applogger.info(addline_msg('{}'.format("通知処理（新規イベント）")))  # noqa: F405
     OASE.send(objdbca, new_notification_list, {"notification_type": OASENotificationType.NEW})
 
     # 通知処理（未知）
@@ -971,6 +972,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
 
             unused_notification_list.append(EventRow)
 
+    g.applogger.info(addline_msg('{}'.format("通知処理（未知）")))  # noqa: F405
     OASE.send(objdbca, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
 
     EventObj.print_event()
@@ -1113,31 +1115,31 @@ class ActionStatusMonitor():
         Rows = self.MariaDBCA.sql_execute(sql, [])
 
         Log = "処理対象のT_OASE_ACTION_LOG ({}件)".format(len(Rows))
-        g.applogger.info(Log)
+        g.applogger.debug(addline_msg('{}'.format(Log)))
         for Row in Rows:
             Data_Error = False
             if not Row['JOIN_CONDUCTOR_INSTANCE_ID']:
                 # T_COMN_CONDUCTOR_INSTANCEに対象レコードなし
                 Log = "T_COMN_CONDUCTOR_INSTANCEに対象レコードなし。(ACTION_LOG_ID: {} CONDUCTOR_INSTANCE_ID: {})".format(Row["ACTION_LOG_ID"], Row["CONDUCTOR_INSTANCE_ID"])
-                g.applogger.info(Log)
+                g.applogger.info(addline_msg('{}'.format(Log)))
                 Data_Error = True
             else:
                 if Row['TAB_B_DISUSE_FLAG'] != '0':
                     # T_COMN_CONDUCTOR_INSTANCEの対象レコードが廃止
                     Log = "T_COMN_CONDUCTOR_INSTANCEの対象レコードが廃止。(ACTION_LOG_ID: {} CONDUCTOR_INSTANCE_ID: {})".format(Row["ACTION_LOG_ID"], Row["CONDUCTOR_INSTANCE_ID"])
-                    g.applogger.info(Log)
+                    g.applogger.info(addline_msg('{}'.format(Log)))
                     Data_Error = True
 
             if not Row['JOIN_RULE_ID']:
                 # T_OASE_RULEに対象レコードなし
                 Log = "T_OASE_RULEに対象レコードなし。(ACTION_LOG_ID: {} RULE_ID: {})".format(Row["ACTION_LOG_ID"], Row["RULE_ID"])
-                g.applogger.info(Log)
+                g.applogger.info(addline_msg('{}'.format(Log)))
                 Data_Error = True
             else:
                 if Row['TAB_C_DISUSE_FLAG'] != '0':
                     # T_OASE_RULEの対象レコードが廃止
                     Log = "T_OASE_RULEの対象レコードが廃止。(ACTION_LOG_ID: {} RULE_ID: {})".format(Row["ACTION_LOG_ID"], Row["RULE_ID"])
-                    g.applogger.info(Log)
+                    g.applogger.info(addline_msg('{}'.format(Log)))
                     Data_Error = True
 
             TargetStatusList = []
@@ -1155,15 +1157,13 @@ class ActionStatusMonitor():
                 ret_rule = self.MariaDBCA.table_select('T_OASE_RULE', 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
                 if not ret_rule:
                     tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 elif ret_rule[0].get('AFTER_NOTIFICATION_DESTINATION'):
                     # 通知先が設定されている場合、通知処理(作業後)を実行する
-                    after_Action_Event_List = []
-                    for event_id in Row["EVENT_ID_LIST"].split(','):
-                        ret, EventRow = self.EventObj.get_events(eval(event_id))
-                        if ret is True:
-                            after_Action_Event_List.append(EventRow)
+                    # 2.3の時点では、イベントの情報は空にしておく
+                    after_Action_Event_List = [{}]
 
+                    g.applogger.info(addline_msg('{}'.format("通知処理(作業後)")))  # noqa: F405
                     OASE.send(self.MariaDBCA, after_Action_Event_List, {"notification_type": OASENotificationType.AFTER_ACTION, "rule_id": Row["RULE_ID"]})
 
                 if Row['CONDUCTOR_STATUS_ID'] == self.CSTS_Completed:
@@ -1183,7 +1183,7 @@ class ActionStatusMonitor():
                 UpdateRow[colname] = Row[colname]
 
             Log = "T_OASE_ACTION_LOG更新 (ACTION_LOG_ID: {} STATUS_ID: {})".format(Row["ACTION_LOG_ID"], Row["STATUS_ID"])
-            g.applogger.info(Log)
+            g.applogger.debug(addline_msg('{}'.format(Log)))
             print(UpdateRow[colname])
 
             self.MariaDBCA.table_update('T_OASE_ACTION_LOG', UpdateRow, 'ACTION_LOG_ID', True)
@@ -1237,6 +1237,6 @@ class ActionStatusMonitor():
         _id = self.EventObj.insert_event(RaccEventDict)
 
         Log = "結論イベント登録 (_id: {})".format(_id)
-        g.applogger.info(Log)
+        g.applogger.debug(Log)
 
         return True

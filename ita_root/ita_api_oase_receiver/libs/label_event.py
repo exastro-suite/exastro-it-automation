@@ -81,6 +81,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
             "_exastro_fetched_time": single_event["_exastro_fetched_time"],
             "_exastro_end_time": single_event["_exastro_end_time"],
             "_exastro_type": "event",
+            "_exastro_checked": "0",
             "_exastro_evaluated": "0",
             "_exastro_undetected": "0",
             "_exastro_timeout": "0",

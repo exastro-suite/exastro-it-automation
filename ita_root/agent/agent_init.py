@@ -16,6 +16,7 @@ from dotenv import load_dotenv  # python-dotenv
 import os
 import sys
 import time
+import re
 
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
@@ -45,21 +46,44 @@ def main():
             g.applogger.set_level(os.environ.get("LOG_LEVEL", "INFO"))
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
-            # storageにdbの保存場所を作成
-            db_dir = "/storage/{}/{}/sqlite".format(organization_id, workspace_id)
-            os.makedirs(db_dir, exist_ok=True)
-
             # コマンドラインから引数を受け取る["自身のファイル名", "ループ回数"]
             args = sys.argv
             loop_count = int(os.environ.get("ITERATION", 500)) if len(args) == 1 else int(args[1])
             interval = int(os.environ.get("EXECUTE_INTERVAL", 10))
 
-            main_logic(organization_id, workspace_id, loop_count, interval)
+            # 妥当な設定（organization_id, workspace_id）でなければ、メイン処理に回さない
+            is_setting_check = setting_check(organization_id, workspace_id)
+            if is_setting_check is False:
+                g.applogger.info("setting is invalid.so, main_logic is skipped")
+                time.sleep(interval)
+            else:
+                main_logic(organization_id, workspace_id, loop_count, interval)
         except Exception as e:
             # catch - other all error
             g.applogger.error(e)
             time.sleep(interval)
 
+# 妥当な設定（organization_id, workspace_id）でなければ、メイン処理に回さない
+def setting_check(organization_id, workspace_id):
+    if organization_id is None or workspace_id is None:
+        return False
+
+    if not organization_id or not workspace_id or organization_id.isspace() or workspace_id.isspace():
+        return False
+
+    # 不正な文字列チェック
+    try:
+        pattern = re.compile(r'^[a-zA-Z0-9-_]{1,36}$')
+        match = re.match(pattern, organization_id)
+        if match is None:
+            return False
+        match = re.match(pattern, workspace_id)
+        if match is None:
+            return False
+    except Exception:
+        return False
+
+    return True
 
 if __name__ == '__main__':
     main()

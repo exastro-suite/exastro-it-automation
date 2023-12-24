@@ -171,7 +171,7 @@ def collect_action_log(wsDb: DBConnectWs, parameter: dict):
         TARGET_PARAM = ["start_time", "end_time"]
 
         # 後にORDER BY句の文字列を結合することを考慮して予め末尾にスペースを仕込んでおく。
-        where = "WHERE DISUSE_FLAG=0 "
+        where = "WHERE DISUSE_FLAG=0 AND ACTION_ID is not null AND ACTION_ID != '' "
         bind_value = []
         for key, value in parameter.items():
             # 想定していないパラメータを渡された場合は次のパラメータにスキップする。

@@ -605,8 +605,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     # テーブル名
     t_oase_rule = 'T_OASE_RULE'  # ルール管理
     # 「ルール管理」からレコードを取得
-    # ソート条件変更　ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B ASC
-    ruleList = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B ASC', [0, 1])
+    # ソート条件変更　ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B DESC
+    ruleList = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B DESC', [0, 1])
     # 優先順位を更新
     ruleList = RulePriorityUpdate(ruleList)
     if not ruleList:

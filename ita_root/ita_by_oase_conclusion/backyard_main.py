@@ -605,7 +605,10 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     # テーブル名
     t_oase_rule = 'T_OASE_RULE'  # ルール管理
     # 「ルール管理」からレコードを取得
-    ruleList = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY RULE_PRIORITY', [0, 1])
+    # ソート条件変更　ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B ASC
+    ruleList = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B ASC', [0, 1])
+    # 優先順位を更新
+    ruleList = RulePriorityUpdate(ruleList)
     if not ruleList:
         tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -816,7 +819,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 # 通知処理(作業前)
                                 rule_id = action_log_row["RULE_ID"]
                                 # 「ルール管理」からレコードを取得
-                                ret_rule = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                                # ソート条件不要
+                                ret_rule = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s', [0, 1, rule_id])
                                 if not ret_rule:
                                     tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
                                     g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -976,6 +980,16 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     OASE.send(objdbca, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
 
     EventObj.print_event()
+
+
+def RulePriorityUpdate(RuleRows):
+    ret_RuleRows = []
+    Priority = 1
+    for Row in RuleRows:
+        Row['RULE_PRIORITY'] = Priority
+        Priority += 1
+        ret_RuleRows.append(Row)
+    return ret_RuleRows
 
 
 def UserIDtoUserName(objdbca, UserId):
@@ -1154,7 +1168,8 @@ class ActionStatusMonitor():
                 # 通知処理(作業後)
                 rule_id = Row["RULE_ID"]
                 # 「ルール管理」からレコードを取得
-                ret_rule = self.MariaDBCA.table_select('T_OASE_RULE', 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                # ソート条件不要
+                ret_rule = self.MariaDBCA.table_select('T_OASE_RULE', 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s', [0, 1, rule_id])
                 if not ret_rule:
                     tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
                     g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

@@ -47,17 +47,23 @@ class Notification(ABC):
 
         fetch_data = cls._fetch_table(objdbca, decision_information)
         if fetch_data is None:
+            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80002"))
             return {}
 
         template = cls._get_template(fetch_data, decision_information)
         if template is None:
+            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80003"))
             return {}
 
         # 負荷を考慮して通知先は1回のみ取得することとする
         notification_destination = cls._fetch_notification_destination(fetch_data, decision_information)
         if len(notification_destination) == 0:
+            g.applogger.info(g.appmsg.get_log_message("BKY-80007", [cls.__qualname__]))
+            g.applogger.info(g.appmsg.get_log_message("BKY-80009", [decision_information]))
             g.applogger.info(g.appmsg.get_log_message("BKY-80004"))
             return {}
 
@@ -126,14 +132,13 @@ class Notification(ABC):
             item: 通知するイベント
             template: メッセージのテンプレート
         """
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80014", [item.get('_id')]))
-
         item = cls._convert_message(item)
 
         jinja_template = Template(template)
         try:
             tmp_message = jinja_template.render(item)
         except Exception as e:
+            g.applogger.info(g.appmsg.get_log_message("BKY-80014", [item.get('_id')]))
             g.applogger.error(e)
             g.applogger.error(g.appmsg.get_log_message("BKY-80006"))
             return None
@@ -301,6 +306,7 @@ class Notification(ABC):
         if request_response.status_code != 200:
             # ループで処理する都合エラーが発生してもその瞬間に例外は発生させない
             # 代わりにエラー件数とエラーが発生した際のリクエスト内容を記録し、呼び出し元に返却するようにする。
+            g.applogger.info(g.appmsg.get_log_message("BKY-80026", [data]))
             result["failure"] = 1
             result["failure_info"].append(data)
             result["failure_notification_count"] = len(body_data_list)

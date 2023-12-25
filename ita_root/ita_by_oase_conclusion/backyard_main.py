@@ -300,10 +300,10 @@ class Judgement:
             return False, UseEventIdList
 
         # ルールに設定されている結論ラベルが異常ではないかチェック
-        if type(RuleRow["CONCLUSION_LABEL_NAME"]) is str:
-            RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
+        if type(RuleRow["CONCLUSION_LABEL_SETTINGS"]) is str:
+            RuleRow["CONCLUSION_LABEL_SETTINGS"] = json.loads(RuleRow["CONCLUSION_LABEL_SETTINGS"])
 
-        for row in RuleRow["CONCLUSION_LABEL_NAME"]:
+        for row in RuleRow["CONCLUSION_LABEL_SETTINGS"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -432,9 +432,9 @@ class Judgement:
     def putRaccEvent(self, RuleRow, UseEventIdList):
         addlabels = {}
         label_key_inputs = {}
-        if type(RuleRow["CONCLUSION_LABEL_NAME"]) is str:
-            RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
-        for row in RuleRow["CONCLUSION_LABEL_NAME"]:
+        if type(RuleRow["CONCLUSION_LABEL_SETTINGS"]) is str:
+            RuleRow["CONCLUSION_LABEL_SETTINGS"] = json.loads(RuleRow["CONCLUSION_LABEL_SETTINGS"])
+        for row in RuleRow["CONCLUSION_LABEL_SETTINGS"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -605,7 +605,10 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     # テーブル名
     t_oase_rule = 'T_OASE_RULE'  # ルール管理
     # 「ルール管理」からレコードを取得
-    ruleList = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY RULE_PRIORITY', [0, 1])
+    # ソート条件変更　ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B DESC
+    ruleList = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B DESC', [0, 1])
+    # 優先順位を更新
+    ruleList = RulePriorityUpdate(ruleList)
     if not ruleList:
         tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -816,7 +819,8 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 # 通知処理(作業前)
                                 rule_id = action_log_row["RULE_ID"]
                                 # 「ルール管理」からレコードを取得
-                                ret_rule = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                                # ソート条件不要
+                                ret_rule = objdbca.table_select(t_oase_rule, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s', [0, 1, rule_id])
                                 if not ret_rule:
                                     tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
                                     g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -873,7 +877,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 # 結論イベントに処理で必要なラベル情報を追加
                                 ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, defObj.DF_LOCAL_LABLE_NAME, defObj.DF_LOCAL_LABLE_STATUS, defObj.DF_PROC_EVENT)
 
-                                FilterCheckLabelDict = ruleRow["CONCLUSION_LABEL_NAME"]
+                                FilterCheckLabelDict = ruleRow["CONCLUSION_LABEL_SETTINGS"]
 
                                 # 結論イベントに対応するフィルタ確認
                                 ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(FilterCheckLabelDict, filterList)
@@ -976,6 +980,16 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     OASE.send(objdbca, unused_notification_list, {"notification_type": OASENotificationType.UNDETECTED})
 
     EventObj.print_event()
+
+
+def RulePriorityUpdate(RuleRows):
+    ret_RuleRows = []
+    Priority = 1
+    for Row in RuleRows:
+        Row['RULE_PRIORITY'] = Priority
+        Priority += 1
+        ret_RuleRows.append(Row)
+    return ret_RuleRows
 
 
 def UserIDtoUserName(objdbca, UserId):
@@ -1099,7 +1113,7 @@ class ActionStatusMonitor():
                 TAB_B.DISUSE_FLAG                 AS TAB_B_DISUSE_FLAG,
                 TAB_C.RULE_ID                     AS JOIN_RULE_ID,
                 TAB_C.RULE_NAME                   AS RULE_NAME,
-                TAB_C.CONCLUSION_LABEL_NAME       AS CONCLUSION_LABEL_NAME,
+                TAB_C.CONCLUSION_LABEL_SETTINGS   AS CONCLUSION_LABEL_SETTINGS,
                 TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
                 TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
                 TAB_C.TTL                         AS TTL,
@@ -1154,7 +1168,8 @@ class ActionStatusMonitor():
                 # 通知処理(作業後)
                 rule_id = Row["RULE_ID"]
                 # 「ルール管理」からレコードを取得
-                ret_rule = self.MariaDBCA.table_select('T_OASE_RULE', 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s ORDER BY RULE_PRIORITY', [0, 1, rule_id])
+                # ソート条件不要
+                ret_rule = self.MariaDBCA.table_select('T_OASE_RULE', 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s', [0, 1, rule_id])
                 if not ret_rule:
                     tmp_msg = "処理対象レコードなし。Table:T_OASE_RULE"
                     g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -1198,9 +1213,9 @@ class ActionStatusMonitor():
         # 結論イベント登録
         label_key_inputs = {}
         addlabels = {}
-        if type(RuleInfo["CONCLUSION_LABEL_NAME"]) is str:
-            RuleInfo["CONCLUSION_LABEL_NAME"] = json.loads(RuleInfo["CONCLUSION_LABEL_NAME"])
-        for row in RuleInfo["CONCLUSION_LABEL_NAME"]:
+        if type(RuleInfo["CONCLUSION_LABEL_SETTINGS"]) is str:
+            RuleInfo["CONCLUSION_LABEL_SETTINGS"] = json.loads(RuleInfo["CONCLUSION_LABEL_SETTINGS"])
+        for row in RuleInfo["CONCLUSION_LABEL_SETTINGS"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:

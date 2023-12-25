@@ -97,17 +97,17 @@ class OASE(Notification):
         rule_id = decision_information.get("rule_id")
 
         if notification_type in [OASENotificationType.BEFORE_ACTION, OASENotificationType.AFTER_ACTION] and rule_id is None:
-            raise Exception("rule_id is required if notification_type is OASENotificationType.BEFORE_ACTION or OASENotificationType.AFTER_ACTION")
+            g.applogger.info(g.appmsg.get_log_message("BKY-80025"))
+            return None
 
         values = cls.__get_table_search_condition(notification_type, rule_id)
 
         query = f"SELECT {values['display_column']} FROM {values['table']} WHERE DISUSE_FLAG=0 AND {values['condition_column']}"
 
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80019", [query]))
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80020", [values['condition_value']]))
-
         query_result = objdbca.sql_execute(query, values['condition_value'])
         if len(query_result) == 0:
+            g.applogger.info(g.appmsg.get_log_message("BKY-80019", [query]))
+            g.applogger.info(g.appmsg.get_log_message("BKY-80020", [values['condition_value']]))
             return None
 
         return query_result.pop()
@@ -127,10 +127,14 @@ class OASE(Notification):
             return None
 
         path = get_upload_file_path(workspace_id, menu_id, uuid, rest_name, file_name, "")
-        g.applogger.debug(g.appmsg.get_log_message("BKY-80021", [path]))
 
-        with open(path["file_path"], 'r', encoding='utf_8') as f:
-            template = f.read()
+        try:
+            with open(path["file_path"], 'r', encoding='utf_8') as f:
+                template = f.read()
+        except Exception as e:
+            g.applogger.info(g.appmsg.get_log_message("BKY-80021", [path]))
+            g.applogger.error(e)
+            return None
 
         return template
 
@@ -178,7 +182,7 @@ class OASE(Notification):
             if item in feched_notification_destination_list:
                 result.append(item)
             else:
-                g.applogger.info(f"通知先ID：{item}は通知先に登録されていないため除外します。")
+                g.applogger.info(g.appmsg.get_log_message("BKY-80005", [item]))
 
         return result
 

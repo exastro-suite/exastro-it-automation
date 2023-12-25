@@ -1162,9 +1162,15 @@ setChartEvents() {
 
     // leave
     const blockLeave = function() {
-        er.rect( er.chartContext.block, er.currentBlock.block, er.getPatternColor( er.currentBlock.pattern ) );
+        // 最新のデータに更新
+        er.currentBlock = er.canvasData.find(function(item){
+            return item.id === er.currentBlock.id;
+        });
+        if ( er.currentBlock ) {
+            er.rect( er.chartContext.block, er.currentBlock.block, er.getPatternColor( er.currentBlock.pattern ) );
+            er.$.chart.css('cursor', 'default');
+        }
         er.currentBlock = null;
-        er.$.chart.css('cursor', 'default');
     };
 
     // 範囲指定モードフラグ

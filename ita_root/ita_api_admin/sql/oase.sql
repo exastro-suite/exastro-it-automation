@@ -336,9 +336,9 @@ CREATE TABLE T_OASE_FILTER_OPERATOR
 CREATE TABLE T_OASE_FILTER
 (
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
-    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -352,9 +352,9 @@ CREATE TABLE T_OASE_FILTER_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
-    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -417,6 +417,7 @@ CREATE TABLE T_OASE_ACTION_JNL
 CREATE TABLE T_OASE_RULE
 (
     RULE_ID                         VARCHAR(40),                                -- ルールID
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
@@ -430,9 +431,8 @@ CREATE TABLE T_OASE_RULE
     AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
-    CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
+    CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
-    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -447,6 +447,7 @@ CREATE TABLE T_OASE_RULE_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     RULE_ID                         VARCHAR(40),                                -- ルールID
+    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     RULE_NAME                       VARCHAR(255),                               -- ルール名
     RULE_LABEL_NAME                 VARCHAR(255),                               -- ルールラベル名
     RULE_PRIORITY                   INT,                                        -- 優先順位
@@ -460,9 +461,8 @@ CREATE TABLE T_OASE_RULE_JNL
     AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
-    CONCLUSION_LABEL_NAME           TEXT,                                       -- ラベリング情報
+    CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
-    AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ

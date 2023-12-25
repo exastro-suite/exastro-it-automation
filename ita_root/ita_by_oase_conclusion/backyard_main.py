@@ -300,10 +300,10 @@ class Judgement:
             return False, UseEventIdList
 
         # ルールに設定されている結論ラベルが異常ではないかチェック
-        if type(RuleRow["CONCLUSION_LABEL_NAME"]) is str:
-            RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
+        if type(RuleRow["CONCLUSION_LABEL_SETTINGS"]) is str:
+            RuleRow["CONCLUSION_LABEL_SETTINGS"] = json.loads(RuleRow["CONCLUSION_LABEL_SETTINGS"])
 
-        for row in RuleRow["CONCLUSION_LABEL_NAME"]:
+        for row in RuleRow["CONCLUSION_LABEL_SETTINGS"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -432,9 +432,9 @@ class Judgement:
     def putRaccEvent(self, RuleRow, UseEventIdList):
         addlabels = {}
         label_key_inputs = {}
-        if type(RuleRow["CONCLUSION_LABEL_NAME"]) is str:
-            RuleRow["CONCLUSION_LABEL_NAME"] = json.loads(RuleRow["CONCLUSION_LABEL_NAME"])
-        for row in RuleRow["CONCLUSION_LABEL_NAME"]:
+        if type(RuleRow["CONCLUSION_LABEL_SETTINGS"]) is str:
+            RuleRow["CONCLUSION_LABEL_SETTINGS"] = json.loads(RuleRow["CONCLUSION_LABEL_SETTINGS"])
+        for row in RuleRow["CONCLUSION_LABEL_SETTINGS"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:
@@ -873,7 +873,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                                 # 結論イベントに処理で必要なラベル情報を追加
                                 ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, defObj.DF_LOCAL_LABLE_NAME, defObj.DF_LOCAL_LABLE_STATUS, defObj.DF_PROC_EVENT)
 
-                                FilterCheckLabelDict = ruleRow["CONCLUSION_LABEL_NAME"]
+                                FilterCheckLabelDict = ruleRow["CONCLUSION_LABEL_SETTINGS"]
 
                                 # 結論イベントに対応するフィルタ確認
                                 ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(FilterCheckLabelDict, filterList)
@@ -1099,7 +1099,7 @@ class ActionStatusMonitor():
                 TAB_B.DISUSE_FLAG                 AS TAB_B_DISUSE_FLAG,
                 TAB_C.RULE_ID                     AS JOIN_RULE_ID,
                 TAB_C.RULE_NAME                   AS RULE_NAME,
-                TAB_C.CONCLUSION_LABEL_NAME       AS CONCLUSION_LABEL_NAME,
+                TAB_C.CONCLUSION_LABEL_SETTINGS   AS CONCLUSION_LABEL_SETTINGS,
                 TAB_C.RULE_LABEL_NAME             AS RULE_LABEL_NAME,
                 TAB_C.EVENT_ID_LIST               AS EVENT_ID_LIST,
                 TAB_C.TTL                         AS TTL,
@@ -1198,9 +1198,9 @@ class ActionStatusMonitor():
         # 結論イベント登録
         label_key_inputs = {}
         addlabels = {}
-        if type(RuleInfo["CONCLUSION_LABEL_NAME"]) is str:
-            RuleInfo["CONCLUSION_LABEL_NAME"] = json.loads(RuleInfo["CONCLUSION_LABEL_NAME"])
-        for row in RuleInfo["CONCLUSION_LABEL_NAME"]:
+        if type(RuleInfo["CONCLUSION_LABEL_SETTINGS"]) is str:
+            RuleInfo["CONCLUSION_LABEL_SETTINGS"] = json.loads(RuleInfo["CONCLUSION_LABEL_SETTINGS"])
+        for row in RuleInfo["CONCLUSION_LABEL_SETTINGS"]:
             label_key = row.get('label_key')
             name = self.getIDtoName(label_key)
             if name is False:

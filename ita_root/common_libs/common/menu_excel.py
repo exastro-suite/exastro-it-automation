@@ -112,6 +112,8 @@ def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  
             endCell = None
             for j, value in enumerate(sorted_pulldown_list[column_name_rest].values(), 1):
                 last_loop = len(sorted_pulldown_list[column_name_rest])
+                if value is not None:
+                    value = str(value)
                 ws_master.cell(
                     row=startRow_master + j,
                     column=startClm_master + i,
@@ -1415,6 +1417,8 @@ def collect_excel_filter(
                     ws.cell(
                         row=startRow + 7,
                         column=column_num).border = border
+                    if value is not None:
+                        value = str(value)
                     ws.cell(row=startRow + 7, column=column_num, value=value)
                     ws.cell(row=startRow + 7, column=column_num).data_type = 's'
 

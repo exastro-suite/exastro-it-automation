@@ -2672,7 +2672,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
                 let options;
                 if ( params.term && params.term !== '') {
                     options = optionlist.filter(function( item ){
-                        return item.text.indexOf( params.term ) !== -1;
+                        return String( item.text ).indexOf( params.term ) !== -1;
                     });
                 } else {
                     options = optionlist;

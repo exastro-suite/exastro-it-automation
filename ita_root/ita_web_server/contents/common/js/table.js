@@ -2633,13 +2633,10 @@ filterSelectOpen( $button ) {
 ##################################################
 */
 setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $removeObj, multipel = false ) {
+    const tb = this;
     return new Promise(function( resolve ){
         // listをソートする
-        optionlist.sort(function( a, b ){
-            a = fn.cv( a, '');
-            b = fn.cv( b, '');
-            return a.localeCompare( b );
-        });
+        optionlist.sort( tb.pulldownSort );
 
         // select2データ形式
         const selectedData = [];
@@ -4411,11 +4408,7 @@ changeEdtiMode( changeMode ) {
                 tb.data.editSelectArray[ restName ].push( result[ restName ][ id ] );
             }
             // ソート
-            tb.data.editSelectArray[ restName ].sort(function( a, b ){
-                a = fn.cv( a, '');
-                b = fn.cv( b, '');
-                return a.localeCompare( b );
-            });
+            tb.data.editSelectArray[ restName ].sort( tb.pulldownSort );
 
             // バイト数の多い順に並べる
             tb.data.editSelectLength[ restName ] = $.extend( true, [], tb.data.editSelectArray[ restName ] );
@@ -4476,6 +4469,43 @@ changeEdtiMode( changeMode ) {
     }).catch( function( e ) {
         fn.gotoErrPage( e.message );
     });
+}
+/*
+##################################################
+   プルダウン項目のソート
+##################################################
+*/
+pulldownSort( a, b ) {
+    let paramA = fn.cv( a, ''),
+        paramB = fn.cv( b, '');
+
+    if ( fn.typeof( paramA ) === 'object' ||  fn.typeof( paramA ) === 'array' ||
+            fn.typeof( paramB ) === 'object' ||  fn.typeof( paramB ) === 'array') {
+        try {
+            paramA = ( paramA !== '')? JSON.stringify( paramA ): '';
+            paramB = ( paramB !== '')? JSON.stringify( paramB ): '';
+        } catch ( error ) {
+            paramA = '';
+            paramB = '';
+            console.warn('JSON.stringify error');
+        }
+    } else {
+        if ( !isNaN( paramA ) && !isNaN( paramB ) ) {
+            paramA = Number( paramA );
+            paramB = Number( paramB );
+        } else {
+            paramA = String( paramA );
+            paramB = String( paramB );
+        }
+    }
+
+    if ( paramA < paramB ) {
+        return -1;
+    } else if ( paramA > paramB ) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 /*
 ##################################################

@@ -628,6 +628,9 @@ border-radius: 4px;
 .eventFlowPartsItem:last-child {
 margin-bottom: 0;
 }
+.eventFlowPartsItem[data-available-flag="False"] {
+opacity: .3;
+}
 .eventFlowPartsHeader {
 display: flex;
 background-image: linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,0) );

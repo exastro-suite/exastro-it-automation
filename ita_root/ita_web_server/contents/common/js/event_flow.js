@@ -997,7 +997,11 @@ fetchParts( type ) {
         params.menuNameRest = partsData.rest
         er[ partsData.id ] = { info: info };
 
-        er[ partsData.id ].table = new DataTable( partsData.id, 'view', er[ partsData.id ].info, params, { parts: partsData } );
+        const option = {
+            parts: partsData
+        };
+
+        er[ partsData.id ].table = new DataTable( partsData.id, 'view', er[ partsData.id ].info, params, option );
 
         // ソートセット
         er[ partsData.id ].table.sort = [{ ASC: partsData.partsRestName }];

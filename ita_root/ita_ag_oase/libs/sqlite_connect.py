@@ -37,22 +37,22 @@ class sqliteConnect:
             for event in events:
                 self.insert_event(event)
                 # sent_timestampテーブルにデータを重複して保存しないようにリストを作成
-                check_key = (event["_exastro_event_collection_settings_id"], event["_exastro_fetched_time"])
+                check_key = (event["_exastro_event_collection_settings_name"], event["_exastro_fetched_time"])
                 if check_key not in processed:
                     processed.add(check_key)
                     timestamp_info.append(
                         {
-                            "id": event["_exastro_event_collection_settings_id"],
+                            "name": event["_exastro_event_collection_settings_name"],
                             "timestamp": event["_exastro_fetched_time"]
                         }
                     )
             for info in timestamp_info:
                 self.insert_timestamp(
-                    info["id"],
+                    info["name"],
                     info["timestamp"]
                 )
                 self.insert_last_fetched_time(
-                    info["id"],
+                    info["name"],
                     info["timestamp"]
                 )
 
@@ -90,7 +90,7 @@ class sqliteConnect:
         self.db_cursor.execute(
             f"""
                 CREATE TABLE IF NOT EXISTS {table_name}(
-                    event_collection_settings_id TEXT NOT NULL,
+                    event_collection_settings_name TEXT NOT NULL,
                     event TEXT NOT NULL,
                     fetched_time INTEGER NOT NULL,
                     sent_flag BOOLEAN NOT NULL
@@ -99,8 +99,8 @@ class sqliteConnect:
         )
         event_string = json.dumps(event)
         self.db_cursor.execute(
-            f"INSERT INTO {table_name} (event_collection_settings_id, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?)",
-            (event["_exastro_event_collection_settings_id"], event_string, event["_exastro_fetched_time"], False)
+            f"INSERT INTO {table_name} (event_collection_settings_name, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?)",
+            (event["_exastro_event_collection_settings_name"], event_string, event["_exastro_fetched_time"], False)
         )
 
     def insert_timestamp(self, id, fetched_time):
@@ -108,14 +108,14 @@ class sqliteConnect:
         self.db_cursor.execute(
             f"""
                 CREATE TABLE IF NOT EXISTS {table_name}(
-                    event_collection_settings_id TEXT NOT NULL,
+                    event_collection_settings_name TEXT NOT NULL,
                     fetched_time INTEGER NOT NULL,
                     sent_flag BOOLEAN NOT NULL
                 )
             """
         )
         self.db_cursor.execute(
-            f"INSERT INTO {table_name} (event_collection_settings_id, fetched_time, sent_flag) VALUES (?, ?, ?)",
+            f"INSERT INTO {table_name} (event_collection_settings_name, fetched_time, sent_flag) VALUES (?, ?, ?)",
             (id, fetched_time, False)
         )
 
@@ -124,23 +124,23 @@ class sqliteConnect:
         self.db_cursor.execute(
             f"""
                 CREATE TABLE IF NOT EXISTS {table_name}(
-                    event_collection_settings_id TEXT NOT NULL,
+                    event_collection_settings_name TEXT NOT NULL,
                     last_fetched_time INTEGER NOT NULL
                 )
             """
         )
 
-        self.db_cursor.execute(f"SELECT * FROM {table_name} WHERE event_collection_settings_id=?", (id, ))
+        self.db_cursor.execute(f"SELECT * FROM {table_name} WHERE event_collection_settings_name=?", (id, ))
         record_exists = self.db_cursor.fetchone()
 
         if record_exists is None:
             self.db_cursor.execute(
-                f"INSERT INTO {table_name} (event_collection_settings_id, last_fetched_time) VALUES (?, ?)",
+                f"INSERT INTO {table_name} (event_collection_settings_name, last_fetched_time) VALUES (?, ?)",
                 (id, fetched_time)
             )
         else:
             self.db_cursor.execute(
-                f"UPDATE {table_name} SET last_fetched_time=? WHERE event_collection_settings_id=?",
+                f"UPDATE {table_name} SET last_fetched_time=? WHERE event_collection_settings_name=?",
                 (fetched_time, id)
             )
 

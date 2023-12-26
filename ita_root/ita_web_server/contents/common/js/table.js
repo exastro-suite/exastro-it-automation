@@ -2633,13 +2633,10 @@ filterSelectOpen( $button ) {
 ##################################################
 */
 setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $removeObj, multipel = false ) {
+    const tb = this;
     return new Promise(function( resolve ){
         // listをソートする
-        optionlist.sort(function( a, b ){
-            a = fn.cv( a, '');
-            b = fn.cv( b, '');
-            return a.localeCompare( b );
-        });
+        optionlist.sort( tb.pulldownSort );
 
         // select2データ形式
         const selectedData = [];
@@ -2675,7 +2672,7 @@ setSelect2( $selectArea, $selectBox, optionlist, openFlag = false, selected, $re
                 let options;
                 if ( params.term && params.term !== '') {
                     options = optionlist.filter(function( item ){
-                        return item.text.indexOf( params.term ) !== -1;
+                        return String( item.text ).indexOf( params.term ) !== -1;
                     });
                 } else {
                     options = optionlist;
@@ -2811,7 +2808,11 @@ requestTbody() {
         if ( !tb.partsFlag ) {
             tb.filterParams = tb.getFilterParameter();
         } else {
-            tb.filterParams = {};
+            tb.filterParams = {
+                discard: {
+                    NORMAL: '0'
+                }
+            };
         }
     } else {
         // パラメータ集フィルタ設定
@@ -4411,11 +4412,7 @@ changeEdtiMode( changeMode ) {
                 tb.data.editSelectArray[ restName ].push( result[ restName ][ id ] );
             }
             // ソート
-            tb.data.editSelectArray[ restName ].sort(function( a, b ){
-                a = fn.cv( a, '');
-                b = fn.cv( b, '');
-                return a.localeCompare( b );
-            });
+            tb.data.editSelectArray[ restName ].sort( tb.pulldownSort );
 
             // バイト数の多い順に並べる
             tb.data.editSelectLength[ restName ] = $.extend( true, [], tb.data.editSelectArray[ restName ] );
@@ -4476,6 +4473,43 @@ changeEdtiMode( changeMode ) {
     }).catch( function( e ) {
         fn.gotoErrPage( e.message );
     });
+}
+/*
+##################################################
+   プルダウン項目のソート
+##################################################
+*/
+pulldownSort( a, b ) {
+    let paramA = fn.cv( a, ''),
+        paramB = fn.cv( b, '');
+
+    if ( fn.typeof( paramA ) === 'object' ||  fn.typeof( paramA ) === 'array' ||
+            fn.typeof( paramB ) === 'object' ||  fn.typeof( paramB ) === 'array') {
+        try {
+            paramA = ( paramA !== '')? JSON.stringify( paramA ): '';
+            paramB = ( paramB !== '')? JSON.stringify( paramB ): '';
+        } catch ( error ) {
+            paramA = '';
+            paramB = '';
+            console.warn('JSON.stringify error');
+        }
+    } else {
+        if ( !isNaN( paramA ) && !isNaN( paramB ) ) {
+            paramA = Number( paramA );
+            paramB = Number( paramB );
+        } else {
+            paramA = String( paramA );
+            paramB = String( paramB );
+        }
+    }
+
+    if ( paramA < paramB ) {
+        return -1;
+    } else if ( paramA > paramB ) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 /*
 ##################################################
@@ -6679,10 +6713,11 @@ partsItemHtml( type, name, idRest, nameRest, item ) {
 
     const
     partsName = fn.cv( parameter[nameRest], '', true ),
-    partsId = fn.cv( parameter[idRest], '', true );
+    partsId = fn.cv( parameter[idRest], '', true ),
+    flag = fn.cv( parameter.available_flag, '', true );
 
     return ``
-    + `<li class="eventFlowPartsItem eventFlowParts${name}">`
+    + `<li class="eventFlowPartsItem eventFlowParts${name}" data-available-flag="${flag}">`
         + `<div class="eventFlowPartsHeader">`
             + `<div class="eventFlowPartsName"><span class="eventFlowPartsNameText">${partsName}</span></div>`
             + `<div class="eventFlowPartsMenu">${tb.partsMenuHtml( partsId )}</div>`
@@ -6820,7 +6855,7 @@ partsRuleListHtml( type, name ) {
 }
 /*
 ##################################################
-  ルールHTML
+  エラーHTML
 ##################################################
 */
 partsEditError ( title, elements ) {

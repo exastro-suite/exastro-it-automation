@@ -2808,7 +2808,11 @@ requestTbody() {
         if ( !tb.partsFlag ) {
             tb.filterParams = tb.getFilterParameter();
         } else {
-            tb.filterParams = {};
+            tb.filterParams = {
+                discard: {
+                    NORMAL: '0'
+                }
+            };
         }
     } else {
         // パラメータ集フィルタ設定
@@ -6709,10 +6713,11 @@ partsItemHtml( type, name, idRest, nameRest, item ) {
 
     const
     partsName = fn.cv( parameter[nameRest], '', true ),
-    partsId = fn.cv( parameter[idRest], '', true );
+    partsId = fn.cv( parameter[idRest], '', true ),
+    flag = fn.cv( parameter.available_flag, '', true );
 
     return ``
-    + `<li class="eventFlowPartsItem eventFlowParts${name}">`
+    + `<li class="eventFlowPartsItem eventFlowParts${name}" data-available-flag="${flag}">`
         + `<div class="eventFlowPartsHeader">`
             + `<div class="eventFlowPartsName"><span class="eventFlowPartsNameText">${partsName}</span></div>`
             + `<div class="eventFlowPartsMenu">${tb.partsMenuHtml( partsId )}</div>`
@@ -6850,7 +6855,7 @@ partsRuleListHtml( type, name ) {
 }
 /*
 ##################################################
-  ルールHTML
+  エラーHTML
 ##################################################
 */
 partsEditError ( title, elements ) {

@@ -123,19 +123,19 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     # 最終取得日時
     current_timestamp = int(datetime.datetime.now().timestamp())
     timestamp_data = {}
-    timestamp_dict = {key: current_timestamp for key in id_list}
+    timestamp_dict = {key: current_timestamp for key in setting_name_list}
     try:
         # 各設定の最終取得日時を取得
         timestamp_data = {key: value for key, value in sqliteDB.select_all("last_fetched_time")}
-        for id in id_list:
-            if id in timestamp_data:
-                timestamp_dict[id] = timestamp_data[id]
+        for name in setting_name_list:
+            if name in timestamp_data:
+                timestamp_dict[name] = timestamp_data[name]
             else:
-                sqliteDB.insert_last_fetched_time(id, current_timestamp)
+                sqliteDB.insert_last_fetched_time(name, current_timestamp)
                 sqliteDB.db_connect.commit()
     except sqlite3.OperationalError:
-        for id in id_list:
-            sqliteDB.insert_last_fetched_time(id, current_timestamp)
+        for name in id_list:
+            sqliteDB.insert_last_fetched_time(name, current_timestamp)
             sqliteDB.db_connect.commit()
 
     # イベント収集
@@ -167,15 +167,15 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     unsent_timestamp_rowids = []  # アップデート用rowidリスト
     send_to_ita_flag = False
 
-    # event_collection_settings_idとfetched_timeの組み合わせで辞書を作成
-    for id in id_list:
+    # event_collection_settings_nameとfetched_timeの組み合わせで辞書を作成
+    for name in setting_name_list:
         try:
             sqliteDB.db_cursor.execute(
                 """
-                SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp
-                WHERE event_collection_settings_id=? AND sent_flag=?
+                SELECT rowid, event_collection_settings_name, fetched_time FROM sent_timestamp
+                WHERE event_collection_settings_name=? AND sent_flag=?
                 """,
-                (id, 0)
+                (name, 0)
             )
             unsent_timestamp = sqliteDB.db_cursor.fetchall()
             unsent_timestamp_rowids.extend([row[0] for row in unsent_timestamp])
@@ -190,18 +190,18 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         # 作成した辞書を使用してイベントを検索
         for item in unsent_timestamp:
             unsent_event = {}
-            event_collection_settings_id = item[1]
+            event_collection_settings_name = item[1]
             fetched_time = item[2]
             unsent_event["fetched_time"] = fetched_time
-            unsent_event["event_collection_settings_id"] = event_collection_settings_id
+            unsent_event["event_collection_settings_name"] = event_collection_settings_name
             unsent_event["event"] = []
 
             sqliteDB.db_cursor.execute(
                 """
-                SELECT rowid, event_collection_settings_id, event, fetched_time FROM events
-                WHERE event_collection_settings_id=? AND fetched_time=? AND sent_flag=?
+                SELECT rowid, event_collection_settings_name, event, fetched_time FROM events
+                WHERE event_collection_settings_name=? AND fetched_time=? AND sent_flag=?
                 """,
-                (event_collection_settings_id, fetched_time, 0)
+                (event_collection_settings_name, fetched_time, 0)
             )
             unsent_events = sqliteDB.db_cursor.fetchall()
             unsent_event["event"].extend([row[2] for row in unsent_events])
@@ -252,15 +252,15 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     remain_timestamp_dict = {}  # sent_timestampテーブルに残すレコードの{rowid: {id: xxx, fetched_time: nnn}}
     remain_event_rowids = []  # eventsテーブルに残すレコードのrowid
     g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
-    for id in id_list:
+    for name in setting_name_list:
         try:
             sqliteDB.db_cursor.execute(
                 """
-                SELECT rowid, event_collection_settings_id, fetched_time FROM sent_timestamp
-                WHERE event_collection_settings_id=? and sent_flag=1
+                SELECT rowid, event_collection_settings_name, fetched_time FROM sent_timestamp
+                WHERE event_collection_settings_name=? and sent_flag=1
                 ORDER BY fetched_time DESC LIMIT 2
                 """,
-                (id, )
+                (name, )
             )
             remain_timestamp = sqliteDB.db_cursor.fetchall()
         except sqlite3.OperationalError:
@@ -270,7 +270,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         if len(remain_timestamp) < 2:
             continue
         for item in remain_timestamp:
-            remain_timestamp_dict[item[0]] = {"event_collection_settings_id": item[1], "fetched_time": item[2]}
+            remain_timestamp_dict[item[0]] = {"event_collection_settings_name": item[1], "fetched_time": item[2]}
 
     # 削除対象イベントが無い場合、削除処理をスキップ
     if len(remain_timestamp_dict) >= 1:
@@ -278,9 +278,9 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             sqliteDB.db_cursor.execute(
                 """
                 SELECT rowid FROM events
-                WHERE ((event_collection_settings_id=? AND fetched_time=?) OR sent_flag=0)
+                WHERE ((event_collection_settings_name=? AND fetched_time=?) OR sent_flag=0)
                 """,
-                (item["event_collection_settings_id"], item["fetched_time"])
+                (item["event_collection_settings_name"], item["fetched_time"])
             )
             remain_event = sqliteDB.db_cursor.fetchall()
             for item in remain_event:

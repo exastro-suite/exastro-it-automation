@@ -30,7 +30,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
     pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
     for setting in event_collection_settings:
-        setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_ID"]]
+        setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_NAME"]]
         fetched_time = datetime.datetime.now()  # API取得時間
 
         # パスワードカラムを複合化しておく
@@ -83,6 +83,7 @@ def init_label(data, fetched_time, setting):
     event["_exastro_fetched_time"] = int(fetched_time.timestamp())
     event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
     event["_exastro_type"] = "event"
+    event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
 
     return event
 

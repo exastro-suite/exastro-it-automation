@@ -207,6 +207,11 @@ class LabeledEventCollection(CollectionBase):
             if "_exastro_rule_name" in labels:
                 format_item["_exastro_rule_name"] = labels.pop("_exastro_rule_name")
 
+            # "_exastro_checked"は後から制御用に追加した項目。
+            # 画面での取り扱いが決まっていないため、v2.3.0ではlabelsから取り除く対応のみ実施する。
+            if "_exastro_checked" in labels:
+                labels.pop("_exastro_checked")
+
             # 残項目はlabelsとして返却するため代入する。
             # 画面返却時、配列やobjectは扱えないため文字列に変更する。
             format_item["labels"] = json.dumps(labels, ensure_ascii=False)

@@ -129,10 +129,12 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         event_list = single_event["event"]
 
         # イベント収集設定IDとfetched_timeをsingle_dataに格納する
-        single_data["EVENT_COLLECTION_SETTINGS_ID"] = single_event["event_collection_settings_id"]
+        table_name = "T_OASE_EVENT_COLLECTION_SETTINGS"
+        event_collection_settings = wsDb.table_select(table_name, "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s AND DISUSE_FLAG = 0", [single_event["event_collection_settings_name"]])  # noqa: E501
+        event_collection_settings_id = event_collection_settings[0]["EVENT_COLLECTION_SETTINGS_ID"]
+        single_data["EVENT_COLLECTION_SETTINGS_ID"] = event_collection_settings_id
         single_data["FETCHED_TIME"] = single_event["fetched_time"]
 
-        event_collection_settings_id = single_data["EVENT_COLLECTION_SETTINGS_ID"]
         fetched_time = single_data["FETCHED_TIME"]
 
         table_name = "T_OASE_EVENT_COLLECTION_PROGRESS"

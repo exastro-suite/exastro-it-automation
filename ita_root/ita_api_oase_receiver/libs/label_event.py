@@ -89,6 +89,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         labeled_event["exastro_created_at"] = single_event["_exastro_created_at"]
         # 重複して不要なexastro用ラベルを削除
         del labeled_event["event"]["_exastro_event_collection_settings_id"]
+        del labeled_event["event"]["_exastro_event_collection_settings_name"]
         del labeled_event["event"]["_exastro_fetched_time"]
         del labeled_event["event"]["_exastro_end_time"]
         del labeled_event["event"]["_exastro_type"]

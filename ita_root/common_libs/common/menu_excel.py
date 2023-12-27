@@ -1175,6 +1175,8 @@ def collect_excel_journal(
                         ws.cell(
                             row=startDetailRow,
                             column=column_num).border = border
+                        if value is not None:
+                            value = str(value)
                         ws.cell(
                             row=startDetailRow,
                             column=column_num,
@@ -1942,6 +1944,7 @@ def create_title_info(column_info, column_group_info, columns, title_info, exec_
                 pos)
 
     return title_info, pos
+
 
 def get_special_column_pulldown_list(column_list, pulldown_list):
     """

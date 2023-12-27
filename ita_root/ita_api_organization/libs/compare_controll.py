@@ -31,6 +31,8 @@ import shutil
 import dictdiffer
 import difflib
 
+import openpyxl
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
@@ -2551,6 +2553,13 @@ def ws_add_table_data_cells(ws, row_no, column_no, col_name="", val_1="", val_2=
         # detail
         ws.cell(row=row_no, column=column_no + 4, value=wr_fmt(other))
 
+    # 等号対応: set data_type->str
+    _target_cols = [col_name, str_diff, val_1, val_2, other]
+    for _idx in range(0, len(_target_cols)):
+        _c_no = column_no + _idx
+        ws.cell(row=row_no, column=_c_no).number_format = openpyxl.styles.numbers.FORMAT_TEXT
+        ws.cell(row=row_no, column=_c_no).data_type = 's'
+
     # add diff style
     if diff_flg is True:
         ws.cell(row=row_no, column=column_no + 1).font = Font(color='FF0000')
@@ -2676,6 +2685,12 @@ def ws_index_create_table(wb, file_name, exec_time, config, compare_config, comp
     ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60017")))
     ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(host_str))
 
+    # 等号対応: set data_type->str
+    for _n in range(1, 10):
+        print(_n, column_no, column_no + 1)
+        ws.cell(row=_n, column=column_no).number_format = openpyxl.styles.numbers.FORMAT_TEXT
+        ws.cell(row=_n, column=column_no + 1).data_type = 's'
+
     # add table: comapre execute parameters
     tbl_end_no = int("{}".format(tmp_row_no))
     table_name = "compare_parameter"
@@ -2722,6 +2737,11 @@ def ws_index_create_table(wb, file_name, exec_time, config, compare_config, comp
         ws.cell(row=row_no, column=column_no + 1, value=wr_fmt(str_host_compare_diff))
         ws.cell(row=row_no, column=column_no).font = host_result_font
         ws.cell(row=row_no, column=column_no + 1).font = host_result_font
+
+        # 等号対応: set data_type->str
+        for _n in range(column_no, column_no + 2):
+            ws.cell(row=row_no, column=_n).number_format = openpyxl.styles.numbers.FORMAT_TEXT
+            ws.cell(row=row_no, column=_n).data_type = 's'
 
         # set link
         target_cell = "{}{}".format("A", row_no)

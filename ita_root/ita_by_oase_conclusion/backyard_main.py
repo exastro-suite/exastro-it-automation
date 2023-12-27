@@ -217,6 +217,7 @@ class Judgement:
         defObj = RuleJudgementConst()
         for RuleRow in RuleList:
             hit = True
+            FilterList = []
             FilterList.append(RuleRow['FILTER_A'])
             if RuleRow.get('FILTER_B') is not None:
                 FilterList.append(RuleRow['FILTER_B'])

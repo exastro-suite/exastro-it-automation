@@ -89,9 +89,6 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集設定ファイルからイベント収集設定の取得
     settings = get_settings()
-    id_list = []
-    if settings is not False:
-        id_list = [setting["EVENT_COLLECTION_SETTINGS_ID"] for setting in settings]
     g.applogger.debug(g.appmsg.get_log_message("AGT-10007", []))
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
@@ -110,8 +107,6 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 create_file(response["data"])
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10009", []))
                 settings = get_settings()
-                if settings is not False:
-                    id_list = [setting["EVENT_COLLECTION_SETTINGS_ID"] for setting in settings]
             else:
                 g.applogger.info(g.appmsg.get_log_message("AGT-10010", []))
                 g.applogger.debug(status_code)
@@ -134,7 +129,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 sqliteDB.insert_last_fetched_time(name, current_timestamp)
                 sqliteDB.db_connect.commit()
     except sqlite3.OperationalError:
-        for name in id_list:
+        for name in setting_name_list:
             sqliteDB.insert_last_fetched_time(name, current_timestamp)
             sqliteDB.db_connect.commit()
 

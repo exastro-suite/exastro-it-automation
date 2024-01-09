@@ -37,8 +37,11 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-      - MONGO_HOST=${MONGO_HOST}
-      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
     volumes:
       - vol-ita-storage:/storage
     networks:
@@ -66,8 +69,11 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-      - MONGO_HOST=${MONGO_HOST}
-      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
       - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
       - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
       - GITLAB_PROTOCOL=${GITLAB_PROTOCOL:-http}
@@ -103,18 +109,19 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-      - MONGO_HOST=${MONGO_HOST}
-      - MONGO_PORT=${MONGO_PORT}
-      - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
-      - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-    volumes:
-      - vol-ita-storage:/storage
+    # volumes:
+    #   - vol-ita-storage:/storage
     networks:
       - exastro
-    # profiles:
-    #   - ita-oase
+    profiles:
+      - ita-oase
 
   ita-web-server:
     user: 1000:1000
@@ -175,6 +182,8 @@ services:
       - ../.volumes/ita-mongodb/data:/data/db
     networks:
       - exastro
+    profiles:
+      - ita-oase
 
   ita-by-ansible-execute:
     user: 1000:${HOST_DOCKER_GID:-1000}
@@ -836,8 +845,11 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-      - MONGO_HOST=${MONGO_HOST}
-      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST:-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
     volumes:
       - vol-ita-storage:/storage
     networks:
@@ -845,7 +857,7 @@ services:
     profiles:
       - exastro-it-automation-backyard
       - ita-by-oase-conclusion
-      # - ita-oase
+      - ita-oase
     depends_on:
       ita-migration:
         condition: service_completed_successfully

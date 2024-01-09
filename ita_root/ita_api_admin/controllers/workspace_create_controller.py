@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 from common_libs.api import api_filter_admin, check_request_body_key
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectRoot
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
 from libs.admin_common import initial_settings_ansible
@@ -60,6 +60,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         return '', "ALREADY EXISTS", "499-00001", 499
 
     inistial_data_ansible_if = org_db.get_inistial_data_ansible_if()
+    # get no install driver list
     no_install_driver_tmp = org_db.get_no_install_driver()
     if no_install_driver_tmp is None or len(no_install_driver_tmp) == 0:
         no_install_driver = []
@@ -93,17 +94,22 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         connect_info = org_db.get_connect_info()
 
         mongo_host = None
-        mongo_port = None
+        mongo_connection_string = None
         ws_mongo_name = None
         mongo_username = None
         mongo_user_password = None
         # OrganizationにてOASEがインストール対象外ではない場合は、Workspace毎のMongoDBユーザ情報を追加する。
         if 'oase' not in no_install_driver:
-            mongo_host = connect_info['MONGO_HOST']
-            mongo_port = connect_info['MONGO_PORT']
+            mongo_host = mongo_host = os.environ.get('MONGO_HOST', '')
+            mongo_connection_string = os.environ.get('MONGO_CONNECTION_STRING', '')
+            if not mongo_host and not mongo_connection_string:
+                # OASEが有効かつ、環境変数「MONGO_HOST」もしくは「MONGO_CONNECTION_STRING」に値が無い場合は、workspace作成をできないようにする。
+                return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
+
             # make workspace-mongo connect infomation
-            root_mongo = MONGOConnectRoot()
-            ws_mongo_name, mongo_username, mongo_user_password = root_mongo.userinfo_generate("ITA_WS")
+            if not mongo_connection_string:
+                org_mongo = MONGOConnectOrg(org_db)
+                ws_mongo_name, mongo_username, mongo_user_password = org_mongo.userinfo_generate("ITA_WS")
 
         data = {
             'WORKSPACE_ID': workspace_id,
@@ -112,11 +118,10 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             'DB_USER': db_username,
             'DB_PASSWORD': ky_encrypt(db_user_password),
             'DB_DATABASE': ws_db_name,
-            'MONGO_HOST': mongo_host,
-            'MONGO_PORT': mongo_port,
+            'MONGO_CONNECTION_STRING': mongo_connection_string,
+            'MONGO_DATABASE': ws_mongo_name,
             'MONGO_USER': mongo_username,
             'MONGO_PASSWORD': ky_encrypt(mongo_user_password),
-            'MONGO_DATABASE': ws_mongo_name,
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
@@ -129,12 +134,13 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # print(db_username, db_user_password)
 
         if 'oase' not in no_install_driver:
-            # create workspace-mongodb-user
-            root_mongo.create_user(
-                mongo_username,
-                mongo_user_password,
-                ws_mongo_name
-            )
+            if not mongo_connection_string:
+                # create workspace-mongodb-user
+                org_mongo.create_user(
+                    mongo_username,
+                    mongo_user_password,
+                    ws_mongo_name
+                )
 
         g.applogger.debug("created db and db-user")
 
@@ -145,11 +151,10 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         g.db_connect_info["WSDB_USER"] = data["DB_USER"]
         g.db_connect_info["WSDB_PASSWORD"] = data["DB_PASSWORD"]
         g.db_connect_info["WSDB_DATABASE"] = data["DB_DATABASE"]
-        g.db_connect_info["WSMONGO_HOST"] = data['MONGO_HOST']
-        g.db_connect_info["WSMONGO_PORT"] = str(data['MONGO_PORT'])
-        g.db_connect_info["WSMONGO_USER"] = data['MONGO_USER']
-        g.db_connect_info["WSMONGO_PASSWORD"] = data['MONGO_PASSWORD']
-        g.db_connect_info["WSMONGO_DATABASE"] = data['MONGO_DATABASE']
+        g.db_connect_info["WS_MONGO_CONNECTION_STRING"] = data['MONGO_CONNECTION_STRING']
+        g.db_connect_info["WS_MONGO_DATABASE"] = data['MONGO_DATABASE']
+        g.db_connect_info["WS_MONGO_USER"] = data['MONGO_USER']
+        g.db_connect_info["WS_MONGO_PASSWORD"] = data['MONGO_PASSWORD']
 
         ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
 
@@ -260,10 +265,10 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             org_root_db.user_drop(db_username)
 
         if 'oase' not in no_install_driver:
-            if 'root_mongo' in locals():
-                root_mongo = MONGOConnectRoot()
-                root_mongo.drop_database(ws_mongo_name)
-                root_mongo.drop_user(mongo_username, ws_mongo_name)
+            if 'org_mongo' in locals() and not mongo_connection_string:
+                org_mongo = MONGOConnectOrg(org_db)
+                org_mongo.drop_database(ws_mongo_name)
+                org_mongo.drop_user(mongo_username, ws_mongo_name)
 
         raise Exception(e)
 
@@ -294,6 +299,13 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     if connect_info is False:
         return '', "ALREADY DELETED", "499-00002", 499
 
+    # get no install driver list
+    no_install_driver_tmp = org_db.get_no_install_driver()
+    if no_install_driver_tmp is None or len(no_install_driver_tmp) == 0:
+        no_install_driver = []
+    else:
+        no_install_driver = json.loads(no_install_driver_tmp)
+
     # OrganizationとWorkspaceが削除されている場合のエラーログ抑止する為、廃止してからデータベース削除
     data = {
         'PRIMARY_KEY': connect_info['PRIMARY_KEY'],
@@ -320,9 +332,11 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         org_root_db.user_drop(connect_info['DB_USER'])
         org_root_db.db_disconnect()
 
-        root_mongo = MONGOConnectRoot()
-        root_mongo.drop_database(connect_info['MONGO_DATABASE'])
-        root_mongo.drop_user(connect_info['MONGO_USER'], connect_info['MONGO_DATABASE'])
+        if 'oase' not in no_install_driver:
+            if not connect_info['MONGO_CONNECTION_STRING']:
+                org_mongo = MONGOConnectOrg(org_db)
+                org_mongo.drop_database(connect_info['MONGO_DATABASE'])
+                org_mongo.drop_user(connect_info['MONGO_USER'], connect_info['MONGO_DATABASE'])
 
         # delete storage directory for workspace
         if os.path.isdir(workspace_dir):

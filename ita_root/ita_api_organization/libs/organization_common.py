@@ -98,8 +98,9 @@ def before_request_handler():
         g.db_connect_info['ORGDB_ADMIN_USER'] = orgdb_connect_info.get('DB_ADMIN_USER')
         g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = orgdb_connect_info.get('DB_ADMIN_PASSWORD')
         g.db_connect_info['ORGDB_DATABASE'] = orgdb_connect_info.get('DB_DATABASE')
-        g.db_connect_info['ORGMONGO_HOST'] = orgdb_connect_info.get('MONGO_HOST')
-        g.db_connect_info['ORGMONGO_PORT'] = str(orgdb_connect_info.get('MONGO_PORT') or "")
+        g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = orgdb_connect_info.get('MONGO_CONNECTION_STRING')
+        g.db_connect_info["ORG_MONGO_ADMIN_USER"] = orgdb_connect_info.get('MONGO_ADMIN_USER')
+        g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = orgdb_connect_info.get('MONGO_ADMIN_PASSWORD')
         g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = orgdb_connect_info.get('INITIAL_DATA_ANSIBLE_IF')
         g.db_connect_info['NO_INSTALL_DRIVER'] = orgdb_connect_info.get('NO_INSTALL_DRIVER')
         # gitlab connect info
@@ -121,11 +122,10 @@ def before_request_handler():
         g.db_connect_info["WSDB_USER"] = wsdb_connect_info["DB_USER"]
         g.db_connect_info["WSDB_PASSWORD"] = wsdb_connect_info["DB_PASSWORD"]
         g.db_connect_info["WSDB_DATABASE"] = wsdb_connect_info["DB_DATABASE"]
-        g.db_connect_info["WSMONGO_HOST"] = wsdb_connect_info["MONGO_HOST"]
-        g.db_connect_info["WSMONGO_PORT"] = str(wsdb_connect_info["MONGO_PORT"] or "")
-        g.db_connect_info["WSMONGO_USER"] = wsdb_connect_info["MONGO_USER"]
-        g.db_connect_info["WSMONGO_PASSWORD"] = wsdb_connect_info["MONGO_PASSWORD"]
-        g.db_connect_info["WSMONGO_DATABASE"] = wsdb_connect_info["MONGO_DATABASE"]
+        g.db_connect_info["WS_MONGO_CONNECTION_STRING"] = wsdb_connect_info["MONGO_CONNECTION_STRING"]
+        g.db_connect_info["WS_MONGO_DATABASE"] = wsdb_connect_info["MONGO_DATABASE"]
+        g.db_connect_info["WS_MONGO_USER"] = wsdb_connect_info["MONGO_USER"]
+        g.db_connect_info["WS_MONGO_PASSWORD"] = wsdb_connect_info["MONGO_PASSWORD"]
 
         ws_db = DBConnectWs(workspace_id)  # noqa: F405
         g.applogger.debug("WS_DB:{} can be connected".format(workspace_id))

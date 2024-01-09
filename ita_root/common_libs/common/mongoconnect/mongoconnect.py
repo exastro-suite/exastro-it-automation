@@ -28,24 +28,26 @@ from .collection_base import CollectionBase
 from .const import Const
 
 
-class MONGOConnectRoot():
+class MONGOConnectCommon():
     """
     database connection agnet class for root-user on mongodb
     """
     _client = None  # database connection clinet
     _db = None  # database connection
 
-    def __init__(self, user_name=None, user_password=None, db_name=None):
+    def __init__(self):
         """
         constructor
         """
-
         # MongoDBに接続
-        self._host = os.getenv("MONGO_HOST")
-        self._port = int(os.getenv("MONGO_PORT"))
-        self._db_user = os.getenv("MONGO_ADMIN_USER") if user_name is None else user_name
-        self._db_passwd = ky_encrypt(os.getenv("MONGO_ADMIN_PASSWORD")) if user_password is None else user_password
-        self._db_name = 'admin' if db_name is None else db_name
+        self._connection_string = os.environ.get('MONGO_CONNECTION_STRING', "")
+        self._option_ssl_flg = True if os.environ.get("MONGO_OPTION_SSL", "FALSE").upper() == "TRUE" else False
+        self._scheme = os.environ.get("MONGO_SCHEME", "mongodb")
+        self._host = os.environ.get("MONGO_HOST")
+        self._port = int(os.environ.get("MONGO_PORT", 0) or 0)
+        self._db_user = os.environ.get("MONGO_ADMIN_USER")
+        self._db_passwd = ky_encrypt(os.environ.get("MONGO_ADMIN_PASSWORD"))
+        self._db_name = 'admin'
 
         # connect database
         self.connect()
@@ -67,21 +69,25 @@ class MONGOConnectRoot():
             return True
 
         try:
-            self._client = MongoClient(
-                host='mongodb://{}'.format(self._host),
-                port=self._port,
-                username=self._db_user,
-                password=ky_decrypt(self._db_passwd),
-                authSource=self._db_name,
-            )
+            if not self._connection_string:
+                self._client = MongoClient(
+                    ssl=self._option_ssl_flg,
+                    host='{}://{}'.format(self._scheme, self._host),
+                    port=self._port,
+                    username=self._db_user,
+                    password=ky_decrypt(self._db_passwd),
+                    authSource=self._db_name,
+                )
+            else:
+                self._client = MongoClient(self._connection_string)
         except PyMongoError as mongo_err:
             if mongo_err.timeout:
-                raise AppException("999-00002", [self._db, mongo_err])
+                raise AppException("999-00002", ["mongodb.{}".format(self._db_name), mongo_err])
             else:
-                raise AppException("999-00002", [self._db, mongo_err])
+                raise AppException("999-00002", ["mongodb.{}".format(self._db_name), mongo_err])
 
         if self._client is None:
-            raise AppException("999-00002", [self._db_name, "cannot access. connect info may be incorrect"])
+            raise AppException("999-00002", ["mongodb.{}".format(self._db_name), "cannot access. connect info may be incorrect"])
 
         self._db = self._client[self._db_name]
 
@@ -125,7 +131,7 @@ class MONGOConnectRoot():
 
         self.db(db_name).command('createUser', user_name, pwd=user_password, roles=role)
 
-    def drop_user(self, user_name, db_name=None):
+    def drop_user(self, user_name, db_name='admin'):
         """
         drop user
         """
@@ -150,7 +156,7 @@ class MONGOConnectRoot():
         code = res['code'] if 'code' in res else ''
         codeName = res['codeName'] if 'codeName' in res else ''
 
-        raise AppException("999-00002", [self._db, errmsg, code, codeName])
+        raise AppException("999-00002", [self._db_name, errmsg, code, codeName])
 
     def _uuid_create(self):
         """
@@ -194,7 +200,48 @@ class MONGOConnectRoot():
         return password
 
 
-class MONGOConnectWs(MONGOConnectRoot):
+class MONGOConnectOrg(MONGOConnectCommon):
+    """
+    database connection root user agnet class for organization on mongodb
+    """
+
+    def __init__(self, org_db: DBConnectOrg):
+        """
+        constructor
+        """
+        if self._client is not None:
+            return True
+
+        organization_id = g.get('ORGANIZATION_ID')
+        self._organization_id = organization_id
+
+        # get db-connect-infomation from environment-variables
+        self._option_ssl_flg = True if os.environ.get("MONGO_OPTION_SSL", "FALSE").upper() == "TRUE" else False
+        self._scheme = os.environ.get("MONGO_SCHEME", "mongodb")
+        self._host = os.environ.get("MONGO_HOST")
+        self._port = int(os.environ.get("MONGO_PORT", 0) or 0)
+
+        self._db_name = "admin"
+        if "db_connect_info" not in g:
+            # get db-connect-infomation from organization-db
+            connect_info = org_db.get_org_mongo_connect_info()
+            if connect_info is False:
+                db_info = "ORGANIZATION_ID=" + organization_id
+                raise AppException("999-00001", [db_info])
+
+            self._connection_string = connect_info["MONGO_CONNECTION_STRING"]
+            self._db_user = connect_info["MONGO_ADMIN_USER"]
+            self._db_passwd = connect_info["MONGO_ADMIN_PASSWORD"]
+        else:
+            self._connection_string = g.db_connect_info["ORG_MONGO_CONNECTION_STRING"]
+            self._db_user = g.db_connect_info["ORG_MONGO_ADMIN_USER"]
+            self._db_passwd = g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"]
+
+        # connect database
+        self.connect()
+
+
+class MONGOConnectWs(MONGOConnectCommon):
     """
     database connection root user agnet class for workspace-db on mongodb
     """
@@ -203,18 +250,22 @@ class MONGOConnectWs(MONGOConnectRoot):
         """
         constructor
         """
+        if self._client is not None:
+            return True
+
+        organization_id = g.get('ORGANIZATION_ID')
+        self._organization_id = organization_id
+
+        workspace_id = g.get('WORKSPACE_ID')
+        self._workspace_id = workspace_id
+
+        # get db-connect-infomation from environment-variables
+        self._option_ssl_flg = True if os.environ.get("MONGO_OPTION_SSL", "FALSE").upper() == "TRUE" else False
+        self._scheme = os.environ.get("MONGO_SCHEME", "mongodb")
+        self._host = os.environ.get("MONGO_HOST")
+        self._port = int(os.environ.get("MONGO_PORT", 0) or 0)
+
         if "db_connect_info" not in g:
-            if self._client is not None:
-                return True
-
-            if organization_id is None:
-                organization_id = g.get('ORGANIZATION_ID')
-            self._organization_id = organization_id
-
-            if workspace_id is None:
-                workspace_id = g.get('WORKSPACE_ID')
-            self._workspace_id = workspace_id
-
             # get db-connect-infomation from organization-db
             org_db = DBConnectOrg(organization_id)
             connect_info = org_db.get_wsdb_connect_info(workspace_id)
@@ -222,12 +273,16 @@ class MONGOConnectWs(MONGOConnectRoot):
                 db_info = "WORKSPACE_ID=" + workspace_id
                 db_info = "ORGANIZATION_ID=" + organization_id + "," + db_info if organization_id else db_info
                 raise AppException("999-00001", [db_info])
+
+            self._connection_string = connect_info['MONGO_CONNECTION_STRING']
+            self._db_name = connect_info["MONGO_DATABASE"]
+            self._db_user = connect_info["MONGO_USER"]
+            self._db_passwd = connect_info["MONGO_PASSWORD"]
         else:
-            self._host = g.db_connect_info["WSMONGO_HOST"]
-            self._port = int(g.db_connect_info["WSMONGO_PORT"])
-            self._db_user = g.db_connect_info["WSMONGO_USER"]
-            self._db_passwd = g.db_connect_info["WSMONGO_PASSWORD"]
-            self._db_name = g.db_connect_info["WSMONGO_DATABASE"]
+            self._connection_string = g.db_connect_info['WS_MONGO_CONNECTION_STRING']
+            self._db_name = g.db_connect_info["WS_MONGO_DATABASE"]
+            self._db_user = g.db_connect_info["WS_MONGO_USER"]
+            self._db_passwd = g.db_connect_info["WS_MONGO_PASSWORD"]
 
         # connect database
         self.connect()

@@ -1518,13 +1518,29 @@ def _set_compare_detail_config(objdbca, compare_config, options):
         sql_str = textwrap.dedent("""
             SELECT
                 `TAB_A`.*,
-                `TAB_C`.`COLUMN_NAME_JA` AS `TARGET_COLUMN_NAME_1_JA`,
-                `TAB_C`.`COLUMN_NAME_EN` AS `TARGET_COLUMN_NAME_1_EN`,
+                CONCAT(
+                    `TBL_G`.`FULL_COL_GROUP_NAME_JA`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_JA`
+                ) AS `TARGET_COLUMN_NAME_1_JA`,
+                CONCAT(
+                    `TBL_H`.`FULL_COL_GROUP_NAME_EN`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_EN`
+                ) AS `TARGET_COLUMN_NAME_1_EN`,
                 `TAB_C`.`COLUMN_NAME_REST` AS `TARGET_COLUMN_NAME_1_REST`,
                 `TAB_C`.`COLUMN_CLASS` AS `TARGET_COLUMN_CLASS_1`,
                 `TAB_E`.`COLUMN_CLASS_NAME` AS `TARGET_COLUMN_CLASS_NAME_1`,
-                `TAB_D`.`COLUMN_NAME_JA` AS `TARGET_COLUMN_NAME_2_JA`,
-                `TAB_D`.`COLUMN_NAME_EN` AS `TARGET_COLUMN_NAME_2_EN`,
+                CONCAT(
+                    `TBL_G`.`FULL_COL_GROUP_NAME_JA`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_JA`
+                ) AS `TARGET_COLUMN_NAME_2_JA`,
+                CONCAT(
+                    `TBL_H`.`FULL_COL_GROUP_NAME_EN`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_EN`
+                ) AS `TARGET_COLUMN_NAME_2_EN`,
                 `TAB_D`.`COLUMN_NAME_REST` AS `TARGET_COLUMN_NAME_2_REST`,
                 `TAB_D`.`COLUMN_CLASS` AS `TARGET_COLUMN_CLASS_2`,
                 `TAB_F`.`COLUMN_CLASS_NAME` AS `TARGET_COLUMN_CLASS_NAME_2`
@@ -1535,11 +1551,15 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             LEFT JOIN `T_COMN_MENU_COLUMN_LINK` `TAB_D` ON ( `TAB_A`.`TARGET_COLUMN_ID_2` = `TAB_D`.`COLUMN_DEFINITION_ID` )
             LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_E` ON ( `TAB_E`.`COLUMN_CLASS_ID` = `TAB_C`.`COLUMN_CLASS` )
             LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_F` ON ( `TAB_F`.`COLUMN_CLASS_ID` = `TAB_D`.`COLUMN_CLASS` )
+            LEFT JOIN `T_COMN_COLUMN_GROUP` `TBL_G` ON ( `TAB_C`.`COL_GROUP_ID` = `TBL_G`.`COL_GROUP_ID` )
+            LEFT JOIN `T_COMN_COLUMN_GROUP` `TBL_H` ON ( `TAB_D`.`COL_GROUP_ID` = `TBL_H`.`COL_GROUP_ID` )
             WHERE `TAB_B`.`COMPARE_NAME` = %s
             AND `TAB_A`.`DISUSE_FLAG` <> 1
             AND `TAB_B`.`DISUSE_FLAG` <> 1
             AND `TAB_C`.`DISUSE_FLAG` <> 1
             AND `TAB_D`.`DISUSE_FLAG` <> 1
+            AND `TBL_G`.`DISUSE_FLAG` <> 1
+            AND `TBL_H`.`DISUSE_FLAG` <> 1
             ORDER BY `TAB_A`.`DISP_SEQ` ASC
         """).format().strip()
         bind_list = [compare_name]
@@ -1707,12 +1727,15 @@ def _set_column_info(objdbca, compare_config, options):
             sql_str = textwrap.dedent("""
                 SELECT
                     `TAB_A`.*,
-                    `TAB_B`.`COLUMN_CLASS_NAME`
+                    `TAB_B`.`COLUMN_CLASS_NAME`,
+                    `TAB_C`.*
                 FROM
                     `T_COMN_MENU_COLUMN_LINK` `TAB_A`
                 LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_B` ON ( `TAB_A`.`COLUMN_CLASS` = `TAB_B`.`COLUMN_CLASS_ID` )
+                LEFT JOIN `T_COMN_COLUMN_GROUP` `TAB_C` ON ( `TAB_A`.`COL_GROUP_ID` = `TAB_C`.`COL_GROUP_ID` )
                 WHERE `TAB_A`.`MENU_ID` = %s
                 AND `TAB_A`.`DISUSE_FLAG` <> 1
+                AND `TAB_C`.`DISUSE_FLAG` <> 1
                 ORDER BY  `TAB_A`.`COLUMN_DISP_SEQ` ASC
             """).format().strip()
             bind_list = [menu_id]
@@ -1751,7 +1774,10 @@ def _set_column_info(objdbca, compare_config, options):
                 # for row in tmp_rows:
 
                 for row in rows:
-                    compare_col_title = row.get("COLUMN_NAME_" + language.upper())
+                    compare_col_title = "{}/{}".format(
+                        row.get("FULL_COL_GROUP_NAME_" + language.upper()),
+                        row.get("COLUMN_NAME_" + language.upper())
+                    )
                     col_key = row.get("COLUMN_NAME_REST")
                     if col_key not in del_parameter_list:
                         column_class = row.get("COLUMN_CLASS")
@@ -2687,7 +2713,6 @@ def ws_index_create_table(wb, file_name, exec_time, config, compare_config, comp
 
     # 等号対応: set data_type->str
     for _n in range(1, 10):
-        print(_n, column_no, column_no + 1)
         ws.cell(row=_n, column=column_no).number_format = openpyxl.styles.numbers.FORMAT_TEXT
         ws.cell(row=_n, column=column_no + 1).data_type = 's'
 

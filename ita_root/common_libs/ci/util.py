@@ -171,6 +171,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             if allow_proc(organization_id, workspace_id) is True:
                 main_logic_exec = main_logic
                 main_logic_exec(organization_id, workspace_id)
+                del main_logic_exec
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
             app_exception(e)
@@ -178,7 +179,6 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
             # catch - other all error
             exception(e)
 
-        del main_logic_exec
         # delete environment of workspace
         g.pop('WORKSPACE_ID')
         g.db_connect_info.pop("WSDB_HOST")

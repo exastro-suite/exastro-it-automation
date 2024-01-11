@@ -32,8 +32,8 @@ def main():
 
     with flask_app.app_context():
         try:
-            organization_id = os.environ.get("ORGANIZATION_ID")
-            workspace_id = os.environ.get("WORKSPACE_ID")
+            organization_id = os.environ.get("EXASTRO_ORGANIZATION_ID")
+            workspace_id = os.environ.get("EXASTRO_WORKSPACE_ID")
             g.ORGANIZATION_ID = organization_id
             g.WORKSPACE_ID = workspace_id
 

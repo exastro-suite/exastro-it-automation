@@ -16,6 +16,7 @@ from flask import g
 import datetime
 import jmespath
 import json
+import sqlite3
 from common_libs.oase.get_api_client import get_auth_client
 from common_libs.common.exception import AppException
 from common_libs.ci.util import app_exception
@@ -31,6 +32,20 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
 
     for setting in event_collection_settings:
         setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_NAME"]]
+
+        # メールの重複取得防止のため、event_collection_settings_nameに対応するmessage_idをDBから取得し、settingsに加える
+        if setting["CONNECTION_METHOD_ID"] == "4":
+            try:
+                sqliteDB.db_cursor.execute(
+                    "SELECT id FROM events WHERE event_collection_settings_name=?",
+                    (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
+                )
+                message_ids = sqliteDB.db_cursor.fetchall()
+                message_ids = [item[0] for item in message_ids]
+            except sqlite3.OperationalError:  # テーブルがまだ作成されていない時の例外処理
+                message_ids = []
+            setting["MESSAGE_IDS"] = message_ids
+
         fetched_time = datetime.datetime.now()  # API取得時間
 
         # パスワードカラムを複合化しておく

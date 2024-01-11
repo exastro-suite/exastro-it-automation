@@ -107,6 +107,8 @@ class IMAPAuthClient(APIClientCommon):
                 info['subject'] = e.subject.decode() if e.subject else ''
                 info['body'] = body
 
+                # メール重複取得防止
+                # 受信時間が最終取得時間より後かつ、message_idがすでに取得したメールのmessage_idと一致しないかチェック
                 if info["date"] >= self.last_fetched_timestamp and info["message_id"] not in self.message_ids:
                     response.append(info)
 

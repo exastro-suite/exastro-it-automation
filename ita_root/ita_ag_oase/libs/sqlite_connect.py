@@ -100,6 +100,7 @@ class sqliteConnect:
             """
 
         )
+        # イベントがメールの場合、message_idが必ずあるため、message_idを保存（メール重複取得防止のため）
         if "message_id" in event:
             message_id = event["message_id"]
         event_string = json.dumps(event)

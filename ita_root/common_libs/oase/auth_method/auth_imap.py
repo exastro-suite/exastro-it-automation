@@ -105,9 +105,9 @@ class IMAPAuthClient(APIClientCommon):
                 info['subject'] = e.subject.decode() if e.subject else ''
                 info['body'] = b.decode()
 
-                response.append(info)
+                if info["date"] >= self.last_fetched_timestamp and info["message_id"] not in self.message_ids:
+                    response.append(info)
 
-                response = [item for item in response if item["date"] >= self.last_fetched_timestamp]
         except Exception as e:
             socks.setdefaultproxy()
             raise AppException("AGT-10028", [e])

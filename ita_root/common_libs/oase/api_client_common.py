@@ -43,6 +43,7 @@ class APIClientCommon:
         self.secret_access_key = event_settings["SECRET_ACCESS_KEY"]
         self.mailbox_name = event_settings["MAILBOXNAME"]
         self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
+        self.message_ids = event_settings["MESSAGE_IDS"] if "MESSAGE_IDS" in event_settings else None
 
     def call_api(self, parameter):
         API_response = None

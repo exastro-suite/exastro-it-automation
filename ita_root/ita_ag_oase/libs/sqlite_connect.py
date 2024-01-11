@@ -87,20 +87,25 @@ class sqliteConnect:
 
     def insert_event(self, event):
         table_name = "events"
+        message_id = None
         self.db_cursor.execute(
             f"""
                 CREATE TABLE IF NOT EXISTS {table_name}(
                     event_collection_settings_name TEXT NOT NULL,
+                    id TEXT,
                     event TEXT NOT NULL,
                     fetched_time INTEGER NOT NULL,
                     sent_flag BOOLEAN NOT NULL
                 )
             """
+
         )
+        if "message_id" in event:
+            message_id = event["message_id"]
         event_string = json.dumps(event)
         self.db_cursor.execute(
-            f"INSERT INTO {table_name} (event_collection_settings_name, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?)",
-            (event["_exastro_event_collection_settings_name"], event_string, event["_exastro_fetched_time"], False)
+            f"INSERT INTO {table_name} (event_collection_settings_name, id, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?, ?)",
+            (event["_exastro_event_collection_settings_name"], message_id, event_string, event["_exastro_fetched_time"], False)
         )
 
     def insert_timestamp(self, id, fetched_time):

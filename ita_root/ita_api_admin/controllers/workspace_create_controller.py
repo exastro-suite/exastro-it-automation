@@ -339,8 +339,14 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
                 org_mongo.drop_user(connect_info['MONGO_USER'], connect_info['MONGO_DATABASE'])
 
         # delete storage directory for workspace
-        if os.path.isdir(workspace_dir):
-            shutil.rmtree(workspace_dir)
+        while os.path.isdir(workspace_dir):
+            try:
+                shutil.rmtree(workspace_dir)
+                break
+            except FileNotFoundError:
+                # 削除時にFileNotFoundErrorが出る場合があるので、その場合は再度削除を行う
+                time.sleep(1)
+                continue
 
     except AppException as e:
         # スキップファイルが存在する場合は削除する

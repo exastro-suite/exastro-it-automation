@@ -134,6 +134,7 @@ setup( target ) {
         line: er.$.body.find('.eventFlowChartPositionLineCanvas').get(0),
         block: er.$.body.find('.eventFlowChartBlockCanvas').get(0),
         incident: er.$.body.find('.eventFlowChartIncidentCanvas').get(0),
+        link: er.$.body.find('.eventFlowChartLinkCanvas').get(0)
     };
 
     // Chart canvas context
@@ -213,6 +214,7 @@ mainHtml( id ) {
                             + `<canvas class="eventFlowChartPositionLineCanvas"></canvas>`
                             + `<canvas class="eventFlowChartBlockCanvas"></canvas>`
                             + `<canvas class="eventFlowChartIncidentCanvas"></canvas>`
+                            + `<canvas class="eventFlowChartLinkCanvas"></canvas>`
                         + `</div>`
                         + `<div class="eventFlowCurrentBorder"></div>`
                         + `<div class="eventFlowPositionBorder"></div>`
@@ -500,9 +502,9 @@ updateCanvas( initFlag = false ) {
         if ( initFlag ) {
             er.$.target.removeClass('nowLoading');
             er.setEvents();
-            er.setPartsEvents();
         }
 
+        //er.history = dummy;
         er.history = history;
         er.controller = null;
         er.updateDate = Date.now();
@@ -898,8 +900,8 @@ setEventBlock() {
         const pattern = ( event.type === 'event')? event.pattern: 'action';
 
         // ブロック
-        if ( er.currentBlock && er.currentBlock.id === event.id ) {
-            er.rect( ctxB, event.block, er.getPatternColor( pattern, 0.5 ) );
+        if ( ( er.currentBlock && er.currentBlock.id === event.id ) || ( er.clickBlock && er.clickBlock.id === event.id ) ) {
+            er.rect( ctxB, event.block, er.getPatternColor( pattern, 0.3 ) );
         } else {
             er.rect( ctxB, event.block, er.getPatternColor( pattern ) );
         }
@@ -914,7 +916,99 @@ setEventBlock() {
         ctxE.fill();
         ctxE.stroke();
     }
+
+    if( er.currentBlock ) er.setEventLink( er.currentBlock );
+    if( er.clickBlock ) er.setEventLink( er.clickBlock );
 }
+/*
+##################################################
+    イベントの繋がりを描画する
+##################################################
+*/
+setEventLink( targetBlock ) {
+    if ( !targetBlock && !targetBlock.original && !targetBlock.original.item ) return;
+
+    const er = this;
+
+    const ctx = er.chartContext.link;
+
+    let idList;
+    if ( targetBlock.type === 'action') {
+        if ( !targetBlock.original.item.EVENT_ID_LIST ) return;
+        idList = targetBlock.original.item.EVENT_ID_LIST.split(',');
+    } else {
+        if ( !targetBlock.original.item.exastro_events ) return;
+        idList = targetBlock.original.item.exastro_events;
+    }
+
+    if ( fn.typeof( idList ) === 'array' && idList.length ) {
+        // イベントリスト
+        const eventList = er.canvasData.filter(function( item ){
+            return idList.indexOf(`ObjectId('${item.id}')`) !== -1;
+        });
+
+        // 最新のデータに更新
+        const actionItem = er.canvasData.find(function( item ){
+            return item.id === targetBlock.id;
+        });
+        if ( !actionItem ) return;
+
+        const
+        actionX = actionItem.block.x + actionItem.block.w / 2,
+        actionY = actionItem.block.y + actionItem.block.h / 2;
+
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 6;
+        for ( const event of eventList ) {
+            ctx.beginPath();
+            er.line( ctx, actionX, actionY, event.block.x + event.block.w / 2, event.block.y + event.block.h / 2 );
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = '#005BAC';
+        ctx.lineWidth = 2;
+        for ( const event of eventList ) {
+            ctx.beginPath();
+            er.line( ctx, actionX, actionY, event.block.x + event.block.w / 2, event.block.y + event.block.h / 2 );
+            ctx.stroke();
+
+            ctx.clearRect( event.block.x, event.block.y, event.block.w, event.block.h );
+        }
+
+        ctx.clearRect( actionItem.block.x, actionItem.block.y, actionItem.block.w, actionItem.block.h );
+
+        const lenght = eventList.length;
+        for ( let i = 0; i < lenght; i++ ) {
+            const event = eventList[i];
+            ctx.beginPath();
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 6;
+            ctx.rect( event.block.x, event.block.y, event.block.w, event.block.h );
+            if ( i === 0 ) ctx.rect( actionItem.block.x, actionItem.block.y, actionItem.block.w, actionItem.block.h );
+            ctx.stroke();
+
+            ctx.beginPath();
+
+            ctx.strokeStyle = '#005BAC';
+            ctx.lineWidth = 2;
+            ctx.rect( event.block.x, event.block.y, event.block.w, event.block.h );
+            if ( i === 0 ) ctx.rect( actionItem.block.x, actionItem.block.y, actionItem.block.w, actionItem.block.h );
+
+            ctx.stroke();
+
+            // 再度繋がりがある場合
+            if ( event.original && event.original.item && event.original.item.exastro_events ) {
+                er.setEventLink( event );
+            }
+        }
+    }
+}
+clearEventLink() {
+    const er = this;
+
+    const ctx = er.chartContext.link;
+    er.clear( ctx )
+};
 /*
 ##################################################
   クリア
@@ -1018,13 +1112,19 @@ fetchParts( type ) {
             'changePartsEditMode': function( e, type ){
                 er.$.target.addClass( type + 'EventFlowEditMode');
                 if ( type === 'rule') {
-                    //er.ruleEditEventOn();
+                    er.ruleEditEventOn();
+                }
+                if ( type === 'rule' ||  type === 'filter') {
+                    er.labelSetEventOn( type );
                 }
             },
             'changePartsViewMode': function( e, type ){
                 er.$.target.removeClass( type + 'EventFlowEditMode');
                 if ( type === 'rule') {
-                    //er.ruleEditEventOff();
+                    er.ruleEditEventOff();
+                }
+                if ( type === 'rule' ||  type === 'filter') {
+                    er.labelSetEventOff( type );
                 }
             }
         });
@@ -1077,14 +1177,6 @@ getPartsData( type ) {
                 partsRestName: 'rule_name'
             };
     }
-}
-/*
-##################################################
-  Events
-##################################################
-*/
-setPartsEvents() {
-    const er = this;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1171,10 +1263,16 @@ setChartEvents() {
             return item.id === er.currentBlock.id;
         });
         if ( er.currentBlock ) {
-            er.rect( er.chartContext.block, er.currentBlock.block, er.getPatternColor( er.currentBlock.pattern ) );
+            if ( !er.clickBlock || ( er.clickBlock.id !== er.currentBlock.id ) ) {
+                er.rect( er.chartContext.block, er.currentBlock.block, er.getPatternColor( er.currentBlock.pattern ) );
+            }
             er.$.chart.css('cursor', 'default');
         }
         er.currentBlock = null;
+
+        // 繋がり線
+        er.clearEventLink();
+        if ( er.clickBlock ) er.setEventLink( er.clickBlock );
     };
 
     // 範囲指定モードフラグ
@@ -1290,12 +1388,29 @@ setChartEvents() {
             const
             chart = $( this ).get(0),
             x = e.pageX - chart.getBoundingClientRect().left;
+            er.clearEventLink();
+
+            // クリック中のブロックの色を戻す
+            if ( !er.currentBlock || ( er.clickBlock && er.clickBlock.id !== er.currentBlock.id ) ) {
+                // 最新のデータに更新
+                if ( er.clickBlock ) {
+                    er.clickBlock = er.canvasData.find(function(item){
+                        return item.id === er.clickBlock.id;
+                    });
+                    if ( er.clickBlock  ) {
+                        er.rect( er.chartContext.block, er.clickBlock.block, er.getPatternColor( er.clickBlock.pattern ) );
+                    }
+                }
+            }
 
             // イベント詳細情報表示
             if ( !dateRangeSelectMode && er.currentBlock ) {
                 er.viewEventInfo( x );
+                er.clickBlock = er.currentBlock;
+                er.setEventLink( er.clickBlock );
             } else {
                 er.$.info.hide();
+                er.clickBlock = null;
             }
         },
         'pointerenter': function() {
@@ -1343,8 +1458,10 @@ setChartEvents() {
                         er.currentBlock = item;
                         // 描画
                         er.clearRect( er.chartContext.block, item.block );
-                        er.rect( er.chartContext.block, item.block, er.getPatternColor( item.pattern, 0.5 ));
+                        er.rect( er.chartContext.block, item.block, er.getPatternColor( item.pattern, 0.3 ));
                         er.$.chart.css('cursor', 'pointer');
+
+                        er.setEventLink( er.currentBlock );
                         break;
                     }
                 }
@@ -1420,7 +1537,7 @@ ruleEditEventOn() {
                 top: pde.pageY,
                 left: pde.pageX
             });
-            er.$.body.append( $dummy );
+            er.$.target.append( $dummy );
 
             fn.deselection();
 
@@ -1468,9 +1585,84 @@ ruleEditEventOn() {
 }
 ruleEditEventOff() {
     const er = this;
-
     $( window ).off('rule__tableReady.setFilter');
     er.$.parts.find('.eventFlowPartsTableBlockFilter, .eventFlowPartsBlockAction').off('mousedown.setFilter');
+}
+labelSetEventOn( type ) {
+    const er = this;
+
+    const $window = $( window );
+
+    // Rule Edit Tableの準備ができたら
+    $window.on(`${type}__tableReady.setFilter`, function(){
+        er.$.info.addClass('labelDragMode');
+        er.$.info.on('mousedown.setLabel', '.eventFlowLabel', function( pde ){
+            if ( pde.button !== 0 || er[ type ].table.flag.dragAndDrop === true ) return;
+            er[ type ].table.flag.dragAndDrop = true;
+
+            const $item = $( this );
+
+            const selectKey = ( type === 'filter')? '[data-key="filter_condition_json"]': '[data-key="conclusion_label_settings"]';
+
+            const $targetArea = er[ type ].table.$.tbody.find('.inputHidden').filter( selectKey ).closest('.ci');
+            $targetArea.addClass('dragAndDropArea');
+
+            const $dummy = $item.clone();
+            er.$.target.append( $dummy );
+            $dummy.addClass('eventFlowLabelMove').css({
+                top: pde.pageY,
+                left: pde.pageX
+            });
+
+            $item.addClass('nowMoving');
+
+            fn.deselection();
+
+            $window.on({
+                'mousemove.setFilter': function( pme ){
+                    const
+                    x = pme.pageX - pde.pageX,
+                    y = pme.pageY - pde.pageY;
+                    $dummy.css({
+                        transform: `translate( ${x}px, ${y}px )`
+                    });
+                },
+                'mouseup.setLabel': function( pme ){
+                    $window.off('mousemove.setLabel mouseup.setLabel');
+                    er[ type ].table.flag.dragAndDrop = false;
+
+                    const $target = $( pme.target ).closest('.dragAndDropArea');
+                    if ( $target.length ) {
+                        const
+                        $input = $target.find('.tableEditMultipleHiddenColmun'),
+                        $text = $target.find('.tableEditMultipleColmun'),
+                        value = fn.jsonParse( $input.val(), 'array'),
+                        array = [];
+
+                        array.push($item.find('.eventFlowLabelKey').text());
+                        if ( type === 'filter') array.push('==');
+                        array.push($item.find('.eventFlowLabelValue').text());
+                        value.push( array );
+
+                        const text = fn.jsonStringifyDelimiterSpace( value );
+                        $input.val( text ).change();
+                        $text.text( text );
+                    }
+
+                    $dummy.remove();
+                    $item.removeClass('nowMoving');
+                    $targetArea.removeClass('dragAndDropArea');
+                }
+            });
+
+        });
+    });
+}
+labelSetEventOff( type ) {
+    const er = this;
+    $( window ).off(`${type}__tableReady.setFilter`);
+    er.$.info.off('mousedown.setLabel');
+    er.$.info.removeClass('labelDragMode');
 }
 /*
 ##################################################
@@ -1486,11 +1678,11 @@ viewEventInfo( x ) {
 
     // 表示位置（左右）
     if ( x / er.w > .5 ) {
-      css.left = 0;
-      css.right = 'auto';
+        css.left = 0;
+        css.right = 'auto';
     } else {
-      css.right = 0;
-      css.left = 'auto';
+        css.right = 40;
+        css.left = 'auto';
     }
 
     er.$.info.css(css);
@@ -1761,6 +1953,8 @@ setScrollBarEvent() {
 
                 er.setTimeScale();
             }
+
+            er.clearEventLink();
             er.setEventBlock();
             er.$.chart.click();
         };

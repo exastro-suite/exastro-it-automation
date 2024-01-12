@@ -103,7 +103,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             mongo_host = mongo_host = os.environ.get('MONGO_HOST', '')
             mongo_connection_string = os.environ.get('MONGO_CONNECTION_STRING', '')
             if not mongo_host and not mongo_connection_string:
-                # OASEが有効かつ、環境変数「MONGO_HOST」もしくは「MONGO_CONNECTION_STRING」に値が無い場合は、workspace作成をできないようにする。
+                # OASEが有効かつ、環境変数「MONGO_HOST」と「MONGO_CONNECTION_STRING」両方に値が無い場合は、workspace作成をできないようにする。
                 return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
 
             # make workspace-mongo connect infomation

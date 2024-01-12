@@ -98,18 +98,18 @@ def external_valid_menu_before(objdbca, objtable, option):
             return retBool, msg, option,
 
     # 以降通知テンプレートのチェック
-    if cmd_type == 'Register' or cmd_type == 'Update':
-        before_notification = option.get('entry_parameter', {}).get('file', {}).get('before_notification', '')
-        after_notification = option.get('entry_parameter', {}).get('file', {}).get('after_notification', '')
-    elif cmd_type == 'Restore':
-        before_notification = option.get('current_parameter', {}).get('file', {}).get('before_notification', '')
-        after_notification = option.get('current_parameter', {}).get('file', {}).get('after_notification', '')
-
     target = {}
-    if before_notification != '' and before_notification is not None:
-        target["before_notification"] = before_notification
-    if after_notification != '' and after_notification is not None:
-        target["after_notification"] = after_notification
+    if cmd_type == 'Register' or cmd_type == 'Update':
+        # ファイルがUpdadeされているかチェック
+        file_name = entry_parameter.get('before_notification')
+        if file_name:
+            # ファイルの中身を取得
+            target["before_notification"] = option.get('entry_parameter', {}).get('file', {}).get('before_notification', '')
+        # ファイルがUpdadeされているかチェック
+        file_name = entry_parameter.get('after_notification')
+        if file_name:
+            # ファイルの中身を取得
+            target["after_notification"] = option.get('entry_parameter', {}).get('file', {}).get('after_notification', '')
 
     # テンプレートのアップロードが無い場合は以降のチェックが不要となるためこの時点で返却する
     if len(target) == 0:

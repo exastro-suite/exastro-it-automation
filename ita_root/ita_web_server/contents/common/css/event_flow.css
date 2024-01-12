@@ -249,7 +249,8 @@ user-select: none;
 }
 .eventFlowChartPositionLineCanvas,
 .eventFlowChartBlockCanvas,
-.eventFlowChartIncidentCanvas {
+.eventFlowChartIncidentCanvas,
+.eventFlowChartLinkCanvas {
 position: absolute;
 left: 0; top: 0;
 user-select: none;
@@ -289,11 +290,11 @@ color: #EEE;
 
 .eventFlowEventInformation {
 display: none;
-align-items: center;
+align-items: end;
 position: absolute;
 left: 0; top: 0;
 z-index: 1;
-width: 50%; height: 100%;
+width: 50%; height: calc( 100% - 32px );
 padding: 8px;
 pointer-events: none;
 }
@@ -531,9 +532,7 @@ transform: rotate(180deg);
 .filterEventFlowEditMode .eventFlowPartsBlockAction,
 .filterEventFlowEditMode .eventFlowPartsBlockRule,
 .actionEventFlowEditMode .eventFlowPartsBlockFilter,
-.actionEventFlowEditMode .eventFlowPartsBlockRule,
-.ruleEventFlowEditMode .eventFlowPartsBlockFilter,
-.ruleEventFlowEditMode .eventFlowPartsBlockAction {
+.actionEventFlowEditMode .eventFlowPartsBlockRule {
 display: none;
 }
 .teblePartsEditTextArea {
@@ -541,7 +540,6 @@ resize: vertical;
 }
 
 /* Rule edit mode */
-/*
 .ruleEventFlowEditMode .eventFlowParts {
 flex: 0 0 800px;
 flex-wrap: wrap;
@@ -569,11 +567,19 @@ background-color: transparent;
 background-image: linear-gradient( rgba( 255,255,255,.5 ) 50%, transparent 50% );
 background-size: 4px 4px;
 }
+.dragAndDropArea .tableEditMultipleColmun,
 .dragAndDropArea .tableEditInputSelectValue,
 .dragAndDropArea .tableEditInputSelectContainer .select2-selection {
-background-color: var(--accentColor10) !important;
-border-color: var(--accentColor100) !important;
+background-color: #FFF6E6 !important;
+border-color: #FFA500 !important;
 }
+.darkmode .dragAndDropArea .tableEditMultipleColmun,
+.darkmode .dragAndDropArea .tableEditInputSelectValue,
+.darkmode .dragAndDropArea .tableEditInputSelectContainer .select2-selection {
+background-color: #33312E !important;
+border-color: #FFA500 !important;
+}
+.dragAndDropArea:hover .tableEditMultipleColmun,
 .dragAndDropArea:hover .tableEditInputSelectValue,
 .dragAndDropArea:hover .tableEditInputSelectContainer .select2-selection {
 background-color: var(--focusBackgroundColor) !important;
@@ -590,13 +596,22 @@ border-radius: 4px;
 box-shadow: 2px 2px 4px rgba(0,0,0,.3);
 word-break: break-all;
 }
+.eventFlowLabelMove {
+user-select: none;
+pointer-events: none;
+position: fixed!important;
+z-index: 9999!important;
+max-width: 320px;
+}
 .nowMoving {
-opacity: .3!important;
+opacity: .5!important;
+}
+.nowMoving[data-available-flag="False"] {
+opacity: .1!important;
 }
 .nowMoving .eventFlowPartsName {
 cursor: grabbing!important;
 }
-*/
 
 .eventFlowPartsList,
 .eventFlowPartsNoDate {
@@ -711,6 +726,10 @@ display: flex;
 border-radius: 4px;
 /*clip-path: polygon( 8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%);*/
 color: #FFF;
+}
+.labelDragMode .eventFlowLabel {
+cursor: grab;
+user-select: none;
 }
 /*
 .eventFlowLabel::after {
@@ -854,6 +873,9 @@ width: 100%!important;
 .eventFlowPartsTableGroupTd {
 padding-bottom: 8px;
 background-color: #DDD;
+}
+.darkmode .eventFlowPartsTableGroupTd {
+background-color: rgba(0,0,0,.1);
 }
 .eventFlowPartsTable .td {
 height: 40px;

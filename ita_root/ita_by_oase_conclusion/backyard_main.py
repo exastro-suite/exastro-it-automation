@@ -349,7 +349,7 @@ class Judgement:
         tmp_msg = "ルール内　フィルタ判定結果: {}".format(str(ret))
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-        ret = self.checkFilterCondition(FilterResultDict)
+        ret = self.checkFilterCondition(FilterResultDict, IncidentDict)
         if ret is True:
             tmp_msg = "ルール判定結果: マッチ RULE_ID:{} RULE_NAME:{} FILTER_A:{} FILTER_OPERATOR:{} FILTER_B:{}".format(RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -390,14 +390,20 @@ class Judgement:
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False, {}
 
-    def checkFilterCondition(self, FilterResultDict):
+    def checkFilterCondition(self, FilterResultDict, IncidentDict):
         DebugMode = False
 
         defObj = RuleJudgementConst()
 
         if FilterResultDict['Operator'] == defObj.DF_OPE_OR:
-            if FilterResultDict['True'] != 0:
+            if FilterResultDict['True'] == 1:
+                # or条件の場合、片方がマッチした時のみTrueとする
                 return True
+            elif FilterResultDict['True'] == 2:
+                # 両方のフィルターにマッチした場合は未知とするためIncidentDictから該当の要素を削除する
+                for event in FilterResultDict['EventList']:
+                    del_key = [key for key, value in IncidentDict.items() if value == event['_id']]
+                    del IncidentDict[del_key[0]]
         elif FilterResultDict['Operator'] == defObj.DF_OPE_AND:
             if FilterResultDict['False'] == 0:
                 return True

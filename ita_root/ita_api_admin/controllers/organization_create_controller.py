@@ -79,7 +79,7 @@ def organization_create(body, organization_id):
         mongo_connection_string = os.environ.get('MONGO_CONNECTION_STRING', '')
 
         if not mongo_host and not mongo_connection_string:
-            # OASEが有効かつ、環境変数「MONGO_HOST」もしくは「MONGO_CONNECTION_STRING」に値が無い場合は、Organization作成をできないようにする。
+            # OASEが有効かつ、環境変数「MONGO_HOST」と「MONGO_CONNECTION_STRING」両方に値が無い場合は、Organization作成をできないようにする。
             return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
 
         if not mongo_connection_string:

@@ -1,11 +1,12 @@
 from flask import g
-from common_libs.oase.api_client_common import APIClientCommon
-from imapclient import imapclient, IMAPClient
+import datetime
 import ssl
 import socket
 import socks
+import re
+from common_libs.oase.api_client_common import APIClientCommon
+from imapclient import imapclient, IMAPClient
 from common_libs.common.exception import AppException
-import datetime
 
 
 class IMAPAuthClient(APIClientCommon):
@@ -87,6 +88,7 @@ class IMAPAuthClient(APIClientCommon):
                 e = d[b'ENVELOPE']
                 h = d[b'RFC822.HEADER']
                 b = d[b'RFC822.TEXT']
+                body = re.sub(r'^=\r\n$', '', b.decode())
 
                 ef = e.from_[0] if isinstance(e.from_, tuple) and len(e.from_) > 0 else None
                 et = e.to[0] if isinstance(e.to, tuple) and len(e.to) > 0 else None
@@ -103,11 +105,13 @@ class IMAPAuthClient(APIClientCommon):
                 # info['date'] = e.date.strftime('%Y-%m-%d %H:%M:%S')
                 info['lastchange'] = e.date.timestamp()
                 info['subject'] = e.subject.decode() if e.subject else ''
-                info['body'] = b.decode()
+                info['body'] = body
 
-                response.append(info)
+                # メール重複取得防止
+                # 受信時間が最終取得時間より後かつ、message_idがすでに取得したメールのmessage_idと一致しないかチェック
+                if info["date"] >= self.last_fetched_timestamp and info["message_id"] not in self.message_ids:
+                    response.append(info)
 
-                response = [item for item in response if item["date"] >= self.last_fetched_timestamp]
         except Exception as e:
             socks.setdefaultproxy()
             raise AppException("AGT-10028", [e])

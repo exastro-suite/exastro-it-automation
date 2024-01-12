@@ -75,10 +75,10 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
 def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # 環境変数の取得
-    username = os.environ["USERNAME"]
-    password = os.environ["PASSWORD"]
+    username = os.environ["EXASTRO_USERNAME"]
+    password = os.environ["EXASTRO_PASSWORD"]
     setting_name_list = os.environ["EVENT_COLLECTION_SETTINGS_NAMES"].split(",")
-    baseUrl = os.environ["URL"]
+    baseUrl = os.environ["EXASTRO_URL"]
     # ITAのAPI呼び出しモジュール
     exastro_api = Exastro_API(
         username,

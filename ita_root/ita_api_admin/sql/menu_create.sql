@@ -357,66 +357,82 @@ CREATE TABLE T_MENU_OTHER_LINK_JNL
 
 
 -- 他メニュー連携ビュー
-CREATE OR REPLACE VIEW V_MENU_OTHER_LINK AS 
+CREATE OR REPLACE VIEW V_MENU_OTHER_LINK AS
 SELECT DISTINCT TAB_A.LINK_ID              ,
-       TAB_C.MENU_GROUP_ID                 ,
-       TAB_A.MENU_ID                       ,
-       TAB_A.MENU_ID MENU_ID_CLONE         ,
-       TAB_B.MENU_NAME_JA                  ,
-       TAB_B.MENU_NAME_EN                  ,
-       TAB_B.MENU_NAME_REST                ,
-       TAB_A.COLUMN_DISP_NAME_JA           ,
-       TAB_A.COLUMN_DISP_NAME_EN           ,
-       CONCAT(TAB_C.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_A.COLUMN_DISP_NAME_JA) LINK_PULLDOWN_JA,
-       CONCAT(TAB_C.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_A.COLUMN_DISP_NAME_EN) LINK_PULLDOWN_EN,
-       TAB_A.REF_TABLE_NAME                ,
-       TAB_A.REF_PKEY_NAME                 ,
-       TAB_A.REF_COL_NAME                  ,
-       TAB_A.REF_COL_NAME_REST             ,
-       TAB_A.REF_SORT_CONDITIONS           ,
-       TAB_A.REF_MULTI_LANG                ,
-       TAB_A.COLUMN_CLASS                  ,
-       TAB_A.MENU_CREATE_FLAG              ,
-       TAB_A.NOTE                          ,
-       TAB_A.DISUSE_FLAG                   ,
-       TAB_A.LAST_UPDATE_TIMESTAMP         ,
-       TAB_A.LAST_UPDATE_USER
+        TAB_C.MENU_GROUP_ID                 ,
+        TAB_A.MENU_ID                       ,
+        TAB_A.MENU_ID MENU_ID_CLONE         ,
+        TAB_B.MENU_NAME_JA                  ,
+        TAB_B.MENU_NAME_EN                  ,
+        TAB_B.MENU_NAME_REST                ,
+        TAB_A.COLUMN_DISP_NAME_JA           ,
+        TAB_A.COLUMN_DISP_NAME_EN           ,
+        CASE WHEN TAB_E.FULL_COL_GROUP_NAME_JA IS NULL OR TAB_E.FULL_COL_GROUP_NAME_JA = '' THEN
+            CONCAT(TAB_C.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_A.COLUMN_DISP_NAME_JA)
+        ELSE
+            CONCAT(TAB_C.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_E.FULL_COL_GROUP_NAME_JA,'/',TAB_A.COLUMN_DISP_NAME_JA) END AS LINK_PULLDOWN_JA,
+        CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL OR TAB_E.FULL_COL_GROUP_NAME_EN = '' THEN
+            CONCAT(TAB_C.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_A.COLUMN_DISP_NAME_EN)
+        ELSE
+            CONCAT(TAB_C.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_E.FULL_COL_GROUP_NAME_EN,'/',TAB_A.COLUMN_DISP_NAME_EN) END AS LINK_PULLDOWN_EN,
+        TAB_A.REF_TABLE_NAME                ,
+        TAB_A.REF_PKEY_NAME                 ,
+        TAB_A.REF_COL_NAME                  ,
+        TAB_A.REF_COL_NAME_REST             ,
+        TAB_A.REF_SORT_CONDITIONS           ,
+        TAB_A.REF_MULTI_LANG                ,
+        TAB_A.COLUMN_CLASS                  ,
+        TAB_A.MENU_CREATE_FLAG              ,
+        TAB_A.NOTE                          ,
+        TAB_A.DISUSE_FLAG                   ,
+        TAB_A.LAST_UPDATE_TIMESTAMP         ,
+        TAB_A.LAST_UPDATE_USER
 FROM T_MENU_OTHER_LINK TAB_A
 LEFT JOIN T_COMN_MENU TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP TAB_C ON (TAB_B.MENU_GROUP_ID = TAB_C.MENU_GROUP_ID)
-WHERE TAB_B.DISUSE_FLAG='0' AND TAB_C.DISUSE_FLAG='0'
+LEFT JOIN T_COMN_MENU_COLUMN_LINK TAB_D ON (TAB_A.MENU_ID = TAB_D.MENU_ID AND TAB_A.REF_COL_NAME_REST = TAB_D.COLUMN_NAME_REST)
+LEFT JOIN T_COMN_COLUMN_GROUP TAB_E ON (TAB_D.COL_GROUP_ID = TAB_E.COL_GROUP_ID)
+WHERE TAB_B.DISUSE_FLAG='0' AND TAB_C.DISUSE_FLAG='0' AND (TAB_D.DISUSE_FLAG='0' OR TAB_A.MENU_ID='10103')
 ;
-CREATE OR REPLACE VIEW V_MENU_OTHER_LINK_JNL AS 
+CREATE OR REPLACE VIEW V_MENU_OTHER_LINK_JNL AS
 SELECT DISTINCT TAB_A.JOURNAL_SEQ_NO       ,
-       TAB_A.JOURNAL_REG_DATETIME          ,
-       TAB_A.JOURNAL_ACTION_CLASS          ,
-       TAB_A.LINK_ID                       ,
-       TAB_C.MENU_GROUP_ID                 ,
-       TAB_A.MENU_ID                       ,
-       TAB_A.MENU_ID MENU_ID_CLONE         ,
-       TAB_B.MENU_NAME_JA                  ,
-       TAB_B.MENU_NAME_EN                  ,
-       TAB_B.MENU_NAME_REST                ,
-       TAB_A.COLUMN_DISP_NAME_JA           ,
-       TAB_A.COLUMN_DISP_NAME_EN           ,
-       CONCAT(TAB_C.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_A.COLUMN_DISP_NAME_JA) LINK_PULLDOWN_JA,
-       CONCAT(TAB_C.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_A.COLUMN_DISP_NAME_EN) LINK_PULLDOWN_EN,
-       TAB_A.REF_TABLE_NAME                ,
-       TAB_A.REF_PKEY_NAME                 ,
-       TAB_A.REF_COL_NAME                  ,
-       TAB_A.REF_COL_NAME_REST             ,
-       TAB_A.REF_SORT_CONDITIONS           ,
-       TAB_A.REF_MULTI_LANG                ,
-       TAB_A.COLUMN_CLASS                  ,
-       TAB_A.MENU_CREATE_FLAG              ,
-       TAB_A.NOTE                          ,
-       TAB_A.DISUSE_FLAG                   ,
-       TAB_A.LAST_UPDATE_TIMESTAMP         ,
-       TAB_A.LAST_UPDATE_USER
+        TAB_A.JOURNAL_REG_DATETIME          ,
+        TAB_A.JOURNAL_ACTION_CLASS          ,
+        TAB_A.LINK_ID                       ,
+        TAB_C.MENU_GROUP_ID                 ,
+        TAB_A.MENU_ID                       ,
+        TAB_A.MENU_ID MENU_ID_CLONE         ,
+        TAB_B.MENU_NAME_JA                  ,
+        TAB_B.MENU_NAME_EN                  ,
+        TAB_B.MENU_NAME_REST                ,
+        TAB_A.COLUMN_DISP_NAME_JA           ,
+        TAB_A.COLUMN_DISP_NAME_EN           ,
+        CASE WHEN TAB_E.FULL_COL_GROUP_NAME_JA IS NULL OR TAB_E.FULL_COL_GROUP_NAME_JA = '' THEN
+            CONCAT(TAB_C.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_A.COLUMN_DISP_NAME_JA)
+        ELSE
+            CONCAT(TAB_C.MENU_GROUP_NAME_JA,':',TAB_B.MENU_NAME_JA,':',TAB_E.FULL_COL_GROUP_NAME_JA,'/',TAB_A.COLUMN_DISP_NAME_JA) END AS LINK_PULLDOWN_JA,
+        CASE WHEN TAB_E.FULL_COL_GROUP_NAME_EN IS NULL OR TAB_E.FULL_COL_GROUP_NAME_EN = '' THEN
+            CONCAT(TAB_C.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_A.COLUMN_DISP_NAME_EN)
+        ELSE
+            CONCAT(TAB_C.MENU_GROUP_NAME_EN,':',TAB_B.MENU_NAME_EN,':',TAB_E.FULL_COL_GROUP_NAME_EN,'/',TAB_A.COLUMN_DISP_NAME_EN) END AS LINK_PULLDOWN_EN,
+        TAB_A.REF_TABLE_NAME                ,
+        TAB_A.REF_PKEY_NAME                 ,
+        TAB_A.REF_COL_NAME                  ,
+        TAB_A.REF_COL_NAME_REST             ,
+        TAB_A.REF_SORT_CONDITIONS           ,
+        TAB_A.REF_MULTI_LANG                ,
+        TAB_A.COLUMN_CLASS                  ,
+        TAB_A.MENU_CREATE_FLAG              ,
+        TAB_A.NOTE                          ,
+        TAB_A.DISUSE_FLAG                   ,
+        TAB_A.LAST_UPDATE_TIMESTAMP         ,
+        TAB_A.LAST_UPDATE_USER
 FROM T_MENU_OTHER_LINK_JNL TAB_A
 LEFT JOIN T_COMN_MENU_JNL TAB_B ON (TAB_A.MENU_ID = TAB_B.MENU_ID)
 LEFT JOIN T_COMN_MENU_GROUP_JNL TAB_C ON (TAB_B.MENU_GROUP_ID = TAB_C.MENU_GROUP_ID)
-WHERE TAB_B.DISUSE_FLAG='0' AND TAB_C.DISUSE_FLAG='0'
+LEFT JOIN T_COMN_MENU_COLUMN_LINK_JNL TAB_D ON (TAB_A.MENU_ID = TAB_D.MENU_ID AND TAB_A.REF_COL_NAME_REST = TAB_D.COLUMN_NAME_REST)
+LEFT JOIN T_COMN_COLUMN_GROUP_JNL TAB_E ON (TAB_D.COL_GROUP_ID = TAB_E.COL_GROUP_ID)
+WHERE TAB_B.DISUSE_FLAG='0' AND TAB_C.DISUSE_FLAG='0' AND (TAB_D.DISUSE_FLAG='0' OR TAB_A.MENU_ID='10103')
 ;
 
 

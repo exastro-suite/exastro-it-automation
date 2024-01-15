@@ -69,7 +69,8 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             # check no install driver
             service_list = {'terraform_cloud_ep': ['ita-by-terraform-cloud-ep-vars-listup', 'ita-by-terraform-cloud-ep-execute'],
                             'terraform_cli': ['ita-by-terraform-cli-vars-listup', 'ita-by-terraform-cli-execute'],
-                            'ci_cd': ['ita-by-cicd-for-iac']
+                            'ci_cd': ['ita-by-cicd-for-iac'],
+                            'oase': ['ita-by-oase-conclusion'],
                             }
 
             no_install_driver_tmp = organization_info.get('NO_INSTALL_DRIVER')

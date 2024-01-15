@@ -48,10 +48,10 @@ def main():
 
             # コマンドラインから引数を受け取る["自身のファイル名", "ループ回数"]
             args = sys.argv
-            loop_count = int(os.environ.get("ITERATION", 500)) if len(args) == 1 else int(args[1])
-            loop_count = 1 if loop_count <=1 else loop_count
-            interval = int(os.environ.get("EXECUTE_INTERVAL", 10))
-            interval = 3 if interval<=3 else interval
+            loop_count = int(os.environ.get("ITERATION", 10)) if len(args) == 1 else int(args[1])
+            loop_count = 10 if loop_count <=10 else loop_count  # 下限値
+            interval = int(os.environ.get("EXECUTE_INTERVAL", 5))
+            interval = 3 if interval<=3 else interval  # 下限値
 
             # 妥当な設定（organization_id, workspace_id）でなければ、メイン処理に回さない
             is_setting_check = setting_check(organization_id, workspace_id)

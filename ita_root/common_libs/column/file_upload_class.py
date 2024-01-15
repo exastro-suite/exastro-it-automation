@@ -208,6 +208,10 @@ class FileUploadColumn(Column):
                             msg = g.appmsg.get_api_message('MSG-00014', [old_file_path])
                             return retBool, msg
 
+                # シンボリックリンクが既にある場合は削除してから作成を行う
+                if os.path.isfile(dir_path):
+                    os.unlink(dir_path)
+
                 # シンボリックリンク作成
                 try:
                     os.symlink(old_dir_path, dir_path)

@@ -143,6 +143,7 @@ def organization_create(body, organization_id):
         g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = data['MONGO_CONNECTION_STRING']
         g.db_connect_info["ORG_MONGO_ADMIN_USER"] = data['MONGO_ADMIN_USER']
         g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = data['MONGO_ADMIN_PASSWORD']
+        g.db_connect_info["NO_INSTALL_DRIVER"] = data['NO_INSTALL_DRIVER']
 
         org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
         # create organization-databse
@@ -218,7 +219,8 @@ def organization_delete(organization_id):  # noqa: E501
     g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = connect_info['MONGO_CONNECTION_STRING']
     g.db_connect_info["ORG_MONGO_ADMIN_USER"] = connect_info['MONGO_ADMIN_USER']
     g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = connect_info['MONGO_ADMIN_PASSWORD']
-
+    g.db_connect_info["INITIAL_DATA_ANSIBLE_IF"] = connect_info['INITIAL_DATA_ANSIBLE_IF']
+    g.db_connect_info["NO_INSTALL_DRIVER"] = connect_info['NO_INSTALL_DRIVER']
 
     # get ws-db connect infomation
     org_db = DBConnectOrg(organization_id)  # noqa: F405

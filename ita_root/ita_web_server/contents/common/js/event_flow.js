@@ -1700,6 +1700,10 @@ viewEventInfo( x ) {
         html.push( er.eventInfoRowHtml('Rule Name', fn.cv( d.item.RULE_NAME, '')));
     } else {
         html.push( er.eventInfoRowHtml('Pattern', fn.cv( er.patternList[ er.currentBlock.pattern ], '')));
+        if ( d.item.exatsro_rule ) {
+            html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.exatsro_rule.id, ''), '') );
+            html.push( er.eventInfoRowHtml('Rule name', fn.cv( d.item.exatsro_rule.name, ''), '') );
+        }
         html.push( er.eventInfoRowHtml('Labels', '', 'eventInfoTableLabelsBlank') );
         html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( d.item.labels, er.label )}</td></tr>`);
     }

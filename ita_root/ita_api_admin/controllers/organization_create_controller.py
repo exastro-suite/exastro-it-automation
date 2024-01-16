@@ -265,7 +265,9 @@ def organization_delete(organization_id):  # noqa: E501
         if os.path.isdir(organization_dir):
             shutil.rmtree(organization_dir)
 
-        root_mongo = MONGOConnectCommon()
+        if 'oase' not in no_install_driver:
+            root_mongo = MONGOConnectCommon()
+
         for workspace_data in workspace_data_list:
             # drop ws-db and ws-db-user
             org_root_db.connection_kill(workspace_data['DB_DATABASE'], workspace_data['DB_USER'])

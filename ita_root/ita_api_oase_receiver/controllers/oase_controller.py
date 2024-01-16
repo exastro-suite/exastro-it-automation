@@ -149,9 +149,9 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             last_fetched_time = collection_progress[0]["FETCHED_TIME"]
 
             if fetched_time <= last_fetched_time:
-                g.applogger.info("送られてきたfetched_timeは最新ではないため保存されませんでした")
-                g.applogger.info(last_fetched_time)
-                g.applogger.info(single_event)
+                err_code = "499-01818"
+                err_msg = g.appmsg.get_log_message(err_code, [last_fetched_time, single_event])
+                g.applogger.info(err_msg)
                 continue
             # イベント収集設定IDとfetched_timeをリストに格納
             fetched_time_list.append(single_data)

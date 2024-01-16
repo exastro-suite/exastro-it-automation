@@ -2824,8 +2824,8 @@ def ws_target_host_create_table(wb, file_name, exec_time, config, compare_data, 
         # get target menu
         val_1 = "1:{}".format(config.get("target_menus")[0])
         val_2 = "2:{}".format(config.get("target_menus")[1])
-        val_1 = "{}:{}".format(g.appmsg.get_api_message("MSG-60025"), config.get("target_menus")[0])
-        val_2 = "{}:{}".format(g.appmsg.get_api_message("MSG-60026"), config.get("target_menus")[1])
+        val_1 = "{}:{}".format(g.appmsg.get_api_message("MSG-60025"), config.get("target_menus")[0])[0:255]
+        val_2 = "{}:{}".format(g.appmsg.get_api_message("MSG-60026"), config.get("target_menus")[1])[0:255]
 
         # set table start point
         tbl_start_no = int("{}".format(row_no))
@@ -2850,7 +2850,6 @@ def ws_target_host_create_table(wb, file_name, exec_time, config, compare_data, 
             if col_name not in [g.appmsg.get_api_message("MSG-60022")]:
                 row_no, val_1, val_2, val_diff_flg, str_diff = \
                     get_col_name_data(compare_data, row_no, target_host, col_name, compare_target_flg)
-
                 # set target data
                 ws = ws_add_table_data_cells(ws, row_no, column_no, col_name, val_1, val_2, str_diff, "", val_diff_flg, wrap_text_flg)
 

@@ -157,6 +157,7 @@
     "499-01815": "It cannot be uploaded because the content is incorrect as a jinja2 template.(item:{})",
     "499-01816": "Please make sure the template includes one [TITLE].(item:{})",
     "499-01817": "Please make sure the template includes one [BODY].(item:{})",
+    "499-01818": "The fetched_time sent was not saved because it was not the latest. (latest fetched_time:{}, event:{})",
     "999-00001": "System Error",
     "999-00002": "System Error",
     "999-00003": "System Error",

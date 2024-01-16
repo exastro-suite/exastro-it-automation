@@ -520,6 +520,9 @@ flex: 0 0 auto;
 .eventFlowPartsTableClose .eventFlowPartsBlockBody {
 display: none;
 }
+.ruleEventFlowEditMode .eventFlowPartsTableClose .eventFlowPartsBlockBody {
+display: block!important;
+}
 .eventFlowPartsItemOpen .eventFlowPartsInfo {
 display: block;
 }

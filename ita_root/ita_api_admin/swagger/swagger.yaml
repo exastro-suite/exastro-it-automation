@@ -597,7 +597,7 @@ components:
         oase:
           type: boolean
       description: "terraform_cloud_ep: Terraform-Cloud/EPドライバ <br/>terraform_cli:\
-        \ Terraform-CLIドライバ, <br/>ci_cd: CI/CD for IaC, <br/>oase: OASE,  "
+        \ Terraform-CLIドライバ, <br/>ci_cd: CI/CD for IaC, <br/>oase: OASE, "
     organization_id_ita_body:
       type: object
       properties:
@@ -638,12 +638,17 @@ components:
             options:
             - id: terraform_cloud_ep
               name: Terraform Cloud/EP driver
+              enable: true
             - id: terraform_cli
               name: Terraform CLI driver
+              enable: true
             - id: ci_cd
               name: CI/CD for IaC
+              enable: true
             - id: oase
               name: OASE
+              enable: true
+              description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
         message: message
     inline_response_200_3:
       type: object
@@ -1104,24 +1109,34 @@ components:
           example:
           - id: terraform_cloud_ep
             name: Terraform Cloud/EP driver
+            enable: true
           - id: terraform_cli
             name: Terraform CLI driver
+            enable: true
           - id: ci_cd
             name: CI/CD for IaC
+            enable: true
           - id: oase
             name: OASE
+            enable: true
+            description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
           items:
             $ref: '#/components/schemas/inline_response_200_2_data_drivers_options'
       example:
         options:
         - id: terraform_cloud_ep
           name: Terraform Cloud/EP driver
+          enable: true
         - id: terraform_cli
           name: Terraform CLI driver
+          enable: true
         - id: ci_cd
           name: CI/CD for IaC
+          enable: true
         - id: oase
           name: OASE
+          enable: true
+          description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
     inline_response_200_2_data:
       properties:
         drivers:
@@ -1131,12 +1146,17 @@ components:
           options:
           - id: terraform_cloud_ep
             name: Terraform Cloud/EP driver
+            enable: true
           - id: terraform_cli
             name: Terraform CLI driver
+            enable: true
           - id: ci_cd
             name: CI/CD for IaC
+            enable: true
           - id: oase
             name: OASE
+            enable: true
+            description: 利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。
     inline_response_200_3_data_organization_id_initial_data_parameter:
       type: object
       properties:

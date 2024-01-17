@@ -18,6 +18,7 @@ ita_settings
 # import connexion
 from flask import g
 import json
+import os
 
 from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -45,8 +46,21 @@ def get_ita_settings():  # noqa: E501
     if additional_driver_json is not None:
         additional_driver = json.loads(additional_driver_json)
 
-    # descriptionの言語を選定
+    # OASEはMongoDBの設定有無でデフォルトのチェック有無を変更する
+    mongo_host = os.environ.get('MONGO_HOST', '')
+    mongo_connection_string = os.environ.get('MONGO_CONNECTION_STRING', '')
+
     for driver_data in additional_driver:
+        # デフォルトのチェック有無を設定
+        if driver_data["id"] == "oase":
+            if not mongo_host and not mongo_connection_string:
+                driver_data["enable"] = False
+            else:
+                driver_data["enable"] = True
+        else:
+            driver_data["enable"] = True
+
+        # descriptionの言語を選定
         if g.LANGUAGE == "ja":
             if driver_data.get("description_ja"):
                 driver_data["description"] = driver_data.pop("description_ja")

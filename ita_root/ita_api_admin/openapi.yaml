@@ -394,7 +394,7 @@ paths:
                                   type: string
                                 name:
                                   type: string
-                            example: [{id: terraform_cloud_ep, name: Terraform Cloud/EP driver}, {id: terraform_cli, name: Terraform CLI driver}, {id: ci_cd, name: CI/CD for IaC}, {id: oase, name: OASE}]
+                            example: [{id: terraform_cloud_ep, name: Terraform Cloud/EP driver, enable: true}, {id: terraform_cli, name: Terraform CLI driver, enable: true}, {id: ci_cd, name: CI/CD for IaC, enable: true}, {id: oase, name: OASE, enable: true, "description": "利用するためにはMongoDBが必要です。MongoDBがない場合は有効にできません。"}]
 
 
                   message:

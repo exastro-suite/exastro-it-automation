@@ -126,11 +126,10 @@ def organization_create(body, organization_id):
             'MONGO_CONNECTION_STRING': mongo_connection_string,
             'MONGO_ADMIN_USER': mongo_username,
             'MONGO_ADMIN_PASSWORD': ky_encrypt(mongo_user_password),
+            'NO_INSTALL_DRIVER': no_install_driver,
             'DISUSE_FLAG': 0,
             'LAST_UPDATE_USER': g.get('USER_ID')
         }
-        if no_install_driver is not None:
-            data['NO_INSTALL_DRIVER'] = no_install_driver
 
         g.db_connect_info = {}
         g.db_connect_info["ORGDB_HOST"] = data['DB_HOST']

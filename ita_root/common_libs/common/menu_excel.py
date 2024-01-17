@@ -1042,7 +1042,7 @@ def collect_excel_journal(
     msg = g.appmsg.get_api_message('MSG-30022')
     # 対象メニューを特定するためのIDを取得する
     menu_name = menu_record[0].get('MENU_NAME_' + lang.upper())
-    file_name = menu_name + '_' + msg + '_' + \
+    file_name = menu_name[0:200] + '_' + msg + '_' + \
         datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.xlsx'
     file_path = excel_dir + '/' + file_name
 
@@ -1276,7 +1276,7 @@ def collect_excel_filter(
 
     # 対象メニューを特定するためのIDを取得する
     menu_name = menu_record[0].get('MENU_NAME_' + lang.upper())
-    file_name = menu_name + '_' + \
+    file_name = menu_name[0:200] + '_' + \
         datetime.datetime.now().strftime('%Y%m%d%H%M%S') + '.xlsx'
     file_path = excel_dir + '/' + file_name
 

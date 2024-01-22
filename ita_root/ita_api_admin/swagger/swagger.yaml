@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API (System Management)
   description: Exastro IT Automation API for System Manager
-  version: "2.2"
+  version: "2.3"
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -309,7 +309,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ita_settings_controller
+      x-openapi-router-controller: controllers.ita_settings
   /api/ita/initial-settings/ansible/:
     get:
       tags:

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: "2.2"
+  version: "2.3"
 
 servers:
   - url: "https://{host}"

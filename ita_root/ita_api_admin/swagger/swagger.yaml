@@ -309,7 +309,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-      x-openapi-router-controller: controllers.ita_settings
+      x-openapi-router-controller: controllers.ita_settings_controller
   /api/ita/initial-settings/ansible/:
     get:
       tags:

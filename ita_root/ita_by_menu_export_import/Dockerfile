@@ -28,8 +28,8 @@ ENV SERVICE_NAME=ita-by-menu-export-import
 
 RUN curl -k -LO https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm \
 &&  dnf -y localinstall mysql80-community-release-el7-3.noarch.rpm \
-&&  curl -k -LO https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 \
-&&  rpm --import RPM-GPG-KEY-mysql-2022 \
+&&  curl -k -LO https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 \
+&&  rpm --import RPM-GPG-KEY-mysql-2023 \
 &&  dnf -y install mysql-community-client
 
 RUN dnf install -y \

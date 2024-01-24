@@ -149,6 +149,8 @@ setUi() {
             } else {
                 getMessage = module.messageid_en();
             }
+
+            ui.headerMenu( false );
             set();
         });
     } else {

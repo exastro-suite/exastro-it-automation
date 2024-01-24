@@ -924,7 +924,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
                     html[0] += fn.html.cell( selectButton, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowSelect'], 'th', headRowspan );
                     tb.data.filterHeadColspan++;
                 }
-                const itemText = ( tb.getTableSettingValue('menu') === 'show')? '項目メニュー': fn.html.icon('ellipsis_v');
+                const itemText = ( tb.getTableSettingValue('menu') === 'show')? getMessage.FTE00178: fn.html.icon('ellipsis_v');
                 html[0] += fn.html.cell( itemText, ['tHeadTh', 'tHeadLeftSticky', 'tHeadRowMenu'], 'th', headRowspan );
                 tb.data.filterHeadColspan++;
             } break;

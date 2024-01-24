@@ -19,6 +19,7 @@ import ssl
 import re
 import time
 import inspect
+import os
 from flask import g
 from common_libs.common.util import ky_decrypt
 
@@ -124,8 +125,35 @@ class RestApiCaller():
 
             req = urllib.request.Request(url, data=data, headers=headers, method=method)
             if proxy_address:
-                req.set_proxy(proxy_address, 'http')
-                req.set_proxy(proxy_address, 'https')
+                http_pattern = "http://[\w/:%#\$&\?\(\)~\.=\+\-]+"
+                https_pattern = "https://[\w/:%#\$&\?\(\)~\.=\+\-]+"
+
+                # 環境変数「http_proxy」「https_proxy」の設定をする
+                if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
+                    os.environ['http_proxy'] = proxy_address
+                else:
+                    os.environ['http_proxy'] = "http://{}".format(proxy_address)
+
+                if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
+                    os.environ['https_proxy'] = proxy_address
+                else:
+                    os.environ['https_proxy'] = "https://{}".format(proxy_address)
+
+                # プロキシアドレスにプロトコルの記載がある場合は、プロトコル以降を抽出
+                d_proxy_address = ""
+                if re.match(http_pattern, proxy_address):
+                    d_proxy_address = proxy_address.split('http://')[-1]
+
+                if re.match(https_pattern, proxy_address):
+                    d_proxy_address = proxy_address.split('https://')[-1]
+
+                if not d_proxy_address:
+                    d_proxy_address = proxy_address
+
+                # プロキシを設定
+                req.set_proxy(d_proxy_address, 'http')
+                req.set_proxy(d_proxy_address, 'https')
+
             try:
                 with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
                     status_code = resp.getcode()
@@ -288,8 +316,35 @@ class RestApiCaller():
         responseContents = ''
         req = urllib.request.Request(url, headers=headers, method=method)
         if proxy_address:
-            req.set_proxy(proxy_address, 'http')
-            req.set_proxy(proxy_address, 'https')
+            http_pattern = "http://[\w/:%#\$&\?\(\)~\.=\+\-]+"
+            https_pattern = "https://[\w/:%#\$&\?\(\)~\.=\+\-]+"
+
+            # 環境変数「http_proxy」「https_proxy」の設定をする
+            if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
+                os.environ['http_proxy'] = proxy_address
+            else:
+                os.environ['http_proxy'] = "http://{}".format(proxy_address)
+
+            if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
+                os.environ['https_proxy'] = proxy_address
+            else:
+                os.environ['https_proxy'] = "https://{}".format(proxy_address)
+
+            # プロキシアドレスにプロトコルの記載がある場合は、プロトコル以降を抽出
+            d_proxy_address = ""
+            if re.match(http_pattern, proxy_address):
+                d_proxy_address = proxy_address.split('http://')[-1]
+
+            if re.match(https_pattern, proxy_address):
+                d_proxy_address = proxy_address.split('https://')[-1]
+
+            if not d_proxy_address:
+                d_proxy_address = proxy_address
+
+            # プロキシを設定
+            req.set_proxy(d_proxy_address, 'http')
+            req.set_proxy(d_proxy_address, 'https')
+
         try:
             with urllib.request.urlopen(req, context=ssl_context, timeout=10) as resp:
                 # status_code = resp.getcode()

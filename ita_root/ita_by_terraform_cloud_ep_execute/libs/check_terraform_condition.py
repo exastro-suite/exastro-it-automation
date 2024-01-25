@@ -138,7 +138,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
         # [RESTAPI]Planログを取得し、plan.logに書き込み(上書き)
         g.applogger.info(g.appmsg.get_log_message("BKY-51026", [execution_no]))
-        content_log = get_run_log(restApiCaller, tf_plan_log_url, True)  # noqa: F405
+        content_log = get_run_log(restApiCaller, tf_plan_log_url, True, False)  # noqa: F405
         with open(plan_log, 'w') as f:
             f.write(content_log)
         g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
@@ -191,7 +191,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 if policy_output_url:
                     # [RESTAPI]PolicyCheckログを取得し、policy_check_logに書き込み(上書き)
                     g.applogger.info(g.appmsg.get_log_message("BKY-51028", [execution_no]))
-                    content_log = get_run_log(restApiCaller, policy_output_url, False)  # noqa: F405
+                    content_log = get_run_log(restApiCaller, policy_output_url, False, False)  # noqa: F405
                     with open(policy_check_log, 'w') as f:
                         f.write(content_log)
                     g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
@@ -277,7 +277,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
                 # [RESTAPI]Applyログを取得し、apply.logに書き込み(上書き)
                 g.applogger.info(g.appmsg.get_log_message("BKY-51032", [execution_no]))
-                content_log = get_run_log(restApiCaller, tf_apply_log_url, True)  # noqa: F405
+                content_log = get_run_log(restApiCaller, tf_apply_log_url, True, False)  # noqa: F405
                 with open(apply_log, 'w') as f:
                     f.write(content_log)
                 g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
@@ -340,7 +340,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             # [RESTAPI]stateファイルを取得し、ky_encryptをかけたものを生成する。
             g.applogger.info(g.appmsg.get_log_message("BKY-51034", [execution_no]))
             if tf_state_url and tf_state_id:
-                tf_state_org = get_run_log(restApiCaller, tf_state_url, True)  # noqa: F405
+                tf_state_org = get_run_log(restApiCaller, tf_state_url, True, True)  # noqa: F405
                 if tf_state_org:
                     tf_state_enc = ky_encrypt(tf_state_org)
                     tf_state_file = log_dir + '/' + tf_state_id + '.tfstate'

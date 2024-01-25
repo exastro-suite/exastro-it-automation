@@ -523,7 +523,7 @@ def get_apply_data(restApiCaller, tf_apply_id):
     return response_array
 
 
-def get_run_log(restApiCaller, get_log_url, direct_flag=False):
+def get_run_log(restApiCaller, get_log_url, direct_flag=False, env_setting_flag=False):
     """
         TerraformのRUNからログを取得する
         ARGS:
@@ -533,7 +533,7 @@ def get_run_log(restApiCaller, get_log_url, direct_flag=False):
             response_array: RESTAPI返却値
 
     """
-    responseContents = restApiCaller.get_log_data('GET', get_log_url, direct_flag)
+    responseContents = restApiCaller.get_log_data('GET', get_log_url, direct_flag, env_setting_flag)
 
     return responseContents
 

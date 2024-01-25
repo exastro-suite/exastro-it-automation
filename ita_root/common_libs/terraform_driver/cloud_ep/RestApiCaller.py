@@ -128,17 +128,6 @@ class RestApiCaller():
                 http_pattern = "http://[\w/:%#\$&\?\(\)~\.=\+\-]+"
                 https_pattern = "https://[\w/:%#\$&\?\(\)~\.=\+\-]+"
 
-                # 環境変数「http_proxy」「https_proxy」の設定をする
-                if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
-                    os.environ['http_proxy'] = proxy_address
-                else:
-                    os.environ['http_proxy'] = "http://{}".format(proxy_address)
-
-                if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
-                    os.environ['https_proxy'] = proxy_address
-                else:
-                    os.environ['https_proxy'] = "https://{}".format(proxy_address)
-
                 # プロキシアドレスにプロトコルの記載がある場合は、プロトコル以降を抽出
                 d_proxy_address = ""
                 if re.match(http_pattern, proxy_address):
@@ -268,7 +257,7 @@ class RestApiCaller():
 
         return response_array
 
-    def get_log_data(self, method, url, direct_flag):  # noqa: C901
+    def get_log_data(self, method, url, direct_flag, env_setting_flag):  # noqa: C901
         # 変数定義
         httpContext = {}
         httpContext['http'] = {}
@@ -276,6 +265,8 @@ class RestApiCaller():
         ssl_context = None
         self.RestResultList = []
         proxy_address = ""
+        df_env_http_proxy = os.environ.get('http_proxy')
+        df_env_https_proxy = os.environ.get('https_proxy')
 
         # コンテンツ付与
         headers['Content-type'] = 'application/vnd.api+json'
@@ -319,16 +310,18 @@ class RestApiCaller():
             http_pattern = "http://[\w/:%#\$&\?\(\)~\.=\+\-]+"
             https_pattern = "https://[\w/:%#\$&\?\(\)~\.=\+\-]+"
 
-            # 環境変数「http_proxy」「https_proxy」の設定をする
-            if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
-                os.environ['http_proxy'] = proxy_address
-            else:
-                os.environ['http_proxy'] = "http://{}".format(proxy_address)
+            # Stateファイル取得時のみ、環境変数にProxyの設定を入れる
+            if env_setting_flag:
+                # 環境変数「http_proxy」「https_proxy」の設定をする
+                if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
+                    os.environ['http_proxy'] = proxy_address
+                else:
+                    os.environ['http_proxy'] = "http://{}".format(proxy_address)
 
-            if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
-                os.environ['https_proxy'] = proxy_address
-            else:
-                os.environ['https_proxy'] = "https://{}".format(proxy_address)
+                if re.match(http_pattern, proxy_address) or re.match(https_pattern, proxy_address):
+                    os.environ['https_proxy'] = proxy_address
+                else:
+                    os.environ['https_proxy'] = "https://{}".format(proxy_address)
 
             # プロキシアドレスにプロトコルの記載がある場合は、プロトコル以降を抽出
             d_proxy_address = ""
@@ -356,6 +349,18 @@ class RestApiCaller():
             self.apperrorloger(e)
             self.apperrorloger(print_url)
             self.apperrorloger(print_HttpContext)
+
+        if proxy_address and env_setting_flag:
+            # 環境変数の設定値を元に戻す
+            if df_env_http_proxy is None:
+                del os.environ['http_proxy']
+            else:
+                os.environ['http_proxy'] = df_env_http_proxy
+
+            if df_env_https_proxy is None:
+                del os.environ['https_proxy']
+            else:
+                os.environ['https_proxy'] = df_env_https_proxy
 
         return responseContents
 

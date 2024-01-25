@@ -150,7 +150,7 @@ setUi() {
                 getMessage = module.messageid_en();
             }
 
-            ui.headerMenu( false );
+            if ( ui.storageUser ) ui.headerMenu( false );
             set();
         });
     } else {

@@ -477,7 +477,7 @@ def get_backyard_execute_status_list():
                 "status_name_table": "T_COMN_CONDUCTOR_STATUS",
                 "status_name_id_column": "STATUS_ID",
                 "status_name_column": "STATUS_NAME",
-                "add_count": False  # Conductorはexecute_countに加算をしない。
+                "add_count": False  # Conductorは_execute_countに加算をしない。
             },
             "excel_export_import": {
                 "container_name": "ita-by-excel-export-import",
@@ -616,19 +616,19 @@ def get_backyard_execute_status_list():
                             workspace_exec_count += 1
 
                 # Workspace単位の実行中対象数を格納
-                backyard_execute_status_list[org_id][ws_id]['execute_count'] = workspace_exec_count
+                backyard_execute_status_list[org_id][ws_id]['_execute_count'] = workspace_exec_count
 
                 # Organization単位の実行中対象数を加算
                 organization_exec_count += workspace_exec_count
 
             # Organization単位の実行中対象数を格納
-            backyard_execute_status_list[org_id]['execute_count'] = organization_exec_count
+            backyard_execute_status_list[org_id]['_execute_count'] = organization_exec_count
 
             # 全体の実行中対象数を加算
             all_exec_count += organization_exec_count
 
         # 全体の実行中対象数を格納
-        backyard_execute_status_list['execute_count'] = all_exec_count
+        backyard_execute_status_list['_execute_count'] = all_exec_count
 
         return backyard_execute_status_list
 

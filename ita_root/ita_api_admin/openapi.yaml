@@ -888,12 +888,21 @@ paths:
                     example: 000-00000
                   data:
                     properties:
+                      _execute_count:
+                        type: number
+                        example: 1
                       (organization_name):
                         type: object
                         properties:
+                          _execute_count:
+                            type: number
+                            example: 1
                           (workspace_name):
                             type: object
                             properties:
+                              _execute_count:
+                                type: number
+                                example: 1
                               (backyard_container_name):
                                 type: array
                                 items:

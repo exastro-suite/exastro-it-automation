@@ -1021,20 +1021,62 @@ components:
       example:
         result: 000-00000
         data:
-          _execute_count: 1
-          (organization_name):
-            (workspace_name):
-              (backyard_container_name):
-              - status_id: "1"
-                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
-                status_name: 未実行
-                id: (uuid)
-              - status_id: "1"
-                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
-                status_name: 未実行
-                id: (uuid)
-              _execute_count: 1
-            _execute_count: 1
+          execute_count: 0.80082819046101150206595775671303272247314453125
+          organizations:
+          - execute_count: 6.02745618307040320615897144307382404804229736328125
+            id: (organiation_id)
+            workspaces:
+            - execute_count: 1.46581298050294517310021547018550336360931396484375
+              backyards:
+                (backyard_container_name):
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+              id: (workspace_id)
+            - execute_count: 1.46581298050294517310021547018550336360931396484375
+              backyards:
+                (backyard_container_name):
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+              id: (workspace_id)
+          - execute_count: 6.02745618307040320615897144307382404804229736328125
+            id: (organiation_id)
+            workspaces:
+            - execute_count: 1.46581298050294517310021547018550336360931396484375
+              backyards:
+                (backyard_container_name):
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+              id: (workspace_id)
+            - execute_count: 1.46581298050294517310021547018550336360931396484375
+              backyards:
+                (backyard_container_name):
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+                - status_id: "1"
+                  last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                  status_name: 未実行
+                  id: (uuid)
+              id: (workspace_id)
         message: message
     inline_response_200_7:
       type: object
@@ -1375,7 +1417,7 @@ components:
       example:
         service_name_1: INFO/DEBUG
         service_name_2: INFO/DEBUG
-    inline_response_200_6_data_organization_name_workspace_name_backyard_container_name:
+    inline_response_200_6_data_backyards_backyard_container_name:
       type: object
       properties:
         id:
@@ -1395,16 +1437,13 @@ components:
         last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
         status_name: 未実行
         id: (uuid)
-    inline_response_200_6_data_organization_name_workspace_name:
+    inline_response_200_6_data_backyards:
       type: object
       properties:
-        _execute_count:
-          type: number
-          example: 1
         (backyard_container_name):
           type: array
           items:
-            $ref: '#/components/schemas/inline_response_200_6_data_organization_name_workspace_name_backyard_container_name'
+            $ref: '#/components/schemas/inline_response_200_6_data_backyards_backyard_container_name'
       example:
         (backyard_container_name):
         - status_id: "1"
@@ -1415,17 +1454,19 @@ components:
           last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
           status_name: 未実行
           id: (uuid)
-        _execute_count: 1
-    inline_response_200_6_data_organization_name:
+    inline_response_200_6_data_workspaces:
       type: object
       properties:
-        _execute_count:
+        id:
+          type: string
+          example: (workspace_id)
+        execute_count:
           type: number
-          example: 1
-        (workspace_name):
-          $ref: '#/components/schemas/inline_response_200_6_data_organization_name_workspace_name'
+        backyards:
+          $ref: '#/components/schemas/inline_response_200_6_data_backyards'
       example:
-        (workspace_name):
+        execute_count: 1.46581298050294517310021547018550336360931396484375
+        backyards:
           (backyard_container_name):
           - status_id: "1"
             last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
@@ -1435,19 +1476,25 @@ components:
             last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
             status_name: 未実行
             id: (uuid)
-          _execute_count: 1
-        _execute_count: 1
-    inline_response_200_6_data:
+        id: (workspace_id)
+    inline_response_200_6_data_organizations:
+      type: object
       properties:
-        _execute_count:
+        id:
+          type: string
+          example: (organiation_id)
+        execute_count:
           type: number
-          example: 1
-        (organization_name):
-          $ref: '#/components/schemas/inline_response_200_6_data_organization_name'
+        workspaces:
+          type: array
+          items:
+            $ref: '#/components/schemas/inline_response_200_6_data_workspaces'
       example:
-        _execute_count: 1
-        (organization_name):
-          (workspace_name):
+        execute_count: 6.02745618307040320615897144307382404804229736328125
+        id: (organiation_id)
+        workspaces:
+        - execute_count: 1.46581298050294517310021547018550336360931396484375
+          backyards:
             (backyard_container_name):
             - status_id: "1"
               last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
@@ -1457,8 +1504,84 @@ components:
               last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
               status_name: 未実行
               id: (uuid)
-            _execute_count: 1
-          _execute_count: 1
+          id: (workspace_id)
+        - execute_count: 1.46581298050294517310021547018550336360931396484375
+          backyards:
+            (backyard_container_name):
+            - status_id: "1"
+              last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+              status_name: 未実行
+              id: (uuid)
+            - status_id: "1"
+              last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+              status_name: 未実行
+              id: (uuid)
+          id: (workspace_id)
+    inline_response_200_6_data:
+      properties:
+        execute_count:
+          type: number
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/inline_response_200_6_data_organizations'
+      example:
+        execute_count: 0.80082819046101150206595775671303272247314453125
+        organizations:
+        - execute_count: 6.02745618307040320615897144307382404804229736328125
+          id: (organiation_id)
+          workspaces:
+          - execute_count: 1.46581298050294517310021547018550336360931396484375
+            backyards:
+              (backyard_container_name):
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+            id: (workspace_id)
+          - execute_count: 1.46581298050294517310021547018550336360931396484375
+            backyards:
+              (backyard_container_name):
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+            id: (workspace_id)
+        - execute_count: 6.02745618307040320615897144307382404804229736328125
+          id: (organiation_id)
+          workspaces:
+          - execute_count: 1.46581298050294517310021547018550336360931396484375
+            backyards:
+              (backyard_container_name):
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+            id: (workspace_id)
+          - execute_count: 1.46581298050294517310021547018550336360931396484375
+            backyards:
+              (backyard_container_name):
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+              - status_id: "1"
+                last_update_timestamp: YYYY-MM-DD hh:mm:ss.xxxxxx
+                status_name: 未実行
+                id: (uuid)
+            id: (workspace_id)
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

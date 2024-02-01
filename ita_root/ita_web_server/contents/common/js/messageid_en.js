@@ -956,7 +956,7 @@ export function messageid_en() {
         'FTE13008': 'Unknown events',
         'FTE13009': 'Timeout events',
         'FTE13010': 'Known events',
-        'FTE13011': 'Results',
+        'FTE13011': 'Conclusion events',
         'FTE13012': 'New events',
         'FTE13013': 'Actions',
         'FTE13014': 'Range specification',

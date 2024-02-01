@@ -367,7 +367,7 @@ paths:
         - ITA Settings
       description: Organizationで選択可能なドライバの一覧を取得する
       operationId: getItaSettings
-      x-openapi-router-controller: controllers.ita_settings
+      x-openapi-router-controller: controllers.ita_settings_controller
       parameters: []
       responses:
         '200':
@@ -888,38 +888,48 @@ paths:
                     example: 000-00000
                   data:
                     properties:
-                      _execute_count:
+                      execute_count:
                         type: number
-                        example: 1
-                      (organization_name):
-                        type: object
-                        properties:
-                          _execute_count:
-                            type: number
-                            example: 1
-                          (workspace_name):
-                            type: object
-                            properties:
-                              _execute_count:
-                                type: number
-                                example: 1
-                              (backyard_container_name):
-                                type: array
-                                items:
-                                  type: "object"
-                                  properties:
-                                    id:
-                                      type: string
-                                      example: "(uuid)"
-                                    status_id:
-                                      type: string
-                                      example: "1"
-                                    status_name:
-                                      type: string
-                                      example: "未実行"
-                                    last_update_timestamp:
-                                      type: string
-                                      example: "YYYY-MM-DD hh:mm:ss.xxxxxx"
+                      organizations:
+                        type: array
+                        items:
+                          type: "object"
+                          properties:
+                            id:
+                              type: string
+                              example: "(organiation_id)"
+                            execute_count:
+                              type: number
+                            workspaces:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    example: "(workspace_id)"
+                                  execute_count:
+                                    type: number
+                                  backyards:
+                                    type: object
+                                    properties:
+                                      (backyard_container_name):
+                                        type: array
+                                        items:
+                                          type: "object"
+                                          properties:
+                                            id:
+                                              type: string
+                                              example: "(uuid)"
+                                            status_id:
+                                              type: string
+                                              example: "1"
+                                            status_name:
+                                              type: string
+                                              example: "未実行"
+                                            last_update_timestamp:
+                                              type: string
+                                              example: "YYYY-MM-DD hh:mm:ss.xxxxxx"
                   message:
                     type: string
         '401':

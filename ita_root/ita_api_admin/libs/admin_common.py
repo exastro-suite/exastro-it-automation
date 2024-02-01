@@ -545,6 +545,7 @@ def get_backyard_execute_status_list():
             organization_list.append(organization_data)
 
         # Organizationの一覧でループスタート
+        backyard_execute_status_list['organizations'] = []
         for org_data in organization_list:
             # 対象一覧をコピー
             backyard_check_list = copy.deepcopy(tmp_backyard_check_list)
@@ -562,7 +563,9 @@ def get_backyard_execute_status_list():
             organization_exec_count = 0
 
             # 返却値にorganization_idでkeyを作成
-            backyard_execute_status_list[org_id] = {}
+            organization_status_data = {}
+            organization_status_data['id'] = org_id
+            organization_status_data['workspaces'] = []
 
             # Workspaceの一覧を取得
             workspace_list = []
@@ -577,14 +580,14 @@ def get_backyard_execute_status_list():
                 ws_id = ws_data.get('workspace_id')
                 ws_db = DBConnectWs(ws_id, org_id)  # noqa: F405
                 workspace_exec_count = 0
-
-                # 返却値にworkspace_idでkeyを作成
-                backyard_execute_status_list[org_id][ws_id] = {}
+                workspace_status_data = {}
+                workspace_status_data['id'] = ws_id
+                workspace_status_data['backyards'] = {}
 
                 for backyard_data in backyard_check_list.values():
                     # 返却値にbackyardコンテナ名でkeyを作成
                     container_name = backyard_data.get('container_name')
-                    backyard_execute_status_list[org_id][ws_id][container_name] = []
+                    workspace_status_data['backyards'][container_name] = []
 
                     # ステータスIDと名称を取得
                     status_name_data = {}
@@ -609,26 +612,32 @@ def get_backyard_execute_status_list():
                         status_name = status_name_data.get(status_id)
                         last_update_timestamp = execute_record.get('LAST_UPDATE_TIMESTAMP')
                         execute_data = {'id': id, 'status_id': status_id, 'status_name': status_name, 'last_update_timestamp': last_update_timestamp}
-                        backyard_execute_status_list[org_id][ws_id][container_name].append(execute_data)
+                        workspace_status_data['backyards'][container_name].append(execute_data)
 
                         # Workspace単位の実行中対象数を加算
                         if backyard_data.get('add_count') is True:
                             workspace_exec_count += 1
 
                 # Workspace単位の実行中対象数を格納
-                backyard_execute_status_list[org_id][ws_id]['_execute_count'] = workspace_exec_count
+                workspace_status_data['execute_count'] = workspace_exec_count
 
                 # Organization単位の実行中対象数を加算
                 organization_exec_count += workspace_exec_count
 
+                # Workspaceのデータを追加
+                organization_status_data['workspaces'].append(workspace_status_data)
+
             # Organization単位の実行中対象数を格納
-            backyard_execute_status_list[org_id]['_execute_count'] = organization_exec_count
+            organization_status_data['execute_count'] = organization_exec_count
 
             # 全体の実行中対象数を加算
             all_exec_count += organization_exec_count
 
+            # Organizationのデータを追加
+            backyard_execute_status_list['organizations'].append(organization_status_data)
+
         # 全体の実行中対象数を格納
-        backyard_execute_status_list['_execute_count'] = all_exec_count
+        backyard_execute_status_list['execute_count'] = all_exec_count
 
         return backyard_execute_status_list
 

@@ -909,6 +909,7 @@ class SubValueAutoReg():
         ina_array_vars_ass_list = {}
         
         tmp_ary_data = {}
+        host_ary = []
         
         dict_objmenu = {}
 
@@ -980,12 +981,15 @@ class SubValueAutoReg():
                     tmp_ary_data[table_name] = {}
                 tmp_ary_data[table_name][index] = row
                 index += 1
+                
+                if row['HOST_ID'] not in host_ary:
+                    host_ary.append(row['HOST_ID'])
         
                 parameter = {}
             
             for tmp_table_name, tmp_value in tmp_ary_data.items():
                 registered_data_cnt = 0
-                break_flg = False
+                registered_host_ary = []
                 for row in tmp_value.values():
                     for table_name, ary_col_data in in_tabColNameToValAssRowList.items():
                         for col_data in ary_col_data[col_name].values():
@@ -1163,16 +1167,15 @@ class SubValueAutoReg():
                                     if not ret[0] == 0:
                                         ina_vars_ass_list[idx] = ret[0]
                                         registered_data_cnt += 1
+                                        if host_id not in registered_host_ary:
+                                            registered_host_ary.append(host_id)
                                     if not ret[2] == 0:
                                         ina_array_vars_ass_list[idx] = ret[2]
                             
                                     idx += 1
                                     skip_flag = False
 
-                        if registered_data_cnt == data_cnt_ary[table_name]:
-                            break_flg = True
-                            break
-                    if break_flg is True:
+                    if host_ary == len(registered_host_ary):
                         break
                             
             # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認

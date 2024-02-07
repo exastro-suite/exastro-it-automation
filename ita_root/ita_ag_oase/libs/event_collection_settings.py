@@ -17,6 +17,9 @@ import os
 
 file_name = "/tmp/event_collection_settings.json"
 
+def set_dir(dir):
+    global file_name
+    file_name = "{}/event_collection_settings.json".format(dir)
 
 def create_file(settings):
     with open(file_name, "x") as f:

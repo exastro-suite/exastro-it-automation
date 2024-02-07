@@ -23,7 +23,7 @@ from common_libs.ci.util import app_exception, exception
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
-from libs.event_collection_settings import create_file, remove_file, get_settings
+from libs.event_collection_settings import set_dir, create_file, remove_file, get_settings
 
 
 def agent_main(organization_id, workspace_id, loop_count, interval):
@@ -33,6 +33,11 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
     # storageにdbの保存場所を作成
     db_dir = "/storage/{}/{}/sqlite".format(organization_id, workspace_id)
     os.makedirs(db_dir, exist_ok=True)
+    # tmpに設定の保存場所を作成
+    tmp_dir = "/tmp/{}/{}/ag_oase_{}".format(organization_id, workspace_id, g.AGENT_NAME)
+    os.makedirs(tmp_dir, exist_ok=True)
+    set_dir(tmp_dir)
+
     # SQLiteモジュール
     sqliteDB = sqliteConnect(organization_id, workspace_id)
 
@@ -89,7 +94,8 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集設定ファイルからイベント収集設定の取得
     settings = get_settings()
-    g.applogger.debug(g.appmsg.get_log_message("AGT-10007", []))
+    nodata = "(no data)" if settings == [] or not settings else ""
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10007", [nodata]))
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
@@ -105,7 +111,8 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             )
             if status_code == 200:
                 create_file(response["data"])
-                g.applogger.debug(g.appmsg.get_log_message("AGT-10009", []))
+                nodata = "(no data)" if response["data"] == [] else ""
+                g.applogger.debug(g.appmsg.get_log_message("AGT-10009", [nodata]))
                 settings = get_settings()
             else:
                 g.applogger.info(g.appmsg.get_log_message("AGT-10010", []))

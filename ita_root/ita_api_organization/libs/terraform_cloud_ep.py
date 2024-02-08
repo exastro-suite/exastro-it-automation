@@ -14,14 +14,17 @@
 
 import json
 import base64
+import re
+from flask import g  # noqa: F401
+
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
-from flask import g  # noqa: F401
-from libs.organization_common import check_auth_menu  # noqa: F401
 from common_libs.api import check_request_body_key  # noqa: F401
 # from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
+
+from libs.organization_common import check_auth_menu  # noqa: F401
 
 
 def check_organization(objdbca, tf_organization_name):
@@ -114,6 +117,13 @@ def check_workspace(objdbca, tf_organization_name, tf_workspace_name):
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
 
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
+
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
     if not ret:
@@ -169,6 +179,13 @@ def get_organization_list(objdbca):
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -229,6 +246,13 @@ def get_workspace_list(objdbca):
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -316,6 +340,13 @@ def create_organization(objdbca, parameters):
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
 
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
+
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
     if not ret:
@@ -371,6 +402,13 @@ def create_workspace(objdbca, tf_organization_name, parameters):
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -428,6 +466,13 @@ def update_organization(objdbca, tf_organization_name, parameters):
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
 
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
+
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
     if not ret:
@@ -481,6 +526,13 @@ def update_workspace(objdbca, tf_organization_name, tf_workspace_name, parameter
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -543,6 +595,13 @@ def delete_organization(objdbca, tf_organization_name):
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
 
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
+
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
     if not ret:
@@ -587,6 +646,13 @@ def delete_workspace(objdbca, tf_organization_name, tf_workspace_name):
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -634,6 +700,13 @@ def delete_policy(objdbca, tf_organization_name, policy_name):
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -695,6 +768,13 @@ def delete_policy_set(objdbca, tf_organization_name, policy_set_name):
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
 
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
+
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
     if not ret:
@@ -746,6 +826,13 @@ def get_policy_list(objdbca):
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -827,6 +914,13 @@ def get_policy_file(objdbca, tf_organization_name, policy_name, parameters):
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
 
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
+
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
     if not ret:
@@ -866,6 +960,13 @@ def get_policy_set_list(objdbca):  # noqa: C901
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -1027,6 +1128,13 @@ def policy_set_remove_policy(objdbca, tf_organization_name, policy_set_name, pol
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
 
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
+
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
     if not ret:
@@ -1109,6 +1217,13 @@ def policy_set_remove_workspace(objdbca, tf_organization_name, policy_set_name, 
     ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
     if not ret:
         raise AppException("499-01103", [], [])  # noqa: F405
+
+    # hostnameのフォーマットチェック
+    hostname = interface_info_data.get('hostname')
+    pattern = re.compile(r'^[a-zA-Z0-9\._-]+$')
+    match = pattern.match(hostname)
+    if not match:
+        raise AppException("499-01112", [hostname], [hostname])  # noqa: F405
 
     # RESTAPIコールクラス
     ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405

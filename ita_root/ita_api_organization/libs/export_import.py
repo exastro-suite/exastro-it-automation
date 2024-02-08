@@ -12,27 +12,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from flask import g
+
 import json
 import subprocess
 import shutil
 import collections
 import re
 import zipfile
-import glob
+
 import base64
 import datetime
 import tarfile
 import mimetypes
 import secrets
-import pathlib
-import time
-from collections import Counter
+
 from common_libs.common import *  # noqa: F403
-from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectCommon
 from common_libs.loadtable import *  # noqa: F403
-from common_libs.api import api_filter, check_request_body, check_request_body_key
-from flask import g
-from common_libs.common.exception import AppException  # noqa: F401
 
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
@@ -1246,6 +1243,13 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
     with open(import_id_path + '/MENU_GROUPS') as f:
         menu_group_info = json.load(f)
 
+    # PARENT_MENU_GROUPSファイル読み込み
+    if os.path.isfile(import_id_path + '/PARENT_MENU_GROUPS') is False:
+        # 対象ファイルなし
+        raise AppException("499-00905", [], [])
+    with open(import_id_path + '/PARENT_MENU_GROUPS') as f:
+        parent_menu_group_info = json.load(f)
+
     # ユーザが使用している言語に合わせてメニューグループ名、メニュー名を設定する
     for menu_groups in menu_group_info.values():
         for menu_group in menu_groups:
@@ -1265,13 +1269,12 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
 
                 # 親メニューグループがすでに追加されているか確認
                 if parent_flg is False:
-                    parent_menu_group_info = getParentMenuGroupInfo(parent_id, objdbca)
                     parent_menu_group['parent_id'] = None
                     parent_menu_group['id'] = parent_id
-                    parent_menu_group['menu_group_name'] = parent_menu_group_info["MENU_GROUP_NAME_" + lang.upper()]
-                    parent_menu_group['menu_group_name_ja'] = parent_menu_group_info["MENU_GROUP_NAME_JA"]
-                    parent_menu_group['menu_group_name_en'] = parent_menu_group_info["MENU_GROUP_NAME_EN"]
-                    parent_menu_group["disp_seq"] = parent_menu_group_info["DISP_SEQ"]
+                    parent_menu_group['menu_group_name'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_" + lang.upper()]
+                    parent_menu_group['menu_group_name_ja'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_JA"]
+                    parent_menu_group['menu_group_name_en'] = parent_menu_group_info[parent_id]["MENU_GROUP_NAME_EN"]
+                    parent_menu_group["disp_seq"] = parent_menu_group_info[parent_id]["DISP_SEQ"]
                     parent_menu_group['menus'] = []
 
                     menu_groups.append(parent_menu_group)

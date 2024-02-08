@@ -15,9 +15,8 @@ import json
 import re
 import ast
 from flask import g
-# from common_libs.common.exception import AppException
 from common_libs.common import *  # noqa: F403
-from common_libs.common.util import get_maintenance_mode_setting
+from common_libs.common.dbconnect import DBConnectWs
 
 
 def backyard_main(organization_id, workspace_id):
@@ -723,8 +722,6 @@ def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, men
                 "MENU_NAME_JA": record_t_menu_define.get('MENU_NAME_JA'),
                 "MENU_NAME_EN": record_t_menu_define.get('MENU_NAME_EN'),
                 "DISP_SEQ": record_t_menu_define.get('DISP_SEQ'),
-                "AUTOFILTER_FLG": "1",
-                "INITIAL_FILTER_FLG": "0",
                 "SORT_KEY": sort_key,
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')

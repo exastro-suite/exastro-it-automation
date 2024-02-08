@@ -15,11 +15,12 @@
 import json
 import ast
 import datetime
-from common_libs.common import *  # noqa: F403
-from common_libs.loadtable import *  # noqa: F403
 from flask import g
-from libs.organization_common import check_auth_menu  # noqa: F401
+from common_libs.common import *  # noqa: F403
+from common_libs.common.exception import AppException
+from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import check_request_body_key
+from libs.organization_common import check_auth_menu  # noqa: F401
 
 
 def collect_menu_create_data(objdbca):
@@ -78,7 +79,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     if not ret:
         log_msg_args = [menu_create]
         api_msg_args = [menu_create]
-        raise AppException("499-00001", log_msg_args, api_msg_args)  # noqa: F405
+        raise AppException("499-00001", log_msg_args, api_msg_args)
 
     # 対象のuuidを取得
     menu_create_id = ret[0].get('MENU_CREATE_ID')
@@ -433,7 +434,7 @@ def collect_pulldown_initial_value(objdbca, menu_name_rest, column_name_rest):
         if not ret:
             log_msg_args = [menu_name_rest, column_name_rest]
             api_msg_args = [menu_name_rest, column_name_rest]
-            raise AppException("499-00010", log_msg_args, api_msg_args)  # noqa: F405
+            raise AppException("499-00010", log_msg_args, api_msg_args)
 
         ref_table_name = ret[0].get('REF_TABLE_NAME')
         ref_pkey_name = ret[0].get('REF_PKEY_NAME')
@@ -458,7 +459,7 @@ def collect_pulldown_initial_value(objdbca, menu_name_rest, column_name_rest):
             if value:
                 initial_value_dict[key] = value
 
-    except Exception:
+    except AppException:
         initial_value_dict = {}
 
     return initial_value_dict
@@ -487,7 +488,7 @@ def collect_pulldown_reference_item(objdbca, menu_name_rest, column_name_rest):
         if not ret:
             log_msg_args = [menu_name_rest, column_name_rest]
             api_msg_args = [menu_name_rest, column_name_rest]
-            raise AppException("499-00010", log_msg_args, api_msg_args)  # noqa: F405
+            raise AppException("499-00010", log_msg_args, api_msg_args)
 
         # LINK_IDを特定
         link_id = ret[0].get('LINK_ID')
@@ -502,7 +503,7 @@ def collect_pulldown_reference_item(objdbca, menu_name_rest, column_name_rest):
                 add_dict = {'reference_id': reference_id, 'column_name': column_name, 'column_name_rest': column_name_rest}
                 reference_item_list.append(add_dict)
 
-    except Exception:
+    except AppException:
         reference_item_list = []
 
     return reference_item_list
@@ -575,57 +576,67 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
         objdbca.db_transaction_start()
 
         # 更新対象テーブルをロック
-        objdbca.table_lock([t_menu_define, t_menu_column, t_menu_column_group, t_menu_role, t_menu_unique_constraint, t_menu_other_link, t_menu_reference_item])
+        objdbca.table_lock(
+            [
+                t_menu_define,
+                t_menu_column,
+                t_menu_column_group,
+                t_menu_role,
+                t_menu_unique_constraint,
+                t_menu_other_link,
+                t_menu_reference_item
+            ]
+        )
 
         # 登録前バリデーションチェック
         retbool, result_code, msg_args = _check_before_registar_validate(objdbca, menu_data, column_data_list)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 「パラメータシート定義一覧」にレコードを登録
         retbool, result_code, msg_args, menu_create_id = _insert_t_menu_define(objdbca, menu_data)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # カラムグループ用データがある場合、「カラムグループ作成情報」にレコードを登録
         if group_data_list:
             retbool, result_code, msg_args = _insert_t_menu_column_group(objdbca, group_data_list)
             if not retbool:
-                raise Exception(result_code, msg_args)
+                raise AppException(result_code, msg_args)
 
         # 「パラメータシート項目作成情報」にレコードを登録
         retbool, result_code, msg_args = _insert_t_menu_column(objdbca, menu_data, column_data_list)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 「一意制約(複数項目)作成情報」にレコードを登録
         retbool, result_code, msg_args = _insert_t_menu_unique_constraint(objdbca, menu_data)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 「パラメータシートロール作成情報」にレコードを登録
         menu_name = menu_data.get('menu_name')
         role_list = menu_data.get('role_list')
         retbool, result_code, msg_args = _insert_t_menu_role(objdbca, menu_name, role_list)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 「パラメータシート作成履歴」にレコードを登録
         status_id = "1"  # (1:未実行)
         create_type = "1"  # (1:新規作成)
         retbool, result_code, msg_args, history_id = _insert_t_menu_create_history(objdbca, menu_create_id, status_id, create_type, user_id)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except AppException as e:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
         # エラー判定
-        if len(e.args) == 2:
+        if len(e.args) >= 2:
             # result_codeとmsg_argsを取得
             result_code = '{}'.format(e.args[0])
             msg_args = eval('{}'.format(e.args[1]))
@@ -636,7 +647,7 @@ def _create_new_execute(objdbca, create_param):  # noqa: C901
             result_code = '999-99999'
             log_msg_args = []
             api_msg_args = []
-        raise AppException(result_code, log_msg_args, api_msg_args)  # noqa: F405
+        raise AppException(result_code, log_msg_args, api_msg_args)
 
     result_data = {
         'menu_name_rest': menu_name_rest,
@@ -679,12 +690,22 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
         objdbca.db_transaction_start()
 
         # 更新対象テーブルをロック
-        objdbca.table_lock([t_menu_define, t_menu_column, t_menu_column_group, t_menu_role, t_menu_unique_constraint, t_menu_other_link, t_menu_reference_item])
+        objdbca.table_lock(
+            [
+                t_menu_define,
+                t_menu_column,
+                t_menu_column_group,
+                t_menu_role,
+                t_menu_unique_constraint,
+                t_menu_other_link,
+                t_menu_reference_item
+            ]
+        )
 
         # 登録前バリデーションチェック
         retbool, result_code, msg_args = _check_before_registar_validate(objdbca, menu_data, column_data_list)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 対象の「パラメータシート定義一覧」のuuidおよびメニュー名を取得
         menu_create_id = menu_data.get('menu_create_id')
@@ -694,19 +715,19 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
         current_t_menu_define = objdbca.table_select(t_menu_define, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         if not current_t_menu_define:
             # 「パラメータシート定義一覧」に対象のmenu_create_idのレコードが存在しない場合
-            raise Exception("499-00703", ["menu_create_id"])  # 対象keyの値が不正です。(key: {})
+            raise AppException("499-00703", ["menu_create_id"])  # 対象keyの値が不正です。(key: {})
         current_t_menu_define = current_t_menu_define[0]
 
         # 「パラメータシート定義一覧」のレコードを更新
         retbool, result_code, msg_args = _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # カラムグループ用データがある場合、「カラムグループ作成情報」にレコードを登録
         if group_data_list:
             retbool, result_code, msg_args = _insert_t_menu_column_group(objdbca, group_data_list)
             if not retbool:
-                raise Exception(result_code, msg_args)
+                raise AppException(result_code, msg_args)
 
         # 現在の「パラメータシート項目作成情報」のレコードを取得
         current_t_menu_column_list = objdbca.table_select(t_menu_column, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
@@ -714,17 +735,17 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
         # 「パラメータシート項目作成情報」から未使用となる項目のレコードを廃止
         retbool, result_code, msg_args = _disuse_t_menu_column(objdbca, current_t_menu_column_list, column_data_list)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 「パラメータシート項目作成情報」から更新対象のレコードを更新
         retbool, result_code, msg_args = _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column_data_list, type_name)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 「パラメータシート項目作成情報」に新規追加項目用レコードを登録
         retbool, result_code, msg_args = _insert_t_menu_column(objdbca, menu_data, column_data_list)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # 現在の「一意制約(複数項目)作成情報」のレコードを取得
         current_t_menu_unique_constraint = objdbca.table_select(t_menu_unique_constraint, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])  # noqa: E501
@@ -735,20 +756,20 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
             target_record = current_t_menu_unique_constraint[0]
             retbool, result_code, msg_args = _update_t_menu_unique_constraint(objdbca, menu_data, target_record)
             if not retbool:
-                raise Exception(result_code, msg_args)
+                raise AppException(result_code, msg_args)
 
         # 「一意制約(複数項目)」の値がない、かつ「一意制約(複数項目)作成情報」にレコードが存在する場合、レコードを廃止
         elif current_t_menu_unique_constraint and not unique_constraint:
             target_record = current_t_menu_unique_constraint[0]
             retbool, result_code, msg_args = _disuse_t_menu_unique_constraint(objdbca, target_record)
             if not retbool:
-                raise Exception(result_code, msg_args)
+                raise AppException(result_code, msg_args)
 
         # 「一意制約(複数項目)」の値があり、かつ「一意制約(複数項目)作成情報」にレコードが存在しない場合、レコードを登録
         elif not current_t_menu_unique_constraint and unique_constraint:
             retbool, result_code, msg_args = _insert_t_menu_unique_constraint(objdbca, menu_data)
             if not retbool:
-                raise Exception(result_code, msg_args)
+                raise AppException(result_code, msg_args)
 
         # 「ロール選択」の値を取得
         role_list = menu_data.get('role_list')
@@ -771,14 +792,14 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
         if list(add_role_list):
             retbool, result_code, msg_args = _insert_t_menu_role(objdbca, menu_name, list(add_role_list))
             if not retbool:
-                raise Exception(result_code, msg_args)
+                raise AppException(result_code, msg_args)
 
         # 廃止するロールの対象一覧を取得し、レコードを廃止
         disuse_role_list = set(current_role_list) - set(role_list)
         if list(disuse_role_list):
             retbool, result_code, msg_args = _disuse_t_menu_role(objdbca, list(disuse_role_list), current_role_dict)
             if not retbool:
-                raise Exception(result_code, msg_args)
+                raise AppException(result_code, msg_args)
 
         # 「パラメータシート作成履歴」にレコードを登録
         status_id = "1"  # (1:未実行)
@@ -790,17 +811,17 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
             create_type = "3"  # (3:編集)
         retbool, result_code, msg_args, history_id = _insert_t_menu_create_history(objdbca, menu_create_id, status_id, create_type, user_id)
         if not retbool:
-            raise Exception(result_code, msg_args)
+            raise AppException(result_code, msg_args)
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except AppException as e:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
         # エラー判定
-        if len(e.args) == 2:
+        if len(e.args) >= 2:
             # result_codeとmsg_argsを取得
             result_code = '{}'.format(e.args[0])
             msg_args = eval('{}'.format(e.args[1]))
@@ -811,7 +832,7 @@ def _create_exist_execute(objdbca, create_param, type_name):  # noqa: C901
             result_code = '999-99999'
             log_msg_args = []
             api_msg_args = []
-        raise AppException(result_code, log_msg_args, api_msg_args)  # noqa: F405
+        raise AppException(result_code, log_msg_args, api_msg_args)
 
     result_data = {
         'menu_name_rest': menu_name_rest,
@@ -869,12 +890,12 @@ def _insert_t_menu_define(objdbca, menu_data):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # 登録されたレコードのUUIDを保管
         menu_create_id = exec_result[1].get('uuid')
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args, None
@@ -903,12 +924,12 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         # 更新対象レコードの「パラメータシート作成状態」が「1:未作成」の場合「初期化」「編集」はできないのでエラー判定
         menu_create_done_status = str(current_t_menu_define.get('MENU_CREATE_DONE_STATUS'))
         if (type_name == 'edit') and menu_create_done_status == "1":
-            raise Exception("499-00709", [])  # 「パラメータシート定義一覧」の更新対象のレコードの「パラメータシート作成状態」が「未作成」の場合「初期化」および「編集」は実行できません
+            raise AppException("499-00709", [])  # 「パラメータシート定義一覧」の更新対象のレコードの「パラメータシート作成状態」が「未作成」の場合「初期化」および「編集」は実行できません
 
         # 更新対象レコードの「パラメータシート作成状態」が「2:作成済み」の場合「新規作成」はできないのでエラー判定
         menu_create_done_status = str(current_t_menu_define.get('MENU_CREATE_DONE_STATUS'))
         if type_name == 'create_new' and menu_create_done_status == "2":
-            raise Exception("499-00710", [])  # 「パラメータシート定義一覧」の更新対象のレコードの「パラメータシート作成状態」が「作成済み」の場合「新規作成」は実行できません
+            raise AppException("499-00710", [])  # 「パラメータシート定義一覧」の更新対象のレコードの「パラメータシート作成状態」が「作成済み」の場合「新規作成」は実行できません
 
         # 各種メニュー名称を取得
         menu_name_ja = menu_data.get('menu_name')
@@ -932,7 +953,7 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         if type_name == 'initialize' or type_name == 'edit':
             current_menu_name_rest = current_t_menu_define.get('MENU_NAME_REST')
             if not current_menu_name_rest == menu_name_rest:
-                raise Exception("499-00704", ["menu_name_rest"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
+                raise AppException("499-00704", ["menu_name_rest"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
         # 「編集」の場合のみチェックするバリデーション
         if type_name == 'edit':
@@ -949,15 +970,15 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
 
             current_sheet_type_name = sheet_type_dict[current_sheet_type]  # シートタイプ名称
             if not current_sheet_type_name == sheet_type:
-                raise Exception("499-00704", ["sheet_type"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
+                raise AppException("499-00704", ["sheet_type"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
             vertical_id = "1" if vertical == "True" else "0"
             if not current_vertical == vertical_id:
-                raise Exception("499-00704", ["vertical"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
+                raise AppException("499-00704", ["vertical"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
             hostgroup_id = "1" if hostgroup == "True" else "0"
             if not current_hostgroup == hostgroup_id:
-                raise Exception("499-00704", ["hostgroup"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
+                raise AppException("499-00704", ["hostgroup"])  # 「初期化」「編集」の際は対象の値を変更できません。(対象: {})
 
         # 対象のuuidを取得
         menu_create_id = menu_data.get('menu_create_id')
@@ -1011,9 +1032,9 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1060,7 +1081,7 @@ def _insert_t_menu_column_group(objdbca, group_data_list):
 
                 # 対象となる親カラムグループIDが存在しない場合
                 if not target_parent:
-                    raise Exception("499-00703", ["group"])  # 対象keyの値が不正です。(key: {})
+                    raise AppException("499-00703", ["group"])  # 対象keyの値が不正です。(key: {})
 
                 # 『親フルカラムグループ/カラムグループ名』の命名規則でフルカラムグループ名を作成。
                 parent_full_name_ja = target_parent[0].get('FULL_COL_GROUP_NAME_JA')
@@ -1099,12 +1120,12 @@ def _insert_t_menu_column_group(objdbca, group_data_list):
             if not exec_result[0]:
                 result_msg = _format_loadtable_msg(exec_result[2])
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
-                raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+                raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
             # 現在登録されている「カラムグループ作成情報」のレコード一覧を更新
             column_group_list = objdbca.table_select(t_menu_column_group, 'WHERE DISUSE_FLAG = %s', [0])
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1237,9 +1258,9 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                 if not exec_result[0]:
                     result_msg = _format_loadtable_msg(exec_result[2])
                     result_msg = json.dumps(result_msg, ensure_ascii=False)
-                    raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+                    raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1328,19 +1349,19 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     current_column_class_id = target_record.get('COLUMN_CLASS')
                     current_column_class_name = column_class_dict.get(current_column_class_id)
                     if not column_class == current_column_class_name:
-                        raise Exception("499-00706", [item_name, "column_class"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+                        raise AppException("499-00706", [item_name, "column_class"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # 「必須」が変更されている場合エラー判定
                     current_required_id = str(target_record.get('REQUIRED'))
                     update_required_id = "1" if column_data.get('required') == "True" else "0"
                     if not current_required_id == update_required_id:
-                        raise Exception("499-00706", [item_name, "required"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+                        raise AppException("499-00706", [item_name, "required"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # 「一意制約」が変更されている場合エラー判定
                     current_uniqued_id = str(target_record.get('UNIQUED'))
                     update_uniqued_id = "1" if column_data.get('uniqued') == "True" else "0"
                     if not current_uniqued_id == update_uniqued_id:
-                        raise Exception("499-00706", [item_name, "uniqued"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+                        raise AppException("499-00706", [item_name, "uniqued"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # カラムクラス「文字列(単一行)」の場合のバリデーションチェック
                     if column_class == "SingleTextColumn":
@@ -1348,7 +1369,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         current_single_string_maximum_bytes = int(target_record.get('SINGLE_MAX_LENGTH'))
                         update_single_string_maximum_bytes = int(column_data.get('single_string_maximum_bytes'))
                         if current_single_string_maximum_bytes > update_single_string_maximum_bytes:
-                            raise Exception("499-00707", [item_name, "single_string_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                            raise AppException("499-00707", [item_name, "single_string_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                     # カラムクラス「文字列(複数行)」の場合のバリデーションチェック
                     if column_class == "MultiTextColumn":
@@ -1356,7 +1377,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         current_multi_string_maximum_bytes = int(target_record.get('MULTI_MAX_LENGTH'))
                         update_multi_string_maximum_bytes = int(column_data.get('multi_string_maximum_bytes'))
                         if current_multi_string_maximum_bytes > update_multi_string_maximum_bytes:
-                            raise Exception("499-00707", [item_name, "multi_string_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                            raise AppException("499-00707", [item_name, "multi_string_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                     # カラムクラス「整数」の場合のバリデーションチェック
                     if column_class == "NumColumn":
@@ -1365,14 +1386,14 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         # 最小値が既存の値よりも上回っている場合エラー判定
                         if current_integer_minimum_value and update_integer_minimum_value:
                             if current_integer_minimum_value < update_integer_minimum_value:
-                                raise Exception("499-00708", [item_name, "integer_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
+                                raise AppException("499-00708", [item_name, "integer_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
 
                         current_integer_maximum_value = None if not target_record.get('NUM_MAX') else int(target_record.get('NUM_MAX'))
                         update_integer_maximum_value = None if not column_data.get('integer_maximum_value') else int(column_data.get('integer_maximum_value'))  # noqa: E501
                         # 最大値が既存の値よりも下回っている場合エラー判定
                         if current_integer_maximum_value and update_integer_maximum_value:
                             if current_integer_maximum_value > update_integer_maximum_value:
-                                raise Exception("499-00707", [item_name, "integer_maximum_value"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                                raise AppException("499-00707", [item_name, "integer_maximum_value"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                     # カラムクラス「小数」の場合のバリデーションチェック
                     if column_class == "FloatColumn":
@@ -1381,21 +1402,21 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         # 最小値が既存の値よりも上回っている場合エラー判定
                         if current_decimal_minimum_value and update_decimal_minimum_value:
                             if current_decimal_minimum_value < update_decimal_minimum_value:
-                                raise Exception("499-00708", [item_name, "decimal_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
+                                raise AppException("499-00708", [item_name, "decimal_minimum_value"])  # 「編集」の際は既存項目の対象の値が上回る変更はできません。(項目: {}, 対象: {})
 
                         current_decimal_maximum_value = None if not target_record.get('FLOAT_MAX') else int(target_record.get('FLOAT_MAX'))
                         update_decimal_maximum_value = None if not column_data.get('decimal_maximum_value') else int(column_data.get('decimal_maximum_value'))  # noqa: E501
                         # 最大値が既存の値よりも下回っている場合エラー判定
                         if current_decimal_maximum_value and update_decimal_maximum_value:
                             if current_decimal_maximum_value > update_decimal_maximum_value:
-                                raise Exception("499-00707", [item_name, "decimal_maximum_value"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                                raise AppException("499-00707", [item_name, "decimal_maximum_value"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                         current_decimal_digit = None if not target_record.get('FLOAT_DIGIT') else int(target_record.get('FLOAT_DIGIT'))
                         update_decimal_digit = None if not column_data.get('decimal_digit') else int(column_data.get('decimal_digit'))  # noqa: E501
                         # 桁数が既存の値よりも下回っている場合エラー判定
                         if current_decimal_digit and update_decimal_digit:
                             if current_decimal_digit > update_decimal_digit:
-                                raise Exception("499-00707", [item_name, "decimal_digit"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                                raise AppException("499-00707", [item_name, "decimal_digit"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                     # カラムクラス「プルダウン選択」の場合のバリデーションチェック
                     if column_class == "IDColumn":
@@ -1408,7 +1429,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                         # pulldown_selectionが変更されている場合エラー判定
                         if not update_pulldown_selection == current_pulldown_selection:
-                            raise Exception("499-00706", [item_name, "pulldown_selection"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+                            raise AppException("499-00706", [item_name, "pulldown_selection"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                         # 現在設定されているIDのreference_itemを取得
                         current_reference_item = target_record.get('REFERENCE_ITEM')
@@ -1421,7 +1442,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                         # reference_itemが変更されている場合エラー判定
                         if not current_reference_item == update_reference_item:
-                            raise Exception("499-00706", [item_name, "reference_item"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+                            raise AppException("499-00706", [item_name, "reference_item"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # カラムクラス「パスワード」の場合のバリデーションチェック
                     if column_class == "PasswordColumn":
@@ -1429,7 +1450,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         current_password_maximum_bytes = int(target_record.get('PASSWORD_MAX_LENGTH'))
                         update_password_maximum_bytes = int(column_data.get('password_maximum_bytes'))
                         if current_password_maximum_bytes > update_password_maximum_bytes:
-                            raise Exception("499-00707", [item_name, "password_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                            raise AppException("499-00707", [item_name, "password_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                     # カラムクラス「ファイルアップロード」の場合のバリデーションチェック
                     if column_class == "FileUploadColumn":
@@ -1437,7 +1458,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         current_file_upload_maximum_bytes = int(target_record.get('FILE_UPLOAD_MAX_SIZE'))
                         update_file_upload_maximum_bytes = int(column_data.get('file_upload_maximum_bytes'))
                         if current_file_upload_maximum_bytes > update_file_upload_maximum_bytes:
-                            raise Exception("499-00707", [item_name, "file_upload_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                            raise AppException("499-00707", [item_name, "file_upload_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                     # カラムクラス「リンク」の場合のバリデーションチェック
                     if column_class == "HostInsideLinkTextColumn":
@@ -1445,7 +1466,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                         current_link_maximum_bytes = int(target_record.get('LINK_MAX_LENGTH'))
                         update_link_maximum_bytes = int(column_data.get('link_maximum_bytes'))
                         if current_link_maximum_bytes > update_link_maximum_bytes:
-                            raise Exception("499-00707", [item_name, "link_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
+                            raise AppException("499-00707", [item_name, "link_maximum_bytes"])  # 「編集」の際は既存項目の対象の値が下回る変更はできません。(項目: {}, 対象: {})
 
                     # カラムクラス「パラメータシート参照」の場合のバリデーションチェック
                     if column_class == "ParameterSheetReference":
@@ -1458,7 +1479,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                         # pulldown_selectionが変更されている場合エラー判定
                         if not update_parameter_sheet_reference == current_parameter_sheet_reference:
-                            raise Exception("499-00706", [item_name, "parameter_sheet_reference"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
+                            raise AppException("499-00706", [item_name, "parameter_sheet_reference"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                 # 更新用パラメータを作成
                 parameter = {
@@ -1476,10 +1497,9 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     "last_update_date_time": last_update_date_time  # 最終更新日時
                 }
 
-                # カラムグループがある場合
+                # カラムグループを挿入(無い場合はNoneにする)
                 column_group = column_data.get('column_group')
-                if column_group:
-                    parameter["column_group"] = column_group  # カラムグループ(「カラムグループ作成情報」のフルカラムグループ名)
+                parameter["column_group"] = column_group if column_group else None  # カラムグループ(「カラムグループ作成情報」のフルカラムグループ名)
 
                 # 各カラムクラスに対応するparameterにNoneを挿入
                 parameter["single_string_maximum_bytes"] = None  # 文字列(単一行) 最大バイト数
@@ -1583,9 +1603,9 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                 if not exec_result[0]:
                     result_msg = _format_loadtable_msg(exec_result[2])
                     result_msg = json.dumps(result_msg, ensure_ascii=False)
-                    raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+                    raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1644,9 +1664,9 @@ def _disuse_t_menu_column(objdbca, current_t_menu_column_list, column_data_list)
                 if not exec_result[0]:
                     result_msg = _format_loadtable_msg(exec_result[2])
                     result_msg = json.dumps(result_msg, ensure_ascii=False)
-                    raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+                    raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1686,13 +1706,13 @@ def _insert_t_menu_unique_constraint(objdbca, menu_data):
             if not exec_result[0]:
                 result_msg = _format_loadtable_msg(exec_result[2])
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
-                raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+                raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         else:
             # データが無い場合、登録せずreturn
             return True, None, None
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1737,9 +1757,9 @@ def _update_t_menu_unique_constraint(objdbca, menu_data, target_record):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1777,9 +1797,9 @@ def _disuse_t_menu_unique_constraint(objdbca, target_record):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1814,9 +1834,9 @@ def _insert_t_menu_role(objdbca, menu_name, role_list):
             if not exec_result[0]:
                 result_msg = _format_loadtable_msg(exec_result[2])
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
-                raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+                raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1854,9 +1874,9 @@ def _disuse_t_menu_role(objdbca, role_list, current_role_dict):
             if not exec_result[0]:
                 result_msg = _format_loadtable_msg(exec_result[2])
                 result_msg = json.dumps(result_msg, ensure_ascii=False)
-                raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+                raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -1891,7 +1911,7 @@ def _insert_t_menu_create_history(objdbca, menu_create_id, status_id, create_typ
         ret = objdbca.table_insert(t_menu_create_history, data_list, primary_key_name)
         history_id = ret[0].get('HISTORY_ID')
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args, None
@@ -1935,33 +1955,33 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
 
         # シートタイプが「2: データシート」かつ、登録する項目が無い場合エラー判定
         if sheet_id == "2" and not column_data_list:
-            raise Exception("499-00711", [])  # シートタイプが「データシート」の場合、項目数が0件のメニューを作成できません。
+            raise AppException("499-00711", [])  # シートタイプが「データシート」の場合、項目数が0件のメニューを作成できません。
 
         # シートタイプが「3: パラメータシート（オペレーションあり）」かつ、登録する項目が無い場合エラー判定
         if sheet_id == "3" and not column_data_list:
-            raise Exception("499-00714", [])  # シートタイプが「パラメータシート（オペレーションあり）」の場合、項目数が0件のメニューを作成できません。
+            raise AppException("499-00714", [])  # シートタイプが「パラメータシート（オペレーションあり）」の場合、項目数が0件のメニューを作成できません。
 
         # 「バンドル」有効かつ、登録する項目が無い場合エラー判定
         if vertical == "True" and not column_data_list:
-            raise Exception("499-00712", [])  # 「バンドル」が有効の場合、項目数が0件のメニューを作成できません。
+            raise AppException("499-00712", [])  # 「バンドル」が有効の場合、項目数が0件のメニューを作成できません。
 
         # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
         if sheet_id == "2" and hostgroup == "True":
-            raise Exception("499-00713", [])
+            raise AppException("499-00713", [])
 
         # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」以外で「パラメータシート参照」項目を利用している場合
         if not sheet_id == "1":
             for column_data in column_data_list.values():
                 column_class = column_data.get('column_class')
                 if column_class == "ParameterSheetReference":
-                    raise Exception("499-00715", [])
+                    raise AppException("499-00715", [])
 
         # ロールを取得
         role_list = menu_data.get('role_list')
         if not role_list:
-            raise Exception("499-00703", ["role_list"])  # 対象keyの値が不正です。(key: {})
+            raise AppException("499-00703", ["role_list"])  # 対象keyの値が不正です。(key: {})
 
-    except Exception as e:
+    except AppException as e:
         result_code = e.args[0]
         msg_args = e.args[1]
         return False, result_code, msg_args
@@ -2442,7 +2462,7 @@ def update_filter_terms(objdbca, parameter):
         if not ret_data:
             status_code = 'MSG-20258'
             msg = g.appmsg.get_api_message(status_code, [])
-            raise Exception("499-00201", [msg])
+            raise AppException("499-00201", [msg])
         else:
             result = {
                 "Discard": '0',
@@ -2468,7 +2488,7 @@ def update_filter_terms(objdbca, parameter):
             status_code = 'MSG-20258'
             msg_args = [",".join('uuid')]
             msg = g.appmsg.get_api_message(status_code, [msg_args])
-            raise Exception("499-00201", [msg])
+            raise AppException("499-00201", [msg])
         else:
             result = {
                 "Discard": '0',
@@ -2511,7 +2531,7 @@ def delete_filter_terms(objdbca, uuid):
         status_code = 'MSG-20258'
         msg_args = [",".join('uuid')]
         msg = g.appmsg.get_api_message(status_code, [msg_args])
-        raise Exception("499-00201", [msg])
+        raise AppException("499-00201", [msg])
     else:
         result = {
             "Discard": '1',
@@ -2579,7 +2599,7 @@ def validate_check(parameter, edit, objdbca):
         try:
             if not parameter['filter_json'] == '':
                 json.loads(parameter['filter_json'])
-        except Exception:
+        except AppException:
             msg = g.appmsg.get_api_message("MSG-20261")
             log_msg_args = [msg]
             api_msg_args = [msg]
@@ -2634,7 +2654,7 @@ def validate_check(parameter, edit, objdbca):
         try:
             if not parameter['filter_json'] == '':
                 json.loads(parameter['filter_json'])
-        except Exception:
+        except AppException:
             msg = g.appmsg.get_api_message("MSG-20261")
             log_msg_args = [msg]
             api_msg_args = [msg]
@@ -2669,7 +2689,7 @@ def validate_check(parameter, edit, objdbca):
         try:
             lastupdatetime_parameter = lastupdatetime_parameter.replace('-', '/')
             lastupdatetime_parameter = datetime.datetime.strptime(lastupdatetime_parameter, '%Y/%m/%d %H:%M:%S.%f')
-        except Exception:
+        except AppException:
             msg = g.appmsg.get_api_message('MSG-00028', [lastupdatetime_parameter])
             log_msg_args = [msg]
             api_msg_args = [msg]

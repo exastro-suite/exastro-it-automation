@@ -28,3 +28,9 @@ from .json_id_class import JsonIDColumn  # noqa: F401
 from .password_id_class import PasswordIDColumn  # noqa: F401
 from .json_password_id_class import JsonPasswordIDColumn  # noqa: F401
 from .user_id_class import UserIDColumn  # noqa: F401
+from .notification_id_class import NotificationIDColumn  # noqa: F401
+from .multi_select_id_class import MultiSelectIDColumn  # noqa: F401
+from .color_code_class import ColorCodeColumn  # noqa: F401
+from .individual_dialog_column_class import IndividualDialogColumn  # noqa: F401
+from .filter_condition_dialog_column import FilterConditionSettingColumn  # noqa: F401
+from .conclusion_event_dialog_column import ConclusionEventSettingColumn  # noqa: F401

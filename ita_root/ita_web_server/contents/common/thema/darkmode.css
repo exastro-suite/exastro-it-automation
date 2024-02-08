@@ -8,7 +8,7 @@
 /* Main color */
 --mainColor100:#00224E;--mainColor95:#082853;--mainColor90:#0F2F58;--mainColor85:#17355C;--mainColor80:#1F3C61;--mainColor75:#264266;--mainColor70:#2E486B;--mainColor65:#364F6F;--mainColor60:#3D5574;--mainColor55:#455C79;--mainColor50:#4D627E;--mainColor45:#546882;--mainColor40:#5C6F87;--mainColor35:#63758C;--mainColor30:#6B7C91;--mainColor25:#738295;--mainColor20:#7A889A;--mainColor15:#828F9F;--mainColor10:#8A95A4;--mainColor5:#919CA8;--mainColor0:#99A2AD;
 
-/* Accent color */ 
+/* Accent color */
 --accentColor100:#FF821E;--accentColor95:#FF8829;--accentColor90:#FF8F35;--accentColor85:#FF9540;--accentColor80:#FF9B4B;--accentColor75:#FFA156;--accentColor70:#FFA862;--accentColor65:#FFAE6D;--accentColor60:#FFB478;--accentColor55:#FFBA83;--accentColor50:#FFC18F;--accentColor45:#FFC79A;--accentColor40:#FFCDA5;--accentColor35:#FFD3B0;--accentColor30:#FFDABC;--accentColor25:#FFE0C7;--accentColor20:#FFE6D2;--accentColor15:#FFECDD;--accentColor10:#FFF3E9;--accentColor5:#FFF9F4;--accentColor0:#FFFFFF;
 
 /* Black color */
@@ -36,7 +36,7 @@
 
 body {
 background-color: #333;
-} 
+}
 
 .contentHeader {
 background-image: linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,0) 40% );
@@ -110,7 +110,9 @@ color: var(--black30);
 .select2-container--default .select2-selection--single,
 .noSelect, .tableEditInputSelectValue,
 .checkboxLabel, .radioLabel,
-.checkboxTextMark, .radioTextMark {
+.checkboxTextMark, .radioTextMark,
+.tableEditInputSelectValue,
+.tableEditInputMultipleSelectValue {
 background-color: #000;
 border-color: #111;
 color: #DDD;
@@ -367,15 +369,6 @@ color: #DDD;
 .commonSubTitle::after {
 background-image: linear-gradient( transparent 6px, var(--mainColor90) 6px, var(--mainColor90) 10px, transparent 10px ), linear-gradient( 90deg, transparent 6px, var(--mainColor90) 6px, var(--mainColor90) 10px, transparent 10px );
 }
-.containerLoading,
-.tableLoading {
-background-color: rgba( 0,0,0,.2 );
-}
-.containerLoading::after,
-.tableLoading::after {
-border: 24px solid rgba(255,255,255,.1);
-border-bottom-color: rgba(255,255,255,.3);
-}
 .errorLogTab .contentMenuLink.tabOpen .contentMenuLinkInner {
 color: #DDD;
 }
@@ -477,27 +470,34 @@ background-color: #132803;
 background-color: #280000;
 }
 
-.userInfoContainer {
+.headerMenuInfoContainer {
 background-color: #222528;
 border-color: #111;
 border-top-color: var(--mainColor80);
 color: #DDD;
 }
-.userInfoBlock {
+.headerMenuInfoType {
+background-color: var(--mainColor80);
+}
+.headerMenuInfoBlock {
 border-color: #111;
 }
-.userInfoMenu {
+.headerMenuInfoMenu {
 background-color: rgba(255,255,255,.1);
 }
-.userInfoWorkspaceButton {
+.headerMenuInfoWorkspaceButton {
 color: #DDD;
 }
-.userInfoWorkspaceButton:hover {
+.headerMenuInfoWorkspaceButton:hover {
 background-color: rgba(255,255,255,.1);
 }
-.userInfoWorkspaceButton:hover::after {
+.headerMenuInfoWorkspaceButton:hover::after {
 border-top-color: var(--accentColor100);
 border-right-color: var(--accentColor100);
+}
+.headerMenuInfoCurrent .headerMenuInfoWorkspaceButton {
+background-color: rgba(0,0,0,.3);
+color: rgba(255,255,255,.4);
 }
 .processingContainer::after {
 background-color: #666;
@@ -599,8 +599,8 @@ background-color: #990D00;
 background-color: #117A2C;
 }
 
-.userinfoWorkspaceItem,
-.userinfoRoleItem,
+.headerMenuInfoWorkspaceItem,
+.headerMenuInfoRoleItem,
 .tableHorizontal .tableWrap .tBodyTh,
 .tableHorizontal .tableWrap .tBodyTd {
 border-color: #111;

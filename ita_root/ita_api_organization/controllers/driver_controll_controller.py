@@ -17,10 +17,10 @@ import connexion
 from flask import g
 
 from common_libs.common import *  # noqa: F403
-from common_libs.api import api_filter
-from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
-from libs import driver_controll, menu_filter
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_info
+from common_libs.api import api_filter
+
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.AnslConstClass import AnslConst
 from common_libs.ansible_driver.classes.AnspConstClass import AnspConst
@@ -29,9 +29,13 @@ from common_libs.ansible_driver.functions.rest_libs import insert_execution_list
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
-from common_libs.terraform_driver.common.Execute import insert_execution_list as t_insert_execution_list, get_execution_info as t_get_execution_info, reserve_cancel as t_reserve_cancel  # noqa: E501
+from common_libs.terraform_driver.common.Execute import insert_execution_list as t_insert_execution_list, get_execution_info as t_get_execution_info, reserve_cancel as t_reserve_cancel, get_populated_result_data as t_get_populated_result_data  # noqa: E501
 from common_libs.terraform_driver.cloud_ep.Execute import execution_scram as t_cloud_ep_execution_scram
 from common_libs.terraform_driver.cli.Execute import execution_scram as t_cli_execution_scram
+
+from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
+from libs import driver_controll, menu_filter
+
 
 @api_filter
 def get_driver_execute_data(organization_id, workspace_id, menu, execution_no):  # noqa: E501
@@ -85,6 +89,116 @@ def get_driver_execute_data(organization_id, workspace_id, menu, execution_no): 
     else:
         # Terraform用 作業実行の状態取得
         result = t_get_execution_info(objdbca, target[menu], execution_no)
+
+    return result,
+
+@api_filter
+def get_execute_populated_data(organization_id, workspace_id, menu, execution_no):  # noqa: E501
+    """get_execute_populated_data
+
+    作業実行の投入データ取得 # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param menu: メニュー名
+    :type menu: str
+    :param execution_no: 実行No
+    :type execution_no: str
+
+    :rtype: InlineResponse20011
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['12']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
+    target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
+                                                        'table_name': AnslConst.vg_exe_ins_msg_table_name,
+                                                        'ansConstObj': AnslConst()},
+              'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
+                                                         'table_name': AnspConst.vg_exe_ins_msg_table_name,
+                                                         'ansConstObj': AnspConst()},
+              'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
+                                                      'table_name': AnsrConst.vg_exe_ins_msg_table_name,
+                                                      'ansConstObj': AnsrConst()},
+              TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
+                                                  'table_name': TFCloudEPConst.T_EXEC_STS_INST},
+              TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
+                                              'table_name': TFCLIConst.T_EXEC_STS_INST}
+              }
+
+    if 'ansible' in menu:
+        # Ansible用
+        result = driver_controll.get_populated_result_data(objdbca, target[menu], execution_no, 'populated')
+    else:
+        # Terraform用 投入データ取得
+        result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'populated')
+
+    return result,
+
+@api_filter
+def get_execute_result_data(organization_id, workspace_id, menu, execution_no):  # noqa: E501
+    """get_execute_result_data
+
+    作業実行の結果データ取得 # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param menu: メニュー名
+    :type menu: str
+    :param execution_no: 実行No
+    :type execution_no: str
+
+    :rtype: InlineResponse20011
+    """
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    # メニューの存在確認
+    check_menu_info(menu, objdbca)
+
+    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+    sheet_type_list = ['12']
+    check_sheet_type(menu, sheet_type_list, objdbca)
+
+    # メニューに対するロール権限をチェック
+    check_auth_menu(menu, objdbca)
+
+    # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
+    target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
+                                                        'table_name': AnslConst.vg_exe_ins_msg_table_name,
+                                                        'ansConstObj': AnslConst()},
+              'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
+                                                         'table_name': AnspConst.vg_exe_ins_msg_table_name,
+                                                         'ansConstObj': AnspConst()},
+              'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
+                                                      'table_name': AnsrConst.vg_exe_ins_msg_table_name,
+                                                      'ansConstObj': AnsrConst()},
+              TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
+                                                  'table_name': TFCloudEPConst.T_EXEC_STS_INST},
+              TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
+                                              'table_name': TFCLIConst.T_EXEC_STS_INST}
+              }
+
+    if 'ansible' in menu:
+        # Ansible用
+        result = driver_controll.get_populated_result_data(objdbca, target[menu], execution_no, 'result')
+    else:
+        # Terraform用 結果データ取得
+        result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'result')
 
     return result,
 

@@ -705,6 +705,14 @@ class Column():
                         convert_val = tmp_result[2]
                     where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
                     bind_value_list = [convert_val]
+                elif self.class_name in ["NotificationIDColumn", "FilterConditionSettingColumn", "ConclusionEventSettingColumn"]:
+                    # NotificationIDColumn・FilterConditionSettingColumn・ConclusionEventSettingColumnの場合はID変換後の値と比較
+                    convert_val = val
+                    tmp_result = self.convert_value_input(val)
+                    if tmp_result[0] is True:
+                        convert_val = tmp_result[2]
+                    where_str = " WHERE `DISUSE_FLAG` = 0 AND `{}` = %s ".format(self.col_name)
+                    bind_value_list = [convert_val]
                 else:
                     # 通常のカラムの場合
                     if not val:

@@ -149,6 +149,8 @@ setUi() {
             } else {
                 getMessage = module.messageid_en();
             }
+
+            if ( ui.storageUser ) ui.headerMenu( false );
             set();
         });
     } else {
@@ -418,7 +420,7 @@ setSideMenu() {
 }
 /*
 ##################################################
-   サイドメニューデ階層データの作成
+   サイドメニュー階層データの作成
 ##################################################
 */
 createMenuGroupList() {
@@ -449,13 +451,13 @@ createMenuGroupList() {
                 if ( child.menus && child.menus.length ) {
                     ui.dispSeqSort( child.menus );
                     if ( child.menus[0].menu_name_rest ) {
-                         child.main_menu_rest = child.menus[0].menu_name_rest;
+                        child.main_menu_rest = child.menus[0].menu_name_rest;
                     }
                     if ( ui.menuSecondary.indexOf( child.id ) !== -1 ) {
                         child.secondary_open_flag = true;
                     }
                     for ( const menu of child.menus ) {
-                        if ( ui.params.menuNameRest === menu.menu_name_rest ) {
+                        if ( ui.params.menuNameRest !== undefined && ui.params.menuNameRest === menu.menu_name_rest ) {
                             child.secondary_open_flag = true;
                             ui.currentMenuGroupList = parent;
                         }
@@ -468,15 +470,17 @@ createMenuGroupList() {
 
         parent.main_menu_rest = null;
         let subRest = null;
+        let count = 0;
         for ( const menu of parent.menus ) {
-            if ( menu.menu_name_rest && parent.main_menu_rest === null ) {
+            if ( menu.menu_name_rest && parent.main_menu_rest === null && count === 0 ) {
                 parent.main_menu_rest = menu.menu_name_rest;
             } else if ( menu.menus && menu.menus.length && menu.menus[0].menu_name_rest && subRest === null ) {
                 subRest = menu.menus[0].menu_name_rest;
             }
-            if ( ui.currentMenuGroupList === null && ui.params.menuNameRest === menu.menu_name_rest ) {
+            if ( ui.currentMenuGroupList === null && ui.params.menuNameRest !== undefined && ui.params.menuNameRest === menu.menu_name_rest ) {
                 ui.currentMenuGroupList = parent;
             }
+            count++;
         }
         if ( !parent.main_menu_rest && subRest ) parent.main_menu_rest = subRest;
     }
@@ -950,6 +954,20 @@ sheetType() {
             case '25':
                 mn.parameterCollection();
             break;
+            // 26 : イベント履歴
+            case '26':
+                mn.$.content.addClass('tabContent');
+                mn.defaultMenu('standard', 'm');
+            break;
+            // 27 : イベントフロー
+            case '27':
+                mn.eventFlow();
+            break;
+            // 28 : 標準メニュー（ファイル）
+            case '28':
+                mn.$.content.addClass('tabContent');
+                mn.defaultMenu('standard', 'n', false);
+            break;
             // 99 : 独自メニュー
             case '99':
                 mn.customMenu();
@@ -966,25 +984,33 @@ sheetType() {
 headerMenu( readyFlag = true ) {
     const mn = this;
 
-    const html = `
-    <ul class="headerMenuList">
-        <li class="userInfomation headerMenuItem">${mn.userInfo()}</li>
-    </ul>`;
+    const workspaces = fn.cv( mn.rest.user.workspaces, []),
+          workspaceId = mn.params.workspaceId,
+          workspaceName = workspaces[ workspaceId ];
+
+
+    const html = `<ul class="headerMenuList">`
+        + `<li class="headerMenuInformation headerMenuItem">${mn.workspaceInfo()}</li>`
+        + `<li class="headerMenuInformation headerMenuItem">${mn.userInfo()}</li>`
+    + `</ul>`;
 
     mn.$.header.find('.headerMenu').html( html );
 
     mn.$.header.find('.headerMenuButton').on('click', function(){
         const $button = $( this ),
-              $userInfo = $button.next('.userInfoContainer');
+              $userInfo = $button.next('.headerMenuInfoContainer'),
+              $window = $( window );
 
         if ( $userInfo.is('.open') ) {
             $userInfo.removeClass('open');
+            $window.off('pointerdown.userInfo');
         } else {
             $userInfo.addClass('open');
-            const $window = $( window ), $iframe = mn.$.content.find('.customMenuIframe');
+            const $iframe = mn.$.content.find('.customMenuIframe');
+            const $closest = $button.closest('.headerMenuInformation');
 
             const close = function( e ) {
-                if ( !$( e.target ).closest('.userInfomation, .modalOverlay').length ) {
+                if ( !$( e.target ).closest( $closest ).length && !$( e.target ).closest('.modalOverlay').length ) {
                     $userInfo.removeClass('open');
                     $window.off('pointerdown.userInfo');
                     if ( $iframe.length ) $iframe.contents().off('pointerdown.userInfo');
@@ -996,17 +1022,17 @@ headerMenu( readyFlag = true ) {
     });
 
     // ワークスペース切替
-    mn.$.header.find('.userInfoWorkspaceButton').on('click', function(){
+    mn.$.header.find('.headerMenuInfoWorkspaceButton').on('click', function(){
         const workspaceId =  $( this ).attr('data-workspace');
         window.location.href = fn.getWorkspaceChangeUrl( workspaceId );
     });
 
     if ( !readyFlag ) {
-        mn.$.header.find('.userInfoMenuButton').prop('disabled', true );
+        mn.$.header.find('.headerMenuInfoMenuButton').prop('disabled', true );
     }
 
     // ボタン各種
-    mn.$.header.find('.userInfoMenuButton').on('click', function(){
+    mn.$.header.find('.headerMenuInfoMenuButton').on('click', function(){
         const $button = $( this ),
               type = $button.attr('data-type');
         switch ( type ) {
@@ -1039,7 +1065,64 @@ headerMenu( readyFlag = true ) {
 headerMenuReady() {
     const mn = this;
 
-    mn.$.header.find('.userInfoMenuButton').prop('disabled', false );
+    mn.$.header.find('.headerMenuInfoMenuButton').prop('disabled', false );
+}
+/*
+##################################################
+   Workspace infomation
+##################################################
+*/
+workspaceInfo() {
+    const mn = this,
+          workspaces = fn.cv( mn.rest.user.workspaces, [] ),
+          workspaceId = mn.params.workspaceId,
+          currentWorkspaceName = fn.cv( workspaces[workspaceId], '', true );
+
+    const workspaceList = [];
+    for ( const work in workspaces ) {
+        const
+        id = fn.escape( work ),
+        name = fn.cv( workspaces[work], '', true),
+        itemClassName = ( work === workspaceId )? "headerMenuInfoWorkspaceItem headerMenuInfoCurrent": "headerMenuInfoWorkspaceItem";
+        workspaceList.push(`<li class="${itemClassName}">`
+            + `<button class="headerMenuInfoWorkspaceButton" data-workspace="${id}">${name}</button>`
+        + `</li>`);
+    }
+
+    return `
+    <button class="headerMenuButton">
+        <span class="icon icon-workspace"></span>
+        <span class="headerMenuButtonName"><span class="headerMenuButtonNameText">${currentWorkspaceName}</span></span>
+    </button>
+    <div class="headerMenuInfoContainer">
+        <div class="headerMenuInfoBlock workspaceInfo">
+            <div class="headerMenuInfoBody">
+                <div class="headerMenuInfoType">Workspace</div>
+                <div class="headerMenuInfoName">${currentWorkspaceName}</div>
+                <div class="headerMenuInfoId">${fn.escape( workspaceId )}</div>
+                <span class="icon icon-workspace"></span>
+            </div>
+        </div>
+        <!-- ワークスペース -->
+        <div class="headerMenuInfoBlock headerMenuInfoWorkspace">
+            <div class="headerMenuInfoTitle">${fn.html.icon('workspace')} ${getMessage.FTE10005}</div>
+            <div class="headerMenuInfoBody">
+                <ul class="headerMenuInfoWorkspaceList">
+                    ${workspaceList.join('')}
+                </ul>
+            </div>
+        </div>
+        <!-- 設定など -->
+        <div class="headerMenuInfoBlock headerMenuInfoMenu">
+            <div class="headerMenuInfoBody">
+                <ul class="headerMenuInfoMenuList">
+                    <li class="headerMenuInfoMenuItem">
+                        ${fn.html.button( fn.html.icon('menuList') + getMessage.FTE10062, ['headerMenuInfoMenuButton', 'itaButton'], { type: 'platform', action: 'positive'})}
+                    </li>
+                </div>
+            </div>
+        </div>
+    </div>`;
 }
 /*
 ##################################################
@@ -1048,23 +1131,13 @@ headerMenuReady() {
 */
 userInfo() {
     const mn = this,
-          $user = mn.$.header.find('.userIndo'),
           name = fn.cv( mn.rest.user.user_name, '', true ),
           id = fn.cv( mn.rest.user.user_id, '', true ),
-          roles = fn.cv( mn.rest.user.roles, []),
-          workspaces = fn.cv( mn.rest.user.workspaces, []);
-
-    const workspaceList = [];
-
-    for ( const work in workspaces ) {
-        workspaceList.push(`<li class="userinfoWorkspaceItem">`
-            + `<button class="userInfoWorkspaceButton" data-workspace="${work}">${workspaces[work]}</button>`
-        + `</li>`);
-    }
+          roles = fn.cv( mn.rest.user.roles, []);
 
     const roleList = [];
     for ( const role of roles ) {
-        roleList.push(`<li class="userinfoRoleItem">`
+        roleList.push(`<li class="headerMenuInfoRoleItem">`
             + role
         + `</li>`);
     }
@@ -1072,50 +1145,40 @@ userInfo() {
     return `
     <button class="headerMenuButton">
         <span class="icon icon-user"></span>
-        <span class="userName"><span class="userNameText">${name}</span></span>
+        <span class="headerMenuButtonName"><span class="headerMenuButtonNameText">${name}</span></span>
     </button>
-    <div class="userInfoContainer">
-        <div class="userInfoBlock userInfo">
-            <div class="userInfoBody">
-                <div class="userInfoName">${name}</div>
-                <div class="userInfoId">${id}</div>
-            </div>
-        </div>
-        <!-- ワークスペース -->
-        <div class="userInfoBlock userInfoWorkspace">
-            <div class="userInfoTitle">${fn.html.icon('workspace')} ${getMessage.FTE10005}</div>
-            <div class="userInfoBody">
-                <ul class="userInfoWorkspaceList">
-                    ${workspaceList.join('')}
-                </ul>
+    <div class="headerMenuInfoContainer">
+        <div class="headerMenuInfoBlock userInfo">
+            <div class="headerMenuInfoBody">
+                <div class="headerMenuInfoType">User</div>
+                <div class="headerMenuInfoName">${name}</div>
+                <div class="headerMenuInfoId">${id}</div>
+                <span class="icon icon-user"></span>
             </div>
         </div>
         <!-- ロール -->
-        <div class="userInfoBlock userInfoRole">
-            <div class="userInfoTitle">${fn.html.icon('role')} ${getMessage.FTE10006}</div>
-            <div class="userInfoBody">
-                <ul class="userInfoRoleList">
+        <div class="headerMenuInfoBlock headerMenuInfoRole">
+            <div class="headerMenuInfoTitle">${fn.html.icon('role')} ${getMessage.FTE10006}</div>
+            <div class="headerMenuInfoBody">
+                <ul class="headerMenuInfoRoleList">
                     ${roleList.join('')}
                 </ul>
             </div>
         </div>
         <!-- 設定など -->
-        <div class="userInfoBlock userInfoMenu">
-            <div class="userInfoBody">
-                <ul class="userInfoMenuList">
-                    <li class="userInfoMenuItem">
-                        ${fn.html.button( fn.html.icon('gear') + getMessage.FTE10061, ['userInfoMenuButton', 'itaButton'], { type: 'setting', action: 'default'})}
+        <div class="headerMenuInfoBlock headerMenuInfoMenu">
+            <div class="headerMenuInfoBody">
+                <ul class="headerMenuInfoMenuList">
+                    <li class="headerMenuInfoMenuItem">
+                        ${fn.html.button( fn.html.icon('gear') + getMessage.FTE10061, ['headerMenuInfoMenuButton', 'itaButton'], { type: 'setting', action: 'default'})}
                     </li>
-                    <li class="userInfoMenuItem">
-                        ${fn.html.button( fn.html.icon('note') + getMessage.FTE10033, ['userInfoMenuButton', 'itaButton'], { type: 'version', action: 'default'})}
+                    <li class="headerMenuInfoMenuItem">
+                        ${fn.html.button( fn.html.icon('note') + getMessage.FTE10033, ['headerMenuInfoMenuButton', 'itaButton'], { type: 'version', action: 'default'})}
                     </li>
                 </ul>
-                <ul class="userInfoMenuList">
-                    <li class="userInfoMenuItem">
-                        ${fn.html.button( fn.html.icon('menuList') + getMessage.FTE10062, ['userInfoMenuButton', 'itaButton'], { type: 'platform', action: 'positive'})}
-                    </li>
-                    <li class="userInfoMenuItem">
-                        ${fn.html.button( fn.html.icon('logout') + getMessage.FTE10034, ['userInfoMenuButton', 'itaButton'], { type: 'logout', action: 'positive'})}
+                <ul class="headerMenuInfoMenuList">
+                    <li class="headerMenuInfoMenuItem">
+                        ${fn.html.button( fn.html.icon('logout') + getMessage.FTE10034, ['headerMenuInfoMenuButton', 'itaButton'], { type: 'logout', action: 'positive'})}
                     </li>
                 </div>
             </div>
@@ -1267,7 +1330,7 @@ contentTabOpen( openTab ) {
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-defaultMenu( sheetType ) {
+defaultMenu( sheetType, dataType = 'n', fileFlag = true ) {
     const mn = this;
 
     const contentTab = [{ name: 'dataList', title: getMessage.FTE10008, type: 'blank' }];
@@ -1275,7 +1338,9 @@ defaultMenu( sheetType ) {
     if ( mn.flag.history ) {
         contentTab.push({ name: 'changeHistory', title: getMessage.FTE10009, type: 'blank' });
     }
-    contentTab.push({ name: 'dataDownload', title: getMessage.FTE10010 });
+    if ( dataType === 'n') {
+        contentTab.push({ name: 'dataDownload', title: getMessage.FTE10010 });
+    }
 
     const menuInfo = fn.cv( mn.info.menu_info.menu_info, '', true );
 
@@ -1285,7 +1350,7 @@ defaultMenu( sheetType ) {
     // 一覧
     const $dataList = mn.$.content.find('#dataList'),
           initSetFilter = fn.getParams().filter,
-          option = { sheetType: sheetType };
+          option = { sheetType: sheetType, dataType: dataType, fileFlag: fileFlag };
     if ( initSetFilter !== undefined ) option.initSetFilter = initSetFilter;
     mn.mainTable = new DataTable('MT', 'view', mn.info, mn.params, option );
     $dataList.find('.sectionBody').html( mn.mainTable.setup() );
@@ -1311,74 +1376,76 @@ defaultMenu( sheetType ) {
     }
 
     // 全件ダウンロード・ファイル一括登録
-    const $download = mn.$.content.find('#dataDownload');
-    $download.find('.operationButton').on('click', function(){
-        const $button = $( this ),
-              type = $button.attr('data-type');
+    if ( dataType === 'n') {
+        const $download = mn.$.content.find('#dataDownload');
+        $download.find('.operationButton').on('click', function(){
+            const $button = $( this ),
+                type = $button.attr('data-type');
 
-        // File name
-        let fileName = '';
+            // File name
+            let fileName = '';
 
-        if ( mn.currentGroup && mn.currentGroup.title ) {
-            if ( mn.currentGroup.title.length > 64 ) {
-                fileName += mn.currentGroup.title.slice( 0, 61 ) + '..._';
-            } else {
-                fileName += mn.currentGroup.title + '_';
+            if ( mn.currentGroup && mn.currentGroup.title ) {
+                if ( mn.currentGroup.title.length > 64 ) {
+                    fileName += mn.currentGroup.title.slice( 0, 61 ) + '..._';
+                } else {
+                    fileName += mn.currentGroup.title + '_';
+                }
             }
-        }
 
-        if ( mn.title && mn.title.length > 64 ) {
-            fileName += mn.title.slice( 0, 61 ) + '..._';
-        } else {
-            fileName += mn.title + '_';
-        }
+            if ( mn.title && mn.title.length > 64 ) {
+                fileName += mn.title.slice( 0, 61 ) + '..._';
+            } else {
+                fileName += mn.title + '_';
+            }
 
-        const downloadFile = function( type, url, fileName ){
-            $button.prop('disabled', true );
-
-            fn.fetch( url ).then(function( result ){
-                fn.download( type, result, fileName );
-            }).catch(function( error ){
-                fn.gotoErrPage( error.message );
-            }).then(function(){
-                fn.disabledTimer( $button, false, 1000 );
-            });
-        };
-
-        switch ( type ) {
-            case 'allDwonloadExcel': {
+            const downloadFile = function( type, url, fileName ){
                 $button.prop('disabled', true );
 
-                fn.fetch(`/menu/${mn.params.menuNameRest}/filter/count/`).then(function( result ){
-                    const limit = mn.info.menu_info.xls_print_limit;
-                    if ( limit && mn.info.menu_info.xls_print_limit < result ) {
-                        alert( getMessage.FTE00085( result, limit) );
-                    } else {
-                        downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all');
-                    }
+                fn.fetch( url ).then(function( result ){
+                    fn.download( type, result, fileName );
                 }).catch(function( error ){
                     fn.gotoErrPage( error.message );
                 }).then(function(){
                     fn.disabledTimer( $button, false, 1000 );
                 });
-            } break;
-            case 'allDwonloadJson':
-                downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, fileName + 'all');
-            break;
-            case 'newDwonloadExcel':
-                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format');
-            break;
-            case 'excelUpload':
-                mn.fileRegister( $button, 'excel');
-            break;
-            case 'jsonUpload':
-                mn.fileRegister( $button, 'json');
-            break;
-            case 'allHistoryDwonloadExcel':
-                downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal');
-            break;
-        }
-    });
+            };
+
+            switch ( type ) {
+                case 'allDwonloadExcel': {
+                    $button.prop('disabled', true );
+
+                    fn.fetch(`/menu/${mn.params.menuNameRest}/filter/count/`).then(function( result ){
+                        const limit = mn.info.menu_info.xls_print_limit;
+                        if ( limit && mn.info.menu_info.xls_print_limit < result ) {
+                            alert( getMessage.FTE00085( result, limit) );
+                        } else {
+                            downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/`, fileName + 'all');
+                        }
+                    }).catch(function( error ){
+                        fn.gotoErrPage( error.message );
+                    }).then(function(){
+                        fn.disabledTimer( $button, false, 1000 );
+                    });
+                } break;
+                case 'allDwonloadJson':
+                    downloadFile('json', `/menu/${mn.params.menuNameRest}/filter/`, fileName + 'all');
+                break;
+                case 'newDwonloadExcel':
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/format/`, fileName + 'format');
+                break;
+                case 'excelUpload':
+                    mn.fileRegister( $button, 'excel');
+                break;
+                case 'jsonUpload':
+                    mn.fileRegister( $button, 'json');
+                break;
+                case 'allHistoryDwonloadExcel':
+                    downloadFile('excel', `/menu/${mn.params.menuNameRest}/excel/journal/`, fileName + 'journal');
+                break;
+            }
+        });
+    }
 
     mn.setCommonEvents();
     mn.onReady();
@@ -1828,6 +1895,35 @@ parameterCollection() {
 
         const pc = new ParameterCollection( mn.params.menuNameRest, params );
         pc.setup();
+
+        mn.onReady();
+    });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//   イベントフロー
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+eventFlow() {
+    const mn = this;
+
+    const menuInfo = fn.cv( mn.info.menu_info.menu_info, '');
+    mn.$.content.html( mn.commonContainer( mn.title, menuInfo, mn.contentSection('', 'eventFlow') ) );
+    mn.setCommonEvents();
+
+    const assets = [
+        { type: 'js', url: '/_/ita/js/event_flow.js'},
+        { type: 'css', url: '/_/ita/css/event_flow.css'},
+    ];
+
+    fn.loadAssets( assets ).then(function(){
+        const params = mn.params;
+        params.user = mn.rest.user;
+
+        const ef = new EventFlow( mn.params.menuNameRest, params );
+        ef.setup('#eventFlow');
 
         mn.onReady();
     });

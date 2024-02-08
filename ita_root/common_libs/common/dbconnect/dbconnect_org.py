@@ -51,6 +51,11 @@ class DBConnectOrg(DBConnectCommon):
         self._db_user = connect_info.get('DB_USER')
         self._db_passwd = connect_info.get('DB_PASSWORD')
         self._db = connect_info.get('DB_DATABASE')
+
+        self._mongo_connection_string = connect_info.get('MONGO_CONNECTION_STRING')
+        self._mongo_admin_user = connect_info.get('MONGO_ADMIN_USER')
+        self._mongo_admin_password = connect_info.get('MONGO_ADMIN_PASSWORD')
+
         self._inistial_data_ansible_if = connect_info.get('INITIAL_DATA_ANSIBLE_IF')
         self._no_install_driver = connect_info.get('NO_INSTALL_DRIVER')
 
@@ -62,6 +67,23 @@ class DBConnectOrg(DBConnectCommon):
         destructor
         """
         self.db_disconnect()
+
+    def get_connect_info(self):
+        """
+        get database connect infomation for self
+
+        Returns:
+            database connect infomation for self: dict
+        """
+        connect_info = {
+            'DB_HOST': self._host,
+            'DB_PORT': self._port,
+            'DB_USER': self._db_user,
+            'DB_PASSWORD': self._db_passwd,
+            'DB_DATABASE': self._db,
+        }
+
+        return connect_info
 
     def get_wsdb_connect_info(self, workspace_id):
         """
@@ -86,11 +108,15 @@ class DBConnectOrg(DBConnectCommon):
             return data_list[0]
 
         return {
-            "DB_HOST": g.db_connect_info["WSDB_HOST"],
-            "DB_PORT": g.db_connect_info["WSDB_PORT"],
-            "DB_USER": g.db_connect_info["WSDB_USER"],
-            "DB_PASSWORD": g.db_connect_info["WSDB_PASSWORD"],
-            "DB_DATABASE": g.db_connect_info["WSDB_DATABASE"]
+            "DB_HOST": g.db_connect_info.get("WSDB_HOST"),
+            "DB_PORT": g.db_connect_info.get("WSDB_PORT"),
+            "DB_USER": g.db_connect_info.get("WSDB_USER"),
+            "DB_PASSWORD": g.db_connect_info.get("WSDB_PASSWORD"),
+            "DB_DATABASE": g.db_connect_info.get("WSDB_DATABASE"),
+            'MONGO_CONNECTION_STRING': g.db_connect_info.get('WS_MONGO_CONNECTION_STRING'),
+            'MONGO_DATABASE': g.db_connect_info.get('WS_MONGO_DATABASE'),
+            'MONGO_USER': g.db_connect_info.get('WS_MONGO_USER'),
+            'MONGO_PASSWORD': g.db_connect_info.get('WS_MONGO_PASSWORD')
         }
 
     def get_inistial_data_ansible_if(self):
@@ -105,6 +131,16 @@ class DBConnectOrg(DBConnectCommon):
         """
         return self._no_install_driver
 
+    def get_org_mongo_connect_info(self):
+        """
+        get org_mongo_connect_info
+        """
+
+        return {
+            'MONGO_CONNECTION_STRING': self._mongo_connection_string,
+            'MONGO_ADMIN_USER': self._mongo_admin_user,
+            'MONGO_ADMIN_PASSWORD': self._mongo_admin_password
+        }
 
 class DBConnectOrgRoot(DBConnectOrg):
     """

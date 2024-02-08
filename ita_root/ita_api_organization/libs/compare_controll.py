@@ -15,10 +15,6 @@
 
 from flask import g  # noqa: F401
 
-from common_libs.common import *  # noqa: F403
-from common_libs.loadtable import *  # noqa: F403
-from common_libs.column import *  # noqa: F403
-
 import uuid  # noqa: F401
 import textwrap
 import sys
@@ -35,12 +31,18 @@ import shutil
 import dictdiffer
 import difflib
 
+import openpyxl
+
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.styles.fonts import Font
 from openpyxl.utils.escape import *  # noqa: F403
+
+from common_libs.common import *  # noqa: F403
+from common_libs.loadtable import *  # noqa: F403
+from common_libs.column import *  # noqa: F403
 
 
 # 比較実行画面用情報取得(リスト情報、パラメータフォーマット)
@@ -1516,13 +1518,29 @@ def _set_compare_detail_config(objdbca, compare_config, options):
         sql_str = textwrap.dedent("""
             SELECT
                 `TAB_A`.*,
-                `TAB_C`.`COLUMN_NAME_JA` AS `TARGET_COLUMN_NAME_1_JA`,
-                `TAB_C`.`COLUMN_NAME_EN` AS `TARGET_COLUMN_NAME_1_EN`,
+                CONCAT(
+                    `TBL_G`.`FULL_COL_GROUP_NAME_JA`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_JA`
+                ) AS `TARGET_COLUMN_NAME_1_JA`,
+                CONCAT(
+                    `TBL_H`.`FULL_COL_GROUP_NAME_EN`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_EN`
+                ) AS `TARGET_COLUMN_NAME_1_EN`,
                 `TAB_C`.`COLUMN_NAME_REST` AS `TARGET_COLUMN_NAME_1_REST`,
                 `TAB_C`.`COLUMN_CLASS` AS `TARGET_COLUMN_CLASS_1`,
                 `TAB_E`.`COLUMN_CLASS_NAME` AS `TARGET_COLUMN_CLASS_NAME_1`,
-                `TAB_D`.`COLUMN_NAME_JA` AS `TARGET_COLUMN_NAME_2_JA`,
-                `TAB_D`.`COLUMN_NAME_EN` AS `TARGET_COLUMN_NAME_2_EN`,
+                CONCAT(
+                    `TBL_G`.`FULL_COL_GROUP_NAME_JA`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_JA`
+                ) AS `TARGET_COLUMN_NAME_2_JA`,
+                CONCAT(
+                    `TBL_H`.`FULL_COL_GROUP_NAME_EN`,
+                    '/',
+                    `TAB_C`.`COLUMN_NAME_EN`
+                ) AS `TARGET_COLUMN_NAME_2_EN`,
                 `TAB_D`.`COLUMN_NAME_REST` AS `TARGET_COLUMN_NAME_2_REST`,
                 `TAB_D`.`COLUMN_CLASS` AS `TARGET_COLUMN_CLASS_2`,
                 `TAB_F`.`COLUMN_CLASS_NAME` AS `TARGET_COLUMN_CLASS_NAME_2`
@@ -1533,11 +1551,15 @@ def _set_compare_detail_config(objdbca, compare_config, options):
             LEFT JOIN `T_COMN_MENU_COLUMN_LINK` `TAB_D` ON ( `TAB_A`.`TARGET_COLUMN_ID_2` = `TAB_D`.`COLUMN_DEFINITION_ID` )
             LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_E` ON ( `TAB_E`.`COLUMN_CLASS_ID` = `TAB_C`.`COLUMN_CLASS` )
             LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_F` ON ( `TAB_F`.`COLUMN_CLASS_ID` = `TAB_D`.`COLUMN_CLASS` )
+            LEFT JOIN `T_COMN_COLUMN_GROUP` `TBL_G` ON ( `TAB_C`.`COL_GROUP_ID` = `TBL_G`.`COL_GROUP_ID` )
+            LEFT JOIN `T_COMN_COLUMN_GROUP` `TBL_H` ON ( `TAB_D`.`COL_GROUP_ID` = `TBL_H`.`COL_GROUP_ID` )
             WHERE `TAB_B`.`COMPARE_NAME` = %s
             AND `TAB_A`.`DISUSE_FLAG` <> 1
             AND `TAB_B`.`DISUSE_FLAG` <> 1
             AND `TAB_C`.`DISUSE_FLAG` <> 1
             AND `TAB_D`.`DISUSE_FLAG` <> 1
+            AND `TBL_G`.`DISUSE_FLAG` <> 1
+            AND `TBL_H`.`DISUSE_FLAG` <> 1
             ORDER BY `TAB_A`.`DISP_SEQ` ASC
         """).format().strip()
         bind_list = [compare_name]
@@ -1705,12 +1727,15 @@ def _set_column_info(objdbca, compare_config, options):
             sql_str = textwrap.dedent("""
                 SELECT
                     `TAB_A`.*,
-                    `TAB_B`.`COLUMN_CLASS_NAME`
+                    `TAB_B`.`COLUMN_CLASS_NAME`,
+                    `TAB_C`.*
                 FROM
                     `T_COMN_MENU_COLUMN_LINK` `TAB_A`
                 LEFT JOIN `T_COMN_COLUMN_CLASS` `TAB_B` ON ( `TAB_A`.`COLUMN_CLASS` = `TAB_B`.`COLUMN_CLASS_ID` )
+                LEFT JOIN `T_COMN_COLUMN_GROUP` `TAB_C` ON ( `TAB_A`.`COL_GROUP_ID` = `TAB_C`.`COL_GROUP_ID` )
                 WHERE `TAB_A`.`MENU_ID` = %s
                 AND `TAB_A`.`DISUSE_FLAG` <> 1
+                AND `TAB_C`.`DISUSE_FLAG` <> 1
                 ORDER BY  `TAB_A`.`COLUMN_DISP_SEQ` ASC
             """).format().strip()
             bind_list = [menu_id]
@@ -1749,7 +1774,10 @@ def _set_column_info(objdbca, compare_config, options):
                 # for row in tmp_rows:
 
                 for row in rows:
-                    compare_col_title = row.get("COLUMN_NAME_" + language.upper())
+                    compare_col_title = "{}/{}".format(
+                        row.get("FULL_COL_GROUP_NAME_" + language.upper()),
+                        row.get("COLUMN_NAME_" + language.upper())
+                    )
                     col_key = row.get("COLUMN_NAME_REST")
                     if col_key not in del_parameter_list:
                         column_class = row.get("COLUMN_CLASS")
@@ -2551,6 +2579,13 @@ def ws_add_table_data_cells(ws, row_no, column_no, col_name="", val_1="", val_2=
         # detail
         ws.cell(row=row_no, column=column_no + 4, value=wr_fmt(other))
 
+    # 等号対応: set data_type->str
+    _target_cols = [col_name, str_diff, val_1, val_2, other]
+    for _idx in range(0, len(_target_cols)):
+        _c_no = column_no + _idx
+        ws.cell(row=row_no, column=_c_no).number_format = openpyxl.styles.numbers.FORMAT_TEXT
+        ws.cell(row=row_no, column=_c_no).data_type = 's'
+
     # add diff style
     if diff_flg is True:
         ws.cell(row=row_no, column=column_no + 1).font = Font(color='FF0000')
@@ -2676,6 +2711,11 @@ def ws_index_create_table(wb, file_name, exec_time, config, compare_config, comp
     ws.cell(row=tmp_row_no, column=column_no, value=wr_fmt(g.appmsg.get_api_message("MSG-60017")))
     ws.cell(row=tmp_row_no, column=column_no + 1, value=wr_fmt(host_str))
 
+    # 等号対応: set data_type->str
+    for _n in range(1, 10):
+        ws.cell(row=_n, column=column_no).number_format = openpyxl.styles.numbers.FORMAT_TEXT
+        ws.cell(row=_n, column=column_no + 1).data_type = 's'
+
     # add table: comapre execute parameters
     tbl_end_no = int("{}".format(tmp_row_no))
     table_name = "compare_parameter"
@@ -2722,6 +2762,11 @@ def ws_index_create_table(wb, file_name, exec_time, config, compare_config, comp
         ws.cell(row=row_no, column=column_no + 1, value=wr_fmt(str_host_compare_diff))
         ws.cell(row=row_no, column=column_no).font = host_result_font
         ws.cell(row=row_no, column=column_no + 1).font = host_result_font
+
+        # 等号対応: set data_type->str
+        for _n in range(column_no, column_no + 2):
+            ws.cell(row=row_no, column=_n).number_format = openpyxl.styles.numbers.FORMAT_TEXT
+            ws.cell(row=row_no, column=_n).data_type = 's'
 
         # set link
         target_cell = "{}{}".format("A", row_no)
@@ -2779,8 +2824,8 @@ def ws_target_host_create_table(wb, file_name, exec_time, config, compare_data, 
         # get target menu
         val_1 = "1:{}".format(config.get("target_menus")[0])
         val_2 = "2:{}".format(config.get("target_menus")[1])
-        val_1 = "{}:{}".format(g.appmsg.get_api_message("MSG-60025"), config.get("target_menus")[0])
-        val_2 = "{}:{}".format(g.appmsg.get_api_message("MSG-60026"), config.get("target_menus")[1])
+        val_1 = "{}:{}".format(g.appmsg.get_api_message("MSG-60025"), config.get("target_menus")[0])[0:255]
+        val_2 = "{}:{}".format(g.appmsg.get_api_message("MSG-60026"), config.get("target_menus")[1])[0:255]
 
         # set table start point
         tbl_start_no = int("{}".format(row_no))
@@ -2805,7 +2850,6 @@ def ws_target_host_create_table(wb, file_name, exec_time, config, compare_data, 
             if col_name not in [g.appmsg.get_api_message("MSG-60022")]:
                 row_no, val_1, val_2, val_diff_flg, str_diff = \
                     get_col_name_data(compare_data, row_no, target_host, col_name, compare_target_flg)
-
                 # set target data
                 ws = ws_add_table_data_cells(ws, row_no, column_no, col_name, val_1, val_2, str_diff, "", val_diff_flg, wrap_text_flg)
 

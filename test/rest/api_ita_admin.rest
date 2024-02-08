@@ -68,3 +68,9 @@ content-type: application/json
     }
   }
 }
+
+###
+# バックヤード実行状態一括取得
+GET {{base_sys_url}}//api/ita/backyard-execute-check/
+Authorization: Basic {{sys-user-id}} {{sys-user-pw}}
+

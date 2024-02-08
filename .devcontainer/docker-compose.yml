@@ -1,3 +1,16 @@
+#   Copyright 2023 NEC Corporation
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 version: '3.7'
 services:
   ita-api-organization:
@@ -24,6 +37,11 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
     volumes:
       - vol-ita-storage:/storage
     networks:
@@ -51,6 +69,13 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
+      - MONGO_ADMIN_USER=${MONGO_ADMIN_USER}
+      - MONGO_ADMIN_PASSWORD=${MONGO_ADMIN_PASSWORD}
       - GITLAB_PROTOCOL=${GITLAB_PROTOCOL:-http}
       - GITLAB_HOST=${GITLAB_HOST}
       - GITLAB_PORT=${GITLAB_PORT}
@@ -61,6 +86,42 @@ services:
       - vol-ita-storage:/storage
     networks:
       - exastro
+
+  ita-api-oase-receiver:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_api_oase_receiver/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - LISTEN_PORT=8000
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DEFAULT_LANGUAGE=ja
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+    # volumes:
+    #   - vol-ita-storage:/storage
+    networks:
+      - exastro
+    profiles:
+      - ita-oase
 
   ita-web-server:
     user: 1000:1000
@@ -101,6 +162,28 @@ services:
       - ../ita_root/ita_mariadb/conf/custom.cnf:/etc/mysql/conf.d/custom.cnf
     networks:
       - exastro
+
+  ita-mongodb:
+    image: mongo:6.0.7
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
+      interval: 3s
+      retries: 200
+    environment:
+      - TZ=Asia/Tokyo
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "0.0.0.0:27017:27017"
+    volumes:
+      # - ../ita_root/ita_mongodb/conf/mongod.conf:/etc/mongo/mongod.conf
+      # - ../ita_root/ita-mongodb/initdb.d:/docker-entrypoint-initdb.d
+      # - ../ita_root/ita_mongodb/logs:/root/logs
+      - ../.volumes/ita-mongodb/data:/data/db
+    networks:
+      - exastro
+    profiles:
+      - ita-oase
 
   ita-by-ansible-execute:
     user: 1000:${HOST_DOCKER_GID:-1000}
@@ -739,6 +822,48 @@ services:
       - exastro-it-automation-backyard
       - ita-by-file-autoclean
 
+  ita-by-oase-conclusion:
+    user: 1000:1000
+    build:
+      dockerfile: ./ita_root/ita_by_oase_conclusion/Dockerfile
+      context: ../.
+      args:
+        - HTTP_PROXY=${HTTP_PROXY}
+        - http_proxy=${HTTP_PROXY}
+        - HTTPS_PROXY=${HTTPS_PROXY}
+        - https_proxy=${HTTPS_PROXY}
+    environment:
+      - TZ=Asia/Tokyo
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - DEFAULT_LANGUAGE=ja
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ADMIN_USER=${DB_ADMIN_USER}
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
+      - PLATFORM_API_HOST=platform-api
+      - PLATFORM_API_PORT=8000
+      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
+      - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
+      - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
+      - MONGO_HOST=${MONGO_HOST-ita-mongodb}
+      - MONGO_PORT=${MONGO_PORT:-27017}
+    volumes:
+      - vol-ita-storage:/storage
+    networks:
+      - exastro
+    profiles:
+      - exastro-it-automation-backyard
+      - ita-by-oase-conclusion
+      - ita-oase
+    depends_on:
+      ita-migration:
+        condition: service_completed_successfully
+      ita-mongodb:
+        condition: service_healthy
+
   ita-migration:
     user: 1000:1000
     build:
@@ -776,6 +901,8 @@ services:
         condition: service_healthy
       platform-migration-2:
         condition: service_completed_successfully
+
+
 
 volumes:
   vol-ita-storage:

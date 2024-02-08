@@ -291,7 +291,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
             return False, execute_data
         clone_execute_data = execute_data
         # 実行結果の確認
-        retBool, clone_execute_data, db_update_need = instance_checkcondition(wsDb, ansdrv, ans_if_info, clone_execute_data, driver_id, tower_host_list)  # noqa: E501
+        retBool, clone_execute_data, db_update_need, db_update_need_no_jnl = instance_checkcondition(wsDb, ansdrv, ans_if_info, clone_execute_data, driver_id, tower_host_list)  # noqa: E501
 
         # ステータスが更新されたか判定
         if db_update_need is True:
@@ -308,7 +308,7 @@ def main_logic(wsDb: DBConnectWs, execution_no, driver_id):  # noqa: C901
             if execute_data['STATUS_ID'] in [ansc_const.COMPLETE, ansc_const.FAILURE, ansc_const.EXCEPTION, ansc_const.SCRAM]:
                 result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, clone_execute_data, 'FILE_RESULT', zip_tmp_save_path)
             else:
-                result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, clone_execute_data, 'UPDATE', zip_tmp_save_path)
+                result = InstanceRecodeUpdate(wsDb, driver_id, execution_no, clone_execute_data, 'UPDATE', zip_tmp_save_path, db_update_need_no_jnl)
 
             if result[0] is True:
                 wsDb.db_commit()
@@ -435,8 +435,8 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
         ansible_execute = AnsibleExecute()
         if not ans_if_info['ANSIBLE_VAULT_PASSWORD']:
             ans_if_info['ANSIBLE_VAULT_PASSWORD'] = ky_encrypt(AnscConst.DF_ANSIBLE_VAULT_PASSWORD)
-        # AnsibleのPATHは固定
-        retBool = ansible_execute.execute_construct(ansc_const, execution_no, conductor_instance_no, "", "", "/usr/local/bin", ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
+        # AnsibleのPATHは指定無し
+        retBool = ansible_execute.execute_construct(ansc_const, execution_no, conductor_instance_no, "", "", "", ans_if_info['ANSIBLE_VAULT_PASSWORD'], run_mode, "")  # noqa: E501
 
         if retBool is True:
             execute_data["STATUS_ID"] = ansc_const.PROCESSING
@@ -516,6 +516,7 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
 def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if_info, execute_data, driver_id, tower_host_list):
     global ansc_const
     db_update_need = False
+    db_update_need_no_jnl = False
 
     TowerProjectsScpPath = ansdrv.getTowerProjectsScpPath()
     TowerInstanceDirPath = ansdrv.getTowerInstanceDirPath()
@@ -575,10 +576,12 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
         if multiple_log_mark and str(execute_data['MULTIPLELOG_MODE']) != multiple_log_mark:
             execute_data['MULTIPLELOG_MODE'] = multiple_log_mark
             db_update_need = True
+            db_update_need_no_jnl = True
         # マルチログファイルリスト
         if multiple_log_file_json_ary and execute_data['LOGFILELIST_JSON'] != multiple_log_file_json_ary:
             execute_data['LOGFILELIST_JSON'] = multiple_log_file_json_ary
             db_update_need = True
+            db_update_need_no_jnl = True
 
         # 5:正常終了時
         # 6:完了(異常)
@@ -705,7 +708,7 @@ def instance_checkcondition(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, a
             # [処理]Ansible Automation Controller クリーニング 終了(作業No.:{})
             g.applogger.debug(g.appmsg.get_log_message("MSG-10744", [execution_no]))
 
-    return True, execute_data, db_update_need
+    return True, execute_data, db_update_need, db_update_need_no_jnl
 
 
 def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, driver_id, winrm_id):
@@ -1252,7 +1255,7 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
     return True, err_msg, zip_file_name
 
 
-def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_column_name, zip_tmp_save_path):
+def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_column_name, zip_tmp_save_path, db_update_need_no_jnl=False):
     """
     作業管理更新
 
@@ -1263,6 +1266,7 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
         execute_data: 更新内容配列
         update_column_name: 更新対象のFileUpLoadColumn名
         zip_tmp_save_path: 一時的に作成したzipファイルのパス
+        db_update_need_no_jnl: 履歴テーブル更新可否
     RETRUN:
         True/False, errormsg
     """
@@ -1359,6 +1363,8 @@ def InstanceRecodeUpdate(wsDb, driver_id, execution_no, execute_data, update_col
         "type": "Update"
     }
     objmenu = load_table.loadTable(wsDb, MenuName)
+    if db_update_need_no_jnl is True:
+        objmenu.set_history_flg(False)
     retAry = objmenu.exec_maintenance(parameters, execution_no, "", False, False, True)
     result = retAry[0]
     if result is False:

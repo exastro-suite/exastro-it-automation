@@ -17,10 +17,8 @@ import datetime
 import tarfile
 from flask import g
 from common_libs.common import *  # noqa: F403
-from common_libs.common.util import ky_encrypt, get_maintenance_mode_setting
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
-from common_libs.common.exception import AppException  # noqa: F401
 from pathlib import Path
 import shutil
 import subprocess
@@ -816,6 +814,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         menu_list = json_storage_item["menu"]
 
         menu_group_list = []
+        # 親メニューグループのデータ記憶用
+        parent_menu_group_id_list = []
         for menu in menu_list:
             # メニューの存在確認
             menu_info_record = _check_menu_info(menu, objdbca)
@@ -827,7 +827,11 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                     add_menu_group = menu_group
                     break
             else:
-                add_menu_group['parent_id'] = menu_info_record.get('PARENT_MENU_GROUP_ID')
+                parent_menu_group_id = menu_info_record.get('PARENT_MENU_GROUP_ID')
+                if parent_menu_group_id not in parent_menu_group_id_list:
+                    # 親グループのIDを記憶していく
+                    parent_menu_group_id_list.append(parent_menu_group_id)
+                add_menu_group['parent_id'] = parent_menu_group_id
                 add_menu_group['id'] = menu_group_id
                 add_menu_group['menu_group_name_ja'] = menu_info_record.get('MENU_GROUP_NAME_JA')
                 add_menu_group['menu_group_name_en'] = menu_info_record.get('MENU_GROUP_NAME_EN')
@@ -849,6 +853,22 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         menus_data_path = dir_path + '/MENU_GROUPS'
         with open(menus_data_path, "w") as f:
             json.dump(menus_data, f)
+
+        menu_group_id_dict = {}
+        for menu_group_id in parent_menu_group_id_list:
+            menu_id_sql = " SELECT * FROM `T_COMN_MENU_GROUP` WHERE `DISUSE_FLAG` <> 1 AND `MENU_GROUP_ID` = %s "
+            t_comn_menu_group_record = objdbca.sql_execute(menu_id_sql, [menu_group_id])
+            menu_group_name_dict = {}
+            for record in t_comn_menu_group_record:
+                menu_group_id = record.get('MENU_GROUP_ID')
+                menu_group_name_dict['MENU_GROUP_NAME_JA'] = record.get('MENU_GROUP_NAME_JA')
+                menu_group_name_dict['MENU_GROUP_NAME_EN'] = record.get('MENU_GROUP_NAME_EN')
+                menu_group_name_dict['DISP_SEQ'] = record.get('DISP_SEQ')
+                menu_group_id_dict[menu_group_id] = menu_group_name_dict
+
+        parent_menus_data_path = dir_path + '/PARENT_MENU_GROUPS'
+        with open(parent_menus_data_path, "w") as f:
+            json.dump(menu_group_id_dict, f)
 
         # 更新系テーブル取得
         filter_parameter = {}

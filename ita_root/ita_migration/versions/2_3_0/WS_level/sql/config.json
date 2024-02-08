@@ -1,0 +1,9 @@
+[
+    ["", "workspace_master.sql"],
+    ["", "menu_create_master.sql"],
+    ["", "ansible_master.sql"],
+    ["", "export_import_master.sql"],
+    ["", "terraform_cli_master.sql"],
+    ["", "terraform_cloud_ep_master.sql"],
+    ["", "cicd_master.sql"]
+]

@@ -34,6 +34,7 @@
 // UI共通              10001～11000
 // パラメータ集         11001～12000
 // 独自メニュー         12001～13000
+// OASE                13001～14000
 
 
 export function messageid_ja() {
@@ -217,6 +218,7 @@ export function messageid_ja() {
         'FTE00175' : "編集",
         'FTE00176' : "プレビュー",
         'FTE00177' : "空白",
+        'FTE00178' : "項目メニュー",
 
         // パラメータシート定義・作成
         'FTE01001' : "項目",
@@ -949,6 +951,36 @@ export function messageid_ja() {
         // 独自メニュー
         'FTE12001': '独自メニューの表示に失敗しました。',
 
+        // OASE
+        'FTE13001': 'フィルター条件',
+        'FTE13002': 'ラベルキー',
+        'FTE13003': '条件',
+        'FTE13004': '条件値',
+        'FTE13005': '結論ラベル設定',
+        'FTE13006': '結論ラベルキー',
+        'FTE13007': '結論ラベル値',
+        'FTE13008': '未知イベント',
+        'FTE13009': '時間切れイベント',
+        'FTE13010': '既知イベント',
+        'FTE13011': '結論イベント',
+        'FTE13012': '新規イベント',
+        'FTE13013': '実行アクション',
+        'FTE13014': '範囲指定',
+        'FTE13015': '設定',
+        'FTE13016': '範囲指定履歴',
+        'FTE13017': '表示パターン選択',
+        'FTE13018': function( type ){ return `${type}の登録がありません。`},
+        'FTE13019': function( num ){ return `${num}分間`},
+        'FTE13020': function( num ){ return `${num}時間`},
+        'FTE13021': function( num ){ return `${num}日間`},
+        'FTE13022': function( num ){ return `${num}週間`},
+        'FTE13023': function( num ){ return `${num}か月間`},
+        'FTE13024': function( num ){ return `${num}年間`},
+        'FTE13025': '',
+        'FTE13026': '',
+        'FTE13027': '',
+        'FTE13028': '',
+        'FTE13029': '',
     };
 
     return message;

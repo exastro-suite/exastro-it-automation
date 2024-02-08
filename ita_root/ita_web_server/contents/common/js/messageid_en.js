@@ -213,6 +213,7 @@ export function messageid_en() {
         'FTE00175' : "Edit",
         'FTE00176' : "Preview",
         'FTE00177' : "Blank",
+        'FTE00178' : "Item menu",
 
         // Create parameter sheet
         'FTE01001' : "Item",
@@ -943,6 +944,37 @@ export function messageid_en() {
 
         // Custom menu
         'FTE12001': 'Failed to display custom menu.',
+
+        // OASE
+        'FTE13001': 'Filter Condition',
+        'FTE13002': 'Label Key',
+        'FTE13003': 'Condition',
+        'FTE13004': 'Condition value',
+        'FTE13005': 'Conclusion label setting',
+        'FTE13006': 'Conclusion label key',
+        'FTE13007': 'Conclusion label value',
+        'FTE13008': 'Unknown events',
+        'FTE13009': 'Timeout events',
+        'FTE13010': 'Known events',
+        'FTE13011': 'Conclusion events',
+        'FTE13012': 'New events',
+        'FTE13013': 'Actions',
+        'FTE13014': 'Range specification',
+        'FTE13015': 'Setting',
+        'FTE13016': 'Range specification history',
+        'FTE13017': 'Display pattern selection',
+        'FTE13018': function( type ){ return `No ${type} registered.`},
+        'FTE13019': function( num ){ return `Last ${num} minute${(num>1)?'s':''}`},
+        'FTE13020': function( num ){ return `Last ${num} hour${(num>1)?'s':''}`},
+        'FTE13021': function( num ){ return `Last ${num} day${(num>1)?'s':''}`},
+        'FTE13022': function( num ){ return `Last ${num} week${(num>1)?'s':''}`},
+        'FTE13023': function( num ){ return `Last ${num} month${(num>1)?'s':''}`},
+        'FTE13024': function( num ){ return `Last ${num} year${(num>1)?'s':''}`},
+        'FTE13025': '',
+        'FTE13026': '',
+        'FTE13027': '',
+        'FTE13028': '',
+        'FTE13029': '',
 
     };
 

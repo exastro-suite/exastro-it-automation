@@ -28,10 +28,10 @@ AES_PAD_BLOCK_SIZE = 16
 AES_PAD_STYLE = 'pkcs7'
 
 # AES encrypt key
-ENCRYPT_KEY = base64.b64decode(os.environ['ENCRYPT_KEY'])
+ENCRYPT_KEY = base64.b64decode(os.environ.get('ENCRYPT_KEY', ''))
 
 
-def encrypt_str(strdata):
+def encrypt_str(strdata, input_encrypt_key=None):
     """Encrypt the string
 
     Args:
@@ -41,12 +41,13 @@ def encrypt_str(strdata):
         str: Encrypted string - 暗号化した文字列
     """
     iv = get_random_bytes(IV_LENGTH)
-    aes = AES.new(ENCRYPT_KEY, AES.MODE_CBC, iv)
+    encrypt_key = input_encrypt_key if input_encrypt_key is not None else ENCRYPT_KEY
+    aes = AES.new(encrypt_key, AES.MODE_CBC, iv)
     encdata = iv + aes.encrypt(Padding.pad(strdata.encode(), AES_PAD_BLOCK_SIZE, AES_PAD_STYLE))
     return (base64.b64encode(encdata)).decode()
 
 
-def decrypt_str(encstrdata):
+def decrypt_str(encstrdata, input_encrypt_key=None):
     """Decrypt the Encrypted string
 
     Args:
@@ -57,5 +58,6 @@ def decrypt_str(encstrdata):
     """
     encdata = base64.b64decode(encstrdata.encode())
     iv = encdata[:IV_LENGTH]
-    aes = AES.new(ENCRYPT_KEY, AES.MODE_CBC, iv)
+    encrypt_key = input_encrypt_key if input_encrypt_key is not None else ENCRYPT_KEY
+    aes = AES.new(encrypt_key, AES.MODE_CBC, iv)
     return Padding.unpad(aes.decrypt(encdata[IV_LENGTH:]), AES_PAD_BLOCK_SIZE, AES_PAD_STYLE).decode()

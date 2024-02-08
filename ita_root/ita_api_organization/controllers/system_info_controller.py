@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 from common_libs.common import *  # noqa: F403
-from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.dbconnect import DBConnectCommon
 from libs import system_info
 from common_libs.api import api_filter
 

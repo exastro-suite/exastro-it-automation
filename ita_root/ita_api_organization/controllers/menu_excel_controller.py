@@ -12,12 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from flask import g
 import connexion
 from common_libs.common import *  # noqa: F403
-from common_libs.api import api_filter, check_request_body, check_request_body_key
-from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
+from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_excel
-from flask import g
+from common_libs.api import api_filter, check_request_body
+from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 
 
 @api_filter
@@ -49,7 +50,8 @@ def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
 
-    result_data = menu_excel.collect_excel_all(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    filter_parameter = {'discard': {'NORMAL': ''}}
+    result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
     return result_data,
 
 
@@ -82,7 +84,7 @@ def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
     # メニューに対するロール権限をチェック
     check_auth_menu(menu, objdbca)
 
-    result_data = menu_excel.collect_excel_format(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
     return result_data,
 
 

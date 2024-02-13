@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro ITA OASE Receiver API
   description: Exastro ITA OASE Receiver API
-  version: "2.3"
+  version: "2.4"
 
 servers:
   - url: "https://{host}"

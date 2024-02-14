@@ -119,7 +119,7 @@ paths:
         content:
           application/json:
             schema:
-              description: イベントのJSONデータを文字列化したもの、取得した時間、イベント収集設定IDを記載
+              description: イベントのJSONデータ、取得した時間、イベント収集設定IDを記載
               properties:
                 events:
                   type: array
@@ -129,14 +129,18 @@ paths:
                       event:
                         type: array
                         items:
-                          type: string
-                          example: "{\"date\": \"2024-01-01 00:00:00\"}"
+                          type: object
+                          example: {"date": 2024-01-01 00:00:00}
                       fetched_time:
                         type: integer
                         example: 1704034800
-                      event_collection_settings_id:
+                      event_collection_settings_name:
                         type: string
-                        example: "uuid"
+                        example: "setting_name"
+                    required:
+                      - event
+                      - fetched_time
+                      - event_collection_settings_name
 
       responses:
         '200':

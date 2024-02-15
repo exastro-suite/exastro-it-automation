@@ -156,11 +156,8 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             # イベント収集設定IDとfetched_timeをリストに格納
             fetched_time_list.append(single_data)
 
-        # 辞書型のイベントから文字列型のイベントを取り出す
-        for event_str in event_list:
-            # tryの中で文字列から辞書化する
+        for event_dict in event_list:
             try:
-                event_dict = json.loads(event_str, strict=False)
                 # db.event_collection.createIndex({'_exastro_created_at': 1}, {expireAfterSeconds: 1})
                 # db.labeled_event_collection.createIndex({'exastro_created_at': 1}, {expireAfterSeconds: 1})
                 event_dict['_exastro_created_at'] = datetime.datetime.utcnow()

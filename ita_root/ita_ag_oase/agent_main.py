@@ -206,9 +206,12 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 (event_collection_settings_name, fetched_time, 0)
             )
             unsent_events = sqliteDB.db_cursor.fetchall()
-            unsent_event["event"].extend([row[2] for row in unsent_events])
             for row in unsent_events:
                 unsent_event_rowids.append(row[0])
+                # 文字列で保存されていたイベントをJSON形式に再変換
+                json_event = json.loads(row[2])
+                unsent_event["event"].append(json_event)
+
             post_body["events"].append(unsent_event)
 
     # ITAにデータを送信

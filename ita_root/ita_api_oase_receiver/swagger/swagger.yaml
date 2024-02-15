@@ -164,26 +164,31 @@ components:
         - {}
         message: message
     apiorganization_idworkspacesworkspace_idoase_agentevents_events:
+      required:
+      - event
+      - event_collection_settings_name
+      - fetched_time
       type: object
       properties:
         event:
           type: array
           items:
-            type: string
-            example: "{\"date\": \"2024-01-01 00:00:00\"}"
+            type: object
+            example:
+              date: 2024-01-01 00:00:00
         fetched_time:
           type: integer
           example: 1704034800
-        event_collection_settings_id:
+        event_collection_settings_name:
           type: string
-          example: uuid
+          example: setting_name
     oase_agent_events_body:
       properties:
         events:
           type: array
           items:
             $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_events'
-      description: イベントのJSONデータを文字列化したもの、取得した時間、イベント収集設定IDを記載
+      description: イベントのJSONデータ、取得した時間、イベント収集設定IDを記載
     inline_response_200_1:
       type: object
       properties:

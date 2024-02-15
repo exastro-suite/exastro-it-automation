@@ -36,7 +36,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS
     EVENT_COLLECTION_SETTINGS_NAME  VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
     REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
-    URL                             VARCHAR(1024),                              -- URL
+    URL                             VARCHAR(1024),                              -- 接続先
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
     PROXY                           VARCHAR(255),                               -- プロキシ
@@ -66,7 +66,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS_JNL
     EVENT_COLLECTION_SETTINGS_NAME  VARCHAR(255),                               -- イベント収集名
     CONNECTION_METHOD_ID            VARCHAR(2),                                 -- 接続方式ID
     REQUEST_METHOD_ID               VARCHAR(2),                                 -- リクエストメソッドID
-    URL                             VARCHAR(1024),                              -- URL
+    URL                             VARCHAR(1024),                              -- 接続先
     PORT                            INT,                                        -- ポート
     REQUEST_HEADER                  TEXT,                                       -- リクエストヘッダー
     PROXY                           VARCHAR(255),                               -- プロキシ

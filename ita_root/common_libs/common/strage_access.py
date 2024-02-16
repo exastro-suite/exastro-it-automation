@@ -84,6 +84,9 @@ class strage_write:
             if os.path.isdir(tmp_dir_path) is False:
                 os.makedirs(tmp_dir_path)
             self.tmp_file_path = "{}/{}".format(tmp_dir_path, os.path.basename(file_path))
+        else:
+           msg = "Paths other than /storage cannot be processed by this module. (path:{})".format(file_path)
+           raise Exception(msg)
         # open
         self.fd = open(self.tmp_file_path, mode)
         return self.fd

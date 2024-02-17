@@ -137,10 +137,11 @@ paths:
                       event_collection_settings_name:
                         type: string
                         example: "setting_name"
+                      event_collection_settings_id:
+                        type: string
+                        example: setting_id
                     required:
                       - event
-                      - fetched_time
-                      - event_collection_settings_name
 
       responses:
         '200':

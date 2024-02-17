@@ -94,11 +94,10 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
 def init_label(data, fetched_time, setting):
     event = {}
     event = data
+    event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
     event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
     event["_exastro_fetched_time"] = int(fetched_time.timestamp())
     event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
-    event["_exastro_type"] = "event"
-    event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
 
     return event
 

@@ -166,8 +166,6 @@ components:
     apiorganization_idworkspacesworkspace_idoase_agentevents_events:
       required:
       - event
-      - event_collection_settings_name
-      - fetched_time
       type: object
       properties:
         event:
@@ -182,6 +180,9 @@ components:
         event_collection_settings_name:
           type: string
           example: setting_name
+        event_collection_settings_id:
+          type: string
+          example: setting_id
     oase_agent_events_body:
       properties:
         events:

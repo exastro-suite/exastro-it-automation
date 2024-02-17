@@ -60,11 +60,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     for label_key in label_keys:
         label_key_map[label_key["LABEL_KEY_ID"]] = label_key
 
-    # そのままのイベントデータを保存するためのコレクション
-    event_collection = wsMongo.collection("event_collection")
-    # MongoDBに保存
-    event_collection.insert_many(events)
-
     # ラベル付与したイベントデータを保存するためのコレクション
     labeled_event_collection = wsMongo.collection("labeled_event_collection")
     # ラベル付与されたイベント配列（MongoDBに保存予定）
@@ -92,7 +87,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         del labeled_event["event"]["_exastro_event_collection_settings_name"]
         del labeled_event["event"]["_exastro_fetched_time"]
         del labeled_event["event"]["_exastro_end_time"]
-        del labeled_event["event"]["_exastro_type"]
         del labeled_event["event"]["_exastro_created_at"]
         labeled_events.append(labeled_event)
 

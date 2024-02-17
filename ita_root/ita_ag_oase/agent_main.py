@@ -99,9 +99,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
-
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
-
         g.applogger.info(g.appmsg.get_log_message("AGT-10008", []))
         try:
             status_code, response = exastro_api.api_request(
@@ -115,9 +113,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10009", [nodata]))
                 settings = get_settings()
             else:
-                g.applogger.info(g.appmsg.get_log_message("AGT-10010", []))
-                g.applogger.debug(status_code)
-                g.applogger.debug(response)
+                g.applogger.info(g.appmsg.get_log_message("AGT-10010", [status_code, response]))
                 settings = False
         except AppException as e:  # noqa E405
             app_exception(e)
@@ -189,7 +185,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         else:
             send_to_ita_flag = True
 
-        # 作成した辞書を使用してイベントを検索
+        # 作成した辞書を使用してイベントをDBから検索
         for item in unsent_timestamp:
             unsent_event = {}
             event_collection_settings_name = item[1]
@@ -221,6 +217,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         event_count = 0
         for event in post_body["events"]:
             event_count = event_count + len(event["event"])
+        # "Sending {} events to Exastro IT Automation"
         g.applogger.info(g.appmsg.get_log_message("AGT-10017", [event_count]))
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
         try:
@@ -234,6 +231,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
         # データ送信に成功した場合、sent_flagカラムの値をtrueにアップデート
         if status_code == 200:
+            # "Successfully sent events to Exastro IT Automation."
             g.applogger.info(g.appmsg.get_log_message("AGT-10018", []))
             for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
                 try:
@@ -246,8 +244,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
             g.applogger.debug(g.appmsg.get_log_message("AGT-10019", []))
         else:
-            g.applogger.info(g.appmsg.get_log_message("AGT-10020", []))
-            g.applogger.debug(response)
+            g.applogger.info(g.appmsg.get_log_message("AGT-10020", [status_code, response]))
 
     else:
         g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))

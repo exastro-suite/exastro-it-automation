@@ -45,6 +45,7 @@ class storage_read(storage_base):
         storage_file_path = None
         tmp_file_path = None
         tmp_dir_path = None
+        storage_path_flg = False
         fd = None
 
     def open(self, file_path, mode = None):
@@ -52,13 +53,13 @@ class storage_read(storage_base):
         self.tmp_file_path = file_path
         root_dir = "^{}".format(os.environ.get('STORAGEPATH'))
         # ファイルパスが /storage か判定
-        if re.search(root_dir, file_path) is not None:
+        self.storage_flg = self.path_check(file_path)
+        if self.storage_flg is True:
             self.tmp_file_path = self.make_temp_path(file_path)
             #  /storageから/tmpにファイルコピー(パーミッション維持)
             shutil.copy2(self.storage_file_path, self.tmp_file_path)
         else:
-           msg = "Paths other than /storage cannot be processed by this module. (path:{})".format(file_path)
-           raise Exception(msg)
+            self.tmp_file_path = file_path
         # open
         if mode is not None:
             self.fd = open(self.tmp_file_path, mode)
@@ -73,12 +74,14 @@ class storage_read(storage_base):
     def close(self, file_del = True):
         # close
         self.fd.close()
-        if file_del is True:
-            # /tmpの掃除
-            self.remove()
+        if self.storage_flg is True:
+            if file_del is True:
+                # /tmpの掃除
+                self.remove()
 
     def remove(self):
-        os.remove(self.tmp_file_path)
+        if os.path.isfile(self.tmp_file_path) is True:
+            os.remove(self.tmp_file_path)
 
 
 class storage_write(storage_base):
@@ -86,6 +89,7 @@ class storage_write(storage_base):
         storage_file_path = None
         tmp_file_path = None
         tmp_dir_path = None
+        storage_flg = False
         fd = None
 
     def open(self, file_path, mode = None):
@@ -93,11 +97,14 @@ class storage_write(storage_base):
         self.tmp_file_path = file_path
         root_dir = "^{}".format(os.environ.get('STORAGEPATH'))
         # ファイルパスが /storage か判定
-        if re.search(root_dir, file_path) is not None:
+        self.storage_flg = self.path_check(file_path)
+        if self.storage_flg is True:
             self.tmp_file_path = self.make_temp_path(file_path)
+            # open('xxx', 'a')のケースがあるのでファイルコピー
+            if os.path.isfile(file_path) is True:
+                shutil.copy2(self.storage_file_path, self.tmp_file_path)
         else:
-           msg = "Paths other than /storage cannot be processed by this module. (path:{})".format(file_path)
-           raise Exception(msg)
+            self.tmp_file_path = file_path
         # open
         self.fd = open(self.tmp_file_path, mode)
         return self.fd
@@ -109,14 +116,16 @@ class storage_write(storage_base):
     def close(self, file_del = True):
         # close
         self.fd.close()
-        if file_del is True:
+        if self.storage_flg is True:
             # /tmpから/stargeにコピー
             shutil.copy2(self.tmp_file_path, self.storage_file_path)
-            # /tmpの掃除
-            self.remove()
+            if file_del is True:
+                # /tmpの掃除
+                self.remove()
 
     def remove(self):
-        os.remove(self.tmp_file_path)
+        if os.path.isfile(self.tmp_file_path) is True:
+            os.remove(self.tmp_file_path)
 
 class storage_write_text(storage_base):
     def write_text(self, file_path, value, encoding="utf-8"):
@@ -134,7 +143,8 @@ class storage_write_text(storage_base):
             # /tmpから/stargeにコピー
             shutil.copy2(tmp_file_path, file_path)
             # /tmpの掃除
-            os.remove(tmp_file_path)
+            if os.path.isfile(self.tmp_file_path) is True:
+                os.remove(tmp_file_path)
 
 class storage_read_text(storage_base):
     def read_text(self, file_path, encoding="utf-8"):
@@ -152,5 +162,6 @@ class storage_read_text(storage_base):
         value = Path(tmp_file_path).read_text(encoding=encoding)
         if storage_flg is True:
             # /tmpの掃除
-            os.remove(tmp_file_path)
+            if os.path.isfile(self.tmp_file_path) is True:
+                os.remove(tmp_file_path)
         return value

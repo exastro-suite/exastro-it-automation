@@ -463,13 +463,13 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010604','110106','キー','Key','search_key_name','11010706','1',40,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'SEARCH_KEY_NAME',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 255
-}','^[a-zA-Z0-9_-]+$',NULL,NULL,'[最大長]255バイト
-検索条件となる、イベントのプロパティのキーを半角英数字と利用可能な記号(_-)で入力します。
+}','^[a-zA-Z0-9!#%&()*+,-.;<=>?@[\\]^_{|}~]+$',NULL,NULL,'[最大長]255バイト
+検索条件となる、イベントのプロパティのキーを半角英数字と利用可能な記号(!#%&()*+,-.;<=>?@[]^_{|}~)で入力します。
 下記キーも入力可能です。
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
 ・_exastro_end_time','[Maximum length] 255 bytes
-Enter the event property key as a search condition using half-width alphanumeric characters and available symbols (_-).
+Enter the event property key as a search condition using half-width alphanumeric characters and available symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
 You can also enter the following keys.
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
@@ -477,13 +477,13 @@ You can also enter the following keys.
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010604,_____DATE_____,'INSERT','11010604','110106','キー','Key','search_key_name','11010706','1',40,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'SEARCH_KEY_NAME',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 255
-}','^[a-zA-Z0-9_-]+$',NULL,NULL,'[最大長]255バイト
-検索条件となる、イベントのプロパティのキーを半角英数字と利用可能な記号(_-)で入力します。
+}','^[a-zA-Z0-9!#%&()*+,-.;<=>?@[\\]^_{|}~]+$',NULL,NULL,'[最大長]255バイト
+検索条件となる、イベントのプロパティのキーを半角英数字と利用可能な記号(!#%&()*+,-.;<=>?@[]^_{|}~)で入力します。
 下記キーも入力可能です。
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
 ・_exastro_end_time','[Maximum length] 255 bytes
-Enter the event property key as a search condition using half-width alphanumeric characters and available symbols (_-).
+Enter the event property key as a search condition using half-width alphanumeric characters and available symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
 You can also enter the following keys.
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
@@ -495,11 +495,11 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 ・真偽値、オブジェクト、配列、空判定：
 比較方法が[==, ≠]の場合に、いずれかを指定してください。
 ・その他：
-比較方法が[RegExp]の場合は指定してください。','Select the data type of the value.
+比較方法が[RegExp, RegExp(DOTALL), RegExp(MULTILINE)]の場合は指定してください。','Select the data type of the value.
 ・Boolean value, object, array, empty judgment:
 If the comparison method is [==, ≠], please specify one.
 ·others:
-Please specify if the comparison method is [RegExp]. ',NULL,'0',_____DATE_____,1);
+Please specify if the comparison method is [RegExp, RegExp(DOTALL), RegExp(MULTILINE)]. ',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010605,_____DATE_____,'INSERT','11010605','110106','値のデータ型','Type','type_name','11010706','7',50,'T_OASE_TARGET_TYPE','TYPE_ID','TYPE_NAME',NULL,'1',NULL,NULL,NULL,NULL,'TYPE_ID',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 2
@@ -507,22 +507,22 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 ・真偽値、オブジェクト、配列、空判定：
 比較方法が[==, ≠]の場合に、いずれかを指定してください。
 ・その他：
-比較方法が[RegExp]の場合は指定してください。','Select the data type of the value.
+比較方法が[RegExp, RegExp(DOTALL), RegExp(MULTILINE)]の場合は指定してください。','Select the data type of the value.
 ・Boolean value, object, array, empty judgment:
 If the comparison method is [==, ≠], please specify one.
 ·others:
-Please specify if the comparison method is [RegExp]. ',NULL,'0',_____DATE_____,1);
+Please specify if the comparison method is [RegExp, RegExp(DOTALL), RegExp(MULTILINE)]. ',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010606','110106','比較方法','Comparison Method','comparison_method','11010706','7',60,'T_OASE_COMPARISON_METHOD','COMPARISON_METHOD_ID','COMPARISON_METHOD_SYMBOL',NULL,'0',NULL,NULL,NULL,NULL,'COMPARISON_METHOD_ID',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 2
 }',NULL,NULL,NULL,'比較方法を選択します。
 ・<, <=, >, >=：
 値のデータ型が、[文字列、整数、小数]の場合のみ選択可能です。
-・RegExp：
+・RegExp, RegExp(DOTALL), RegExp(MULTILINE)：
 値のデータ型が、[その他]の場合のみ選択可能です。','Select a comparison method.
 ・<, <=, >, >=：
 Can only be selected when the value data type is [String, Integer, Decimal].
-・RegExp:
+・RegExp, RegExp(DOTALL), RegExp(MULTILINE):
 Can only be selected when the value data type is [Other]. ',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010606,_____DATE_____,'INSERT','11010606','110106','比較方法','Comparison Method','comparison_method','11010706','7',60,'T_OASE_COMPARISON_METHOD','COMPARISON_METHOD_ID','COMPARISON_METHOD_SYMBOL',NULL,'0',NULL,NULL,NULL,NULL,'COMPARISON_METHOD_ID',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
@@ -530,11 +530,11 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 }',NULL,NULL,NULL,'比較方法を選択します。
 ・<, <=, >, >=：
 値のデータ型が、[文字列、整数、小数]の場合のみ選択可能です。
-・RegExp：
+・RegExp, RegExp(DOTALL), RegExp(MULTILINE)：
 値のデータ型が、[その他]の場合のみ選択可能です。','Select a comparison method.
 ・<, <=, >, >=：
 Can only be selected when the value data type is [String, Integer, Decimal].
-・RegExp:
+・RegExp, RegExp(DOTALL), RegExp(MULTILINE):
 Can only be selected when the value data type is [Other]. ',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010607','110106','比較する値','Value to Compare','search_value_name','11010706','1',70,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'SEARCH_VALUE_NAME',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
@@ -579,15 +579,67 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010609','110106','値','Value','label_value_name','11010707','1',90,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'LABEL_VALUE_NAME',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 255
-}','^[a-zA-Z0-9_-]+$',NULL,NULL,'[最大長]255バイト
-ラベル付与したい値を半角英数字と利用可能な記号(_-)で入力できます。','[Maximum length] 255 bytes
-You can enter the value you want to label using half-width alphanumeric characters and available symbols (_-). ',NULL,'0',_____DATE_____,1);
+}',NULL,NULL,NULL,'[最大長]255バイト
+ラベル付与したい値を入力します。
+ 
+正規表現で使用したい場合は、以下のように入力してください。
+①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
+任意の値を入力してください。
+②正規表現を使って（「比較する値」による）検索を行い、そのマッチした結果を、ラベルの値としてそのまま利用したい場合
+値を空欄にしてください。
+③②のマッチした結果に対して、正規表現置換を行いたい場合
+検索結果のキャプチャグループの値を使いたい場合などを想定しています
+ex. 
+・キャプチャグループの1個目をラベルの値にしたい場合
+　→ \\\\1
+・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
+　→ \\\\1.com','[Maximum length] 255 bytes
+Enter the value you want to label.
+ 
+If you want to use it as a regular expression, enter it as follows.
+① I want to search using regular expressions (by "value to compare") and add any value to the label.
+Please enter any value.
+② If you want to search using regular expressions (by "value to compare") and use the matching results as is as the label value.
+Please leave the value blank.
+③ If you want to perform regular expression replacement on the matched results of ②
+This assumes cases where you want to use the capture group value of search results.
+ex.
+・If you want the first capture group to be the label value
+→ \\\\1
+・If you want to set the first capture group + any value (.com) as the label value
+→ \\\\1.com',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010609,_____DATE_____,'INSERT','11010609','110106','値','Value','label_value_name','11010707','1',90,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'LABEL_VALUE_NAME',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 255
-}','^[a-zA-Z0-9_-]+$',NULL,NULL,'[最大長]255バイト
-ラベル付与したい値を半角英数字と利用可能な記号(_-)で入力できます。','[Maximum length] 255 bytes
-You can enter the value you want to label using half-width alphanumeric characters and available symbols (_-). ',NULL,'0',_____DATE_____,1);
+}',NULL,NULL,NULL,'[最大長]255バイト
+ラベル付与したい値を入力します。
+ 
+正規表現で使用したい場合は、以下のように入力してください。
+①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
+任意の値を入力してください。
+②正規表現を使って（「比較する値」による）検索を行い、そのマッチした結果を、ラベルの値としてそのまま利用したい場合
+値を空欄にしてください。
+③②のマッチした結果に対して、正規表現置換を行いたい場合
+検索結果のキャプチャグループの値を使いたい場合などを想定しています
+ex. 
+・キャプチャグループの1個目をラベルの値にしたい場合
+　→ \\\\1
+・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
+　→ \\\\1.com','[Maximum length] 255 bytes
+Enter the value you want to label.
+ 
+If you want to use it as a regular expression, enter it as follows.
+① I want to search using regular expressions (by "value to compare") and add any value to the label.
+Please enter any value.
+② If you want to search using regular expressions (by "value to compare") and use the matching results as is as the label value.
+Please leave the value blank.
+③ If you want to perform regular expression replacement on the matched results of ②
+This assumes cases where you want to use the capture group value of search results.
+ex.
+・If you want the first capture group to be the label value
+→ \\\\1
+・If you want to set the first capture group + any value (.com) as the label value
+→ \\\\1.com',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010610','110106','備考','Remarks','remarks',NULL,'12',100,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'NOTE',NULL,'0','1','1','0','0','1','0',NULL,'{
 "min_length": 0,
 "max_length": 4000
@@ -1041,7 +1093,11 @@ INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAM
 
 INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('6','greater than or equal to','以上','>=',NULL,'0',_____DATE_____,1);
 
-INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('7','regular expression','正規表現','RegExp',NULL,'0',_____DATE_____,1);
+INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('7','regular expression（no option）','正規表現（optionなし）','RegExp',NULL,'0',_____DATE_____,1);
+
+INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('8','regular expression（DOTALL）','正規表現（DOTALL）','RegExp(DOTALL)',NULL,'0',_____DATE_____,NULL);
+
+INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('9','regular expression（MULTILINE ）','正規表現（MULTILINE ）','RegExp(MULTILINE )',NULL,'0',_____DATE_____,NULL);
 
 
 INSERT INTO T_OASE_TARGET_TYPE (TYPE_ID,TYPE_NAME_EN,TYPE_NAME_JA,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('1','string','文字列',NULL,'0',_____DATE_____,1);

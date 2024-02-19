@@ -165,3 +165,49 @@ class storage_read_text(storage_base):
             if os.path.isfile(self.tmp_file_path) is True:
                 os.remove(tmp_file_path)
         return value
+
+
+file = "/storage/org1/workspace-1/enomot.txt"
+#obj = storage_write_text()
+#obj.write_text(file, "榎本123", encoding="utf-8")
+#obj = storage_read_text()
+#print(obj.read_text(file,  encoding="utf-8"))
+import sys
+#sys.exit(1)
+file = "/storage/org1/workspace-1/enomot.txt"
+print("write " + file)
+obj = storage_write()
+obj.open(file, 'w')
+obj.write("line1\n")
+print("write close")
+obj.close()
+print("write " + file)
+obj = storage_write()
+obj.open(file, 'a')
+obj.write("line2\n")
+print("write close")
+obj.close()
+print("read\n")
+obj = storage_read()
+obj.open(file)
+print(obj.read())
+obj.close(False)
+file = "/tmp/enomot.txt"
+print("write " + file)
+obj = storage_write()
+obj.open(file, 'w')
+obj.write("line1\n")
+print("write close")
+obj.close()
+print("write " + file)
+obj = storage_write()
+obj.open(file, 'a')
+obj.write("line2\n")
+print("write close")
+obj.close()
+print("read\n")
+obj = storage_read()
+obj.open(file)
+print(obj.read())
+obj.close(False)
+

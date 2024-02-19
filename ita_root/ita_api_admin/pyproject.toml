@@ -8,8 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.9"
 setuptools = ">=0.0.0"
-flask = ">=0.0.0"
-connexion = {version = ">=0.0.0", extras = ["swagger-ui"]}
+flask = "^2.0.0"
+connexion = {version = "^2.0.0", extras = ["swagger-ui", "uvicorn"]}
 six = ">=0.0.0"
 requests = ">=0.0.0"
 pyyaml = ">=0.0.0"

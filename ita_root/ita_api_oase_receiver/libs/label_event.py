@@ -156,15 +156,10 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                     else:
                         # ラベル付与設定内target_valueをラベル付与設定内target_typeに合わせて変換 [パターンA,B,F用]
                         target_value_setting = target_value_type[setting["TYPE_ID"]](setting["SEARCH_VALUE_NAME"])
-                        # ラベル付与内comparison_method_idが7（正規表現）の場合
-                        if setting["COMPARISON_METHOD_ID"] == "7":
-                            # 収集してきたJSONデータのvalueとラベル付与設定内search_value_name、label_value_nameをcomparison_method_idを使用して正規表現（置換）を行う
-                            result_tuple = comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting, setting["LABEL_VALUE_NAME"])  # noqa: E501
-                        else:
-                            # 収集してきたJSONデータのvalueとラベル付与設定内search_value_nameをcomparison_method_idを使用して比較
-                            result_tuple = comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting)
-                        if result_tuple[0]:
-                            event_collection_data = add_label(label_key_map, event_collection_data, setting, result_tuple[1])  # パターンA,B,F
+                        # 収集してきたJSONデータのvalueとラベル付与設定内search_value_nameをcomparison_method_idを使用して比較
+                        compare_result, compare_match = comparison_values(setting["COMPARISON_METHOD_ID"], target_value_collection, target_value_setting)  # noqa: E501
+                        if compare_result is True:
+                            event_collection_data = add_label(label_key_map, event_collection_data, setting, compare_match)  # パターンA,B,F
             except Exception as e:
                 # ラベル付与に失敗しました
                 err_code = "499-01806"
@@ -213,7 +208,7 @@ def returns_bool(_value):
         return None
 
 
-def comparison_values(comparison_method_id="1", comparative=None, referent=None, lavel_value_name=None):
+def comparison_values(comparison_method_id="1", comparative=None, referent=None):
     """
     収集してきたイベントの(target_keyに対応する)値と、ラベル付与設定のtarget_valueを比較
     compare value of collected event and target value of label settings
@@ -222,12 +217,12 @@ def comparison_values(comparison_method_id="1", comparative=None, referent=None,
         comparison_method_id: 比較方法
         comparative: 収集した値
         referent: 比較値(target_value)
-        label_value_name: ラベルの値
     Returns:
-        tuple: (result_bool: 比較結果(該当すればtrue), result_value: 値）
+        compare_result: 比較結果(該当すればtrue)
+        compare_match: マッチした値
     """
-    result_bool = False
-    result_value = None
+    compare_result = False
+    compare_match = None
 
     comparison_operator = {
         "1": operator.eq,  # ==
@@ -250,22 +245,17 @@ def comparison_values(comparison_method_id="1", comparative=None, referent=None,
                 regex_pattern = re.compile(referent)
                 result = regex_pattern.search(comparative)
                 if result:
-                    result_bool = True
-                    result_group = result.group(0)
-                    if lavel_value_name is None:
-                        result_value = result_group
-                    else:
-                        lavel_value_name_row = r'{}'.format(lavel_value_name)
-                        result_value = re.sub(regex_pattern, lavel_value_name_row, result_group)
+                    compare_result = True
+                    compare_match = result.group(0)
             else:
                 comparison = comparison_operator[comparison_method_id]
-                result_bool = comparison(comparative, referent)
+                compare_result = comparison(comparative, referent)
         except Exception as e:
             # 収集した値{comparative}に対して、比較方法{comparison_method_id}と比較値{referent}を実行し、エラーが{e}が発生したので、処理をスキップします。
             err_msg = g.appmsg.get_log_message("499-01807", [comparative, comparison_method_id, referent, e])
             g.applogger.info(err_msg)
 
-    return (result_bool, result_value)
+    return compare_result, compare_match
 
 
 # ドット区切りの文字列で辞書を指定して値を取得
@@ -277,21 +267,26 @@ def get_value_from_jsonpath(jsonpath, data):
 
 
 # ラベル付与処理
-def add_label(label_key_map, event_collection_data, setting, label_value_name=None):
+def add_label(label_key_map, event_collection_data, setting, compare_match=None):
     # ラベルのマスタを引く
     label_key_data = label_key_map[setting["LABEL_KEY_ID"]]
 
     label_key_id = label_key_data["LABEL_KEY_ID"]
     label_key_string = label_key_data["LABEL_KEY_NAME"]
-    # label_valueが空の場合、target_valueをlabel_valueに流用する [パターンB,E用]
+    # label_valueが空の場合、target_valueをlabel_valueに流用する(正規表現の場合はマッチ結果を流用する）
     if setting["COMPARISON_METHOD_ID"] != "7":
         if setting["LABEL_VALUE_NAME"] is None:
-            setting["LABEL_VALUE_NAME"] = setting["SEARCH_VALUE_NAME"]
-
-    if label_value_name:
-        event_collection_data["labels"][label_key_string] = label_value_name
+            label_value_name = setting["SEARCH_VALUE_NAME"]
+        else:
+            label_value_name = setting["LABEL_VALUE_NAME"]
     else:
-        event_collection_data["labels"][label_key_string] = setting["LABEL_VALUE_NAME"]
+        if setting["LABEL_VALUE_NAME"] is None:
+            label_value_name = compare_match
+        else:
+            pattern_re = re.compile(setting["SEARCH_VALUE_NAME"])
+            label_value_name = re.sub(pattern_re, setting["LABEL_VALUE_NAME"], compare_match)
+
+    event_collection_data["labels"][label_key_string] = label_value_name
     event_collection_data["exastro_labeling_settings"][label_key_string] = setting["LABELING_SETTINGS_ID"]
     event_collection_data["exastro_label_key_inputs"][label_key_string] = label_key_id
     return event_collection_data

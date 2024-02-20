@@ -208,6 +208,22 @@ ex.
 → \\1
 ・If you want to set the first capture group + any value (.com) as the label value
 → \\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]255バイト
+任意のルール名を入力します。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any rule name.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010903';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]255バイト
+任意のルール名を入力します。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any rule name.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010903';
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]255バイト
+どのルールから作成された結論イベントなのかを、恒久的に判別するため"_exastro_rule_name"ラベルに設定する任意の名前を入力します。
+※後から変更することはできません。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any name you want to set in the "_exastro_rule_name" label to permanently identify which rule the conclusion event was created from.
+*You cannot change it later.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010904';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]255バイト
+どのルールから作成された結論イベントなのかを、恒久的に判別するため"_exastro_rule_name"ラベルに設定する任意の名前を入力します。
+※後から変更することはできません。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any name you want to set in the "_exastro_rule_name" label to permanently identify which rule the conclusion event was created from.
+*You cannot change it later.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010904';
 
 -- T_OASE_COMPARISON_METHOD: UPDATE
 UPDATE T_OASE_COMPARISON_METHOD SET COMPARISON_METHOD_NAME_EN = 'regular expression（no option）', COMPARISON_METHOD_NAME_JA = '正規表現（optionなし）', COMPARISON_METHOD_SYMBOL = 'RegExp', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COMPARISON_METHOD_ID = '7';

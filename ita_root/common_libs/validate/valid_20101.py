@@ -190,6 +190,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         tmpFile = "{}/InventryFileAddOptionYamlParse_{}".format(get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmpFile)
+        # #2079 /storage配下ではないので対象外
         with open(tmpFile, "w") as fd:
             fd.write(in_string)
         obj = YamlParse()

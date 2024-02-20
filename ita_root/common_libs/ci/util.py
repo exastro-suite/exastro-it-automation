@@ -295,10 +295,13 @@ def app_exception(e):
         t = traceback.format_exc()
         log_err(arrange_stacktrace_format(t))
 
-        # catch - raise AppException("xxx-xxxxx", log_format), and get message
-        result_code, log_msg_args, api_msg_args = args
-        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-        log_err(log_msg)
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    if ret_db_disuse is False:
+        log_err(log_msg, False)
+    else:
+        log_err(log_msg, True)
 
 
 def exception(e, exception_log_need=False):
@@ -356,11 +359,13 @@ def validation_exception(e):
         t = traceback.format_exc()
         log_err(arrange_stacktrace_format(t))
 
-        # catch - raise AppException("xxx-xxxxx", log_format), and get message
-        result_code, log_msg_args, api_msg_args = args
-        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-        log_err(log_msg)
-
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    if ret_db_disuse is False:
+        log_err(log_msg, False)
+    else:
+        log_err(log_msg, True)
 
 def app_exception_driver_log(e, logfile=None):
     '''
@@ -469,8 +474,11 @@ def validation_exception_driver_log(e, logfile=None):
             w_obj.close()
 
 
-def log_err(msg=""):
-    g.applogger.error("[error]{}".format(msg))
+def log_err(msg="", set_info=False):
+    if set_info is True:
+        g.applogger.info(msg)
+    else:
+        g.applogger.error(msg)
 
 
 def is_service_loglevel_table(common_db):

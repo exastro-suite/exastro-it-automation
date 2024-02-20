@@ -175,6 +175,7 @@ class DBConnectCommon:
         Arguments:
             file_name: sql file path
         """
+        # #2079 /storage配下ではないので対象外
         with open(file_name, "r") as f:
             sql_list = f.read().split(";\n")
             for sql in sql_list:

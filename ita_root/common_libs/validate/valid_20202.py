@@ -67,6 +67,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
             filepath_tmp = "%s/20202_playbook_file_%s.yml" % (get_OSTmpPath(), os.getpid())
             # /tmpに作成したファイルはゴミ掃除リストに追加
             addAnsibleCreateFilesPath(filepath_tmp)
+            # #2079 /storage配下ではないので対象外
             with open(filepath_tmp, "w") as fd:
                 fd.write(playbook_data_decoded)
 

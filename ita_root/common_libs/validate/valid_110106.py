@@ -120,9 +120,9 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
             except Exception:
                 msg.append(g.appmsg.get_api_message("MSG-130008", [setting_name]))
 
-        # ターゲットタイプがその他の時
+        # ターゲットタイプがその他の時、比較方法は正規表現のみ
         if target_type == "10":
-            if comparison_method != "7":
+            if comparison_method not in ["7", "8", "9"]:
                 msg.append(g.appmsg.get_api_message("MSG-130009", [setting_name]))
             if search_value is None:
                 msg.append(g.appmsg.get_api_message("MSG-130010", [setting_name]))
@@ -141,8 +141,8 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
                 method = get_comparison_method(objdbca, comparison_method)
                 msg.append(g.appmsg.get_api_message("MSG-130013", [setting_name, method]))
 
-        # 比較方法が正規表現の時
-        if comparison_method == "7":
+        # 比較方法が正規表現の時、ターゲットタイプはその他のみ
+        if comparison_method in ["7", "8", "9"]:
             if target_type != "10":
                 msg.append(g.appmsg.get_api_message("MSG-130014", [setting_name]))
             if search_value is None:

@@ -51,6 +51,7 @@ class AppLog:
         isMyapp = True if os.getenv('IS_MYAPP') == "1" else False
 
         # read config.yml
+        # #2079 /storage配下ではないので対象外
         with open(os.getenv('PYTHONPATH') + 'logging.yml', 'r') as yml:
             dictConfig = yaml.safe_load(yml)
 

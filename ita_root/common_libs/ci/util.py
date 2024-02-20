@@ -23,6 +23,7 @@ import json
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
 from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.storage_access import storage_write
 
 
 def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=500):
@@ -294,10 +295,13 @@ def app_exception(e):
         t = traceback.format_exc()
         log_err(arrange_stacktrace_format(t))
 
-        # catch - raise AppException("xxx-xxxxx", log_format), and get message
-        result_code, log_msg_args, api_msg_args = args
-        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-        log_err(log_msg)
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    if ret_db_disuse is False:
+        log_err(log_msg, False)
+    else:
+        log_err(log_msg, True)
 
 
 def exception(e, exception_log_need=False):
@@ -355,11 +359,13 @@ def validation_exception(e):
         t = traceback.format_exc()
         log_err(arrange_stacktrace_format(t))
 
-        # catch - raise AppException("xxx-xxxxx", log_format), and get message
-        result_code, log_msg_args, api_msg_args = args
-        log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-        log_err(log_msg)
-
+    # catch - raise AppException("xxx-xxxxx", log_format), and get message
+    result_code, log_msg_args, api_msg_args = args
+    log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+    if ret_db_disuse is False:
+        log_err(log_msg, False)
+    else:
+        log_err(log_msg, True)
 
 def app_exception_driver_log(e, logfile=None):
     '''
@@ -390,12 +396,12 @@ def app_exception_driver_log(e, logfile=None):
 
         if logfile:
             # 作業実行のエラーログ出力
-            f = open(logfile, "a")
+            w_obj = storage_write()
+            w_obj.open(logfile, "a")
             t = traceback.format_exc()
-            f.write(arrange_stacktrace_format(t) + "\n\n")
-            f.write(log_msg + "\n")
-            f.close()
-
+            w_obj.write(arrange_stacktrace_format(t) + "\n\n")
+            w_obj.write(log_msg + "\n")
+            w_obj.close()
 
 def exception_driver_log(e, logfile=None):
     '''
@@ -421,11 +427,11 @@ def exception_driver_log(e, logfile=None):
     # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
     if ret_db_disuse is False:
         if logfile:
-            # 作業実行のエラーログ出力
-            f = open(logfile, "a")
+            w_obj = storage_write()
+            w_obj.open(logfile, "a")
             t = traceback.format_exc()
-            f.write(arrange_stacktrace_format(t) + "\n\n")
-            f.close()
+            w_obj.write(arrange_stacktrace_format(t) + "\n\n")
+            w_obj.close()
 
 
 def validation_exception_driver_log(e, logfile=None):
@@ -460,15 +466,19 @@ def validation_exception_driver_log(e, logfile=None):
     if ret_db_disuse is False:
         if logfile:
             # 作業実行のエラーログ出力
-            f = open(logfile, "a")
+            w_obj = storage_write()
+            w_obj.open(logfile, "a")
             t = traceback.format_exc()
-            f.write(arrange_stacktrace_format(t) + "\n\n")
-            f.write(log_msg + "\n")
-            f.close()
+            w_obj.write(arrange_stacktrace_format(t) + "\n\n")
+            w_obj.write(log_msg + "\n")
+            w_obj.close()
 
 
-def log_err(msg=""):
-    g.applogger.error("[error]{}".format(msg))
+def log_err(msg="", set_info=False):
+    if set_info is True:
+        g.applogger.info(msg)
+    else:
+        g.applogger.error(msg)
 
 
 def is_service_loglevel_table(common_db):

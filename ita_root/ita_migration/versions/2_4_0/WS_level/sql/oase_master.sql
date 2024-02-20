@@ -162,9 +162,9 @@ UPDATE T_COMN_MENU_COLUMN_LINK SET VALIDATE_REG_EXP = NULL, DESCRIPTION_JA = '[�
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
 ex.
 ・キャプチャグループの1個目をラベルの値にしたい場合
-　→ \\\\1
+　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
-　→ \\\\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
+　→ \\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
 Enter the value you want to label.
 
 If you want to use it as a regular expression, enter it as follows.
@@ -176,9 +176,9 @@ Please leave the value blank.
 This assumes cases where you want to use the capture group value of search results.
 ex.
 ・If you want the first capture group to be the label value
-→ \\\\1
+→ \\1
 ・If you want to set the first capture group + any value (.com) as the label value
-→ \\\\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
+→ \\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_REG_EXP = NULL, DESCRIPTION_JA = '[最大長]255バイト
 ラベル付与したい値を入力します。
 
@@ -191,9 +191,9 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_REG_EXP = NULL, DESCRIPTION_JA =
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
 ex.
 ・キャプチャグループの1個目をラベルの値にしたい場合
-　→ \\\\1
+　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
-　→ \\\\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
+　→ \\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
 Enter the value you want to label.
 
 If you want to use it as a regular expression, enter it as follows.
@@ -205,9 +205,9 @@ Please leave the value blank.
 This assumes cases where you want to use the capture group value of search results.
 ex.
 ・If you want the first capture group to be the label value
-→ \\\\1
+→ \\1
 ・If you want to set the first capture group + any value (.com) as the label value
-→ \\\\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
+→ \\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
 
 -- T_OASE_COMPARISON_METHOD: UPDATE
 UPDATE T_OASE_COMPARISON_METHOD SET COMPARISON_METHOD_NAME_EN = 'regular expression（no option）', COMPARISON_METHOD_NAME_JA = '正規表現（optionなし）', COMPARISON_METHOD_SYMBOL = 'RegExp', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COMPARISON_METHOD_ID = '7';

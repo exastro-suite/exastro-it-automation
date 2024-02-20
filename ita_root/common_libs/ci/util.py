@@ -23,6 +23,7 @@ import json
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
 from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.storage_access import storage_write
 
 
 def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=500):
@@ -390,12 +391,12 @@ def app_exception_driver_log(e, logfile=None):
 
         if logfile:
             # 作業実行のエラーログ出力
-            f = open(logfile, "a")
+            w_obj = storage_write()
+            w_obj.open(logfile, "a")
             t = traceback.format_exc()
-            f.write(arrange_stacktrace_format(t) + "\n\n")
-            f.write(log_msg + "\n")
-            f.close()
-
+            w_obj.write(arrange_stacktrace_format(t) + "\n\n")
+            w_obj.write(log_msg + "\n")
+            w_obj.close()
 
 def exception_driver_log(e, logfile=None):
     '''
@@ -421,11 +422,11 @@ def exception_driver_log(e, logfile=None):
     # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
     if ret_db_disuse is False:
         if logfile:
-            # 作業実行のエラーログ出力
-            f = open(logfile, "a")
+            w_obj = storage_write()
+            w_obj.open(logfile, "a")
             t = traceback.format_exc()
-            f.write(arrange_stacktrace_format(t) + "\n\n")
-            f.close()
+            w_obj.write(arrange_stacktrace_format(t) + "\n\n")
+            w_obj.close()
 
 
 def validation_exception_driver_log(e, logfile=None):
@@ -460,11 +461,12 @@ def validation_exception_driver_log(e, logfile=None):
     if ret_db_disuse is False:
         if logfile:
             # 作業実行のエラーログ出力
-            f = open(logfile, "a")
+            w_obj = storage_write()
+            w_obj.open(logfile, "a")
             t = traceback.format_exc()
-            f.write(arrange_stacktrace_format(t) + "\n\n")
-            f.write(log_msg + "\n")
-            f.close()
+            w_obj.write(arrange_stacktrace_format(t) + "\n\n")
+            w_obj.write(log_msg + "\n")
+            w_obj.close()
 
 
 def log_err(msg=""):

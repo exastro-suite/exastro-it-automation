@@ -956,6 +956,20 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     tmp_msg = "ルールマッチ終了"
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+    # 処理後タイムアウトイベント検出
+    PostProcTimeoutEventIdList = EventObj.get_post_proc_timeout_event()
+    if len(PostProcTimeoutEventIdList) > 0:
+        tmp_msg = "処理後タイムアウト検出 EventId: %s" % (str(PostProcTimeoutEventIdList))
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        # 処理後タイムアウトの_exastro_timeoutを1に更新
+        update_Flag_Dict = {"_exastro_timeout": '1'}
+        EventObj.update_label_flag(PostProcTimeoutEventIdList, update_Flag_Dict)
+        tmp_msg = "イベント更新  処理後タイムアウト (%s) ids:%s" % (str(update_Flag_Dict), str(PostProcTimeoutEventIdList))
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    else:
+        tmp_msg = "処理後タイムアウトイベントなし"
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
     # 未知事象フラグを立てる（一括で行う）
     UnusedEventIdList = EventObj.get_unused_event(IncidentDict)
     if len(UnusedEventIdList) > 0:

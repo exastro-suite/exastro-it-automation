@@ -79,7 +79,7 @@ class sqliteConnect:
             for table_name, record_info in dict.items():
                 rowid_list = [rowid for rowid in record_info]
                 delete_placeholders = ", ".join("?" for _ in rowid_list)
-                where_str = f"WHERE NOT (rowid IN ({delete_placeholders}) OR sent_flag=0)"
+                where_str = f"WHERE (rowid IN ({delete_placeholders}) OR sent_flag=0)"
                 self.delete(table_name, where_str, rowid_list)
             self.db_connect.commit()
         except Exception as e:

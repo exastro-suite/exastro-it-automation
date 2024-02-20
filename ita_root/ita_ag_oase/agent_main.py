@@ -249,47 +249,57 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     else:
         g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))
 
-    # レコードのDELETE
-    # 最新のレコードと1ループ前のレコードを残す
-    remain_timestamp_dict = {}  # sent_timestampテーブルに残すレコードの{rowid: {id: xxx, fetched_time: nnn}}
-    remain_event_rowids = []  # eventsテーブルに残すレコードのrowid
+    # 不要なレコードのDELETE（1世代前までのイベントは残す）
+    to_delete_timestamp_rowids = []  # sent_timestampテーブルから削除するレコードのrowids
+    to_delete_events_rowids = []  # eventsテーブルから削除するレコードのrowids
+    remain_events_dict = {}  # eventsテーブルに残すレコードの{event_collection_settings_name: [...fetched_time]}
     g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
     for name in setting_name_list:
+
         try:
+            # sent_timestampテーブルから送信済みフラグが1のレコードを全件取得
             sqliteDB.db_cursor.execute(
                 """
                 SELECT rowid, event_collection_settings_name, fetched_time FROM sent_timestamp
                 WHERE event_collection_settings_name=? and sent_flag=1
-                ORDER BY fetched_time DESC LIMIT 2
+                ORDER BY fetched_time DESC
                 """,
                 (name, )
             )
-            remain_timestamp = sqliteDB.db_cursor.fetchall()
+            all_records = sqliteDB.db_cursor.fetchall()
+
+            # sent_timestampテーブルでnameあたりのレコードが2世代分以下の場合、処理をスキップ
+            if len(all_records) <= 2:
+                continue
+
+            remain_events_dict[name] = [all_records[0][2], all_records[1][2]]
+
+            # fetched_timeが最大値とその次の値の（テーブルに残す）レコードを排除したリストを作成
+            to_delete_timestamp = all_records[2:]
+            # rowidのみを抜き出したリスト
+            rowids = [item[0] for item in to_delete_timestamp]
+            to_delete_timestamp_rowids.extend(rowids)
+
+
         except sqlite3.OperationalError:
             # テーブルが作られていない（イベントが無い）場合、処理を終了
             return
 
-        if len(remain_timestamp) < 2:
-            continue
-        for item in remain_timestamp:
-            remain_timestamp_dict[item[0]] = {"event_collection_settings_name": item[1], "fetched_time": item[2]}
-
     # 削除対象イベントが無い場合、削除処理をスキップ
-    if len(remain_timestamp_dict) >= 1:
-        for rowid, item in remain_timestamp_dict.items():
-            sqliteDB.db_cursor.execute(
-                """
-                SELECT rowid FROM events
-                WHERE ((event_collection_settings_name=? AND fetched_time=?) OR sent_flag=0)
-                """,
-                (item["event_collection_settings_name"], item["fetched_time"])
-            )
-            remain_event = sqliteDB.db_cursor.fetchall()
-            for item in remain_event:
-                remain_event_rowids.append(item[0])
+    if len(remain_events_dict) >= 1:
+        #  eventsテーブルから削除対象のレコードを全件取得（remain_events_dictの情報に一致しないレコード）
+        condition = " AND ".join([f"((event_collection_settings_name!='{name}' OR fetched_time NOT IN ({', '.join(map(str, fetched_time))})) AND NOT sent_flag=0)" for name, fetched_time in remain_events_dict.items()])
+
+        sqliteDB.db_cursor.execute(
+            f"SELECT rowid FROM events WHERE {condition}"
+        )
+        to_delete_events = sqliteDB.db_cursor.fetchall()
+        for item in to_delete_events:
+            to_delete_events_rowids.append(item[0])
+
         try:
             sqliteDB.db_connect.execute("BEGIN")
-            sqliteDB.delete_unnecessary_records({"events": remain_event_rowids, "sent_timestamp": remain_timestamp_dict})
+            sqliteDB.delete_unnecessary_records({"events": to_delete_events_rowids, "sent_timestamp": to_delete_timestamp_rowids})
             g.applogger.debug(g.appmsg.get_log_message("AGT-10023", []))
         except AppException as e:  # noqa F405
             app_exception(e)

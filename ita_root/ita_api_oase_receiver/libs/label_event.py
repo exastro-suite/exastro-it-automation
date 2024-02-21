@@ -191,12 +191,13 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                         if compare_result is True:
                             labeled_event = add_label(labeled_event, setting, compare_match)  # パターンA,B,F
             except Exception as e:
-                # ラベル付与に失敗しました
-                err_code = "499-01806"
                 g.applogger.info(stacktrace())
                 g.applogger.info("event={}".format(labeled_event))
                 g.applogger.info("label_setting={}".format(setting))
-                raise AppException(err_code, [e], [e])
+                # ラベル付与に失敗しました
+                err_msg = g.appmsg.get_log_message("499-01806", [e])
+                g.applogger.info(err_msg)
+                continue
 
     # ラベル付与したデータをMongoDBに保存
     try:

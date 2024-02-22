@@ -251,7 +251,6 @@ def comparison_values(comparison_method_id="1", collect_value=None, compare_valu
             if regex_result:
                 compare_result = True
                 # マッチした全体を格納
-                print(regex_result)
                 compare_match = regex_result.group(0)
         else:
             comparison = COMPARISON_OPERATOR[comparison_method_id]  # 比較メソッドを取り出す

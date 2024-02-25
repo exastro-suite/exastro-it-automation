@@ -245,6 +245,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             g.applogger.debug(g.appmsg.get_log_message("AGT-10019", []))
         else:
             g.applogger.info(g.appmsg.get_log_message("AGT-10020", [status_code, response]))
+            g.applogger.info("post_body={}".format(post_body))
 
     else:
         g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))

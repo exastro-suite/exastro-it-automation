@@ -23,6 +23,7 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_excel
+from common_libs.common import storage_access
 import util
 
 
@@ -36,8 +37,8 @@ def backyard_main(organization_id, workspace_id):
 
     """
 
-    EXPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/export"
-    IMPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import"
+    EXPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/export"
+    IMPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import"
     DST_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/uploadfiles/60106/file_name"
     RESULT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/uploadfiles/60106/result_file"
 
@@ -195,8 +196,12 @@ def backyard_main(organization_id, workspace_id):
 
                 # ファイル一覧をJSONに変換
                 tmpExportPath = EXPORT_PATH + "/" + taskId + "/tmp_zip"
-                fileputflg = pathlib.Path(tmpExportPath + "/MENU_LIST.txt").write_text(fileNameList, encoding="utf-8")
-
+                
+                # MENU_LIST作成
+                file_write = storage_access.storage_write()
+                file_write.open(tmpExportPath + "/MENU_LIST.txt", mode="w")
+                file_write.write(fileNameList)
+                file_write.close()
 
                 # パスの有無を確認
                 if not os.path.exists(DST_PATH):
@@ -239,8 +244,13 @@ def backyard_main(organization_id, workspace_id):
                         import_menu_list.append(menu_id)
 
                 targetImportPath = IMPORT_PATH + "/import/" + upload_id
-                tmpMenuIdFileAry = Path(targetImportPath + '/MENU_LIST.txt').read_text(encoding="utf-8")
+                
+                # tmp配下で読み取り
+                file_read = storage_access.storage_read()
+                file_read.open(targetImportPath + "/MENU_LIST.txt")
+                tmpMenuIdFileAry = file_read.read()
                 tmpMenuIdFileAry = tmpMenuIdFileAry.split("\n")
+                file_read.close()
 
                 menuIdFileInfo = []
                 retImportAry = {}

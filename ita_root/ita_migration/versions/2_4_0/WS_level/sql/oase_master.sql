@@ -2,6 +2,7 @@
     -- T_COMN_MENU_COLUMN_LINK : UPDATE
     -- T_OASE_COMPARISON_METHOD: UPDATE
     -- T_OASE_COMPARISON_METHOD: INSERT
+    -- T_OASE_ACTION_STATUS: UPDATE
 
 -- T_COMN_MENU_COLUMN_LINK: UPDATE
 UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_NAME_JA = '接続先', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010105';
@@ -162,9 +163,9 @@ UPDATE T_COMN_MENU_COLUMN_LINK SET VALIDATE_REG_EXP = NULL, DESCRIPTION_JA = '[�
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
 ex.
 ・キャプチャグループの1個目をラベルの値にしたい場合
-　→ \\\\1
+　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
-　→ \\\\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
+　→ \\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
 Enter the value you want to label.
 
 If you want to use it as a regular expression, enter it as follows.
@@ -176,9 +177,9 @@ Please leave the value blank.
 This assumes cases where you want to use the capture group value of search results.
 ex.
 ・If you want the first capture group to be the label value
-→ \\\\1
+→ \\1
 ・If you want to set the first capture group + any value (.com) as the label value
-→ \\\\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
+→ \\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_REG_EXP = NULL, DESCRIPTION_JA = '[最大長]255バイト
 ラベル付与したい値を入力します。
 
@@ -191,9 +192,9 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_REG_EXP = NULL, DESCRIPTION_JA =
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
 ex.
 ・キャプチャグループの1個目をラベルの値にしたい場合
-　→ \\\\1
+　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
-　→ \\\\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
+　→ \\1.com', DESCRIPTION_EN = '[Maximum length] 255 bytes
 Enter the value you want to label.
 
 If you want to use it as a regular expression, enter it as follows.
@@ -205,13 +206,74 @@ Please leave the value blank.
 This assumes cases where you want to use the capture group value of search results.
 ex.
 ・If you want the first capture group to be the label value
-→ \\\\1
+→ \\1
 ・If you want to set the first capture group + any value (.com) as the label value
-→ \\\\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
+→ \\1.com', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010609';
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]255バイト
+任意のルール名を入力します。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any rule name.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010903';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]255バイト
+任意のルール名を入力します。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any rule name.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010903';
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]255バイト
+どのルールから作成された結論イベントなのかを、恒久的に判別するため"_exastro_rule_name"ラベルに設定する任意の名前を入力します。
+※後から変更することはできません。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any name you want to set in the "_exastro_rule_name" label to permanently identify which rule the conclusion event was created from.
+*You cannot change it later.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010904';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]255バイト
+どのルールから作成された結論イベントなのかを、恒久的に判別するため"_exastro_rule_name"ラベルに設定する任意の名前を入力します。
+※後から変更することはできません。', DESCRIPTION_EN = '[Maximum length] 255 bytes
+Enter any name you want to set in the "_exastro_rule_name" label to permanently identify which rule the conclusion event was created from.
+*You cannot change it later.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010904';
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = 'ステータスには以下の状態が存在します。
+・判定済み
+・実行中
+・承認待ち
+・承認済み
+・承認却下済み
+・完了
+・完了（異常）
+・完了確認待ち
+・完了確認済み
+・完了確認却下済み', DESCRIPTION_EN = 'The following status states exist.
+・Evaluated
+・Running
+・Awaiting Approval
+・Approved
+・Rejected
+・Completed
+・Completed (abnormal)
+・Waiting for completion confirmation
+・Completion Confirmed
+・Completion confirmed rejected', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11011004';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = 'ステータスには以下の状態が存在します。
+・判定済み
+・実行中
+・承認待ち
+・承認済み
+・承認却下済み
+・完了
+・完了（異常）
+・完了確認待ち
+・完了確認済み
+・完了確認却下済み', DESCRIPTION_EN = 'The following status states exist.
+・Evaluated
+・Running
+・Awaiting Approval
+・Approved
+・Rejected
+・Completed
+・Completed (abnormal)
+・Waiting for completion confirmation
+・Completion Confirmed
+・Completion confirmed rejected', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11011004';
 
 -- T_OASE_COMPARISON_METHOD: UPDATE
 UPDATE T_OASE_COMPARISON_METHOD SET COMPARISON_METHOD_NAME_EN = 'regular expression（no option）', COMPARISON_METHOD_NAME_JA = '正規表現（optionなし）', COMPARISON_METHOD_SYMBOL = 'RegExp', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COMPARISON_METHOD_ID = '7';
 
 -- T_OASE_COMPARISON_METHOD: INSERT
-INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('8','regular expression（DOTALL）','正規表現（DOTALL）','RegExp(DOTALL)',NULL,'0',_____DATE_____,NULL);
-INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('9','regular expression（MULTILINE ）','正規表現（MULTILINE ）','RegExp(MULTILINE )',NULL,'0',_____DATE_____,NULL);
+INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('8','regular expression（DOTALL）','正規表現（DOTALL）','RegExp(DOTALL)',NULL,'0',_____DATE_____,1);
+INSERT INTO T_OASE_COMPARISON_METHOD (COMPARISON_METHOD_ID,COMPARISON_METHOD_NAME_EN,COMPARISON_METHOD_NAME_JA,COMPARISON_METHOD_SYMBOL,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('9','regular expression（MULTILINE ）','正規表現（MULTILINE ）','RegExp(MULTILINE )',NULL,'0',_____DATE_____,1);
+
+-- T_OASE_ACTION_STATUS: UPDATE
+UPDATE T_OASE_ACTION_STATUS SET ACTION_STASTUS_NAME_EN = 'Evaluated', ACTION_STASTUS_NAME_JA = '判定済み', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE ACTION_STASTUS_ID = '1';

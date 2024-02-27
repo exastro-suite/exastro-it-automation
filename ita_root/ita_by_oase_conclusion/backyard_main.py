@@ -32,7 +32,7 @@ import json
 
 def backyard_main(organization_id, workspace_id):
     """
-        ルールマッチング機能backyardメイン処理
+        OASE評価機能backyardメイン処理
         ARGS:
             organization_id: Organization ID
             workspace_id: Workspace ID
@@ -776,7 +776,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         Row = {
                             "RULE_ID": ruleRow.get("RULE_ID"),
                             "RULE_NAME": ruleRow.get("RULE_NAME"),
-                            # 1:ルールマッチング済み
+                            # 1:判定済み
                             "STATUS_ID": "1",
                             "ACTION_ID": action_id,
                             "ACTION_NAME": action_name,
@@ -813,7 +813,7 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
                         # コミット  トランザクション終了
                         objdbca.db_transaction_end(True)
 
-                        # 評価結果からルールマッチング済みのレコードを取得
+                        # 評価結果から判定済みのレコードを取得
                         # テーブル名
                         t_oase_action_log = 'T_OASE_ACTION_LOG'  # 評価結果
                         # 「評価結果」からレコードを取得
@@ -956,6 +956,20 @@ def JudgeMain(objdbca, MongoDBCA, judgeTime, EventObj):
     tmp_msg = "ルールマッチ終了"
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+    # 処理後タイムアウトイベント検出
+    PostProcTimeoutEventIdList = EventObj.get_post_proc_timeout_event()
+    if len(PostProcTimeoutEventIdList) > 0:
+        tmp_msg = "処理後タイムアウト検出 EventId: %s" % (str(PostProcTimeoutEventIdList))
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        # 処理後タイムアウトの_exastro_timeoutを1に更新
+        update_Flag_Dict = {"_exastro_timeout": '1'}
+        EventObj.update_label_flag(PostProcTimeoutEventIdList, update_Flag_Dict)
+        tmp_msg = "イベント更新  処理後タイムアウト (%s) ids:%s" % (str(update_Flag_Dict), str(PostProcTimeoutEventIdList))
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    else:
+        tmp_msg = "処理後タイムアウトイベントなし"
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
     # 未知事象フラグを立てる（一括で行う）
     UnusedEventIdList = EventObj.get_unused_event(IncidentDict)
     if len(UnusedEventIdList) > 0:
@@ -1086,7 +1100,7 @@ class ActionStatusMonitor():
         # ラベルマスタ取得
         self.getLabelGroup()
         # OASE 評価結果　ステータス値
-        self.OSTS_Rule_Match = "1"               # ルールマッチング済み
+        self.OSTS_Rule_Match = "1"               # 判定済み
         self.OSTS_Executing = "2"                # 実行中
         self.OSTS_Wait_Approval = "3"            # 承認待ち
         self.OSTS_Approved = "4"                 # 承認済み

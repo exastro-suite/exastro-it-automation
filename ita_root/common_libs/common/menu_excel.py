@@ -1728,7 +1728,7 @@ def execute_excel_maintenance(
     try:
         # メニューのレコード登録/更新(更新/廃止/復活)
         result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameter)
-    except Exception as e:
+    except AppException as e:
         # エラー判定
         # 処理が終わったらwbは削除する
         os.remove(file_path)

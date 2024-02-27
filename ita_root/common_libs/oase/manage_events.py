@@ -182,7 +182,7 @@ class ManageEvents:
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
             # 処理後にタイムアウトにするイベント
-            if event[self.rule_const["DF_LOCAL_LABLE_NAME"]][self.rule_const["DF_LOCAL_LABLE_STATUS"]] == self.rule_const["DF_TIMEOUT_EVENT"]:
+            if event[self.rule_const["DF_LOCAL_LABLE_NAME"]][self.rule_const["DF_LOCAL_LABLE_STATUS"]] == self.rule_const["DF_POST_PROC_TIMEOUT_EVENT"]:
                 post_proc_timeout_event_ids.append(event_id)
 
         return post_proc_timeout_event_ids

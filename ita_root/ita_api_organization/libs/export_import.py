@@ -30,6 +30,7 @@ import secrets
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectCommon
 from common_libs.loadtable import *  # noqa: F403
+from common_libs.common import storage_access
 
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
@@ -493,9 +494,9 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
     fileName = upload_id + '_ita_data.zip'
 
     # ファイル保存
-    uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/" + fileName
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+    uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/upload/" + fileName
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/upload/"
+    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/import/"
     ret = upload_file(uploadFilePath, body_zipfile['base64'])
 
     if ret == 0:
@@ -503,14 +504,22 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
             os.remove(uploadPath + fileName)
 
     # zip解凍
-    if os.path.exists(uploadPath + fileName):
-        os.makedirs(uploadPath + upload_id)
-        os.chmod(uploadPath + upload_id, 0o777)
+    # 解凍はtmp配下で行う
+    tmp_dir_path = "/tmp/{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')) + "/upload"
+    if os.path.isdir(tmp_dir_path) is False:
+        os.makedirs(tmp_dir_path)
+        os.chmod(tmp_dir_path, 0o777)
+    shutil.copy2(uploadPath + fileName, tmp_dir_path)
 
-    ret = unzip_file(fileName, uploadPath, upload_id)
+    ret = unzip_file(fileName, tmp_dir_path, upload_id)
 
     if ret is False:
-        unzip_file_cmd(fileName, uploadPath, upload_id)
+        unzip_file_cmd(fileName, tmp_dir_path, upload_id)
+    
+    shutil.copytree(tmp_dir_path + "/" + upload_id, uploadPath + upload_id)
+    
+    # tmp配下のファイル削除
+    shutil.rmtree(tmp_dir_path)
 
     # zipファイルの中身確認
     declare_list = checkZipFile(upload_id, organization_id, workspace_id)
@@ -751,7 +760,7 @@ def _format_loadtable_msg(loadtable_msg):
 
     return result_msg
 
-def unzip_file(fileName, uploadPath, upload_id):
+def unzip_file(fileName, tmp_dir_path, upload_id):
     """
         zipファイルを解凍する
 
@@ -760,20 +769,21 @@ def unzip_file(fileName, uploadPath, upload_id):
             uploadPath: 解凍先パス
             upload_id: アップロードID
     """
+    
     try:
-        with zipfile.ZipFile(uploadPath + fileName) as z:
+        with zipfile.ZipFile(tmp_dir_path + "/" + fileName) as z:
             for info in z.infolist():
                 info.filename = info.orig_filename.encode('cp437').decode('cp932')
                 if os.sep != "/" and os.sep in info.filename:
                     info.filename = info.filename.replace(os.sep, "/")
-                z.extract(info, path=uploadPath + upload_id)
+                z.extract(info, path=tmp_dir_path + "/" + upload_id)
 
     except Exception as e:
         return False
 
     return True
 
-def unzip_file_cmd(fileName, uploadPath, upload_id):
+def unzip_file_cmd(fileName, tmp_dir_path, upload_id):
     """
         zipファイルを解凍する(コマンド)
 
@@ -782,8 +792,9 @@ def unzip_file_cmd(fileName, uploadPath, upload_id):
             uploadPath: 解凍先パス
             upload_id: アップロードID
     """
-    to_path = uploadPath + upload_id
-    from_path = uploadPath + fileName
+    # tmp配下で解凍する
+    to_path = tmp_dir_path + "/" + upload_id
+    from_path = tmp_dir_path + "/" + fileName
     cmd = ["unzip", "-d", to_path, from_path]
     cp = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -797,8 +808,8 @@ def checkZipFile(upload_id, organization_id, workspace_id):
             upload_id: アップロードID
     """
     fileName = upload_id + '_ita_data.zip'
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/upload/"
+    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/import/"
 
     lst = os.listdir(uploadPath + upload_id)
 
@@ -845,7 +856,10 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
         raise AppException("499-01302", [], [])
 
-    tmp_menu_list = Path(uploadPath + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
+    file_read = storage_access.storage_read()
+    file_read.open(uploadPath + upload_id + "/MENU_LIST.txt")
+    tmp_menu_list = file_read.read()
+    file_read.close()
     if tmp_menu_list == "":
         if os.path.exists(uploadPath + fileName):
             os.remove(uploadPath + fileName)
@@ -945,7 +959,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
     Returns:
         実行結果
     """
-    path = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+    path = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/import/"
 
     # 取得したいFILEリストの取得
     menuIdFile = Path(path + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")

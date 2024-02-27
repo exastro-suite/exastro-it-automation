@@ -1482,6 +1482,6 @@
     "AGT-10024": "Executing VACUUM operation on SQLite database to optimize space.",
     "AGT-10025": "Completed VACUUM operation.",
     "AGT-10026": "Failed to execute VACUUM operation.",
-    "AGT-10027": "SQLite Error: {}",
+    "AGT-10027": "SQLite Error: {}, data: {}",
     "AGT-10028": "IMAPClient Error: {}"
 }

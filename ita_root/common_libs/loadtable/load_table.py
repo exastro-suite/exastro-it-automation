@@ -1328,6 +1328,10 @@ class loadTable():
         # 実行種別簡易判定、補完 (パラメータ内にPK無し:登録,有:更新)
         target_uuid_key = self.get_rest_key(primary_key)
 
+        # 登録時は入力されたUUIDを無視する
+        if cmd_type == CMD_REGISTER:
+            target_uuid = ''
+
         if cmd_type in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
             # テーブル情報（カラム、PK取得）
             column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())

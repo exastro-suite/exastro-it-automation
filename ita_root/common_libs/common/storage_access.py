@@ -20,7 +20,8 @@ import os
 import uuid
 import shutil
 from pathlib import Path
-
+import traceback
+import inspect
 
 class storage_base:
     def make_temp_path(self, file_path):
@@ -39,6 +40,11 @@ class storage_base:
             return True
         else:
             return False
+
+    def DebugPrint(title, log):
+        frame = inspect.currentframe().f_back
+        log = '<<%s>><<%s>><<%s>>%s\n%s\n' % (os.path.basename(frame.f_code.co_filename), frame.f_code.co_name, str(frame.f_lineno), str(title), str(log))
+        print(log)
 
 class storage_read(storage_base):
     def __init__(self):
@@ -160,6 +166,26 @@ class storage_read_text(storage_base):
             tmp_file_path = file_path
 
         value = Path(tmp_file_path).read_text(encoding=encoding)
+        if storage_flg is True:
+            # /tmpの掃除
+            if os.path.isfile(self.tmp_file_path) is True:
+                os.remove(tmp_file_path)
+        return value
+
+class storage_read_bytes(storage_base):
+    def read_bytes(self, file_path):
+        # ルートパスを判定
+        storage_flg = self.path_check(file_path)
+        if storage_flg is True:
+            # /storage
+            tmp_file_path = self.make_temp_path(file_path)
+            # /storageから/tmpにコピー
+            shutil.copy2(file_path, tmp_file_path)
+        else:
+            # not /storage
+            tmp_file_path = file_path
+
+        value = Path(tmp_file_path).read_bytes()
         if storage_flg is True:
             # /tmpの掃除
             if os.path.isfile(self.tmp_file_path) is True:

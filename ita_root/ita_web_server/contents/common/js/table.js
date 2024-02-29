@@ -63,7 +63,7 @@ constructor( tableId, mode, info, params, option = {}) {
 
     // Filter
     tb.rest.filter = ( tb.params.restFilter )?
-         tb.params.restFilter:
+        tb.params.restFilter:
         `/menu/${tb.params.menuNameRest}/filter/`;
 
     // Filter pulldown
@@ -1981,7 +1981,7 @@ setTableEvents() {
             $color.val( value );
             $mark.css('background-color', value );
 
-            $text.val( text ).change();
+            $text.val( text );
         });
 
         // tableEditMultipleColmun
@@ -1998,11 +1998,13 @@ setTableEvents() {
                 if ( result !== undefined ) {
                     const resultValue = ( fn.typeof( result ) === 'array' && result.length )? fn.jsonStringifyDelimiterSpace( result ): '';
                     $input.val( resultValue ).change();
-                    $block.text( resultValue );
 
                     // 表示欄の幅の調整
                     if ( !tb.partsFlag ) {
+                        $block.text( resultValue );
                         tb.tableInputMaxWidthCheck( $block );
+                    } else {
+                        $block.html( fn.html.labelListHtml( resultValue, tb.label ) );
                     }
                 }
             });
@@ -2989,8 +2991,10 @@ workerPost( type, data ) {
     // 送信タイプ別
     switch ( type ) {
         case 'filter': {
+            const filterRest = ( tb.option.fileFlag === false )? tb.rest.filter + '?file=no': tb.rest.filter;
+
             const url = fn.getRestApiUrl(
-                tb.rest.filter,
+                filterRest,
                 tb.params.orgId,
                 tb.params.wsId );
 
@@ -3826,8 +3830,9 @@ buttonAction( columnInfo, item, columnKey ) {
 editCellHtml( item, columnKey ) {
     const tb = this;
 
-    const parameter = item.parameter,
-          file = item.file;
+    const
+    parameter = item.parameter,
+    file = item.file;
 
     const rowId = parameter[ tb.idNameRest ],
           columnInfo = tb.info.column_info[ columnKey ],
@@ -3845,6 +3850,12 @@ editCellHtml( item, columnKey ) {
             case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
             case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
                 return fn.cv( v, '');
+            case 'FilterConditionSettingColumn': case 'ConclusionEventSettingColumn':
+                if ( !tb.partsFlag ) {
+                    return fn.cv( v, '', true );
+                } else {
+                    return fn.cv( v, '');
+                }
             default:
                 return fn.cv( v, '', true );
         }
@@ -3997,7 +4008,7 @@ editCellHtml( item, columnKey ) {
         // パスワード
         case 'PasswordColumn': case 'PasswordIDColumn': case 'JsonPasswordIDColumn': case 'MaskColumn': {
             const deleteToggleFlag = ( !isNaN( rowId ) && Number( rowId ) < 0 )? false: true,
-                  deleteFlag = ( inputData && inputData.after.parameter[ columnName ] === null )? true: false;
+                deleteFlag = ( inputData && inputData.after.parameter[ columnName ] === null )? true: false;
             inputClassName.push('tableEditInputText');
 
             return fn.html.inputPassword( inputClassName, value, name, attr, { widthAdjustment: true, deleteToggle: deleteToggleFlag, deleteFlag: deleteFlag });
@@ -4028,8 +4039,16 @@ editCellHtml( item, columnKey ) {
             inputClassName.push('tableEditMultipleHiddenColmun');
             const viewClassName = ['tableEditFilterCondition', 'tableEditMultipleColmun', 'input'];
             if ( inputClassName.indexOf('tableEditChange') !== -1 ) viewClassName.push('tableEditChange');
-            return `<div class="${viewClassName.join(' ')}">${value}</div>`
-            + fn.html.inputHidden( inputClassName, value, name, attr ); }
+
+            // イベントフロー画面の場合はラベル表示する
+            if ( !tb.partsFlag ) {
+                return `<div class="${viewClassName.join(' ')}">${value}</div>`
+                + fn.html.inputHidden( inputClassName, value, name, attr );
+            } else {
+                return `<div class="${viewClassName.join(' ')}">${fn.html.labelListHtml( value, tb.label )}</div>`
+                + fn.html.inputHidden( inputClassName, fn.escape(value), name, attr );
+            }
+        }
 
         // 不明
         default:
@@ -6594,7 +6613,13 @@ tbodyPartsHtml() {
                     const attr = {};
                     if ( column.column_name_rest ) attr.rest = column.column_name_rest;
                     if ( column.description ) attr.title = fn.cv( column.description, '', true );
-                    html.push( fn.html.row( fn.html.cell( columnName, 'tHeadTh popup popupScroll', 'th', 1, 1, attr) + tb.cellPartsHtml( itemData, columnKey ) ) );
+
+                    if ( column.column_name_rest === 'conclusion_label_settings' || column.column_name_rest === 'filter_condition_json') {
+                        html.push( fn.html.row( fn.html.cell( columnName, 'tHeadTh popup popupScroll', 'th', 1, 1, attr) + fn.html.cell('', 'blankTd', 'td') ) );
+                        html.push( fn.html.row( tb.cellPartsHtml( itemData, columnKey, 2 ) ) );
+                    } else {
+                        html.push( fn.html.row( fn.html.cell( columnName, 'tHeadTh popup popupScroll', 'th', 1, 1, attr) + tb.cellPartsHtml( itemData, columnKey ) ) );
+                    }
                 } else {
                     const groupName = fn.cv( groupInfo[columnKey].column_group_name, '', true );
                     html.push( fn.html.row( fn.html.cell( groupName, 'tHeadGroup tHeadTh', 'th', 1, 2 ) ) );
@@ -6617,7 +6642,7 @@ tbodyPartsHtml() {
    Cell HTML
 ##################################################
 */
-cellPartsHtml( item, columnKey ) {
+cellPartsHtml( item, columnKey, colspan = 1 ) {
     const tb = this;
 
     const columnInfo = tb.info.column_info[ columnKey ],
@@ -6636,10 +6661,10 @@ cellPartsHtml( item, columnKey ) {
             return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td');
         case 'edit':
             if ( ( columnName !== 'discard' && item.discard === '1' ) && columnName !== 'remarks' ) {
-                return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td');
+                return fn.html.cell( tb.viewCellHtml( item, columnKey ), className, 'td', 1, colspan );
             } else {
                 className.push('tBodyTdInput');
-                return fn.html.cell( tb.editCellHtml( item, columnKey ), className, 'td');
+                return fn.html.cell( tb.editCellHtml( item, columnKey ), className, 'td', 1, colspan );
             }
     }
 }
@@ -6807,7 +6832,7 @@ partsRuleHtml( parameter ) {
     filterB = fn.cv( parameter.filter_b, null, true ),
     operator = fn.cv( parameter.filter_operator, null, true ),
     actionName = fn.cv( parameter.action_id, null, true ),
-    labels = fn.cv( parameter.conclusion_label_name, null );
+    labels = fn.cv( parameter.conclusion_label_settings, null );
 
     const html = [];
 
@@ -6829,10 +6854,23 @@ partsRuleHtml( parameter ) {
         html.push( tb.partsRuleBlockHtml('Action', actionHtml ) );
     }
 
-    // Label
+    // 再評価Label
     if ( labels ) {
+        const ruleLabelName = fn.cv( parameter.rule_label_name, null, true );
+
         const listHtml = fn.html.labelListHtml( labels, tb.label );
-        html.push( tb.partsRuleBlockHtml('Label', listHtml ) );
+
+        const ruleHtml = ``
+        + `<div class="eventFlowPartsRuleCnclusion">`
+            + `<div class="eventFlowPartsHeader">`
+                + `<div class="eventFlowPartsName"><span class="eventFlowPartsNameText">${ruleLabelName}</span></div>`
+            + `</div>`
+            + `<div class="eventFlowPartsBody">`
+                + listHtml
+            + `</div>`
+        + `</div>`;
+
+        html.push( tb.partsRuleBlockHtml('Label', ruleHtml ) );
     }
 
     return `<div class="eventFlowPartsRuleContainer">${html.join('')}</div>`;

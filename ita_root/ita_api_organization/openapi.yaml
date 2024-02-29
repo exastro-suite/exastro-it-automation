@@ -497,6 +497,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルダウンロード指定
+          required: false
+          schema:
+            type: string
       requestBody:
         content:
           application/json:

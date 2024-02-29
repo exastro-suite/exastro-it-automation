@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: "2.4"
+  version: "2.3"
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -463,6 +463,14 @@ paths:
         required: true
         style: simple
         explode: false
+        schema:
+          type: string
+      - name: file
+        in: query
+        description: ファイルダウンロード指定
+        required: false
+        style: form
+        explode: true
         schema:
           type: string
       requestBody:

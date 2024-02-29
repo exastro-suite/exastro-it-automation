@@ -145,7 +145,7 @@ def get_journal(organization_id, workspace_id, menu, uuid):  # noqa: E501
 
 
 @api_filter
-def post_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def post_filter(organization_id, workspace_id, menu, body=None, file=None):  # noqa: E501
     """post_filter
 
     検索条件を指定し、レコードを取得する # noqa: E501
@@ -158,6 +158,8 @@ def post_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     :type menu: str
     :param body:
     :type body: dict | bytes
+    :param file: ファイルデータ指定
+    :type file: str
 
     :rtype: InlineResponse2005
     """
@@ -187,6 +189,12 @@ def post_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
 
     # メニューのカラム情報を取得
     result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
+    
+    # ファイルデータなしの場合
+    if file == 'no':
+        for value in result_data:
+            value['file'] = {}
+
     return result_data,
 
 

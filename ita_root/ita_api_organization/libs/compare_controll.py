@@ -43,6 +43,7 @@ from openpyxl.utils.escape import *  # noqa: F403
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
+from common_libs.common import storage_access
 
 
 # 比較実行画面用情報取得(リスト情報、パラメータフォーマット)
@@ -2893,20 +2894,22 @@ def no_mimetype_is_binary_chk(target_file_path, file_mimetype, encoding):
     import chardet
     ret = False
     encode = encoding
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read = storage_access.storage_read_bytes()
+    
     if file_mimetype is None:
         # check encode -> check ASCII -08
-        with open(target_file_path, 'rb') as f:
-            fd = f.read()
-            encode = chardet.detect(fd)['encoding']
-            if encode is None:
-                ret = True
-            else:
-                tmp_code = [fdcode for fdcode in list(fd)]
-                # check ASCII -08
-                for n in range(0, 9):
-                    if n in tmp_code:
-                        ret = True
-                        break
+        fd = file_read.read_bytes(target_file_path)
+        encode = chardet.detect(fd)['encoding']
+        if encode is None:
+            ret = True
+        else:
+            tmp_code = [fdcode for fdcode in list(fd)]
+            # check ASCII -08
+            for n in range(0, 9):
+                if n in tmp_code:
+                    ret = True
+                    break
     return ret, file_mimetype, encode,
 
 

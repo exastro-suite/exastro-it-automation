@@ -37,8 +37,8 @@ def backyard_main(organization_id, workspace_id):
 
     """
 
-    EXPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/export"
-    IMPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import"
+    EXPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/export"
+    IMPORT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import"
     DST_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/uploadfiles/60106/file_name"
     RESULT_PATH = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/uploadfiles/60106/result_file"
 
@@ -248,8 +248,7 @@ def backyard_main(organization_id, workspace_id):
                 # tmp配下で読み取り
                 file_read = storage_access.storage_read()
                 file_read.open(targetImportPath + "/MENU_LIST.txt")
-                tmpMenuIdFileAry = file_read.read()
-                tmpMenuIdFileAry = tmpMenuIdFileAry.split("\n")
+                tmpMenuIdFileAry = file_read.read().split("\n")
                 file_read.close()
 
                 menuIdFileInfo = []
@@ -368,13 +367,18 @@ def backyard_main(organization_id, workspace_id):
                     continue
 
                 # 一時ディレクトリ削除
-                shutil.rmtree(IMPORT_PATH + "/import/" + upload_id)
+                # アップロード後インポート実行しない場合、一時ディレクトリが残るのでimportディレクトリを削除してから、もう一度ディレクトリを作り直す
+                shutil.rmtree(IMPORT_PATH + "/import")
+                os.makedirs(IMPORT_PATH + "/import")
+                os.chmod(IMPORT_PATH + "/import", 0o777)
 
     except Exception as e:
         if os.path.exists(EXPORT_PATH + "/" + taskId):
             shutil.rmtree(EXPORT_PATH + "/" + taskId)
         if os.path.exists(IMPORT_PATH + "/import/" + upload_id):
-            shutil.rmtree(IMPORT_PATH + "/import/" + upload_id)
+            shutil.rmtree(IMPORT_PATH + "/import")
+            os.makedirs(IMPORT_PATH + "/import")
+            os.chmod(IMPORT_PATH + "/import", 0o777)
 
         # ステータスを完了(異常)に更新
         util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)

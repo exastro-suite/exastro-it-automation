@@ -494,9 +494,9 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
     fileName = upload_id + '_ita_data.zip'
 
     # ファイル保存
-    uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/upload/" + fileName
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/import/"
+    uploadFilePath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/" + fileName
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
+    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
     ret = upload_file(uploadFilePath, body_zipfile['base64'])
 
     if ret == 0:
@@ -531,6 +531,9 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
         cmd = "rm -rf " + importPath + upload_id
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         raise AppException("499-01305", [], [])
+    
+    # zipファイル削除
+    os.remove(importPath + fileName)
 
     retImportAry = {}
     retUnImportAry = {}
@@ -808,8 +811,8 @@ def checkZipFile(upload_id, organization_id, workspace_id):
             upload_id: アップロードID
     """
     fileName = upload_id + '_ita_data.zip'
-    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/upload/"
-    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/import/"
+    uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/upload/"
+    importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
 
     lst = os.listdir(uploadPath + upload_id)
 
@@ -959,10 +962,13 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
     Returns:
         実行結果
     """
-    path = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/bulk_excel/import/import/"
+    path = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
+    
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read_text = storage_access.storage_read_text()
 
     # 取得したいFILEリストの取得
-    menuIdFile = Path(path + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
+    menuIdFile = file_read_text.read_text(path + upload_id + '/MENU_LIST.txt')
 
     tmpMenuIdFileAry = menuIdFile.split("\n")
 
@@ -1564,6 +1570,9 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     fileName = upload_id + '_ita_data.tar.gz'
     uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
     importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
+    
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read_text = storage_access.storage_read_text()
 
     lst = os.listdir(uploadPath + upload_id)
 
@@ -1622,7 +1631,8 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     export_version = ''
     if os.path.isfile(uploadPath + upload_id + '/VERSION'):
         # エクスポート時のバージョンを取得
-        export_version = Path(uploadPath + upload_id + '/VERSION').read_text(encoding='utf-8')
+        export_version = file_read_text.read_text(uploadPath + upload_id + '/VERSION')
+
 
     if version_data["version"] != export_version:
         # エクスポート時のバージョンとインポートする環境のバージョンが違う場合はエラー
@@ -1747,11 +1757,16 @@ def _collect_ita_version(common_db):
     return version_data
 
 def _decode_zip_file(file_path, base64Data):
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_write = storage_access.storage_write()
+    
     # アップロードファイルbase64変換処理
     upload_file_decode = base64.b64decode(base64Data.encode('utf-8'))
 
     # ファイル移動
-    Path(file_path).write_bytes(upload_file_decode)
+    file_write.open(file_path, mode="wb")
+    file_write.write(upload_file_decode)
+    file_write.close()
 
     # ファイルタイプの取得、判定
     file_mimetype, encoding = mimetypes.guess_type(file_path)

@@ -168,7 +168,7 @@ class storage_read_text(storage_base):
         value = Path(tmp_file_path).read_text(encoding=encoding)
         if storage_flg is True:
             # /tmpの掃除
-            if os.path.isfile(self.tmp_file_path) is True:
+            if os.path.isfile(tmp_file_path) is True:
                 os.remove(tmp_file_path)
         return value
 

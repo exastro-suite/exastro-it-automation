@@ -15,6 +15,7 @@ from flask import g
 import hcl2
 import json
 import re
+from common_libs.common import storage_access
 
 
 class HCL2JSONParse():
@@ -57,11 +58,15 @@ class HCL2JSONParse():
         """
         try:
             result = True
+            
+            # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+            file_read = storage_access.storage_read()
 
             # 対象ファイルの解析を実行
-            with open(self.file_path, 'r') as file:
-                parse_result = hcl2.load(file)
-                result_json = json.dumps(parse_result)
+            file_read.open(self.file_path)
+            parse_result = hcl2.loads(file_read.read())
+            result_json = json.dumps(parse_result)
+            file_read.close()
 
             # typeがnullの場合を考慮し、処理しやすい形に変換
             pattern = r'\"type\"\:\s(null)'

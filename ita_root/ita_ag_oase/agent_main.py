@@ -138,23 +138,23 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集
     events = []
+    event_collection_settings_enable = []
     if settings is not False:
         g.applogger.info(g.appmsg.get_log_message("AGT-10011", []))
-        events = collect_event(sqliteDB, settings, timestamp_dict)
+        events, event_collection_settings_enable = collect_event(sqliteDB, settings, timestamp_dict)
         g.applogger.info(g.appmsg.get_log_message("AGT-10012", [len(events)]))
     else:
         g.applogger.debug(g.appmsg.get_log_message("AGT-10013", []))
 
     # 収集したイベント, 取得時間をSQLiteに保存
-    if events != []:
-        try:
-            sqliteDB.db_connect.execute("BEGIN")
-            sqliteDB.insert_events(events)
-            g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
-        except AppException as e:  # noqa E405
-            sqliteDB.db_connect.rollback()
-            g.applogger.error(g.appmsg.get_log_message("AGT-10015", []))
-            app_exception(e)
+    try:
+        sqliteDB.db_connect.execute("BEGIN")
+        sqliteDB.insert_events(events, event_collection_settings_enable)
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
+    except AppException as e:  # noqa E405
+        sqliteDB.db_connect.rollback()
+        g.applogger.error(g.appmsg.get_log_message("AGT-10015", []))
+        app_exception(e)
 
     # ITAに送信するデータを取得
     g.applogger.debug(g.appmsg.get_log_message("AGT-10016", []))

@@ -29,7 +29,7 @@ class sqliteConnect:
         # DBカーソル作成
         self.db_cursor = self.db_connect.cursor()
 
-    def insert_events(self, events):
+    def insert_events(self, events, event_collection_settings_enable):
 
         timestamp_info = []
         processed = set()
@@ -60,6 +60,12 @@ class sqliteConnect:
                     info["name"],
                     info["timestamp"]
                 )
+            for data in event_collection_settings_enable:
+                if data["is_save"] is True and data["len"] == 0:
+                    self.insert_last_fetched_time(
+                        data["name"],
+                        data["fetched_time"]
+                    )
 
             self.db_connect.commit()
         except Exception as e:

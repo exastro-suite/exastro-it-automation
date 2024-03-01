@@ -6,9 +6,10 @@ import socks
 import re
 
 from imapclient import imapclient, IMAPClient
+from imapclient.response_types import Address
 import email
 from email.header import decode_header
-import quopri  # pip install pycopy-quopri
+import quopri
 import base64
 import chardet
 import binascii
@@ -57,7 +58,7 @@ class IMAPAuthClient(APIClientCommon):
             return result
 
         except imapclient.exceptions.LoginError:
-            g.applogger.info("Failed to login to mailserver. Check login settings.")
+            g.applogger.info("Failed to login to mailserver(event_collection_settings_name='{}'). Check login settings.".format(self.event_collection_settings_name))
             return result
         except Exception as e:
             raise AppException("AGT-10028", [e])
@@ -139,50 +140,6 @@ class IMAPAuthClient(APIClientCommon):
                     res['subject'] = subject
                     # g.applogger.debug("{}={}".format('subject', res['subject']))
 
-                    # 宛先ヘッダー（ENVELOPE）に含まれる各項目をデコードしていく
-                    res['from'] = ""
-                    res['sender'] = ""
-                    res['to'] = ""
-                    res['cc'] = ""
-                    res['bcc'] = ""
-                    res['reply_to'] = ""
-                    res['in_reply_to'] = ""
-
-                    item_map = {
-                        'from_': {'prop': 'from', 'val': e.from_},  # 差出人アドレス。複数可能
-                        'sender': {'prop': 'sender', 'val': e.sender},  # 実際の差出人（送信者）のアドレス。複数不可
-                        'to': {'prop': 'to', 'val': e.to},
-                        'cc': {'prop': 'cc', 'val': e.cc},
-                        'bcc': {'prop': 'bcc', 'val': e.bcc},
-                        'reply_to': {'prop': 'reply_to', 'val': e.reply_to},  # メールの返信先。指定されていない場合には、通常Fromが返信先として使用される
-                        'in_reply_to': {'prop': 'in_reply_to', 'val': e.in_reply_to}  # 返信時に、どのメールへの返信かを示す。通常はMessage-IDが指定される
-                    }
-                    for _item_name in ['from_', 'sender', 'to', 'cc', 'bcc', 'reply_to', 'in_reply_to']:
-                        item_name = item_map[_item_name]['prop']  # 最終的にeventにつけるプロパティ名を取得
-                        _tupple_address = item_map[_item_name]['val']
-                        item_value_list = []
-
-                        if _tupple_address is None or len(_tupple_address) == 0:
-                            continue
-
-                        for address in _tupple_address:
-                            if address.name is not None:
-                                # 名前いり
-                                byte_msg, _charset = decode_header(address.name.decode())[0]
-                                charset = _charset if _charset is not None else header_content_charset
-                                item_value = '"%s"<%s@%s>' % (self._decode_msg(byte_msg, None, charset), address.mailbox.decode(), address.host.decode())
-                            else:
-                                item_value = '%s@%s' % (address.mailbox.decode(), address.host.decode())
-                            item_value_list.append(str(item_value))
-
-                        res[item_name] = ','.join(item_value_list)
-                        # g.applogger.debug("{}={}".format(item_name, res[item_name]))
-
-                    # Return-Path Mail Fromコマンド（SMTP）の内容を付加することになる。エンベロープの差出人アドレス。メールが届かなかった場合に、そのメールが送り返されるメールアドレス
-                    # Delivered-To 送信者が本来送信した宛先から別のアドレスに転送された宛先。 受信したメールサーバで別のメールアドレスに転送している場合などに付加される。
-                    res['return_path'] = self._parser(h.decode(), 'Return-Path: ')
-                    res['deliver_to'] = self._parser(h.decode(), 'Delivered-To: ')
-
                     # 本文（body）
                     res['body'] = {
                         'raw' : '',
@@ -191,12 +148,9 @@ class IMAPAuthClient(APIClientCommon):
                     }
                     eobj_body = email.message_from_bytes(b)
                     # rawデータをとりあえずつっこんでおく
-                    try:
-                        charset = eobj_body.get_charsets()[0] or header_content_charset
-                        body_transfer_encoding = eobj_body.get('Content-Transfer-Encoding') or header_transfer_encoding
-                        res['body']['raw'] = self._decode_msg(b, body_transfer_encoding, charset)
-                    except:
-                        pass
+                    charset = eobj_body.get_charsets()[0] or header_content_charset
+                    body_transfer_encoding = eobj_body.get('Content-Transfer-Encoding') or header_transfer_encoding
+                    res['body']['raw'] = self._decode_msg(b, body_transfer_encoding, charset)
 
                     # マルチパートかどうか
                     if eobj_header.get_content_maintype() == "multipart":
@@ -249,6 +203,67 @@ class IMAPAuthClient(APIClientCommon):
                                 res['body']['plain'] = body
                             elif content_type == 'text/html':
                                 res['body']['html'] = re.sub(r'\s', '', body)
+
+                    # 宛先ヘッダー（ENVELOPE）に含まれる各項目をデコードしていく
+                    res['from'] = ""
+                    res['sender'] = ""
+                    res['to'] = ""
+                    res['cc'] = ""
+                    res['bcc'] = ""
+                    res['reply_to'] = ""
+                    res['in_reply_to'] = ""
+
+                    item_map = {
+                        'from_': {'prop': 'from', 'val': e.from_},  # 差出人アドレス。複数可能
+                        'sender': {'prop': 'sender', 'val': e.sender},  # 実際の差出人（送信者）のアドレス。複数不可
+                        'to': {'prop': 'to', 'val': e.to},
+                        'cc': {'prop': 'cc', 'val': e.cc},
+                        'bcc': {'prop': 'bcc', 'val': e.bcc},
+                        'reply_to': {'prop': 'reply_to', 'val': e.reply_to},  # メールの返信先。指定されていない場合には、通常Fromが返信先として使用される
+                        'in_reply_to': {'prop': 'in_reply_to', 'val': e.in_reply_to}  # 返信時に、どのメールへの返信かを示す。通常はMessage-IDが指定される
+                    }
+                    for _item_name in ['from_', 'sender', 'to', 'cc', 'bcc', 'reply_to', 'in_reply_to']:
+                        item_name = item_map[_item_name]['prop']  # 最終的にeventにつけるプロパティ名を取得
+                        _tupple_address = item_map[_item_name]['val']
+                        item_value_list = []
+
+                        if _tupple_address is None or len(_tupple_address) == 0:
+                            continue
+
+                        # g.applogger.debug(_tupple_address)
+                        if type(_tupple_address) is tuple:
+                            for address in _tupple_address:
+                                if isinstance(address, Address):
+                                    # Addressクラスのインスタンス
+                                    if address.name is not None:
+                                        # 名前いり
+                                        byte_msg, _charset = decode_header(address.name.decode())[0]
+                                        charset = _charset if _charset is not None else header_content_charset
+                                        item_value = '"%s"<%s@%s>' % (self._decode_msg(byte_msg, None, charset), address.mailbox.decode(), address.host.decode())
+                                    else:
+                                        item_value = '%s@%s' % (address.mailbox.decode(), address.host.decode())
+                                else:
+                                    try:
+                                        item_value = address.decode()
+                                    except:
+                                        g.applogger.info("decode adress error1:{}".format(address))
+                                        item_value = address
+                                item_value_list.append(str(item_value))
+                        else:
+                            try:
+                                item_value = _tupple_address.decode()
+                            except:
+                                g.applogger.info("decode adress error2:{}".format(_tupple_address))
+                                item_value = _tupple_address
+                            item_value_list.append(str(item_value))
+
+                        res[item_name] = ','.join(item_value_list)
+                        # g.applogger.debug("{}={}".format(item_name, res[item_name]))
+
+                    # Return-Path Mail Fromコマンド（SMTP）の内容を付加することになる。エンベロープの差出人アドレス。メールが届かなかった場合に、そのメールが送り返されるメールアドレス
+                    # Delivered-To 送信者が本来送信した宛先から別のアドレスに転送された宛先。 受信したメールサーバで別のメールアドレスに転送している場合などに付加される。
+                    res['return_path'] = self._parser(h.decode(), 'Return-Path: ')
+                    res['deliver_to'] = self._parser(h.decode(), 'Delivered-To: ')
 
                     # g.applogger.debug('subject={}'.format(res['subject']))
                     # g.applogger.debug('body={}'.format(res['body']))

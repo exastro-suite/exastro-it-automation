@@ -3846,7 +3846,8 @@ editCellHtml( item, columnKey ) {
 
     const setValue = function( v ) {
         switch ( columnType ) {
-            // プルダウン選択はここでエスケープしない
+            // JsonColumn、プルダウン選択はここでエスケープしない
+            case 'JsonColumn':
             case 'IDColumn': case 'LinkIDColumn': case 'RoleIDColumn': case 'UserIDColumn':
             case 'EnvironmentIDColumn': case 'JsonIDColumn': case 'NotificationIDColumn':
                 return fn.cv( v, '');
@@ -3948,8 +3949,16 @@ editCellHtml( item, columnKey ) {
     }
 
     switch ( columnType ) {
+        // JsonColumn
+        case 'JsonColumn':
+            if ( fn.typeof( value ) === 'object' || fn.typeof( value ) === 'array') {
+                value = fn.escape( fn.jsonStringify( value ) );
+            } else {
+                value = fn.escape( value );
+            }
+
         // 文字列入力（単一行）
-        case 'SingleTextColumn': case 'HostInsideLinkTextColumn': case 'JsonColumn':
+        case 'SingleTextColumn': case 'HostInsideLinkTextColumn':
         case 'TextColumn': case 'SensitiveSingleTextColumn':
             inputClassName.push('tableEditInputText');
             const widthAdjustment = ( tb.partsFlag )? {}: { widthAdjustment: true };

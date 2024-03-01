@@ -12,7 +12,9 @@ import quopri  # pip install pycopy-quopri
 import base64
 import chardet
 import binascii
+import traceback
 
+from common_libs.common.util import arrange_stacktrace_format
 from common_libs.common.exception import AppException
 from common_libs.oase.api_client_common import APIClientCommon
 
@@ -251,8 +253,10 @@ class IMAPAuthClient(APIClientCommon):
                     # g.applogger.debug('subject={}'.format(res['subject']))
                     # g.applogger.debug('body={}'.format(res['body']))
                     # g.applogger.debug(res)
-                except:
-                    pass
+                except Exception as e:
+                    t = traceback.format_exc()
+                    err_log = arrange_stacktrace_format(t)
+                    g.applogger.info(err_log)
 
                 # レスポンスに追加
                 response.append(res)

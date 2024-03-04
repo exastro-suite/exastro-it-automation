@@ -96,6 +96,7 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
             g.db_connect_info['ORGDB_ADMIN_USER'] = organization_info.get('DB_ADMIN_USER')
             g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = organization_info.get('DB_ADMIN_PASSWORD')
             g.db_connect_info['ORGDB_DATABASE'] = organization_info.get('DB_DATABASE')
+            g.db_connect_info["ORG_MONGO_OWNER"] = organization_info.get('MONGO_OWNER')
             g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = organization_info.get('MONGO_CONNECTION_STRING')
             g.db_connect_info["ORG_MONGO_ADMIN_USER"] = organization_info.get('MONGO_ADMIN_USER')
             g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = organization_info.get('MONGO_ADMIN_PASSWORD')

@@ -587,6 +587,7 @@ class DBConnectCommon:
             'DB_ADMIN_USER': g.db_connect_info.get('ORGDB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': g.db_connect_info.get('ORGDB_ADMIN_PASSWORD'),
             'DB_DATABASE': g.db_connect_info.get('ORGDB_DATABASE'),
+            'MONGO_OWNER': g.db_connect_info.get('ORG_MONGO_OWNER'),
             'MONGO_CONNECTION_STRING': g.db_connect_info.get('ORG_MONGO_CONNECTION_STRING'),
             'MONGO_ADMIN_USER': g.db_connect_info.get('ORG_MONGO_ADMIN_USER'),
             'MONGO_ADMIN_PASSWORD': g.db_connect_info.get('ORG_MONGO_ADMIN_PASSWORD'),

@@ -107,10 +107,13 @@ class IMAPAuthClient(APIClientCommon):
                 # print(dir(h))
                 try:
                     res = {}
-                    res['message_id'] = e.message_id.decode()
-                    res['date'] = int(e.date.timestamp())
-                    # res['date'] = e.date.strftime('%Y-%m-%d %H:%M:%S')
-                    res['lastchange'] = e.date.timestamp()
+                    # RFC5322 Message-IDは含むべき、Dateは必須
+                    # Dateがない場合は、古いデータにしてしまい、取り扱わない
+                    e_timestamp = e.date.timestamp() if type(e.date) is datetime.datetime else int(self.last_fetched_timestamp) - 1
+                    res['date'] = int(e_timestamp)
+                    res['lastchange'] = e_timestamp
+                    # message_idがない場合は無理やりつける
+                    res['message_id'] = e.message_id.decode() if e.message_id is not None else '{}_{}'.format(self.event_collection_settings_name, e_timestamp)
 
                     # メール重複取得防止
                     # 受信時間が最終取得時間より後かつ、message_idがすでに取得したメールのmessage_idと一致しないかチェック

@@ -220,7 +220,7 @@ paths:
         content:
           application/json:
             schema:
-              description: ロールID情報
+              $ref: '#/components/schemas/workspace_id_ita_body'
       responses:
         "200":
           description: Success
@@ -584,6 +584,8 @@ components:
               terraform_cli: true
               terraform_cloud_ep: true
               ci_cd: true
+          mongo_owner: false
+          mongo_connection_string: mongodb+srv://user:***@mongo.example.com/?tls=true
         message: message
     apiorganizationsorganization_idita_drivers:
       type: object
@@ -603,6 +605,13 @@ components:
       properties:
         drivers:
           $ref: '#/components/schemas/apiorganizationsorganization_idita_drivers'
+        mongo_owner:
+          type: boolean
+          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
+          example: false
+        mongo_connection_string:
+          type: string
+          example: mongodb+srv://user:pass@mongo.example.com/?tls=true
       nullable: true
     inline_response_200_1:
       type: object
@@ -620,7 +629,22 @@ components:
       properties:
         drivers:
           $ref: '#/components/schemas/apiorganizationsorganization_idita_drivers'
+        mongo_owner:
+          type: boolean
+          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
+          example: false
+        mongo_connection_string:
+          type: string
+          example: mongodb+srv://user:pass@mongo.example.com/?tls=true
       nullable: true
+    workspace_id_ita_body:
+      required:
+      - role_id
+      type: object
+      properties:
+        role_id:
+          type: string
+          example: xxx-xxxxx
     inline_response_200_2:
       type: object
       properties:
@@ -1132,6 +1156,13 @@ components:
       properties:
         optionsIta:
           $ref: '#/components/schemas/inline_response_200_data_optionsIta'
+        mongo_owner:
+          type: boolean
+          example: false
+        mongo_connection_string:
+          type: string
+          description: パスワードはマスキングされる
+          example: mongodb+srv://user:***@mongo.example.com/?tls=true
       example:
         optionsIta:
           drivers:
@@ -1139,6 +1170,8 @@ components:
             terraform_cli: true
             terraform_cloud_ep: true
             ci_cd: true
+        mongo_owner: false
+        mongo_connection_string: mongodb+srv://user:***@mongo.example.com/?tls=true
     inline_response_200_2_data_drivers_options:
       type: object
       properties:

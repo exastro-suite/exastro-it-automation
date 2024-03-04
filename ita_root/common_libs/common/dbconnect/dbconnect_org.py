@@ -52,6 +52,7 @@ class DBConnectOrg(DBConnectCommon):
         self._db_passwd = connect_info.get('DB_PASSWORD')
         self._db = connect_info.get('DB_DATABASE')
 
+        self._mongo_owner = connect_info.get('MONGO_OWNER')
         self._mongo_connection_string = connect_info.get('MONGO_CONNECTION_STRING')
         self._mongo_admin_user = connect_info.get('MONGO_ADMIN_USER')
         self._mongo_admin_password = connect_info.get('MONGO_ADMIN_PASSWORD')
@@ -70,10 +71,10 @@ class DBConnectOrg(DBConnectCommon):
 
     def get_connect_info(self):
         """
-        get database connect infomation for self
+        get infomation for self
 
         Returns:
-            database connect infomation for self: dict
+            infomation for self: dict
         """
         connect_info = {
             'DB_HOST': self._host,
@@ -81,6 +82,10 @@ class DBConnectOrg(DBConnectCommon):
             'DB_USER': self._db_user,
             'DB_PASSWORD': self._db_passwd,
             'DB_DATABASE': self._db,
+            'MONGO_OWNER': self._mongo_owner,
+            'MONGO_CONNECTION_STRING': self._mongo_connection_string,
+            'MONGO_ADMIN_USER': self._mongo_admin_user,
+            'MONGO_ADMIN_PASSWORD': self._mongo_admin_password
         }
 
         return connect_info
@@ -131,16 +136,6 @@ class DBConnectOrg(DBConnectCommon):
         """
         return self._no_install_driver
 
-    def get_org_mongo_connect_info(self):
-        """
-        get org_mongo_connect_info
-        """
-
-        return {
-            'MONGO_CONNECTION_STRING': self._mongo_connection_string,
-            'MONGO_ADMIN_USER': self._mongo_admin_user,
-            'MONGO_ADMIN_PASSWORD': self._mongo_admin_password
-        }
 
 class DBConnectOrgRoot(DBConnectOrg):
     """

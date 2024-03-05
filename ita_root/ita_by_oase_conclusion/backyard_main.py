@@ -468,9 +468,9 @@ class Judgement:
         for name, value in addlabels.items():
             RaccEventDict["labels"][name] = value
         RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
-        RaccEventDict["exatsro_rule"] = {}
-        RaccEventDict["exatsro_rule"]['id'] = RuleRow['RULE_ID']
-        RaccEventDict["exatsro_rule"]['name'] = RuleRow['RULE_NAME']
+        RaccEventDict["exastro_rules"] = []
+        rule_data = {'id': RuleRow['RULE_ID'], 'name': RuleRow['RULE_NAME']}
+        RaccEventDict["exastro_rules"].insert(0, rule_data)
         RaccEventDict["exastro_events"] = list(map(repr, UseEventIdList))
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
@@ -1277,9 +1277,9 @@ class ActionStatusMonitor():
         for name, value in addlabels.items():
             RaccEventDict["labels"][name] = value
         RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
-        RaccEventDict["exatsro_rule"] = {}
-        RaccEventDict["exatsro_rule"]['id'] = RuleInfo['RULE_ID']
-        RaccEventDict["exatsro_rule"]['name'] = RuleInfo['RULE_NAME']
+        RaccEventDict["exastro_rules"] = []
+        rule_data = {'id': RuleInfo['RULE_ID'], 'name': RuleInfo['RULE_NAME']}
+        RaccEventDict["exastro_rules"].insert(0, rule_data)
         RaccEventDict["exastro_events"] = RuleInfo['EVENT_ID_LIST'].split(',')
         RaccEventDict["exastro_label_key_inputs"] = {}
         RaccEventDict["exastro_label_key_inputs"] = label_key_inputs

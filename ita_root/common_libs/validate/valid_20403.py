@@ -64,7 +64,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
             zip_file_path = zipFileName.format(get_OSTmpPath(), os.getpid())
             # /tmpに作成したファイルはゴミ掃除リストに追加
             addAnsibleCreateFilesPath(zip_file_path)
-            # #2079 /storage配下ではないので対象外
+            #  #2079 /storage配下ではないので対象外
             fd = open(zip_file_path, "wb")
             fd.write(base64.b64decode(zip_data))
             fd.close()

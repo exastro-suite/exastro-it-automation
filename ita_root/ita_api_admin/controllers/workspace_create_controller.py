@@ -198,6 +198,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
             # insert initial data of workspace-db
             ws_db.db_transaction_start()
+            # #2079 /storage配下ではないので対象外
             with open(dml_file, "r") as f:
                 sql_list = f.read().split(";\n")
                 for sql in sql_list:
@@ -329,6 +330,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
 
         if os.path.isdir(workspace_dir):
             # サービススキップファイルを配置する
+            # #2079 /storageにアクセスしているがファイルを作成しているだけなのでそのまま
             f = Path(workspace_dir + '/skip_all_service_for_ws_del')
             f.touch()
             time.sleep(3)

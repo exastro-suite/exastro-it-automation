@@ -31,7 +31,7 @@ import shutil
 import traceback
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
-from common_libs.common.storage_access import storage_base, storage_read, storage_write, storage_write_text, storage_read_text
+from common_libs.common.storage_access import storage_base, storage_write, storage_write_text, storage_read_text
 
 
 def ky_encrypt(lcstr, input_encrypt_key=None):
@@ -93,6 +93,7 @@ def ky_file_encrypt(src_file, dest_file):
         # #2079 /storage配下は/tmpを経由してアクセスする
         w_obj = storage_write_text()
         w_obj.write_text(dest_file, enc_data, encoding="utf-8")
+
     except Exception:
         return False
     finally:
@@ -124,6 +125,7 @@ def ky_file_decrypt(src_file, dest_file):
         # #2079 /storage配下は/tmpを経由してアクセスする
         w_obj = storage_write_text()
         w_obj.write_text(dest_file, enc_data, encoding="utf-8")
+
     except Exception:
         return False
     finally:
@@ -253,36 +255,31 @@ def file_encode(file_path):
     Returns:
         Encoded string
     """
-    try:
-        is_file = os.path.isfile(file_path)
-        if not is_file:
-            return ""
+    is_file = os.path.isfile(file_path)
+    if not is_file:
+        return ""
 
-        # #2079 /storage配下は/tmpを経由してアクセスする
-        obj = storage_base()
-        storage_flg = obj.path_check(file_path)
-        if storage_flg is True:
-            # /storage
-            tmp_file_path = obj.make_temp_path(file_path)
-            # /storageから/tmpにコピー
-            shutil.copy2(file_path, tmp_file_path)
-        else:
-            # not /storage
-            tmp_file_path = file_path
+    # #2079 /storage配下は/tmpを経由してアクセスする
+    obj = storage_base()
+    storage_flg = obj.path_check(file_path)
+    if storage_flg is True:
+        # /storage
+        tmp_file_path = obj.make_temp_path(file_path)
+        # /storageから/tmpにコピー
+        shutil.copy2(file_path, tmp_file_path)
+    else:
+        # not /storage
+        tmp_file_path = file_path
+    # ファイル読み込み
+    with open(tmp_file_path, "rb") as f:
+        read_value = base64.b64encode(f.read()).decode()
+    f.close()
 
-        # ファイル読み込み
-        with open(tmp_file_path, "rb") as f:
-            read_value = base64.b64encode(f.read()).decode()
-        f.close()
+    if storage_flg is True:
+        if os.path.isfile(tmp_file_path) is True:
+            os.remove(tmp_file_path)
 
-        if storage_flg is True:
-            # /tmpゴミ掃除
-            if os.path.isfile(tmp_file_path) is True:
-                os.remove(tmp_file_path)
-        return read_value
-
-    except Exception:
-        return False
+    return read_value
 
 
 def file_decode(file_path):
@@ -314,6 +311,7 @@ def file_decode(file_path):
         with open(tmp_file_path, "rb") as f:
             text = f.read().decode()
         f.close()
+
         if storage_flg is True:
             # /tmpゴミ掃除
             if os.path.isfile(tmp_file_path) is True:
@@ -396,10 +394,10 @@ def upload_file(file_path, text):
 
     try:
         # #2079 /storage配下は/tmpを経由してアクセスする
-        w_obj = storage_write()
-        fd = w_obj.open(file_path, "bx")
-        w_obj.write(text)
-        w_obj.close()
+        obj = storage_write()
+        fd = obj.open(file_path, "bx")
+        obj.write(text)
+        obj.close()
 
     except Exception:
         return False
@@ -430,10 +428,11 @@ def encrypt_upload_file(file_path, text):
 
     try:
         # #2079 /storage配下は/tmpを経由してアクセスする
-        w_obj = storage_write()
-        fd = w_obj.open(file_path, "w")
-        w_obj.write(text)
-        w_obj.close()
+        obj = storage_write()
+        fd = obj.open(file_path, "w")
+        obj.write(text)
+        obj.close()
+
     except Exception:
         return False
 
@@ -710,7 +709,7 @@ def create_dirs(config_file_path, dest_dir):
     Returns:
         is success:(bool)
     """
-    # 2079 openのままで問題なし
+    # #2079 /storage配下ではないので対象外
     with open(config_file_path) as f:
         lines = f.readlines()
 
@@ -734,7 +733,7 @@ def put_uploadfiles(config_file_path, src_dir, dest_dir):
     Returns:
         is success:(bool)
     """
-    # 2079 openのままで問題なし
+    # #2079 /storage配下ではないので対象外
     with open(config_file_path, 'r') as material_conf_json:
         material_conf = json.load(material_conf_json)
         for menu_id, file_info_list in material_conf.items():

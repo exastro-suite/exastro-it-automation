@@ -92,6 +92,7 @@ def external_valid_menu_before(objdbca, objtable, option):
             errormsg = g.appmsg.get_api_message("499-00308")
             return False, errormsg, option
 
+
     # ファイル削除
     if os.path.exists(uploadPath):
         shutil.rmtree(uploadPath)

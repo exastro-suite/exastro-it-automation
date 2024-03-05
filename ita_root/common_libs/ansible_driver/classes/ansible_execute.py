@@ -22,6 +22,8 @@ from common_libs.ansible_driver.functions.util import get_OSTmpPath, addAnsibleC
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
 from common_libs.common.util import ky_file_decrypt, ky_decrypt
 from common_libs.ansible_driver.functions.util import loacl_quote
+from common_libs.common.storage_access import storage_read, storage_write
+
 
 """
 Ansible coreコンテナの実行を制御するモジュール
@@ -121,8 +123,11 @@ class AnsibleExecute():
         strExecshellName = "{}/{}/.playbook_execute_shell.sh".format(execute_path, self.strTempFolderName)
 
         # ansible vault password file作成
-        with open(strVaultPasswordFileName, 'w') as fd:
-            fd.write(ky_decrypt(vault_password))
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(strVaultPasswordFileName, 'w')
+        obj.write(ky_decrypt(vault_password))
+        obj.close()
 
         # 実行ユーザー確認
         if execute_user:
@@ -138,8 +143,12 @@ class AnsibleExecute():
         stroptionfile = "{}/{}/AnsibleExecOption.txt".format(execute_path, self.strInFolderName)
         # ansible-playbookコマンド実行時のオプション取得
         stransibleplaybook_options = ''
-        with open(stroptionfile) as fd:
-            stransibleplaybook_options += fd.read()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_read()
+        obj.open(stroptionfile)
+        stransibleplaybook_options = obj.read()
+        obj.close()
+
         # パラメータ文字列をエスケープする
         stransibleplaybook_options = loacl_quote(stransibleplaybook_options)
         # ドライランモードの場合のansible-playbookのパラメータを設定する。
@@ -199,8 +208,11 @@ class AnsibleExecute():
 
         # sshAgentの設定とPlaybookを実行するshellのテンプレートを読み込み
         strShell = ""
-        with open(strExecshellTemplateName) as fd:
-            strShell += fd.read()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_read()
+        obj.open(strExecshellTemplateName)
+        strShell = obj.read()
+        obj.close()
 
         # テンプレート内の変数を実値に置き換え
         strShell = strShell.replace('<<sshAgentConfigFile>>', strDecodeSSHAgentconfigFileName)
@@ -213,8 +225,11 @@ class AnsibleExecute():
         strShell = strShell.replace('<<result_file_path>>', strResultFileName)
 
         # ansible-playbook実行 shell作成
-        with open(strExecshellName, 'w') as fd:
-            fd.write(strShell)
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(strExecshellName, 'w')
+        obj.write(strShell)
+        obj.close()
 
         os.chmod(strExecshellName, 0o777)
         # ansible-playbook 標準エラー出力先
@@ -309,8 +324,12 @@ class AnsibleExecute():
             if os.path.isfile(strResultFileName):
                 # ansible-playbookコマンド実行結果ファイルより結果取得
                 strStatus = ""
-                with open(strResultFileName) as fd:
-                    strStatus = fd.read()
+                # #2079 /storage配下は/tmpを経由してアクセスする
+                obj = storage_read()
+                obj.open(strResultFileName)
+                strStatus = obj.read()
+                obj.close()
+
                 key = "^COMPLETED"
                 match = re.findall(key, strStatus)
                 if len(match) == 1:
@@ -343,8 +362,11 @@ class AnsibleExecute():
 
         # 特定のキーワードで改行しansibleのログを見やすくする
         if os.path.isfile(strorgSTDOUTFileName):
-            with open(strorgSTDOUTFileName, "r") as fd:
-                log_data = fd.read()
+            # #2079 /storage配下は/tmpを経由してアクセスする
+            obj = storage_read()
+            obj.open(strorgSTDOUTFileName, "r")
+            log_data = obj.read()
+            obj.close()
 
             if ansConstObj.vg_driver_id == ansConstObj.DF_PIONEER_DRIVER_ID:
                 # ログ(", ")  =>  (",\n")を改行する
@@ -366,8 +388,11 @@ class AnsibleExecute():
                 log_data = log_data.replace("\\n", "\n")
         else:
             log_data = ""
-        with open(strSTDOUTFileName, "w") as fd:
-            fd.write(log_data)
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(strSTDOUTFileName, "w")
+        obj.write(log_data)
+        obj.close()
 
         return retStatus
 
@@ -390,7 +415,10 @@ class AnsibleExecute():
         execute_path = getAnsibleExecutDirPath(ansc_const, execute_no)
         # 緊急停止ファイル作成
         strForcedFileName = "{}/{}/{}".format(execute_path, self.strOutFolderName, self.forcedfile)
-        with open(strForcedFileName, 'w') as fd:
-            fd.write("")
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(strForcedFileName, "w")
+        obj.write("")
+        obj.close()
 
         return True

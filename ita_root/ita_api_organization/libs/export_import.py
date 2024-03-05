@@ -338,6 +338,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
                 "specified_time": body_specified_time,
                 "file_name": None,
                 "execution_user": user_name,
+                "language": lang,
                 "json_storage_item": json.dumps(body),
                 "discard": "0"
             },
@@ -515,9 +516,9 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
 
     if ret is False:
         unzip_file_cmd(fileName, tmp_dir_path, upload_id)
-    
+
     shutil.copytree(tmp_dir_path + "/" + upload_id, uploadPath + upload_id)
-    
+
     # tmp配下のファイル削除
     shutil.rmtree(tmp_dir_path)
 
@@ -531,7 +532,7 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
         cmd = "rm -rf " + importPath + upload_id
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         raise AppException("499-01305", [], [])
-    
+
     # zipファイル削除
     os.remove(importPath + fileName)
 
@@ -772,7 +773,7 @@ def unzip_file(fileName, tmp_dir_path, upload_id):
             uploadPath: 解凍先パス
             upload_id: アップロードID
     """
-    
+
     try:
         with zipfile.ZipFile(tmp_dir_path + "/" + fileName) as z:
             for info in z.infolist():
@@ -963,7 +964,7 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
         実行結果
     """
     path = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
-    
+
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read_text = storage_access.storage_read_text()
 
@@ -1260,15 +1261,19 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
     if os.path.isfile(import_id_path + '/MENU_GROUPS') is False:
         # 対象ファイルなし
         raise AppException("499-00905", [], [])
-    with open(import_id_path + '/MENU_GROUPS') as f:
-        menu_group_info = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_id_path + '/MENU_GROUPS')
+    menu_group_info = json.loads(file_read.read())
+    file_read.close()
 
     # PARENT_MENU_GROUPSファイル読み込み
     if os.path.isfile(import_id_path + '/PARENT_MENU_GROUPS') is False:
         # 対象ファイルなし
         raise AppException("499-00905", [], [])
-    with open(import_id_path + '/PARENT_MENU_GROUPS') as f:
-        parent_menu_group_info = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_id_path + '/PARENT_MENU_GROUPS')
+    parent_menu_group_info = json.loads(file_read.read())
+    file_read.close()
 
     # ユーザが使用している言語に合わせてメニューグループ名、メニュー名を設定する
     for menu_groups in menu_group_info.values():
@@ -1304,8 +1309,10 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         raise AppException("499-00905", [], [])
 
     # DP_INFOファイル読み込み
-    with open(import_id_path + '/DP_INFO') as f:
-        dp_info_file = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_id_path + '/DP_INFO')
+    dp_info_file = json.loads(file_read.read())
+    file_read.close()
     dp_mode = dp_info_file['DP_MODE']
     abolished_type = dp_info_file['ABOLISHED_TYPE']
     specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
@@ -1350,8 +1357,10 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
         raise AppException("499-00905", [], [])
 
     # DP_INFOファイル読み込み
-    with open(import_path + '/DP_INFO') as f:
-        dp_info_file = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_path + '/DP_INFO')
+    dp_info_file = json.loads(file_read.read())
+    file_read.close()
 
     dp_info = _check_dp_info(objdbca, menu, dp_info_file)
 
@@ -1420,6 +1429,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
                 "specified_time": specified_time,
                 "file_name": file_name,
                 "execution_user": user_name,
+                "language": lang,
                 "json_storage_item": import_list,
                 "discard": "0"
             },
@@ -1570,7 +1580,7 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     fileName = upload_id + '_ita_data.tar.gz'
     uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
     importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
-    
+
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read_text = storage_access.storage_read_text()
 
@@ -1759,7 +1769,7 @@ def _collect_ita_version(common_db):
 def _decode_zip_file(file_path, base64Data):
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_write = storage_access.storage_write()
-    
+
     # アップロードファイルbase64変換処理
     upload_file_decode = base64.b64decode(base64Data.encode('utf-8'))
 

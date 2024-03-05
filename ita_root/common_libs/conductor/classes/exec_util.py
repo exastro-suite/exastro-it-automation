@@ -43,7 +43,7 @@ from common_libs.terraform_driver.common.Execute import insert_execution_list as
 from common_libs.terraform_driver.cloud_ep.Execute import execution_scram as t_cloud_ep_execution_scram
 from common_libs.terraform_driver.cli.Execute import execution_scram as t_cli_execution_scram
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
-
+from common_libs.common import storage_access
 
 bool_master_true = 'True'
 bool_master_false = 'False'
@@ -1857,13 +1857,19 @@ class ConductorExecuteLibs():
             if os.path.isfile(file_path) is True:
                 try:
                     # ファイル読込み+LIST化
-                    with open(file_path) as f:
-                        file_data = json.load(f)
+                    obj = storage_access.storage_read()
+                    f = obj.open(file_path)
+                    file_data = json.load(f)
+                    obj.close()
+
                     # 追加
                     file_data.append(msg_json)
+
                     # ファイル書き込み
-                    with open(file_path, 'w') as f:
-                        json.dump(file_data, f, ensure_ascii=False, indent=4)
+                    obj = storage_access.storage_write()
+                    f = obj.open(file_path, 'w')
+                    json.dump(file_data, f, ensure_ascii=False, indent=4)
+                    obj.close()
                 except Exception:
                     raise Exception
 
@@ -2757,9 +2763,10 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                 # 全MVをzip化,base64
                 tmp_result = shutil.make_archive(tmp_work_path_filename, ext, root_dir=tmp_work_path)
 
-                with open(tmp_result, "rb") as f:
-                    zip_base64_str = base64.b64encode(f.read()).decode('utf-8')  # noqa: F405
-
+                obj = storage_access.storage_read()
+                obj.open(tmp_result, "rb")
+                zip_base64_str = base64.b64encode(obj.read()).decode('utf-8')  # noqa: F405
+                obj.close()
                 result.setdefault('file_name', zip_file_name)
                 result.setdefault('file_data', zip_base64_str)
 
@@ -3149,10 +3156,12 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             status_file_val = None
             tmp_f_str_line = None
             if os.path.isfile(status_file_path) is True:  # noqa: F405
-                with open(status_file_path) as f:
-                    tmp_f_str = f.read()
-                    tmp_f_str_line = tmp_f_str.splitlines()
-                    status_file_val = tmp_f_str_line[0]
+                obj = storage_access.storage_read()
+                obj.open(status_file_path)
+                tmp_f_str = obj.read()
+                obj.close()
+                tmp_f_str_line = tmp_f_str.splitlines()
+                status_file_val = tmp_f_str_line[0]
                 result['status_file_path'] = status_file_path
                 result['str_row'] = tmp_f_str
                 result['status_file_value'] = status_file_val

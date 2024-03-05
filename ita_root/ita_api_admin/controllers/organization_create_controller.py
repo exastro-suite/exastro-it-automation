@@ -573,6 +573,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
             # insert initial data of workspace-db
             ws_db.db_transaction_start()
+            # #2079 /storage配下ではないので対象外
             with open(dml_file, "r") as f:
                 sql_list = f.read().split(";\n")
                 for sql in sql_list:

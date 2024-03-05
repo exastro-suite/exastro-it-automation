@@ -195,9 +195,9 @@ def addAnsibleCreateFilesPath(path):
     """
     file_name = g.AnsibleCreateFilesPath
 
+    # #2079 /storage配下ではないので対象外
     with open(file_name, 'a') as fd:
         fd.write(path + "\n")
-        fd.close()
 
 def getAnsibleCreateFilesPath():
     """
@@ -214,11 +214,11 @@ def getAnsibleCreateFilesPath():
     if not os.path.isfile(file_name):
         return result_path_list
 
+    # #2079 /storage配下ではないので対象外
     with open(file_name, 'r') as fd:
         for path in fd.readlines():
             path = path.replace('\n', '')
             result_path_list.append(path)
-        fd.close()
 
     return result_path_list
 
@@ -237,6 +237,7 @@ def rmAnsibleCreateFiles():
             os.remove(del_path)
 
     file_name = g.AnsibleCreateFilesPath
+
     if os.path.isfile(file_name):
       os.remove(file_name)
 

@@ -41,11 +41,6 @@ class storage_base:
         else:
             return False
 
-    def DebugPrint(title, log):
-        frame = inspect.currentframe().f_back
-        log = '<<%s>><<%s>><<%s>>%s\n%s\n' % (os.path.basename(frame.f_code.co_filename), frame.f_code.co_name, str(frame.f_lineno), str(title), str(log))
-        print(log)
-
 class storage_read(storage_base):
     def __init__(self):
         storage_file_path = None
@@ -149,7 +144,7 @@ class storage_write_text(storage_base):
             # /tmpから/stargeにコピー
             shutil.copy2(tmp_file_path, file_path)
             # /tmpの掃除
-            if os.path.isfile(self.tmp_file_path) is True:
+            if os.path.isfile(tmp_file_path) is True:
                 os.remove(tmp_file_path)
 
 class storage_read_text(storage_base):
@@ -188,6 +183,6 @@ class storage_read_bytes(storage_base):
         value = Path(tmp_file_path).read_bytes()
         if storage_flg is True:
             # /tmpの掃除
-            if os.path.isfile(self.tmp_file_path) is True:
+            if os.path.isfile(tmp_file_path) is True:
                 os.remove(tmp_file_path)
         return value

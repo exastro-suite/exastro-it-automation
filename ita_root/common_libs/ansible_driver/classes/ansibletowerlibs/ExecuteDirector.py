@@ -107,6 +107,7 @@ from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath, g
 from common_libs.ansible_driver.functions.util import getDeviceListSSHPrivateKeyUploadDirPath
 from common_libs.ansible_driver.functions.util import get_OSTmpPath, getGitRepositorieDir
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
+from common_libs.common.storage_access import storage_base, storage_read, storage_write, storage_write_text, storage_read_text
 
 
 class ExecuteDirector():
@@ -620,12 +621,14 @@ class ExecuteDirector():
         tmp_TowerInfo_File = '%s/.ky_ansible_materials_transfer_TowerInfo_%s.log' % (get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_TowerInfo_File)
+
         if os.path.isfile(tmp_TowerInfo_File):
             os.unlink(tmp_TowerInfo_File)
 
         tmp_log_file = '%s/.ky_ansible_materials_transfer_logfile_%s.log' % (get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_log_file)
+
         if os.path.isfile(tmp_log_file):
             os.unlink(tmp_log_file)
 
@@ -656,7 +659,10 @@ class ExecuteDirector():
             )
 
             try:
-                pathlib.Path(tmp_TowerInfo_File).write_text(info)
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_write_text()
+                obj.write_text(tmp_TowerInfo_File, info)
+
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
                 self.ExceptionErrorLog(e, errorMessage, "", "")
@@ -664,6 +670,7 @@ class ExecuteDirector():
 
             cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
             try:
+                # #2079 /storage配下ではないので対象外
                 with open(tmp_log_file, 'a') as fp:
                     startlog = "[Trace] transfer material to ansible automation controller start. (host:{} source path:{} destination path:{})".format(str(tgtHostList), src_path, dest_path)
                     endlog = "[Trace] transfer material to ansible automation controller done."
@@ -753,6 +760,7 @@ class ExecuteDirector():
         tmp_log_file = '%s/.ky_ansible_materials_delete_logfile_%s.log' % (get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_log_file)
+
         if os.path.isfile(tmp_log_file):
             os.unlink(tmp_log_file)
 
@@ -769,6 +777,7 @@ class ExecuteDirector():
             tmp_TowerInfo_File = '%s/.ky_ansible_materials_delete_TowerInfo_%s.log' % (get_OSTmpPath(), os.getpid())
             # /tmpに作成したファイルはゴミ掃除リストに追加
             addAnsibleCreateFilesPath(tmp_TowerInfo_File)
+
             if os.path.isfile(tmp_TowerInfo_File):
                 os.unlink(tmp_TowerInfo_File)
 
@@ -784,7 +793,10 @@ class ExecuteDirector():
             )
 
             try:
-                pathlib.Path(tmp_TowerInfo_File).write_text(info)
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_write_text()
+                obj.write_text(tmp_TowerInfo_File, info)
+
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
                 self.ExceptionErrorLog(e, errorMessage, "", "")
@@ -793,6 +805,7 @@ class ExecuteDirector():
             else:
                 cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_delete.sh"), tmp_TowerInfo_File]
                 try:
+                    # #2079 /storage配下ではないので対象外
                     with open(tmp_log_file, 'a') as fp:
                         startlog = "[Trace] Delete material transferred to ansible automation controller start. (host:{} delete path:{})".format(tgtHostList, dest_path)
                         endlog = "[Trace] Delete material transferred to ansible automation controller done."
@@ -827,12 +840,14 @@ class ExecuteDirector():
         tmp_TowerInfo_File = '%s/.ky_ansible_resultfile_transfer_TowerInfo_%s.log' % (get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_TowerInfo_File)
+
         if os.path.isfile(tmp_TowerInfo_File):
             os.unlink(tmp_TowerInfo_File)
 
         tmp_log_file = '%s/.ky_ansible_resultfile_transfer_delete_logfile_%s.log' % (get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmp_log_file)
+
         if os.path.isfile(tmp_log_file):
             os.unlink(tmp_log_file)
 
@@ -863,7 +878,9 @@ class ExecuteDirector():
                 )
 
                 try:
-                    pathlib.Path(tmp_TowerInfo_File).write_text(info)
+                    # #2079 /storage配下のアクセスは/tmp経由にする。
+                    obj = storage_write_text()
+                    obj.write_text(tmp_TowerInfo_File, info)
 
                 except Exception as e:
                     errorMessage = g.appmsg.get_api_message("MSG-10570")
@@ -873,6 +890,7 @@ class ExecuteDirector():
                 else:
                     cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
                     try:
+                        # #2079 /storage配下ではないので対象外
                         with open(tmp_log_file, 'a') as fp:
                             startlog = "[Trace] Transfer material updated to ansible automation controller start. (host:{} source path:{} destination path:{})".format(str(tgtHostList), src_path, dest_path)
                             endlog = "[Trace] Transfer material updated to ansible automation controller done."
@@ -921,7 +939,9 @@ class ExecuteDirector():
             )
 
             try:
-                pathlib.Path(tmp_TowerInfo_File).write_text(info)
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_write_text()
+                obj.write_text(tmp_TowerInfo_File, info)
 
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
@@ -931,6 +951,7 @@ class ExecuteDirector():
             else:
                 cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
                 try:
+                    # #2079 /storage配下ではないので対象外
                     with open(tmp_log_file, 'a') as fp:
                         startlog = "[Trace] Transfer material updated to ansible automation controller start. (host:{} source path:{} destination path:{})".format(str(tgtHostList), src_path, dest_path)
                         endlog = "[Trace] Transfer material updated to ansible automation controller done."
@@ -979,7 +1000,9 @@ class ExecuteDirector():
             )
 
             try:
-                pathlib.Path(tmp_TowerInfo_File).write_text(info)
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_write_text()
+                obj.write_text(tmp_TowerInfo_File, info)
 
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
@@ -989,6 +1012,7 @@ class ExecuteDirector():
             else:
                 cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
                 try:
+                    # #2079 /storage配下ではないので対象外
                     with open(tmp_log_file, 'a') as fp:
                         startlog = "[Trace] Transfer material updated to ansible automation controller start. (host:{} source path:{} destination path:{})".format(str(tgtHostList), src_path, dest_path)
                         endlog = "[Trace] Transfer material updated to ansible automation controller done."
@@ -1037,8 +1061,9 @@ class ExecuteDirector():
             )
 
             try:
-                pathlib.Path(tmp_TowerInfo_File).write_text(info)
-
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_write_text()
+                obj.write_text(tmp_TowerInfo_File, info)
             except Exception as e:
                 errorMessage = g.appmsg.get_api_message("MSG-10570")
                 self.ExceptionErrorLog(e, errorMessage, "", "")
@@ -1047,6 +1072,7 @@ class ExecuteDirector():
             else:
                 cmd = ["sh", "%s/%s" % (get_AnsibleDriverShellPath(), "ky_ansible_materials_transfer.sh"), tmp_TowerInfo_File]
                 try:
+                    # #2079 /storage配下ではないので対象外
                     with open(tmp_log_file, 'a') as fp:
                         startlog = "[Trace] Transfer material updated to ansible automation controller start. (host:{} source path:{} destination path:{})".format(str(tgtHostList), src_path, dest_path)
                         endlog = "[Trace] Transfer material updated to ansible automation controller done."
@@ -2170,7 +2196,9 @@ class ExecuteDirector():
                 # ファイル名を短くする。
                 jobFileFullPath = "%s/exec_%s_%s.log.org" % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
-                    pathlib.Path(jobFileFullPath).write_text(result_stdout)
+                    # #2079 /storage配下のアクセスは/tmp経由にする。
+                    obj = storage_write_text()
+                    obj.write_text(jobFileFullPath, result_stdout)
 
                 except Exception as e:
                     errorMessage = "CreateLogs Faild to write file. %s" % (jobFileFullPath)
@@ -2191,7 +2219,9 @@ class ExecuteDirector():
                 # ファイル名を短くする。
                 jobFileFullPath = '%s/exec_%s_%s.log' % (outDirectoryPath, jobNo, job_slice_number_str)
                 try:
-                    pathlib.Path(jobFileFullPath).write_text(result_stdout)
+                    # #2079 /storage配下のアクセスは/tmp経由にする。
+                    obj = storage_write_text()
+                    obj.write_text(jobFileFullPath, result_stdout)
 
                 except Exception as e:
                     errorMessage = "CreateLogs Faild to write file. %s" % (jobFileFullPath)
@@ -2231,7 +2261,9 @@ class ExecuteDirector():
         execlogContent = ""
         for jobName, jobFileFullPathAry in self.jobOrgLogFileList.items():
             for jobFileFullPath in jobFileFullPathAry:
-                jobFileContent = pathlib.Path(jobFileFullPath).read_text()
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_read_text()
+                jobFileContent = obj.read_text(jobFileFullPath)
                 if not jobFileContent:
                     self.errorLogOut("AllCreateLogs Faild to read file. %s" % (jobFileFullPath))
                     return False
@@ -2240,7 +2272,9 @@ class ExecuteDirector():
 
         execlogFullPath_org = '%s.org' % (execlogFullPath)
         try:
-            pathlib.Path(execlogFullPath_org).write_text(execlogContent)
+            # #2079 /storage配下のアクセスは/tmp経由にする。
+            obj = storage_write_text()
+            obj.write_text(execlogFullPath_org, execlogContent)
 
         except Exception as e:
             errorMessage = "AllCreateLogs Faild to write file."
@@ -2251,7 +2285,9 @@ class ExecuteDirector():
         execlogContent = ""
         for jobName, jobFileFullPathAry in self.jobFileList.items():
             for jobFileFullPath in jobFileFullPathAry:
-                jobFileContent = pathlib.Path(jobFileFullPath).read_text()
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_read_text()
+                jobFileContent = obj.read_text(jobFileFullPath)
                 if not jobFileContent:
                     self.errorLogOut("AllCreateLogs Faild to read file. %s" % (jobFileFullPath))
                     return False
@@ -2259,7 +2295,9 @@ class ExecuteDirector():
                 execlogContent = '%s%s\n' % (execlogContent, jobFileContent)
 
         try:
-            pathlib.Path(execlogFullPath).write_text(execlogContent)
+            # #2079 /storage配下のアクセスは/tmp経由にする。
+            obj = storage_write_text()
+            obj.write_text(execlogFullPath, execlogContent)
 
         except Exception as e:
             errorMessage = "AllCreateLogs Faild to write file."
@@ -2281,8 +2319,11 @@ class ExecuteDirector():
                 message += '\n'
 
             try:
-                with open(errorLogfile, 'a') as fp:
-                    fp.write(message)
+                # #2079 /storage配下は/tmpを経由してアクセスする
+                obj = storage_write()
+                obj.open(errorLogfile, 'a')
+                obj.write(message)
+                obj.close()
 
             except Exception as e:
                 errorMessage = "Faild to write message."
@@ -2361,6 +2402,7 @@ class ExecuteDirector():
         os.chmod(repositories_base_path, 0o777)
         # repositories_base_pathは/tmpに作成ししているがゴミ掃除リストに追加しない
 
+        # #2079 /storage配下ではないのでこのまま
         proj_name = os.path.basename(pathlib.Path(SrcFilePath).parent)
         self.gitLoaclRepositoriesPath = "%s/%s" % (repositories_base_path, proj_name)
         # /tmpに作成したファイルはゴミ掃除リストに追加
@@ -2459,18 +2501,22 @@ class ExecuteDirector():
     def saveGitProjectId(self, execution_no, project_id):
         execute_path = getAnsibleExecutDirPath(self.AnsConstObj, execution_no)
         filePath = "{}/tmp/GitlabProjectId.txt".format(execute_path)
-        with open(filePath, 'w') as fd:
-            fd.write(project_id)
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(filePath, 'w')
+        obj.write(project_id)
+        obj.close()
 
     def getGitProjectId(self, execution_no):
         execute_path = getAnsibleExecutDirPath(self.AnsConstObj, execution_no)
         filePath = "{}/tmp/GitlabProjectId.txt".format(execute_path)
-        if os.path.exists(filePath):
-            with open(filePath) as fd:
-                project_id = fd.read()
-            return project_id
-        else:
-            return False
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_read()
+        obj.open(filePath)
+        project_id = obj.read()
+        obj.close()
+
+        return project_id
 
     def deleteMaterialsTransferTempDir(self, execution_no):
         OrchestratorSubId_dir = self.AnsConstObj.vg_OrchestratorSubId_dir
@@ -2614,7 +2660,10 @@ class ExecuteDirector():
         ssh_key_file_dir = getFileupLoadColumnPath('2100040702', 'ANS_GIT_SSH_KEY_FILE')
 
         filePath = '%s/%s/%s' % (ssh_key_file_dir, FuncCommonLib.addPadding(systemId), sshKeyFileName)
-        content = pathlib.Path(filePath).read_text()
+
+        # #2079 /storage配下のアクセスは/tmp経由にする。
+        obj = storage_read_text()
+        content = obj.read_text(filePath)
         content = ky_decrypt(content)
 
         return content
@@ -2622,7 +2671,10 @@ class ExecuteDirector():
     @staticmethod
     def getDeviceListSshKeyFileContent(systemId, sshKeyFileName):
         filePath = '%s/%s/%s' % (getDeviceListSSHPrivateKeyUploadDirPath(), systemId, sshKeyFileName)
-        content = pathlib.Path(filePath).read_text()
+
+        # #2079 /storage配下のアクセスは/tmp経由にする。
+        obj = storage_read_text()
+        content = obj.read_text(filePath)
 
         return content
 
@@ -2814,16 +2866,37 @@ class ExecuteDirector():
         self.AACCreateObjectIdDict[key_id].append(str(id_value))
 
         path = self.AACCreateObjectIdFilePath
-        with open(path, 'w') as fd:
-            fd.write(json.dumps(self.AACCreateObjectIdDict))
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(path, 'w')
+        obj.write(json.dumps(self.AACCreateObjectIdDict))
+        obj.close()
 
     def getAACCreateObjectID(self):
         path = self.AACCreateObjectIdFilePath
-        if not os.path.exists(path):
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_base()
+        storage_flg = obj.path_check(path)
+        if storage_flg is True:
+            # /storage
+            tmp_file_path = obj.make_temp_path(path)
+            if os.path.exists(tmp_file_path) is True:
+                #  /storageから/tmpにファイルコピー(パーミッション維持)
+                shutil.copy2(path, self.tmp_file_path)
+        else:
+            # not /storage
+            tmp_file_path = path
+
+        if not os.path.exists(tmp_file_path):
             return []
-        with open(path, 'r') as fd:
-            jsonstr = fd.read()
+
+        obj = storage_read()
+        obj.open(tmp_file_path, 'r')
+        jsonstr = obj.read()
+        obj.close()
+
         AACCreateObjectIdDict = json.loads(jsonstr)
+
         return AACCreateObjectIdDict
 
     def ExceptionErrorLog(self, e, errorMessage, stderrlogfile, stderrmsg=""):
@@ -2835,8 +2908,11 @@ class ExecuteDirector():
 
         if stderrlogfile:
             if os.path.isfile(stderrlogfile):
-                log = pathlib.Path(stderrlogfile).read_text()
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_read_text()
+                log = obj.read_text(stderrlogfile)
                 self.errorLogOut(log)
+
         t = traceback.format_exc()
         self.errorLogOut(arrange_stacktrace_format(t))
         self.errorLogOut(str(e))

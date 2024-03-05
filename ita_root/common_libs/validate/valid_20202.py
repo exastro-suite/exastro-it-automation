@@ -74,6 +74,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
             # YAML形式であることをチェック
             obj = YamlParse()
             ret = obj.Parse(filepath_tmp)
+
             os.remove(filepath_tmp)
             if ret is False:
                 retBool = False

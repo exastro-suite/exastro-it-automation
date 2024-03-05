@@ -26,6 +26,7 @@ from common_libs.loadtable import *  # noqa F403
 from common_libs.common.exception import *  # noqa F403
 from .AnscConstClass import AnscConst
 from .WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
+from common_libs.common.storage_access import storage_base
 
 # ローカル変数(全体)宣言
 lv_val_assign_tbl = 'T_ANSR_VALUE_AUTOREG'
@@ -334,7 +335,7 @@ class SubValueAutoReg():
         # 多次元変数を紐付けている紐付メニューの具体値からTPF変数を抽出する
         for varsAssRecord in lv_arrayVarsAssList.values():
             template_list, host_list = self.extract_tpl_vars(var_extractor, varsAssRecord, template_list, host_list)
-        
+
         return True, template_list, host_list
 
     def getAnsible_RolePackage_file(self, in_dir, in_pkey, in_filename):
@@ -907,10 +908,10 @@ class SubValueAutoReg():
 
         ina_vars_ass_list = {}
         ina_array_vars_ass_list = {}
-        
+
         tmp_ary_data = {}
         host_ary = []
-        
+
         dict_objmenu = {}
 
         idx = 0
@@ -976,17 +977,17 @@ class SubValueAutoReg():
                 col_row_id = row[AnscConst.DF_ITA_LOCAL_PKEY]
 
                 col_name = 'DATA_JSON'  # 2系からデータの持ち方変わった
-                
+
                 if table_name not in tmp_ary_data:
                     tmp_ary_data[table_name] = {}
                 tmp_ary_data[table_name][index] = row
                 index += 1
-                
+
                 if row['HOST_ID'] not in host_ary:
                     host_ary.append(row['HOST_ID'])
-        
+
                 parameter = {}
-            
+
             for tmp_table_name, tmp_value in tmp_ary_data.items():
                 registered_data_cnt = 0
                 registered_host_ary = []
@@ -997,7 +998,7 @@ class SubValueAutoReg():
                             exec_flag = False
                             menu_name_rest = col_data["MENU_NAME_REST"]
                             host_id = row['HOST_ID']
-                            
+
                             if tmp_table_name == table_name:
                                 # 縦メニューの場合
                                 if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
@@ -1031,7 +1032,7 @@ class SubValueAutoReg():
                                                         else:
                                                             exit_flag = True
                                                             continue
-                                
+
                                                     # TPF/CPF変数カラム判定
                                                     if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                                         if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
@@ -1042,23 +1043,23 @@ class SubValueAutoReg():
                                         # 項目が削除されていないか確認
                                         if exit_flag is True:
                                             continue
-                        
+
                                         exec_flag = True
                                 else:
                                     # パラメータシートから値を取得
                                     if menu_name_rest not in dict_objmenu:
                                         dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
-                                
+
                                     # ホスト名取得
                                     sql = "SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE SYSTEM_ID = %s"
-                                
+
                                     host_data_list = WS_DB.sql_execute(sql, [row['HOST_ID']])
                                     for host_data in host_data_list:
                                         host_name = host_data['HOST_NAME']
-                                
+
                                     # オペレーション名取得
                                     sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
-                                
+
                                     ope_data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
                                     for ope_data in ope_data_list:
                                         ope_name = ope_data['OPERATION_NAME']
@@ -1066,7 +1067,7 @@ class SubValueAutoReg():
                                     filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]}, "discard": {"LIST": ["0"]}}
                                     status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
                                     parameter = tmp_result[0]['parameter']
-                                
+
                                     # 項目なしは対象外
                                     if col_data['COL_GROUP_ID'] is None:
                                         ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
@@ -1084,7 +1085,7 @@ class SubValueAutoReg():
                                             col_val = parameter[col_data['COLUMN_NAME_REST']]
                                         else:
                                             continue
-                                
+
                                     # TPF/CPF変数カラム判定
                                     if col_data['REF_TABLE_NAME'] in VariableColumnAry:
                                         if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
@@ -1093,9 +1094,9 @@ class SubValueAutoReg():
                                                     col_val = "'{{ " + col_val + " }}'"
                                                 else:
                                                     continue
-                        
+
                                     exec_flag = True
-                            
+
                             col_class = self.getColumnClass(col_data['COLUMN_CLASS'], WS_DB)
                             col_name_rest = col_data['COLUMN_NAME_REST']
                             col_filepath = ""
@@ -1115,10 +1116,10 @@ class SubValueAutoReg():
                                             warning_flag = 1
                                             # 次のデータへ
                                             continue
-                            
+
                                         col_filepath = col_filepath + "/" + col_val
                                         col_file_md5 = self.md5_file(col_filepath)
-                            
+
                             # 代入値管理の登録に必要な情報を生成
                             if exec_flag == 1:
                                 # 同一登録データがある場合はスキップ
@@ -1132,7 +1133,7 @@ class SubValueAutoReg():
                                                         if col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
                                                             if col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
                                                                 skip_flag = True
-                            
+
                                 for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
                                     if len(ina_array_vars_ass_list_value) > 0:
                                         if operation_id == ina_array_vars_ass_list_value['OPERATION_ID']:
@@ -1142,7 +1143,7 @@ class SubValueAutoReg():
                                                         if col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
                                                             if col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
                                                                 skip_flag = True
-                            
+
                                 if skip_flag == 0:
                                     ret = self.makeVarsAssignData(table_name,
                                                         col_name,
@@ -1162,7 +1163,7 @@ class SubValueAutoReg():
                                                         in_tableNameToMenuIdList[table_name],
                                                         row[AnscConst.DF_ITA_LOCAL_PKEY],
                                                         WS_DB)
-                            
+
                                     # NULL連携無効で処理対象外になった場合は追加しない
                                     if not ret[0] == 0:
                                         ina_vars_ass_list[idx] = ret[0]
@@ -1171,13 +1172,13 @@ class SubValueAutoReg():
                                             registered_host_ary.append(host_id)
                                     if not ret[2] == 0:
                                         ina_array_vars_ass_list[idx] = ret[2]
-                            
+
                                     idx += 1
                                     skip_flag = False
 
                     if host_ary == len(registered_host_ary):
                         break
-                            
+
             # 縦メニューの代入順序に対応したレコードが紐付対象メニューに登録されているか確認
             if 'col_name' in locals():
                 for col_data in in_tabColNameToValAssRowList[table_name][col_name].values():
@@ -1192,7 +1193,7 @@ class SubValueAutoReg():
                         frame = inspect.currentframe().f_back
                         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                         warning_flag = 1
-        
+
         # オブジェクト解放
         del dict_objmenu
 
@@ -1401,9 +1402,27 @@ class SubValueAutoReg():
             str: ファイルのMD5ハッシュ値
         """
         md5 = hashlib.md5()
-        with open(file, 'rb') as f:
-            for block in iter(lambda: f.read(65536), b''):
-                md5.update(block)
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_base()
+        storage_flg = obj.path_check(file)
+        if storage_flg is True:
+            # /storage
+            tmp_file_path = obj.make_temp_path(file)
+            # /storageから/tmpにコピー
+            shutil.copy2(file, tmp_file_path)
+        else:
+            # not /storage
+            tmp_file_path = file
+        with open(tmp_file_path, 'rb') as f:
+             for block in iter(lambda: f.read(65536), b''):
+                 md5.update(block)
+        f.close()
+
+        if storage_flg is True:
+            # /tmpゴミ掃除
+            if os.path.isfile(tmp_file_path) is True:
+                os.remove(tmp_file_path)
+
         return md5.hexdigest()
 
     def validateValueTypeColValue(self, in_col_val, in_null_data_handling_flg, in_menu_id, in_row_id, in_menu_title, WS_DB):
@@ -2064,7 +2083,7 @@ class SubValueAutoReg():
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']] = {}
             if data['COL_NAME'] not in inout_tabColNameToValAssRowList[data['TABLE_NAME']]:
                 inout_tabColNameToValAssRowList[data['TABLE_NAME']][data['COL_NAME']] = {}
-            
+
             # 各パラメータシートごとのデータ数
             if data['TABLE_NAME'] not in data_cnt_ary:
                 data_cnt_ary[data['TABLE_NAME']] = 1

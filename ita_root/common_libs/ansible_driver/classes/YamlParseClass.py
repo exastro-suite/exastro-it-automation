@@ -1,4 +1,5 @@
 import yaml
+from common_libs.common.storage_access import storage_read
 
 """
   yamlファイルのパースモジュール
@@ -49,10 +50,16 @@ class YamlParse:
 
         # 対話ファイルを読み込む
         try:
+            # #2079 /storage配下は/tmpを経由してアクセスする
+            r_obj = storage_read()
+            r_obj.open(yamlfile)
+            yaml_value = r_obj.read()
+            r_obj.close()
+
             if yaml_var >= str(5):
-                retParse = yaml.load(open(yamlfile).read(), Loader=yaml.FullLoader)
+                retParse = yaml.load(yaml_value, Loader=yaml.FullLoader)
             else:
-                retParse = yaml.load(open(yamlfile).read())
+                retParse = yaml.load(yaml_value)
             # パーサーが辞書以外のリターンをした場合はyamlフォーマットエラーにする。
             if isinstance(retParse, dict) or isinstance(retParse, list):
                 pass

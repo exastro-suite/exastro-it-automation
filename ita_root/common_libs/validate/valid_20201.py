@@ -53,7 +53,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         tmpFile = "{}/HeaderSectionYamlParse_{}".format(get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmpFile)
-        # #2079 /storage配下ではないので対象外
+        #  #2079 /storage配下ではないので対象外
         fd = open(tmpFile, 'w')
         fd.write(in_string)
         fd.close()

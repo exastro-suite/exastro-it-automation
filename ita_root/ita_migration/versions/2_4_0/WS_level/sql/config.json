@@ -1,4 +1,5 @@
 [
     ["", "workspace_master.sql"],
-    ["", "oase_master.sql"]
+    ["", "oase_master.sql"],
+    ["export_import.sql", "export_import_master.sql"]
 ]

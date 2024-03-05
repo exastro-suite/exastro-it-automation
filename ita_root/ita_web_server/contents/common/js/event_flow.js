@@ -23,7 +23,7 @@
 class EventFlow {
 /*
 ##################################################
-  Constructor
+    Constructor
 ##################################################
 */
 constructor( id ) {
@@ -31,7 +31,7 @@ constructor( id ) {
 }
 /*
 ##################################################
-  初期値
+    初期値
 ##################################################
 */
 setInitCanvasValue() {
@@ -43,9 +43,10 @@ setInitCanvasValue() {
 
     er.initRange = '1h'; // 初期表示範囲
 
-    er.intervalTime = 10000; // 更新間隔
+    er.intervalTime = fn.storage.get('eventflow_interval_time', 'local', false ); // 更新間隔
+    if ( er.intervalTime === false ) er.intervalTime = 5000;
 
-    er.blockMargin = 16; // ブロックごとの重なり判定マージン
+    er.blockMargin = 64; // ブロックごとの重なり判定マージン
     er.minFloor = 16; // 最小段数
     er.maxRate = 50; // 最大拡大倍数
 
@@ -60,11 +61,12 @@ setInitCanvasValue() {
     // 色
     er.patternColor = {
         conclusion: '255,170,0', // 再評価
-        unknown: '255,31,255', // 未知
+        unknown: '175,65,175', // 未知
         timeout: '255,30,30', // 既知（時間切れ）
         evaluated: '189,204,212', // 既知（対処済み）
-        newEvent: '140,198,63', // NEW
-        action: '0,91,172' // アクション
+        newEvent: '40,170,225', // NEW
+        action: '0,91,172', // アクション
+        rule: '0,156,125' // ルール
     };
 
     // 表示フラグ
@@ -74,7 +76,8 @@ setInitCanvasValue() {
         timeout: true, // 既知（時間切れ）
         evaluated: true, // 既知（対処済み）
         newEvent: true, // NEW
-        action: true // アクション
+        action: true, // アクション
+        rule: true // ルール
     };
 
     // パターンリスト
@@ -84,7 +87,20 @@ setInitCanvasValue() {
         unknown: getMessage.FTE13008,
         timeout: getMessage.FTE13009,
         conclusion: getMessage.FTE13011,
-        action: getMessage.FTE13013
+        action: getMessage.FTE13013,
+        rule: getMessage.FTE13030
+    };
+
+    // パターンアイコン
+    er.patternIcon = {
+        newEvent: 'e93b',
+        evaluated: 'e906',
+        unknown: 'e907',
+        timeout: 'e939',
+        conclusion: 'e935',
+        action: 'e913',
+        rule: 'e960',
+        ruleBack: 'e961'
     };
 
     // 各種フラグ
@@ -99,7 +115,7 @@ setInitCanvasValue() {
 }
 /*
 ##################################################
-  Setup
+    Setup
 ##################################################
 */
 setup( target ) {
@@ -125,6 +141,7 @@ setup( target ) {
         hScroll: $target.find('.eventFlowChartBar[data-type="horizontal"]'),
         positionBorder: $target.find('.eventFlowPositionBorder'),
         positionDate: $target.find('.eventFlowPositionDate'),
+        nowDate: $target.find('.eventFlowNowDate'),
         info: $target.find('.eventFlowEventInformation'),
         parts: $target.find('.eventFlowParts'),
     };
@@ -173,7 +190,7 @@ setup( target ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
-  Main HTML
+    Main HTML
 ##################################################
 */
 mainHtml( id ) {
@@ -194,7 +211,7 @@ mainHtml( id ) {
             { html: { html: er.patternSelectHTML() }, separate: true }
         ],
         Sub: [
-            //{ button: { icon: 'gear', text: getMessage.FTE13015, type: 'setting', action: 'default'}}
+            { html: { html: er.updateIntervalSelectHTML() } }
         ]
     };
 
@@ -232,8 +249,9 @@ mainHtml( id ) {
                         + `</div>`
                     + `</div>`
                 + `</div>`
-                + `<div class="eventFlowEventInformation"><div class="eventFlowEventInformationInner"></div></div>`
+                + `<div class="eventFlowEventInformation"></div>`
                 + `<div class="eventFlowPositionDate"></div>`
+                + `<div class="eventFlowNowDate"></div>`
             + `</div>`
             // + `<div class="eventFlowFooter"></div>`
         + `</div>`
@@ -247,7 +265,7 @@ mainHtml( id ) {
 }
 /*
 ##################################################
-  Header 期間選択HTML
+    Header 期間選択HTML
 ##################################################
 */
 dateRangeSelectHTML() {
@@ -306,7 +324,7 @@ dateRangeSelectHTML() {
 }
 /*
 ##################################################
-  範囲Radio HTML
+    範囲Radio HTML
 ##################################################
 */
 addSelectRange( id, value, text, checked = false ) {
@@ -326,7 +344,7 @@ addSelectRange( id, value, text, checked = false ) {
 }
 /*
 ##################################################
-  Header パターン選択HTML
+    Header パターン選択HTML
 ##################################################
 */
 patternSelectHTML() {
@@ -358,6 +376,52 @@ patternSelectHTML() {
         + `</div>`
     + `</div>`;
 }
+/*
+##################################################
+    Header 更新間隔選択HTML
+##################################################
+*/
+updateIntervalSelectHTML() {
+    const er = this;
+
+    const commonClassName = 'eventFlowIntervalSelect';
+
+    const intervalList = {
+        '0': getMessage.FTE13027,
+        '1000': getMessage.FTE13028(1),
+        '5000': getMessage.FTE13028(5),
+        '10000': getMessage.FTE13028(10),
+        '30000': getMessage.FTE13028(30),
+        '60000': getMessage.FTE13028(60),
+    };
+
+    const listHtml = [];
+    for ( const key in intervalList ) {
+        const
+        name = `${er.id}_${commonClassName}Radio`,
+        id = `${name}_${key}`;
+
+        const checked = ( er.intervalTime === Number( key ) )? {checked: 'checked'}: {};
+
+        listHtml.push(`<li class="${commonClassName}Item">`
+            + fn.html.radioText(`${commonClassName}Radio`, key, name, id, checked, intervalList[ key ] )
+        + `</li>`);
+    }
+
+    const initNum = ( er.intervalTime !== 0 )? getMessage.FTE13028( er.intervalTime / 1000 ): getMessage.FTE13027;
+
+    return ``
+    + `<div class="${commonClassName} eventFlowSelectWrap">`
+        + `<button class="${commonClassName}Button eventFlowSelectButton">`
+            + `<span class="${commonClassName}Name">${getMessage.FTE13029}</span><span class="${commonClassName}Number">${initNum}</span>`
+        + `</button>`
+        + `<div class="${commonClassName}ListBlock eventFlowOpenBlock">`
+            + `<ul class="${commonClassName}List">`
+                + listHtml.join('')
+            + `</ul>`
+        + `</div>`
+    + `</div>`;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 //  Canvas
@@ -365,70 +429,211 @@ patternSelectHTML() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
-  表示データの作成
+    表示データの作成
 ##################################################
 */
 createCanvasData() {
     const er = this;
 
+    // 履歴データを複製
+    const history = fn.arrayCopy( er.history );
+
+    const ruleList = [];
+    const ruleIdList = [];
+
+    // イベントのつながりを作成
+    // ルールリストの作成
+    for ( const e of history ) {
+        // パターン
+        if ( e.type === 'event') {
+            e.pattern = er.checkEventPattern( e.item.labels );
+        } else {
+            e.pattern = e.type;
+        }
+
+        const eventList = er.getEventList(e);
+        const ruleInfo = er.getRuleInfo(e);
+
+        // 座標
+        if ( e.type === 'event') {
+            e.x1 = er.getDateWidthPositionX( e.item.labels._exastro_fetched_time );
+            e.x2 = er.getDateWidthPositionX( e.item.labels._exastro_end_time );
+        } else {
+            e.x1 = e.x2 = er.getDateWidthPositionX( e.datetime );
+        }
+
+        if ( eventList && ruleInfo ) {
+            // ユニークルールID
+            const ruleId = ruleInfo.id + eventList.toString();
+
+            // Inイベント
+            if ( !e.before ) e.before = [];
+            if ( e.before.indexOf( ruleId ) === -1 ) {
+                e.before.push( ruleId );
+            }
+
+            // ルール枠の作成
+            if ( ruleIdList.indexOf( ruleId ) === -1 ) {
+                ruleList.push( er.createRuleData( e, eventList, ruleId, ruleInfo ) );
+                ruleIdList.push( ruleId );
+            } else {
+                const rule = ruleList.find(function(r){
+                    return ruleId === r.id;
+                });
+
+                if ( rule ) {
+                    if ( rule.datetime > e.datetime ) {
+                        rule.datetime = e.datetime;
+                        rule.x1 = rule.x2 = e.x1;
+                    }
+                    rule.after.push( e.id );
+                }
+            }
+
+            // Outイベント
+            for ( const id of eventList ) {
+                const event = history.find(function(e){
+                    return e.id === id;
+                });
+
+                if ( !event.after ) event.after = [];
+                if ( event.after.indexOf( ruleId ) === -1 ) {
+                    event.after.push( ruleId );
+                }
+            }
+        }
+    }
+
+    // イベントをグループ化する
+    er.groupList = {
+        groupData: {},
+        groupInfo: {},
+        group: {},
+        singleData: []
+    };
+    let groupCount = 1;
+
+    // すでにいずれかのグループに入っているかチェック
+    const eventGroupCheck = function( id ){
+        for ( const key in er.groupList.group ) {
+            if ( er.groupList.group[ key ].indexOf( id ) !== -1 ) return true;
+        }
+        return false;
+    };
+
+    // つながりのあるIDをチェック
+    const eventLinkCheck = function( eventId, groupId ){
+        if ( eventGroupCheck( eventId ) ) return;
+
+        // チェック用IDリスト
+        if ( !er.groupList.group[ groupId ] ) er.groupList.group[ groupId ] = [];
+        er.groupList.group[ groupId ].push( eventId );
+
+        const e = list.find(function( item ){
+            return eventId === item.id;
+        });
+
+        if ( e ) {
+            e.group = groupId;
+
+            // グループごとの範囲
+            if ( !er.groupList.groupInfo[ groupId ] ) er.groupList.groupInfo[ groupId ] = {};
+            if ( !er.groupList.groupInfo[ groupId ].minX || er.groupList.groupInfo[ groupId ].minX > e.x1 ) er.groupList.groupInfo[ groupId ].minX = e.x1;
+            if ( !er.groupList.groupInfo[ groupId ].maxX || er.groupList.groupInfo[ groupId ].maxX < e.x2 ) er.groupList.groupInfo[ groupId ].maxX = e.x2;
+
+            // イベントデータ
+            if ( !er.groupList.groupData[ groupId ] ) er.groupList.groupData[ groupId ] = [];
+            er.groupList.groupData[ groupId ].push( e );
+
+            // 繋がり
+            if ( e.after ) {
+                for ( const id of e.after ) {
+                    eventLinkCheck( id, groupId );
+                }
+            }
+            if ( e.before ) {
+                for ( const id of e.before ) {
+                    eventLinkCheck( id, groupId );
+                }
+            }
+        }
+    };
+
+    // 履歴にルールを追加
+    const list = ruleList.concat( history );
+
+    // データの振り分け
+    for ( const e of list ) {
+        // 繋がりがあるかどうか
+        if ( e.after || e.before ) {
+            eventLinkCheck( e.id, 'group' + groupCount++ );
+        } else {
+            er.groupList.singleData.push( e );
+        }
+    }
+
+    // 描画用イベント位置情報
     er.canvasData = [];
 
-    er.history.sort(function( a, b ){
-        return a.datetime.localeCompare( b.datetime );
-    });
-
+    // 階層
     const floor = [];
-    let f = 0;
-    for ( const item of er.history ) {
-        const data = {
-            id: item.id,
-            type: item.type,
-            date: item.datetime,
-            original: item
-        };
 
-        // パターン
-        if ( item.type === 'event') {
-            data.pattern = er.checkEventPattern( item.item.labels );
-        } else {
-            data.pattern = item.type;
-        }
-
+    const createFloorData = function( e, x1, x2 ){
         // 表示パターンチェック
-        if ( er.displayFlag[ data.pattern ] === false ) continue;
+        if ( er.displayFlag[ e.pattern ] === false ) return;
 
-        // X座標
-        if ( item.type === 'event') {
-            data.x1 = er.getDateWidthPositionX( item.item.labels._exastro_fetched_time );
-            data.x2 = er.getDateWidthPositionX( item.item.labels._exastro_end_time );
-        } else {
-            data.x1 = er.getDateWidthPositionX( item.datetime );
-        }
-        const
-        x1 = data.x1,
-        x2 = ( data.x2 )? data.x2: data.x1;
-
-        // 表示範囲内かチェック
-        if ( ( data.x1 < 0 && x2 < 0 ) || ( data.x1 > er.w && x2 > er.w ) ) continue;
-
-        // 一番上の段に表示できるか？
-        const floorTopLength = ( floor[0] )? floor[0].length - 1: 0;
-        if ( floor[0] && floor[0][floorTopLength] + er.blockMargin < x1 ) f = 0;
+        if ( !x1 ) x1 = e.x1;
+        if ( !x2 ) x2 = e.x2;
 
         // 何段目に表示するか
-        while ( data.floor === undefined ) {
+        let f = 0;
+        while ( e.floor === undefined ) {
             if ( !floor[f] ) floor[f] = [];
 
             const l = floor[f].length;
             if ( l === 0 || ( floor[f][ l - 1 ] && floor[f][ l - 1 ] + er.blockMargin < x1 ) ) {
                 floor[f].push( x1 );
                 floor[f].push( x2 );
-                data.floor = f;
+                e.floor = f;
             }
+
+            if ( floor[f][0] && floor[f][0] - er.blockMargin > x2 ) {
+                floor[f].unshift( x2 );
+                floor[f].unshift( x1 );
+                e.floor = f;
+            }
+
             f++;
         }
+        er.canvasData.push( e );
+    };
 
-        er.canvasData.push( data );
+    // グループの階層データの作成
+    for ( const groupId in er.groupList.groupData ) {
+        const group = er.groupList.groupData[ groupId ];
+
+        group.sort(function( a, b ){
+            if ( a.datetime < b.datetime ) {
+                return -1;
+            } else if ( a.datetime > b.datetime ) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+
+        const
+        minX = er.groupList.groupInfo[ groupId ].minX,
+        maxX = er.groupList.groupInfo[ groupId ].maxX;
+
+        for ( const e of group ) {
+            createFloorData( e, minX, maxX );
+        }
+    }
+
+    // 単発イベント階層データの作成
+    for ( const e of er.groupList.singleData ) {
+        createFloorData( e );
     }
 
     // 段数
@@ -437,7 +642,81 @@ createCanvasData() {
 }
 /*
 ##################################################
-  イベントパターンを調べる
+    イベントデータからイベントリストを返す
+##################################################
+*/
+getEventList( e ) {
+    const exastro_events = (function(){
+        if ( e.type === 'action' && e.item && e.item.EVENT_ID_LIST ) {
+            // "EVENT_ID_LIST": "ObjectId('XXX1'),ObjectId('XXX2')"
+            return e.item.EVENT_ID_LIST.split(',');
+        } else if ( e.type === 'event' && e.item && e.item.exastro_events ) {
+            // "exastro_events": [
+            //    "ObjectId('XXX1')",
+            //    "ObjectId('XXX2')",
+            // ],
+            return e.item.exastro_events;
+        }
+        return null;
+    })();
+
+    if ( exastro_events ) {
+        const list = [];
+        for ( const id of exastro_events ) {
+            if ( fn.typeof( id ) === 'string' && id.match(/^ObjectId/) ) {
+                const rId = id.replace(/ObjectId\(\'(.+)\'\)/, "$1");
+                list.push( rId );
+            }
+        }
+        return list.sort();
+    } else {
+        return null;
+    }
+}
+/*
+##################################################
+    イベントデータからルール情報を返す
+##################################################
+*/
+getRuleInfo( e ) {
+    if ( e.type === 'action' && e.item && e.item.RULE_ID && e.item.RULE_NAME ) {
+        return {
+            id: e.item.RULE_ID,
+            name: e.item.RULE_NAME
+        };
+    } else if ( e.type === 'event' && e.item && e.item.exastro_rules && e.item.exastro_rules[0] ) {
+        const id = ( e.item.exastro_rules[0].id )? e.item.exastro_rules[0].id: '';
+        const name = ( e.item.exastro_rules[0].name )? e.item.exastro_rules[0].name: '';
+        return {
+            id: id,
+            name: name
+        };
+    } else {
+        return null;
+    }
+}
+/*
+##################################################
+    ルールデータの作成
+##################################################
+*/
+createRuleData( e, eventList, ruleId, ruleInfo ) {
+    const ruleData = {
+        id: ruleId,
+        type: 'rule',
+        datetime: e.datetime,
+        before: eventList,
+        after: [ e.id ],
+        x1: e.x1,
+        x2: e.x2,
+        info: ruleInfo,
+        pattern: 'rule'
+    };
+    return ruleData;
+}
+/*
+##################################################
+    イベントパターンを調べる
 ##################################################
 */
 checkEventPattern( labels ) {
@@ -462,7 +741,7 @@ checkEventPattern( labels ) {
 }
 /*
 ##################################################
-  パターンカラー
+    パターンカラー
 ##################################################
 */
 getPatternColor( pattern, opacity = 1 ) {
@@ -470,7 +749,7 @@ getPatternColor( pattern, opacity = 1 ) {
 }
 /*
 ##################################################
-  更新
+    更新
 ##################################################
 */
 updateCanvas( initFlag = false ) {
@@ -509,18 +788,24 @@ updateCanvas( initFlag = false ) {
         er.controller = null;
         er.updateDate = Date.now();
 
-        er.timerId = setTimeout(function(){
-            er.updateCanvas();
-        }, er.intervalTime );
-
+        // キャンバス
         er.resetCanvas();
+
+        // 自動更新
+        if ( er.intervalTime !== 0 ) {
+            er.timerId = setTimeout(function(){
+                er.updateCanvas();
+            }, er.intervalTime );
+        } else {
+            er.timerId = null;
+        }
     }).catch(function(error){
         console.error( error );
     });
 }
 /*
 ##################################################
-  自動更新停止
+    自動更新停止
 ##################################################
 */
 stopAutoUpdate() {
@@ -538,7 +823,7 @@ stopAutoUpdate() {
         er.timerId = null;
     }
 
-    // 読み込み停止
+    // 読み込み中の場合は停止
     if ( er.controller ) {
         er.controller.abort();
         er.controller = null;
@@ -546,7 +831,7 @@ stopAutoUpdate() {
 }
 /*
 ##################################################
-  自動更新再開
+    自動更新再開
 ##################################################
 */
 resumeAutoUpdate() {
@@ -557,13 +842,17 @@ resumeAutoUpdate() {
         return;
     }
 
-    er.timerId = setTimeout(function(){
-        er.updateCanvas();
-    }, er.resumeDate );
+    if ( er.intervalTime !== 0 ) {
+        er.timerId = setTimeout(function(){
+            er.updateCanvas();
+        }, er.resumeDate );
+    } else {
+        er.timerId = null;
+    }
 }
 /*
 ##################################################
-  自動更新中チェック
+    自動更新中チェック
 ##################################################
 */
 checkAutoUpdate() {
@@ -571,7 +860,7 @@ checkAutoUpdate() {
 }
 /*
 ##################################################
-  再表示
+    再表示
 ##################################################
 */
 resetCanvas( canvasSizeChangeFlag = false ) {
@@ -602,10 +891,14 @@ resetCanvas( canvasSizeChangeFlag = false ) {
 
     // 各種イベントブロック
     er.setEventBlock();
+
+    // 繋がり線
+    if ( er.clickBlock ) er.setEventLink( er.clickBlock );
+    if ( er.currentBlock ) er.setEventLink( er.currentBlock );
 }
 /*
 ##################################################
-  範囲変更
+    範囲変更
 ##################################################
 */
 changeDateReset( startDate, endDate, rangeFlag = false ) {
@@ -641,7 +934,7 @@ changeDateReset( startDate, endDate, rangeFlag = false ) {
 }
 /*
 ##################################################
-  X座標から時間を取得
+    X座標から時間を取得
 ##################################################
 */
 getPositionDate( x ) {
@@ -651,7 +944,7 @@ getPositionDate( x ) {
 }
 /*
 ##################################################
-  表jいしている範囲からX座標を取得する
+    表示している範囲からX座標を取得する
 ##################################################
 */
 getDatePositionX( date ) {
@@ -660,7 +953,7 @@ getDatePositionX( date ) {
 }
 /*
 ##################################################
-  全体の範囲からX座標を取得する
+    全体の範囲からX座標を取得する
 ##################################################
 */
 getDateWidthPositionX( date ) {
@@ -669,7 +962,7 @@ getDateWidthPositionX( date ) {
 }
 /*
 ##################################################
-  階層からY座標を取得する
+    階層からY座標を取得する
 ##################################################
 */
 getFloorPositonY( floor ) {
@@ -678,7 +971,7 @@ getFloorPositonY( floor ) {
 }
 /*
 ##################################################
-  線の色
+    線の色
 ##################################################
 */
 getBorderColor() {
@@ -686,7 +979,7 @@ getBorderColor() {
 }
 /*
 ##################################################
-  テキストの色
+    テキストの色
 ##################################################
 */
 getTextColor() {
@@ -694,7 +987,7 @@ getTextColor() {
 }
 /*
 ##################################################
-  タイムスケールを描画する
+    タイムスケールを描画する
 ##################################################
 */
 setTimeScale() {
@@ -760,29 +1053,29 @@ setTimeScale() {
         let num = 0, text = '', y = 40;
         switch( type ) {
             case 'y':
-              num = startLineDate.getMonth();
-              text = fn.date( startLineDate, 'yyyy/MM/dd');
-              startLineDate.setMonth( num + interval );
-              break;
+                num = startLineDate.getMonth();
+                text = fn.date( startLineDate, 'yyyy/MM/dd');
+                startLineDate.setMonth( num + interval );
+                break;
             case 'M': case 'w':
-              num = startLineDate.getDate();
-              text = fn.date( startLineDate, 'yyyy/MM/dd');
-              startLineDate.setDate( num + interval );
-              break;
+                num = startLineDate.getDate();
+                text = fn.date( startLineDate, 'yyyy/MM/dd');
+                startLineDate.setDate( num + interval );
+                break;
             case 'd': case 'H':
-              num = startLineDate.getHours();
-              text = fn.date( startLineDate, 'HH:mm:ss');
-              startLineDate.setHours( num + interval );
-              break;
+                num = startLineDate.getHours();
+                text = fn.date( startLineDate, 'HH:mm:ss');
+                startLineDate.setHours( num + interval );
+                break;
             case 'm':
-              num = startLineDate.getMinutes();
-              text = fn.date( startLineDate, 'HH:mm:ss');
-              startLineDate.setMinutes( num + interval );
-              break;
+                num = startLineDate.getMinutes();
+                text = fn.date( startLineDate, 'HH:mm:ss');
+                startLineDate.setMinutes( num + interval );
+                break;
             default:
-              num = startLineDate.getSeconds();
-              text = fn.date( startLineDate, 'HH:mm:ss');
-              startLineDate.setSeconds( num + interval );
+                num = startLineDate.getSeconds();
+                text = fn.date( startLineDate, 'HH:mm:ss');
+                startLineDate.setSeconds( num + interval );
         };
 
         // テキストが重ならないかチェック
@@ -796,10 +1089,27 @@ setTimeScale() {
 
     }
     ctx.stroke();
+
+    // 現在時刻線
+    const paddingLeft = 16; // .eventFlowBodyInner
+    const nowX = er.getDatePositionX( Date.now() );
+    if ( nowX > er.w ) {
+        er.$.nowDate.hide();
+    } else if ( nowX < 0 ) {
+        er.$.nowDate.show().addClass('noBorder').css({
+            left: paddingLeft,
+            width: er.w
+        });
+    } else {
+        er.$.nowDate.show().removeClass('noBorder').css({
+            left: nowX + paddingLeft,
+            width: er.w - nowX
+        });
+    }
 }
 /*
 ##################################################
-  表示範囲で目盛りをどうするか判定する
+    表示範囲で目盛りをどうするか判定する
 ##################################################
 */
 checkTimeScaleMode( rangeDate ) {
@@ -815,7 +1125,7 @@ checkTimeScaleMode( rangeDate ) {
         return '1w';
     } else if ( rangeDate >= 1000 * 60 * 60 * 24 * 3 ) {
         return '1d';
-    } else if ( rangeDate >= 1000 * 60 * 60 * 3 ) {
+    } else if ( rangeDate >= 1000 * 60 * 60 * 6 ) {
         return '1H';
     } else if ( rangeDate >= 1000 * 60 * 3 ) {
         return '1m';
@@ -825,7 +1135,7 @@ checkTimeScaleMode( rangeDate ) {
 }
 /*
 ##################################################
-  間隔線を描画する
+    間隔線を描画する
 ##################################################
 */
 setLine() {
@@ -861,64 +1171,88 @@ setLine() {
 }
 /*
 ##################################################
-  イベントブロックを描画する
+    イベントブロックを描画する
 ##################################################
 */
 setEventBlock() {
     const er = this;
 
-    const
-    ctxB = er.chartContext.block,
-    ctxE = er.chartContext.incident;
+    const ico = er.chartContext.incident;
+    er.clear( ico );
 
-    er.clear( ctxB );
-    er.clear( ctxE );
+    const fontSize = er.lineSpacing * er.vRate * .5;
+    ico.textAlign = 'center';
+    ico.textBaseline = 'middle';
+    ico.font = fontSize + 'px exastro-ui-icons';
 
-    ctxE.strokeStyle = '#FFF';
+    const ttl = er.chartContext.block;
+    er.clear( ttl );
+    ttl.lineWidth = 2;
 
     for ( const event of er.canvasData ) {
-        ctxE.beginPath();
-
         const
         x1 = event.x1 * er.hRate - er.hPosition,
-        x2 = ( event.type === 'event')? event.x2 * er.hRate - er.hPosition: x1,
         y = er.getFloorPositonY( event.floor );
 
-        const height = er.lineSpacing * er.vRate;
+        if ( event.type === 'event') {
+            const
+            x2 = event.x2 * er.hRate - er.hPosition,
+            h = ( er.lineSpacing * er.vRate ) - ( er.lineSpacing * er.vRate * .4 );
 
-        const eventHeight = height - height * .4;
+            ttl.beginPath();
 
-        const rectHeight = height - height * .2;
+            ttl.strokeStyle = er.getPatternColor(event.pattern);
 
+            er.line( ttl, x1, y, x2, y ); // 横線
+            er.line( ttl, x1, y - h / 2, x1, y + h / 2 ); // 開始縦線
+            er.line( ttl, x2, y - h / 2, x2, y + h / 2 ); // 終了縦線
+            ttl.stroke();
+        }
+
+        const blockHeight = er.lineSpacing * er.vRate * .7;
         event.block = {
-            x: x1 - 8,
-            y: y - rectHeight / 2,
-            w: x2 - x1 + 16,
-            h: rectHeight
+            x: x1 - blockHeight / 2,
+            y: y - blockHeight / 2,
+            w: blockHeight,
+            h: blockHeight,
+            centerX: x1,
+            centerY: y
         };
 
-        const pattern = ( event.type === 'event')? event.pattern: 'action';
+        er.eventBlock( ico, event );
+    }
+}
+/*
+##################################################
+    ブロックを描画する
+##################################################
+*/
+eventBlock( ctx, e, opacity = 1 ) {
+    const er = this;
 
-        // ブロック
-        if ( ( er.currentBlock && er.currentBlock.id === event.id ) || ( er.clickBlock && er.clickBlock.id === event.id ) ) {
-            er.rect( ctxB, event.block, er.getPatternColor( pattern, 0.3 ) );
-        } else {
-            er.rect( ctxB, event.block, er.getPatternColor( pattern ) );
-        }
-
-        if ( event.type === 'event') {
-            er.line( ctxE, x1, y, x2, y ); // 開始終了線
-            er.line( ctxE, x1, y - eventHeight / 2, x1, y + eventHeight / 2 ); // 開始線
-            er.line( ctxE, x2, y - eventHeight / 2, x2, y + eventHeight / 2 ); // 終了線
-        } else {
-            er.arc( ctxE, x1, y, '#FFF'); // アクション円
-        }
-        ctxE.fill();
-        ctxE.stroke();
+    const r = e.block.h *.1;
+    if ( e.pattern !== 'rule') {
+        er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ) );
+    } else {
+        er.roundRect( ctx, e.block, r, er.getPatternColor( e.pattern, opacity ), null, null, true );
     }
 
-    if( er.currentBlock ) er.setEventLink( er.currentBlock );
-    if( er.clickBlock ) er.setEventLink( er.clickBlock );
+    ctx.fillStyle = "#FFF";
+    ctx.fillText( er.getPatternIcon( e.pattern ), e.block.centerX, e.block.centerY );
+}
+/*
+##################################################
+    パターンアイコン
+##################################################
+*/
+getPatternIcon( pattern ) {
+    const er = this;
+
+    const
+    iconInt = parseInt( er.patternIcon[pattern], 16 ),
+    iconStr = String.fromCharCode( iconInt );
+
+    return iconStr;
 }
 /*
 ##################################################
@@ -926,79 +1260,86 @@ setEventBlock() {
 ##################################################
 */
 setEventLink( targetBlock ) {
-    if ( !targetBlock && !targetBlock.original && !targetBlock.original.item ) return;
+    if ( !targetBlock && !targetBlock.item ) return;
 
     const er = this;
 
+    const groupData = (function(){
+        if ( targetBlock.group ) {
+            return er.groupList.groupData[ targetBlock.group ];
+        } else {
+            const e = er.groupList.singleData.find(function(event){
+                return event.id === targetBlock.id;
+            });
+            return[e]
+        }
+    }());
+
+    // 最新のデータに
+    const eventData = groupData.find(function( item ){
+        return item.id === targetBlock.id;
+    });
+    if ( !eventData ) return;
+
     const ctx = er.chartContext.link;
 
-    let idList;
-    if ( targetBlock.type === 'action') {
-        if ( !targetBlock.original.item.EVENT_ID_LIST ) return;
-        idList = targetBlock.original.item.EVENT_ID_LIST.split(',');
-    } else {
-        if ( !targetBlock.original.item.exastro_events ) return;
-        idList = targetBlock.original.item.exastro_events;
-    }
-
-    if ( fn.typeof( idList ) === 'array' && idList.length ) {
-        // イベントリスト
-        const eventList = er.canvasData.filter(function( item ){
-            return idList.indexOf(`ObjectId('${item.id}')`) !== -1;
+    // 線を描画する
+    const doneList = [];
+    const setLine = function( width, color, x1, y1 , x2, y2 ){
+        const lX = ( x1 < x2 )? x1: x2;
+        const lY = ( y1 > y2 )? y1: y2;
+        ctx.beginPath();
+        ctx.moveTo( x1, y1 );
+        ctx.lineTo( lX, lY );
+        ctx.lineTo( x2, y2 );
+        ctx.lineWidth = width;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+        ctx.closePath();
+    };
+    const linkLine = function( x, y, targetId ){
+        if ( doneList.indexOf( targetId ) !== -1 ) return;
+        doneList.push( targetId );
+        const event  = groupData.find(function( e ){
+            return e.id === targetId;
         });
 
-        // 最新のデータに更新
-        const actionItem = er.canvasData.find(function( item ){
-            return item.id === targetBlock.id;
-        });
-        if ( !actionItem ) return;
+        if ( event && event.block ) {
+            setLine( 6, '#FFF', x, y, event.block.centerX, event.block.centerY );
+            setLine( 2, '#005BAC', x, y, event.block.centerX, event.block.centerY );
 
-        const
-        actionX = actionItem.block.x + actionItem.block.w / 2,
-        actionY = actionItem.block.y + actionItem.block.h / 2;
-
-        ctx.strokeStyle = '#FFF';
-        ctx.lineWidth = 6;
-        for ( const event of eventList ) {
-            ctx.beginPath();
-            er.line( ctx, actionX, actionY, event.block.x + event.block.w / 2, event.block.y + event.block.h / 2 );
-            ctx.stroke();
+            targetLink( event );
         }
-
-        ctx.strokeStyle = '#005BAC';
-        ctx.lineWidth = 2;
-        for ( const event of eventList ) {
-            ctx.beginPath();
-            er.line( ctx, actionX, actionY, event.block.x + event.block.w / 2, event.block.y + event.block.h / 2 );
-            ctx.stroke();
-
-            ctx.clearRect( event.block.x, event.block.y, event.block.w, event.block.h );
+    };
+    const targetLink = function( event ){
+        if ( event.before ) {
+            for ( const id of event.before ) {
+                linkLine( event.block.centerX, event.block.centerY, id );
+            }
         }
+        if ( event.after ) {
+            for ( const id of event.after ) {
+                linkLine( event.block.centerX, event.block.centerY, id );
+            }
+        }
+    };
+    targetLink( eventData );
 
-        ctx.clearRect( actionItem.block.x, actionItem.block.y, actionItem.block.w, actionItem.block.h );
+    // 枠を描画する
+    for ( const e of groupData ) {
+        if ( e.block ) {
+            const ruleFlag = ( e.type === 'rule');
+            er.roundRect( ctx, e.block, e.block.h * .1, '#FFF', null, null, ruleFlag, true );
 
-        const lenght = eventList.length;
-        for ( let i = 0; i < lenght; i++ ) {
-            const event = eventList[i];
-            ctx.beginPath();
-            ctx.strokeStyle = '#FFF';
-            ctx.lineWidth = 6;
-            ctx.rect( event.block.x, event.block.y, event.block.w, event.block.h );
-            if ( i === 0 ) ctx.rect( actionItem.block.x, actionItem.block.y, actionItem.block.w, actionItem.block.h );
-            ctx.stroke();
 
-            ctx.beginPath();
-
-            ctx.strokeStyle = '#005BAC';
-            ctx.lineWidth = 2;
-            ctx.rect( event.block.x, event.block.y, event.block.w, event.block.h );
-            if ( i === 0 ) ctx.rect( actionItem.block.x, actionItem.block.y, actionItem.block.w, actionItem.block.h );
-
-            ctx.stroke();
-
-            // 再度繋がりがある場合
-            if ( event.original && event.original.item && event.original.item.exastro_events ) {
-                er.setEventLink( event );
+            const hover = ( er.currentBlock && e.id === er.currentBlock.id )? 'rgba(255,255,255,.5)': null;
+            if ( er.clickBlock && e.id === er.clickBlock.id ) {
+                er.roundRect( ctx, e.block, e.block.h * .1, null, '#FFF', 8, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, hover, '#005BAC', 4, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, hover, '#577397', 2, ruleFlag );
+            } else {
+                er.roundRect( ctx, e.block, e.block.h * .1, null, '#FFF', 6, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, hover, '#005BAC', 2, ruleFlag );
             }
         }
     }
@@ -1011,35 +1352,91 @@ clearEventLink() {
 };
 /*
 ##################################################
-  クリア
+    クリア
 ##################################################
 */
-clear( canvas ) {
-    canvas.clearRect( 0, 0, this.w, this.h );
+clear( ctx ) {
+    ctx.clearRect( 0, 0, this.w, this.h );
 }
 /*
 ##################################################
-  四角形
+    四角形
 ##################################################
 */
-rect( canvas, position, color ) {
-    canvas.fillStyle = color;
-    canvas.fillRect( position.x, position.y, position.w, position.h );
+rect( ctx, position, color ) {
+    ctx.fillStyle = color;
+    ctx.fillRect( position.x, position.y, position.w, position.h );
 }
 /*
 ##################################################
-  四角形クリア
+    四角形（角丸）
 ##################################################
 */
-clearRect( canvas, position ) {
-    canvas.clearRect( position.x, position.y, position.w, position.h );
+roundRect( ctx, p, r, fill = null, stroke = null, lineWidth = 1, rotateFlag = false, clearFlag = false ) {
+    ctx.beginPath();
+
+    // 図形部分を消去する
+    if ( clearFlag ) ctx.globalCompositeOperation = 'destination-out';
+
+    // 菱形にする（45度回転）
+    if ( rotateFlag ) {
+        ctx.translate( p.x + p.w / 2, p.y + p.h / 2 );
+        ctx.rotate( ( Math.PI / 180 ) * 45 );
+        ctx.scale( .85, .85);
+        ctx.translate( - ( p.x + p.w / 2 ), - ( p.y + p.h / 2 ) );
+    }
+
+    // 角丸四角形
+    ctx.moveTo( p.x + r, p.y );
+    ctx.lineTo( p.x + p.w - r, p.y );
+    ctx.arc( p.x + p.w - r, p.y + r, r, Math.PI * ( 3 / 2 ), 0, false );
+    ctx.lineTo( p.x + p.w, p.y + p.h - r );
+    ctx.arc( p.x + p.w - r, p.y + p.h - r, r, 0, Math.PI * ( 1 / 2 ), false );
+    ctx.lineTo( p.x + r, p.y + p.h );
+    ctx.arc( p.x + r, p.y + p.h - r, r, Math.PI * ( 1 / 2 ), Math.PI, false );
+    ctx.lineTo( p.x, p.y + r );
+    ctx.arc( p.x + r, p.y + r, r, Math.PI, Math.PI * ( 3 / 2 ), false );
+
+    // 塗り
+    if ( fill ) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+    }
+
+    // 線
+    if ( stroke ) {
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+    }
+
+    // 回転を戻す
+    if ( rotateFlag ) {
+        ctx.translate( p.x + p.w / 2, p.y + p.h / 2 );
+        ctx.scale( 1 / .85, 1 / .85 );
+        ctx.rotate( ( Math.PI / 180 ) * -45 );
+        ctx.translate( - ( p.x + p.w / 2 ), - ( p.y + p.h / 2 ) );
+    }
+
+    // 合成方法をデフォルトに戻す
+    if ( clearFlag ) ctx.globalCompositeOperation = 'source-over';
+
+    ctx.closePath();
 }
 /*
 ##################################################
-  線
+    四角形クリア
 ##################################################
 */
-line( canvas, x1, y1, x2, y2 ) {
+clearRect( ctx, position ) {
+    ctx.clearRect( position.x, position.y, position.w, position.h );
+}
+/*
+##################################################
+    線
+##################################################
+*/
+line( ctx, x1, y1, x2, y2 ) {
     const er = this;
 
     // 範囲外は描画しない
@@ -1047,17 +1444,17 @@ line( canvas, x1, y1, x2, y2 ) {
     if (( y1 >= er.h && y2 >= er.h ) || ( y1 <= 0 && y2 <= 0 )) return;
 
     // 1px線の描画がボケるため、位置を調整する
-    canvas.moveTo( x1 + .5, y1 + .5 );
-    canvas.lineTo( x2 + .5, y2 + .5 );
+    ctx.moveTo( x1 + .5, y1 + .5 );
+    ctx.lineTo( x2 + .5, y2 + .5 );
 }
 /*
 ##################################################
-  円
+    円
 ##################################################
 */
-arc( canvas, x, y, color ) {
-    canvas.fillStyle = color;
-    canvas.arc( x, y, 2, 0, 360 * Math.PI / 180, false );
+arc( ctx, size, x, y, color ) {
+    ctx.fillStyle = color;
+    ctx.arc( x, y, size, 0, 360 * Math.PI / 180, false );
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1066,7 +1463,7 @@ arc( canvas, x, y, color ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
-  各種読み込み開始
+    各種読み込み開始
 ##################################################
 */
 setupParts() {
@@ -1078,7 +1475,7 @@ setupParts() {
 }
 /*
 ##################################################
-  各種読み込み
+    各種読み込み
 ##################################################
 */
 fetchParts( type ) {
@@ -1138,7 +1535,7 @@ fetchParts( type ) {
 }
 /*
 ##################################################
-  パーツデータ
+    パーツデータ
 ##################################################
 */
 getPartsData( type ) {
@@ -1186,7 +1583,7 @@ getPartsData( type ) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
 ##################################################
-  Events
+    Events
 ##################################################
 */
 setEvents() {
@@ -1195,32 +1592,39 @@ setEvents() {
     er.setChartEvents();
     er.setSelectButtonToggleEvent();
     er.setPatternSelectEvent();
+    er.setUpdateIntervalEvent();
     er.setScrollBarEvent();
     er.canvasSizeResizeObserver();
 
     er.setMenuButtonEvent();
+    er.setTabEvent();
 }
 /*
 ##################################################
-  Canvasサイズの変更を監視
+    Canvasサイズの変更を監視
 ##################################################
 */
 canvasSizeResizeObserver() {
     const er = this;
 
+    er.observeInit = true;
+
     let timer;
     const observer = new ResizeObserver(function(){
-        clearTimeout( timer );
-        timer = setTimeout( function() {
-            er.resetCanvas();
-        }, 500 );
+        if ( er.observeInit === false ) {
+            clearTimeout( timer );
+            timer = setTimeout( function() {
+                er.resetCanvas();
+            }, 500 );
+        }
+        er.observeInit = false;
     });
 
     observer.observe( er.$.chart.get(0) );
 }
 /*
 ##################################################
-  判定
+    判定
 ##################################################
 */
 blockEnterCheck( block, pointer ) {
@@ -1229,7 +1633,7 @@ blockEnterCheck( block, pointer ) {
 }
 /*
 ##################################################
-  現在位置の情報を表示
+    現在位置の情報を表示
 ##################################################
 */
 viewCurrentInfo( dateX, x, y ) {
@@ -1243,7 +1647,25 @@ viewCurrentInfo( dateX, x, y ) {
 }
 /*
 ##################################################
-  Chart events
+    イベント情報タブ切り替え
+##################################################
+*/
+setTabEvent() {
+    const er = this;
+
+    er.$.info.on('click', '.eventInfoTabItem', function(){
+        const $item = $( this ), $wrap = $item.closest('.eventInfoContainer');
+
+        if ( !$item.is('.open') ) {
+            const index = $wrap.find('.eventInfoTabItem').index( this );
+            $wrap.find('.open').removeClass('open');
+            $( this ).add( $wrap.find('.eventInfoTabBlock').eq( index ) ).addClass('open');
+        }
+    });
+}
+/*
+##################################################
+    Chart events
 ##################################################
 */
 setChartEvents() {
@@ -1263,9 +1685,6 @@ setChartEvents() {
             return item.id === er.currentBlock.id;
         });
         if ( er.currentBlock ) {
-            if ( !er.clickBlock || ( er.clickBlock.id !== er.currentBlock.id ) ) {
-                er.rect( er.chartContext.block, er.currentBlock.block, er.getPatternColor( er.currentBlock.pattern ) );
-            }
             er.$.chart.css('cursor', 'default');
         }
         er.currentBlock = null;
@@ -1316,6 +1735,9 @@ setChartEvents() {
             // Canvas更新
             er.setTimeScale();
             er.setEventBlock();
+
+            er.clearEventLink();
+            if ( er.clickBlock ) er.setEventLink( er.clickBlock );
 
             // スクロールバーサイズ
             $hRange.css({
@@ -1390,19 +1812,6 @@ setChartEvents() {
             x = e.pageX - chart.getBoundingClientRect().left;
             er.clearEventLink();
 
-            // クリック中のブロックの色を戻す
-            if ( !er.currentBlock || ( er.clickBlock && er.clickBlock.id !== er.currentBlock.id ) ) {
-                // 最新のデータに更新
-                if ( er.clickBlock ) {
-                    er.clickBlock = er.canvasData.find(function(item){
-                        return item.id === er.clickBlock.id;
-                    });
-                    if ( er.clickBlock  ) {
-                        er.rect( er.chartContext.block, er.clickBlock.block, er.getPatternColor( er.clickBlock.pattern ) );
-                    }
-                }
-            }
-
             // イベント詳細情報表示
             if ( !dateRangeSelectMode && er.currentBlock ) {
                 er.viewEventInfo( x );
@@ -1410,7 +1819,7 @@ setChartEvents() {
                 er.setEventLink( er.clickBlock );
             } else {
                 er.$.info.hide();
-                er.clickBlock = null;
+                if ( !dateRangeSelectMode ) er.clickBlock = null;
             }
         },
         'pointerenter': function() {
@@ -1453,12 +1862,9 @@ setChartEvents() {
                 }
 
                 // Block enter
-                for ( const item of er.canvasData ) {
-                    if ( er.blockEnterCheck( item.block, pointerPosition ) ) {
-                        er.currentBlock = item;
-                        // 描画
-                        er.clearRect( er.chartContext.block, item.block );
-                        er.rect( er.chartContext.block, item.block, er.getPatternColor( item.pattern, 0.3 ));
+                for ( const e of er.canvasData ) {
+                    if ( er.blockEnterCheck( e.block, pointerPosition ) ) {
+                        er.currentBlock = e;
                         er.$.chart.css('cursor', 'pointer');
 
                         er.setEventLink( er.currentBlock );
@@ -1500,7 +1906,7 @@ setChartEvents() {
 }
 /*
 ##################################################
-  Drag and Drop
+    Drag and Drop
 ##################################################
 */
 ruleEditEventOn() {
@@ -1645,8 +2051,10 @@ labelSetEventOn( type ) {
                         value.push( array );
 
                         const text = fn.jsonStringifyDelimiterSpace( value );
-                        $input.val( text ).change();
-                        $text.text( text );
+                        $input.val( fn.nlcEscape(text) ).change();
+
+                        const labelHtml = fn.html.labelListHtml( value, er.label );
+                        $text.html( labelHtml );
                     }
 
                     $dummy.remove();
@@ -1666,13 +2074,13 @@ labelSetEventOff( type ) {
 }
 /*
 ##################################################
-  イベントの詳細情報を表示
+    イベントの詳細情報を表示
 ##################################################
 */
 viewEventInfo( x ) {
     const er = this;
 
-    const d = er.currentBlock.original;
+    const d = er.currentBlock;
 
     const css = {display: 'flex'};
 
@@ -1689,30 +2097,85 @@ viewEventInfo( x ) {
 
     const html = [];
     html.push( er.eventInfoRowHtml('Type', d.type ) );
-    html.push( er.eventInfoRowHtml('Datetime', d.datetime ) );
-    html.push( er.eventInfoRowHtml('ID', d.id ) );
 
     if ( d.type === 'action') {
+        html.push( er.eventInfoRowHtml('Datetime', d.datetime ) );
+        html.push( er.eventInfoRowHtml('ID', d.id ) );
         html.push( er.eventInfoRowHtml('Action Name', fn.cv( d.item.ACTION_NAME, '')));
         html.push( er.eventInfoRowHtml('Conductor', fn.cv( d.item.CONDUCTOR_INSTANCE_NAME, '')));
         html.push( er.eventInfoRowHtml('Operation', fn.cv( d.item.OPERATION_NAME, '')));
         html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.RULE_ID, '')));
         html.push( er.eventInfoRowHtml('Rule Name', fn.cv( d.item.RULE_NAME, '')));
+    } else if ( d.type === 'rule') {
+        if ( d.info ) {
+            html.push( er.eventInfoRowHtml('Rule ID', d.info.id ) );
+            html.push( er.eventInfoRowHtml('Rule Name', d.info.name ) );
+        }
     } else {
+        html.push( er.eventInfoRowHtml('Datetime', d.datetime ) );
+        html.push( er.eventInfoRowHtml('ID', d.id ) );
         html.push( er.eventInfoRowHtml('Pattern', fn.cv( er.patternList[ er.currentBlock.pattern ], '')));
-        if ( d.item.exatsro_rule ) {
-            html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.exatsro_rule.id, ''), '') );
-            html.push( er.eventInfoRowHtml('Rule name', fn.cv( d.item.exatsro_rule.name, ''), '') );
+        if ( d.item.exastro_rules && d.item.exastro_rules[0] ) {
+            html.push( er.eventInfoRowHtml('Rule ID', fn.cv( d.item.exastro_rules[0].id, ''), '') );
+            html.push( er.eventInfoRowHtml('Rule name', fn.cv( d.item.exastro_rules[0].name, ''), '') );
         }
         html.push( er.eventInfoRowHtml('Labels', '', 'eventInfoTableLabelsBlank') );
         html.push(`<tr class="eventInfoTableTr"><td class="eventInfoTableTd eventInfoTableLabels" colspan="2">${fn.html.labelListHtml( d.item.labels, er.label )}</td></tr>`);
     }
 
-    er.$.info.find('.eventFlowEventInformationInner').html(`<table class="eventInfoTable">${html.join('')}</table>`);
+    const tableHtml = `<table class="eventInfoTable">${html.join('')}</table>`;
+
+    if ( d.type === 'action') {
+        er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
+    } else if ( d.type === 'event' && d.item.event ) {
+        const json = fn.jsonStringify( d.item.event, '\t');
+
+        // 行数から高さを決める
+        const
+        lineHeight = 17,
+        match = json.match(/\n/g),
+        height = ( match.length + 2 ) * lineHeight;
+
+        // HTML
+        const infoHtml = `<div class="eventInfoContainer">`
+            + `<div class="eventInfoTabBlocks">`
+                + `<div class="eventInfoTabBlock open"><table class="eventInfoTable">${html.join('')}</table></div>`
+                + `<div class="eventInfoTabBlock"><div id="eventInfoJson">${json}</div></div>`
+            + `</div>`
+            + `<div class="eventInfoTabs">`
+                + `<ul class="eventInfoTabList">`
+                    + `<li class="eventInfoTabItem open">${getMessage.FTE13026}</li>`
+                    + `<li class="eventInfoTabItem">${getMessage.FTE13025}</li>`
+                + `</ul>`
+            + `</div>`
+        + `</div>`;
+        er.$.info.html( infoHtml );
+        er.$.info.find('#eventInfoJson').height( height );
+
+        // テーマ
+        const aceTheme = ( $('body').is('.darkmode') )? 'monokai': 'chrome';
+
+        // Ace editor
+        const aceEditor = ace.edit('eventInfoJson', {
+            theme: `ace/theme/${aceTheme}`,
+            mode: `ace/mode/json`,
+            displayIndentGuides: true,
+            fontSize: '14px',
+            minLines: 2,
+            showPrintMargin: false,
+            readOnly: true,
+            wrapBehavioursEnabled: false,
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true
+        });
+        er.$.info.find('.ace_scrollbar').addClass('commonScroll');
+    } else {
+        er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
+    }
 }
 /*
 ##################################################
-  イベントの詳細情報　行HTML
+    イベントの詳細情報　行HTML
 ##################################################
 */
 eventInfoRowHtml( thText, tdText, addClassName, escape = true ) {
@@ -1726,37 +2189,50 @@ eventInfoRowHtml( thText, tdText, addClassName, escape = true ) {
 }
 /*
 ##################################################
-  指定の範囲で再描画する
+    指定の範囲で再描画する
 ##################################################
 */
 updateDataTime( range ) {
     let s, e = new Date();
+
+    // 現在時刻から範囲の1/10を追加する
+    const endDate = function( start ) {
+        const now = Date.now();
+        return new Date( now + ( ( now - start.getTime() ) / 10 ) );
+    }
+
     switch ( range ) {
         case '5M': case '15M': case '30M': {
             const m = Number( range.slice( 0, -1 ) );
             s = new Date( e.getTime() - m * ( 60 * 1000 ) );
+            e = endDate(s);
         } break;
         case '1h': case '3h': case '6h': case '12h': case '24h': {
             const h = Number( range.slice( 0, -1 ) );
             s = new Date( e.getTime() - h * ( 60 * 60 * 1000 ) );
+            e = endDate(s);
         } break;
         case '2d': {
             const h = Number( range.slice( 0, -1 ) ) * 24;
             s = new Date( e.getTime() - h * ( 60 * 60 * 1000 ) );
+            e = endDate(s);
         } break;
         case '1w': {
             const h = Number( range.slice( 0, -1 ) ) * 24 * 7;
             s = new Date( e.getTime() - h * ( 60 * 60 * 1000 ) );
+            e = endDate(s);
         } break;
         case '1m': case '3m': case '6m':{
             const m = Number( range.slice( 0, -1 ) );
             const now = new Date();
             s = new Date( now.setMonth( now.getMonth() - m ) );
+            e = endDate(s);
         } break;
         case '1y': case '2y': case '5y':{
             const y = Number( range.slice( 0, -1 ) );
             const now = new Date();
             s = new Date( now.setFullYear( now.getFullYear() - y ) );
+            e = endDate(s);
         } break;
         default:
             const date = range.split(' to ');
@@ -1767,7 +2243,7 @@ updateDataTime( range ) {
 }
 /*
 ##################################################
-  選択られている時間から更新
+    選択している時間から更新
 ##################################################
 */
 updateDataRange( range, rangeFlag = false ) {
@@ -1778,7 +2254,7 @@ updateDataRange( range, rangeFlag = false ) {
 }
 /*
 ##################################################
-  Header select button
+    Header select button
 ##################################################
 */
 setSelectButtonToggleEvent() {
@@ -1817,14 +2293,21 @@ setSelectButtonToggleEvent() {
                 if ( height < 160 ) height = 160;
                 $block.outerHeight( height );
             }
+
+            if ( $button.is('.eventFlowIntervalSelectButton') ) {
+                er.stopAutoUpdate();
+            }
         } else {
             $window.off('pointerdown.eventFlowSelect');
+            if ( $button.is('.eventFlowIntervalSelectButton') ) {
+                er.resumeAutoUpdate();
+            }
         }
     });
 }
 /*
 ##################################################
-  パターン選択
+    パターン選択
 ##################################################
 */
 setPatternSelectEvent() {
@@ -1847,7 +2330,31 @@ setPatternSelectEvent() {
 }
 /*
 ##################################################
-  Menu button
+    更新間隔選択
+##################################################
+*/
+setUpdateIntervalEvent() {
+    const er = this;
+
+    const
+    $button = er.$.header.find('.eventFlowIntervalSelectButton'),
+    $Num = er.$.header.find('.eventFlowIntervalSelectNumber'),
+    $radio = er.$.header.find('.eventFlowIntervalSelectRadio');
+
+    $radio.on('change', function(){
+        const val = Number( $( this ).val() );
+        er.intervalTime = er.resumeDate = val;
+
+        fn.storage.set('eventflow_interval_time', val, 'local', false );
+
+        const text = ( val !== 0 )? getMessage.FTE13028( val / 1000 ): getMessage.FTE13027;
+        $Num.text( text );
+        $button.click();
+    });
+}
+/*
+##################################################
+    Menu button
 ##################################################
 */
 setMenuButtonEvent() {
@@ -1934,15 +2441,15 @@ setScrollBarEvent() {
         afterPosittion = rangePosition;
 
         const widthCheck = function( width, max ) {
-           if ( max < width ) width = max;
-           if ( rangeMinWidth > width ) width = rangeMinWidth;
-           return width;
+            if ( max < width ) width = max;
+            if ( rangeMinWidth > width ) width = rangeMinWidth;
+            return width;
         };
 
         const positionCheck = function( position, max ) {
-           if ( position < 0 ) position = 0;
-           if ( position > max ) position = max;
-           return position;
+            if ( position < 0 ) position = 0;
+            if ( position > max ) position = max;
+            return position;
         };
 
         const updateCanvasPosition = function() {
@@ -1961,6 +2468,8 @@ setScrollBarEvent() {
             er.clearEventLink();
             er.setEventBlock();
             er.$.chart.click();
+
+            if ( er.clickBlock ) er.setEventLink( er.clickBlock );
         };
 
         $window.on({

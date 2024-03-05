@@ -6848,11 +6848,13 @@ partsRuleHtml( parameter ) {
     // Filter
     const filterHtml = [];
     let filterAddClass = null;
-    filterHtml.push( tb.partsRuleListHtml('Filter', filterA ) );
     if ( filterB ) {
+        filterHtml.push( tb.partsRuleListHtml('Filters', '<span class="filtersNum">A</span>' + filterA ) );
         filterHtml.push(`<div class="eventFlowPartsRuleOperator">${operator}</div>`);
-        filterHtml.push( tb.partsRuleListHtml('Filter', filterB ) );
+        filterHtml.push( tb.partsRuleListHtml('Filters', '<span class="filtersNum">B</span>' + filterB ) );
         filterAddClass = 'eventFlowPartsRuleOperatorMode';
+    } else {
+        filterHtml.push( tb.partsRuleListHtml('Filter', filterA ) );
     }
 
     html.push( tb.partsRuleBlockHtml('Filter', filterHtml.join(''), filterAddClass ) );

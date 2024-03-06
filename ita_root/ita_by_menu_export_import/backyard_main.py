@@ -350,6 +350,13 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         g.applogger.error(msg)
         g.applogger.info(trace_msg)
         trace_msg = None
+
+        if objdbca._is_transaction is True:
+            # コミット/トランザクション終了
+            debug_msg = g.appmsg.get_log_message("BKY-20005", [])
+            g.applogger.error(debug_msg)
+            objdbca.db_transaction_end(False)
+
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 
@@ -357,10 +364,6 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             # 展開した一時ファイル群の削除
             shutil.rmtree(execution_no_path)
 
-        # コミット/トランザクション終了
-        debug_msg = g.appmsg.get_log_message("BKY-20005", [])
-        g.applogger.error(debug_msg)
-        objdbca.db_transaction_end(False)
 
         # 異常系リターン
         return False, msg, trace_msg
@@ -368,6 +371,13 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         trace_msg = traceback.format_exc()
         g.applogger.error(msg)
         g.applogger.info(trace_msg)
+
+        if objdbca._is_transaction is True:
+            # コミット/トランザクション終了
+            debug_msg = g.appmsg.get_log_message("BKY-20005", [])
+            g.applogger.error(debug_msg)
+            objdbca.db_transaction_end(False)
+
         restoreTables(objdbca, workspace_path)
         restoreFiles(workspace_path, uploadfiles_dir)
 
@@ -375,10 +385,6 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             # 展開した一時ファイル群の削除
             shutil.rmtree(execution_no_path)
 
-        # コミット/トランザクション終了
-        debug_msg = g.appmsg.get_log_message("BKY-20005", [])
-        g.applogger.error(debug_msg)
-        objdbca.db_transaction_end(False)
 
         # 異常系リターン
         return False, msg, trace_msg
@@ -427,15 +433,6 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
 
     menu_id, table_name, history_table_flag = _menu_data_file_read(menu_name_rest, 'menu_id', execution_no_path)
 
-    if dp_mode == '1':
-        rpt.set_time(f"{menu_name_rest}: delete table")
-        delete_sql = "DELETE FROM {}".format(table_name)
-        objdbca.sql_execute(delete_sql, [])
-        rpt.set_time(f"{menu_name_rest}: delete table")
-    imported_table_list.append(table_name)
-    rpt.set_time(f"{menu_name_rest}: register data")
-    _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode, objmenu=objmenu)
-    rpt.set_time(f"{menu_name_rest}: register data")
     if history_table_flag == '1':
         if dp_mode == '1':
             rpt.set_time(f"{menu_name_rest}: delete table jnl")
@@ -446,6 +443,16 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
         rpt.set_time(f"{menu_name_rest}: register data jnl")
         _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
         rpt.set_time(f"{menu_name_rest}: register data jnl")
+
+    if dp_mode == '1':
+        rpt.set_time(f"{menu_name_rest}: delete table")
+        delete_sql = "DELETE FROM {}".format(table_name)
+        objdbca.sql_execute(delete_sql, [])
+        rpt.set_time(f"{menu_name_rest}: delete table")
+    imported_table_list.append(table_name)
+    rpt.set_time(f"{menu_name_rest}: register data")
+    _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode, objmenu=objmenu)
+    rpt.set_time(f"{menu_name_rest}: register data")
 
     menu_name_rest_list.remove(menu_name_rest)
 
@@ -650,6 +657,17 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
         objmenu = load_table.loadTable(objdbca, menu_name_rest)   # noqa: F405
     pk = objmenu.get_primary_key()
 
+    # ファイルアップロード系カラムを取得する
+    file_column = ["9", "20"]  # [FileUploadColumn, FileUploadEncryptColumn]
+    file_column_list = []
+    ret_file_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s AND DISUSE_FLAG = %s', [menu_id, file_column, 0])  # noqa: E501
+    if len(ret_file_column) != 0:
+        for record in ret_file_column:
+            file_col_name_rest = record['COLUMN_NAME_REST']
+            file_column_list.append(file_col_name_rest)
+
+    # PKの rest_key取得
+    _pk_rest_name = objmenu.get_rest_key(objmenu.get_primary_key())
 
     for json_record in json_sql_data:
         param = json_record['parameter']
@@ -684,6 +702,45 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
         elif param_type == 'Update':
             result = objdbca.table_update(table_name, colname_parameter, pk)
 
+        # ファイル関連カラムの設定取得、リンク生成
+        if 'file' not in json_record or len(file_column_list) == 0:
+            continue
+
+        # 履歴テーブルのチェックID取得
+        chk_jnl_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
+        chk_jnl_record = objdbca.sql_execute(chk_jnl_sql, [table_name + "_JNL"])
+        if len(chk_jnl_record) == 0:
+            continue
+
+        chk_jnl_sql = " SELECT * FROM `" + table_name + "_JNL" + "` WHERE `" + pk + "` = '" + param[_pk_rest_name] + "'" + " ORDER BY LAST_UPDATE_TIMESTAMP DESC "
+        chk_jnl_record = objdbca.sql_execute(chk_jnl_sql, [])
+        if len(chk_jnl_record) == 0:
+            continue
+
+        # ファイルが無い場合はSKIP
+        file_param = json_record['file']
+        if file_param is not None and len(file_param) == 0:
+            continue
+
+        # ファイルリンク生成
+        # symlink : ~/old/<journal_id>/<file> -> ~/<file>
+        for file_column in file_column_list:
+            col_class_name = objmenu.get_col_class_name(file_column)
+            objcolumn = objmenu.get_columnclass(file_column, "Register")
+            if col_class_name in ["FileUploadColumn", "FileUploadEncryptColumn"]:
+                if param.get(file_column):
+                    file_path = objcolumn.get_file_data_path(param[file_column], param[_pk_rest_name], None, False)
+                    # 履歴IDからファイル実体のパス特定
+                    for _jnls in chk_jnl_record:
+                        journal_id = _jnls.get("JOURNAL_SEQ_NO")
+                        old_file_path = objcolumn.get_file_data_path(param[file_column], param[_pk_rest_name], journal_id, False)
+                        if os.path.isfile(old_file_path):
+                            break
+                    # symlink
+                    if os.path.isfile(old_file_path) and file_path:
+                        if os.path.islink(file_path):
+                            os.unlink(file_path)
+                        os.symlink(old_file_path, file_path)
 
 
 def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name):

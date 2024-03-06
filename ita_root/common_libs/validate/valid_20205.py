@@ -380,4 +380,11 @@ def external_valid_menu_after(objdbca, objtable, option):
         # システムエラーが発生しました。
         msg = g.appmsg.get_api_message("MSG-10886")
 
+    if boolSystemErrorFlag is True:
+        # バックヤード起動フラグ設定
+        table_name = "T_COMN_PROC_LOADED_LIST"
+        data_list = {"LOADED_FLG": "0", "ROW_ID": "202"}
+        primary_key_name = "ROW_ID"
+        objdbca.table_update(table_name, data_list, primary_key_name, False)
+
     return retBool, msg, option

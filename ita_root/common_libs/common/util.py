@@ -29,6 +29,7 @@ import requests
 import json
 import shutil
 import traceback
+from urllib.parse import urlparse
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
 from common_libs.common.storage_access import storage_base, storage_write, storage_write_text, storage_read_text
@@ -784,3 +785,31 @@ def get_maintenance_mode_setting():
     maintenance_mode = response_data.get('data')
 
     return maintenance_mode
+
+
+def url_check(url_string, scheme='', path=False, params=False, query=False, fragment=False, username=False, password=False, port=False):
+    # urlを解析
+    try:
+        parse_obj = urlparse(url_string, scheme='', allow_fragments=True)
+
+        assert len(parse_obj.scheme) > 0, "scheme"
+        assert len(parse_obj.netloc) > 0, "netloc"  # ネットワーク上の位置（hostname:port）
+        assert parse_obj.hostname is not None, "hostname"  # ホスト名 (小文字)
+        if path is True:
+            assert  len(parse_obj.path) > 0, "path"  # 階層的パス
+        if params is True:
+            assert len(parse_obj.params) > 0, "params"  # 最後のパス要素に対するパラメータ
+        if query is True:
+            assert len(parse_obj.query) > 0, "query"  # クエリ要素
+        if fragment is True:
+            assert len(parse_obj.fragment) > 0, "fragment"  # フラグメント識別子
+        if username is True:
+            assert parse_obj.username is not None, "username"  # ユーザ名
+        if password is True:
+            assert parse_obj.password is not None, "password"  # パスワード
+        if port is True:
+            assert parse_obj.port is not None, "port"  # ポート番号を表わす整数 (もしあれば)
+    except Exception as e:
+        return False, e
+
+    return True, parse_obj

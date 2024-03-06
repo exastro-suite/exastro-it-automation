@@ -44,27 +44,32 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'bulk_excel_export'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'bulk_excel_export'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['22']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['22']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # bodyのjson形式チェック
-    check_request_body()
+        # bodyのjson形式チェック
+        check_request_body()
 
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
-        check_request_body_key(body, 'abolished_type')
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
+            check_request_body_key(body, 'abolished_type')
 
-    result_data = export_import.execute_excel_bulk_export(objdbca, menu, body)
-
+        result_data = export_import.execute_excel_bulk_export(objdbca, menu, body)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 @api_filter
@@ -90,27 +95,32 @@ def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'bulk_excel_export'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'bulk_excel_export'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['22']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['22']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # bodyのjson形式チェック
-    check_request_body()
+        # bodyのjson形式チェック
+        check_request_body()
 
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        check_request_body_key(body, 'upload_id')  # keyが無かったら400-00002エラー
-        check_request_body_key(body, 'data_portability_upload_file_name')
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            check_request_body_key(body, 'upload_id')  # keyが無かったら400-00002エラー
+            check_request_body_key(body, 'data_portability_upload_file_name')
 
-    result_data = export_import.execute_excel_bulk_import(objdbca, menu, body)
-
+        result_data = export_import.execute_excel_bulk_import(objdbca, menu, body)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 @api_filter
@@ -136,34 +146,39 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'menu_export'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'menu_export'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['20']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['20']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # bodyのjson形式チェック
-    check_request_body()
+        # bodyのjson形式チェック
+        check_request_body()
 
-    body_menu = {}
-    body_mode = {}
-    body_abolished_type = {}
-    body_specified_time = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        body_menu = check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
-        body_mode = check_request_body_key(body, 'mode')
-        body_abolished_type = check_request_body_key(body, 'abolished_type')
-        if body_mode == "2":
-            body_specified_time = check_request_body_key(body, 'specified_timestamp')
+        body_menu = {}
+        body_mode = {}
+        body_abolished_type = {}
+        body_specified_time = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            body_menu = check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
+            body_mode = check_request_body_key(body, 'mode')
+            body_abolished_type = check_request_body_key(body, 'abolished_type')
+            if body_mode == "2":
+                body_specified_time = check_request_body_key(body, 'specified_timestamp')
 
-    result_data = export_import.execute_menu_bulk_export(objdbca, menu, body)
-
+        result_data = export_import.execute_menu_bulk_export(objdbca, menu, body)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 @api_filter
@@ -189,27 +204,33 @@ def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'menu_import'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'menu_import'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['21']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['21']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # bodyのjson形式チェック
-    check_request_body()
+        # bodyのjson形式チェック
+        check_request_body()
 
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
-        check_request_body_key(body, 'upload_id')
-        check_request_body_key(body, 'file_name')
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            check_request_body_key(body, 'menu')  # keyが無かったら400-00002エラー
+            check_request_body_key(body, 'upload_id')
+            check_request_body_key(body, 'file_name')
 
-    result_data = export_import.execute_menu_import(objdbca, organization_id, workspace_id, menu, body)
+        result_data = export_import.execute_menu_import(objdbca, organization_id, workspace_id, menu, body)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
 
     return result_data,
 
@@ -229,19 +250,24 @@ def get_excel_bulk_export_list(organization_id, workspace_id):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'bulk_excel_export'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'bulk_excel_export'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['22']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['22']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = export_import.get_excel_bulk_export_list(objdbca, organization_id, workspace_id)
-
+        result_data = export_import.get_excel_bulk_export_list(objdbca, organization_id, workspace_id)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 @api_filter
@@ -267,30 +293,35 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs): 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'bulk_excel_export'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'bulk_excel_export'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['22']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['22']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # bodyのjson形式チェック
-    check_request_body()
+        # bodyのjson形式チェック
+        check_request_body()
 
-    retBool, body = export_import.create_upload_parameters(connexion.request, 'zipfile')
-    if retBool is False:
-        status_code = "400-00003"
-        request_content_type = connexion.request.content_type.lower()
-        log_msg_args = [request_content_type]
-        api_msg_args = [request_content_type]
-        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+        retBool, body = export_import.create_upload_parameters(connexion.request, 'zipfile')
+        if retBool is False:
+            status_code = "400-00003"
+            request_content_type = connexion.request.content_type.lower()
+            log_msg_args = [request_content_type]
+            api_msg_args = [request_content_type]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca)
-
+        result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 @api_filter
@@ -309,19 +340,24 @@ def get_menu_export_list(organization_id, workspace_id):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'menu_export'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'menu_export'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['20']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['20']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = export_import.get_menu_export_list(objdbca, organization_id, workspace_id)
-
+        result_data = export_import.get_menu_export_list(objdbca, organization_id, workspace_id)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 @api_filter
@@ -347,33 +383,38 @@ def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'menu_import'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'menu_import'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['21']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['21']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # bodyのjson形式チェック
-    check_request_body()
+        # bodyのjson形式チェック
+        check_request_body()
 
-    body_file = {}
-    retBool, body = export_import.create_upload_parameters(connexion.request, 'file')
-    if retBool is False:
-        status_code = "400-00003"
-        request_content_type = connexion.request.content_type.lower()
-        log_msg_args = [request_content_type]
-        api_msg_args = [request_content_type]
-        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+        body_file = {}
+        retBool, body = export_import.create_upload_parameters(connexion.request, 'file')
+        if retBool is False:
+            status_code = "400-00003"
+            request_content_type = connexion.request.content_type.lower()
+            log_msg_args = [request_content_type]
+            api_msg_args = [request_content_type]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    body_file = check_request_body_key(body, 'file')  # keyが無かったら400-00002エラー
-    check_request_body_key(body_file, 'name')
-    check_request_body_key(body_file, 'base64')
+        body_file = check_request_body_key(body, 'file')  # keyが無かったら400-00002エラー
+        check_request_body_key(body_file, 'name')
+        check_request_body_key(body_file, 'base64')
 
-    result_data = export_import.post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body_file)
-
+        result_data = export_import.post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body_file)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,

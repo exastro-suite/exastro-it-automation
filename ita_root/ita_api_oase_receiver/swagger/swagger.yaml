@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro ITA OASE Receiver API
   description: Exastro ITA OASE Receiver API
-  version: "2.3"
+  version: "2.4"
 servers:
 - url: "https://{host}"
   description: API endpoint
@@ -164,26 +164,32 @@ components:
         - {}
         message: message
     apiorganization_idworkspacesworkspace_idoase_agentevents_events:
+      required:
+      - event
       type: object
       properties:
         event:
           type: array
           items:
-            type: string
-            example: "{\"date\": \"2024-01-01 00:00:00\"}"
+            type: object
+            example:
+              date: 2024-01-01 00:00:00
         fetched_time:
           type: integer
           example: 1704034800
+        event_collection_settings_name:
+          type: string
+          example: setting_name
         event_collection_settings_id:
           type: string
-          example: uuid
+          example: setting_id
     oase_agent_events_body:
       properties:
         events:
           type: array
           items:
             $ref: '#/components/schemas/apiorganization_idworkspacesworkspace_idoase_agentevents_events'
-      description: イベントのJSONデータを文字列化したもの、取得した時間、イベント収集設定IDを記載
+      description: イベントのJSONデータ、取得した時間、イベント収集設定IDを記載
     inline_response_200_1:
       type: object
       properties:

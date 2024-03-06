@@ -20,6 +20,7 @@ import shutil
 import datetime
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common import storage_access
 
 
 """
@@ -57,24 +58,6 @@ def setStatus(taskId, status, objdbca=None, is_register_history=True):
         return False, msg
 
     return True, None
-
-def getExportedMenuIDList(taskId, export_path):
-    """
-
-    エクスポートするメニューIDの一覧取得
-
-    Arguments:
-        taskId: タスクID
-        export_path: エクスポート先パス
-    Returns:
-        メニューID
-    """
-    if not os.path.exists(export_path + "/" + taskId + "/MENU_ID_LIST"):
-        return False
-
-    json = pathlib.Path(export_path + "/" + taskId + "/MENU_ID_LIST").read_text()
-    menuIdAry = json.loads(json)
-    return menuIdAry
 
 def getMenuInfoByMenuId(menuNameRest, objdbca=None):
     """
@@ -122,15 +105,20 @@ def dumpResultMsg(msg, taskId, uploadDir):
     uploadFilePath = uploadDir + "/" + taskId + "/" + resultFileName
 
     # ファイルの作成
+    # 書き込みはtmp配下で行う
+    file_write = storage_access.storage_write()
     if not os.path.isdir(uploadDir + "/" + taskId):
         os.makedirs(uploadDir + "/" + taskId)
         os.chmod(uploadDir + "/" + taskId, 0o777)
     if os.path.exists(uploadFilePath):
-        with open(uploadFilePath, 'a') as f:
-            f.write(msg)
-        f.close()
+        file_write.open(uploadFilePath, mode="a")
+        file_write.write(msg)
+        file_write.close()
     else:
-        pathlib.Path(uploadFilePath).write_text(msg + "\n", encoding="utf-8")
+        file_write = storage_access.storage_write()
+        file_write.open(uploadFilePath, mode="w")
+        file_write.write(msg)
+        file_write.close()
 
     return True
 
@@ -149,7 +137,11 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
     """
 
     result = False
-    shutil.make_archive(base_name=dirPath + "/tmp_zip", format="zip", root_dir=dirPath + "/tmp_zip")
+    
+    # tmp配下でzipに固める
+    tmp_dir_path = "/tmp/{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')) + "/tmp_zip"
+    shutil.copytree(dirPath + "/tmp_zip", tmp_dir_path)
+    shutil.make_archive(base_name=tmp_dir_path, format="zip", root_dir=tmp_dir_path)
 
     objdbca.db_transaction_start()
 
@@ -171,7 +163,7 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
         # ファイル更新用パラメータを作成
         parameters = {
             "file": {
-                "file_name": file_encode(dirPath + "/tmp_zip.zip")
+                "file_name": file_encode(tmp_dir_path + ".zip")
             },
             "parameter": {
                 "file_name": zipFileName,
@@ -193,6 +185,10 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
     except Exception:
         objdbca.db_transaction_end(False)
         return False
+    
+    # tmp配下削除
+    shutil.rmtree(tmp_dir_path)
+    os.remove(tmp_dir_path + ".zip")
 
     return result
 

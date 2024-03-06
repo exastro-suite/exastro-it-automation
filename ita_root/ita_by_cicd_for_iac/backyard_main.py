@@ -38,6 +38,7 @@ from common_libs.ansible_driver.functions.rest_libs import insert_execution_list
 from common_libs.terraform_driver.common.Execute import insert_execution_list as t_insert_execution_list
 from common_libs.cicd.classes.cicd_definition import TD_SYNC_STATUS_NAME_DEFINE, TD_B_CICD_MATERIAL_FILE_TYPE_NAME, TD_B_CICD_MATERIAL_TYPE_NAME, TD_C_PATTERN_PER_ORCH, TD_B_CICD_GIT_PROTOCOL_TYPE_NAME, TD_B_CICD_GIT_REPOSITORY_TYPE_NAME, TD_B_CICD_MATERIAL_LINK_LIST
 from common_libs.cicd.functions.local_functions import MatlLinkColumnValidator2, MatlLinkColumnValidator3, MatlLinkColumnValidator5
+from common_libs.common import storage_access
 
 
 ################################################################
@@ -93,6 +94,10 @@ class CICDMakeParamBase():
         data['last_updated_user'] = g.USER_ID
 
     def diff_file(self, filedata, cur_filedata, *args, **kwargs):
+        
+        # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+        file_read = storage_access.storage_read()
+        file_read_bytes = storage_access.storage_read_bytes()
 
         if cur_filedata is None:
             func = None
@@ -115,8 +120,12 @@ class CICDMakeParamBase():
                 o_mode = kwargs['o_mode']
 
             cur_filedata = ""
-            with open(filepath, o_mode) as fp:
-                cur_filedata = fp.read()
+            if o_mode == "r":
+                file_read.open(filepath)
+                cur_filedata = file_read.read()
+                file_read.close()
+            else:
+                cur_filedata = file_read_bytes.read_bytes(filepath)
 
             if isinstance(cur_filedata, str) is True:
                 cur_filedata = cur_filedata.encode()
@@ -1315,6 +1324,10 @@ class CICD_GrandChildWorkflow():
         return True, result['execution_no']
 
     def MailLinkExecute(self):
+        
+        # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+        file_read = storage_access.storage_read()
+        file_read_bytes = storage_access.storage_read_bytes()
 
         # 資材紐付管理より対象レコード取得
         tgtMatlLinkRow = []
@@ -1457,8 +1470,12 @@ class CICD_GrandChildWorkflow():
             tgtFileName = "%s/%s" % (outRolesDir, zipFileName)
 
         tgtFileData = ""
-        with open(tgtFileName, o_mode) as fp:
-            tgtFileData = fp.read()
+        if o_mode == "r":
+            file_read.open(tgtFileName)
+            tgtFileData = file_read.read()
+            file_read.close()
+        else:
+            tgtFileData = file_read_bytes.read_bytes(tgtFileName)
 
         if isinstance(tgtFileData, str) is True:
             tgtFileData = tgtFileData.encode()

@@ -373,11 +373,14 @@ class FileUploadColumn(Column):
                     try:
                         # シンボリックリンク,oldのファイル,ディレクトリの削除
                         os.unlink(dir_path)
+
                         os.remove(old_dir_path)
+
                         os.rmdir(old_dir_path.replace(val, ''))
                         # 登録時は、対象のIDのディレクトリ削除
                         if cmd_type == "Register":
                             os.rmdir(dir_path.replace(val, ''))
+
                     except Exception:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00016', [old_dir_path])

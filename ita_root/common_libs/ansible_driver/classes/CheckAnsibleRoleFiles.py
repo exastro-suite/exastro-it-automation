@@ -37,6 +37,8 @@ from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import WrappedStringReplaceAdmin
+from common_libs.common.storage_access import storage_read_text, storage_read_bytes
+
 #################################################################################
 # rolesディレクトリ解析
 #################################################################################
@@ -146,8 +148,8 @@ class CheckAnsibleRoleFiles():
 
         try:
             if del_flag is True:
-               if os.path.isdir(in_dist_path):
-                   shutil.rmtree(in_dist_path)
+                if os.path.isdir(in_dist_path):
+                    shutil.rmtree(in_dist_path)
 
             with zipfile.ZipFile(in_zip_path) as zip:
                 zip.extractall(in_dist_path)
@@ -895,7 +897,9 @@ class CheckAnsibleRoleFiles():
                     main_yml = True
 
                 # ファイルの内容を読込む
-                dataString = pathlib.Path(fullpath).read_text()
+                # #2079 /storage配下は/tmp経由でアクセス
+                obj = storage_read_text()
+                dataString = obj.read_text(fullpath)
 
                 # ホスト変数の抜出が指定されている場合
                 if in_get_rolevar:
@@ -1021,7 +1025,9 @@ class CheckAnsibleRoleFiles():
 
         in_errmsg = ""
         ret_code = True
-        dataString = pathlib.Path(in_filepath).read_text()
+        # #2079 /storage配下は/tmp経由でアクセスする。
+        obj = storage_read_text()
+        dataString = obj.read_text(in_filepath)
         line = 0
 
         # 入力データを行単位に分解
@@ -1205,7 +1211,9 @@ class CheckAnsibleRoleFiles():
             dispFilename = "/roles/" + "/roles/".join(ary)
 
         boolRet = True
-        yaml = pathlib.Path(Filename).read_bytes()
+        # #2079 /storage配下は/tmp経由でアクセスする。
+        obj = storage_read_bytes()
+        yaml = obj.read_bytes(Filename)
         # 変数定義ファイルが空の場合
         if len(yaml) == 0:
             return boolRet, strErrMsg
@@ -2948,10 +2956,11 @@ class DefaultVarsFileAnalysis():
           true:   正常
           false:  異常
         """
-
         in_errmsg = ""
         ret_code = True
-        dataString = pathlib.Path(in_filepath).read_text()
+        # #2079 /storage配下は/tmp経由でアクセスする。
+        obj = storage_read_text()
+        dataString = obj.read_text(in_filepath)
         line = 0
 
         # 入力データを行単位に分解

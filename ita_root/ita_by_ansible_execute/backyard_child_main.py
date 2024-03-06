@@ -23,6 +23,7 @@ import inspect
 import copy
 import shlex
 import subprocess
+import shutil
 
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
@@ -46,6 +47,7 @@ from common_libs.ansible_driver.functions.ansibletowerlibs.AnsibleTowerExecute i
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.ci.util import app_exception_driver_log, exception_driver_log, validation_exception_driver_log, validation_exception
 from common_libs.ansible_driver.classes.ansibletowerlibs.RestApiCaller import setAACRestAPITimoutVaule
+from common_libs.common.storage_access import storage_write, storage_base
 
 from libs import common_functions as cm
 
@@ -410,8 +412,10 @@ def instance_execution(wsDb: DBConnectWs, ansdrv: CreateAnsibleExecFiles, ans_if
     zip_data_source_dir = tmp_array_dirs[3]
 
     # ansible-playbookコマンド実行時のオプションパラメータを共有ディレクトリのファイルに出力
-    with open(zip_data_source_dir + "/AnsibleExecOption.txt", "w") as f:
-        f.write(option_parameter)
+    obj = storage_write()
+    obj.open(zip_data_source_dir + "/AnsibleExecOption.txt", "w")
+    obj.write(option_parameter)
+    obj.close()
 
     # 投入データ用ZIPファイル作成
     retBool, err_msg, zip_input_file = createTmpZipFile(
@@ -1229,17 +1233,30 @@ def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):
     err_msg = ""
     zip_file_name = ""
     zip_temp_save_dir = ""
+
     if len(glob.glob(zip_data_source_dir + "/*")) > 0:
+
+        tmp_zip_data_source_dir = "/tmp/{}{}_zip".format(zip_file_pfx, execution_no)
+
+        # /tmpにzipに纏めるディレクトリの確認
+        if os.path.isdir(tmp_zip_data_source_dir) is True:
+            shutil.rmtree(tmp_zip_data_source_dir)
+
+        # /tmpにzipに纏める資材コピー
+        shutil.copytree(zip_data_source_dir, tmp_zip_data_source_dir)
+
         # ----ZIPファイルを作成する
         zip_file_name = zip_file_pfx + execution_no + '.zip'
+
         # 圧縮先
         zip_temp_save_dir = get_OSTmpPath()
         zip_temp_save_path = zip_temp_save_dir + "/" + zip_file_name
+
         # ゴミ掃除リストに追加
         addAnsibleCreateFilesPath(zip_temp_save_path)
+        addAnsibleCreateFilesPath(tmp_zip_data_source_dir)
 
-        # OSコマンドでzip圧縮する
-        tmp_str_command = "cd " + shlex.quote(zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
+        tmp_str_command = "cd " + shlex.quote(tmp_zip_data_source_dir) + " && zip -r " + shlex.quote(zip_temp_save_dir + "/" + zip_file_name) + " . -x ssh_key_files/* -x winrm_ca_files/*  1> /dev/null"  # noqa: E501
 
         ret = subprocess.run(tmp_str_command, check=True, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 

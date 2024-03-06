@@ -35,9 +35,16 @@ def backyard_main(organization_id, workspace_id):
     # DB接続準備
     ws_db = DBConnectWs(workspace_id)  # noqa: F405
 
+    # トランザクション開始
+    ws_db.db_transaction_start()
+
     # 関連データベースが更新されバックヤード処理が必要か判定
     if not has_changes_related_tables(ws_db, proc_loaded_row_id):
         g.applogger.debug("No changes, skip workflow.")
+        # トランザクション終了
+        ws_db.db_transaction_end(False)
+        # DB切断
+        ws_db.db_disconnect()
         return
 
     # 各インスタンス準備
@@ -81,12 +88,19 @@ def backyard_main(organization_id, workspace_id):
     # Movement変数 登録・廃止
     mov_vars_link_table.register_and_discard(mov_vars_dict)
 
-    # DBコミット
-    ws_db.db_commit()
+    # バックヤード処理実行フラグを更新
+    has_changes_related_tables_off(ws_db, proc_loaded_row_id)
 
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
     # 終了処理
     # - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - +
+
+    # DBコミット
+    ws_db.db_commit()
+
+    # トランザクション終了
+    ws_db.db_transaction_end(True)
+
     # DB切断
     ws_db.db_disconnect()
 
@@ -100,3 +114,10 @@ def has_changes_related_tables(ws_db, proc_loaded_row_id):
     not_loaded_count = ws_db.table_count("T_COMN_PROC_LOADED_LIST", where_str, bind_value_list)
 
     return (not_loaded_count > 0)
+
+def has_changes_related_tables_off(ws_db, proc_loaded_row_id):
+    # バックヤード処理実行フラグを更新
+    table_name = "T_COMN_PROC_LOADED_LIST"
+    data_list = {"LOADED_FLG": "1", "ROW_ID": proc_loaded_row_id}
+    primary_key_name = "ROW_ID"
+    ret = ws_db.table_update(table_name, data_list, primary_key_name, False)

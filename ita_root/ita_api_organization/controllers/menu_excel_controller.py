@@ -40,18 +40,24 @@ def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    filter_parameter = {'discard': {'NORMAL': ''}}
-    result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+        filter_parameter = {'discard': {'NORMAL': ''}}
+        result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -74,17 +80,23 @@ def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+        result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -107,17 +119,23 @@ def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = menu_excel.collect_excel_journal(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+        result_data = menu_excel.collect_excel_journal(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -142,23 +160,29 @@ def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    filter_parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        filter_parameter = body
+        filter_parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            filter_parameter = body
 
-    # メニューのカラム情報を取得
-    result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+        # メニューのカラム情報を取得
+        result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -187,33 +211,39 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    privilege = check_auth_menu(menu, objdbca)
-    if privilege == '2':
-        status_code = "401-00001"
-        log_msg_args = [menu]
-        api_msg_args = [menu]
-        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    # bodyのjson形式チェック
-    check_request_body()
+        # bodyのjson形式チェック
+        check_request_body()
 
-    excel_data = {}
-    retBool, excel_data = menu_excel.create_upload_parameters(connexion.request)
-    if retBool is False:
-        status_code = "400-00003"
-        request_content_type = connexion.request.content_type.lower()
-        log_msg_args = [request_content_type]
-        api_msg_args = [request_content_type]
-        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+        excel_data = {}
+        retBool, excel_data = menu_excel.create_upload_parameters(connexion.request)
+        if retBool is False:
+            status_code = "400-00003"
+            request_content_type = connexion.request.content_type.lower()
+            log_msg_args = [request_content_type]
+            api_msg_args = [request_content_type]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    # メニューのカラム情報を取得
-    result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data)
+        # メニューのカラム情報を取得
+        result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,

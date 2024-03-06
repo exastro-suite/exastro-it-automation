@@ -23,7 +23,7 @@ def external_valid_menu_before(objdbca, objtable, option):
     uploadPath = os.environ.get('STORAGEPATH') + "/".join([g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')]) + "/tmp/custom_menu_item/"
 
     # ファイルがある場合バリデーションチェック
-    if 'custom_menu_item' in option["entry_parameter"]["file"]:
+    if 'custom_menu_item' in option["entry_parameter"]["parameter"] and 'custom_menu_item' in option["entry_parameter"]["file"]:
         file_name = option["entry_parameter"]["parameter"]["custom_menu_item"]
         zip_data = option["entry_parameter"]["file"]["custom_menu_item"]
 
@@ -91,6 +91,7 @@ def external_valid_menu_before(objdbca, objtable, option):
                 shutil.rmtree(uploadPath)
             errormsg = g.appmsg.get_api_message("499-00308")
             return False, errormsg, option
+
 
     # ファイル削除
     if os.path.exists(uploadPath):

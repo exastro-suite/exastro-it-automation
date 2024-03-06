@@ -168,6 +168,7 @@ def main():
   yaml_var = str(yaml.__version__).split('.')[0]
   # 対話ファイルを読み込む
   try:
+    # #2079 ファイル名が被るので対象外
     if yaml_var >= str(5):
       config = yaml.load(open(module.params['exec_file']).read(), Loader=yaml.FullLoader)
     else:
@@ -191,6 +192,7 @@ def main():
   with_tmp = with_tmp.replace("/dialog_files/", "/original_dialog_files/")
 
   try:
+    # #2079 ファイル名が被るので対象外
     if yaml_var >= str(5):
       with_file = yaml.load(open(with_tmp).read(), Loader=yaml.FullLoader)
     else:
@@ -209,6 +211,7 @@ def main():
 
   # ホスト変数ファイルにyaml文法エラーがない事を確認する。
   try:
+    # #2079 ファイル名が被るので対象外
     if yaml_var >= str(5):
       with_def = yaml.load(open(module.params['host_vars_file']).read(), Loader=yaml.FullLoader)
     else:
@@ -251,6 +254,7 @@ def main():
     # プロセスIDをファイルに出力
     pid = os.getpid()
     pid_file_name = module.params['log_file_dir'] + "/pioneer." + str(pid)
+    # #2079 ファイル名が被るので対象外
     fp = open(pid_file_name, "w")
     fp.write(str(pid))
     fp.close()
@@ -300,6 +304,7 @@ def main():
     vault_vars_file = vault_vars_file.replace("/original_host_vars/", "/vault_host_vars/")
     # パーサーの例外をキャッチするようにする
     try:
+      # #2079 ファイル名が被るので対象外
       if yaml_var >= str(5):
         vault_vars_def = yaml.load(open(vault_vars_file).read(), Loader=yaml.FullLoader)
       else:
@@ -658,6 +663,7 @@ def main():
             with_tmp = with_tmp.replace("/dialog_files/", "/original_dialog_files/")
 
             try:
+              # #2079 ファイル名が被るので対象外
               if yaml_var >= str(5):
                 with_file = yaml.load(open(with_tmp).read(), Loader=yaml.FullLoader)
               else:
@@ -677,6 +683,7 @@ def main():
 
             # ホスト変数ファイルを読み込む
             try:
+              # #2079 ファイル名が被るので対象外
               if yaml_var >= str(5):
                 with_def = yaml.load(open(module.params['host_vars_file']).read(), Loader=yaml.FullLoader)
               else:
@@ -3002,12 +3009,14 @@ def private_exit_json(**args) :
 
 def private_log(log_file_name,host,var):
   now = datetime.datetime.now()
+  # #2079 ファイル名が被るので対象外
   f = open(log_file_name,'a')
   f.writelines(now.strftime("%Y%m%d %H:%M:%S") + '[' + host + ']' + var + "\n")
   f.close()
 
 def craete_stdout_file(file,data):
   now = datetime.datetime.now()
+  # #2079 ファイル名が被るので対象外
   f = open(file,'w')
   f.writelines(data)
   f.close()
@@ -4000,6 +4009,7 @@ def when_check(when_cmd,register_cmd,register_name,host_vars_file,log_file_name,
     tmp2 = tmp2.lstrip()
     tmp2 = tmp2.rstrip()
 
+    # #2079 ファイル名が被るので対象外
     with open(host_vars_file, "r") as f:
       tmp3 = f.read()
 
@@ -4023,6 +4033,7 @@ def when_check(when_cmd,register_cmd,register_name,host_vars_file,log_file_name,
     tmp2 = tmp2.lstrip()
     tmp2 = tmp2.rstrip()
 
+    # #2079 ファイル名が被るので対象外
     with open(host_vars_file, "r") as f:
       tmp3 = f.read()
 

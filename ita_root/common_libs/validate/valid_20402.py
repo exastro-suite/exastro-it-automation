@@ -51,6 +51,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         # YAMLチェック
         tmpFile = "{}/HeaderSectionYamlParse_{}".format(get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
+        #  #2079 /storage配下ではないので対象外
         addAnsibleCreateFilesPath(tmpFile)
         fd = open(tmpFile, 'w')
         fd.write(in_string)

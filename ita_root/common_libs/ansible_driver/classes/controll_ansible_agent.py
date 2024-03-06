@@ -21,6 +21,7 @@ import shutil
 from flask import g
 from abc import ABC, abstractclassmethod
 from jinja2 import FileSystemLoader, Environment
+from common_libs.common.storage_access import storage_write
 
 
 class AnsibleAgent(ABC):
@@ -101,8 +102,10 @@ class DockerMode(AnsibleAgent):
         template = env.get_template('docker-compose.yml')
         exec_manifest = "%s/.tmp/.docker-compose.yml" % (container_mount_path_driver)
 
-        with open(exec_manifest, 'w') as f:
-            f.write(template.render(
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(exec_manifest, 'w')
+        obj.write(template.render(
                 str_shell_command=str_shell_command,
                 organization_id=self._organization_id,
                 workspace_id=self._workspace_id,
@@ -116,6 +119,7 @@ class DockerMode(AnsibleAgent):
                 container_mount_path_conductor=container_mount_path_conductor,
                 network_id=os.getenv('NETWORK_ID', "")
             ))
+        obj.close()
 
         dir_tmp = "%s/.tmp/work/" % (container_mount_path_driver)
         shutil.copytree('/exastro/templates/work/', dir_tmp)
@@ -264,8 +268,10 @@ class KubernetesMode(AnsibleAgent):
         template = env.get_template('k8s_pod.yml')
         exec_manifest = "%s/.tmp/.k8s_pod.yml" % (container_mount_path_driver)
 
-        with open(exec_manifest, 'w') as f:
-            f.write(template.render(
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(exec_manifest, 'w')
+        obj.write(template.render(
                 str_shell_command=str_shell_command,
                 unique_name=unique_name,
                 HTTP_PROXY=os.getenv('HTTP_PROXY', ""),
@@ -276,6 +282,7 @@ class KubernetesMode(AnsibleAgent):
                 host_mount_path_conductor=host_mount_path_conductor,
                 container_mount_path_conductor=container_mount_path_conductor
             ))
+        obj.close()
 
         # create command string
         command = ["/usr/local/bin/kubectl", "apply", "-f", exec_manifest]

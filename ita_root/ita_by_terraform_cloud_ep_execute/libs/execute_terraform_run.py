@@ -21,6 +21,7 @@ from libs.common_functions import update_execution_record
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
 from common_libs.terraform_driver.common.by_execute import \
     get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl, generate_member_vars_array_for_hcl
+from common_libs.common import storage_access
 import json
 import os
 import shutil
@@ -64,6 +65,9 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         gztar_path = None
         populated_data_rename_path = None
         populated_data_rename_dir_path = None
+        
+        # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+        file_write = storage_access.storage_write()
 
         # ログ格納用ディレクトリを作成する
         if os.path.isdir(log_dir) is False:
@@ -72,26 +76,26 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
 
         # エラーログファイルを生成
         if os.path.isfile(error_log) is False:
-            with open(error_log, 'w'):
-                pass
+            file_write.open(error_log, mode="w")
+            file_write.close()
 
         # Planログファイルを生成
         if os.path.isfile(plan_log) is False:
-            with open(plan_log, 'w'):
-                pass
+            file_write.open(plan_log, mode="w")
+            file_write.close()
         log_file_list.append('plan.log')
 
         # PolicyCheckログファイルを生成
         if os.path.isfile(policy_check_log) is False:
-            with open(policy_check_log, 'w'):
-                pass
+            file_write.open(policy_check_log, mode="w")
+            file_write.close()
         log_file_list.append('policyCheck.log')
 
         if not run_mode == TFCloudEPConst.RUN_MODE_PLAN:
             # Applyログファイルを生成
             if os.path.isfile(apply_log) is False:
-                with open(apply_log, 'w'):
-                    pass
+                file_write.open(apply_log, mode="w")
+                file_write.close()
             log_file_list.append('apply.log')
 
         # インターフェース情報を取得する
@@ -361,8 +365,9 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             os.chmod(variables_dir, 0o777)
 
             # variables.jsonファイルを書き出し
-            with open(variables_json_file, 'w') as f:
-                json.dump(variables_list, f, indent=4)
+            file_write.open(variables_json_file, 'w')
+            file_write.write(json.dumps(variables_list, indent=4))
+            file_write.close()
 
             # [RESTAPI]TerraformのRUNを実行する
             g.applogger.info(g.appmsg.get_log_message("BKY-51039", [execution_no]))
@@ -467,8 +472,9 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
 
     except Exception as msg:
         # 受け取ったメッセージをerror_logに書き込み
-        with open(error_log, 'w') as f:
-            f.write(str(msg))
+        file_write.open(error_log, mode="w")
+        file_write.write(str(msg))
+        file_write.close()
 
         # ディレクトリ/ファイル削除
         if temp_dir:

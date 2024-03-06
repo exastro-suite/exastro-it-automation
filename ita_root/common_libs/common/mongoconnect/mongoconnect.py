@@ -40,7 +40,7 @@ class MONGOConnectCommon():
         constructor
         """
         # MongoDBに接続
-        self._connection_string = os.environ.get('MONGO_CONNECTION_STRING', "")
+        self._connection_string = ''
         self._option_ssl_flg = True if os.environ.get("MONGO_OPTION_SSL", "FALSE").upper() == "TRUE" else False
         self._scheme = os.environ.get("MONGO_SCHEME", "mongodb")
         self._host = os.environ.get("MONGO_HOST")
@@ -79,7 +79,7 @@ class MONGOConnectCommon():
                     authSource=self._db_name,
                 )
             else:
-                self._client = MongoClient(self._connection_string)
+                self._client = MongoClient(ky_decrypt(self._connection_string))
         except PyMongoError as mongo_err:
             if mongo_err.timeout:
                 raise AppException("999-00002", ["mongodb.{}".format(self._db_name), mongo_err])
@@ -224,15 +224,17 @@ class MONGOConnectOrg(MONGOConnectCommon):
         self._db_name = "admin"
         if "db_connect_info" not in g:
             # get db-connect-infomation from organization-db
-            connect_info = org_db.get_org_mongo_connect_info()
+            connect_info = org_db.get_connect_info()
             if connect_info is False:
                 db_info = "ORGANIZATION_ID=" + organization_id
                 raise AppException("999-00001", [db_info])
 
+            self._mongo_owner = connect_info["MONGO_OWNER"]
             self._connection_string = connect_info["MONGO_CONNECTION_STRING"]
             self._db_user = connect_info["MONGO_ADMIN_USER"]
             self._db_passwd = connect_info["MONGO_ADMIN_PASSWORD"]
         else:
+            self._mongo_owner = g.db_connect_info["ORG_MONGO_OWNER"]
             self._connection_string = g.db_connect_info["ORG_MONGO_CONNECTION_STRING"]
             self._db_user = g.db_connect_info["ORG_MONGO_ADMIN_USER"]
             self._db_passwd = g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"]

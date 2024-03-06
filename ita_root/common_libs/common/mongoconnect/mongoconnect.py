@@ -80,11 +80,8 @@ class MONGOConnectCommon():
                 )
             else:
                 self._client = MongoClient(ky_decrypt(self._connection_string))
-        except PyMongoError as mongo_err:
-            if mongo_err.timeout:
-                raise AppException("999-00002", ["mongodb.{}".format(self._db_name), mongo_err])
-            else:
-                raise AppException("999-00002", ["mongodb.{}".format(self._db_name), mongo_err])
+        except PyMongoError as mongo_error:
+            raise AppException("999-00002", ["mongodb.{}".format(self._db_name), mongo_error])
 
         if self._client is None:
             raise AppException("999-00002", ["mongodb.{}".format(self._db_name), "cannot access. connect info may be incorrect"])
@@ -92,6 +89,17 @@ class MONGOConnectCommon():
         self._db = self._client[self._db_name]
 
         return True
+
+    def connect_check(self):
+        """
+         接続チェック（接続できない場合は例外を投げる）
+        """
+
+        try:
+            self._client.server_info()
+        except PyMongoError as mongo_error:
+            # タイムアウト
+            raise AppException("999-00002", ["mongodb.{}".format(self._db_name), "cannot connect mongo.({})".format(mongo_error)])
 
     def disconnect(self):
         """
@@ -205,7 +213,7 @@ class MONGOConnectOrg(MONGOConnectCommon):
     database connection root user agnet class for organization on mongodb
     """
 
-    def __init__(self, org_db: DBConnectOrg):
+    def __init__(self, org_db: DBConnectOrg=None):
         """
         constructor
         """

@@ -427,6 +427,7 @@ class AnsibleCommonLibs():
 
         bool_ret = True
 
+        # #2079 function未使用 対象外
         playbook_data_string = open(in_filename)
 
         local_vars = []
@@ -491,6 +492,7 @@ class AnsibleCommonLibs():
             path = out_filename
 
             try:
+                # #2079 function未使用 対象外
                 Path(path).write_text(json_encode, encoding="utf-8")
             except Exception:
                 bool_ret = False

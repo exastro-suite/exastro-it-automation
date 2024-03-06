@@ -17,6 +17,7 @@ from common_libs.common.util import get_timestamp, ky_encrypt
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from libs.common_functions import update_execution_record
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
+from common_libs.common import storage_access
 import time
 import json
 import os
@@ -59,6 +60,9 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
         plan_log = log_dir + '/plan.log'
         policy_check_log = log_dir + '/policyCheck.log'
         apply_log = log_dir + '/apply.log'
+        
+        # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+        file_write = storage_access.storage_write()
 
         # インターフェース情報を取得する
         ret, interface_info_data = get_intarface_info_data(objdbca)  # noqa: F405
@@ -133,14 +137,15 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
         # Planログファイルがなければ生成
         if os.path.isfile(plan_log) is False:
-            with open(plan_log, 'w'):
-                pass
+            file_write.open(plan_log, mode="w")
+            file_write.close()
 
         # [RESTAPI]Planログを取得し、plan.logに書き込み(上書き)
         g.applogger.info(g.appmsg.get_log_message("BKY-51026", [execution_no]))
         content_log = get_run_log(restApiCaller, tf_plan_log_url, True, False)  # noqa: F405
-        with open(plan_log, 'w') as f:
-            f.write(content_log)
+        file_write.open(plan_log, mode="w")
+        file_write.write(content_log)
+        file_write.close()
         g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
         # Planのステータスから次の処理の動きを判定する
@@ -192,8 +197,9 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                     # [RESTAPI]PolicyCheckログを取得し、policy_check_logに書き込み(上書き)
                     g.applogger.info(g.appmsg.get_log_message("BKY-51028", [execution_no]))
                     content_log = get_run_log(restApiCaller, policy_output_url, False, False)  # noqa: F405
-                    with open(policy_check_log, 'w') as f:
-                        f.write(content_log)
+                    file_write.open(policy_check_log, mode="w")
+                    file_write.write(content_log)
+                    file_write.close()
                     g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
                 # PolicyCheckの緊急停止判定
@@ -272,14 +278,15 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
                 # Applyログファイルがなければ生成
                 if os.path.isfile(apply_log) is False:
-                    with open(apply_log, 'w'):
-                        pass
+                    file_write.open(apply_log, mode="w")
+                    file_write.close()
 
                 # [RESTAPI]Applyログを取得し、apply.logに書き込み(上書き)
                 g.applogger.info(g.appmsg.get_log_message("BKY-51032", [execution_no]))
                 content_log = get_run_log(restApiCaller, tf_apply_log_url, True, False)  # noqa: F405
-                with open(apply_log, 'w') as f:
-                    f.write(content_log)
+                file_write.open(apply_log, mode="w")
+                file_write.write(content_log)
+                file_write.close()
                 g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
                 # Applyのステータスから次の処理の動きを判定する
@@ -344,8 +351,9 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 if tf_state_org:
                     tf_state_enc = ky_encrypt(tf_state_org)
                     tf_state_file = log_dir + '/' + tf_state_id + '.tfstate'
-                    with open(tf_state_file, 'w') as f:
-                        f.write(tf_state_enc)
+                    file_write.open(tf_state_file, mode="w")
+                    file_write.write(tf_state_enc)
+                    file_write.close()
                     g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
                 else:
                     log_msg = g.appmsg.get_log_message("MSG-82039", [tf_workspace_name])
@@ -353,16 +361,18 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                     msg = "[API Error]" + g.appmsg.get_api_message("MSG-82039", [tf_workspace_name])
                     set_status_id = TFCloudEPConst.STATUS_FAILURE  # ステータスを「完了(異常)」に設定
                     # エラーログに追記
-                    with open(error_log, 'w') as f:
-                        f.write(str(msg))
+                    file_write.open(error_log, mode="w")
+                    file_write.write(str(msg))
+                    file_write.close()
             else:
                 log_msg = g.appmsg.get_log_message("MSG-82039", [tf_workspace_name])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82039", [tf_workspace_name])
                 set_status_id = TFCloudEPConst.STATUS_FAILURE  # ステータスを「完了(異常)」に設定
                 # エラーログに追記
-                with open(error_log, 'w') as f:
-                    f.write(str(msg))
+                file_write.open(error_log, mode="w")
+                file_write.write(str(msg))
+                file_write.close()
 
             # Conductorから実行されている場合、outputの結果を格納する
             conductor_instance_no = instance_data.get('CONDUCTOR_INSTANCE_NO')
@@ -380,8 +390,9 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                         msg = "[API Error]" + g.appmsg.get_api_message("MSG-82040", [tf_workspace_name])
                         set_status_id = TFCloudEPConst.STATUS_FAILURE  # ステータスを「完了(異常)」に設定
                         # エラーログに追記
-                        with open(error_log, 'w') as f:
-                            f.write(str(msg))
+                        file_write.open(error_log, mode="w")
+                        file_write.write(str(msg))
+                        file_write.close()
                     else:
                         # output_dataに取得結果を格納する
                         respons_contents_json = response_array.get('responseContents')
@@ -403,8 +414,9 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 # output_dataのjsonファイルを保存
                 output_file_name = 'terraform_output_' + str(execution_no) + '.json'
                 output_data_full = output_dir + output_file_name
-                with open(output_data_full, 'w') as f:
-                    f.write(output_data_json)
+                file_write.open(output_data_full, mode="w")
+                file_write.write(output_data_json)
+                file_write.close()
 
         # 遅延タイマーチェックフラグがTrueの場合かつ、ステータス更新フラグがFalseの場合、遅延タイマーチェック処理を実行する
         if time_limit_check_flag and status_update_flag is False:
@@ -482,7 +494,8 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
     except Exception as msg:
         # 受け取ったメッセージをerror_logに書き込み
-        with open(error_log, 'w') as f:
-            f.write(str(msg))
+        file_write.open(error_log, mode="w")
+        file_write.write(str(msg))
+        file_write.close()
 
         return False

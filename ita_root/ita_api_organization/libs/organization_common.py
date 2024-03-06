@@ -98,6 +98,7 @@ def before_request_handler():
         g.db_connect_info['ORGDB_ADMIN_USER'] = orgdb_connect_info.get('DB_ADMIN_USER')
         g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = orgdb_connect_info.get('DB_ADMIN_PASSWORD')
         g.db_connect_info['ORGDB_DATABASE'] = orgdb_connect_info.get('DB_DATABASE')
+        g.db_connect_info["ORG_MONGO_OWNER"] = orgdb_connect_info.get('MONGO_OWNER')
         g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = orgdb_connect_info.get('MONGO_CONNECTION_STRING')
         g.db_connect_info["ORG_MONGO_ADMIN_USER"] = orgdb_connect_info.get('MONGO_ADMIN_USER')
         g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = orgdb_connect_info.get('MONGO_ADMIN_PASSWORD')

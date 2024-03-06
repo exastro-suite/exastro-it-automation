@@ -9,6 +9,8 @@ CREATE TABLE T_MENU_EXPORT_IMPORT
     SPECIFIED_TIME                  DATETIME(6)  ,                              -- 指定時刻
     FILE_NAME                       VARCHAR(64),                                -- ファイル名
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
+    LANGUAGE                        VARCHAR(40),                                -- 言語
+    EXEC_LOG                        TEXT,                                       -- 実行ログ
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -29,6 +31,8 @@ CREATE TABLE T_MENU_EXPORT_IMPORT_JNL
     SPECIFIED_TIME                  DATETIME(6)  ,                              -- 指定時刻
     FILE_NAME                       VARCHAR(64),                                -- ファイル名
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
+    LANGUAGE                        VARCHAR(40),                                -- 言語
+    EXEC_LOG                        TEXT,                                       -- 実行ログ
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

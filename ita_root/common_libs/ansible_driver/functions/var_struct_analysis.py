@@ -24,7 +24,7 @@ def Template_variable_define_analysis(objdbca, option, pkey_id, TPF_var_name, va
     tmp_file_name = "{}/TemplateVarList_{}.yaml".format(get_OSTmpPath(), os.getpid())
     # /tmpに作成したファイルはゴミ掃除リストに追加
     addAnsibleCreateFilesPath(tmp_file_name)
-
+    #  #2079 /storage配下ではないので対象外
     fd = open(tmp_file_name, 'w')
     fd.write(var_struct_string)
     fd.close()

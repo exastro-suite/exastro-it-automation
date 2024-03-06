@@ -841,8 +841,8 @@ class loadTable():
         """
         result = ''
         table_name = self.get_table_name_jnl()
-        column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
-        primary_key = primary_key_list[0]
+        column_list = self.get_column_list()
+        primary_key = self.get_primary_key()
         query_str = textwrap.dedent("""
             SELECT * FROM `{table_name}`
             WHERE {primary_key} = %s
@@ -865,8 +865,8 @@ class loadTable():
 
         if self.get_history_flg() is True:
             table_name = self.get_table_name_jnl()
-            column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
-            primary_key = primary_key_list[0]
+            column_list = self.get_column_list()
+            primary_key = self.get_primary_key()
             query_str = textwrap.dedent("""
                 SELECT * FROM `{table_name}`
                 WHERE {primary_key} = %s
@@ -1328,9 +1328,14 @@ class loadTable():
         # 実行種別簡易判定、補完 (パラメータ内にPK無し:登録,有:更新)
         target_uuid_key = self.get_rest_key(primary_key)
 
+        # 登録時は入力されたUUIDを無視する
+        if cmd_type == CMD_REGISTER:
+            target_uuid = ''
+
         if cmd_type in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
             # テーブル情報（カラム、PK取得）
-            column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
+            column_list = self.get_column_list()
+            primary_key = self.get_primary_key()
             target_uuid_key = self.get_rest_key(primary_key)
             target_jnls = []
             current_row = {}
@@ -1593,19 +1598,26 @@ class loadTable():
             # rest_key → カラム名に変換
             colname_parameter = self.convert_restkey_colname(tmp_entry_parameter, current_row)
 
-            # import時には履歴を作成しないのでフラグをオフにする
-            if import_mode:
-                history_flg = False
-
-            # 登録・更新処理
-            if cmd_type == CMD_REGISTER:
-                result = self.objdbca.table_insert(self.get_table_name(), colname_parameter, primary_key, history_flg)
-            elif cmd_type == CMD_UPDATE:
-                result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
-            elif cmd_type == CMD_DISCARD:
-                result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
-            elif cmd_type == CMD_RESTORE:
-                result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
+            if import_mode is True:
+                # 登録・更新処理
+                if cmd_type == CMD_REGISTER:
+                    result = self.objdbca.table_insert(self.get_table_name(), colname_parameter, primary_key, False)
+                elif cmd_type == CMD_UPDATE:
+                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, False)
+                elif cmd_type == CMD_DISCARD:
+                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, False)
+                elif cmd_type == CMD_RESTORE:
+                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, False)
+            else:
+                # 登録・更新処理
+                if cmd_type == CMD_REGISTER:
+                    result = self.objdbca.table_insert(self.get_table_name(), colname_parameter, primary_key, history_flg)
+                elif cmd_type == CMD_UPDATE:
+                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
+                elif cmd_type == CMD_DISCARD:
+                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
+                elif cmd_type == CMD_RESTORE:
+                    result = self.objdbca.table_update(self.get_table_name(), colname_parameter, primary_key, history_flg)
 
             result_uuid = ''
             result_uuid_jnl = ''
@@ -1617,13 +1629,17 @@ class loadTable():
                 }
                 self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
             else:
-                result_uuid = result[0].get(primary_key_list[0])
+                result_uuid = result[0].get(primary_key)
                 if history_flg is True:
-                    result_uuid_jnl = self.get_maintenance_uuid(result_uuid)[0].get(COLNAME_JNL_SEQ_NO)
+                    _jnl_uuid = self.get_maintenance_uuid(result_uuid)
+                    if _jnl_uuid:
+                        result_uuid_jnl = _jnl_uuid[0].get(COLNAME_JNL_SEQ_NO)
+                    else:
+                        result_uuid_jnl = '00000000-0000-0000-0000-000000000000'
                 else:
                     result_uuid_jnl = '00000000-0000-0000-0000-000000000000'
 
-                temp_rows = {primary_key_list[0]: result[0].get(primary_key_list[0])}
+                temp_rows = {primary_key: result[0].get(primary_key)}
                 tmp_result = self.convert_colname_restkey(temp_rows)
                 result = tmp_result[0]
 
@@ -1789,7 +1805,7 @@ class loadTable():
             []::RESTパラメータへキー変換
             ARGS:
                 parameter:パラメータ
-                mode: inner/export/normal/input/excel/excel_jnl
+                mode: inner/export/export_jnl/normal/input/excel/excel_jnl
             RETRUN:
                 {}
         """
@@ -1810,7 +1826,7 @@ class loadTable():
                             # ID → VALUE 変換処理不要ならVALUE変更無し
                             if self.get_col_class_name(jsonkey) in ['PasswordColumn']:
                                 # 内部処理用
-                                if mode in ['input', 'export']:
+                                if mode in ['input', 'export', 'export_jnl']:
                                     if jsonval is not None:
                                         objcolumn = self.get_columnclass(jsonkey)
                                         jsonval = util.ky_decrypt(jsonval)    # noqa: F405
@@ -1822,7 +1838,7 @@ class loadTable():
                                     jsonval = None
                             elif self.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:
                                 # 内部処理用
-                                if mode in ['input', 'export']:
+                                if mode in ['input', 'export', 'export_jnl']:
                                     if jsonval is not None:
                                         result = objcolumn.get_values_by_key([jsonval])
                                         jsonval = util.ky_decrypt(result.get(jsonval))# noqa: F405
@@ -1844,14 +1860,14 @@ class loadTable():
                                         if col_val is not None:
                                             objcolumn = self.get_columnclass(jsonkey)
                                             col_val = util.ky_decrypt(col_val)    # noqa: F405
-                                    elif mode in ['inner', 'export']:
+                                    elif mode in ['inner', 'export', 'export_jnl']:
                                         if jsonval is not None:
                                             # base64した値をそのまま返却
                                             pass
                                     else:
                                         col_val = None
                             else:
-                                if mode not in ['input', 'export'] and force_export is False:
+                                if mode not in ['input', 'export', 'export_jnl'] and force_export is False:
                                     tmp_exec = objcolumn.convert_value_output(jsonval)
                                     if tmp_exec[0] is True:
                                         jsonval = tmp_exec[2]
@@ -1885,7 +1901,7 @@ class loadTable():
                     # ID → VALUE 変換処理不要ならVALUE変更無し
                     if self.get_col_class_name(rest_key) in ['PasswordColumn']:
                         # 内部処理用
-                        if mode in ['input', 'export']:
+                        if mode in ['input', 'export', 'export_jnl']:
                             if col_val is not None:
                                 objcolumn = self.get_columnclass(rest_key)
                                 col_val = util.ky_decrypt(col_val)    # noqa: F405
@@ -1905,19 +1921,19 @@ class loadTable():
                                 if col_val is not None:
                                     objcolumn = self.get_columnclass(rest_key)
                                     col_val = util.ky_encrypt(col_val)    # noqa: F405
-                            elif mode in ['inner', 'export']:
+                            elif mode in ['inner', 'export', 'export_jnl']:
                                 if jsonval is not None:
                                     # base64した値をそのまま返却
                                     pass
                             else:
                                 col_val = None
                     else:
-                        if mode not in ['input', 'export'] and force_export is False:
+                        if mode not in ['input', 'export', 'export_jnl'] and force_export is False:
                             tmp_exec = objcolumn.convert_value_output(col_val)
                             if tmp_exec[0] is True:
                                 col_val = tmp_exec[2]
 
-                    if mode in ['input', 'inner', 'export']:
+                    if mode in ['input', 'inner', 'export', 'export_jnl']:
                         rest_parameter.setdefault(rest_key, col_val)
                     else:
                         # if view_item == '1' or auto_input_item == '1':
@@ -1936,7 +1952,7 @@ class loadTable():
                                 # ファイル取得＋64変換
                                 file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
                                 rest_file.setdefault(rest_key, file_data)
-                            elif mode in ['export']:
+                            elif mode in ['export', 'export_jnl']:
                                 objcolumn = self.get_columnclass(rest_key)
                                 # ファイル取得＋複合化＋64変換
                                 file_data = objcolumn.get_decrypt_file_data(col_val, target_uuid, target_uuid_jnl)
@@ -1958,7 +1974,8 @@ class loadTable():
         # 組み合わせ一意設定取得
         unique_constraint = self.get_unique_constraint()
         if unique_constraint is not None:
-            column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
+            column_list = self.get_column_list()
+            primary_key = self.get_primary_key()
             tmp_constraint = json.loads(unique_constraint)
             # 組み合わせ一意検索用Where句生成
             for tmp_uq in tmp_constraint:
@@ -2026,7 +2043,7 @@ class loadTable():
                 # 更新時自身をIDを除外
                 if target_uuid is not None:
                     if len(target_uuid) != 0:
-                        where_str = where_str + " and `{}` <> %s ".format(primary_key_list[0])
+                        where_str = where_str + " and `{}` <> %s ".format(primary_key)
                         bind_value_list.append(target_uuid)
 
                 # 廃止を対象外
@@ -2039,7 +2056,7 @@ class loadTable():
                 if len(table_count) != 0:
                     list_uuids = []
                     for table_count_rows in table_count:
-                        list_uuids.append(table_count_rows.get(primary_key_list[0]))
+                        list_uuids.append(table_count_rows.get(primary_key))
 
                     status_code = 'MSG-00006'
                     msg_args = [str(dict_bind_kv), str(list_uuids)]
@@ -2201,6 +2218,7 @@ class loadTable():
                 current_parameter:現状の最終更新日時
                 lastupdatetime_parameter:パラメータ内の最終更新日時
         """
+        return True
         try:
             lastupdatetime_current = current_parameter.get('last_update_date_time')
             lastupdatetime_parameter = entry_parameter.get('last_update_date_time')
@@ -2304,7 +2322,8 @@ class loadTable():
                 parameter
         """
         # テーブル情報（カラム、PK取得）
-        column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
+        column_list = self.get_column_list()
+        primary_key = self.get_primary_key()
         # 入力項目 PK以外除外
         err_keys = []
         for tmp_keys in list(parameter.keys()):
@@ -2314,7 +2333,7 @@ class loadTable():
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                     tmp_col_name = self.get_col_name(tmp_keys)
                     if input_item != '1' and input_item != '3':
-                        if tmp_col_name not in primary_key_list:
+                        if tmp_col_name not in primary_key:
                             if tmp_keys in parameter:
                                 del parameter[tmp_keys]
 
@@ -2330,7 +2349,7 @@ class loadTable():
                                 del parameter[tmp_keys]
 
                     if cmd_type == CMD_DISCARD or cmd_type == CMD_RESTORE:
-                        if tmp_col_name not in primary_key_list:
+                        if tmp_col_name not in primary_key:
                             # 廃止時に備考の更新は例外で可
                             if tmp_col_name != 'NOTE':
                                 if tmp_keys in parameter:
@@ -2579,14 +2598,14 @@ class loadTable():
                 if sort_key is not None:
                     str_orderby = ''
                     where_str = where_str + str_orderby
-            elif mode in ['jnl', 'excel_jnl', 'count_jnl', 'jnl_all', 'excel_jnl_all', 'jnl_count_all']:
+            elif mode in ['jnl', 'excel_jnl', 'count_jnl', 'jnl_all', 'excel_jnl_all', 'jnl_count_all', 'export_jnl',]:
                 # 履歴テーブル
                 where_str = ''
                 bind_value_list = []
                 view_name = self.get_view_name_jnl()
                 table_name = self.get_table_name_jnl()
 
-                if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all']:
+                if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all', 'export_jnl',]:
                     tmp_jnl_conf = parameter.get('JNL')
                     if tmp_jnl_conf is not None:
                         bindvalue = tmp_jnl_conf
@@ -2600,7 +2619,7 @@ class loadTable():
                         api_msg_args = []
                         # raise AppException(status_code, msg_ags)
                         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
-                elif mode in ['jnl_all']:
+                elif mode in ['jnl_all', 'export_jnl',]:
                     for k, v in parameter.items():
                         if len(where_str) > 0:
                             where_str += ' AND '
@@ -2614,7 +2633,7 @@ class loadTable():
 
                 target_uuid_key = self.get_rest_key(primary_key)
 
-                if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all']:
+                if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all', 'export_jnl']:
                     where_str = textwrap.dedent("""
                         where `{col_name}` IN ( %s )
                         ORDER BY `JOURNAL_REG_DATETIME` DESC

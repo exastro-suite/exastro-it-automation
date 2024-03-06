@@ -27,6 +27,9 @@ class APIClientCommon:
     """
     # 必要項目定義
     def __init__(self, event_settings):
+        self.event_collection_settings_id = event_settings["EVENT_COLLECTION_SETTINGS_ID"]
+        self.event_collection_settings_name = event_settings["EVENT_COLLECTION_SETTINGS_NAME"]
+
         self.request_methods = {
             "1": "GET",
             "2": "POST"

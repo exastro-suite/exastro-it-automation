@@ -629,6 +629,31 @@ def split_host_grp(hgsp_config, hgsp_data):
             disuse_cnt += 1
         hgsp_data['disuse_cnt'] = disuse_cnt
 
+        # アップロードファイルコピー
+        tmp_msg = 'copy_upload_file split->input'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        copy_file_array = hgsp_data.get('copy_file_array')
+        result = copy_upload_file(copy_file_array)
+        if result is False:
+            raise Exception()
+
+        # コミット
+        result = objdbca.db_transaction_end(True)  # True / False
+        tmp_msg = 'db_transaction_end: {}'.format(result)
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        if result is not True:
+            raise Exception()
+
+        tranStartFlg = False
+
+        # トランザクション開始
+        tmp_msg = 'db_transaction_start'
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        result = objdbca.db_transaction_start()
+        if result is not True:
+            raise Exception()
+        tranStartFlg = True
+
         # ホストグループ分割対象テーブルを検索:SQL実行
         split_target_table = SplitTargetTable(objdbca)  # noqa: F405
         sql = split_target_table.create_sselect(
@@ -652,14 +677,6 @@ def split_host_grp(hgsp_config, hgsp_data):
         else:
             tmp_msg = 'updated split_target: split_target_flg no update and next cycle'
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-        # アップロードファイルコピー
-        tmp_msg = 'copy_upload_file split->input'
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        copy_file_array = hgsp_data.get('copy_file_array')
-        result = copy_upload_file(copy_file_array)
-        if result is False:
-            raise Exception()
 
         # コミット
         result = objdbca.db_transaction_end(True)  # True / False
@@ -1537,9 +1554,10 @@ def reset_split_target_flg(objdbca):
     split_target_table = SplitTargetTable(objdbca)  # noqa: F405
     sql = textwrap.dedent("""
         UPDATE
-            `T_HGSP_SPLIT_TARGET` SET `DIVIDED_FLG` = '0'
+            `T_HGSP_SPLIT_TARGET` SET `DIVIDED_FLG` = '0',
+            `LAST_UPDATE_TIMESTAMP` = '{}'
         WHERE `T_HGSP_SPLIT_TARGET`.`DISUSE_FLAG` = '0'
-    """).format().strip()
+    """).format(get_now_datetime()).strip()
     result = split_target_table.exec_query(sql)
     if result is False:
         return False
@@ -1739,7 +1757,7 @@ def length0_empty_conv(str_data):
     """
     if str_data is None:
         return None
-    elif len(str_data) == 0:
+    elif isinstance(str_data, str) and len(str_data) == 0:
         return None
     else:
         return str_data

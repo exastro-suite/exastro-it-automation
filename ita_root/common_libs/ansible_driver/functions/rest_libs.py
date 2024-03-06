@@ -175,6 +175,7 @@ def insert_execution_list(objdbca, run_mode, driver_id, operation_row, movement_
         if os.path.isfile(path) is False:
             # 対象ファイルなし
             raise AppException("499-00905", [], [])
+
         AnsibleCfgData = file_encode(path)
         if AnsibleCfgData is False:
             # エンコード失敗

@@ -28,10 +28,12 @@ from common_libs.oase.encrypt import agent_decrypt
 ######################################################
 def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=None):
     events = []
+    event_collection_settings_enable = []  # イベント収集対象が収集可能な状態かどうか（eventの保存の可否に利用する）
     pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
     for setting in event_collection_settings:
         setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_NAME"]]
+        event_collection_settings_enable_single = {}
 
         # メールの重複取得防止のため、event_collection_settings_nameに対応するmessage_idをDBから取得し、settingsに加える
         if setting["CONNECTION_METHOD_ID"] == "4":
@@ -48,6 +50,11 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
 
         fetched_time = datetime.datetime.now()  # API取得時間
 
+        # イベント収集設定名とfetched_timeをevent_collection_settings_enable_singleに追加する
+        event_collection_settings_enable_single["name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
+        event_collection_settings_enable_single["fetched_time"] = int(fetched_time.timestamp())
+        event_collection_settings_enable_single["is_save"] = True
+
         # パスワードカラムを複合化しておく
         setting['AUTH_TOKEN'] = agent_decrypt(setting['AUTH_TOKEN'], pass_phrase)
         setting['PASSWORD'] = agent_decrypt(setting['PASSWORD'], pass_phrase)
@@ -62,9 +69,14 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         except AppException as e:
             g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)
+            event_collection_settings_enable_single["is_save"] = False
+
+        # イベント収集数をevent_collection_settings_enable_singleに追加する
+        event_collection_settings_enable_single["len"] = len(json_data)
+        event_collection_settings_enable.append(event_collection_settings_enable_single)
 
         # イベントが0件の場合はスキップ
-        if json_data in [{}, []]:
+        if event_collection_settings_enable_single["len"] == 0:
             continue
 
         # 設定で指定したキーの値を取得
@@ -88,17 +100,16 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                 event = init_label(data, fetched_time, setting)
                 events.append(event)
 
-    return events
+    return events, event_collection_settings_enable
 
 
 def init_label(data, fetched_time, setting):
     event = {}
     event = data
+    event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
     event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
     event["_exastro_fetched_time"] = int(fetched_time.timestamp())
     event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
-    event["_exastro_type"] = "event"
-    event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
 
     return event
 

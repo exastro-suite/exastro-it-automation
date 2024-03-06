@@ -31,6 +31,7 @@ from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
 from common_libs.terraform_driver.common.by_execute import \
     get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl, generate_member_vars_array_for_hcl
+from common_libs.common import storage_access
 from libs import functions as func
 
 
@@ -392,6 +393,9 @@ def update_status_error(wsDb: DBConnectWs, execute_data):
 def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False):
     time_limit = execute_data['I_TIME_LIMIT']  # 遅延タイマ
     current_status = execute_data['STATUS_ID']
+    
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_write = storage_access.storage_write()
 
     # すでに結果ファイルが存在していた（重複処理が走らなければ、ありえない)
     if init_flg is True and os.path.exists(result_file_path):
@@ -406,11 +410,13 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
     # 結果ファイルにコマンドとPIDを書き込む
     str_body = str_command + " : PID=" + str(proc.pid) + "\n"
     if init_flg is True:
-        with open(result_file_path, mode='w', encoding='UTF-8') as f:
-            f.write(str_body)
+        file_write.open(result_file_path, mode="w")
+        file_write.write(str_body)
+        file_write.close()
     else:
-        with open(result_file_path, mode='a', encoding='UTF-8') as f:
-            f.write(str_body)
+        file_write.open(result_file_path, mode="a")
+        file_write.write(str_body)
+        file_write.close()
 
     # ステータスが実行中(3)、かつ制限時間が設定されている場合のみ遅延判定する
     delay_flag = False
@@ -454,11 +460,13 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
     # 結果を受け取る
     stdout_data, stderr_data = proc.communicate()
 
-    with open(cmd_log, mode='w', encoding='UTF-8') as f:
-        f.write(stdout_data)
+    file_write.open(cmd_log, mode="w")
+    file_write.write(stdout_data)
+    file_write.close()
 
-    with open(error_log, mode='w', encoding='UTF-8') as f:
-        f.write(stderr_data)
+    file_write.open(error_log, mode="w")
+    file_write.write(stderr_data)
+    file_write.close()
 
     exit_status = proc.returncode
     if exit_status == 0:
@@ -471,8 +479,9 @@ def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False
         str_body = "PREVENTED({})\n".format(exit_status)
 
     # 結果を書き込む
-    with open(result_file_path, mode='a', encoding='UTF-8') as f:
-        f.write(str_body)
+    file_write.open(result_file_path, mode="a")
+    file_write.write(str_body)
+    file_write.close()
 
     return update_status, execute_data
 
@@ -539,6 +548,10 @@ def save_encrypt_statefile(execute_data):
     global result_matter_arr
 
     try:
+        # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+        file_read = storage_access.storage_read()
+        file_write = storage_access.storage_write()
+        
         # 1:tfstate
         org_state_file = workspace_work_dir + "/terraform.tfstate"
         encrypt_state_file = tmp_execution_dir + "/terraform.tfstate"
@@ -548,13 +561,15 @@ def save_encrypt_statefile(execute_data):
         else:
             # stateファイルの中身を取得
             str_body = ""
-            with open(org_state_file, mode='r', encoding='UTF-8') as f:
-                str_body = f.read()
+            file_read.open(org_state_file)
+            str_body = file_read.read()
+            file_read.close()
 
         # ファイルに中身を新規書き込み
         str_encrypt_body = ky_encrypt(str_body)
-        with open(encrypt_state_file, mode='w', encoding='UTF-8') as f:
-            f.write(str_encrypt_body)
+        file_write.open(encrypt_state_file, mode="w")
+        file_write.write(str_encrypt_body)
+        file_write.close()
         # 結果ファイルのリストに追加
         result_matter_arr.append(encrypt_state_file)
 
@@ -567,13 +582,15 @@ def save_encrypt_statefile(execute_data):
         else:
             # stateファイルの中身を取得
             str_body = ""
-            with open(org_state_file, mode='r', encoding='UTF-8') as f:
-                str_body = f.read()
+            file_read.open(org_state_file)
+            str_body = file_read.read()
+            file_read.close()
 
         # ファイルに中身を新規書き込み
         str_encrypt_body = ky_encrypt(str_body)
-        with open(encrypt_state_file, mode='w', encoding='UTF-8') as f:
-            f.write(str_encrypt_body)
+        file_write.open(encrypt_state_file, mode="w")
+        file_write.write(str_encrypt_body)
+        file_write.close()
         # 結果ファイルのリストに追加
         result_matter_arr.append(encrypt_state_file)
 
@@ -622,6 +639,9 @@ def is_emergency_stop(wsDb: DBConnectWs, execute_data):
 
 # Conductorからの実行時、output出力結果を格納する
 def output_conducor(conductor_instance_no):
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_write = storage_access.storage_write()
+
     if not conductor_instance_no:
         return
 
@@ -635,8 +655,9 @@ def output_conducor(conductor_instance_no):
 
     if cp.returncode == 0:
         # 正常終了した場合
-        with open(output_file_path, mode='w', encoding='UTF-8') as f:
-            f.write(cp.stdout)
+        file_write.open(output_file_path, mode="w")
+        file_write.write(cp.stdout)
+        file_write.close()
 
         return True
     else:
@@ -663,6 +684,9 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
     run_mode = execute_data['RUN_MODE']
     movement_id = execute_data['MOVEMENT_ID']
     operation_id = execute_data['OPERATION_ID']
+    
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_write = storage_access.storage_write()
 
     # WORKSPACE_IDから対象Workspace(B_TERRAFORM_CLI_WORKSPACES)のレコードを取得して、workspace名をキャッシュ
     # condition = """WHERE `DISUSE_FLAG`=0 AND WORKSPACE_ID = %s"""
@@ -986,14 +1010,16 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
                 input_matter_arr.append(default_tfvars_file_path)
                 # 変数のkey&valueをtfvarsファイルに書き込み
                 str_variable_tfvars = "\n".join(variable_tfvars)
-                with open(default_tfvars_file_path, mode='w', encoding='UTF-8') as f:
-                    f.write(str_variable_tfvars)
+                file_write.open(default_tfvars_file_path, mode="w")
+                file_write.write(str_variable_tfvars)
+                file_write.close()
 
             if len(secure_tfvars) > 0:
                 # 変数のkey&valueをtfvarsファイルに書き込み
                 str_secure_tfvars = "\n".join(secure_tfvars)
-                with open(secure_tfvars_file_path, mode='w', encoding='UTF-8') as f:
-                    f.write(str_secure_tfvars)
+                file_write.open(secure_tfvars_file_path, mode="w")
+                file_write.write(str_secure_tfvars)
+                file_write.close()
                 # secure.tfvarsが存在
                 secure_tfvars_flg = True
     else:

@@ -377,7 +377,7 @@ def external_valid_menu_after(objdbca, objtable, option):
         # システムエラーが発生しました。
         msg = g.appmsg.get_api_message("MSG-10886")
 
-    if boolSystemErrorFlag is True:
+    if retBool is True:
         # バックヤード起動フラグ設定
         table_name = "T_COMN_PROC_LOADED_LIST"
         data_list = {"LOADED_FLG": "0", "ROW_ID": "203"}

@@ -38,21 +38,26 @@ def get_column_list(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # メニューのカラム情報を取得
-    data = menu_info.collect_menu_column_list(objdbca, menu, menu_record)
-
+        # メニューのカラム情報を取得
+        data = menu_info.collect_menu_column_list(objdbca, menu, menu_record)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -74,23 +79,28 @@ def get_menu_info(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = False     # シートタイプはすべて許容
-    menu_table_link_record, custom_file_list = menu_info.custom_check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = False     # シートタイプはすべて許容
+        menu_table_link_record, custom_file_list = menu_info.custom_check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    privilege = check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
 
-    # メニューの基本情報および項目情報の取得
-    if len(custom_file_list) == 0:
-        data = menu_info.collect_menu_info(objdbca, menu, menu_record, menu_table_link_record, privilege)
-    else:
-        # 独自メニュー用の基本情報および項目情報の取得
-        data = menu_info.collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_list)
-
+        # メニューの基本情報および項目情報の取得
+        if len(custom_file_list) == 0:
+            data = menu_info.collect_menu_info(objdbca, menu, menu_record, menu_table_link_record, privilege)
+        else:
+            # 独自メニュー用の基本情報および項目情報の取得
+            data = menu_info.collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_list)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -112,21 +122,26 @@ def get_pulldown_list(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # IDColumn項目のプルダウン一覧の取得
-    data = menu_info.collect_pulldown_list(objdbca, menu, menu_record)
-
+        # IDColumn項目のプルダウン一覧の取得
+        data = menu_info.collect_pulldown_list(objdbca, menu, menu_record)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -150,34 +165,39 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu_record = check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu_record = check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
-    # 26 : MongoDBを利用するシートタイプ
-    sheet_type_list.append('26')
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
+        # 26 : MongoDBを利用するシートタイプ
+        sheet_type_list.append('26')
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        menu_table_link_record = check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # MongoDB向けの処理かどうかで分岐
-    if menu_table_link_record[0]["SHEET_TYPE"] == '26':
-        wsMongo = MONGOConnectWs()
+        # MongoDB向けの処理かどうかで分岐
+        if menu_table_link_record[0]["SHEET_TYPE"] == '26':
+            wsMongo = MONGOConnectWs()
 
-        # 既存処理もインデックス指定で取得しているため1レコードしか取れない前提で処理して問題ないと判断。
-        # 都度インデックス指定でアクセスするのは手間なので先頭のデータでそれぞれ変数を上書きする。
-        menu_record = menu_record[0]
-        menu_table_link_record = menu_table_link_record[0]
+            # 既存処理もインデックス指定で取得しているため1レコードしか取れない前提で処理して問題ないと判断。
+            # 都度インデックス指定でアクセスするのは手間なので先頭のデータでそれぞれ変数を上書きする。
+            menu_record = menu_record[0]
+            menu_table_link_record = menu_table_link_record[0]
 
-        data = menu_info.collect_search_candidates_from_mongodb(wsMongo, column, menu_record, menu_table_link_record)
+            data = menu_info.collect_search_candidates_from_mongodb(wsMongo, column, menu_record, menu_table_link_record)
 
-    else:
-        # 対象項目のプルダウン検索候補一覧を取得
-        data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
-
+        else:
+            # 対象項目のプルダウン検索候補一覧を取得
+            data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return data,

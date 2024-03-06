@@ -41,23 +41,29 @@ def get_filter_count(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
-    # 26 : MongoDBを利用するシートタイプ
-    sheet_type_list.append('26')
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
+        # 26 : MongoDBを利用するシートタイプ
+        sheet_type_list.append('26')
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    filter_parameter = {}
-    result_data = menu_filter.rest_count(objdbca, menu, filter_parameter)
+        filter_parameter = {}
+        result_data = menu_filter.rest_count(objdbca, menu, filter_parameter)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -81,29 +87,34 @@ def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
-    # 26 : MongoDBを利用するシートタイプ
-    sheet_type_list.append('26')
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
+        # 26 : MongoDBを利用するシートタイプ
+        sheet_type_list.append('26')
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    filter_parameter = {}
-    result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
-    
-    # ファイルデータなしの場合
-    if file == 'no':
-        for value in result_data:
-            value['file'] = {}
-    
+        filter_parameter = {}
+        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
+
+        # ファイルデータなしの場合
+        if file == 'no':
+            for value in result_data:
+                value['file'] = {}
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -128,19 +139,25 @@ def get_journal(organization_id, workspace_id, menu, uuid):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = menu_filter.rest_filter_journal(objdbca, menu, uuid)
+        result_data = menu_filter.rest_filter_journal(objdbca, menu, uuid)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -167,34 +184,39 @@ def post_filter(organization_id, workspace_id, menu, body=None, file=None):  # n
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
-    # 26 : MongoDBを利用するシートタイプ
-    sheet_type_list.append('26')
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
+        # 26 : MongoDBを利用するシートタイプ
+        sheet_type_list.append('26')
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    filter_parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        filter_parameter = body
+        filter_parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            filter_parameter = body
 
-    # メニューのカラム情報を取得
-    result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
-    
-    # ファイルデータなしの場合
-    if file == 'no':
-        for value in result_data:
-            value['file'] = {}
+        # メニューのカラム情報を取得
+        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
 
+        # ファイルデータなしの場合
+        if file == 'no':
+            for value in result_data:
+                value['file'] = {}
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -218,28 +240,34 @@ def post_filter_count(organization_id, workspace_id, menu, body=None):  # noqa: 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
-    # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
-    # 26 : MongoDBを利用するシートタイプ
-    sheet_type_list.append('26')
-    # 28 : 作業管理のシートタイプ追加
-    sheet_type_list.append('28')
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6']
+        # MongoDBからデータを取得するシートタイプを追加。後から追加したことを示すためあえてappendしている。
+        # 26 : MongoDBを利用するシートタイプ
+        sheet_type_list.append('26')
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    filter_parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        filter_parameter = body
+        filter_parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            filter_parameter = body
 
-    # メニューのカラム情報を取得
-    result_data = menu_filter.rest_count(objdbca, menu, filter_parameter)
+        # メニューのカラム情報を取得
+        result_data = menu_filter.rest_count(objdbca, menu, filter_parameter)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -265,18 +293,24 @@ def download_file(organization_id, workspace_id, menu, id, column):
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4', '5', '6', '26', '28']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6', '26', '28']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    filter_parameter = {}
+        filter_parameter = {}
 
-    # ファイルデータ取得
-    result_data = menu_filter.get_file_data(objdbca, menu, filter_parameter, id, column)
+        # ファイルデータ取得
+        result_data = menu_filter.get_file_data(objdbca, menu, filter_parameter, id, column)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,

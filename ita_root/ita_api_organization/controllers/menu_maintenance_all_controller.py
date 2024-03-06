@@ -53,28 +53,34 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0', '1', '2', '3', '4']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    privilege = check_auth_menu(menu, objdbca)
-    if privilege == '2':
-        status_code = "401-00001"
-        log_msg_args = [menu]
-        api_msg_args = [menu]
-        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+        # メニューに対するロール権限をチェック
+        privilege = check_auth_menu(menu, objdbca)
+        if privilege == '2':
+            status_code = "401-00001"
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    retBool, parameters, = menu_maintenance_all.create_maintenance_parameters(connexion.request)
-    if retBool is False:
-        status_code = "400-00003"
-        request_content_type = connexion.request.content_type.lower()
-        log_msg_args = [request_content_type]
-        api_msg_args = [request_content_type]
-        raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+        retBool, parameters, = menu_maintenance_all.create_maintenance_parameters(connexion.request)
+        if retBool is False:
+            status_code = "400-00003"
+            request_content_type = connexion.request.content_type.lower()
+            log_msg_args = [request_content_type]
+            api_msg_args = [request_content_type]
+            raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters)
+        result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,

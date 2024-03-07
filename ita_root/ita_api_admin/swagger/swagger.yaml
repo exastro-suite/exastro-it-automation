@@ -612,24 +612,17 @@ components:
           example: mongodb
         owner:
           type: boolean
+          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用
           example: false
         connection_string:
           type: string
+          description: 接続文字列
           example: mongodb://user:pass@mongo.example.com/?tls=true
-      example:
-        owner: false
-        name: mongodb
-        connection_string: mongodb://user:pass@mongo.example.com/?tls=true
     apiorganizationsorganization_idita_service:
       type: object
       properties:
         document_store:
           $ref: '#/components/schemas/apiorganizationsorganization_idita_service_document_store'
-      example:
-        document_store:
-          owner: false
-          name: mongodb
-          connection_string: mongodb://user:pass@mongo.example.com/?tls=true
     organization_id_ita_body:
       type: object
       properties:
@@ -1161,13 +1154,41 @@ components:
         terraform_cli: true
         terraform_cloud_ep: true
         ci_cd: true
+    inline_response_200_data_optionsIta_service_document_store:
+      type: object
+      properties:
+        name:
+          type: string
+          example: mongodb
+        owner:
+          type: boolean
+          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用
+          example: false
+        connection_string:
+          type: string
+          description: 接続文字列。パスワードはマスキングされる
+          example: mongodb://user:pass@mongo.example.com/?tls=true
+      example:
+        owner: false
+        name: mongodb
+        connection_string: mongodb://user:pass@mongo.example.com/?tls=true
+    inline_response_200_data_optionsIta_service:
+      type: object
+      properties:
+        document_store:
+          $ref: '#/components/schemas/inline_response_200_data_optionsIta_service_document_store'
+      example:
+        document_store:
+          owner: false
+          name: mongodb
+          connection_string: mongodb://user:pass@mongo.example.com/?tls=true
     inline_response_200_data_optionsIta:
       type: object
       properties:
         drivers:
           $ref: '#/components/schemas/inline_response_200_data_optionsIta_drivers'
         service:
-          $ref: '#/components/schemas/apiorganizationsorganization_idita_service'
+          $ref: '#/components/schemas/inline_response_200_data_optionsIta_service'
       example:
         service:
           document_store:

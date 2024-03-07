@@ -99,9 +99,11 @@ paths:
                                   owner:
                                     type: boolean
                                     example: false
+                                    description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用
                                   connection_string:
                                     type: string
                                     example: mongodb://user:pass@mongo.example.com/?tls=true
+                                    description: 接続文字列。パスワードはマスキングされる
                   message:
                     type: string
                     example: ""
@@ -168,9 +170,11 @@ paths:
                         owner:
                           type: boolean
                           example: false
+                          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用
                         connection_string:
                           type: string
                           example: mongodb://user:pass@mongo.example.com/?tls=true
+                          description: 接続文字列
       responses:
         '200':
           description: Success
@@ -246,9 +250,11 @@ paths:
                         owner:
                           type: boolean
                           example: false
+                          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用
                         connection_string:
                           type: string
                           example: mongodb://user:pass@mongo.example.com/?tls=true
+                          description: 接続文字列
       responses:
         '200':
           description: Success

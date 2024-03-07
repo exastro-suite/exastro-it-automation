@@ -2156,7 +2156,7 @@ viewEventInfo( x ) {
         const infoHtml = `<div class="eventInfoContainer">`
             + `<div class="eventInfoTabBlocks">`
                 + `<div class="eventInfoTabBlock open"><table class="eventInfoTable">${html.join('')}</table></div>`
-                + `<div class="eventInfoTabBlock"><div id="eventInfoJson">${json}</div></div>`
+                + `<div class="eventInfoTabBlock"><div id="eventInfoJson"></div></div>`
             + `</div>`
             + `<div class="eventInfoTabs">`
                 + `<ul class="eventInfoTabList">`
@@ -2185,6 +2185,9 @@ viewEventInfo( x ) {
             enableLiveAutocompletion: true
         });
         er.$.info.find('.ace_scrollbar').addClass('commonScroll');
+
+        // 値をセット
+        aceEditor.session.setValue( json );
     } else {
         er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
     }

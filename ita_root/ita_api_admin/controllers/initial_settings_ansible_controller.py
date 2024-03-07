@@ -33,22 +33,27 @@ def get_all_initial_setting_ansible():  # noqa: E501
 
     :rtype: InlineResponse2001
     """
+    try:
+        common_db = DBConnectCommon()  # noqa: F405
+        where_str = "WHERE `DISUSE_FLAG`='0'"
+        org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str)
 
-    common_db = DBConnectCommon()  # noqa: F405
-    where_str = "WHERE `DISUSE_FLAG`='0'"
-    org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str)
-
-    if len(org_db_info_list) == 0:
-        result_data = ""
-    else:
-        result_data = {}
-        for org_db_info in org_db_info_list:
-            initial_data_ansible_if = org_db_info.get('INITIAL_DATA_ANSIBLE_IF')
-            if (initial_data_ansible_if is not None) and (len(initial_data_ansible_if) > 0):
-                result_data[org_db_info['ORGANIZATION_ID']] = json.loads(initial_data_ansible_if)
-            else:
-                result_data[org_db_info['ORGANIZATION_ID']] = None
-
+        if len(org_db_info_list) == 0:
+            result_data = ""
+        else:
+            result_data = {}
+            for org_db_info in org_db_info_list:
+                initial_data_ansible_if = org_db_info.get('INITIAL_DATA_ANSIBLE_IF')
+                if (initial_data_ansible_if is not None) and (len(initial_data_ansible_if) > 0):
+                    result_data[org_db_info['ORGANIZATION_ID']] = json.loads(initial_data_ansible_if)
+                else:
+                    result_data[org_db_info['ORGANIZATION_ID']] = None
+    except Exception as e:
+        if "common_db" in locals():
+            common_db.db_disconnect()
+        raise e
+    finally:
+        common_db.db_disconnect()
     return result_data,
 
 
@@ -64,20 +69,26 @@ def get_initial_setting_ansible(organization_id):  # noqa: E501
     :rtype: InlineResponse2002
     """
 
-    common_db = DBConnectCommon()  # noqa: F405
-    where_str = "WHERE `ORGANIZATION_ID`=%s AND `DISUSE_FLAG`='0'"
-    bind_value_list = [organization_id]
-    org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str, bind_value_list)
+    try:
+        common_db = DBConnectCommon()  # noqa: F405
+        where_str = "WHERE `ORGANIZATION_ID`=%s AND `DISUSE_FLAG`='0'"
+        bind_value_list = [organization_id]
+        org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str, bind_value_list)
 
-    if len(org_db_info_list) == 0:
-        return '', "organization_id[%s] is not exist." % (organization_id), "499-00000", 499
-    else:
-        initial_data_ansible_if = org_db_info_list[0].get('INITIAL_DATA_ANSIBLE_IF')
-        if (initial_data_ansible_if is not None) and (len(initial_data_ansible_if) > 0):
-            result_data = json.loads(initial_data_ansible_if)
+        if len(org_db_info_list) == 0:
+            return '', "organization_id[%s] is not exist." % (organization_id), "499-00000", 499
         else:
-            result_data = None
-
+            initial_data_ansible_if = org_db_info_list[0].get('INITIAL_DATA_ANSIBLE_IF')
+            if (initial_data_ansible_if is not None) and (len(initial_data_ansible_if) > 0):
+                result_data = json.loads(initial_data_ansible_if)
+            else:
+                result_data = None
+    except Exception as e:
+        if "common_db" in locals():
+            common_db.db_disconnect()
+        raise e
+    finally:
+        common_db.db_disconnect()
     return result_data,
 
 
@@ -95,102 +106,111 @@ def post_initial_setting_ansible(organization_id, body=None):  # noqa: E501
     :rtype: InlineResponse200
     """
 
-    # organization_idのチェック
-    common_db = DBConnectCommon()  # noqa: F405
-    where_str = "WHERE `ORGANIZATION_ID`=%s AND `DISUSE_FLAG`='0'"
-    bind_value_list = [organization_id]
-    org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str, bind_value_list)
+    try:
+        # organization_idのチェック
+        common_db = DBConnectCommon()  # noqa: F405
+        where_str = "WHERE `ORGANIZATION_ID`=%s AND `DISUSE_FLAG`='0'"
+        bind_value_list = [organization_id]
+        org_db_info_list = common_db.table_select("T_COMN_ORGANIZATION_DB_INFO", where_str, bind_value_list)
 
-    if len(org_db_info_list) == 0:
-        return '', "organization_id[%s] is not exist." % (organization_id), "499-00000", 499
+        if len(org_db_info_list) == 0:
+            return '', "organization_id[%s] is not exist." % (organization_id), "499-00000", 499
 
-    org_db_info = org_db_info_list[0]
+        org_db_info = org_db_info_list[0]
 
-    # input_limit_settingのチェック
-    if 'input_limit_setting' in body.keys():
-        if body.get('input_limit_setting') not in [True, False]:
-            return '', "key[input_limit_setting] is invalid. Set True or False.", "499-00001", 499
+        # input_limit_settingのチェック
+        if 'input_limit_setting' in body.keys():
+            if body.get('input_limit_setting') not in [True, False]:
+                return '', "key[input_limit_setting] is invalid. Set True or False.", "499-00001", 499
 
-    # execution_engine_listのチェック
-    if 'execution_engine_list' in body.keys():
-        execution_engine_list = body.get('execution_engine_list')
-        if len(execution_engine_list) == 0:
-            return '', "key[execution_engine_list] is invalid. Set 'Ansible-Core' or 'Ansible Automation Controller' or both.", "499-00002", 499
-
-        for execution_engine in execution_engine_list:
-            if execution_engine not in ['Ansible-Core', 'Ansible Automation Controller']:
+        # execution_engine_listのチェック
+        if 'execution_engine_list' in body.keys():
+            execution_engine_list = body.get('execution_engine_list')
+            if len(execution_engine_list) == 0:
                 return '', "key[execution_engine_list] is invalid. Set 'Ansible-Core' or 'Ansible Automation Controller' or both.", "499-00002", 499
 
-    # initial_dataのチェック
-    if 'initial_data' in body.keys() and 'ansible_automation_controller_host_list' in body.get('initial_data').keys():
-        for ansible_automation_controller_host in body.get('initial_data').get('ansible_automation_controller_host_list'):
-            if 'parameter' not in ansible_automation_controller_host.keys():
-                return '', "key[initial_data.execution_engine_list] is invalid. key[parameter] is required.", "499-00003", 499
-            if 'host' not in ansible_automation_controller_host.get('parameter').keys():
-                return '', "key[initial_data.execution_engine_list.parameter] is invalid. key[host] is required.", "499-00003", 499
+            for execution_engine in execution_engine_list:
+                if execution_engine not in ['Ansible-Core', 'Ansible Automation Controller']:
+                    return '', "key[execution_engine_list] is invalid. Set 'Ansible-Core' or 'Ansible Automation Controller' or both.", "499-00002", 499
 
-    # connect organization-db
-    g.ORGANIZATION_ID = organization_id
-    g.db_connect_info = {}
-    g.db_connect_info['ORGDB_HOST'] = org_db_info.get('DB_HOST')
-    g.db_connect_info['ORGDB_PORT'] = str(org_db_info.get('DB_PORT'))
-    g.db_connect_info['ORGDB_USER'] = org_db_info.get('DB_USER')
-    g.db_connect_info['ORGDB_PASSWORD'] = org_db_info.get('DB_PASSWORD')
-    g.db_connect_info['ORGDB_ADMIN_USER'] = org_db_info.get('DB_ADMIN_USER')
-    g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = org_db_info.get('DB_ADMIN_PASSWORD')
-    g.db_connect_info['ORGDB_DATABASE'] = org_db_info.get('DB_DATABASE')
-    g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = org_db_info.get('INITIAL_DATA_ANSIBLE_IF')
+        # initial_dataのチェック
+        if 'initial_data' in body.keys() and 'ansible_automation_controller_host_list' in body.get('initial_data').keys():
+            for ansible_automation_controller_host in body.get('initial_data').get('ansible_automation_controller_host_list'):
+                if 'parameter' not in ansible_automation_controller_host.keys():
+                    return '', "key[initial_data.execution_engine_list] is invalid. key[parameter] is required.", "499-00003", 499
+                if 'host' not in ansible_automation_controller_host.get('parameter').keys():
+                    return '', "key[initial_data.execution_engine_list.parameter] is invalid. key[host] is required.", "499-00003", 499
 
-    org_db = DBConnectOrg(organization_id)  # noqa: F405
-    workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`='0'")
-
-    # Workspace分ループ
-    for workspace_data in workspace_data_list:
-
-        # connect workspace-db
-        workspace_id = workspace_data["WORKSPACE_ID"]
-        g.WORKSPACE_ID = workspace_id
+        # connect organization-db
+        g.ORGANIZATION_ID = organization_id
         g.db_connect_info = {}
-        g.db_connect_info["WSDB_HOST"] = workspace_data["DB_HOST"]
-        g.db_connect_info["WSDB_PORT"] = str(workspace_data["DB_PORT"])
-        g.db_connect_info["WSDB_USER"] = workspace_data["DB_USER"]
-        g.db_connect_info["WSDB_PASSWORD"] = workspace_data["DB_PASSWORD"]
-        g.db_connect_info["WSDB_DATABASE"] = workspace_data["DB_DATABASE"]
+        g.db_connect_info['ORGDB_HOST'] = org_db_info.get('DB_HOST')
+        g.db_connect_info['ORGDB_PORT'] = str(org_db_info.get('DB_PORT'))
+        g.db_connect_info['ORGDB_USER'] = org_db_info.get('DB_USER')
+        g.db_connect_info['ORGDB_PASSWORD'] = org_db_info.get('DB_PASSWORD')
+        g.db_connect_info['ORGDB_ADMIN_USER'] = org_db_info.get('DB_ADMIN_USER')
+        g.db_connect_info['ORGDB_ADMIN_PASSWORD'] = org_db_info.get('DB_ADMIN_PASSWORD')
+        g.db_connect_info['ORGDB_DATABASE'] = org_db_info.get('DB_DATABASE')
+        g.db_connect_info['INITIAL_DATA_ANSIBLE_IF'] = org_db_info.get('INITIAL_DATA_ANSIBLE_IF')
+
+        org_db = DBConnectOrg(organization_id)  # noqa: F405
+        workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`='0'")
+
+        # Workspace分ループ
+        for workspace_data in workspace_data_list:
+
+            # connect workspace-db
+            workspace_id = workspace_data["WORKSPACE_ID"]
+            g.WORKSPACE_ID = workspace_id
+            g.db_connect_info = {}
+            g.db_connect_info["WSDB_HOST"] = workspace_data["DB_HOST"]
+            g.db_connect_info["WSDB_PORT"] = str(workspace_data["DB_PORT"])
+            g.db_connect_info["WSDB_USER"] = workspace_data["DB_USER"]
+            g.db_connect_info["WSDB_PASSWORD"] = workspace_data["DB_PASSWORD"]
+            g.db_connect_info["WSDB_DATABASE"] = workspace_data["DB_DATABASE"]
+
+            try:
+                ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
+
+                ws_db.db_transaction_start()
+
+                # 初期データ設定
+                initial_settings_ansible(ws_db, body)
+
+                ws_db.db_commit()
+                ws_db.db_disconnect()
+
+            except AppException as e:
+                ws_db.db_rollback()
+                ws_db.db_disconnect()
+                raise AppException(e)
+
+            ws_db.db_disconnect()
+
+        org_db.db_disconnect()
+
+        # 初期設定データを作成
+        update_org_db_info = org_db_info
+        update_org_db_info['INITIAL_DATA_ANSIBLE_IF'] = json.dumps(body)
 
         try:
-            ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
+            common_db.db_transaction_start()
+            common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', [update_org_db_info], 'PRIMARY_KEY')
 
-            ws_db.db_transaction_start()
-
-            # 初期データ設定
-            initial_settings_ansible(ws_db, body)
-
-            ws_db.db_commit()
-            ws_db.db_disconnect()
+            common_db.db_commit()
+            common_db.db_disconnect()
 
         except AppException as e:
-            ws_db.db_rollback()
-            ws_db.db_disconnect()
+            common_db.db_rollback()
+            common_db.db_disconnect()
             raise AppException(e)
-
-        ws_db.db_disconnect()
-
-    org_db.db_disconnect()
-
-    # 初期設定データを作成
-    update_org_db_info = org_db_info
-    update_org_db_info['INITIAL_DATA_ANSIBLE_IF'] = json.dumps(body)
-
-    try:
-        common_db.db_transaction_start()
-        common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', [update_org_db_info], 'PRIMARY_KEY')
-
-        common_db.db_commit()
-        common_db.db_disconnect()
-
-    except AppException as e:
-        common_db.db_rollback()
-        common_db.db_disconnect()
-        raise AppException(e)
+    except Exception as e:
+        if "common_db" in locals():
+            common_db.db_disconnect()
+        if "org_db" in locals():
+            org_db.db_disconnect()
+        if "ws_db" in locals():
+            ws_db.db_disconnect()
+        raise e
 
     return '',

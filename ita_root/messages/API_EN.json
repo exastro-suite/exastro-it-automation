@@ -129,6 +129,7 @@
     "499-01305": "There are no importable menus.",
     "499-01401": "Service name and log level are invalid. ({}:{})",
     "499-01501": "If the mode is time specification, specify the correct time.",
+    "499-01502": "Please check the file name of the kym file. \n{}",
     "499-01601": "MODE_NAME is invalid. (MODE_NAME: {})",
     "499-01602": "Invalid value for SETTING_VALUE. (MODE_NAME: {}, SETTING_VALUE: {})",
     "499-01701": "Must be in JSON list format.\ne.g.\n[\"value1\", \"value2\"]",

@@ -290,15 +290,15 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     # 削除対象イベントが無い場合、削除処理をスキップ
     if len(remain_events_dict) >= 1:
         #  eventsテーブルから削除対象のレコードを全件取得（remain_events_dictの情報に一致しないレコード）
-        condition = " AND ".join([f"((event_collection_settings_name!='{name}' OR fetched_time NOT IN ({', '.join(map(str, fetched_time))})) AND NOT sent_flag=0)" for name, fetched_time in remain_events_dict.items()])
-
-        sqliteDB.db_cursor.execute(
-            f"SELECT rowid FROM events WHERE {condition}"
-        )
-        to_delete_events = sqliteDB.db_cursor.fetchall()
-        for item in to_delete_events:
-            to_delete_events_rowids.append(item[0])
-
+        for name, time_list in remain_events_dict.items():
+            target_placeholders = ",".join(f"'{time}'" for time in time_list)
+            where_str = f"""
+                SELECT rowid FROM events
+                WHERE event_collection_settings_name = ? AND fetched_time NOT IN ({target_placeholders}) AND sent_flag != ?
+            """
+            sqliteDB.db_cursor.execute(where_str, (name, 0))
+            rowids = sqliteDB.db_cursor.fetchall()
+            to_delete_events_rowids.extend([item[0] for item in rowids])
         try:
             sqliteDB.db_connect.execute("BEGIN")
             sqliteDB.delete_unnecessary_records({"events": to_delete_events_rowids, "sent_timestamp": to_delete_timestamp_rowids})

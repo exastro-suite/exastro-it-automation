@@ -25,7 +25,7 @@ import re
 from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectCommon, MONGOConnectOrg
-from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp
+from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
 from common_libs.api import app_exception_response, exception_response
@@ -62,25 +62,39 @@ def organization_create(body, organization_id):
     if body is not None and len(body) > 0:
         drivers = body.get('drivers')
         if drivers is not None:
-            for driver_name, bool in drivers.items():
+            for driver_name, driver_bool in drivers.items():
                 if driver_name not in driver_list:
                     return '', "Value of key[drivers] is invalid.", "499-00004", 499
 
-                if bool is False:
+                if driver_bool is False:
                     additional_drivers[driver_name] = False
 
     # OASEが有効な場合
+    is_exists_mongo_info = False
+    if 'services' in body and 'document_store' in body['services']:
+        is_exists_mongo_info = True
     mongo_host = None
     mongo_owner = None
     mongo_connection_string = None
     mongo_admin_user = None
     mongo_admin_password = None
     if additional_drivers["oase"] is True:
+        if is_exists_mongo_info is False:
+            # 必要な接続情報が足りない
+            return "", "body paramater 'services.document_store' is required", "499-00008", 499
+        mongodb_info = body['services']['document_store']
+
         mongo_host = os.environ.get('MONGO_HOST', '')
-        mongo_owner = body.get('mongo_owner', True)
-        mongo_connection_string = body.get('mongo_connection_string', '')
+        mongo_owner = mongodb_info.get('owner', True)
+        mongo_connection_string = mongodb_info.get('connection_strings', '')
+        if mongo_connection_string:
+            # 接続文字列の不正チェック
+            url_check_bool, url_check_msg = mongo_url_check(mongo_connection_string)
+            if url_check_bool is False:
+                return "", url_check_msg, "499-00009", 499
+
         # pattern
-        # 1. mongo_owner=True   mongo_connection_string=None    WS単位でユーザを作成し、ＤＢと紐づける。内部コンテナを利用。
+        # 1. mongo_owner=True   mongo_connection_string=""    WS単位でユーザを作成し、ＤＢと紐づける。内部コンテナを利用。
         # 2. mongo_owner=False  mongo_connection_string="xxx"   ユーザは作成しない。外部のmongoを利用。
         # 3. mongo_owner=True   mongo_connection_string="xxx"   WS単位でユーザを作成し、ＤＢと紐づける。外部のmongoを利用。未実装
         if (mongo_owner is True and not mongo_host) or (mongo_owner is False and not mongo_connection_string):
@@ -99,8 +113,8 @@ def organization_create(body, organization_id):
     # make no install driver list
     no_install_driver = None
     no_install_driver_list = []
-    for driver_name, bool in additional_drivers.items():
-        if bool is False:
+    for driver_name, driver_bool in additional_drivers.items():
+        if driver_bool is False:
             no_install_driver_list.append(driver_name)
 
     if len(no_install_driver_list) > 0:
@@ -155,6 +169,10 @@ def organization_create(body, organization_id):
         g.db_connect_info["ORG_MONGO_ADMIN_USER"] = data['MONGO_ADMIN_USER']
         g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = data['MONGO_ADMIN_PASSWORD']
         g.db_connect_info["NO_INSTALL_DRIVER"] = data['NO_INSTALL_DRIVER']
+
+        # 試しにmongoクライアントでエラーが出ないかチェックする
+        org_mongo = MONGOConnectOrg()
+        org_mongo.connect_check()
 
         org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
         # create organization-databse
@@ -362,16 +380,37 @@ def organization_info(organization_id):  # noqa: E501
         for driver_name in no_install_driver:
             drivers[driver_name] = False
 
-    # mongo_connection_string パスワードを***にマスキングする
-    _mongo_connection_string = ky_decrypt(connect_info.get('MONGO_CONNECTION_STRING', ''))
-    pattern = re.compile(r'(.+?)://(.+):(.+)@(.+)')
-    mongo_connection_string = pattern.sub(r'\1://\2:***@\4', _mongo_connection_string)
+    services = {}
+
+    document_store = None
+    if drivers["oase"] is True:
+        # mongo_connection_string パスワードを***にマスキングする
+        is_mongo_owner = bool(connect_info.get('MONGO_OWNER'))
+        encrypt_mongo_connection_string = connect_info.get('MONGO_CONNECTION_STRING', '')
+
+        mask_mongo_connection_string = ""
+        if encrypt_mongo_connection_string:
+            mongo_connection_string = ky_decrypt(encrypt_mongo_connection_string)
+            url_check_bool, url_parse_obj = mongo_url_check(mongo_connection_string)
+            if url_check_bool is False:
+                return "", url_parse_obj, "499-00009", 499
+
+            mask_mongo_connection_string = mongo_connection_string.replace(url_parse_obj.password, '***')
+
+        document_store = {
+            "name": "mongodb",
+            "owner": is_mongo_owner,
+            "connection_strings": mask_mongo_connection_string
+        }
+
+    if document_store is not None:
+        services["document_store"] = document_store
 
     result_data = {
         "optionsita": {
-            "drivers": drivers
-        },
-        "mongo_connection_string": mongo_connection_string
+            "drivers": drivers,
+            "services": services
+        }
     }
 
     return result_data,
@@ -390,7 +429,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
     :rtype: InlineResponse2001
     """
-
+    g.db_connect_info = {}
     # Bodyのチェック用
     driver_list = [
         'terraform_cloud_ep',
@@ -400,7 +439,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
     ]
 
     # Common DB connect
-    g.db_connect_info = {}
     common_db = DBConnectCommon()  # noqa: F405
     org_connect_info = common_db.get_orgdb_connect_info(organization_id)
 
@@ -416,14 +454,14 @@ def organization_update(organization_id, body=None):  # noqa: E501
     if body is not None and len(body) > 0:
         drivers = body.get('drivers')
         # bodyのdriversに指定のドライバ名以外のkeyがないかをチェック
-        for driver_name, bool in drivers.items():
+        for driver_name, driver_bool in drivers.items():
             if driver_name not in driver_list:
                 return '', "Value of key[drivers] is invalid.", "499-00004", 499
 
         # インストール済みのドライバをfalseに指定した際にエラーとする。
         to_false_driver = []
-        for driver_name, bool in drivers.items():
-            if driver_name not in no_install_driver and bool is False:
+        for driver_name, driver_bool in drivers.items():
+            if driver_name not in no_install_driver and driver_bool is False:
                 to_false_driver.append(driver_name)
 
         if len(to_false_driver) > 0:
@@ -444,8 +482,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
     # 追加するドライバの対象が、no_install_driverに含まれていない（すでにインストール済み）場合は追加対象から除外する
     add_drivers = []
-    for driver_name, bool in drivers.items():
-        if driver_name in no_install_driver and bool is True:
+    for driver_name, driver_bool in drivers.items():
+        if driver_name in no_install_driver and driver_bool is True:
             add_drivers.append(driver_name)
             update_no_install_driver.remove(driver_name)
 
@@ -470,24 +508,46 @@ def organization_update(organization_id, body=None):  # noqa: E501
     }
 
     # OASEが有効な場合
+    is_exists_mongo_info = False
+    if 'services' in body and 'document_store' in body['services']:
+        is_exists_mongo_info = True
     mongo_host = None
     mongo_owner = None
     mongo_connection_string = None
     mongo_admin_user = None
     mongo_admin_password = None
-    if "oase" in add_drivers:
+
+    if "oase" in add_drivers or ("oase" not in no_install_driver and is_exists_mongo_info is True):
+        if is_exists_mongo_info is False:
+            # 必要な接続情報が足りない
+            return "", "body paramater 'document_store' is required", "499-00008", 499
+        mongodb_info = body['services']['document_store']
+
         mongo_host = os.environ.get('MONGO_HOST', '')
-        mongo_owner = body.get('mongo_owner', True)
-        mongo_connection_string = body.get('mongo_connection_string', '')
-        # MongoDBの接続情報が設定されている場合のみインストール可能
+        mongo_owner = mongodb_info.get('owner', True)
+        mongo_connection_string = mongodb_info.get('connection_strings', '')
+        if mongo_connection_string:
+            # 接続文字列の不正チェック
+            url_check_bool, url_check_msg = mongo_url_check(mongo_connection_string)
+            if url_check_bool is False:
+                return "", url_check_msg, "499-00009", 499
 
         # pattern
-        # 1. mongo_owner=True   mongo_connection_string=None    WS単位でユーザを作成し、ＤＢと紐づける。内部コンテナを利用。
+        # 1. mongo_owner=True   mongo_connection_string=""    WS単位でユーザを作成し、ＤＢと紐づける。内部コンテナを利用。
         # 2. mongo_owner=False  mongo_connection_string="xxx"   ユーザは作成しない。外部のmongoを利用。
         # 3. mongo_owner=True   mongo_connection_string="xxx"   WS単位でユーザを作成し、ＤＢと紐づける。外部のmongoを利用。未実装
         if (mongo_owner is True and not mongo_host) or (mongo_owner is False and not mongo_connection_string):
             # どちらのpatternの接続情報もなく、OASEドライバを追加できない。
             return "", "The OASE driver cannot be added because the connection infomation of mongo is not set", "499-00006", 499
+
+        if "oase" not in no_install_driver:
+        # インストール済みの場合（接続情報のみを変更する）
+            # v2.4ではpattern2→pattern2しか許さない
+            if mongo_owner is True or not mongo_connection_string or bool(org_connect_info['MONGO_OWNER']) is True or not org_connect_info['MONGO_CONNECTION_STRING']:
+                return "", "This change of mongo connection infomation is not allowed", "499-00010", 499
+            # 同じ文字列の送信は許さない
+            if mongo_connection_string == ky_decrypt(org_connect_info['MONGO_CONNECTION_STRING']):
+                return "", "this mongo connection infomation is already changed", "499-00011", 499
 
         # v2.4ではmongo_owner=Trueは、内部コンテナしか許さないので、pattern1に流す
         if mongo_owner is True:
@@ -498,7 +558,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
             mongo_admin_user = os.environ.get("MONGO_ADMIN_USER")
             mongo_admin_password = os.environ.get("MONGO_ADMIN_PASSWORD")
 
-        common_db.db_transaction_start()
         data = {
             'PRIMARY_KEY': org_connect_info['PRIMARY_KEY'],
             'MONGO_OWNER': mongo_owner,
@@ -506,13 +565,17 @@ def organization_update(organization_id, body=None):  # noqa: E501
             'MONGO_ADMIN_USER': mongo_admin_user,
             'MONGO_ADMIN_PASSWORD': ky_encrypt(mongo_admin_password),
         }
-        common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', data, 'PRIMARY_KEY')
-        common_db.db_commit()
-
+        # 試しにmongoクライアントでエラーが出ないかチェックする
         g.db_connect_info["ORG_MONGO_OWNER"] = data['MONGO_OWNER']
         g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = data['MONGO_CONNECTION_STRING']
         g.db_connect_info["ORG_MONGO_ADMIN_USER"] = data['MONGO_ADMIN_USER']
         g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = data['MONGO_ADMIN_PASSWORD']
+        org_mongo = MONGOConnectOrg()
+        org_mongo.connect_check()
+
+        common_db.db_transaction_start()
+        common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', data, 'PRIMARY_KEY')
+        common_db.db_commit()
 
     # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
     for workspace_data in workspace_data_list:
@@ -523,10 +586,15 @@ def organization_update(organization_id, body=None):  # noqa: E501
         ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
         last_update_timestamp = str(get_timestamp())
 
-        # 追加インストール対象にoaseが含まれている場合、MongoDBに関する処理を実行。
-        if "oase" in add_drivers:
-            org_mongo = MONGOConnectOrg(org_db)
-            ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
+        # OASEがインストールされる場合 or インストール済みで接続情報を変更したい場合
+        if "oase" in add_drivers or ("oase" not in no_install_driver and is_exists_mongo_info is True):
+            if "oase" in add_drivers:
+                # 初めてインストールするときは、DB名とユーザ名を払い出す
+                ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
+            else:
+                # 接続情報の変更はDB名を継続利用
+                # v2.4ではpattern2のみ
+                ws_mongo_name = workspace_data['MONGO_DATABASE']
 
             # pattern1 pattern3
             if mongo_owner is True:
@@ -554,7 +622,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 "MONGO_PASSWORD": ky_encrypt(ws_mongo_password)
             }
             # organizationの接続文字列を継承しているものだけ、変更を反映する
-            if mongo_connection_string and org_connect_info['MONGO_CONNECTION_STRING'] == workspace_data['MONGO_CONNECTION_STRING']:
+            if mongo_connection_string and ky_decrypt(org_connect_info['MONGO_CONNECTION_STRING']) == ky_decrypt(workspace_data['MONGO_CONNECTION_STRING']):
                 update_data['MONGO_CONNECTION_STRING'] = ky_encrypt(mongo_connection_string)
             org_db.db_transaction_start()
             org_db.table_update("T_COMN_WORKSPACE_DB_INFO", update_data, "PRIMARY_KEY")
@@ -615,3 +683,15 @@ def db_disuse_set(db_obj, pkey, table, disuse_flg):
         'DISUSE_FLAG': disuse_flg
     }
     db_obj.table_update(table, data, "PRIMARY_KEY")
+
+
+def mongo_url_check(mongo_connection_string):
+    # 接続文字列の不正チェック
+    url_check_bool, url_parse_obj = url_check(mongo_connection_string, username=True, password=True, port=True)
+    if url_check_bool is False:
+        return False, "body paramater 'services.document_store.connection_strings' is invalid. ({})".format(url_parse_obj)
+
+    if url_parse_obj.scheme not in ['mongodb', 'mongodb+srv']:
+        return False, "URI must begin with 'mongodb://' or 'mongodb+srv://'"
+
+    return True, url_parse_obj

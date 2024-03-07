@@ -19,6 +19,7 @@ from enum import Enum
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.util import get_upload_file_path
 from common_libs.notification.notification_base import Notification
+from common_libs.common import storage_access
 from flask import g
 
 
@@ -129,8 +130,10 @@ class OASE(Notification):
         path = get_upload_file_path(workspace_id, menu_id, uuid, rest_name, file_name, "")
 
         try:
-            with open(path["file_path"], 'r', encoding='utf_8') as f:
-                template = f.read()
+            access_file = storage_access.storage_read()
+            access_file.open(path["file_path"])
+            template = access_file.read()
+            access_file.close()
         except Exception as e:
             g.applogger.info(g.appmsg.get_log_message("BKY-80021", [path]))
             g.applogger.error(e)

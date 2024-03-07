@@ -57,6 +57,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     org_db = DBConnectOrg(organization_id)  # noqa: F405
     ws_connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if ws_connect_info:
+        org_db.db_disconnect()
         return '', "ALREADY EXISTS", "499-00001", 499
 
     inistial_data_ansible_if = org_db.get_inistial_data_ansible_if()
@@ -74,6 +75,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         os.makedirs(workspace_dir)
         g.applogger.debug("made workspace_dir")
     else:
+        org_db.db_disconnect()
         return '', "ALREADY EXISTS", "499-00001", 499
 
     try:
@@ -114,6 +116,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             mongo_connection_string = orgdb_connect_info['MONGO_CONNECTION_STRING']
             if not mongo_host and not mongo_connection_string:
                 # OASEが有効かつ、環境変数「MONGO_HOST」と「MONGO_CONNECTION_STRING」両方に値が無い場合は、workspace作成をできないようにする。
+                org_db.db_disconnect()
+                org_root_db.db_disconnect()
                 return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
 
             # make workspace-mongo connect infomation
@@ -260,6 +264,18 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_db.db_transaction_start()
         org_db.table_insert("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
         org_db.db_commit()
+
+        if 'org_root_db' in locals():
+            org_root_db.db_disconnect()
+
+        if 'org_db' in locals():
+            org_db.db_disconnect()
+
+        if 'ws_db' in locals():
+            ws_db.db_disconnect()
+
+        if 'org_mongo' in locals():
+            org_mongo.disconnect()
     except Exception as e:
         shutil.rmtree(workspace_dir)
         if 'ws_db' in locals():
@@ -275,6 +291,18 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             org_mongo.drop_database(ws_mongo_name)
             if mongo_owner is True:
                 org_mongo.drop_user(ws_mongo_user, ws_mongo_name)
+
+        if 'org_root_db' in locals():
+            org_root_db.db_disconnect()
+
+        if 'org_db' in locals():
+            org_db.db_disconnect()
+
+        if 'ws_db' in locals():
+            ws_db.db_disconnect()
+
+        if 'org_mongo' in locals():
+            org_mongo.disconnect()
 
         raise Exception(e)
 
@@ -303,6 +331,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     org_db = DBConnectOrg(organization_id)  # noqa: F405
     connect_info = org_db.get_wsdb_connect_info(workspace_id)
     if connect_info is False:
+        org_db.db_disconnect()
         return '', "ALREADY DELETED", "499-00002", 499
 
     # get no install driver list
@@ -386,7 +415,10 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
             org_db.db_transaction_start()
             org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
             org_db.db_commit()
+            org_db.db_disconnect()
 
             return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
+        else:
+            org_db.db_disconnect()
 
     return '',

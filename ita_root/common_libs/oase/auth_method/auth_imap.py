@@ -117,7 +117,7 @@ class IMAPAuthClient(APIClientCommon):
 
                     # メール重複取得防止
                     # 受信時間が最終取得時間より後かつ、message_idがすでに取得したメールのmessage_idと一致しないかチェック
-                    if res["date"] < self.last_fetched_timestamp or res["message_id"] in self.message_ids:
+                    if res["date"] < self.last_fetched_timestamp or res["message_id"] in self.saved_ids:
                         # g.applogger.debug('event[messege_id={}] is skipped'.format(res['message_id']))
                         continue
                     # ヘッダー情報から、文字コードなどを抜き出しておく

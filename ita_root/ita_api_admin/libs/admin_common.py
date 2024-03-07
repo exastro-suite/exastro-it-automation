@@ -617,6 +617,7 @@ def get_backyard_execute_status_list():
                         # Workspace単位の実行中対象数を加算
                         if backyard_data.get('add_count') is True:
                             workspace_exec_count += 1
+                ws_db.db_disconnect()
 
                 # Workspace単位の実行中対象数を格納
                 workspace_status_data['execute_count'] = workspace_exec_count
@@ -636,11 +637,22 @@ def get_backyard_execute_status_list():
             # Organizationのデータを追加
             backyard_execute_status_list['organizations'].append(organization_status_data)
 
+            org_db.db_disconnect()
+
         # 全体の実行中対象数を格納
         backyard_execute_status_list['execute_count'] = all_exec_count
+
+        common_db.db_disconnect()
 
         return backyard_execute_status_list
 
     except Exception as e:
+        if "common_db" in locals():
+            common_db.db_disconnect()
+        if "org_db" in locals():
+            org_db.db_disconnect()
+        if "ws_db" in locals():
+            ws_db.db_disconnect()
+
         # catch - other all error
         return exception_response(e, True)

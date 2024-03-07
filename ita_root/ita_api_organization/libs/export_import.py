@@ -31,7 +31,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectCommon
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common import storage_access
-
+from common_libs.column import *  # noqa: F403
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
@@ -1247,6 +1247,21 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         os.makedirs(upload_dir_name)
         g.applogger.debug("made import_dir")
 
+    # loadTableの呼び出し
+    objmenu = load_table.loadTable(objdbca, 'menu_export_import_list')  # noqa: F405
+    if objmenu.get_objtable() is False:
+        log_msg_args = ["not menu or table"]
+        api_msg_args = ["not menu or table"]
+        raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
+
+    objcolumn = FileUploadColumn(objdbca, objmenu.objtable, "file_name", '')
+    option = {"file_data": ""}
+    valid_result = objcolumn.check_basic_valid(body['name'], option)
+    if valid_result[0] is False:
+        log_msg_args = [valid_result[1]]
+        api_msg_args = [valid_result[1]]
+        raise AppException("499-01502", log_msg_args, api_msg_args)  # noqa: F405
+
     # アップロードファイルbase64変換処理
     _decode_zip_file(file_path, body['base64'])
 
@@ -1416,6 +1431,14 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
 
         user_name = util.get_user_name(user_id)
 
+        objcolumn = FileUploadColumn(objdbca, objmenu.objtable, "file_name", '')
+        option = {"file_data": file_encode(import_path + '_ita_data.tar.gz')}
+        valid_result = objcolumn.check_basic_valid(file_name, option)
+        if valid_result[0] is False:
+            log_msg_args = [valid_result[1]]
+            api_msg_args = [valid_result[1]]
+            raise AppException("499-01502", log_msg_args, api_msg_args)  # noqa: F405
+
         # 登録用パラメータを作成
         parameters = {
             "file": {
@@ -1446,6 +1469,10 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
+    except AppException as e:
+        # ロールバック トランザクション終了
+        objdbca.db_transaction_end(False)
+        raise e
     except Exception as e:
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)

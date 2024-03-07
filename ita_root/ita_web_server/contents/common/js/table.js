@@ -4397,7 +4397,11 @@ changeEdtiMode( changeMode ) {
     tb.edit.addId = -1;
 
     // 選択状態
-    tb.select.edit = tb.select.view.concat();
+    if ( changeMode === 'changeEditRegi') {
+        tb.select.edit = [];
+    } else {
+        tb.select.edit = tb.select.view.concat();
+    }
 
     tb.$.container.removeClass('viewTable autoFilterStandBy initFilterStandBy');
     tb.$.container.addClass('editTable');

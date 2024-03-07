@@ -6751,7 +6751,7 @@ partsItemHtml( type, name, idRest, nameRest, item ) {
     flag = fn.cv( parameter.available_flag, '', true );
 
     return ``
-    + `<li class="eventFlowPartsItem eventFlowParts${name}" data-available-flag="${flag}">`
+    + `<li class="eventFlowPartsItem eventFlowParts${name}" data-available-flag="${flag}" data-id="${partsId}">`
         + `<div class="eventFlowPartsHeader">`
             + `<div class="eventFlowPartsName"><span class="eventFlowPartsNameText">${partsName}</span></div>`
             + `<div class="eventFlowPartsMenu">${tb.partsMenuHtml( partsId )}</div>`

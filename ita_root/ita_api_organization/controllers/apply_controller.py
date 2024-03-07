@@ -35,7 +35,7 @@ def post_apply_parameter(organization_id, workspace_id, body=None, **kwargs):  #
     :type organization_id: str
     :param workspace_id: WorkspaceID
     :type workspace_id: str
-    :param body: 
+    :param body:
     :type body: dict | bytes
 
     :rtype: InlineResponse20011
@@ -128,8 +128,11 @@ def post_apply_parameter(organization_id, workspace_id, body=None, **kwargs):  #
 
         else:
             objdbca.db_transaction_end(False)
-
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
     finally:
         objdbca.db_transaction_end(False)
+        objdbca.db_disconnect()
 
     return result_data,

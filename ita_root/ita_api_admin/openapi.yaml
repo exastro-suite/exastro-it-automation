@@ -71,6 +71,7 @@ paths:
                     type: string
                     example: 000-00000
                   data:
+                    type: object
                     properties:
                       optionsIta:
                         type: object
@@ -86,15 +87,24 @@ paths:
                                 type: boolean
                               oase:
                                 type: boolean
-                      mongo_owner:
-                        type: boolean
-                        example: false
-                      mongo_connection_string:
-                        type: string
-                        example: mongodb+srv://user:***@mongo.example.com/?tls=true
-                        description: パスワードはマスキングされる
+                          service:
+                            type: object
+                            properties:
+                              document_store:
+                                type: object
+                                properties:
+                                  name: 
+                                    type: string
+                                    example: mongodb
+                                  owner:
+                                    type: boolean
+                                    example: false
+                                  connection_string:
+                                    type: string
+                                    example: mongodb://user:pass@mongo.example.com/?tls=true
                   message:
                     type: string
+                    example: ""
         '401':
           description: Unauthorized
           content:
@@ -146,13 +156,21 @@ paths:
                   <br/>ci_cd: CI/CD for IaC,
                   <br/>oase: OASE,
                   "
-                mongo_owner:
-                  type: boolean
-                  example: false
-                  description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
-                mongo_connection_string:
-                  type: string
-                  example: mongodb+srv://user:pass@mongo.example.com/?tls=true
+                service:
+                  type: object
+                  properties:
+                    document_store:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: mongodb
+                        owner:
+                          type: boolean
+                          example: false
+                        connection_string:
+                          type: string
+                          example: mongodb://user:pass@mongo.example.com/?tls=true
       responses:
         '200':
           description: Success
@@ -216,13 +234,21 @@ paths:
                   <br/>ci_cd: CI/CD for IaC,
                   <br/>oase: OASE,
                   "
-                mongo_owner:
-                  type: boolean
-                  example: false
-                  description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
-                mongo_connection_string:
-                  type: string
-                  example: mongodb+srv://user:pass@mongo.example.com/?tls=true
+                service:
+                  type: object
+                  properties:
+                    document_store:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: mongodb
+                        owner:
+                          type: boolean
+                          example: false
+                        connection_string:
+                          type: string
+                          example: mongodb://user:pass@mongo.example.com/?tls=true
       responses:
         '200':
           description: Success

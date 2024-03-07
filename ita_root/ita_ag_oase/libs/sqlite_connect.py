@@ -116,14 +116,14 @@ class sqliteConnect:
         )
         # イベントがメールの場合、message_idが必ずあるため、message_idを保存（メール重複取得防止のため）
         if "message_id" in event:
-            id = event["message_id"]
+            unique_id = event["message_id"]
         elif "_exastro_oase_event_id" in event:
-            id = event["_exastro_oase_event_id"]
+            unique_id = event["_exastro_oase_event_id"]
 
         event_string = json.dumps(event)
         self.db_cursor.execute(
             f"INSERT INTO {table_name} (event_collection_settings_name, id, event, fetched_time, sent_flag) VALUES (?, ?, ?, ?, ?)",
-            (event["_exastro_event_collection_settings_name"], id, event_string, event["_exastro_fetched_time"], False)
+            (event["_exastro_event_collection_settings_name"], unique_id, event_string, event["_exastro_fetched_time"], False)
         )
 
     def insert_timestamp(self, id, fetched_time):

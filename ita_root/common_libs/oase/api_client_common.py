@@ -51,7 +51,7 @@ class APIClientCommon:
         self.password = event_settings["PASSWORD"]
         self.parameter = event_settings["PARAMETER"]
         self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
-        self.message_ids = event_settings["MESSAGE_IDS"] if "MESSAGE_IDS" in event_settings else None
+        self.saved_ids = event_settings["SAVED_IDS"] if "SAVED_IDS" in event_settings else None
 
     def call_api(self, parameter):
         API_response = None

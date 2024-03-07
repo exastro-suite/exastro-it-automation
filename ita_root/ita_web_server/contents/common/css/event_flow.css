@@ -212,6 +212,9 @@ color: rgba( 0,0,0,.6 );
 .eventFlowIntervalSelectListBlock {
 left: auto; right: 0;
 }
+.darkmode .eventFlowIntervalSelectName {
+color: rgba( 255,255,255,.6 );
+}
 
 
 /*
@@ -563,6 +566,9 @@ display: block!important;
 .eventFlowPartsItemOpen .eventFlowPartsInfo {
 display: block;
 }
+.eventFlowPartsShow .eventFlowPartsInfo {
+display: block!important;
+}
 .eventFlowPartsTableClose .icon-arrow02_top,
 .eventFlowPartsItemOpen .icon-arrow02_bottom {
 display: inline-block;
@@ -682,6 +688,13 @@ border-radius: 4px;
 .eventFlowPartsRule { background-color: #009C7D; }
 .eventFlowPartsRuleCnclusion { background-color: #FFAA00; }
 
+.darkmode .eventFlowPartsItem {
+background-image: linear-gradient( rgba(0,0,0,.4), rgba(0,0,0,.4) );
+}
+.darkmode .eventFlowPartsRuleCnclusion {
+background-image: linear-gradient( rgba(0,0,0,.2), rgba(0,0,0,.2) );
+color: #FFF;
+}
 .eventFlowPartsItem:last-child {
 margin-bottom: 0;
 }
@@ -740,6 +753,9 @@ white-space: normal;
 text-shadow: none;
 color: #333;
 }
+.darkmode .eventFlowPartsRuleCnclusion .eventFlowPartsName {
+color: #FFF;
+}
 
 /* Event info table */
 .eventInfoTable {
@@ -795,6 +811,9 @@ gap: 4px;
 padding: 4px;
 background-color: #FFF;
 border-radius: 0 0 2px 2px;
+}
+.darkmode .eventFlowPartsRuleBlockBody .eventFlowLabelList {
+background-color: #33373c;
 }
 
 .eventFlowLabel {
@@ -1038,9 +1057,16 @@ font-size: 14px;
 color: rgba(0,0,0,.3);
 cursor: pointer;
 }
+.darkmode .eventInfoTabItem {
+background-color: #222;
+color: rgba(255,255,255,.3);
+}
 .eventInfoTabItem:hover {
 color: rgba(0,0,0,.6);
 opacity: .5;
+}
+.darkmode .eventInfoTabItem:hover {
+color: rgba(255,255,255,.6);
 }
 .eventInfoTabItem.open,
 .eventInfoTabItem.open:hover {
@@ -1053,4 +1079,10 @@ cursor: default;
 }
 #eventInfoJson {
 max-height: 100%;
+}
+.darkmode .eventInfoTabItem.open,
+.darkmode .eventInfoTabItem.open:hover {
+background-color: #333;
+border-color: #333;
+color: rgba(255,255,255,.8);
 }

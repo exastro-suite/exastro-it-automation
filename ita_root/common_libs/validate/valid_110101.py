@@ -13,6 +13,7 @@
 #
 
 from flask import g
+import json
 
 
 def agent_setting_valid(objdbca, objtable, option):
@@ -68,8 +69,6 @@ def agent_setting_valid(objdbca, objtable, option):
             if entry_parameter['request_header'] is not None and \
                entry_parameter['request_header'].lower().find(AUTHORIZATION_HEADER) > -1:
                 msg.append(g.appmsg.get_api_message("MSG-120006", [connection_method_name]))
-            if entry_parameter['response_key'] is None:
-                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
 
         # 接続方式がBasic認証の場合
         elif connection_method == "2":
@@ -82,8 +81,6 @@ def agent_setting_valid(objdbca, objtable, option):
             if entry_parameter['request_header'] is not None and \
                entry_parameter['request_header'].lower().find(AUTHORIZATION_HEADER) > -1:
                 msg.append(g.appmsg.get_api_message("MSG-120006", [connection_method_name]))
-            if entry_parameter['response_key'] is None:
-                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
 
         # 接続方式が、共有鍵認証の場合
         elif connection_method == "3":
@@ -96,15 +93,22 @@ def agent_setting_valid(objdbca, objtable, option):
             if entry_parameter['request_header'] is not None and \
                entry_parameter['request_header'].lower().find(AUTHORIZATION_HEADER) > -1:
                 msg.append(g.appmsg.get_api_message("MSG-120006", [connection_method_name]))
-            if entry_parameter['response_key'] is None:
-                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
 
         # 接続方式がオプション認証の場合
         elif connection_method == "5":
             if request_method not in ["1", "2"]:
                 msg.append(g.appmsg.get_api_message("MSG-120004", [connection_method_name]))
-            if entry_parameter['response_key'] is None:
-                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
+
+        # JSON形式チェック
+        if connection_method in ["1", "2", "3", "5"]:
+            # リクエストヘッダー
+            if entry_parameter['request_header'] is not None:
+                if not isJsonFormat(entry_parameter['request_header']):
+                    msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
+            # パラメーター
+            if entry_parameter['parameter'] is not None:
+                if not isJsonFormat(entry_parameter['parameter']):
+                    msg.append(g.appmsg.get_api_message("MSG-120012", [connection_method_name]))
 
         # 編集時に対象レコードの接続方式が変更され、パスワードカラムに入力が無い場合、値をnullに設定
         if cmd_type == "Update":
@@ -138,3 +142,17 @@ def get_connection_method_name(objdbca, connection_method_id, lang):
         return record[0][f"CONNECTION_METHOD_NAME_{lang}"]
     else:
         return ""
+
+
+def isJsonFormat(line):
+    try:
+        json.loads(line)
+    except json.JSONDecodeError:
+        return False
+
+    except ValueError:
+        return False
+
+    except Exception:
+        return False
+    return True

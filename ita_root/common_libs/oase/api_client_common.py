@@ -47,6 +47,7 @@ class APIClientCommon:
         self.mailbox_name = event_settings["MAILBOXNAME"]
         self.password = event_settings["PASSWORD"]
         self.parameter = event_settings["PARAMETER"]
+        # 前回イベント収集日時（初回イベント収取時は、システム日時が設定されている）
         self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
         self.message_ids = event_settings["MESSAGE_IDS"] if "MESSAGE_IDS" in event_settings else None
 
@@ -54,7 +55,7 @@ class APIClientCommon:
         API_response = None
         self.parameter = parameter  # APIのパラメータ
         if self.parameter is not None:
-            # パラメータ中の"EXSASTRO_LAST_FETCHED_TIME"を前回イベント収集日時に置換
+            # パラメータ中の"EXSASTRO_LAST_FETCHED_TIME"を前回イベント収集日時（初回はシステム日時）に置換
             last_fetched_time = datetime.datetime.utcfromtimestamp(self.last_fetched_timestamp)
             last_fetched_ymd = last_fetched_time.strftime('%Y/%m/%d %H:%M:%S')
             last_fetched_dmy = last_fetched_time.strftime('%d/%m/%y %H:%M:%S')
@@ -98,11 +99,11 @@ class APIClientCommon:
             return API_response
 
         except requests.exceptions.InvalidJSONError:
-            g.applogger.info("Failed to login to mailserver. Check login settings.")
+            g.applogger.info("Request data failed due to type error. Check the parameter settings.")
             return API_response
 
         except requests.exceptions.JSONDecodeError:
-            g.applogger.info("Converting the response to JSON failed with a JSON error.")
+            g.applogger.info("Failed because the response was not in JSON format")
             return API_response
 
         except Exception as e:

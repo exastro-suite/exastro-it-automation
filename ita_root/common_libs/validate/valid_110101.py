@@ -17,21 +17,36 @@ from flask import g
 
 def agent_setting_valid(objdbca, objtable, option):
 
+    AUTHORIZATION_HEADER = "authorization:"
     retBool = True
     msg = []
     cmd_type = option.get("cmd_type")
     entry_parameter = option.get('entry_parameter').get('parameter')
+    LANG = g.LANGUAGE.upper()
 
     if cmd_type in ["Register", "Update"]:
 
         connection_method = entry_parameter['connection_method_name']
         request_method = entry_parameter['request_method_name']
         password = entry_parameter.get("password")
+        auth_token = entry_parameter.get("auth_token")
+        secret_access_key = entry_parameter.get("secret_access_key")
+
+        # 接続方式名取得
+        connection_method_name = get_connection_method_name(objdbca, connection_method, LANG)
 
         # パスワードカラムの入力があるかチェック
         password_entered = False
         if password:
             password_entered = True
+
+        auth_token_entered = False
+        if auth_token:
+            auth_token_entered = True
+
+        secret_access_key_entered = False
+        if secret_access_key:
+            secret_access_key_entered = True
 
         # 接続方式がIMAPパスワードの場合
         if connection_method == "4":
@@ -43,6 +58,53 @@ def agent_setting_valid(objdbca, objtable, option):
                 msg.append(g.appmsg.get_api_message("MSG-120003"))
             # レスポンスリストフラグをTrueに自動設定
             entry_parameter["response_list_flag"] = "1"
+
+        # 接続方式がBearer認証の場合
+        elif connection_method == "1":
+            if request_method not in ["1", "2"]:
+                msg.append(g.appmsg.get_api_message("MSG-120004", [connection_method_name]))
+            if auth_token_entered is False and cmd_type == "Register":
+                msg.append(g.appmsg.get_api_message("MSG-120005", [connection_method_name]))
+            if entry_parameter['request_header'] is not None and \
+               entry_parameter['request_header'].lower().find(AUTHORIZATION_HEADER) > -1:
+                msg.append(g.appmsg.get_api_message("MSG-120006", [connection_method_name]))
+            if entry_parameter['response_key'] is None:
+                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
+
+        # 接続方式がBasic認証の場合
+        elif connection_method == "2":
+            if request_method not in ["1", "2"]:
+                msg.append(g.appmsg.get_api_message("MSG-120004", [connection_method_name]))
+            if entry_parameter['username'] is None:
+                msg.append(g.appmsg.get_api_message("MSG-120007", [connection_method_name]))
+            if password_entered is False and cmd_type == "Register":
+                msg.append(g.appmsg.get_api_message("MSG-120008", [connection_method_name]))
+            if entry_parameter['request_header'] is not None and \
+               entry_parameter['request_header'].lower().find(AUTHORIZATION_HEADER) > -1:
+                msg.append(g.appmsg.get_api_message("MSG-120006", [connection_method_name]))
+            if entry_parameter['response_key'] is None:
+                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
+
+        # 接続方式が、共有鍵認証の場合
+        elif connection_method == "3":
+            if request_method not in ["1", "2"]:
+                msg.append(g.appmsg.get_api_message("MSG-120004", [connection_method_name]))
+            if entry_parameter['access_key_id'] is None:
+                msg.append(g.appmsg.get_api_message("MSG-120009", [connection_method_name]))
+            if secret_access_key_entered is False and cmd_type == "Register":
+                msg.append(g.appmsg.get_api_message("MSG-120010", [connection_method_name]))
+            if entry_parameter['request_header'] is not None and \
+               entry_parameter['request_header'].lower().find(AUTHORIZATION_HEADER) > -1:
+                msg.append(g.appmsg.get_api_message("MSG-120006", [connection_method_name]))
+            if entry_parameter['response_key'] is None:
+                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
+
+        # 接続方式がオプション認証の場合
+        elif connection_method == "5":
+            if request_method not in ["1", "2"]:
+                msg.append(g.appmsg.get_api_message("MSG-120004", [connection_method_name]))
+            if entry_parameter['response_key'] is None:
+                msg.append(g.appmsg.get_api_message("MSG-120011", [connection_method_name]))
 
         # 編集時に対象レコードの接続方式が変更され、パスワードカラムに入力が無い場合、値をnullに設定
         if cmd_type == "Update":
@@ -61,3 +123,18 @@ def agent_setting_valid(objdbca, objtable, option):
             retBool = False
 
     return retBool, msg, option,
+
+
+def get_connection_method_name(objdbca, connection_method_id, lang):
+    # 接続方式マスタ
+    target_type_table = "T_OASE_CONNECTION_METHOD"
+    record = objdbca.table_select(
+        target_type_table,
+        "WHERE DISUSE_FLAG=0 AND CONNECTION_METHOD_ID=%s",
+        [connection_method_id]
+    )
+    if record:
+        # 言語に合わせた、接続方式名を返却
+        return record[0][f"CONNECTION_METHOD_NAME_{lang}"]
+    else:
+        return ""

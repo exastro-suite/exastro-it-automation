@@ -48,12 +48,9 @@ def get_all_initial_setting_ansible():  # noqa: E501
                     result_data[org_db_info['ORGANIZATION_ID']] = json.loads(initial_data_ansible_if)
                 else:
                     result_data[org_db_info['ORGANIZATION_ID']] = None
-    except Exception as e:
+    finally:
         if "common_db" in locals():
             common_db.db_disconnect()
-        raise e
-    finally:
-        common_db.db_disconnect()
     return result_data,
 
 
@@ -83,12 +80,9 @@ def get_initial_setting_ansible(organization_id):  # noqa: E501
                 result_data = json.loads(initial_data_ansible_if)
             else:
                 result_data = None
-    except Exception as e:
+    finally:
         if "common_db" in locals():
             common_db.db_disconnect()
-        raise e
-    finally:
-        common_db.db_disconnect()
     return result_data,
 
 
@@ -204,13 +198,12 @@ def post_initial_setting_ansible(organization_id, body=None):  # noqa: E501
             common_db.db_rollback()
             common_db.db_disconnect()
             raise AppException(e)
-    except Exception as e:
+    finally:
         if "common_db" in locals():
             common_db.db_disconnect()
         if "org_db" in locals():
             org_db.db_disconnect()
         if "ws_db" in locals():
             ws_db.db_disconnect()
-        raise e
 
     return '',

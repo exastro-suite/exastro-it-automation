@@ -83,11 +83,9 @@ def get_ita_settings():  # noqa: E501
                 'options': additional_driver
             }
         }
-    except Exception as e:
+
+    finally:
         if "common_db" in locals():
             common_db.db_disconnect()
-        raise e
-    finally:
-        common_db.db_disconnect()
 
     return result_data,

@@ -53,9 +53,6 @@ def get_column_list(organization_id, workspace_id, menu):  # noqa: E501
 
         # メニューのカラム情報を取得
         data = menu_info.collect_menu_column_list(objdbca, menu, menu_record)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -96,9 +93,6 @@ def get_menu_info(organization_id, workspace_id, menu):  # noqa: E501
         else:
             # 独自メニュー用の基本情報および項目情報の取得
             data = menu_info.collect_custom_menu_info(objdbca, menu, menu_record, privilege, custom_file_list)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -137,9 +131,6 @@ def get_pulldown_list(organization_id, workspace_id, menu):  # noqa: E501
 
         # IDColumn項目のプルダウン一覧の取得
         data = menu_info.collect_pulldown_list(objdbca, menu, menu_record)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -195,9 +186,6 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
         else:
             # 対象項目のプルダウン検索候補一覧を取得
             data = menu_info.collect_search_candidates(objdbca, menu, column, menu_record, menu_table_link_record)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,

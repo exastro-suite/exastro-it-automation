@@ -65,11 +65,8 @@ def get_notification_destination(organization_id, workspace_id, menu, column):  
             table_name = menu_table_link_row['TABLE_NAME']
             column_name = menu_table_column_link_row['COL_NAME']
             result = rule_notification(objdbca, table_name, column_name)
-    except Exception as e:
+    finally:
         if "objdbca" in locals():
             objdbca.db_disconnect()
-        raise e
-    finally:
-        objdbca.db_disconnect()
 
     return result,

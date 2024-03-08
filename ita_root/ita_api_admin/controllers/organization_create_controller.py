@@ -360,10 +360,12 @@ def organization_delete(organization_id):  # noqa: E501
             db_disuse_set(common_db, connect_info['PRIMARY_KEY'], 'T_COMN_ORGANIZATION_DB_INFO', 0)
             common_db.db_commit()
 
-            common_db.db_disconnect()
-            org_db.db_disconnect()
-            org_root_db.db_disconnect()
-
+            if 'common_db' in locals():
+                common_db.db_disconnect()
+            if 'org_root_db' in locals():
+                org_root_db.db_disconnect()
+            if 'org_db' in locals():
+                org_db.db_disconnect()
             if 'org_mongo' in locals():
                 org_mongo.disconnect()
 
@@ -446,12 +448,9 @@ def organization_info(organization_id):  # noqa: E501
                 "services": services
             }
         }
-    except Exception as e:
+    finally:
         if "common_db" in locals():
             common_db.db_disconnect()
-        raise e
-    finally:
-        common_db.db_disconnect()
     return result_data,
 
 
@@ -712,14 +711,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
         }
         common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', data, 'PRIMARY_KEY')
         common_db.db_commit()
-    except Exception as e:
-        if 'common_db' in locals():
-            common_db.db_disconnect()
-        if 'org_db' in locals():
-            org_db.db_disconnect()
-        if 'org_mongo' in locals():
-            org_mongo.disconnect()
-        raise e
     finally:
         if 'common_db' in locals():
             common_db.db_disconnect()

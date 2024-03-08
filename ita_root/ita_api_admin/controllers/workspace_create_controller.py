@@ -265,17 +265,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_db.table_insert("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
         org_db.db_commit()
 
-        if 'org_root_db' in locals():
-            org_root_db.db_disconnect()
-
-        if 'org_db' in locals():
-            org_db.db_disconnect()
-
-        if 'ws_db' in locals():
-            ws_db.db_disconnect()
-
-        if 'org_mongo' in locals():
-            org_mongo.disconnect()
     except Exception as e:
         shutil.rmtree(workspace_dir)
         if 'ws_db' in locals():
@@ -292,6 +281,8 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             if mongo_owner is True:
                 org_mongo.drop_user(ws_mongo_user, ws_mongo_name)
 
+        raise Exception(e)
+    finally:
         if 'org_root_db' in locals():
             org_root_db.db_disconnect()
 
@@ -303,8 +294,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
         if 'org_mongo' in locals():
             org_mongo.disconnect()
-
-        raise Exception(e)
 
     return '',
 

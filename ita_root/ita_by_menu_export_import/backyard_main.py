@@ -206,7 +206,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         f = Path(workspace_path + '/tmp/driver/import_menu/skip_all_service')
         f.touch()
         time.sleep(int(os.environ.get("EXECUTE_INTERVAL", 10)))
-        time.sleep(int(10))
+
 
         execution_no = str(record.get('EXECUTION_NO'))
         file_name = str(record.get('FILE_NAME'))
@@ -542,7 +542,7 @@ def _format_loadtable_msg(loadtable_msg):
     return result_msg
 
 
-def _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name):
+def _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode="1"):
     t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
 
     # DATAファイル確認
@@ -573,6 +573,18 @@ def _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_
             pass_col_name_rest = record['COLUMN_NAME_REST']
             pass_column_list.append(pass_col_name_rest)
 
+    # 環境移行、パラメータシートの場合
+    if dp_mode == '1' and table_name.startswith('T_CMDB'):
+        chk_pk_sql = "SELECT COUNT(*) FROM `" + table_name + "` ;"
+        chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
+        record_count = list(chk_pk_record[0].values())[0]
+        # 同一テーブルで処理済みの場合、SKIP
+        if record_count == 0 and len(json_sql_data) == 0:
+            g.applogger.info(f"{menu_name_rest}: target 0. ")
+            return objmenu
+        elif record_count != 0 and record_count == len(json_sql_data):
+            g.applogger.info(f"{menu_name_rest}: already imported. ")
+            return objmenu
 
     for json_record in json_sql_data:
         file_param = json_record['file']
@@ -743,7 +755,7 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
                         os.symlink(old_file_path, file_path)
 
 
-def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name):
+def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode="1"):
     t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
 
     menu_name_rest += '_JNL'
@@ -785,6 +797,19 @@ def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, me
 
     # PKの rest_key取得
     _pk_rest_name = objmenu.get_rest_key(objmenu.get_primary_key())
+
+    # 環境移行、パラメータシートの場合
+    if dp_mode == '1' and table_name.startswith('T_CMDB'):
+        chk_pk_sql = "SELECT COUNT(*) FROM `" + history_table_name + "` ;"
+        chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
+        record_count = list(chk_pk_record[0].values())[0]
+        # 同一テーブルで処理済みの場合、SKIP
+        if record_count == 0 and len(json_sql_data) == 0:
+            g.applogger.info(f"{menu_name_rest}: target 0. ")
+            return objmenu
+        elif record_count != 0 and record_count == len(json_sql_data):
+            g.applogger.info(f"{menu_name_rest}: already imported. ")
+            return objmenu
 
     for json_record in json_sql_data:
         file_param = json_record['file']
@@ -1603,6 +1628,7 @@ def import_table_and_data(
         table_name = param.get('table_name')
         view_name = param.get('view_name')
         history_table_flag = param.get('history_table_flag')
+        hostgroup_flag = param.get('hostgroup_flag')
 
         tmp_msg = "Target import record data: {}, {}, {}, {}".format(menu_id, table_name, view_name, history_table_flag)
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -1623,20 +1649,27 @@ def import_table_and_data(
 
         # 環境移行モードの場合、uploadfiles配下のデータを削除する
         if dp_mode == '1':
-            rpt.set_time(f"{menu_name_rest}: clear uploadfiles")
-            tmp_msg = "check information_schema.tables START: {}".format(table_name)
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            if table_name not in imported_table_list:
+                if hostgroup_flag == "1" and table_name.endswith("_SV") and \
+                    table_name.replace("_SV", "") in imported_table_list:
+                    pass
+                elif hostgroup_flag == "1" and table_name + "_SV" in imported_table_list:
+                    pass
+                else:
+                    rpt.set_time(f"{menu_name_rest}: clear uploadfiles")
+                    tmp_msg = "check information_schema.tables START: {}".format(table_name)
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-            chk_table_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
-            chk_table_rtn = objdbca.sql_execute(chk_table_sql, [table_name])
+                    chk_table_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
+                    chk_table_rtn = objdbca.sql_execute(chk_table_sql, [table_name])
 
-            tmp_msg = "check information_schema.tables END: {}".format(table_name)
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            if len(chk_table_rtn) != 0:
-                # uploadfiles配下のデータを削除する
-                if os.path.isdir(uploadfiles_dir + '/' + menu_id):
-                    shutil.rmtree(uploadfiles_dir + '/' + menu_id)
-            rpt.set_time(f"{menu_name_rest}: clear uploadfiles")
+                    tmp_msg = "check information_schema.tables END: {}".format(table_name)
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    if len(chk_table_rtn) != 0:
+                        # uploadfiles配下のデータを削除する
+                        if os.path.isdir(uploadfiles_dir + '/' + menu_id):
+                            shutil.rmtree(uploadfiles_dir + '/' + menu_id)
+                    rpt.set_time(f"{menu_name_rest}: clear uploadfiles")
 
         # DBデータファイル読み込み
         db_data_path = execution_no_path + '/' + table_name + '.sql'
@@ -1772,10 +1805,10 @@ def import_table_and_data(
         objmenu = load_table.loadTable(objdbca, menu_name_rest)
         if history_table_flag == '1':
             rpt.set_time(f"{menu_name_rest}:  register data jnl")
-            objmenu = _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
+            objmenu = _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
             rpt.set_time(f"{menu_name_rest}:  register data jnl")
         rpt.set_time(f"{menu_name_rest}: register data")
-        objmenu = _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
+        objmenu = _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
         rpt.set_time(f"{menu_name_rest}: register data")
 
         if objdbca._is_transaction:

@@ -86,7 +86,7 @@ def organization_create(body, organization_id):
 
         mongo_host = os.environ.get('MONGO_HOST', '')
         mongo_owner = mongodb_info.get('owner', True)
-        mongo_connection_string = mongodb_info.get('connection_strings', '')
+        mongo_connection_string = mongodb_info.get('connection_string', '')
         if mongo_connection_string:
             # 接続文字列の不正チェック
             url_check_bool, url_check_msg = mongo_url_check(mongo_connection_string)
@@ -434,7 +434,7 @@ def organization_info(organization_id):  # noqa: E501
             document_store = {
                 "name": "mongodb",
                 "owner": is_mongo_owner,
-                "connection_strings": mask_mongo_connection_string
+                "connection_string": mask_mongo_connection_string
             }
 
         if document_store is not None:
@@ -565,7 +565,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
             mongo_host = os.environ.get('MONGO_HOST', '')
             mongo_owner = mongodb_info.get('owner', True)
-            mongo_connection_string = mongodb_info.get('connection_strings', '')
+            mongo_connection_string = mongodb_info.get('connection_string', '')
             if mongo_connection_string:
                 # 接続文字列の不正チェック
                 url_check_bool, url_check_msg = mongo_url_check(mongo_connection_string)
@@ -744,7 +744,7 @@ def mongo_url_check(mongo_connection_string):
     # 接続文字列の不正チェック
     url_check_bool, url_parse_obj = url_check(mongo_connection_string, username=True, password=True, port=True)
     if url_check_bool is False:
-        return False, "body paramater 'services.document_store.connection_strings' is invalid. ({})".format(url_parse_obj)
+        return False, "body paramater 'services.document_store.connection_string' is invalid. ({})".format(url_parse_obj)
 
     if url_parse_obj.scheme not in ['mongodb', 'mongodb+srv']:
         return False, "URI must begin with 'mongodb://' or 'mongodb+srv://'"

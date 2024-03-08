@@ -22,7 +22,7 @@ from common_libs.common.dbconnect import DBConnectWs
 from common_libs.api import api_filter
 from common_libs.common import menu_maintenance_all
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
-from libs import apply
+from common_libs.apply import apply
 
 
 @api_filter
@@ -128,9 +128,7 @@ def post_apply_parameter(organization_id, workspace_id, body=None, **kwargs):  #
 
         else:
             objdbca.db_transaction_end(False)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
+
     finally:
         objdbca.db_transaction_end(False)
         objdbca.db_disconnect()

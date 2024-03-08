@@ -86,6 +86,13 @@ paths:
                                 type: boolean
                               oase:
                                 type: boolean
+                      mongo_owner:
+                        type: boolean
+                        example: false
+                      mongo_connection_string:
+                        type: string
+                        example: mongodb+srv://user:***@mongo.example.com/?tls=true
+                        description: パスワードはマスキングされる
                   message:
                     type: string
         '401':
@@ -139,6 +146,13 @@ paths:
                   <br/>ci_cd: CI/CD for IaC,
                   <br/>oase: OASE,
                   "
+                mongo_owner:
+                  type: boolean
+                  example: false
+                  description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
+                mongo_connection_string:
+                  type: string
+                  example: mongodb+srv://user:pass@mongo.example.com/?tls=true
       responses:
         '200':
           description: Success
@@ -202,6 +216,13 @@ paths:
                   <br/>ci_cd: CI/CD for IaC,
                   <br/>oase: OASE,
                   "
+                mongo_owner:
+                  type: boolean
+                  example: false
+                  description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
+                mongo_connection_string:
+                  type: string
+                  example: mongodb+srv://user:pass@mongo.example.com/?tls=true
       responses:
         '200':
           description: Success
@@ -290,7 +311,13 @@ paths:
         content:
           application/json:
             schema:
-              description: ロールID情報
+              type: object
+              properties:
+                role_id:
+                  type: string
+                  example: xxx-xxxxx
+              required:
+                - role_id
       responses:
         '200':
           description: Success

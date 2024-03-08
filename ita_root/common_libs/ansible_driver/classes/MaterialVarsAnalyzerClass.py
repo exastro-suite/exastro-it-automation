@@ -19,7 +19,9 @@ from common_libs.ansible_driver.classes.WrappedStringReplaceAdmin import Wrapped
 from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath, getPioneerDialogUploadDirPath
 from common_libs.conductor.classes.exec_util import addline_msg
 from flask import g
-
+import os
+from common_libs.common.storage_access import storage_base
+import shutil
 
 class MaterialVarsAnalyzer():
 
@@ -40,14 +42,13 @@ class MaterialVarsAnalyzer():
         Returns:
             result_vars: { playbook_matter_id: set(var_name) }
         """
-
         try:
             data_string = self._read_material_file(uuid, file_name)
         except Exception as e:
             g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
-            g.applogger.debug(msg)
+            g.applogger.info(msg)
             return None
 
         var_extractor = WrappedStringReplaceAdmin(self._ws_db)
@@ -85,8 +86,25 @@ class MaterialVarsAnalyzer():
 
         file_path = "{}/{}/{}".format(upload_column_path, uuid, file_name)
 
-        with open(file_path, "rb") as f:
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_base()
+        storage_flg = obj.path_check(file_path)
+        if storage_flg is True:
+            # /storage
+            tmp_file_path = obj.make_temp_path(file_path)
+            # /storageから/tmpにコピー
+            shutil.copy2(file_path, tmp_file_path)
+        else:
+            # not /storage
+            tmp_file_path = file_path
+
+        with open(tmp_file_path, "rb") as f:
             result = f.read().decode('utf-8')
+
+        if storage_flg is True:
+            # /tmpゴミ掃除
+            if os.path.isfile(tmp_file_path) is True:
+                os.remove(tmp_file_path)
 
         return result
 

@@ -976,11 +976,16 @@ export function messageid_ja() {
         'FTE13022': function( num ){ return `${num}週間`},
         'FTE13023': function( num ){ return `${num}か月間`},
         'FTE13024': function( num ){ return `${num}年間`},
-        'FTE13025': '',
-        'FTE13026': '',
-        'FTE13027': '',
-        'FTE13028': '',
-        'FTE13029': '',
+        'FTE13025': 'イベントRAWデータ',
+        'FTE13026': 'イベント情報',
+        'FTE13027': '無効',
+        'FTE13028': function( sec ){ return `${sec}秒`},
+        'FTE13029': '自動更新',
+        'FTE13030': 'ルール',
+        'FTE13031': '',
+        'FTE13032': '',
+        'FTE13033': '',
+        'FTE13034': '',
     };
 
     return message;

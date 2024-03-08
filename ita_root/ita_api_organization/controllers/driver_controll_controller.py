@@ -57,39 +57,44 @@ def get_driver_execute_data(organization_id, workspace_id, menu, execution_no): 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['12']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['12']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
-    target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
-                                                        'table_name': AnslConst.vg_exe_ins_msg_table_name,
-                                                        'ansConstObj': AnslConst()},
-              'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
-                                                         'table_name': AnspConst.vg_exe_ins_msg_table_name,
-                                                         'ansConstObj': AnspConst()},
-              'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
-                                                      'table_name': AnsrConst.vg_exe_ins_msg_table_name,
-                                                      'ansConstObj': AnsrConst()},
-              TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
-                                                  'table_name': TFCloudEPConst.T_EXEC_STS_INST},
-              TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
-                                              'table_name': TFCLIConst.T_EXEC_STS_INST}
-              }
+        # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
+        target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
+                                                            'table_name': AnslConst.vg_exe_ins_msg_table_name,
+                                                            'ansConstObj': AnslConst()},
+                'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
+                                                            'table_name': AnspConst.vg_exe_ins_msg_table_name,
+                                                            'ansConstObj': AnspConst()},
+                'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
+                                                        'table_name': AnsrConst.vg_exe_ins_msg_table_name,
+                                                        'ansConstObj': AnsrConst()},
+                TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
+                                                    'table_name': TFCloudEPConst.T_EXEC_STS_INST},
+                TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
+                                                'table_name': TFCLIConst.T_EXEC_STS_INST}
+                }
 
-    if 'ansible' in menu:
-        # Ansible用 作業実行の状態取得
-        result = driver_controll.get_execution_info(objdbca, target[menu], execution_no)
-    else:
-        # Terraform用 作業実行の状態取得
-        result = t_get_execution_info(objdbca, target[menu], execution_no)
-
+        if 'ansible' in menu:
+            # Ansible用 作業実行の状態取得
+            result = driver_controll.get_execution_info(objdbca, target[menu], execution_no)
+        else:
+            # Terraform用 作業実行の状態取得
+            result = t_get_execution_info(objdbca, target[menu], execution_no)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 @api_filter
@@ -112,39 +117,44 @@ def get_execute_populated_data(organization_id, workspace_id, menu, execution_no
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['12']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['12']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
-    target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
-                                                        'table_name': AnslConst.vg_exe_ins_msg_table_name,
-                                                        'ansConstObj': AnslConst()},
-              'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
-                                                         'table_name': AnspConst.vg_exe_ins_msg_table_name,
-                                                         'ansConstObj': AnspConst()},
-              'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
-                                                      'table_name': AnsrConst.vg_exe_ins_msg_table_name,
-                                                      'ansConstObj': AnsrConst()},
-              TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
-                                                  'table_name': TFCloudEPConst.T_EXEC_STS_INST},
-              TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
-                                              'table_name': TFCLIConst.T_EXEC_STS_INST}
-              }
+        # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
+        target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
+                                                            'table_name': AnslConst.vg_exe_ins_msg_table_name,
+                                                            'ansConstObj': AnslConst()},
+                'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
+                                                            'table_name': AnspConst.vg_exe_ins_msg_table_name,
+                                                            'ansConstObj': AnspConst()},
+                'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
+                                                        'table_name': AnsrConst.vg_exe_ins_msg_table_name,
+                                                        'ansConstObj': AnsrConst()},
+                TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
+                                                    'table_name': TFCloudEPConst.T_EXEC_STS_INST},
+                TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
+                                                'table_name': TFCLIConst.T_EXEC_STS_INST}
+                }
 
-    if 'ansible' in menu:
-        # Ansible用
-        result = driver_controll.get_populated_result_data(objdbca, target[menu], execution_no, 'populated')
-    else:
-        # Terraform用 投入データ取得
-        result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'populated')
-
+        if 'ansible' in menu:
+            # Ansible用
+            result = driver_controll.get_populated_result_data(objdbca, target[menu], execution_no, 'populated')
+        else:
+            # Terraform用 投入データ取得
+            result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'populated')
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 @api_filter
@@ -167,39 +177,44 @@ def get_execute_result_data(organization_id, workspace_id, menu, execution_no): 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['12']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['12']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
-    target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
-                                                        'table_name': AnslConst.vg_exe_ins_msg_table_name,
-                                                        'ansConstObj': AnslConst()},
-              'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
-                                                         'table_name': AnspConst.vg_exe_ins_msg_table_name,
-                                                         'ansConstObj': AnspConst()},
-              'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
-                                                      'table_name': AnsrConst.vg_exe_ins_msg_table_name,
-                                                      'ansConstObj': AnsrConst()},
-              TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
-                                                  'table_name': TFCloudEPConst.T_EXEC_STS_INST},
-              TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
-                                              'table_name': TFCLIConst.T_EXEC_STS_INST}
-              }
+        # 作業状態確認メニューと作業実行メニューのRest名、テーブル名の対応
+        target = {'check_operation_status_ansible_legacy': {'execution_list': 'execution_list_ansible_legacy',
+                                                            'table_name': AnslConst.vg_exe_ins_msg_table_name,
+                                                            'ansConstObj': AnslConst()},
+                'check_operation_status_ansible_pioneer': {'execution_list': 'execution_list_ansible_pioneer',
+                                                            'table_name': AnspConst.vg_exe_ins_msg_table_name,
+                                                            'ansConstObj': AnspConst()},
+                'check_operation_status_ansible_role': {'execution_list': 'execution_list_ansible_role',
+                                                        'table_name': AnsrConst.vg_exe_ins_msg_table_name,
+                                                        'ansConstObj': AnsrConst()},
+                TFCloudEPConst.RN_CHECK_OPERATION: {'execution_list': TFCloudEPConst.RN_EXECUTION_LIST,
+                                                    'table_name': TFCloudEPConst.T_EXEC_STS_INST},
+                TFCLIConst.RN_CHECK_OPERATION: {'execution_list': TFCLIConst.RN_EXECUTION_LIST,
+                                                'table_name': TFCLIConst.T_EXEC_STS_INST}
+                }
 
-    if 'ansible' in menu:
-        # Ansible用
-        result = driver_controll.get_populated_result_data(objdbca, target[menu], execution_no, 'result')
-    else:
-        # Terraform用 結果データ取得
-        result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'result')
-
+        if 'ansible' in menu:
+            # Ansible用
+            result = driver_controll.get_populated_result_data(objdbca, target[menu], execution_no, 'result')
+        else:
+            # Terraform用 結果データ取得
+            result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'result')
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 
@@ -220,29 +235,35 @@ def get_driver_execute_info(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['11']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['11']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # 作業実行メニューとMovement一覧の対応
-    movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
-                       'execution_ansible_legacy': 'movement_list_ansible_legacy',
-                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
-                       TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
-                       TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業実行関連のメニューの基本情報および項目情報の取得
-    target_menus = ["operation_list", movement_target[menu]]
-    data = {}
-    for target in target_menus:
-        data[target] = menu_info.collect_menu_info(objdbca, target)
+        # 作業実行メニューとMovement一覧の対応
+        movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
+                        'execution_ansible_legacy': 'movement_list_ansible_legacy',
+                        'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
+                        TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
+                        TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
 
+        # 作業実行関連のメニューの基本情報および項目情報の取得
+        target_menus = ["operation_list", movement_target[menu]]
+        data = {}
+        for target in target_menus:
+            data[target] = menu_info.collect_menu_info(objdbca, target)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -268,32 +289,38 @@ def get_driver_execute_search_candidates(organization_id, workspace_id, menu, ta
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['11']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['11']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業実行メニューとMovement一覧の対応
-    movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
-                       'execution_ansible_legacy': 'movement_list_ansible_legacy',
-                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
-                       TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
-                       TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
+        # 作業実行メニューとMovement一覧の対応
+        movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
+                        'execution_ansible_legacy': 'movement_list_ansible_legacy',
+                        'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
+                        TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
+                        TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
 
-    # targetのチェック
-    target_menus = ["operation_list", movement_target[menu]]
-    if target not in target_menus:
-        log_msg_args = [target]
-        api_msg_args = [target]
-        raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
+        # targetのチェック
+        target_menus = ["operation_list", movement_target[menu]]
+        if target not in target_menus:
+            log_msg_args = [target]
+            api_msg_args = [target]
+            raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
 
-    # 対象項目のプルダウン検索候補一覧を取得
-    data = menu_info.collect_search_candidates(objdbca, target, column)
+        # 対象項目のプルダウン検索候補一覧を取得
+        data = menu_info.collect_search_candidates(objdbca, target, column)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -322,29 +349,34 @@ def post_driver_cancel(organization_id, workspace_id, menu, execution_no, body=N
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['12']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['12']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    target = {'check_operation_status_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
-              'check_operation_status_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
-              TFCloudEPConst.RN_CHECK_OPERATION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
-              TFCLIConst.RN_CHECK_OPERATION: TFCommonConst.DRIVER_TERRAFORM_CLI}
+        target = {'check_operation_status_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
+                'check_operation_status_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
+                'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+                TFCloudEPConst.RN_CHECK_OPERATION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+                TFCLIConst.RN_CHECK_OPERATION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
-    if 'ansible' in menu:
-        # Ansible用 予約取り消し
-        result = driver_controll.reserve_cancel(objdbca, target[menu], execution_no)
-    else:
-        # Terraform用 予約取り消し
-        result = t_reserve_cancel(objdbca, target[menu], execution_no)
-
+        if 'ansible' in menu:
+            # Ansible用 予約取り消し
+            result = driver_controll.reserve_cancel(objdbca, target[menu], execution_no)
+        else:
+            # Terraform用 予約取り消し
+            result = t_reserve_cancel(objdbca, target[menu], execution_no)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 
@@ -373,55 +405,60 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['11']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['11']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
+        parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameter = body
 
-    useed = True
-    # 予約日時のフォーマットチェック
-    # yyyy/mm/dd hh:mmをyyyy/mm/dd hh:mm:ssにしている
-    schedule_date = driver_controll.scheduled_format_check(parameter, useed)
+        useed = True
+        # 予約日時のフォーマットチェック
+        # yyyy/mm/dd hh:mmをyyyy/mm/dd hh:mm:ssにしている
+        schedule_date = driver_controll.scheduled_format_check(parameter, useed)
 
-    Required = True
-    # Movementチェック
-    movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
+        Required = True
+        # Movementチェック
+        movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
 
-    # オペレーションチェック
-    operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
+        # オペレーションチェック
+        operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
 
-    target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
-              'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
-              TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
-              TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
+        target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
+                'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
+                'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+                TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+                TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
-    # トランザクション開始
-    objdbca.db_transaction_start()
+        # トランザクション開始
+        objdbca.db_transaction_start()
 
-    # 作業管理に登録
-    conductor_id = None
-    conductor_name = None
-    run_mode = "1"
-    if 'ansible' in menu:
-        # Ansible用 作業実行登録
-        result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
-    else:
-        # Terraform用 作業実行登録
-        result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
-    # コミット・トランザクション終了
-    objdbca.db_transaction_end(True)
-
+        # 作業管理に登録
+        conductor_id = None
+        conductor_name = None
+        run_mode = "1"
+        if 'ansible' in menu:
+            # Ansible用 作業実行登録
+            result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+        else:
+            # Terraform用 作業実行登録
+            result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+        # コミット・トランザクション終了
+        objdbca.db_transaction_end(True)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 
@@ -450,55 +487,60 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['11']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['11']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
+        parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameter = body
 
-    useed = True
-    # 予約日時のフォーマットチェック
-    # yyyy/mm/dd hh:mmをyyyy/mm/dd hh:mm:ssにしている
-    schedule_date = driver_controll.scheduled_format_check(parameter, useed)
+        useed = True
+        # 予約日時のフォーマットチェック
+        # yyyy/mm/dd hh:mmをyyyy/mm/dd hh:mm:ssにしている
+        schedule_date = driver_controll.scheduled_format_check(parameter, useed)
 
-    Required = True
-    # Movementチェック
-    movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
+        Required = True
+        # Movementチェック
+        movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
 
-    # オペレーションチェック
-    operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
+        # オペレーションチェック
+        operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
 
-    target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
-              'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
-              TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
-              TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
+        target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
+                'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
+                'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+                TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+                TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
-    # トランザクション開始
-    objdbca.db_transaction_start()
+        # トランザクション開始
+        objdbca.db_transaction_start()
 
-    # 作業管理に登録
-    conductor_id = None
-    conductor_name = None
-    run_mode = "3"
-    if 'ansible' in menu:
-        # Ansible用 作業実行登録
-        result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
-    else:
-        # Terraform用 作業実行登録
-        result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
-    # コミット・トランザクション終了
-    objdbca.db_transaction_end(True)
-
+        # 作業管理に登録
+        conductor_id = None
+        conductor_name = None
+        run_mode = "3"
+        if 'ansible' in menu:
+            # Ansible用 作業実行登録
+            result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+        else:
+            # Terraform用 作業実行登録
+            result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+        # コミット・トランザクション終了
+        objdbca.db_transaction_end(True)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 @api_filter
@@ -526,48 +568,53 @@ def post_driver_execute_delete_resource(organization_id, workspace_id, menu, bod
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['11']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['11']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
+        parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameter = body
 
-    # Terraformメニューであること
-    if not menu == TFCloudEPConst.RN_EXECTION and not menu == TFCLIConst.RN_EXECTION:
-        # リソース削除はTerraformドライバのみ実施可能です。
-        raise AppException("499-00917", [], [])  # noqa: F405
+        # Terraformメニューであること
+        if not menu == TFCloudEPConst.RN_EXECTION and not menu == TFCLIConst.RN_EXECTION:
+            # リソース削除はTerraformドライバのみ実施可能です。
+            raise AppException("499-00917", [], [])  # noqa: F405
 
-    # トランザクション開始
-    objdbca.db_transaction_start()
+        # トランザクション開始
+        objdbca.db_transaction_start()
 
-    # ドライバIDを選定
-    if menu == TFCloudEPConst.RN_EXECTION:
-        driver_id = TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP
-    else:
-        driver_id = TFCommonConst.DRIVER_TERRAFORM_CLI
+        # ドライバIDを選定
+        if menu == TFCloudEPConst.RN_EXECTION:
+            driver_id = TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP
+        else:
+            driver_id = TFCommonConst.DRIVER_TERRAFORM_CLI
 
-    # パラメータの抽出
-    tf_workspace_name = parameter.get('tf_workspace_name')
-    if not tf_workspace_name:
-        # 必要なパラメータが指定されていません。
-        raise AppException("499-00908", ['tf_workspace_name'], ['tf_workspace_name'])  # noqa: F405
+        # パラメータの抽出
+        tf_workspace_name = parameter.get('tf_workspace_name')
+        if not tf_workspace_name:
+            # 必要なパラメータが指定されていません。
+            raise AppException("499-00908", ['tf_workspace_name'], ['tf_workspace_name'])  # noqa: F405
 
-    # 作業実行登録
-    run_mode = TFCommonConst.RUN_MODE_DESTROY
-    result = t_insert_execution_list(objdbca, run_mode, driver_id, None, None, None, None, None, tf_workspace_name)
+        # 作業実行登録
+        run_mode = TFCommonConst.RUN_MODE_DESTROY
+        result = t_insert_execution_list(objdbca, run_mode, driver_id, None, None, None, None, None, tf_workspace_name)
 
-    # コミット・トランザクション終了
-    objdbca.db_transaction_end(True)
-
+        # コミット・トランザクション終了
+        objdbca.db_transaction_end(True)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 
@@ -596,56 +643,61 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['11']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['11']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
+        parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameter = body
 
-    useed = True
-    # 予約日時のフォーマットチェック
-    # yyyy/mm/dd hh:mmをyyyy/mm/dd hh:mm:ssにしている
-    schedule_date = driver_controll.scheduled_format_check(parameter, useed)
+        useed = True
+        # 予約日時のフォーマットチェック
+        # yyyy/mm/dd hh:mmをyyyy/mm/dd hh:mm:ssにしている
+        schedule_date = driver_controll.scheduled_format_check(parameter, useed)
 
-    Required = True
-    # Movementチェック
-    movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
+        Required = True
+        # Movementチェック
+        movement_row = driver_controll.movement_registr_check(objdbca, parameter, menu, Required)
 
-    # オペレーションチェック
-    operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
+        # オペレーションチェック
+        operation_row = driver_controll.operation_registr_check(objdbca, parameter, Required)
 
-    target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
-              'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
-              TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
-              TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
+        target = {'execution_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
+                'execution_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
+                'execution_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID,
+                TFCloudEPConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLOUD_EP,
+                TFCLIConst.RN_EXECTION: TFCommonConst.DRIVER_TERRAFORM_CLI}
 
-    # トランザクション開始
-    objdbca.db_transaction_start()
+        # トランザクション開始
+        objdbca.db_transaction_start()
 
-    # 作業管理に登録
-    conductor_id = None
-    conductor_name = None
-    run_mode = "2"
-    if 'ansible' in menu:
-        # Ansible用 作業実行登録
-        result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
-    else:
-        # Terraform用 作業実行登録
-        result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+        # 作業管理に登録
+        conductor_id = None
+        conductor_name = None
+        run_mode = "2"
+        if 'ansible' in menu:
+            # Ansible用 作業実行登録
+            result = a_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
+        else:
+            # Terraform用 作業実行登録
+            result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
 
-    # コミット・トランザクション終了
-    objdbca.db_transaction_end(True)
-
+        # コミット・トランザクション終了
+        objdbca.db_transaction_end(True)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result,
 
 
@@ -671,37 +723,43 @@ def post_driver_execute_filter(organization_id, workspace_id, menu, target, body
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['11']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['11']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業実行メニューとMovement一覧の対応
-    movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
-                       'execution_ansible_legacy': 'movement_list_ansible_legacy',
-                       'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
-                       TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
-                       TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
+        # 作業実行メニューとMovement一覧の対応
+        movement_target = {'execution_ansible_role': 'movement_list_ansible_role',
+                        'execution_ansible_legacy': 'movement_list_ansible_legacy',
+                        'execution_ansible_pioneer': 'movement_list_ansible_pioneer',
+                        TFCloudEPConst.RN_EXECTION: TFCloudEPConst.RN_MOVEMENT,
+                        TFCLIConst.RN_EXECTION: TFCLIConst.RN_MOVEMENT}
 
-    # targetのチェック
-    target_menus = ["operation_list", movement_target[menu]]
-    if target not in target_menus:
-        log_msg_args = []
-        api_msg_args = []
-        raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
+        # targetのチェック
+        target_menus = ["operation_list", movement_target[menu]]
+        if target not in target_menus:
+            log_msg_args = []
+            api_msg_args = []
+            raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
 
-    filter_parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        filter_parameter = body
+        filter_parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            filter_parameter = body
 
-    # メニューのカラム情報を取得
-    result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
+        # メニューのカラム情報を取得
+        result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -730,37 +788,42 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['12']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['12']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    objdbca.db_transaction_start()
+        objdbca.db_transaction_start()
 
-    target = {'check_operation_status_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
-              'check_operation_status_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
-              'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
+        target = {'check_operation_status_ansible_legacy': AnscConst.DF_LEGACY_DRIVER_ID,
+                'check_operation_status_ansible_pioneer': AnscConst.DF_PIONEER_DRIVER_ID,
+                'check_operation_status_ansible_role': AnscConst.DF_LEGACY_ROLE_DRIVER_ID}
 
-    if 'ansible' in menu:
-        # Ansible用 緊急停止処理
-        # result = a_exectuion_scram(objdbca, target[menu], execution_no)
-        a_exectuion_scram(objdbca, target[menu], execution_no)
-    else:
-        if 'terraform_cloud_ep' in menu:
-            # Terraform Cloud/EP用 緊急停止処理
-            t_cloud_ep_execution_scram(objdbca, execution_no)
+        if 'ansible' in menu:
+            # Ansible用 緊急停止処理
+            # result = a_exectuion_scram(objdbca, target[menu], execution_no)
+            a_exectuion_scram(objdbca, target[menu], execution_no)
         else:
-            # Terraform CLI用 緊急停止処理
-            t_cli_execution_scram(objdbca, execution_no)
+            if 'terraform_cloud_ep' in menu:
+                # Terraform Cloud/EP用 緊急停止処理
+                t_cloud_ep_execution_scram(objdbca, execution_no)
+            else:
+                # Terraform CLI用 緊急停止処理
+                t_cli_execution_scram(objdbca, execution_no)
 
-    objdbca.db_transaction_end(False)  # roleback
+        objdbca.db_transaction_end(False)  # roleback
 
-    # 緊急停止を受付ました
-    result_msg = g.appmsg.get_api_message("MSG-10891", [execution_no])
-
+        # 緊急停止を受付ました
+        result_msg = g.appmsg.get_api_message("MSG-10891", [execution_no])
+    except Exception as e:
+        objdbca.db_disconnect()
+        raise e
+    finally:
+        objdbca.db_disconnect()
     return result_msg,

@@ -30,6 +30,7 @@ import secrets
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectCommon
 from common_libs.loadtable import *  # noqa: F403
+from common_libs.common import storage_access
 
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
@@ -337,6 +338,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
                 "specified_time": body_specified_time,
                 "file_name": None,
                 "execution_user": user_name,
+                "language": lang,
                 "json_storage_item": json.dumps(body),
                 "discard": "0"
             },
@@ -503,14 +505,22 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
             os.remove(uploadPath + fileName)
 
     # zip解凍
-    if os.path.exists(uploadPath + fileName):
-        os.makedirs(uploadPath + upload_id)
-        os.chmod(uploadPath + upload_id, 0o777)
+    # 解凍はtmp配下で行う
+    tmp_dir_path = "/tmp/{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')) + "/upload"
+    if os.path.isdir(tmp_dir_path) is False:
+        os.makedirs(tmp_dir_path)
+        os.chmod(tmp_dir_path, 0o777)
+    shutil.copy2(uploadPath + fileName, tmp_dir_path)
 
-    ret = unzip_file(fileName, uploadPath, upload_id)
+    ret = unzip_file(fileName, tmp_dir_path, upload_id)
 
     if ret is False:
-        unzip_file_cmd(fileName, uploadPath, upload_id)
+        unzip_file_cmd(fileName, tmp_dir_path, upload_id)
+
+    shutil.copytree(tmp_dir_path + "/" + upload_id, uploadPath + upload_id)
+
+    # tmp配下のファイル削除
+    shutil.rmtree(tmp_dir_path)
 
     # zipファイルの中身確認
     declare_list = checkZipFile(upload_id, organization_id, workspace_id)
@@ -522,6 +532,9 @@ def execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca):
         cmd = "rm -rf " + importPath + upload_id
         ret = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         raise AppException("499-01305", [], [])
+
+    # zipファイル削除
+    os.remove(importPath + fileName)
 
     retImportAry = {}
     retUnImportAry = {}
@@ -751,7 +764,7 @@ def _format_loadtable_msg(loadtable_msg):
 
     return result_msg
 
-def unzip_file(fileName, uploadPath, upload_id):
+def unzip_file(fileName, tmp_dir_path, upload_id):
     """
         zipファイルを解凍する
 
@@ -760,20 +773,21 @@ def unzip_file(fileName, uploadPath, upload_id):
             uploadPath: 解凍先パス
             upload_id: アップロードID
     """
+
     try:
-        with zipfile.ZipFile(uploadPath + fileName) as z:
+        with zipfile.ZipFile(tmp_dir_path + "/" + fileName) as z:
             for info in z.infolist():
                 info.filename = info.orig_filename.encode('cp437').decode('cp932')
                 if os.sep != "/" and os.sep in info.filename:
                     info.filename = info.filename.replace(os.sep, "/")
-                z.extract(info, path=uploadPath + upload_id)
+                z.extract(info, path=tmp_dir_path + "/" + upload_id)
 
     except Exception as e:
         return False
 
     return True
 
-def unzip_file_cmd(fileName, uploadPath, upload_id):
+def unzip_file_cmd(fileName, tmp_dir_path, upload_id):
     """
         zipファイルを解凍する(コマンド)
 
@@ -782,8 +796,9 @@ def unzip_file_cmd(fileName, uploadPath, upload_id):
             uploadPath: 解凍先パス
             upload_id: アップロードID
     """
-    to_path = uploadPath + upload_id
-    from_path = uploadPath + fileName
+    # tmp配下で解凍する
+    to_path = tmp_dir_path + "/" + upload_id
+    from_path = tmp_dir_path + "/" + fileName
     cmd = ["unzip", "-d", to_path, from_path]
     cp = subprocess.run(cmd, capture_output=True, text=True)
 
@@ -845,7 +860,10 @@ def checkZipFile(upload_id, organization_id, workspace_id):
 
         raise AppException("499-01302", [], [])
 
-    tmp_menu_list = Path(uploadPath + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
+    file_read = storage_access.storage_read()
+    file_read.open(uploadPath + upload_id + "/MENU_LIST.txt")
+    tmp_menu_list = file_read.read()
+    file_read.close()
     if tmp_menu_list == "":
         if os.path.exists(uploadPath + fileName):
             os.remove(uploadPath + fileName)
@@ -947,8 +965,11 @@ def makeImportCheckbox(declare_list, upload_id, organization_id, workspace_id, o
     """
     path = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/bulk_excel/import/import/"
 
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read_text = storage_access.storage_read_text()
+
     # 取得したいFILEリストの取得
-    menuIdFile = Path(path + upload_id + '/MENU_LIST.txt').read_text(encoding="utf-8")
+    menuIdFile = file_read_text.read_text(path + upload_id + '/MENU_LIST.txt')
 
     tmpMenuIdFileAry = menuIdFile.split("\n")
 
@@ -1240,15 +1261,19 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
     if os.path.isfile(import_id_path + '/MENU_GROUPS') is False:
         # 対象ファイルなし
         raise AppException("499-00905", [], [])
-    with open(import_id_path + '/MENU_GROUPS') as f:
-        menu_group_info = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_id_path + '/MENU_GROUPS')
+    menu_group_info = json.loads(file_read.read())
+    file_read.close()
 
     # PARENT_MENU_GROUPSファイル読み込み
     if os.path.isfile(import_id_path + '/PARENT_MENU_GROUPS') is False:
         # 対象ファイルなし
         raise AppException("499-00905", [], [])
-    with open(import_id_path + '/PARENT_MENU_GROUPS') as f:
-        parent_menu_group_info = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_id_path + '/PARENT_MENU_GROUPS')
+    parent_menu_group_info = json.loads(file_read.read())
+    file_read.close()
 
     # ユーザが使用している言語に合わせてメニューグループ名、メニュー名を設定する
     for menu_groups in menu_group_info.values():
@@ -1284,8 +1309,10 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         raise AppException("499-00905", [], [])
 
     # DP_INFOファイル読み込み
-    with open(import_id_path + '/DP_INFO') as f:
-        dp_info_file = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_id_path + '/DP_INFO')
+    dp_info_file = json.loads(file_read.read())
+    file_read.close()
     dp_mode = dp_info_file['DP_MODE']
     abolished_type = dp_info_file['ABOLISHED_TYPE']
     specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
@@ -1330,8 +1357,10 @@ def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
         raise AppException("499-00905", [], [])
 
     # DP_INFOファイル読み込み
-    with open(import_path + '/DP_INFO') as f:
-        dp_info_file = json.load(f)
+    file_read = storage_access.storage_read()
+    file_read.open(import_path + '/DP_INFO')
+    dp_info_file = json.loads(file_read.read())
+    file_read.close()
 
     dp_info = _check_dp_info(objdbca, menu, dp_info_file)
 
@@ -1400,6 +1429,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
                 "specified_time": specified_time,
                 "file_name": file_name,
                 "execution_user": user_name,
+                "language": lang,
                 "json_storage_item": import_list,
                 "discard": "0"
             },
@@ -1551,6 +1581,9 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     uploadPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/upload/"
     importPath = os.environ.get('STORAGEPATH') + "/".join([organization_id, workspace_id]) + "/tmp/driver/import_menu/import/"
 
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read_text = storage_access.storage_read_text()
+
     lst = os.listdir(uploadPath + upload_id)
 
     fileAry = []
@@ -1608,7 +1641,8 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
     export_version = ''
     if os.path.isfile(uploadPath + upload_id + '/VERSION'):
         # エクスポート時のバージョンを取得
-        export_version = Path(uploadPath + upload_id + '/VERSION').read_text(encoding='utf-8')
+        export_version = file_read_text.read_text(uploadPath + upload_id + '/VERSION')
+
 
     if version_data["version"] != export_version:
         # エクスポート時のバージョンとインポートする環境のバージョンが違う場合はエラー
@@ -1733,11 +1767,16 @@ def _collect_ita_version(common_db):
     return version_data
 
 def _decode_zip_file(file_path, base64Data):
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_write = storage_access.storage_write()
+
     # アップロードファイルbase64変換処理
     upload_file_decode = base64.b64decode(base64Data.encode('utf-8'))
 
     # ファイル移動
-    Path(file_path).write_bytes(upload_file_decode)
+    file_write.open(file_path, mode="wb")
+    file_write.write(upload_file_decode)
+    file_write.close()
 
     # ファイルタイプの取得、判定
     file_mimetype, encoding = mimetypes.guess_type(file_path)

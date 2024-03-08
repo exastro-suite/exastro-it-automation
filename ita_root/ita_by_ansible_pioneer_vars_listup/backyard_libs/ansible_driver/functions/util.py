@@ -75,11 +75,11 @@ def extract_variable_for_execute(mov_vars_dict, tpl_vars_dict, ws_db):
     # host_list = { MovementID: { OPERATION_ID: { SYSTEM_ID: 0 }, … }, … }
 
     for movement_id, tpl_var_set in template_list.items():
-        tpl_var_name = list(tpl_var_set.keys())[0]
-        if tpl_var_name in tpl_vars_dict:
-            mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
-        else:
-            debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
-            g.applogger.debug(debug_msg)
+        for tpl_var_name in tpl_var_set:
+            if tpl_var_name in tpl_vars_dict:
+                mov_vars_dict[movement_id] |= tpl_vars_dict[tpl_var_name]
+            else:
+                debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
+                g.applogger.debug(debug_msg)
 
     return mov_vars_dict

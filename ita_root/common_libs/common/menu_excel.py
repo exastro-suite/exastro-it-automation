@@ -32,7 +32,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.common import menu_maintenance_all, menu_info
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import check_request_body_key
-
+from common_libs.common import storage_access
 
 # 「マスタ」シートを作成する
 def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  # noqa: E302
@@ -1543,6 +1543,9 @@ def execute_excel_maintenance(
     """
     # 言語設定取得
     lang = g.LANGUAGE
+    
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_write = storage_access.storage_write()
 
     if backyard_exec == 1:
         lang = backyard_lang
@@ -1572,8 +1575,9 @@ def execute_excel_maintenance(
     # 受け取ったデータを編集用として一時的にエクセルファイルに保存
     file_name = 'post_excel_maintenance_tmp.xlsx'
     file_path = excel_dir + '/' + file_name
-    with open(file_path, "wb") as f:
-        f.write(wbDecode)
+    file_write.open(file_path, mode="wb")
+    file_write.write(wbDecode)
+    file_write.close()
 
     try:
         # ファイルを読み込む
@@ -1728,7 +1732,7 @@ def execute_excel_maintenance(
     try:
         # メニューのレコード登録/更新(更新/廃止/復活)
         result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameter)
-    except Exception as e:
+    except AppException as e:
         # エラー判定
         # 処理が終わったらwbは削除する
         os.remove(file_path)

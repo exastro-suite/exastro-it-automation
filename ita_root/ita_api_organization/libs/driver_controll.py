@@ -31,6 +31,7 @@ from common_libs.ansible_driver.classes.AnsrConstClass import AnsrConst
 from common_libs.ansible_driver.functions.util import getAnsibleExecutDirPath
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
+from common_libs.common.storage_access import storage_read_text
 
 
 def movement_registr_check(objdbca, parameter, menu_id, Required=False):
@@ -190,17 +191,23 @@ def get_execution_info(objdbca, target, execution_no):
         for log in list_log:
             log_file_path = path + '/out/' + log
             if os.path.isfile(log_file_path):
-                lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+                # #2079 /storage配下のアクセスは/tmp経由にする。
+                obj = storage_read_text()
+                lcstr = obj.read_text(log_file_path, encoding="utf-8")
                 execution_info['progress']['execution_log']['exec_log'][log] = lcstr
 
     log_file_path = path + '/out/exec.log'
     if os.path.isfile(log_file_path):
-        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+        # #2079 /storage配下のアクセスは/tmp経由にする。
+        obj = storage_read_text()
+        lcstr = obj.read_text(log_file_path, encoding="utf-8")
         execution_info['progress']['execution_log']['exec_log']['exec.log'] = lcstr
 
     log_file_path = path + '/out/error.log'
     if os.path.isfile(log_file_path):
-        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+        # #2079 /storage配下のアクセスは/tmp経由にする。
+        obj = storage_read_text()
+        lcstr = obj.read_text(log_file_path, encoding="utf-8")
         execution_info['progress']['execution_log']['error_log'] = lcstr
 
     # 状態監視周期・進行状態表示件数

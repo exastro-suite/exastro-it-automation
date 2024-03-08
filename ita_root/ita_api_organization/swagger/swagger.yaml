@@ -57,6 +57,8 @@ tags:
   description: CI/CD for IaCの操作
 - name: OASE
   description: OASE用
+- name: Apply
+  description: パラメータ適用
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
     get:
@@ -463,6 +465,14 @@ paths:
         required: true
         style: simple
         explode: false
+        schema:
+          type: string
+      - name: file
+        in: query
+        description: ファイルダウンロード指定
+        required: false
+        style: form
+        explode: true
         schema:
           type: string
       requestBody:
@@ -5513,6 +5523,54 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.oase_controller
+  /api/{organization_id}/workspaces/{workspace_id}/ita/apply/:
+    post:
+      tags:
+      - Apply
+      description: オペレーションの生成からパラメータの適用までを行いConductor作業実行する
+      operationId: post_apply_parameter
+      parameters:
+      - name: organization_id
+        in: path
+        description: OrganizationID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: workspace_id
+        in: path
+        description: WorkspaceID
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ita_apply_body'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.apply_controller
 components:
   schemas:
     TABLE:
@@ -6055,6 +6113,26 @@ components:
           type: string
           description: インポート対象をまとめたzipファイルを指定。
           format: binary
+    ApplyParameterTypeA:
+      type: array
+      items:
+        $ref: '#/components/schemas/ApplyParameterTypeA_inner'
+    ApplyParameterTypeB:
+      type: array
+      items:
+        $ref: '#/components/schemas/ApplyParameterTypeB_inner'
+    ApplyParameterTypeC:
+      type: object
+      properties:
+        rest_key_name:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplyParameterTypeC_rest_key_name'
+    ApplyParameterTypeD:
+      type: object
+      properties:
+        rest_key_name:
+          $ref: '#/components/schemas/ApplyParameterTypeC_rest_key_name'
     inline_response_200:
       type: object
       properties:
@@ -7157,6 +7235,26 @@ components:
         result: 000-00000
         data: []
         message: message
+    ita_apply_body:
+      type: object
+      properties:
+        conductor_class_name:
+          type: string
+        operation_name:
+          type: string
+          nullable: true
+        schedule_date:
+          type: string
+          nullable: true
+          example: YYYY/MM/DD hh:mm
+        parameter_info:
+          nullable: true
+          anyOf:
+          - $ref: '#/components/schemas/ApplyParameterTypeA'
+          - $ref: '#/components/schemas/ApplyParameterTypeB'
+          - $ref: '#/components/schemas/ApplyParameterTypeC'
+          - $ref: '#/components/schemas/ApplyParameterTypeD'
+      description: 適用するパラメータ情報および作業実行するConductorの構成情報
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:
@@ -7235,6 +7333,55 @@ components:
         jump:
           menu_id: メニューID
           execution_id: 作業ID
+    ApplyParameterTypeA_inner:
+      type: object
+      properties:
+        rest_key_name:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              parameter:
+                type: object
+                properties:
+                  rest_key_name:
+                    type: string
+              file:
+                type: object
+                properties:
+                  rest_key_name:
+                    type: string
+                    example: base64 encode file
+    ApplyParameterTypeB_inner:
+      type: object
+      properties:
+        rest_key_name:
+          type: object
+          properties:
+            type:
+              type: string
+            parameter:
+              type: object
+              properties:
+                rest_key_name:
+                  type: string
+            file:
+              type: object
+              properties:
+                rest_key_name:
+                  type: string
+                  example: base64 encode file
+    ApplyParameterTypeC_rest_key_name:
+      type: object
+      properties:
+        type:
+          type: string
+        parameter:
+          $ref: '#/components/schemas/FILTER_PARAMETERS_parameter'
+        file:
+          $ref: '#/components/schemas/FILTER_PARAMETERS_file'
     inline_response_200_data:
       type: object
       properties:

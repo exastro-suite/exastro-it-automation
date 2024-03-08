@@ -29,7 +29,7 @@ class sqliteConnect:
         # DBカーソル作成
         self.db_cursor = self.db_connect.cursor()
 
-    def insert_events(self, events):
+    def insert_events(self, events, event_collection_settings_enable):
 
         timestamp_info = []
         processed = set()
@@ -46,6 +46,11 @@ class sqliteConnect:
                             "timestamp": event["_exastro_fetched_time"]
                         }
                     )
+        except Exception as e:
+            g.applogger.info('insert_events error')
+            raise AppException("AGT-10027", [e, event])
+
+        try:
             for info in timestamp_info:
                 self.insert_timestamp(
                     info["name"],
@@ -55,10 +60,17 @@ class sqliteConnect:
                     info["name"],
                     info["timestamp"]
                 )
+            for data in event_collection_settings_enable:
+                if data["is_save"] is True and data["len"] == 0:
+                    self.insert_last_fetched_time(
+                        data["name"],
+                        data["fetched_time"]
+                    )
 
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("AGT-10027", [e])
+            g.applogger.info('insert_events error')
+            raise AppException("AGT-10027", [e, info])
 
     def update_sent_flag(self, table_name, timestamp_list):
         try:
@@ -72,18 +84,20 @@ class sqliteConnect:
             )
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("AGT-10027", [e])
+            g.applogger.info('update_sent_flag error')
+            raise AppException("AGT-10027", [e, timestamp_list])
 
     def delete_unnecessary_records(self, dict):
         try:
             for table_name, record_info in dict.items():
                 rowid_list = [rowid for rowid in record_info]
                 delete_placeholders = ", ".join("?" for _ in rowid_list)
-                where_str = f"WHERE NOT (rowid IN ({delete_placeholders}) OR sent_flag=0)"
+                where_str = f"WHERE (rowid IN ({delete_placeholders}) OR sent_flag=0)"
                 self.delete(table_name, where_str, rowid_list)
             self.db_connect.commit()
         except Exception as e:
-            raise AppException("AGT-10027", [e])
+            g.applogger.info('delete_unnecessary_records error')
+            raise AppException("AGT-10027", [e, rowid_list])
 
     def insert_event(self, event):
         table_name = "events"

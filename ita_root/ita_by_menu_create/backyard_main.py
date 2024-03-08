@@ -17,6 +17,7 @@ import ast
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common import storage_access
 
 
 def backyard_main(organization_id, workspace_id):
@@ -195,6 +196,9 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
     """
     # テーブル/ビュー名
     t_comn_column_group = 'T_COMN_COLUMN_GROUP'
+    
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read = storage_access.storage_read()
 
     try:
         # パラメータシート作成用の各テーブルからレコードを取得
@@ -315,34 +319,36 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         if create_type == 'create_new' or create_type == 'initialize':
             debug_msg = g.appmsg.get_log_message("BKY-20008", [create_table_name, create_table_name_jnl])
             g.applogger.debug(debug_msg)
-            with open(sql_file_path, "r") as f:
-                file = f.read()
-                if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
-                    file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
-                    file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
-                elif sheet_type == "2":  # データシート
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            file_read.open(sql_file_path)
+            file = file_read.read()
+            file_read.close()
+            if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+                file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
+                file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
+            elif sheet_type == "2":  # データシート
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            sql_list = file.split(";\n")
+            for sql in sql_list:
+                if re.fullmatch(r'[\s\n\r]*', sql) is None:
+                    objdbca.sql_execute(sql)
+
+            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
+            if hostgroup_flag:
+                file_read.open(sql_file_path)
+                file = file_read.read()
+                file_read.close()
+                if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
+                    file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
+                    file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
+                    file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
+                    file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
                 sql_list = file.split(";\n")
                 for sql in sql_list:
                     if re.fullmatch(r'[\s\n\r]*', sql) is None:
                         objdbca.sql_execute(sql)
-
-            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
-            if hostgroup_flag:
-                with open(sql_file_path, "r") as f:
-                    file = f.read()
-                    if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
-                        file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
-                        file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
-                        file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
-                        file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
-                    sql_list = file.split(";\n")
-                    for sql in sql_list:
-                        if re.fullmatch(r'[\s\n\r]*', sql) is None:
-                            objdbca.sql_execute(sql)
 
         # 「編集」の場合、VIEWの置き換えSQLのみ実行
         elif create_type == 'edit':
@@ -350,38 +356,40 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             g.applogger.debug(debug_msg)
             # reg: CREATE OR REPLACE VIEW
             search_ptn = r'CREATE[\s]*OR[\s]*REPLACE[\s]*VIEW'
-            with open(sql_file_path, "r") as f:
-                file = f.read()
-                if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
-                    file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
-                    file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
-                elif sheet_type == "2":  # データシート
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            file_read.open(sql_file_path)
+            file = file_read.read()
+            file_read.close()
+            if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+                file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
+                file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
+            elif sheet_type == "2":  # データシート
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            sql_list = file.split(";\n")
+            for sql in sql_list:
+                if re.fullmatch(r'[\s\n\r]*', sql) is None:
+                    # VIEWの置き換えSQL実行
+                    if re.search(search_ptn, sql, re.IGNORECASE) is not None:
+                        objdbca.sql_execute(sql)
+
+            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
+            if hostgroup_flag:
+                file_read.open(sql_file_path)
+                file = file_read.read()
+                file_read.close()
+                if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
+                    file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
+                    file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
+                    file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
+                    file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
                 sql_list = file.split(";\n")
                 for sql in sql_list:
                     if re.fullmatch(r'[\s\n\r]*', sql) is None:
                         # VIEWの置き換えSQL実行
                         if re.search(search_ptn, sql, re.IGNORECASE) is not None:
                             objdbca.sql_execute(sql)
-
-            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
-            if hostgroup_flag:
-                with open(sql_file_path, "r") as f:
-                    file = f.read()
-                    if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
-                        file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
-                        file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
-                        file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
-                        file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
-                    sql_list = file.split(";\n")
-                    for sql in sql_list:
-                        if re.fullmatch(r'[\s\n\r]*', sql) is None:
-                            # VIEWの置き換えSQL実行
-                            if re.search(search_ptn, sql, re.IGNORECASE) is not None:
-                                objdbca.sql_execute(sql)
 
         # カラムグループ登録の処理に必要な形式にフォーマット
         result, msg, dict_t_menu_column_group, target_column_group_list = _format_column_group_data(record_t_menu_column_group, record_t_menu_column, menu_create_id)  # noqa: E501

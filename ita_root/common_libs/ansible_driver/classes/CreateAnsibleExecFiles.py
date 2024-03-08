@@ -225,6 +225,8 @@ from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.functions.util import getPioneerDialogUploadDirPath
 from common_libs.ansible_driver.functions.util import getLegacyPlaybookUploadDirPath
 from common_libs.common.util import ky_encrypt, ky_decrypt, ky_file_encrypt, ky_file_decrypt
+from common_libs.common.storage_access import storage_base, storage_read, storage_write, storage_base
+
 """
 Ansibleの実行に必要な情報をデータベースから取得しAnsible実行ディレクトリを作成するモジュール
 """
@@ -947,29 +949,34 @@ class CreateAnsibleExecFiles():
             # 展開先にhostsファイルがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_HOSTS_FILE)
             is_file = os.path.isfile(path)
+
             if is_file is True:
                 os.remove(path)
 
             # 展開先にホスト変数ディレクトリがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_HOST_VARS_DIR)
             is_dir = os.path.isdir(path)
+
             if is_dir is True:
                 shutil.rmtree(path)
 
             # 展開先にホストグループ変数ディレクトリがあれば削除する。
             path = "{}/{}".format(c_indir, self.LC_ANS_GROUP_VARS_DIR)
             is_dir = os.path.isdir(path)
+
             if is_dir is True:
                 shutil.rmtree(path)
 
             # ITA独自ディレクトリの存在を確認し削除
             path = "{}/{}".format(c_indir, self.LC_ITA_OUT_DIR)
             is_dir = os.path.isdir(path)
+
             if is_dir is True:
                 shutil.rmtree(path)
 
             path = "{}/{}".format(c_indir, self.LC_ITA_TMP_DIR)
             is_dir = os.path.isdir(path)
+
             if is_dir is True:
                 shutil.rmtree(path)
 
@@ -1299,7 +1306,9 @@ class CreateAnsibleExecFiles():
         SSHAgentConfigInfoFile = "{}/{}".format(self.getTemporary_file_Dir(), self.LC_ANS_SSHAGENTCONFIG_FILE)
 
         file_name = self.getAnsible_hosts_file()
-        fd = open(file_name, "w")
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(file_name, 'w')
 
         # 固定ファイル出力
         header = ""
@@ -1308,7 +1317,7 @@ class CreateAnsibleExecFiles():
         header += "    hostgroups:\n"
         header += "      hosts:\n"
 
-        fd.write(header)
+        obj.write(header)
 
         spaceStr = ""
         indento_sp_host = spaceStr.ljust(8)
@@ -1485,9 +1494,9 @@ class CreateAnsibleExecFiles():
             if len(win_ca_file) != 0:
                 host_name_string += indento_sp_param + win_ca_file + "\n"
 
-            fd.write(host_name_string)
+            obj.write(host_name_string)
 
-        fd.close()
+        obj.close()
 
         # ssh-agentの設定に必要な情報を一時ファイルをスクランブル
         if CreateSSHAgentConfigInfoFile is True:
@@ -1536,11 +1545,13 @@ class CreateAnsibleExecFiles():
         tmpFile = "{}/yamlParse_{}".format(get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(tmpFile)
+        # #2079 /storage配下ではないので対象外
         fd = open(tmpFile, 'w')
         fd.write(in_string)
         fd.close()
         obj = YamlParse()
         ret = obj.Parse(tmpFile)
+
         os.remove(tmpFile)
         if ret is False:
             mt_error_line = obj.GetLastError()
@@ -1737,11 +1748,11 @@ class CreateAnsibleExecFiles():
                 var_str += "{}: {}\n".format(var, val)
 
         if var_str:
-            fd = open(in_file_name, in_mode)
-
-            fd.write(var_str)
-
-            fd.close()
+            # #2079 /storage配下は/tmpを経由してアクセスする
+            obj = storage_write()
+            obj.open(in_file_name, in_mode)
+            obj.write(var_str)
+            obj.close()
 
         return True
 
@@ -1760,8 +1771,9 @@ class CreateAnsibleExecFiles():
             True/False
         """
 
-        fd = open(in_file_name, "w")
-
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(in_file_name, "w")
         # ドライバ区分判定
         value = ""
         if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID:
@@ -1800,7 +1812,7 @@ class CreateAnsibleExecFiles():
             value = value + "\n"
             value = value + "  roles:\n"
 
-        fd.write(value)
+        obj.write(value)
         value = ""
         for no, file_list in ina_playbook_list.items():
             for key, file in file_list.items():
@@ -1829,8 +1841,8 @@ class CreateAnsibleExecFiles():
                 elif self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
                     value += "    - role: " + file + "\n"
 
-        fd.write(value)
-        fd.close()
+        obj.write(value)
+        obj.close()
 
         return True
 
@@ -2230,9 +2242,11 @@ class CreateAnsibleExecFiles():
         logmsg = "File[{}:{}]{}".format(file, line, errorMsg)
         # エラーログファイルのパスが生成されている場合エラーログファイルにログ出力
         logfile = self.getAnsible_out_Dir() + "/" + "error.log"
-        f = open(logfile, "a")
-        f.write(errorMsg + "\n")
-        f.close()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(logfile, "a")
+        obj.write(errorMsg + "\n")
+        obj.close()
         g.applogger.debug(logmsg)
 
     def getDBHostList(self, in_execute_no, in_pattern_id, in_operation_id, mt_hostlist, mt_hostostypelist, mt_hostinfolist, in_winrm_id):
@@ -4166,9 +4180,11 @@ class CreateAnsibleExecFiles():
             return False
 
         # テンプレートに登録されているITA変数を抜出す。
-        fd = open(templatefile)
-        dataString = fd.read()
-        fd.close()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_read()
+        obj.open(templatefile)
+        dataString = obj.read()
+        obj.close()
 
         objConv = VarStructAnalJsonConv()
         retAry = objConv.TemplateVarStructAnalJsonLoads(ina_tpf_vars_struct_json)
@@ -4967,9 +4983,12 @@ class CreateAnsibleExecFiles():
             True/False
         """
         row = "{}\t{}\t{}\t\n".format(hostname, ssh_key_file, pssphrase)
-        fd = open(file, 'a')
-        fd.write(row)
-        fd.close()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj.open(file, 'a')
+        obj.write(row)
+        obj.close()
+
         return True
 
     def setFileUploadCloumnFileEnv(self, row):
@@ -5330,11 +5349,13 @@ class CreateAnsibleExecFiles():
                     var_str = var_str + "%s: %s\n" % (var, val)
 
         if var_str:
-            fd = open(in_file_name, in_mode)
+            # #2079 /storage配下は/tmpを経由してアクセスする
+            obj = storage_write()
+            obj.open(in_file_name, in_mode)
 
-            fd.write(var_str)
+            obj.write(var_str)
 
-            fd.close()
+            obj.close()
 
         return True
 
@@ -5444,11 +5465,13 @@ class CreateAnsibleExecFiles():
                     var_str += "{}: {}\n".format(var, val)
 
         if var_str:
-            fd = open(in_file_name, in_mode)
+            # #2079 /storage配下は/tmpを経由してアクセスする
+            obj = storage_write()
+            obj.open(in_file_name, in_mode)
 
-            fd.write(var_str)
+            obj.write(var_str)
 
-            fd.close()
+            obj.close()
 
         return True
 
@@ -5683,9 +5706,11 @@ class CreateAnsibleExecFiles():
             return False
 
         # テンプレートに登録されているITA変数を抜出す。
-        fd = open(templatefile)
-        dataString = fd.read()
-        fd.close()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_read()
+        obj.open(templatefile)
+        dataString = obj.read()
+        obj.close()
 
         # テンプレートに登録されている変数を抜出す。
         objConv = VarStructAnalJsonConv()
@@ -5879,9 +5904,11 @@ class CreateAnsibleExecFiles():
                 local_vars = []
 
                 # 子PlayBookに登録されている変数を抜出す。
-                fd = open(file_name)
-                dataString = fd.read()
-                fd.close()
+                # #2079 /storage配下は/tmpを経由してアクセスする
+                obj = storage_read()
+                obj.open(file_name)
+                dataString = obj.read()
+                obj.close()
 
                 # グローバル変数を子PlayBookから抜出しグローバル変数管理に登録されていることを確認する。
                 varsArray = []
@@ -6049,9 +6076,11 @@ class CreateAnsibleExecFiles():
                 # 子PlayBookのバスを取得
                 file_name = self.getAnsible_child_playbiook_file(playbookpkey, playbook)
 
-                fd = open(file_name)
-                dataString = fd.read()
-                fd.close()
+                # #2079 /storage配下は/tmpを経由してアクセスする
+                obj = storage_read()
+                obj.open(file_name)
+                dataString = obj.read()
+                obj.close()
 
                 # 子PlayBookのtemplateモジュールが使用されているか確認
                 # la_tpf_vars[行番号]=テンプレート変数を返す
@@ -6181,9 +6210,11 @@ class CreateAnsibleExecFiles():
         use_gbl_vars_list = {}
 
         templatefile = self.getITA_template_file(in_tpf_key, in_tpf_file_name)
-        fd = open(templatefile)
-        dataString = fd.read()
-        fd.close()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_read()
+        obj.open(templatefile)
+        dataString = obj.read()
+        obj.close()
 
         # 変数定義の解析結果をデコード
         obj = VarStructAnalJsonConv()
@@ -6265,9 +6296,11 @@ class CreateAnsibleExecFiles():
                 file_name = self.getAnsible_child_playbiook_file(playbookpkey, playbook)
 
                 # 子PlayBookの内容を取得 ここまでの過程でファイルの存在は確認
-                fd = open(file_name)
-                dataString = fd.read()
-                fd.close()
+                # #2079 /storage配下は/tmpを経由してアクセスする
+                obj = storage_read()
+                obj.open(file_name)
+                dataString = obj.read()
+                obj.close()
 
                 # 子PlayBookのファイル管理変数が使用されているか確認
                 local_vars = []
@@ -6416,10 +6449,11 @@ class CreateAnsibleExecFiles():
                     var_str = var_str + "{}: {}\n".format(var, val)
 
             # 空でも作成
-            fd = open(file_name, 'w')
-            fd.write(var_str)
-            fd.close()
-
+            # #2079 /storage配下は/tmpを経由してアクセスする
+            obj = storage_write()
+            obj.open(file_name, 'w')
+            obj.write(var_str)
+            obj.close()
         return True
 
     def CreatePioneerDialogfiles(self, ina_hostinfolist,
@@ -6667,9 +6701,11 @@ class CreateAnsibleExecFiles():
                     file_name = self.getAnsible_dialog_file(host_name, pkey, playbook)
 
                     # 対話ファイルの内容を取得 ここまでの過程でファイルの存在は確認
-                    fd = open(file_name)
-                    dataString = fd.read()
-                    fd.close()
+                    # #2079 /storage配下は/tmpを経由してアクセスする
+                    obj = storage_read()
+                    obj.open(file_name)
+                    dataString = obj.read()
+                    obj.close()
 
                     # 対話ファイルでtemplate変数が使用されているか確認
                     # la_tpf_vars [行番号]=テンプレート変数を返す
@@ -6808,10 +6844,11 @@ class CreateAnsibleExecFiles():
                     file_name = self.getAnsible_dialog_file(host_name, playbook_pkey, playbook)
 
                     # 対話ファイルの内容を取得 ここまでの過程でファイルの存在は確認
-                    # 対話ファイルの内容を取得 ここまでの過程でファイルの存在は確認
-                    fd = open(file_name)
-                    dataString = fd.read()
-                    fd.close()
+                    # #2079 /storage配下は/tmpを経由してアクセスする
+                    obj = storage_read()
+                    obj.open(file_name)
+                    dataString = obj.read()
+                    obj.close()
 
                     # 子PlayBookのcopyモジュールが使用されているか確認
                     local_vars = []
@@ -6995,9 +7032,11 @@ class CreateAnsibleExecFiles():
 
                     # 子PlayBookで使用している変数がホストの変数に登録されているか判定
                     # 子PlayBookに登録されている変数を抜出す。
-                    fd = open(file_name)
-                    dataString = fd.read()
-                    fd.close()
+                    # #2079 /storage配下は/tmpを経由してアクセスする
+                    obj = storage_read()
+                    obj.open(file_name)
+                    dataString = obj.read()
+                    obj.close()
 
                     # 変数具体値がTPF/CPF変数の場合の具体値置換えでない場合
                     if in_SpecialVarValReplace is False:
@@ -7226,9 +7265,11 @@ class CreateAnsibleExecFiles():
                     del obj
 
                     if book_upd is True:
-                        fd = open(file_name, 'w')
-                        fd.write(dataString)
-                        fd.close()
+                        # #2079 /storage配下は/tmpを経由してアクセスする
+                        obj = storage_write()
+                        obj.open(file_name, 'w')
+                        obj.write(dataString)
+                        obj.close()
 
         return result_code
 
@@ -7243,9 +7284,12 @@ class CreateAnsibleExecFiles():
         playbookwrite = []
 
         # playbookの読み込み
-        fd = open(self.getAnsible_playbook_file(), 'r')
-        playbookread = fd.read().split("\n")
-        fd.close()
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_read()
+        obj.open(self.getAnsible_playbook_file(), 'r')
+        value = obj.read()
+        playbookread = value.split("\n")
+        obj.close()
 
         # Templateファイルがある場合、TemplateMmoduleを親playbookに追加する
         for line in playbookread:
@@ -7260,11 +7304,13 @@ class CreateAnsibleExecFiles():
                     playbookwrite.append("      template: src='{}'  dest='{}'".format(in_tpf_path[var_name]['src'], in_tpf_path[var_name]['dest']))
                     playbookwrite.append("      delegate_to: 127.0.0.1")
                     playbookwrite.append("      when: {} is defined".format(var_name))
-        fd = open(self.getAnsible_playbook_file(), "w")
-        for line in playbookwrite:
-            fd.write(line + "\n")
-        fd.close
 
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        obj = open(self.getAnsible_playbook_file(), "w")
+        for line in playbookwrite:
+            obj.write(line + "\n")
+        obj.close()
         return True
 
     def CheckDialogfileFormat(self, in_file_name, in_host_name):
@@ -7295,7 +7341,9 @@ class CreateAnsibleExecFiles():
         localaction_line_no = 0
 
         try:
-            with open(in_file_name) as fd:
+            # #2079 /storage配下は/tmpを経由してアクセスする
+            obj = storage_read()
+            with obj.open(in_file_name) as fd:
                 line_no = 0
 
                 # mystsの値
@@ -8449,7 +8497,7 @@ class CreateAnsibleExecFiles():
 
                 elif mysts == 9:
                     pass
-
+            obj.close()
         except Exception as e:
             msgstr = g.appmsg.get_api_message("MSG-10104", [in_host_name, os.path.basename(in_file_name)])
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),

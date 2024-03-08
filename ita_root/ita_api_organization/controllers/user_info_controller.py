@@ -39,9 +39,6 @@ def get_menu_group_panels(organization_id, workspace_id):  # noqa: E501
     try:
         # ユーザの権限情報を取得
         data = user_info.collect_menu_group_panels(objdbca)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -66,9 +63,6 @@ def get_user_auth(organization_id, workspace_id):  # noqa: E501
     try:
         # ユーザの権限情報を取得
         data = user_info.collect_user_auth(objdbca)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -93,9 +87,6 @@ def get_user_menus(organization_id, workspace_id):  # noqa: E501
     try:
         # メニューのカラム情報を取得
         data = user_info.collect_menus(objdbca)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -132,9 +123,6 @@ def post_table_settings(organization_id, workspace_id, body=None):  # noqa: E501
 
         # ユーザの権限情報を取得
         data = user_info.regist_table_settings(objdbca, parameter)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -159,9 +147,6 @@ def get_widget_settings(organization_id, workspace_id):  # noqa: E501
     try:
         # メニューのカラム情報を取得
         data = user_info.collect_widget_settings(objdbca)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -198,9 +183,6 @@ def post_widget_settings(organization_id, workspace_id, body=None):  # noqa: E50
 
         # ユーザの権限情報を取得
         data = user_info.regist_widget_settings(objdbca, parameter)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return data,

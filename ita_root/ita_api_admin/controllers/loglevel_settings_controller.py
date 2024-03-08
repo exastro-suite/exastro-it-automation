@@ -48,12 +48,9 @@ def get_all_loglevel_settings():  # noqa: E501
                     result_data[loglevel_container['SERVICE_NAME']] = log_level
                 else:
                     result_data[loglevel_container['SERVICE_NAME']] = None
-    except Exception as e:
+    finally:
         if "common_db" in locals():
             common_db.db_disconnect()
-        raise e
-    finally:
-        common_db.db_disconnect()
     return result_data,
 
 
@@ -73,11 +70,8 @@ def post_all_setting_loglevel(body=None):  # noqa: E501
         common_db = DBConnectCommon()  # noqa: F405
         parameter = body
         loglevel_settings_container(common_db, parameter)
-    except Exception as e:
+    finally:
         if "common_db" in locals():
             common_db.db_disconnect()
-        raise e
-    finally:
-        common_db.db_disconnect()
 
     return g.appmsg.get_api_message("000-00001"),

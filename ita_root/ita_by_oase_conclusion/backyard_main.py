@@ -163,7 +163,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # フィルタリング開始
-    tmp_msg = g.appmsg.get_log_message("BKY-90013", ['Start'])
+    tmp_msg = g.appmsg.get_log_message("BKY-90013", ['Started'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     newIncident = False
@@ -182,13 +182,13 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
             tmp_msg = g.appmsg.get_log_message("BKY-90015", [filterId, str(JudgeEventId)])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    tmp_msg = g.appmsg.get_log_message("BKY-90013", ['End'])
+    tmp_msg = g.appmsg.get_log_message("BKY-90013", ['Ended'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # ルールで使用しているフィルタを集計
     FiltersUsedinRulesDict = judgeObj.SummaryofFiltersUsedinRules(ruleList)
 
-    tmp_msg = g.appmsg.get_log_message("BKY-90016", ['Start'])
+    tmp_msg = g.appmsg.get_log_message("BKY-90016", ['Started'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 「アクション」からレコードを取得
@@ -219,7 +219,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
             TargetRuleList = judgeObj.TargetRuleExtraction(TargetLevel, ruleList, FiltersUsedinRulesDict, IncidentDict)
 
             newIncident = True
-            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Start'])
+            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Started'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # レベル毎の結論イベント未発生確認のループ -----
@@ -431,7 +431,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # ----- レベル毎の結論イベント未発生確認のループ
-            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'End'])
+            tmp_msg = g.appmsg.get_log_message("BKY-90017", [TargetLevel, 'Ended'])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # ----- レベル毎のループ
@@ -444,7 +444,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
             break
 
     # ----- 全レベルループ
-    tmp_msg = g.appmsg.get_log_message("BKY-90016", ['End'])
+    tmp_msg = g.appmsg.get_log_message("BKY-90016", ['Ended'])
     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 処理後タイムアウトイベント検出

@@ -12,11 +12,14 @@
 # limitations under the License.
 #
 
+from flask import g
 import requests
 import json
 from urllib.parse import urlparse
+import datetime
+from http.client import HTTPResponse
 
-
+from common_libs.common.exception import AppException
 
 class APIClientCommon:
     """
@@ -45,23 +48,66 @@ class APIClientCommon:
         self.access_key_id = event_settings["ACCESS_KEY_ID"]
         self.secret_access_key = event_settings["SECRET_ACCESS_KEY"]
         self.mailbox_name = event_settings["MAILBOXNAME"]
+        self.password = event_settings["PASSWORD"]
+        self.parameter = event_settings["PARAMETER"]
+        # 前回イベント収集日時（初回イベント収取時は、システム日時が設定されている）
         self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
-        self.message_ids = event_settings["MESSAGE_IDS"] if "MESSAGE_IDS" in event_settings else None
+        self.saved_ids = event_settings["SAVED_IDS"] if "SAVED_IDS" in event_settings else None
 
     def call_api(self, parameter):
         API_response = None
         self.parameter = parameter  # APIのパラメータ
-        response = requests.request(
-            method=self.request_method,
-            url=self.url,
-            headers=self.headers,
-            params=parameter if self.request_method == "1" else None,
-            data=json.dumps(self.parameter) if self.request_method == "2" else None,
-            proxies={
-                "http": f"{self.proxy_host}:{self.proxy_port}",
-                "https": f"{self.proxy_host}:{self.proxy_port}"
-            }
-        )
-        API_response = response.json()
+        if self.parameter is not None:
+            # パラメータ中の"EXSASTRO_LAST_FETCHED_TIME"を前回イベント収集日時（初回はシステム日時）に置換
+            last_fetched_time = datetime.datetime.utcfromtimestamp(self.last_fetched_timestamp)
+            last_fetched_ymd = last_fetched_time.strftime('%Y/%m/%d %H:%M:%S')
+            last_fetched_dmy = last_fetched_time.strftime('%d/%m/%y %H:%M:%S')
+            last_fetched_timestamp = str(int(datetime.datetime.timestamp(last_fetched_time)))
 
-        return API_response
+            for key, value in self.parameter.items():
+                if type(value) is str:
+                    value = value.replace("EXSASTRO_LAST_FETCHED_YY_MM_DD", last_fetched_ymd)
+                    value = value.replace("EXSASTRO_LAST_FETCHED_DD_MM_YY", last_fetched_dmy)
+                    value = value.replace("EXSASTRO_LAST_FETCHED_TIMESTAMP", last_fetched_timestamp)
+                    self.parameter[key] = value
+
+        try:
+            proxies = None
+            if self.proxy_host is not None and self.proxy_port is not None:
+                proxies = {
+                    "http": f"{self.proxy_host}:{self.proxy_port}",
+                    "https": f"{self.proxy_host}:{self.proxy_port}"
+                }
+
+            response = requests.request(
+                method=self.request_method,
+                url=self.url,
+                headers=self.headers,
+                params=parameter if self.request_method == "GET" else None,
+                data=json.dumps(self.parameter).encode() if self.request_method == "POST" else None,
+                proxies=proxies
+            )
+            API_response = response.json()
+
+            g.applogger.debug("HTTP STATUS {}".format(response.status_code))
+            g.applogger.debug("Respons: {}\n".format(API_response))
+
+            if response.status_code < 200 or response.status_code > 299:
+                status_description = ""
+                if response.status_code in HTTPResponse:
+                    status_description = HTTPResponse[response.status_code]
+                http_status = "{} {}".format(response.status_code, status_description)
+                raise AppException("AGT-10029", [http_status])
+
+            return API_response
+
+        except requests.exceptions.InvalidJSONError:
+            g.applogger.info("Request data failed due to type error. Check the parameter settings.")
+            return API_response
+
+        except requests.exceptions.JSONDecodeError:
+            g.applogger.info("Failed because the response was not in JSON format")
+            return API_response
+
+        except Exception as e:
+            raise AppException("AGT-10029", [e])

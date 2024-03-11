@@ -424,13 +424,13 @@ CREATE TABLE T_OASE_RULE
     FILTER_A                        VARCHAR(40),                                -- フィルターA
     FILTER_OPERATOR                 VARCHAR(2),                                 -- フィルター演算子
     FILTER_B                        VARCHAR(40),                                -- フィルターB
-    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 作業前_通知
-    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 作業前_承認待ち
-    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 作業前_通知先
+    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 事前_通知
+    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 事前_承認待ち
+    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 事前_通知先
     ACTION_ID                       VARCHAR(40),                                -- アクションID
-    AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
-    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
-    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
+    AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
+    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
+    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先
     CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
@@ -454,13 +454,13 @@ CREATE TABLE T_OASE_RULE_JNL
     FILTER_A                        VARCHAR(40),                                -- フィルターA
     FILTER_OPERATOR                 VARCHAR(2),                                 -- フィルター演算子
     FILTER_B                        VARCHAR(40),                                -- フィルターB
-    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 作業前_通知
-    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 作業前_承認待ち
-    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 作業前_通知先
+    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 事前_通知
+    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 事前_承認待ち
+    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 事前_通知先
     ACTION_ID                       VARCHAR(40),                                -- アクションID
-    AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
-    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
-    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
+    AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
+    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
+    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先
     CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用

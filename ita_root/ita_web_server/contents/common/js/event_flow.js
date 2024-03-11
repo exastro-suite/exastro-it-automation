@@ -46,7 +46,7 @@ setInitCanvasValue() {
     er.intervalTime = fn.storage.get('eventflow_interval_time', 'local', false ); // 更新間隔
     if ( er.intervalTime === false ) er.intervalTime = 5000;
 
-    er.blockMargin = 64; // ブロックごとの重なり判定マージン
+    er.blockMargin = 48; // ブロックごとの重なり判定マージン
     er.minFloor = 16; // 最小段数
     er.maxRate = 50; // 最大拡大倍数
 
@@ -585,24 +585,28 @@ createCanvasData() {
         if ( !x1 ) x1 = e.x1;
         if ( !x2 ) x2 = e.x2;
 
-        // 何段目に表示するか
+        // 何段目のどの位置に入るか調べる
+        const m = er.blockMargin;
         let f = 0;
         while ( e.floor === undefined ) {
             if ( !floor[f] ) floor[f] = [];
 
             const l = floor[f].length;
-            if ( l === 0 || ( floor[f][ l - 1 ] && floor[f][ l - 1 ] + er.blockMargin < x1 ) ) {
-                floor[f].push( x1 );
-                floor[f].push( x2 );
+            if ( l === 0 || floor[f][l-1].x2 + m < x1 ) {
+                floor[f].push({ x1: x1, x2: x2 });
                 e.floor = f;
-            }
-
-            if ( floor[f][0] && floor[f][0] - er.blockMargin > x2 ) {
-                floor[f].unshift( x2 );
-                floor[f].unshift( x1 );
+            } else if ( floor[f][0].x1 - m > x2 ) {
+                floor[f].unshift({ x1: x1, x2: x2 });
                 e.floor = f;
+            } else if ( floor[f][0].x2 + m < x1 && x2 < floor[f][l-1].x1 - m ) {
+                for ( let i = 0; i <= l - 1; i++ ) {
+                    if ( floor[f][i].x2 + m < x1 && x2 < floor[f][i+1].x1 - m ) {
+                        floor[f].splice( i + 1, 0, { x1: x1, x2: x2 });
+                        e.floor = f;
+                        break;
+                    }
+                }
             }
-
             f++;
         }
         er.canvasData.push( e );
@@ -1285,6 +1289,9 @@ setEventLink( targetBlock ) {
 
     // 線を描画する
     const doneList = [];
+    const backLineColor = ( er.colorMode === 'darkmode')? '#111': '#FFF';
+    const lineColor = ( er.colorMode === 'darkmode')? '#577397': '#005BAC';
+    const lineColor2 = ( er.colorMode === 'darkmode')? '#99AAC0': '#577397';
     const setLine = function( width, color, x1, y1 , x2, y2 ){
         const lX = ( x1 < x2 )? x1: x2;
         const lY = ( y1 > y2 )? y1: y2;
@@ -1305,8 +1312,8 @@ setEventLink( targetBlock ) {
         });
 
         if ( event && event.block ) {
-            setLine( 6, '#FFF', x, y, event.block.centerX, event.block.centerY );
-            setLine( 2, '#005BAC', x, y, event.block.centerX, event.block.centerY );
+            setLine( 6, backLineColor, x, y, event.block.centerX, event.block.centerY );
+            setLine( 2, lineColor, x, y, event.block.centerX, event.block.centerY );
 
             targetLink( event );
         }
@@ -1329,17 +1336,17 @@ setEventLink( targetBlock ) {
     for ( const e of groupData ) {
         if ( e.block ) {
             const ruleFlag = ( e.type === 'rule');
-            er.roundRect( ctx, e.block, e.block.h * .1, '#FFF', null, null, ruleFlag, true );
+            er.roundRect( ctx, e.block, e.block.h * .1, backLineColor, null, null, ruleFlag, true );
 
 
-            const hover = ( er.currentBlock && e.id === er.currentBlock.id )? 'rgba(255,255,255,.5)': null;
+            const hover = ( er.currentBlock && e.id === er.currentBlock.id )? ( er.colorMode !== 'darkmode')? 'rgba(255,255,255,.5)': 'rgba(0,0,0,.3)' : null;
             if ( er.clickBlock && e.id === er.clickBlock.id ) {
-                er.roundRect( ctx, e.block, e.block.h * .1, null, '#FFF', 8, ruleFlag );
-                er.roundRect( ctx, e.block, e.block.h * .1, hover, '#005BAC', 4, ruleFlag );
-                er.roundRect( ctx, e.block, e.block.h * .1, hover, '#577397', 2, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, null, backLineColor, 8, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, hover, lineColor, 4, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, hover, lineColor2, 2, ruleFlag );
             } else {
-                er.roundRect( ctx, e.block, e.block.h * .1, null, '#FFF', 6, ruleFlag );
-                er.roundRect( ctx, e.block, e.block.h * .1, hover, '#005BAC', 2, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, null, backLineColor, 6, ruleFlag );
+                er.roundRect( ctx, e.block, e.block.h * .1, hover, lineColor, 2, ruleFlag );
             }
         }
     }
@@ -1818,7 +1825,7 @@ setChartEvents() {
                 er.clickBlock = er.currentBlock;
                 er.setEventLink( er.clickBlock );
             } else {
-                er.$.info.hide();
+                er.hideEventInfo( x );
                 if ( !dateRangeSelectMode ) er.clickBlock = null;
             }
         },
@@ -2095,6 +2102,15 @@ viewEventInfo( x ) {
 
     er.$.info.css(css);
 
+    // クリックしたアクション、ルールと関連するパーツを表示する
+    er.$.parts.find('.eventFlowPartsShow').removeClass('eventFlowPartsShow').show();
+    if ( d.type === 'action' || d.type === 'rule') {
+        const className = ( d.type === 'action')? 'Action': 'Rule';
+        const id = ( d.type === 'action')? d.item.ACTION_ID: ( d.info )? d.info.id: '';
+        er.$.parts.find(`.eventFlowParts${className}`).addClass('eventFlowPartsShow').show()
+            .not(`[data-id="${fn.escape(id)}"]`).hide();
+    }
+
     const html = [];
     html.push( er.eventInfoRowHtml('Type', d.type ) );
 
@@ -2140,7 +2156,7 @@ viewEventInfo( x ) {
         const infoHtml = `<div class="eventInfoContainer">`
             + `<div class="eventInfoTabBlocks">`
                 + `<div class="eventInfoTabBlock open"><table class="eventInfoTable">${html.join('')}</table></div>`
-                + `<div class="eventInfoTabBlock"><div id="eventInfoJson">${json}</div></div>`
+                + `<div class="eventInfoTabBlock"><div id="eventInfoJson"></div></div>`
             + `</div>`
             + `<div class="eventInfoTabs">`
                 + `<ul class="eventInfoTabList">`
@@ -2169,9 +2185,25 @@ viewEventInfo( x ) {
             enableLiveAutocompletion: true
         });
         er.$.info.find('.ace_scrollbar').addClass('commonScroll');
+
+        // 値をセット
+        aceEditor.session.setValue( json );
     } else {
         er.$.info.html(`<div class="eventFlowEventInformationInner">${tableHtml}</div>`);
     }
+}
+/*
+##################################################
+    イベントの詳細情報を表示
+##################################################
+*/
+hideEventInfo() {
+    const er = this;
+
+    const d = er.clickBlock;
+
+    er.$.info.hide();
+    er.$.parts.find('.eventFlowPartsShow').removeClass('eventFlowPartsShow').show();
 }
 /*
 ##################################################

@@ -77,9 +77,6 @@ def maintenance_register(organization_id, workspace_id, menu, body=None, **kwarg
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
         parameter.setdefault('type', cmd_type)
         result_data = menu_maintenance.rest_maintenance(objdbca, menu, parameter, target_uuid)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -140,9 +137,6 @@ def maintenance_update(organization_id, workspace_id, menu, uuid, body=None, **k
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         result_data = menu_maintenance.rest_maintenance(objdbca, menu, parameter, target_uuid)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

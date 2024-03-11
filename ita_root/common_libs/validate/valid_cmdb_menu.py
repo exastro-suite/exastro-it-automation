@@ -91,3 +91,16 @@ def set_reference_operation(objdbca, objtable, option):
             option['entry_parameter']['parameter'][target_column_name_rest] = entry_reference_value
 
     return retBool, msg, option, False
+
+def varlistup_backyard_valid_menu_before(objdbca, objtable, option):
+    retBool = True
+    msg = ''
+
+    # ansible系のバックヤード起動フラグ設定
+    table_name = "T_COMN_PROC_LOADED_LIST"
+    data_list = [{"LOADED_FLG": "0", "ROW_ID": "202"}, {"LOADED_FLG": "0", "ROW_ID": "203"}, {"LOADED_FLG": "0", "ROW_ID": "204"}]
+    primary_key_name = "ROW_ID"
+    for i in data_list:
+        objdbca.table_update(table_name, i, primary_key_name, False)
+
+    return retBool, msg, option, False

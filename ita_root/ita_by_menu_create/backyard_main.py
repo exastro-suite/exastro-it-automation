@@ -196,7 +196,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
     """
     # テーブル/ビュー名
     t_comn_column_group = 'T_COMN_COLUMN_GROUP'
-    
+
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read = storage_access.storage_read()
 
@@ -887,6 +887,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         if sheet_type == "1" and file_upload_only_flag:
             sheet_type = "4"
 
+        json_lock_table = json.dumps(["T_COMN_PROC_LOADED_LIST"])
+
         # 「メニュー-テーブル紐付管理」にレコードを登録もしくは更新する
         ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s', [menu_uuid])
         if ret:
@@ -910,6 +912,9 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "ROW_REUSE_FLAG": row_reuse_flag,
                 "SUBSTITUTION_VALUE_LINK_FLAG": substitution_value_link_flag,
                 "UNIQUE_CONSTRAINT": unique_constraint,
+                "LOCK_TABLE": None,
+                "BEFORE_VALIDATE_REGISTER": None,
+                "AFTER_VALIDATE_REGISTER": None,
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
@@ -919,6 +924,11 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 data_list["VIEW_NAME"] = sv_create_view_name
             elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
                 data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
+
+            # ホストありの入力用パラメータシート判定、BEFORE_VALIDATE_REGISTERにFunction登録
+            if row_insert_flag == "1" and sheet_type == "1":
+                data_list["BEFORE_VALIDATE_REGISTER"] = "varlistup_backyard_valid_menu_before"
+                data_list["LOCK_TABLE"] = json_lock_table
 
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_update(t_comn_menu_table_link, data_list, primary_key_name)
@@ -951,7 +961,14 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 data_list["VIEW_NAME"] = sv_create_view_name
             elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
                 data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
+
+            # ホストありの入力用パラメータシート判定、BEFORE_VALIDATE_REGISTERにFunction登録
+            if row_insert_flag == "1" and sheet_type == "1":
+                data_list["BEFORE_VALIDATE_REGISTER"] = "varlistup_backyard_valid_menu_before"
+                data_list["LOCK_TABLE"] = json_lock_table
+
             primary_key_name = 'TABLE_DEFINITION_ID'
+
             objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
     except Exception as msg:

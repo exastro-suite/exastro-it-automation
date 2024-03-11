@@ -38,7 +38,7 @@ def addline_msg(msg=''):
 #         UserName = Row[UserNameCol]
 #     return UserName
 
-def generateConclusionLables(UseEventIdList, ruleRow):
+def generateConclusionLables(EventObj, UseEventIdList, ruleRow):
     # アクションに利用 & 結論イベントに付与 するラベルを生成する
     conclusion_lables = {}
 

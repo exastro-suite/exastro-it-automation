@@ -1526,7 +1526,7 @@
     "BKY-90010": "Acquired filter management. Items: {}",
     "BKY-90011": "Acquired rule management. Items: {}",
     "BKY-90012": "Creating new event notification incident flag({}) ids: {}",
-    "BKY-90013": "Filtering process started or ended",
+    "BKY-90013": "Filtering process {}",
     "BKY-90014": "Filtering verdict results. Matched FILTER_ID: {} EVENT_ID: <<{}>>",
     "BKY-90015": "Filtering verdict results. No Match FILTER_ID: {} EVENT_ID: <<{}>>",
     "BKY-90016": "Rule match loop process {}",

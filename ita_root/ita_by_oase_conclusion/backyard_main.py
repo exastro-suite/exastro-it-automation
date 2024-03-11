@@ -326,7 +326,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                         for action_log_row in ret_action_log:
                             if action_log_row["ACTION_ID"]:
                             # アクションが設定されている場合
-                                # 通知処理(作業前)
+                                # 通知処理(事前)
                                 rule_id = action_log_row["RULE_ID"]
                                 # 「ルール管理」から対象レコードを取得
                                 ret_rule = wsDb.table_select(oaseConst.T_OASE_RULE, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s AND RULE_ID = %s', [0, 1, rule_id])
@@ -336,7 +336,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                                     return False
 
                                 if ret_rule[0].get('BEFORE_NOTIFICATION_DESTINATION'):
-                                    # 通知先が設定されている場合、通知処理(作業前)を実行する
+                                    # 通知先が設定されている場合、通知処理(事前)を実行する
                                     # 2.3の時点では、イベントの情報は空にしておく
                                     before_Action_Event_List = [{}]
 

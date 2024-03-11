@@ -88,7 +88,7 @@ class ActionStatusMonitor():
             TargetStatusList.append(oaseConst.CSTS_Unexpected_Error)  # 想定外エラー
             # CONDUCTORの状態判定
             if Row['CONDUCTOR_STATUS_ID'] in TargetStatusList:
-                # 通知処理(作業後)
+                # 通知処理(事後)
                 rule_id = Row["RULE_ID"]
                 # 「ルール管理」からレコードを取得
                 # ソート条件不要
@@ -97,7 +97,7 @@ class ActionStatusMonitor():
                     tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_OASE_RULE'])
                     g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 elif ret_rule[0].get('AFTER_NOTIFICATION_DESTINATION'):
-                    # 通知先が設定されている場合、通知処理(作業後)を実行する
+                    # 通知先が設定されている場合、通知処理(事後)を実行する
                     # 2.3の時点では、イベントの情報は空にしておく
                     after_Action_Event_List = [{}]
 

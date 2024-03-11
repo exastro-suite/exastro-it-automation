@@ -35,9 +35,9 @@ class OASENotificationType(Enum):
     TIMEOUT = 3
     # 未知
     UNDETECTED = 4
-    # 作業前
+    # 事前
     BEFORE_ACTION = 5
-    # 作業後
+    # 事後
     AFTER_ACTION = 6
 
 

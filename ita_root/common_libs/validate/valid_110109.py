@@ -79,12 +79,12 @@ def external_valid_menu_before(objdbca, objtable, option):
         retBool = False
         msg = g.appmsg.get_api_message("499-01810")
         return retBool, msg, option,
-    # 作業前の通知先が選択されていて、通知が未選択の場合
+    # 事前の通知先が選択されていて、通知が未選択の場合
     if before_notice_dest and not before_notice:
         retBool = False
         msg = g.appmsg.get_api_message("499-01811")
         return retBool, msg, option,
-    # 作業後の通知先が選択されていて、通知が未選択の場合
+    # 事後の通知先が選択されていて、通知が未選択の場合
     if after_notice_dest and not after_notice:
         retBool = False
         msg = g.appmsg.get_api_message("499-01812")

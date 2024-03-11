@@ -525,4 +525,4 @@ def getRuleList(wsDb, sort_bv_priority=False):
         rule_row['RULE_PRIORITY'] = Priority
         Priority += 1
         ruleList.append(rule_row)
-    return ruleList
+    return True, ruleList

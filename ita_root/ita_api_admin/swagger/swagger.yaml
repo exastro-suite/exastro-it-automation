@@ -41,6 +41,8 @@ tags:
   description: バックヤード実行状態一括取得
 - name: Menu Info
   description: メニュー情報の取得(Exastro Platform連携用) ※利用不可
+- name: InternalHealthCheckService
+  description: ヘルスチェックに関する操作(内部用)
 paths:
   /api/organizations/{organization_id}/ita/:
     get:
@@ -555,6 +557,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.menu_info_controller
+  /internal-api/health-check/liveness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check liveness
+      operationId: internal_health_check_liveness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+  /internal-api/health-check/readness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check readness
+      operationId: internal_health_check_readness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
     ERROR_TEMPLATE:
@@ -1137,6 +1179,21 @@ components:
         - id1
         - id2
         - id3
+        message: message
+    inline_response_200_8:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: string
+          example: ""
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: ""
         message: message
     inline_response_200_data_optionsIta_drivers:
       type: object

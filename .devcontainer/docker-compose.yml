@@ -857,8 +857,8 @@ services:
     depends_on:
       ita-migration:
         condition: service_completed_successfully
-      ita-mongodb:
-        condition: service_healthy
+      # ita-mongodb:
+      #   condition: service_healthy
 
   ita-migration:
     user: 1000:1000

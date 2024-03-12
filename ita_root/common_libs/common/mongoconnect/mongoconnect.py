@@ -84,7 +84,7 @@ class MONGOConnectCommon():
             raise AppException("999-00002", ["mongodb.{}".format(self._db_name), mongo_error])
 
         if self._client is None:
-            raise AppException("999-00002", ["mongodb.{}".format(self._db_name), "cannot access. connect info may be incorrect"])
+            raise AppException("999-00002", ["mongodb.{}".format(self._db_name), "mongodb client is invalid"])
 
         self._db = self._client[self._db_name]
 
@@ -99,7 +99,7 @@ class MONGOConnectCommon():
             self._client.server_info()
         except PyMongoError as mongo_error:
             # タイムアウト
-            raise AppException("999-00002", ["mongodb.{}".format(self._db_name), "cannot connect mongo.({})".format(mongo_error)])
+            raise AppException("499-00011", [mongo_error], [])
 
     def disconnect(self):
         """

@@ -355,6 +355,7 @@ CREATE TABLE T_OASE_FILTER
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
+    SEARCH_CONDITION                VARCHAR(2),                                 -- 検索方法
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -371,6 +372,7 @@ CREATE TABLE T_OASE_FILTER_JNL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
+    SEARCH_CONDITION                VARCHAR(2),                                 -- 検索方法
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時

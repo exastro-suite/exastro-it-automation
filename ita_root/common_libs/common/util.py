@@ -256,6 +256,12 @@ def file_encode(file_path):
     Returns:
         Encoded string
     """
+    print("---file_encode in file_path:" + file_path)
+    if os.path.isdir("/tmp") is False:
+        print("/tmp notfund")
+    if os.path.isdir("/storage") is False:
+        print("/storage notfund")
+
     is_file = os.path.isfile(file_path)
     if not is_file:
         return ""
@@ -267,6 +273,7 @@ def file_encode(file_path):
         # /storage
         tmp_file_path = obj.make_temp_path(file_path)
         # /storageから/tmpにコピー
+        print("copy2 src path:" + file_path + " dest path:" + tmp_file_path)
         shutil.copy2(file_path, tmp_file_path)
     else:
         # not /storage
@@ -292,37 +299,33 @@ def file_decode(file_path):
     Returns:
         Encoded string
     """
-    try:
-        is_file = os.path.isfile(file_path)
-        if not is_file:
-            return ""
+    is_file = os.path.isfile(file_path)
+    if not is_file:
+        return ""
 
-        # #2079 /storage配下は/tmpを経由してアクセスする
-        obj = storage_base()
-        storage_flg = obj.path_check(file_path)
-        if storage_flg is True:
-            # /storage
-            tmp_file_path = obj.make_temp_path(file_path)
-            # /storageから/tmpにコピー
-            shutil.copy2(file_path, tmp_file_path)
-        else:
-            # not /storage
-            tmp_file_path = file_path
+    # #2079 /storage配下は/tmpを経由してアクセスする
+    obj = storage_base()
+    storage_flg = obj.path_check(file_path)
+    if storage_flg is True:
+        # /storage
+        tmp_file_path = obj.make_temp_path(file_path)
+        # /storageから/tmpにコピー
+        shutil.copy2(file_path, tmp_file_path)
+    else:
+        # not /storage
+        tmp_file_path = file_path
 
-        with open(tmp_file_path, "rb") as f:
-            text = f.read().decode()
-        f.close()
+    with open(tmp_file_path, "rb") as f:
+        text = f.read().decode()
+    f.close()
 
-        if storage_flg is True:
-            # /tmpゴミ掃除
-            if os.path.isfile(tmp_file_path) is True:
-                os.remove(tmp_file_path)
+    if storage_flg is True:
+        # /tmpゴミ掃除
+        if os.path.isfile(tmp_file_path) is True:
+            os.remove(tmp_file_path)
 
-        text_decrypt = ky_decrypt(text)
-        return base64.b64encode(text_decrypt.encode()).decode()
-
-    except Exception:
-        return False
+    text_decrypt = ky_decrypt(text)
+    return base64.b64encode(text_decrypt.encode()).decode()
 
 
 def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_name, uuid_jnl):

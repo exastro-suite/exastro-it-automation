@@ -162,10 +162,10 @@ services:
 
   ita-mongodb:
     image: mongo:6.0.7
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
-      interval: 3s
-      retries: 200
+    # healthcheck:
+    #   test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
+    #   interval: 3s
+    #   retries: 200
     environment:
       - TZ=Asia/Tokyo
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}

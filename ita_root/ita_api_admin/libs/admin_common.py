@@ -45,24 +45,28 @@ def before_request_handler():
         check_request_body()
 
         # request-header check
-        user_id = request.headers.get("User-Id")
-        roles_org = request.headers.get("Roles")
-        try:
-            roles_decode = base64.b64decode(roles_org.encode()).decode("utf-8")
-        except Exception:
-            raise AppException("400-00001", ["Roles"], ["Roles"])
-        roles = roles_decode.split("\n")
-        if user_id is None or roles is None or type(roles) is not list:
-            raise AppException("400-00001", ["User-Id or Roles"], ["User-Id or Roles"])
+        # ヘルスチェック用のURLの場合にUser-IdとRolesを確認しない
+        url = request.url
+        ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readness$", url)
+        if ret is None:
+            user_id = request.headers.get("User-Id")
+            roles_org = request.headers.get("Roles")
+            try:
+                roles_decode = base64.b64decode(roles_org.encode()).decode("utf-8")
+            except Exception:
+                raise AppException("400-00001", ["Roles"], ["Roles"])
+            roles = roles_decode.split("\n")
+            if user_id is None or roles is None or type(roles) is not list:
+                raise AppException("400-00001", ["User-Id or Roles"], ["User-Id or Roles"])
 
-        g.USER_ID = user_id
-        g.ROLES = roles
+            g.USER_ID = user_id
+            g.ROLES = roles
 
-        # set log environ format
-        g.applogger.set_env_message()
+            # set log environ format
+            g.applogger.set_env_message()
 
-        debug_args = [request.method + ":" + request.url]
-        g.applogger.info("[ts={}][api-start]url: {}".format(get_api_timestamp(), *debug_args))
+            debug_args = [request.method + ":" + request.url]
+            g.applogger.info("[ts={}][api-start]url: {}".format(get_api_timestamp(), *debug_args))
 
         # set language
         language = request.headers.get("Language")

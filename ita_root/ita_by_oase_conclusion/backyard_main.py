@@ -233,7 +233,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                     # ルール判定 マッチ
                     if ret is True:
                         # アクションに利用 & 結論イベントに付与 するラベルを生成する
-                        conclusion_lables = generateConclusionLables(UseEventIdList, ruleRow)
+                        conclusion_lables = generateConclusionLables(EventObj, UseEventIdList, ruleRow)
 
                         # 評価結果に登録するアクション情報を取得（ある場合）
                         action_id = ruleRow.get("ACTION_ID")

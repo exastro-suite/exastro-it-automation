@@ -59,6 +59,8 @@ tags:
   description: OASE用
 - name: Apply
   description: パラメータ適用
+- name: InternalHealthCheckService
+  description: ヘルスチェックに関する操作(内部用)
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
     get:
@@ -5571,6 +5573,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.apply_controller
+  /internal-api/health-check/liveness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check liveness
+      operationId: internal_health_check_liveness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_26'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+  /internal-api/health-check/readness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check readness
+      operationId: internal_health_check_readness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_26'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
     TABLE:
@@ -7255,6 +7297,21 @@ components:
           - $ref: '#/components/schemas/ApplyParameterTypeC'
           - $ref: '#/components/schemas/ApplyParameterTypeD'
       description: 適用するパラメータ情報および作業実行するConductorの構成情報
+    inline_response_200_26:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: string
+          example: ""
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: ""
+        message: message
     FILTER_REQUEST_PARAMETERS_RANGE:
       type: object
       properties:

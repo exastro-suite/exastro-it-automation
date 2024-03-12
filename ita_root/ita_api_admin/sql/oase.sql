@@ -348,14 +348,14 @@ CREATE TABLE T_OASE_FILTER_OPERATOR
 
 
 
--- フィルター管理
+-- フィルター
 CREATE TABLE T_OASE_FILTER
 (
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
-    SEARCH_CONDITION                VARCHAR(2),                                 -- 検索方法
+    SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -372,7 +372,7 @@ CREATE TABLE T_OASE_FILTER_JNL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
-    SEARCH_CONDITION                VARCHAR(2),                                 -- 検索方法
+    SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -402,7 +402,7 @@ CREATE TABLE T_OASE_ACTION_STATUS
 -- アクション
 CREATE TABLE T_OASE_ACTION
 (
-    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
@@ -422,7 +422,7 @@ CREATE TABLE T_OASE_ACTION_JNL
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
@@ -459,7 +459,7 @@ FROM
 ORDER BY
     ACTION_ID ASC
 ;
-CREATE VIEW V_OASE_ACTION_JNL AS 
+CREATE VIEW V_OASE_ACTION_JNL AS
 SELECT
     JOURNAL_SEQ_NO,
     JOURNAL_REG_DATETIME,
@@ -516,7 +516,7 @@ AND
 
 
 
--- ルール管理
+-- ルール
 CREATE TABLE T_OASE_RULE
 (
     RULE_ID                         VARCHAR(40),                                -- ルールID
@@ -590,7 +590,7 @@ CREATE TABLE T_OASE_ACTION_LOG
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
-    CONCLUSION_LABEL                TEXT,                                       -- 結論ラベル
+    CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
@@ -615,7 +615,7 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
-    CONCLUSION_LABEL                TEXT,                                       -- 結論ラベル
+    CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

@@ -15,6 +15,7 @@
 from flask import g
 import os
 import datetime
+import json
 
 
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -233,7 +234,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                     # ルール判定 マッチ
                     if ret is True:
                         # アクションに利用 & 結論イベントに付与 するラベルを生成する
-                        conclusion_lables = generateConclusionLables(EventObj, UseEventIdList, ruleRow)
+                        conclusion_lables = generateConclusionLables(wsDb, wsMongo, UseEventIdList, ruleRow)
 
                         # 評価結果に登録するアクション情報を取得（ある場合）
                         action_id = ruleRow.get("ACTION_ID")
@@ -285,6 +286,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                             "OPERATION_ID": operation_id,
                             "OPERATION_NAME": operation_name,
                             "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
+                            "CONCLUSION_LABELS": json.dumps(conclusion_lables),
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
                             "DISUSE_FLAG": "0",
@@ -376,7 +378,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                             else:
                             # アクションが設定されていない場合
                                 # 結論イベント登録
-                                ret, ConclusionEventRow = InsertConclusionEvent(EventObj, judgeObj.LabelMasterDict, ruleRow, UseEventIdList, action_log_row[''])
+                                ret, ConclusionEventRow = InsertConclusionEvent(EventObj, judgeObj.LabelMasterDict, ruleRow, UseEventIdList, action_log_row['CONCLUSION_LABELS'])
 
                                 # 新規イベントの通知用に結論イベント登録
                                 # newConclusionEventList.append(ConclusionEventRow)

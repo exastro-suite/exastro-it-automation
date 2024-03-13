@@ -257,10 +257,10 @@ def file_encode(file_path):
         Encoded string
     """
     print("---file_encode in file_path:" + file_path)
-    if os.path.isdir("/tmp") is False:
-        print("/tmp notfund")
-    if os.path.isdir("/storage") is False:
-        print("/storage notfund")
+#    if os.path.isdir("/tmp") is False:
+#        print("/tmp notfund")
+#    if os.path.isdir("/storage") is False:
+#        print("/storage notfund")
 
     is_file = os.path.isfile(file_path)
     if not is_file:

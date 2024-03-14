@@ -2107,7 +2107,7 @@ viewEventInfo( x ) {
     if ( d.type === 'action' || d.type === 'rule') {
         const className = ( d.type === 'action')? 'Action': 'Rule';
         const id = ( d.type === 'action')? d.item.ACTION_ID: ( d.info )? d.info.id: '';
-        er.$.parts.find(`.eventFlowParts${className}`).addClass('eventFlowPartsShow').show()
+        er.$.parts.find(`li.eventFlowParts${className}`).addClass('eventFlowPartsShow').show()
             .not(`[data-id="${fn.escape(id)}"]`).hide();
     }
 

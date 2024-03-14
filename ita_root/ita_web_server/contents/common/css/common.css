@@ -834,10 +834,15 @@ width: auto; min-width: 120px;
 padding: 4px 32px 4px 8px;
 cursor: pointer;
 }
-.tableEditMultipleColmun.textOverWrap,
-.tableEditInputMultipleSelectValueInner.textOverWrap {
+.tableEditMultipleColmun > span.textOverWrap,
+.tableEditInputMultipleSelectValueInner > span.textOverWrap {
 word-break: break-all!important;
 white-space: normal!important;
+}
+.tableEditMultipleColmun > span,
+.tableEditInputMultipleSelectValueInner > span {
+max-width: 100%;
+display: inline-block;
 }
 .tableEditMultipleColmun::after {
 font-family: 'exastro-ui-icons';

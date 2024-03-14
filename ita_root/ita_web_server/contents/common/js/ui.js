@@ -984,11 +984,6 @@ sheetType() {
 headerMenu( readyFlag = true ) {
     const mn = this;
 
-    const workspaces = fn.cv( mn.rest.user.workspaces, []),
-          workspaceId = mn.params.workspaceId,
-          workspaceName = workspaces[ workspaceId ];
-
-
     const html = `<ul class="headerMenuList">`
         + `<li class="headerMenuInformation headerMenuItem">${mn.workspaceInfo()}</li>`
         + `<li class="headerMenuInformation headerMenuItem">${mn.userInfo()}</li>`
@@ -1073,8 +1068,12 @@ headerMenuReady() {
 ##################################################
 */
 workspaceInfo() {
-    const mn = this,
-          workspaces = fn.cv( mn.rest.user.workspaces, [] ),
+    const mn = this;
+
+    // ユーザ情報確認
+    if ( !mn.rest.user ) return;
+
+    const workspaces = fn.cv( mn.rest.user.workspaces, {}),
           workspaceId = mn.params.workspaceId,
           currentWorkspaceName = fn.cv( workspaces[workspaceId], '', true );
 
@@ -1130,8 +1129,12 @@ workspaceInfo() {
 ##################################################
 */
 userInfo() {
-    const mn = this,
-          name = fn.cv( mn.rest.user.user_name, '', true ),
+    const mn = this;
+
+    // ユーザ情報確認
+    if ( !mn.rest.user ) return;
+
+    const name = fn.cv( mn.rest.user.user_name, '', true ),
           id = fn.cv( mn.rest.user.user_id, '', true ),
           roles = fn.cv( mn.rest.user.roles, []);
 

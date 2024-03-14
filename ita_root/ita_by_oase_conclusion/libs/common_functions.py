@@ -44,9 +44,9 @@ def generateConclusionLables(EventObj, UseEventIdList, ruleRow, labelMaster):
     conclusion_lables = {"labels": {}, "exastro_label_key_inputs": {}}
 
     # フィルターA, Bそれぞれに対応するイベント取得
-    event_A = EventObj.find_event_by_id(UseEventIdList[0])
+    result_A, event_A = EventObj.get_events(UseEventIdList[0])
     if len(UseEventIdList) == 2:
-        event_B = EventObj.find_event_by_id(UseEventIdList[1])
+        result_B, event_B = EventObj.get_events(UseEventIdList[1])
     else:
         event_B = {"labels": {}}
 

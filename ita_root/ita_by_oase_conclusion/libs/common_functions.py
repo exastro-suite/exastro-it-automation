@@ -39,27 +39,19 @@ def addline_msg(msg=''):
 #         UserName = Row[UserNameCol]
 #     return UserName
 
-def generateConclusionLables(wsDb, wsMongo, UseEventIdList, ruleRow):
+def generateConclusionLables(EventObj, UseEventIdList, ruleRow, labelMaster):
     # アクションに利用 & 結論イベントに付与 するラベルを生成する
-    conclusion_lables = {"labels": {}}
+    conclusion_lables = {"labels": {}, "exastro_label_key_inputs": {}}
 
-    # フィルターA, Bそれぞれに対応するイベント取得_exastroを含むラベルを除外
-    labeled_event_collection = wsMongo.collection("labeled_event_collection")
-    event_A = labeled_event_collection.find_one({"_id": UseEventIdList[0]})
-    event_B = labeled_event_collection.find_one({"_id": UseEventIdList[1]})
-    # _exastroを含むラベルを除外
-    event_A_labels = {key: value for key, value in event_A["labels"].items() if "_exastro" not in key}
-    event_B_labels = {key: value for key, value in event_B["labels"].items() if "_exastro" not in key}
-    # jinja2テンプレート参照用
-    event_A_reference = event_A_labels.copy()
-    event_B_reference = event_B_labels.copy()
+    # フィルターA, Bそれぞれに対応するイベント取得
+    event_A = EventObj.find_event_by_id(UseEventIdList[0])
+    if len(UseEventIdList) == 2:
+        event_B = EventObj.find_event_by_id(UseEventIdList[1])
+    else:
+        event_B = {"labels": {}}
 
-
-    # A, Bそれぞれkeyの部分をidに変換
-    for name, id in event_A["exastro_label_key_inputs"].items():
-        event_A_labels[id] = event_A_labels.pop(name)
-    for name, id in event_B["exastro_label_key_inputs"].items():
-        event_B_labels[id] = event_B_labels.pop(name)
+    event_A_labels = event_A["labels"]
+    event_B_labels = event_B["labels"]
 
     # ラベルのマージ
     merged_labels = event_B_labels
@@ -70,31 +62,43 @@ def generateConclusionLables(wsDb, wsMongo, UseEventIdList, ruleRow):
 
     conc_label_settings = ruleRow["CONCLUSION_LABEL_SETTINGS"]  # LIST
     for setting in conc_label_settings:
-
+        # label_key_idをlabel_key_nameに変換
+        label_key_name = getIDtoLabelName(labelMaster, setting["label_key"])
         # label_valueに変数ブロックが含まれている場合、jinja2テンプレートで値を変換
         template = Template(setting["label_value"])
-        label_value = template.render(A=event_A_reference, B=event_B_reference)
-        merged_labels[setting["label_key"]] = label_value
+        label_value = template.render(A=event_A_labels, B=event_B_labels)
+        merged_labels[label_key_name] = label_value
+
+    # _exastroを含むラベルを除外
+    keys_to_exclude = [
+        "_exastro_event_collection_settings_id",
+        "_exastro_fetched_time",
+        "_exastro_end_time",
+        "_exastro_type",
+        "_exastro_checked",
+        "_exastro_evaluated",
+        "_exastro_undetected",
+        "_exastro_timeout"
+    ]
+    for key in keys_to_exclude:
+        del merged_labels[key]
+
 
     conclusion_lables["labels"] = merged_labels
+    for label in merged_labels:
+        for master_id, master_key_name in labelMaster.items():
+            if label == master_key_name:
+                conclusion_lables["exastro_label_key_inputs"][label] = master_id
+
 
     return conclusion_lables
 
 
-def InsertConclusionEvent(EventObj, LabelMaster, RuleInfo, UseEventIdList, ConclusionLables):
+def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLables):
+    ConclusionLablesDict = json.loads(ConclusionLables)
     # 結論イベント登録
-    label_key_inputs = {}
-    addlabels = {}
-
-    # 結論ラベル
-    for label_key, label_name in json.loads(ConclusionLables).items():
-        key = getIDtoLabelName(LabelMaster, label_key)
-        if key is False:
-            tmp_msg = g.appmsg.get_log_message("BKY-90039", [label_key])
-            g.applogger.info(tmp_msg)
-            return False, {}
-        label_key_inputs[key] = label_key
-        addlabels[key] = label_name
+    label_key_inputs = ConclusionLablesDict["exastro_label_key_inputs"]
+    addlabels = ConclusionLablesDict["labels"]
 
     conclusionEvent = {}
     NowTime = int(datetime.datetime.now().timestamp())

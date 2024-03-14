@@ -237,6 +237,10 @@ class ManageEvents:
             tmp_msg = "id:{} 状態:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(id, status, evaluated, undetected, timeout, localsts)
             g.applogger.info(self.addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
+    def find_event_by_id(self, id):
+        event = self.labeled_event_collection.find_one({"_id": id})
+        return event
+
     def addline_msg(self, msg=''):
         info = inspect.getouterframes(inspect.currentframe())[1]
         msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)

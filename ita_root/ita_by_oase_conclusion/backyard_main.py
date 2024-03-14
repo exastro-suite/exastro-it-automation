@@ -234,7 +234,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                     # ルール判定 マッチ
                     if ret is True:
                         # アクションに利用 & 結論イベントに付与 するラベルを生成する
-                        conclusion_lables = generateConclusionLables(wsDb, wsMongo, UseEventIdList, ruleRow)
+                        conclusion_lables = generateConclusionLables(EventObj, UseEventIdList, ruleRow, judgeObj.LabelMasterDict)
 
                         # 評価結果に登録するアクション情報を取得（ある場合）
                         action_id = ruleRow.get("ACTION_ID")
@@ -378,7 +378,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                             else:
                             # アクションが設定されていない場合
                                 # 結論イベント登録
-                                ret, ConclusionEventRow = InsertConclusionEvent(EventObj, judgeObj.LabelMasterDict, ruleRow, UseEventIdList, action_log_row['CONCLUSION_LABELS'])
+                                ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleRow, UseEventIdList, action_log_row['CONCLUSION_LABELS'])
 
                                 # 新規イベントの通知用に結論イベント登録
                                 # newConclusionEventList.append(ConclusionEventRow)

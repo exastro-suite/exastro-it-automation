@@ -467,7 +467,18 @@ regexpEscape: function( value ) {
 */
 nlcEscape: function( value ) {
     if (this.typeof( value ) === 'string') {
-        return value.replace(/\r\n/g, '\\r\\n').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        const code = [
+            ['\b', '\\b'],
+            ['\t', '\\t'],
+            ['\n', '\\n'],
+            ['\f', '\\f'],
+            ['\r', '\\r']
+        ];
+        for ( var i = 0; i < code.length; i++ ) {
+            value = value.replace( new RegExp( code[i][0], 'g'), code[i][1] );
+        }
+        // value = value.replace(/\\[anrfRtvsSdDwWlLuU0]/g, '\\$&');
+        return value;
     } else {
         return value;
     }
@@ -3170,7 +3181,12 @@ settingListModalOpen: function( settingData ) {
                 $tr.find('.input').each(function(){
                     const $input = $( this );
                     const val = fn.cv( $input.val(), '');
-                    inputDate[ index ].push( val );
+                    if ( settingData.escape ) {
+                        // タブと円マーク（バックスラッシュ）エスケープ
+                        inputDate[ index ].push( val.replace(/\t/g, '\\t').replace(/\\(?![btnfr])/g, '\\\\') );
+                    } else {
+                        inputDate[ index ].push( val );
+                    }
                 });
                 // 全ての入力が空ならnull
                 if ( inputDate[ index ].join('') === '') inputDate[ index ] = null;
@@ -3253,7 +3269,7 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
         width = ( item.width )? item.width: 'auto',
         idName = `${item.id}_${item.type}_${Date.now()}_${index}`,
         val = ( value[i] !== undefined )? value[i]: null,
-        rVal = cmn.nlcEscape( val ),
+        rVal = ( val !== null )? cmn.nlcEscape( cmn.escape( val ) ): val,
         input = ( item.type === 'text')? this.html.inputText('settingListInputText', rVal, idName ):
             this.html.select( item.list, 'settingListInputSelect', val, idName, {}, { sort: false } );
 

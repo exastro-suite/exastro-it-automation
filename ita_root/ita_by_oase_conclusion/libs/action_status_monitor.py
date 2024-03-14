@@ -130,5 +130,5 @@ class ActionStatusMonitor():
             # 結論イベント登録
             if UpdateRow['STATUS_ID'] in [oaseConst.OSTS_Completed]:
                 # 結論イベント登録
-                InsertConclusionEvent(self.EventObj, self.LabelMasterDict, Row, Row['EVENT_ID_LIST'], Row[''])
+                InsertConclusionEvent(self.EventObj, self.LabelMasterDict, Row, Row['EVENT_ID_LIST'], Row['CONCLUSION_LABELS'])
 

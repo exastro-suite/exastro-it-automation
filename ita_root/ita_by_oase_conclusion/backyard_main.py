@@ -15,6 +15,7 @@
 from flask import g
 import os
 import datetime
+import json
 
 
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -169,7 +170,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
     newIncident = False
     for filterRow in filterList:
         filterId = filterRow["FILTER_ID"]
-        ret, JudgeEventId = judgeObj.filterJudge(filterRow, wsDb)
+        ret, JudgeEventId = judgeObj.getFilterMatch(filterRow)
         if ret is True:
             tmp_msg = g.appmsg.get_log_message("BKY-90014", [filterId, JudgeEventId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -228,12 +229,12 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                 # レベル毎のルール判定のループ -----
                 for ruleRow in TargetRuleList:
                     # ルール判定
-                    ret, UseEventIdList = judgeObj.RuleJudge(ruleRow, IncidentDict, actionIdList)
+                    ret, UseEventIdList = judgeObj.RuleJudge(ruleRow, IncidentDict, actionIdList, filterList)
 
                     # ルール判定 マッチ
                     if ret is True:
                         # アクションに利用 & 結論イベントに付与 するラベルを生成する
-                        conclusion_lables = generateConclusionLables(EventObj, UseEventIdList, ruleRow)
+                        conclusion_lables = generateConclusionLables(EventObj, UseEventIdList, ruleRow, judgeObj.LabelMasterDict)
 
                         # 評価結果に登録するアクション情報を取得（ある場合）
                         action_id = ruleRow.get("ACTION_ID")
@@ -285,6 +286,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                             "OPERATION_ID": operation_id,
                             "OPERATION_NAME": operation_name,
                             "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
+                            "CONCLUSION_LABELS": json.dumps(conclusion_lables),
                             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
                             "NOTE": None,
                             "DISUSE_FLAG": "0",
@@ -376,7 +378,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                             else:
                             # アクションが設定されていない場合
                                 # 結論イベント登録
-                                ret, ConclusionEventRow = InsertConclusionEvent(EventObj, judgeObj.LabelMasterDict, ruleRow, UseEventIdList, action_log_row[''])
+                                ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleRow, UseEventIdList, action_log_row['CONCLUSION_LABELS'])
 
                                 # 新規イベントの通知用に結論イベント登録
                                 # newConclusionEventList.append(ConclusionEventRow)
@@ -462,7 +464,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 未知事象フラグを立てる（一括で行う）
-    UnusedEventIdList = EventObj.get_unused_event(IncidentDict)
+    UnusedEventIdList = EventObj.get_unused_event(IncidentDict, filterList)
     if len(UnusedEventIdList) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90030", [str(UnusedEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

@@ -18,6 +18,7 @@ import os
 
 import json
 import datetime
+from jinja2 import Template
 
 from common_libs.oase.const import oaseConst
 
@@ -38,28 +39,66 @@ def addline_msg(msg=''):
 #         UserName = Row[UserNameCol]
 #     return UserName
 
-def generateConclusionLables(EventObj, UseEventIdList, ruleRow):
+def generateConclusionLables(EventObj, UseEventIdList, ruleRow, labelMaster):
     # アクションに利用 & 結論イベントに付与 するラベルを生成する
-    conclusion_lables = {}
+    conclusion_lables = {"labels": {}, "exastro_label_key_inputs": {}}
+
+    # フィルターA, Bそれぞれに対応するイベント取得
+    result_A, event_A = EventObj.get_events(UseEventIdList[0])
+    if len(UseEventIdList) == 2:
+        result_B, event_B = EventObj.get_events(UseEventIdList[1])
+    else:
+        event_B = {"labels": {}}
+
+    event_A_labels = event_A["labels"]
+    event_B_labels = event_B["labels"]
+
+    # ラベルのマージ
+    merged_labels = event_B_labels
+
+    # Aのラベルを優先して上書き
+    for label in event_A_labels:
+        merged_labels[label] = event_A_labels[label]
+
+    conc_label_settings = ruleRow["CONCLUSION_LABEL_SETTINGS"]  # LIST
+    for setting in conc_label_settings:
+        # label_key_idをlabel_key_nameに変換
+        label_key_name = getIDtoLabelName(labelMaster, setting["label_key"])
+        # label_valueに変数ブロックが含まれている場合、jinja2テンプレートで値を変換
+        template = Template(setting["label_value"])
+        label_value = template.render(A=event_A_labels, B=event_B_labels)
+        merged_labels[label_key_name] = label_value
+
+    # _exastroを含むラベルを除外
+    keys_to_exclude = [
+        "_exastro_event_collection_settings_id",
+        "_exastro_fetched_time",
+        "_exastro_end_time",
+        "_exastro_type",
+        "_exastro_checked",
+        "_exastro_evaluated",
+        "_exastro_undetected",
+        "_exastro_timeout"
+    ]
+    for key in keys_to_exclude:
+        del merged_labels[key]
+
+
+    conclusion_lables["labels"] = merged_labels
+    for label in merged_labels:
+        for master_id, master_key_name in labelMaster.items():
+            if label == master_key_name:
+                conclusion_lables["exastro_label_key_inputs"][label] = master_id
+
 
     return conclusion_lables
 
 
-def InsertConclusionEvent(EventObj, LabelMaster, RuleInfo, UseEventIdList, ConclusionLables):
+def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLables):
+    ConclusionLablesDict = json.loads(ConclusionLables)
     # 結論イベント登録
-    label_key_inputs = {}
-    addlabels = {}
-
-    # 結論ラベル
-    for row in ConclusionLables:
-        label_key = row.get('label_key')
-        name = getIDtoLabelName(LabelMaster, label_key)
-        if name is False:
-            tmp_msg = g.appmsg.get_log_message("BKY-90039", [label_key])
-            g.applogger.info(tmp_msg)
-            return False, {}
-        label_key_inputs[name] = label_key
-        addlabels[name] = row.get('label_value')
+    label_key_inputs = ConclusionLablesDict["exastro_label_key_inputs"]
+    addlabels = ConclusionLablesDict["labels"]
 
     conclusionEvent = {}
     NowTime = int(datetime.datetime.now().timestamp())

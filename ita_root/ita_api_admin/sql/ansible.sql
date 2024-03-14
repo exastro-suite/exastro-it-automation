@@ -418,6 +418,8 @@ CREATE TABLE T_ANSL_MATL_COLL
     TARGET_WINDOWS                  VARCHAR(40),                                -- ターゲット/Windows
     TARGET_OTHER                    TEXT,                                       -- ターゲット/その他
     PYTHON_NECESSARY                VARCHAR(40),                                -- Python要否
+    DESCRIPTION                     TEXT,                                       -- 説明
+    DESCRIPTION_EN                  TEXT,                                       -- 説明(en)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -437,6 +439,8 @@ CREATE TABLE T_ANSL_MATL_COLL_JNL
     TARGET_WINDOWS                  VARCHAR(40),                                -- ターゲット/Windows
     TARGET_OTHER                    TEXT,                                       -- ターゲット/その他
     PYTHON_NECESSARY                VARCHAR(40),                                -- Python要否
+    DESCRIPTION                     TEXT,                                       -- 説明
+    DESCRIPTION_EN                  TEXT,                                       -- 説明(en)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -784,6 +788,8 @@ CREATE TABLE T_ANSP_MATL_COLL
     TARGET_WINDOWS                  VARCHAR(40),                                -- ターゲット/Windows
     TARGET_OTHER                    TEXT,                                       -- ターゲット/その他
     PYTHON_NECESSARY                VARCHAR(40),                                -- Python要否
+    DESCRIPTION                     TEXT,                                       -- 説明
+    DESCRIPTION_EN                  TEXT,                                       -- 説明(en)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -804,6 +810,8 @@ CREATE TABLE T_ANSP_MATL_COLL_JNL
     TARGET_WINDOWS                  VARCHAR(40),                                -- ターゲット/Windows
     TARGET_OTHER                    TEXT,                                       -- ターゲット/その他
     PYTHON_NECESSARY                VARCHAR(40),                                -- Python要否
+    DESCRIPTION                     TEXT,                                       -- 説明
+    DESCRIPTION_EN                  TEXT,                                       -- 説明(en)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -1104,6 +1112,8 @@ CREATE TABLE T_ANSR_MATL_COLL
     TARGET_WINDOWS                  VARCHAR(40),                                -- ターゲット/Windows
     TARGET_OTHER                    TEXT,                                       -- ターゲット/その他
     PYTHON_NECESSARY                VARCHAR(40),                                -- Python要否
+    DESCRIPTION                     TEXT,                                       -- 説明
+    DESCRIPTION_EN                  TEXT,                                       -- 説明(en)
     VAR_STRUCT_ANAL_JSON_STRING     LONGTEXT,                                   -- 変数定義解析結果
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
@@ -1124,6 +1134,8 @@ CREATE TABLE T_ANSR_MATL_COLL_JNL
     TARGET_WINDOWS                  VARCHAR(40),                                -- ターゲット/Windows
     TARGET_OTHER                    TEXT,                                       -- ターゲット/その他
     PYTHON_NECESSARY                VARCHAR(40),                                -- Python要否
+    DESCRIPTION                     TEXT,                                       -- 説明
+    DESCRIPTION_EN                  TEXT,                                       -- 説明(en)
     VAR_STRUCT_ANAL_JSON_STRING     LONGTEXT,                                   -- 変数定義解析結果
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

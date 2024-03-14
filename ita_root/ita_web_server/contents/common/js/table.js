@@ -1449,7 +1449,6 @@ setTableEvents() {
                 $a.addClass('nowDownload');
 
                 const endPoint = `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`;
-                console.log(endPoint)
                 fn.download('base64', null, fileName, endPoint ).then(function(){
                     $a.removeClass('nowDownload');
                 });
@@ -2001,7 +2000,7 @@ setTableEvents() {
 
                     // 表示欄の幅の調整
                     if ( !tb.partsFlag ) {
-                        $block.text( resultValue );
+                        $block.find('span').text( resultValue );
                         tb.tableInputMaxWidthCheck( $block );
                     } else {
                         $block.html( fn.html.labelListHtml( resultValue, tb.label ) );
@@ -3315,8 +3314,8 @@ tableInputMaxWidthCheck( target ) {
     const $target = ( target instanceof jQuery )? target: tb.$[ target ].find('.tableEditMultipleColmun, .tableEditInputMultipleSelectValueInner');
 
     $target.each(function(){
-        const $culumn = $( this ),
-        culumn = $culumn.get(0);
+        const $culumn = ( $( this ).is('.tableEditMultipleColmun') )? $( this ).find('span'): $( this );
+        const culumn = $culumn.get(0);
 
         if ( $culumn.is('.textOverWrap') ) {
             $culumn.css('width', 'auto').removeClass('textOverWrap');
@@ -4051,7 +4050,7 @@ editCellHtml( item, columnKey ) {
 
             // イベントフロー画面の場合はラベル表示する
             if ( !tb.partsFlag ) {
-                return `<div class="${viewClassName.join(' ')}">${value}</div>`
+                return `<div class="${viewClassName.join(' ')}"><span>${value}</span></div>`
                 + fn.html.inputHidden( inputClassName, value, name, attr );
             } else {
                 return `<div class="${viewClassName.join(' ')}">${fn.html.labelListHtml( value, tb.label )}</div>`
@@ -5869,6 +5868,7 @@ multipleColmunSetting( columnType, restName, value, required ) {
         const settingData = tb.columnTypeSettingData( columnType, multipleArray );
         settingData.values = fn.jsonParse( value, 'array');
         settingData.required = required;
+        settingData.escape = true;
 
         fn.settingListModalOpen( settingData ).then(function( result ){
             if ( result !== 'cancel') {

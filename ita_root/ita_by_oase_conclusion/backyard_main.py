@@ -170,7 +170,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
     newIncident = False
     for filterRow in filterList:
         filterId = filterRow["FILTER_ID"]
-        ret, JudgeEventId = judgeObj.filterJudge(filterRow, wsDb)
+        ret, JudgeEventId = judgeObj.getFilterMatch(filterRow)
         if ret is True:
             tmp_msg = g.appmsg.get_log_message("BKY-90014", [filterId, JudgeEventId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -229,7 +229,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
                 # レベル毎のルール判定のループ -----
                 for ruleRow in TargetRuleList:
                     # ルール判定
-                    ret, UseEventIdList = judgeObj.RuleJudge(ruleRow, IncidentDict, actionIdList)
+                    ret, UseEventIdList = judgeObj.RuleJudge(ruleRow, IncidentDict, actionIdList, filterList)
 
                     # ルール判定 マッチ
                     if ret is True:
@@ -464,7 +464,7 @@ def JudgeMain(wsDb, wsMongo, judgeTime, EventObj):
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # 未知事象フラグを立てる（一括で行う）
-    UnusedEventIdList = EventObj.get_unused_event(IncidentDict)
+    UnusedEventIdList = EventObj.get_unused_event(IncidentDict, filterList)
     if len(UnusedEventIdList) > 0:
         tmp_msg = g.appmsg.get_log_message("BKY-90030", [str(UnusedEventIdList)])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

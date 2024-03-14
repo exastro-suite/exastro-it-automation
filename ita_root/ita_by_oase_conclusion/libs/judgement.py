@@ -29,15 +29,10 @@ class Judgement:
 
         self.EventObj = EventObj
 
-    def filterJudge(self, FilterRow, wsDb):
+    def getFilterMatch(self, FilterRow):
+        # フィルターに引っかかったイベントを返す
+        # 単一イベントのときのみ、Trueを返す
         EventJudgList = []
-
-        # 「ラベルマスタ」からレコードを取得
-        labelList = wsDb.table_select(oaseConst.T_OASE_LABEL_KEY_INPUT, 'WHERE DISUSE_FLAG = %s', [0])
-        if not labelList:
-            tmp_msg = g.appmsg.get_log_message("BKY-90009", [oaseConst.T_OASE_LABEL_KEY_INPUT])
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            return False
 
         if type(FilterRow["FILTER_CONDITION_JSON"]) is str:
             filter_condition_json = json.loads(FilterRow.get('FILTER_CONDITION_JSON'))
@@ -186,7 +181,7 @@ class Judgement:
 
         return TargetRuleList
 
-    def RuleJudge(self, RuleRow, IncidentDict, actionIdList):
+    def RuleJudge(self, RuleRow, IncidentDict, actionIdList, filterList):
         UseEventIdList = []
 
         tmp_msg = g.appmsg.get_log_message("BKY-90050", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])
@@ -225,15 +220,15 @@ class Judgement:
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # フィルタ毎のループ
-        FilterList = []
-        FilterList.append(RuleRow['FILTER_A'])
+        Filter_AB_List = []
+        Filter_AB_List.append(RuleRow['FILTER_A'])
         if RuleRow['FILTER_B'] is not None:
-            FilterList.append(RuleRow['FILTER_B'])
-        for FilterId in FilterList:
+            Filter_AB_List.append(RuleRow['FILTER_B'])
+        for FilterId in Filter_AB_List:
             tmp_msg = g.appmsg.get_log_message("BKY-90052", [FilterId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-            ret, EventRow = self.MemoryBaseFilterJudge(FilterId, IncidentDict)
+            ret, EventRow = self.getFilterJudge(FilterId, IncidentDict, filterList)
 
             if ret is True:
                 FilterResultDict['EventList'].append(EventRow)
@@ -271,7 +266,10 @@ class Judgement:
 
         return True, UseEventIdList
 
-    def MemoryBaseFilterJudge(self, FilterId, IncidentDict):
+    def getFilterJudge(self, FilterId, IncidentDict, filterList):
+        # メモリーに保持しているIncidentDict[フィルターID:イベント]形式のリストの中から、これから判定に使うべきイベントを選ぶ
+        # 判定につかうイベントは一つを想定している
+        # 複数イベントがヒットしている場合はフィルターの「検索方法」項目を見て適切な値を返す。
         if FilterId not in IncidentDict:
             tmp_msg = g.appmsg.get_log_message("BKY-90058", [FilterId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -280,7 +278,32 @@ class Judgement:
         if type(IncidentDict[FilterId]) is list:
             tmp_msg = g.appmsg.get_log_message("BKY-90059", [FilterId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            return False, {}
+            # 取得しておいた「フィルター管理」から対象フィルターの検索方法をチェック
+            for filterRow in filterList:
+                t_oase_filterId = filterRow["FILTER_ID"]
+                search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
+                if FilterId != t_oase_filterId:
+                    continue
+
+                if search_condition_Id == '1':
+                    # 検索方法がユニークの場合
+                    # 一意のイベントしか許可しないのでFalseを返す
+                    return False, {}
+                else:
+                    # 検索方法がキューイングの場合
+                    # 一番古いイベントの情報を返す
+                    ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId][0])
+                    if ret is False:
+                        tmp_msg = g.appmsg.get_log_message("BKY-90043", [FilterId])
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                        return False, {}
+
+                    if str(EventRow['labels']['_exastro_evaluated']) == '0':
+                        return True, EventRow
+                    else:
+                        tmp_msg = g.appmsg.get_log_message("BKY-90060", [FilterId])
+                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                        return False, {}
 
         ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
         if ret is False:
@@ -301,10 +324,21 @@ class Judgement:
                 # or条件の場合、片方がマッチした時のみTrueとする
                 return True
             elif FilterResultDict['True'] == 2:
-                # 両方のフィルターにマッチした場合は未知とするためIncidentDictから該当の要素を削除する
+                # or条件で両方のフィルターにマッチしていた場合は未知とするためIncidentDictから該当の要素を削除する
+                remove_key_list = []
                 for event in FilterResultDict['EventList']:
-                    del_key = [key for key, value in IncidentDict.items() if value == event['_id']]
-                    del IncidentDict[del_key[0]]
+                    for key, value in IncidentDict.items():
+                        if type(value) is list:
+                            # フィルターに複数ヒットした場合はlist型で入っている
+                            if event["_id"] in value:
+                                remove_key_list.append(key)
+                        else:
+                            if value == event['_id']:
+                                remove_key_list.append(key)
+
+                for key in remove_key_list:
+                    del IncidentDict[key]
+
         elif FilterResultDict['Operator'] == oaseConst.DF_OPE_AND:
             if FilterResultDict['False'] == 0:
                 return True

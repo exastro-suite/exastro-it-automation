@@ -158,7 +158,7 @@ class ManageEvents:
 
         return post_proc_timeout_event_ids
 
-    def get_unused_event(self, incident_dict):
+    def get_unused_event(self, incident_dict, filterList):
         unused_event_ids = []
         # フィルタにマッチしていないイベントを抽出
         for event_id, event in self.labeled_events_dict.items():
@@ -169,8 +169,30 @@ class ManageEvents:
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
             # フィルタにマッチしていないイベント
-            if event["_id"] not in incident_dict.values():
+            if len(incident_dict) == 0:
+                # keyが削除されてincident_dictが空になっている場合（or条件で両方のフィルターにマッチしていた場合）があるのでここで判定する
                 unused_event_ids.append(event["_id"])
+
+            for key, value in incident_dict.items():
+                if type(value) is list:
+                    # フィルターに複数ヒットした場合はlist型で入っている
+                    for filterRow in filterList:
+                        t_oase_filterId = filterRow["FILTER_ID"]
+                        search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
+                        print(search_condition_Id)
+                        if key != t_oase_filterId:
+                            continue
+
+                        if search_condition_Id == '1':
+                            # ユニークの場合
+                            unused_event_ids.append(event["_id"])
+                        else:
+                            # キューイングの場合
+                            if event["_id"] not in value:
+                                unused_event_ids.append(event["_id"])
+                else:
+                    if event["_id"] not in incident_dict.values():
+                        unused_event_ids.append(event["_id"])
         return unused_event_ids
 
     def insert_event(self, dict):

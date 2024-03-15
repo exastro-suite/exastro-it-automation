@@ -1,3 +1,19 @@
+-- 検索方法マスタ
+CREATE TABLE T_OASE_SEARCH_CONDITION
+(
+    SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法ID
+    SEARCH_CONDITION_NAME_EN        VARCHAR(255),                               -- 検索方法名(en)
+    SEARCH_CONDITION_NAME_JA        VARCHAR(255),                               -- 検索方法名(ja)
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(SEARCH_CONDITION_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
 -- 接続方式マスタ
 CREATE TABLE T_OASE_CONNECTION_METHOD
 (
@@ -49,6 +65,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS
     PARAMETER                       TEXT,                                       -- パラメータ
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
+    EVENT_ID_KEY                    VARCHAR(255),                               -- イベントIDキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -79,6 +96,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS_JNL
     PARAMETER                       TEXT,                                       -- パラメータ
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
+    EVENT_ID_KEY                    VARCHAR(255),                               -- イベントIDキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -332,13 +350,14 @@ CREATE TABLE T_OASE_FILTER_OPERATOR
 
 
 
--- フィルター管理
+-- フィルター
 CREATE TABLE T_OASE_FILTER
 (
     FILTER_ID                       VARCHAR(40),                                -- フィルターID
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
+    SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -355,6 +374,7 @@ CREATE TABLE T_OASE_FILTER_JNL
     AVAILABLE_FLAG                  VARCHAR(2),                                 -- 有効
     FILTER_NAME                     VARCHAR(255),                               -- フィルター名
     FILTER_CONDITION_JSON           TEXT,                                       -- フィルター条件
+    SEARCH_CONDITION_ID             VARCHAR(2),                                 -- 検索方法
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -381,13 +401,17 @@ CREATE TABLE T_OASE_ACTION_STATUS
 
 
 
--- アクション定義
+-- アクション
 CREATE TABLE T_OASE_ACTION
 (
-    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
+    EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
+    HOST_NAME                       VARCHAR(40),                                -- 指定
+    PARAMETER_SHEET_NAME            VARCHAR(40),                                -- 利用パラメータシート
+    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -400,10 +424,14 @@ CREATE TABLE T_OASE_ACTION_JNL
     JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
-    ACTION_ID                       VARCHAR(40),                                -- アクション定義ID
+    ACTION_ID                       VARCHAR(40),                                -- アクションID
     ACTION_NAME                     VARCHAR(255),                               -- アクション名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
+    EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
+    HOST_NAME                       VARCHAR(40),                                -- 指定
+    PARAMETER_SHEET_NAME            VARCHAR(40),                                -- 利用パラメータシート
+    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -413,7 +441,84 @@ CREATE TABLE T_OASE_ACTION_JNL
 
 
 
--- ルール管理
+-- アクションビュー
+CREATE VIEW V_OASE_ACTION AS
+SELECT
+    ACTION_ID,
+    ACTION_NAME,
+    OPERATION_ID,
+    CONDUCTOR_CLASS_ID,
+    EVENT_COLLABORATION,
+    HOST_NAME,
+    PARAMETER_SHEET_NAME,
+    PARAMETER_SHEET_NAME PARAMETER_SHEET_NAME_REST,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_ACTION
+ORDER BY
+    ACTION_ID ASC
+;
+CREATE VIEW V_OASE_ACTION_JNL AS 
+SELECT
+    JOURNAL_SEQ_NO,
+    JOURNAL_REG_DATETIME,
+    JOURNAL_ACTION_CLASS,
+    ACTION_ID,
+    ACTION_NAME,
+    OPERATION_ID,
+    CONDUCTOR_CLASS_ID,
+    EVENT_COLLABORATION,
+    HOST_NAME,
+    PARAMETER_SHEET_NAME,
+    PARAMETER_SHEET_NAME PARAMETER_SHEET_NAME_REST,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_ACTION_JNL
+ORDER BY
+    ACTION_ID ASC
+;
+
+
+
+-- メニュー作成一覧ビュー
+CREATE VIEW V_MENU_DEFINE AS
+SELECT
+    MENU_CREATE_ID,
+    MENU_NAME_JA,
+    MENU_NAME_EN,
+    MENU_NAME_REST,
+    SHEET_TYPE,
+    DISP_SEQ,
+    VERTICAL,
+    HOSTGROUP,
+    MENU_GROUP_ID_INPUT,
+    MENU_GROUP_ID_SUBST,
+    MENU_GROUP_ID_REF,
+    MENU_CREATE_DONE_STATUS,
+    DESCRIPTION_JA,
+    DESCRIPTION_EN,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_MENU_DEFINE
+WHERE
+    MENU_CREATE_DONE_STATUS = 2
+AND
+    DISUSE_FLAG = 0
+AND
+    SHEET_TYPE = 1;
+
+
+
+-- ルール
 CREATE TABLE T_OASE_RULE
 (
     RULE_ID                         VARCHAR(40),                                -- ルールID
@@ -424,13 +529,13 @@ CREATE TABLE T_OASE_RULE
     FILTER_A                        VARCHAR(40),                                -- フィルターA
     FILTER_OPERATOR                 VARCHAR(2),                                 -- フィルター演算子
     FILTER_B                        VARCHAR(40),                                -- フィルターB
-    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 作業前_通知
-    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 作業前_承認待ち
-    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 作業前_通知先
+    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 事前_通知
+    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 事前_承認待ち
+    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 事前_通知先
     ACTION_ID                       VARCHAR(40),                                -- アクションID
-    AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
-    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
-    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
+    AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
+    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
+    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先
     CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
@@ -454,13 +559,13 @@ CREATE TABLE T_OASE_RULE_JNL
     FILTER_A                        VARCHAR(40),                                -- フィルターA
     FILTER_OPERATOR                 VARCHAR(2),                                 -- フィルター演算子
     FILTER_B                        VARCHAR(40),                                -- フィルターB
-    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 作業前_通知
-    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 作業前_承認待ち
-    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 作業前_通知先
+    BEFORE_NOTIFICATION             VARCHAR(255),                               -- 事前_通知
+    BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 事前_承認待ち
+    BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 事前_通知先
     ACTION_ID                       VARCHAR(40),                                -- アクションID
-    AFTER_NOTIFICATION              VARCHAR(255),                               -- 作業後_通知
-    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 作業後_承認待ち
-    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 作業後_通知先
+    AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
+    AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
+    AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先
     CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
@@ -473,7 +578,7 @@ CREATE TABLE T_OASE_RULE_JNL
 
 
 
--- アクション履歴
+-- 評価結果
 CREATE TABLE T_OASE_ACTION_LOG
 (
     ACTION_LOG_ID                   VARCHAR(40),                                -- アクション履歴ID
@@ -487,6 +592,7 @@ CREATE TABLE T_OASE_ACTION_LOG
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
@@ -511,6 +617,7 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

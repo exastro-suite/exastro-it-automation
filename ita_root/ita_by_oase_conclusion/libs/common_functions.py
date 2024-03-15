@@ -18,7 +18,6 @@ import os
 
 import json
 import datetime
-from jinja2 import Template
 
 from common_libs.oase.const import oaseConst
 
@@ -27,83 +26,14 @@ def addline_msg(msg=''):
     msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
     return msg_line
 
-# def UserIDtoUserName(objdbca, UserId):
-#     UserName = ""
-#     UserEnv = g.LANGUAGE.upper()
-#     UserNameCol = "USER_NAME_{}".format(UserEnv)
-#     TableName = "T_COMN_BACKYARD_USER"
-#     WhereStr = "WHERE USER_ID = '%s' AND DISUSE_FLAG='0'" % (UserId)
-
-#     Rows = objdbca.table_select(TableName, WhereStr, [])
-#     for Row in Rows:
-#         UserName = Row[UserNameCol]
-#     return UserName
-
-def generateConclusionLables(EventObj, UseEventIdList, ruleRow, labelMaster):
-    # アクションに利用 & 結論イベントに付与 するラベルを生成する
-    conclusion_lables = {"labels": {}, "exastro_label_key_inputs": {}}
-
-    # フィルターA, Bそれぞれに対応するイベント取得
-    result_A, event_A = EventObj.get_events(UseEventIdList[0])
-    if len(UseEventIdList) == 2:
-        result_B, event_B = EventObj.get_events(UseEventIdList[1])
-    else:
-        event_B = {"labels": {}}
-
-    event_A_labels = event_A["labels"]
-    event_B_labels = event_B["labels"]
-
-    # ラベルのマージ
-    merged_labels = event_B_labels
-
-    # Aのラベルを優先して上書き
-    for label in event_A_labels:
-        merged_labels[label] = event_A_labels[label]
-
-    conc_label_settings = ruleRow["CONCLUSION_LABEL_SETTINGS"]  # LIST
-    for setting in conc_label_settings:
-        # label_key_idをlabel_key_nameに変換
-        label_key_name = getIDtoLabelName(labelMaster, setting["label_key"])
-        # label_valueに変数ブロックが含まれている場合、jinja2テンプレートで値を変換
-        template = Template(setting["label_value"])
-        label_value = template.render(A=event_A_labels, B=event_B_labels)
-        merged_labels[label_key_name] = label_value
-
-    # _exastroを含むラベルを除外
-    keys_to_exclude = [
-        "_exastro_event_collection_settings_id",
-        "_exastro_fetched_time",
-        "_exastro_end_time",
-        "_exastro_type",
-        "_exastro_checked",
-        "_exastro_evaluated",
-        "_exastro_undetected",
-        "_exastro_timeout"
-    ]
-    for key in keys_to_exclude:
-        del merged_labels[key]
-
-
-    conclusion_lables["labels"] = merged_labels
-    for label in merged_labels:
-        for master_id, master_key_name in labelMaster.items():
-            if label == master_key_name:
-                conclusion_lables["exastro_label_key_inputs"][label] = master_id
-
-
-    return conclusion_lables
-
-
 def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLables):
-    ConclusionLablesDict = json.loads(ConclusionLables)
     # 結論イベント登録
-    label_key_inputs = ConclusionLablesDict["exastro_label_key_inputs"]
-    addlabels = ConclusionLablesDict["labels"]
 
     conclusionEvent = {}
     NowTime = int(datetime.datetime.now().timestamp())
+    ConclusionLablesDict = json.loads(ConclusionLables)
 
-    conclusionEvent["labels"] = {}
+    conclusionEvent["labels"] = ConclusionLablesDict["labels"]
     conclusionEvent["labels"]["_exastro_event_collection_settings_id"] = ''
     conclusionEvent["labels"]["_exastro_fetched_time"] = NowTime
     conclusionEvent["labels"]["_exastro_end_time"] = NowTime + int(RuleInfo['TTL'])
@@ -113,18 +43,14 @@ def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLables):
     conclusionEvent["labels"]["_exastro_checked"] = "1"
     conclusionEvent["labels"]["_exastro_type"] = "conclusion"
     conclusionEvent["labels"]["_exastro_rule_name"] = RuleInfo['RULE_LABEL_NAME']
-    for name, value in addlabels.items():
-        conclusionEvent["labels"][name] = value
     conclusionEvent["exastro_created_at"] = datetime.datetime.utcnow()
     conclusionEvent["exastro_rules"] = []
-    rule_data = {'id': RuleInfo['RULE_ID'], 'name': RuleInfo['RULE_NAME']}
-    conclusionEvent["exastro_rules"].insert(0, rule_data)
+    conclusionEvent["exastro_rules"].insert(0, {'id': RuleInfo['RULE_ID'], 'name': RuleInfo['RULE_NAME']})
     if type(UseEventIdList) == str:
         conclusionEvent["exastro_events"] = UseEventIdList.split(',')
     else:
         conclusionEvent["exastro_events"] = list(map(repr, UseEventIdList))
-    conclusionEvent["exastro_label_key_inputs"] = {}
-    conclusionEvent["exastro_label_key_inputs"] = label_key_inputs
+    conclusionEvent["exastro_label_key_inputs"] = ConclusionLablesDict["exastro_label_key_inputs"]
 
     # MongoDBに結論イベント登録
     _id = EventObj.insert_event(conclusionEvent)
@@ -148,3 +74,40 @@ def getIDtoLabelName(LabelMasterDict, uuid):
     if uuid not in LabelMasterDict:
         return False
     return LabelMasterDict[uuid]
+
+def getRuleList(wsDb, sort_bv_priority=False):
+    # 「ルール管理」からレコードを取得
+    # ソート条件変更　ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B DESC
+    _ruleList = wsDb.table_select(oaseConst.T_OASE_RULE, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s ORDER BY AVAILABLE_FLAG DESC, RULE_PRIORITY ASC, FILTER_A ASC, FILTER_B DESC', [0, 1])
+    if not _ruleList:
+        msg = g.appmsg.get_log_message("BKY-90009", [oaseConst.T_OASE_RULE])
+        return False, msg
+
+    if sort_bv_priority is False:
+        return True, _ruleList
+
+    # 優先順位を正規化する
+    # 優先順位を入力していない場合があるため、ソート順に並べて優先順位プロパティを更新しておく
+    ruleList = []
+    Priority = 1
+    for rule_row in _ruleList:
+        rule_row['RULE_PRIORITY'] = Priority
+        Priority += 1
+        ruleList.append(rule_row)
+    return True, ruleList
+
+def getFilterIDMap(wsDb):
+    filterList = wsDb.table_select(oaseConst.T_OASE_FILTER, 'WHERE DISUSE_FLAG = %s AND AVAILABLE_FLAG = %s', [0, 1])
+    if not filterList:
+        tmp_msg = g.appmsg.get_log_message("BKY-90009", [oaseConst.T_OASE_FILTER])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        return False
+    tmp_msg = g.appmsg.get_log_message("BKY-90010", [str(len(filterList))])
+    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+    # key:value形式に変換して、フィルター設定をIDで引けるようにしておく
+    filterIDMap = {}
+    for filter in filterList:
+        filterIDMap[filter["FILTER_ID"]] = filter
+
+    return filterIDMap

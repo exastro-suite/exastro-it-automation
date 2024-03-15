@@ -158,9 +158,35 @@ class ManageEvents:
 
         return post_proc_timeout_event_ids
 
-    def get_unused_event(self, incident_dict, filterList):
+    def get_unused_event(self, incident_dict, filterIDMap):
+        """
+        フィルタにマッチしていないイベントを抽出
+
+        Arguments:
+            incident_dict: メモリーに保持している、フィルターID:（マッチした）イベント（id or id-list）、形式のリスト
+            filterIDMap:
+        Returns:
+            unused_event_ids(dict)
+        """
         unused_event_ids = []
-        # フィルタにマッチしていないイベントを抽出
+
+        filter_match_list = []
+        for filter_id, id_value in incident_dict.items():
+            if type(id_value) is list:
+            # フィルターに複数ヒットした場合はlist型で入っている
+                filterRow = filterIDMap[filter_id]
+                search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
+
+                if search_condition_Id == '1':
+                    # ユニークの場合
+                    pass
+                else:
+                    # キューイングの場合
+                    filter_match_list += id_value
+            else:
+            # フィルターに単一イベントしか引っかかっていない場合
+                filter_match_list.append(id_value)
+
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ
             if event["labels"]["_exastro_timeout"] != "0":
@@ -168,31 +194,16 @@ class ManageEvents:
             # ルールにマッチしているイベント
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
-            # フィルタにマッチしていないイベント
+
+            # keyが削除されてincident_dictが空になっている場合（or条件で両方のフィルターにマッチしていた場合）があるのでここで判定する
             if len(incident_dict) == 0:
-                # keyが削除されてincident_dictが空になっている場合（or条件で両方のフィルターにマッチしていた場合）があるのでここで判定する
-                unused_event_ids.append(event["_id"])
+                unused_event_ids.append(event_id)
+                continue
 
-            for key, value in incident_dict.items():
-                if type(value) is list:
-                    # フィルターに複数ヒットした場合はlist型で入っている
-                    for filterRow in filterList:
-                        t_oase_filterId = filterRow["FILTER_ID"]
-                        search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
-                        print(search_condition_Id)
-                        if key != t_oase_filterId:
-                            continue
+            # フィルターにマッチしなかった
+            if event_id not in filter_match_list:
+                unused_event_ids.append(event_id)
 
-                        if search_condition_Id == '1':
-                            # ユニークの場合
-                            unused_event_ids.append(event["_id"])
-                        else:
-                            # キューイングの場合
-                            if event["_id"] not in value:
-                                unused_event_ids.append(event["_id"])
-                else:
-                    if event["_id"] not in incident_dict.values():
-                        unused_event_ids.append(event["_id"])
         return unused_event_ids
 
     def insert_event(self, dict):

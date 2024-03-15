@@ -2218,7 +2218,6 @@ class loadTable():
                 current_parameter:現状の最終更新日時
                 lastupdatetime_parameter:パラメータ内の最終更新日時
         """
-        return True
         try:
             lastupdatetime_current = current_parameter.get('last_update_date_time')
             lastupdatetime_parameter = entry_parameter.get('last_update_date_time')

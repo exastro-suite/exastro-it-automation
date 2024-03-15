@@ -53,7 +53,7 @@ class APIClientCommon:
         self.parameter = event_settings["PARAMETER"]
         # 前回イベント収集日時（初回イベント収取時は、システム日時が設定されている）
         self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
-        self.message_ids = event_settings["MESSAGE_IDS"] if "MESSAGE_IDS" in event_settings else None
+        self.saved_ids = event_settings["SAVED_IDS"] if "SAVED_IDS" in event_settings else None
 
         # URLのHOST部が、環境変数NO_PROXYに、存在する場合、verify = Falseに設定
         self.verify = None

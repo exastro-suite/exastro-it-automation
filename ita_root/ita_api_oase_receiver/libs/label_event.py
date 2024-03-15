@@ -245,9 +245,9 @@ def comparison_values(comparison_method_id="1", collect_value=None, compare_valu
             regex_option = COMPARISON_OPERATOR[comparison_method_id]  # 正規表現オプションを取り出す
             regex_pattern = re.compile(compare_value, regex_option)
             regex_result = regex_pattern.search(collect_value)
-            g.applogger.debug("comparison by regular expression")
-            g.applogger.debug("compare_value={}, regex_option={}".format(compare_value, regex_option))
-            g.applogger.debug("collect_value={}".format(collect_value))
+            # g.applogger.debug("comparison by regular expression")
+            # g.applogger.debug("compare_value={}, regex_option={}".format(compare_value, regex_option))
+            # g.applogger.debug("collect_value={}".format(collect_value))
             if regex_result:
                 compare_result = True
                 # マッチした全体を格納

@@ -17,10 +17,11 @@ from flask import g
 import inspect
 import os
 
+from common_libs.oase.const import oaseConst
 
 class ManageEvents:
-    def __init__(self, WsMongo, judgeTime):
-        self.labeled_event_collection = WsMongo.collection("labeled_event_collection")
+    def __init__(self, wsMongo, judgeTime):
+        self.labeled_event_collection = wsMongo.collection("labeled_event_collection")
         # 以下条件のイベントを取得
         undetermined_search_value = {
             "labels._exastro_timeout": "0",
@@ -28,32 +29,12 @@ class ManageEvents:
             "labels._exastro_undetected": "0"
         }
         labeled_events = self.labeled_event_collection.find(undetermined_search_value)
-        self.rule_const = {
-            # イベントデータに一時的に追加する項目定期
-            # 親ラベル
-            "DF_LOCAL_LABLE_NAME": "__local_labels__",
-            # 子ラベル イベント状態
-            "DF_LOCAL_LABLE_STATUS": "status",
-            # DF_LOCAL_LABLE_STATUSの状態
-            "DF_PROC_EVENT": '0',             # 処理対象:〇
-            "DF_POST_PROC_TIMEOUT_EVENT": '1',  # 処理対象　処理後タイムアウト:●
-            "DF_TIMEOUT_EVENT": '2',           # タイムアウト
-            "DF_NOT_PROC_EVENT": '3',       # 対象外
-            # ルール・フィルタ管理　JSON内の演算子・条件
-            # 条件
-            "DF_TEST_EQ": '1',  # =
-            "DF_TEST_NE": '2',  # !=
-            # 演算子
-            "DF_OPE_NONE": '',  # None
-            "DF_OPE_OR": '1',  # OR
-            "DF_OPE_AND": '2',  # AND
-            "DF_OPE_ORDER": '3'  # ->
-        }
+
         self.labeled_events_dict = {}
 
         for event in labeled_events:
-            event[self.rule_const["DF_LOCAL_LABLE_NAME"]] = {}
-            event[self.rule_const["DF_LOCAL_LABLE_NAME"]]["status"] = None
+            event[oaseConst.DF_LOCAL_LABLE_NAME] = {}
+            event[oaseConst.DF_LOCAL_LABLE_NAME]["status"] = None
 
             check_result, event_status = self.check_event_status(
                 int(judgeTime),
@@ -65,8 +46,8 @@ class ManageEvents:
 
             self.add_local_label(
                 event,
-                self.rule_const["DF_LOCAL_LABLE_NAME"],
-                self.rule_const["DF_LOCAL_LABLE_STATUS"],
+                oaseConst.DF_LOCAL_LABLE_NAME,
+                oaseConst.DF_LOCAL_LABLE_STATUS,
                 event_status
             )
             self.labeled_events_dict[event["_id"]] = event
@@ -76,20 +57,20 @@ class ManageEvents:
         result = True
         ttl = end_time - fetched_time
         ttl = judge_time - (ttl * 2)
-        event_status = self.rule_const["DF_PROC_EVENT"]
+        event_status = oaseConst.DF_PROC_EVENT
 
         # 不正なイベント
         if fetched_time > end_time:
             result = False
         # 対象外イベント
         elif judge_time < fetched_time:
-            event_status = self.rule_const["DF_NOT_PROC_EVENT"]
+            event_status = oaseConst.DF_NOT_PROC_EVENT
         # タイムアウト
         elif end_time < ttl:
-            event_status = self.rule_const["DF_TIMEOUT_EVENT"]
+            event_status = oaseConst.DF_TIMEOUT_EVENT
         # 処理後タイムアウト（処理対象）
         elif ttl <= end_time < judge_time:
-            event_status = self.rule_const["DF_POST_PROC_TIMEOUT_EVENT"]
+            event_status = oaseConst.DF_POST_PROC_TIMEOUT_EVENT
         # 処理対象
         elif judge_time <= end_time:
             pass
@@ -128,7 +109,7 @@ class ManageEvents:
                 condition = item["LabelCondition"]
                 hit = False
                 if key in labels:
-                    if str(condition) == self.rule_const["DF_TEST_EQ"]:
+                    if str(condition) == oaseConst.DF_TEST_EQ:
                         if labels[key] == value:
                             hit = True
                     else:
@@ -154,22 +135,12 @@ class ManageEvents:
         return True, self.labeled_events_dict[event_id]
 
     def get_timeout_event(self):
+        # タイムアウト（TTL*2）
         timeout_event_id_list = []
         for event_id, event in self.labeled_events_dict.items():
-            if event[self.rule_const["DF_LOCAL_LABLE_NAME"]][self.rule_const["DF_LOCAL_LABLE_STATUS"]] == self.rule_const["DF_TIMEOUT_EVENT"]:
+            if event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS] == oaseConst.DF_TIMEOUT_EVENT:
                 timeout_event_id_list.append(event_id)
         return timeout_event_id_list
-
-    def update_label_flag(self, event_id_list, update_flag_dict):
-        for event_id in event_id_list:
-            if event_id not in self.labeled_events_dict:
-                return False
-            for key, value in update_flag_dict.items():
-                self.labeled_events_dict[event_id]["labels"][key] = value
-            # MongoDB更新
-            self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
-
-        return True
 
     def get_post_proc_timeout_event(self):
         post_proc_timeout_event_ids = []
@@ -182,14 +153,40 @@ class ManageEvents:
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
             # 処理後にタイムアウトにするイベント
-            if event[self.rule_const["DF_LOCAL_LABLE_NAME"]][self.rule_const["DF_LOCAL_LABLE_STATUS"]] == self.rule_const["DF_POST_PROC_TIMEOUT_EVENT"]:
+            if event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS] == oaseConst.DF_POST_PROC_TIMEOUT_EVENT:
                 post_proc_timeout_event_ids.append(event_id)
 
         return post_proc_timeout_event_ids
 
-    def get_unused_event(self, incident_dict):
+    def get_unused_event(self, incident_dict, filterIDMap):
+        """
+        フィルタにマッチしていないイベントを抽出
+
+        Arguments:
+            incident_dict: メモリーに保持している、フィルターID:（マッチした）イベント（id or id-list）、形式のリスト
+            filterIDMap:
+        Returns:
+            unused_event_ids(dict)
+        """
         unused_event_ids = []
-        # フィルタにマッチしていないイベントを抽出
+
+        filter_match_list = []
+        for filter_id, id_value in incident_dict.items():
+            if type(id_value) is list:
+            # フィルターに複数ヒットした場合はlist型で入っている
+                filterRow = filterIDMap[filter_id]
+                search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
+
+                if search_condition_Id == '1':
+                    # ユニークの場合
+                    pass
+                else:
+                    # キューイングの場合
+                    filter_match_list += id_value
+            else:
+            # フィルターに単一イベントしか引っかかっていない場合
+                filter_match_list.append(id_value)
+
         for event_id, event in self.labeled_events_dict.items():
             # タイムアウトしたイベントは登録されているのでスキップ
             if event["labels"]["_exastro_timeout"] != "0":
@@ -197,14 +194,32 @@ class ManageEvents:
             # ルールにマッチしているイベント
             if event["labels"]["_exastro_evaluated"] != "0":
                 continue
-            # フィルタにマッチしていないイベント
-            if event["_id"] not in incident_dict.values():
-                unused_event_ids.append(event["_id"])
+
+            # keyが削除されてincident_dictが空になっている場合（or条件で両方のフィルターにマッチしていた場合）があるのでここで判定する
+            if len(incident_dict) == 0:
+                unused_event_ids.append(event_id)
+                continue
+
+            # フィルターにマッチしなかった
+            if event_id not in filter_match_list:
+                unused_event_ids.append(event_id)
+
         return unused_event_ids
 
     def insert_event(self, dict):
         result = self.labeled_event_collection.insert_one(dict)
         return result.inserted_id
+
+    def update_label_flag(self, event_id_list, update_flag_dict):
+        for event_id in event_id_list:
+            if event_id not in self.labeled_events_dict:
+                return False
+            for key, value in update_flag_dict.items():
+                self.labeled_events_dict[event_id]["labels"][key] = value
+            # MongoDB更新
+            self.labeled_event_collection.update_one({"_id": event_id}, {"$set": {f"labels.{key}": value}})
+
+        return True
 
     def print_event(self):
         for event_id, event in self.labeled_events_dict.items():
@@ -212,7 +227,7 @@ class ManageEvents:
             evaluated = str(event['labels']['_exastro_evaluated'])
             undetected = str(event['labels']['_exastro_undetected'])
             timeout = str(event["labels"]["_exastro_timeout"])
-            localsts = str(event[self.rule_const["DF_LOCAL_LABLE_NAME"]][self.rule_const["DF_LOCAL_LABLE_STATUS"]])
+            localsts = str(event[oaseConst.DF_LOCAL_LABLE_NAME][oaseConst.DF_LOCAL_LABLE_STATUS])
             status = "不明"
             if evaluated == '0' and undetected == '1' and timeout == '0':
                 status = "未知        "
@@ -222,13 +237,13 @@ class ManageEvents:
                 status = "今は対応不要"
             elif evaluated == '1' and undetected == '0' and timeout == '0':
                 status = "要対応      "
-            if localsts == self.rule_const["DF_PROC_EVENT"]:
+            if localsts == oaseConst.DF_PROC_EVENT:
                 localsts = "処理対象:〇"
-            elif localsts == self.rule_const["DF_POST_PROC_TIMEOUT_EVENT"]:
+            elif localsts == oaseConst.DF_POST_PROC_TIMEOUT_EVENT:
                 localsts = "処理対象　処理後タイムアウト:●"
-            elif localsts == self.rule_const["DF_TIMEOUT_EVENT"]:
+            elif localsts == oaseConst.DF_TIMEOUT_EVENT:
                 localsts = "タイムアウト"
-            elif localsts == self.rule_const["DF_NOT_PROC_EVENT"]:
+            elif localsts == oaseConst.DF_NOT_PROC_EVENT:
                 localsts = "対象外"
             tmp_msg = "id:{} 状態:{}  _exastro_evaluated:{}  _exastro_undetected:{}  _exastro_timeout:{} local_status:{}".format(id, status, evaluated, undetected, timeout, localsts)
             g.applogger.info(self.addline_msg('{}'.format(tmp_msg)))  # noqa: F405

@@ -45,24 +45,28 @@ def get_notification_destination(organization_id, workspace_id, menu, column):  
     menu_column_list['rule_before_notification_destination'] = "ID1"
     menu_column_list['rule_after_notification_destination'] = "ID1"
 
-    # DB接続
-    objdbca = DBConnectWs(workspace_id)
+    try:
+        # DB接続
+        objdbca = DBConnectWs(workspace_id)
 
-    # T_COMN_MENUの存在確認
-    menu_row = check_menu(menu, objdbca)
+        # T_COMN_MENUの存在確認
+        menu_row = check_menu(menu, objdbca)
 
-    # T_COMN_MENU_TABLE_LINKの存在確認
-    menu_table_link_row = check_menu_table_link(menu, objdbca, menu_row['MENU_ID'], column)
+        # T_COMN_MENU_TABLE_LINKの存在確認
+        menu_table_link_row = check_menu_table_link(menu, objdbca, menu_row['MENU_ID'], column)
 
-    # T_COMN_MENU_COLUMN_LINKの存在確認
-    menu_table_column_link_row = check_menu_column_link(menu, objdbca, menu_row['MENU_ID'], column)
+        # T_COMN_MENU_COLUMN_LINKの存在確認
+        menu_table_column_link_row = check_menu_column_link(menu, objdbca, menu_row['MENU_ID'], column)
 
-    # menuとcolumnの組合せ確認
-    id = check_target_column(menu, column, menu_column_list)
+        # menuとcolumnの組合せ確認
+        id = check_target_column(menu, column, menu_column_list)
 
-    if id == "ID1":
-        table_name = menu_table_link_row['TABLE_NAME']
-        column_name = menu_table_column_link_row['COL_NAME']
-        result = rule_notification(objdbca, table_name, column_name)
+        if id == "ID1":
+            table_name = menu_table_link_row['TABLE_NAME']
+            column_name = menu_table_column_link_row['COL_NAME']
+            result = rule_notification(objdbca, table_name, column_name)
+    finally:
+        if "objdbca" in locals():
+            objdbca.db_disconnect()
 
     return result,

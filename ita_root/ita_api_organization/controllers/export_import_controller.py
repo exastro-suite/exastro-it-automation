@@ -65,9 +65,6 @@ def execute_excel_bulk_export(organization_id, workspace_id, body=None):  # noqa
             check_request_body_key(body, 'abolished_type')
 
         result_data = export_import.execute_excel_bulk_export(objdbca, menu, body)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -116,9 +113,6 @@ def execute_excel_bulk_import(organization_id, workspace_id, body=None):  # noqa
             check_request_body_key(body, 'data_portability_upload_file_name')
 
         result_data = export_import.execute_excel_bulk_import(objdbca, menu, body)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -174,9 +168,6 @@ def execute_menu_bulk_export(organization_id, workspace_id, body=None):  # noqa:
                 body_specified_time = check_request_body_key(body, 'specified_timestamp')
 
         result_data = export_import.execute_menu_bulk_export(objdbca, menu, body)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -226,9 +217,6 @@ def execute_menu_import(organization_id, workspace_id, body=None):  # noqa: E501
             check_request_body_key(body, 'file_name')
 
         result_data = export_import.execute_menu_import(objdbca, organization_id, workspace_id, menu, body)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
 
@@ -263,9 +251,6 @@ def get_excel_bulk_export_list(organization_id, workspace_id):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = export_import.get_excel_bulk_export_list(objdbca, organization_id, workspace_id)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -317,9 +302,6 @@ def post_excel_bulk_upload(organization_id, workspace_id, body=None, **kwargs): 
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         result_data = export_import.execute_excel_bulk_upload(organization_id, workspace_id, body, objdbca)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -353,9 +335,6 @@ def get_menu_export_list(organization_id, workspace_id):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = export_import.get_menu_export_list(objdbca, organization_id, workspace_id)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -412,9 +391,6 @@ def post_menu_import_upload(organization_id, workspace_id, body=None, **kwargs):
         check_request_body_key(body_file, 'base64')
 
         result_data = export_import.post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body_file)
-    except Exception as e:
-        objdbca.db_disconnect()
-        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

@@ -33,21 +33,24 @@ def get_all_loglevel_settings():  # noqa: E501
     :rtype: InlineResponse2003
     """
 
-    common_db = DBConnectCommon()  # noqa: F405
-    where_str = "WHERE `DISUSE_FLAG`='0'"
-    loglevel_service_list = common_db.table_select("T_COMN_LOGLEVEL", where_str)
+    try:
+        common_db = DBConnectCommon()  # noqa: F405
+        where_str = "WHERE `DISUSE_FLAG`='0'"
+        loglevel_service_list = common_db.table_select("T_COMN_LOGLEVEL", where_str)
 
-    if len(loglevel_service_list) == 0:
-        result_data = {}
-    else:
-        result_data = {}
-        for loglevel_container in loglevel_service_list:
-            log_level = loglevel_container.get('LOG_LEVEL')
-            if (log_level is not None) and (len(log_level) > 0):
-                result_data[loglevel_container['SERVICE_NAME']] = log_level
-            else:
-                result_data[loglevel_container['SERVICE_NAME']] = None
-
+        if len(loglevel_service_list) == 0:
+            result_data = {}
+        else:
+            result_data = {}
+            for loglevel_container in loglevel_service_list:
+                log_level = loglevel_container.get('LOG_LEVEL')
+                if (log_level is not None) and (len(log_level) > 0):
+                    result_data[loglevel_container['SERVICE_NAME']] = log_level
+                else:
+                    result_data[loglevel_container['SERVICE_NAME']] = None
+    finally:
+        if "common_db" in locals():
+            common_db.db_disconnect()
     return result_data,
 
 
@@ -63,8 +66,12 @@ def post_all_setting_loglevel(body=None):  # noqa: E501
     :rtype: InlineResponse200
     """
 
-    common_db = DBConnectCommon()  # noqa: F405
-    parameter = body
-    loglevel_settings_container(common_db, parameter)
+    try:
+        common_db = DBConnectCommon()  # noqa: F405
+        parameter = body
+        loglevel_settings_container(common_db, parameter)
+    finally:
+        if "common_db" in locals():
+            common_db.db_disconnect()
 
     return g.appmsg.get_api_message("000-00001"),

@@ -41,6 +41,8 @@ tags:
   description: バックヤード実行状態一括取得
 - name: Menu Info
   description: メニュー情報の取得(Exastro Platform連携用) ※利用不可
+- name: InternalHealthCheckService
+  description: ヘルスチェックに関する操作(内部用)
 paths:
   /api/organizations/{organization_id}/ita/:
     get:
@@ -555,6 +557,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.menu_info_controller
+  /internal-api/health-check/liveness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check liveness
+      operationId: internal_health_check_liveness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+  /internal-api/health-check/readness:
+    get:
+      tags:
+      - InternalHealthCheckService
+      summary: Internal health check readness
+      operationId: internal_health_check_readness
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
 components:
   schemas:
     ERROR_TEMPLATE:
@@ -575,18 +617,22 @@ components:
           $ref: '#/components/schemas/inline_response_200_data'
         message:
           type: string
+          example: ""
       example:
         result: 000-00000
         data:
           optionsIta:
+            service:
+              document_store:
+                owner: false
+                name: mongodb
+                connection_string: mongodb://user:pass@mongo.example.com/?tls=true
             drivers:
               oase: true
               terraform_cli: true
               terraform_cloud_ep: true
               ci_cd: true
-          mongo_owner: false
-          mongo_connection_string: mongodb+srv://user:***@mongo.example.com/?tls=true
-        message: message
+        message: ""
     apiorganizationsorganization_idita_drivers:
       type: object
       properties:
@@ -600,18 +646,32 @@ components:
           type: boolean
       description: "terraform_cloud_ep: Terraform-Cloud/EPドライバ <br/>terraform_cli:\
         \ Terraform-CLIドライバ, <br/>ci_cd: CI/CD for IaC, <br/>oase: OASE, "
+    apiorganizationsorganization_idita_service_document_store:
+      type: object
+      properties:
+        name:
+          type: string
+          example: mongodb
+        owner:
+          type: boolean
+          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用
+          example: false
+        connection_string:
+          type: string
+          description: 接続文字列
+          example: mongodb://user:pass@mongo.example.com/?tls=true
+    apiorganizationsorganization_idita_service:
+      type: object
+      properties:
+        document_store:
+          $ref: '#/components/schemas/apiorganizationsorganization_idita_service_document_store'
     organization_id_ita_body:
       type: object
       properties:
         drivers:
           $ref: '#/components/schemas/apiorganizationsorganization_idita_drivers'
-        mongo_owner:
-          type: boolean
-          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
-          example: false
-        mongo_connection_string:
-          type: string
-          example: mongodb+srv://user:pass@mongo.example.com/?tls=true
+        service:
+          $ref: '#/components/schemas/apiorganizationsorganization_idita_service'
       nullable: true
     inline_response_200_1:
       type: object
@@ -629,13 +689,8 @@ components:
       properties:
         drivers:
           $ref: '#/components/schemas/apiorganizationsorganization_idita_drivers'
-        mongo_owner:
-          type: boolean
-          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用"
-          example: false
-        mongo_connection_string:
-          type: string
-          example: mongodb+srv://user:pass@mongo.example.com/?tls=true
+        service:
+          $ref: '#/components/schemas/apiorganizationsorganization_idita_service'
       nullable: true
     workspace_id_ita_body:
       required:
@@ -1125,6 +1180,21 @@ components:
         - id2
         - id3
         message: message
+    inline_response_200_8:
+      type: object
+      properties:
+        result:
+          type: string
+          example: 000-00000
+        data:
+          type: string
+          example: ""
+        message:
+          type: string
+      example:
+        result: 000-00000
+        data: ""
+        message: message
     inline_response_200_data_optionsIta_drivers:
       type: object
       properties:
@@ -1141,37 +1211,69 @@ components:
         terraform_cli: true
         terraform_cloud_ep: true
         ci_cd: true
+    inline_response_200_data_optionsIta_service_document_store:
+      type: object
+      properties:
+        name:
+          type: string
+          example: mongodb
+        owner:
+          type: boolean
+          description: trueは内部Mongoコンテナ利用、falseは外部Mongoを利用
+          example: false
+        connection_string:
+          type: string
+          description: 接続文字列。パスワードはマスキングされる
+          example: mongodb://user:pass@mongo.example.com/?tls=true
+      example:
+        owner: false
+        name: mongodb
+        connection_string: mongodb://user:pass@mongo.example.com/?tls=true
+    inline_response_200_data_optionsIta_service:
+      type: object
+      properties:
+        document_store:
+          $ref: '#/components/schemas/inline_response_200_data_optionsIta_service_document_store'
+      example:
+        document_store:
+          owner: false
+          name: mongodb
+          connection_string: mongodb://user:pass@mongo.example.com/?tls=true
     inline_response_200_data_optionsIta:
       type: object
       properties:
         drivers:
           $ref: '#/components/schemas/inline_response_200_data_optionsIta_drivers'
+        service:
+          $ref: '#/components/schemas/inline_response_200_data_optionsIta_service'
       example:
+        service:
+          document_store:
+            owner: false
+            name: mongodb
+            connection_string: mongodb://user:pass@mongo.example.com/?tls=true
         drivers:
           oase: true
           terraform_cli: true
           terraform_cloud_ep: true
           ci_cd: true
     inline_response_200_data:
+      type: object
       properties:
         optionsIta:
           $ref: '#/components/schemas/inline_response_200_data_optionsIta'
-        mongo_owner:
-          type: boolean
-          example: false
-        mongo_connection_string:
-          type: string
-          description: パスワードはマスキングされる
-          example: mongodb+srv://user:***@mongo.example.com/?tls=true
       example:
         optionsIta:
+          service:
+            document_store:
+              owner: false
+              name: mongodb
+              connection_string: mongodb://user:pass@mongo.example.com/?tls=true
           drivers:
             oase: true
             terraform_cli: true
             terraform_cloud_ep: true
             ci_cd: true
-        mongo_owner: false
-        mongo_connection_string: mongodb+srv://user:***@mongo.example.com/?tls=true
     inline_response_200_2_data_drivers_options:
       type: object
       properties:

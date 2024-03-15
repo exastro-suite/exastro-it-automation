@@ -40,7 +40,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             # メール
             try:
                 sqliteDB.db_cursor.execute(
-                    "SELECT id FROM events WHERE event_collection_settings_name=?",
+                    "SELECT id FROM events WHERE event_collection_settings_name=? and id is not null",
                     (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
                 )
                 saved_ids = sqliteDB.db_cursor.fetchall()

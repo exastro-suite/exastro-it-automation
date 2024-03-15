@@ -118,6 +118,35 @@ AND
     DISUSE_FLAG = 0
 AND
     SHEET_TYPE = 1;
+
+-- 結論ラベルキー結合ビュー
+CREATE OR REPLACE VIEW  V_OASE_CONCLUSION_LABEL_KEY_GROUP AS
+SELECT
+    LABEL_KEY_ID,
+    LABEL_KEY_NAME,
+    COLOR_CODE,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_LABEL_KEY_INPUT
+UNION
+SELECT
+    LABEL_KEY_ID,
+    LABEL_KEY_NAME,
+    COLOR_CODE,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_LABEL_KEY_FIXED
+WHERE
+    LABEL_KEY_ID = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09'
+ORDER BY
+    LABEL_KEY_ID ASC
+;
 -- ------------------------------------------------------------
 -- ▲ VIEW CREATE END
 -- ------------------------------------------------------------

@@ -72,7 +72,7 @@ class APIClientCommon:
         # g.applogger.debug("respons_listT_flag..........{}".format(self.respons_listT_flag))
         # g.applogger.debug("respons_key.................{}".format(self.respons_key))
         # g.applogger.debug("env.event_id_key............{}".format(self.event_id_key))
-        # g.applogger.debug("env.message_ids............'{}'".format(self.message_ids))
+        # g.applogger.debug("env.saved_ids............'{}'".format(self.saved_ids))
 
     def call_api(self, parameter):
         API_response = None
@@ -215,7 +215,7 @@ class APIClientCommon:
         else:
             # 過去のイベントidに存在していない場合
             event_id = str(event_id)
-            if event_id not in self.message_ids:
+            if event_id not in self.saved_ids:
 
                 new_enevt_flg = True
                 new_event = raw_json
@@ -234,4 +234,3 @@ class APIClientCommon:
 
         value = jmespath.search(jsonpath, data)
         return value
-

@@ -153,15 +153,15 @@ def labeling_setting_valid(objdbca, objtable, option):  # noqa C901
             except Exception:
                 msg.append(g.appmsg.get_api_message("MSG-130016", [setting_name]))
 
-        # ターゲットタイプ, 比較方法, ターゲットバリューのすべてがブランクの場合
-        if target_type is None and comparison_method is None and search_value is None:
-            if label_value is None:
-                msg.append(g.appmsg.get_api_message("MSG-130017", [setting_name]))
+        # # ターゲットタイプ, 比較方法, ターゲットバリューのすべてがブランクの場合
+        # if target_type is None and comparison_method is None and search_value is None:
+        #     if label_value is None:
+        #         msg.append(g.appmsg.get_api_message("MSG-130017", [setting_name]))
 
-        # ラベルバリューがブランクの場合
-        if label_value is None:
-            if target_type is None or comparison_method is None:
-                msg.append(g.appmsg.get_api_message("MSG-130018", [setting_name]))
+        # # ラベルバリューがブランクの場合
+        # if label_value is None:
+        #     if target_type is None or comparison_method is None:
+        #         msg.append(g.appmsg.get_api_message("MSG-130018", [setting_name]))
 
         # ターゲットタイプがブランクの場合
         if target_type is None:

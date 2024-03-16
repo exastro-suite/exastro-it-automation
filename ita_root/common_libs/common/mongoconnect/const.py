@@ -23,6 +23,7 @@ class Const:
     MONGODB_SHEETTYPE_ID = '26'
 
     # コレクション名
+    EVENT_COLLECTION = "event_collection"
     LABELED_EVENT_COLLECTION = "labeled_event_collection"
 
     # テーブル名

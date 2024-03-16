@@ -240,12 +240,12 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                         else:
                             # アクションが設定されていない場合・・・すぐに結論イベントを出す
                             # 結論イベントの登録
-                            ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleInfo, UseEventIdList, action_log_row['CONCLUSION_LABELS'])
+                            ret, ConclusionEventRow = InsertConclusionEvent(EventObj, ruleInfo, UseEventIdList, action_log_row['CONCLUSION_EVENT_LABELS'])
                             # 結論イベントに処理で必要なラベル情報を追加
                             ConclusionEventRow = EventObj.add_local_label(ConclusionEventRow, oaseConst.DF_LOCAL_LABLE_NAME, oaseConst.DF_LOCAL_LABLE_STATUS, oaseConst.DF_PROC_EVENT)
 
                             # 結論イベントに対応するフィルタ確認
-                            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(action_log_row.get("CONCLUSION_LABELS"), filterIDMap)
+                            ret, UsedFilterIdList = judgeObj.ConclusionLabelUsedInFilter(action_log_row["CONCLUSION_EVENT_LABELS"], filterIDMap)
 
                             tmp_msg = g.appmsg.get_log_message("BKY-90021", [str(ret)])
                             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

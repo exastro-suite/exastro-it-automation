@@ -35,7 +35,9 @@ class Action():
         rule_id = ruleInfo.get("RULE_ID")
 
         # アクションに利用 & 結論イベントに付与 するラベルを生成する
-        conclusion_lables = self.generateConclusionLables(UseEventIdList, ruleInfo, LabelMasterDict)
+        action_label_inheritance_flg = ruleInfo.get("ACTION_LABEL_INHERITANCE_FLAG", "1")
+        event_label_inheritance_flg = ruleInfo.get("EVENT_LABEL_INHERITANCE_FLAG", "0")
+        action_parameters, conclusion_event_lables = self.generateConclusionLables(UseEventIdList, ruleInfo, LabelMasterDict, action_label_inheritance_flg, event_label_inheritance_flg)
 
         # 評価結果に登録するアクション情報を取得（ある場合）
         action_id = ruleInfo.get("ACTION_ID")
@@ -44,6 +46,12 @@ class Action():
         conductor_name = ""
         operation_id = None
         operation_name = ""
+
+        event_collaboration = None
+        host_id = None
+        host_name = ""
+        parameter_sheet_id = ""
+        parameter_sheet_name = ""
         if action_id is not None:
             # 「アクション」からレコードを取得
             ret_action = self.wsDb.table_select(oaseConst.T_OASE_ACTION, 'WHERE DISUSE_FLAG = %s AND ACTION_ID = %s', [0, action_id])
@@ -55,10 +63,10 @@ class Action():
                 conductor_class_id = ret_action[0].get("CONDUCTOR_CLASS_ID")
                 operation_id = ret_action[0].get("OPERATION_ID")
 
-                event_collaboration_flg = ret_action[0].get("EVENT_COLLABORATION")
-                host_name = ret_action[0].get("HOST_NAME")
-                parameter_sheet_name = ret_action[0].get("PARAMETER_SHEET_NAME")
-                parameter_sheet_name_rest = ret_action[0].get("PARAMETER_SHEET_NAME_REST")
+                event_collaboration = ret_action[0].get("EVENT_COLLABORATION", "0")  # 未入力はFalse
+                host_id = ret_action[0].get("HOST_ID")
+                parameter_sheet_id = ret_action[0].get("PARAMETER_SHEET_ID")
+                parameter_sheet_name = ret_action[0].get("PARAMETER_SHEET_NAME_REST")
 
                 if conductor_class_id is not None:
                     # 「コンダクタークラス」からレコードを取得
@@ -78,6 +86,26 @@ class Action():
                     else:
                         operation_name = ret_operation[0].get("OPERATION_NAME")
 
+                if host_id is not None:
+                    # 「ホスト一覧」からレコードを取得
+                    # T_ANSC_DEVICE         HOST_NAME
+                    # T_HGSP_HOSTGROUP_LIST HOSTGROUP_NAME
+                    ret_host = self.wsDb.table_select('T_ANSC_DEVICE', 'WHERE DISUSE_FLAG = %s AND SYSTEM_ID = %s', [0, host_id])
+                    if not ret_host:
+                        tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_ANSC_DEVICE'])
+                        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    else:
+                        host_name = ret_host[0].get("HOST_NAME")
+
+                if parameter_sheet_id is not None:
+                    # 「パラメータシート一覧」からレコードを取得
+                    ret_parameter = self.wsDb.table_select('T_MENU_DEFINE', 'WHERE DISUSE_FLAG = %s AND MENU_CREATE_ID = %s', [0, parameter_sheet_id])
+                    if not ret_parameter:
+                        tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_MENU_DEFINE'])
+                        g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    else:
+                        parameter_sheet_name = ret_parameter[0].get("MENU_NAME_REST")
+
         # 評価結果へ登録
         # トランザクション開始
         self.wsDb.db_transaction_start()
@@ -91,8 +119,16 @@ class Action():
             "CONDUCTOR_INSTANCE_NAME": conductor_name,
             "OPERATION_ID": operation_id,
             "OPERATION_NAME": operation_name,
-            "CONCLUSION_LABELS": json.dumps(conclusion_lables),
+            "EVENT_COLLABORATION": event_collaboration,
+            "HOST_ID": host_id,
+            "HOST_NAME": host_name,
+            "PARAMETER_SHEET_ID": parameter_sheet_id,
+            "PARAMETER_SHEET_NAME_REST": parameter_sheet_name,
+            "ACTION_LABEL_INHERITANCE_FLAG": action_label_inheritance_flg,
+            "EVENT_LABEL_INHERITANCE_FLAG": event_label_inheritance_flg,
             "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
+            "ACTION_PARAMETERS": json.dumps(action_parameters),
+            "CONCLUSION_EVENT_LABELS": json.dumps(conclusion_event_lables),
             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
             "NOTE": None,
             "DISUSE_FLAG": "0",
@@ -145,9 +181,13 @@ class Action():
 
         return action_log_row
 
-    def generateConclusionLables(self, UseEventIdList, ruleRow, labelMaster):
+    def generateConclusionLables(self, UseEventIdList, ruleRow, labelMaster, action_label_inheritance_flg, event_label_inheritance_flg):
         # アクションに利用 & 結論イベントに付与 するラベルを生成する
-        conclusion_lables = {"labels": {}, "exastro_label_key_inputs": {}}
+        action_parameters = {}
+        conclusion_event_lables = {"labels": {}, "exastro_label_key_inputs": {}}
+
+        ab_merged_labels = {}  # 元イベントのラベルを継承するラベル
+        setting_only_labels = {}  # 結論ラベル設定のみのラベル
 
         # フィルターA, Bそれぞれに対応するイベント取得
         ret_bool_A, event_A = self.EventObj.get_events(UseEventIdList[0])
@@ -160,26 +200,27 @@ class Action():
         event_A_labels = event_A["labels"]
         event_B_labels = event_B["labels"]
 
-        merged_labels = event_B_labels
+        if action_label_inheritance_flg == "1" or event_label_inheritance_flg == "1":
+            ab_merged_labels = event_B_labels
 
-        # システム用のラベルは除外
-        key_name_to_exclude = [
-            "_exastro_event_collection_settings_id",
-            "_exastro_fetched_time",
-            "_exastro_end_time",
-            "_exastro_evaluated",
-            "_exastro_undetected",
-            "_exastro_timeout",
-            "_exastro_checked",
-            "_exastro_type",
-            "_exastro_rule_name"
-        ]
-        # フィルターAに該当するイベントのラベルを優先して上書き
-        for label_key_name in event_A_labels:
-            if label_key_name not in key_name_to_exclude:
-                merged_labels[label_key_name] = event_A_labels[label_key_name]
+            # システム用のラベルは除外
+            key_name_to_exclude = [
+                "_exastro_event_collection_settings_id",
+                "_exastro_fetched_time",
+                "_exastro_end_time",
+                "_exastro_evaluated",
+                "_exastro_undetected",
+                "_exastro_timeout",
+                "_exastro_checked",
+                "_exastro_type",
+                "_exastro_rule_name"
+            ]
+            # フィルターAに該当するイベントのラベルを優先して上書き
+            for label_key_name in event_A_labels:
+                if label_key_name not in key_name_to_exclude:
+                    ab_merged_labels[label_key_name] = event_A_labels[label_key_name]
 
-        # 結論ラベル設定を上書き
+        # 結論ラベル設定で上書き
         conc_label_settings = ruleRow["CONCLUSION_LABEL_SETTINGS"]  # LIST
         for setting in conc_label_settings:
             # label_key_idをlabel_key_nameに変換
@@ -187,16 +228,34 @@ class Action():
             # label_valueに変数ブロックが含まれている場合、jinja2テンプレートで値を変換
             template = Template(setting["label_value"])
             label_value = template.render(A=event_A_labels, B=event_B_labels)
-            merged_labels[label_key_name] = label_value
 
-        conclusion_lables["labels"] = merged_labels
-        # merged_labelsから、exastro_label_key_inputsを作成
-        for label_key_name in merged_labels:
-            for master_label_id, master_label_key_name in labelMaster.items():
-                if label_key_name == master_label_key_name:
-                    conclusion_lables["exastro_label_key_inputs"][label_key_name] = master_label_id
+            ab_merged_labels[label_key_name] = label_value
+            setting_only_labels[label_key_name] = label_value
 
-        return conclusion_lables
+        # アクションパラメータに使うラベル
+        if action_label_inheritance_flg == "1":
+            action_parameters = ab_merged_labels
+        else:
+            action_parameters = setting_only_labels
+        # 結論イベントにつけるラベル
+        if event_label_inheritance_flg == "1":
+            conclusion_event_lables["labels"] = ab_merged_labels
+        else:
+            conclusion_event_lables["labels"] = setting_only_labels
+
+        #　exastro_label_key_inputs
+        if event_label_inheritance_flg == "0":
+            for label_key_name in setting_only_labels:
+                for master_label_id, master_label_key_name in labelMaster.items():
+                    if label_key_name == master_label_key_name:
+                        conclusion_event_lables["exastro_label_key_inputs"][label_key_name] = master_label_id
+        else:
+            for label_key_name in ab_merged_labels:
+                for master_label_id, master_label_key_name in labelMaster.items():
+                    if label_key_name == master_label_key_name:
+                        conclusion_event_lables["exastro_label_key_inputs"][label_key_name] = master_label_id
+
+        return action_parameters, conclusion_event_lables
 
     def run(self, action_log_row):
         """
@@ -217,30 +276,33 @@ class Action():
         operation_id = action_log_row.get("OPERATION_ID")
         operation_name = action_log_row.get("OPERATION_NAME")
 
-        paramater_sheet_name_rest = action_log_row.get("MENU_NAME_REST", "")
-        if not paramater_sheet_name_rest:
-            g.applogger.debug("call conductor_execute. paramater_sheet_name_rest:{}".format(paramater_sheet_name_rest))
+        parameter_sheet_name_rest = action_log_row.get("PARAMETER_SHEET_NAME_REST")
+        if not parameter_sheet_name_rest:
+            g.applogger.debug("call conductor_execute.")
             # パラメータシートの指定がない（パターンA）
             res = self.conductor_execute(conductor_class_id, operation_id)
             return res
 
-        g.applogger.debug("call apply_api. paramater_sheet_name_rest:{}".format(paramater_sheet_name_rest))
+        g.applogger.debug("call apply_api.")
         # パラメータシートの指定がある
-        conclusion_label = action_log_row.get("CONCLUSION_LABEL", {})
+        action_parameters = json.loads(action_log_row["ACTION_PARAMETERS"])
 
         # ホスト名
         host_name = None
-        is_use_event_host_name = bool(action_log_row.get("IS_USE_HOST_NAME", False))
-        if is_use_event_host_name is True:
-            host_name = conclusion_label.get('_exastro_host', '')
+        is_use_event_host_name = action_log_row.get("EVENT_COLLABORATION", '0')
+
+        if is_use_event_host_name != '0':
+            host_name = action_parameters.get("_exastro_host", "")
         else:
             host_name = action_log_row.get("HOST_NAME", "")
 
         # パラメータを生成してAPIに投げる（パターンB）
-        request_data = self.generate_paramater_4apply_api(conductor_class_name, operation_name, paramater_sheet_name_rest, host_name, conclusion_label)
+        request_data = self.generate_parameter_4apply_api(conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
+        g.applogger.debug("request_parameters for apply_api: {}".format(request_data))
         if request_data is False:
             return False,
-        return self.apply_api(request_data)
+        res = self.apply_api(request_data)
+        return res
 
     def conductor_execute(self, conductor_class_id, operation_id):
         """
@@ -259,9 +321,11 @@ class Action():
         _res = objcbkl.conductor_execute_no_transaction(parameter)
         return _res
 
-    def generate_paramater_4apply_api(self, conductor_class_name, operation_name, paramater_sheet_name_rest, host_name, conclusion_label):
+    def generate_parameter_4apply_api(self, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters):
+        request_data = {}
+
         # メニュー（パラメータシート）のカラム情報を取得
-        menu_record = self.wsDb.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [paramater_sheet_name_rest, 0])
+        menu_record = self.wsDb.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [parameter_sheet_name_rest, 0])
         if len(menu_record) == 0:
             tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_COMN_MENU'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -275,34 +339,33 @@ class Action():
             return False
 
         # パラメータを作成
-        paramater = {}
-        labels = conclusion_label['LABELS']
+        parameter = {}
         for col_info in col_info_list:
             col_name_rest = col_info['COLUMN_NAME_REST']
-            if col_info['COL_GROUP_ID'] in [None, '0000001'] or col_name_rest not in  ['host_name']:
+            if col_info['COL_GROUP_ID'] in [None, '0000001']:
                 continue
 
-            val = None
-            if col_name_rest in labels:
+            val = ""
+            if col_name_rest in action_parameters.keys():
                 # ラベルの値をセット
-                val = labels[col_name_rest]
-            paramater[col_name_rest] = val
+                val = action_parameters[col_name_rest]
+            parameter[col_name_rest] = val
         # ホスト名
-        if host_name is not None and host_name:
-            paramater['host_name'] = host_name
+        parameter['host_name'] = host_name
 
         parameter_info = {}
-        parameter_info[paramater_sheet_name_rest] = {
+        parameter_info[parameter_sheet_name_rest] = {
             'type' : "Register",
-            'paramater': paramater
+            'parameter': parameter
         }
 
-        return {
+        request_data = {
             "conductor_class_name": conductor_class_name,
-            "operation_name" : operation_name,
-            # "schedule_date": "YYYY/MM/DD hh:mm",
             "parameter_info": parameter_info
         }
+        if operation_name:
+            request_data["operation_name"] = operation_name
+        return request_data
 
     def apply_api(self, request_data):
         ret_bool = False
@@ -383,7 +446,6 @@ class Action():
 
         finally:
             self.wsDb.db_transaction_end(False)
-            self.wsDb.db_disconnect()
 
         return ret_bool, result_data
 

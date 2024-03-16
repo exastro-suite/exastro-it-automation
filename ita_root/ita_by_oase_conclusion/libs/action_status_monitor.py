@@ -165,7 +165,7 @@ class ActionStatusMonitor():
             if UpdateRow['STATUS_ID'] == oaseConst.OSTS_Completed:
                 # if not action_log_row_info.get('AFTER_APPROVAL_PENDING') and UpdateRow['STATUS_ID'] == oaseConst.OSTS_Completed:
                 # 結論イベント登録
-                InsertConclusionEvent(self.EventObj, action_log_row_info, action_log_row_info['EVENT_ID_LIST'], action_log_row_info['CONCLUSION_LABELS'])
+                InsertConclusionEvent(self.EventObj, action_log_row_info, action_log_row_info['EVENT_ID_LIST'], action_log_row_info['CONCLUSION_EVENT_LABELS'])
 
     def getActionLogInfo(self, status_list):
         status_list_str = ",".join(list(map(lambda s: '"{}"'.format(s), status_list)))

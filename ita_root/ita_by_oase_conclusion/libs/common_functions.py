@@ -26,12 +26,12 @@ def addline_msg(msg=''):
     msg_line = "{} ({}:{})".format(msg, os.path.basename(info.filename), info.lineno)
     return msg_line
 
-def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLables):
+def InsertConclusionEvent(EventObj, RuleInfo, UseEventIdList, ConclusionLablesStr):
     # 結論イベント登録
 
     conclusionEvent = {}
     NowTime = int(datetime.datetime.now().timestamp())
-    ConclusionLablesDict = json.loads(ConclusionLables)
+    ConclusionLablesDict = json.loads(ConclusionLablesStr)
 
     conclusionEvent["labels"] = ConclusionLablesDict["labels"]
     conclusionEvent["labels"]["_exastro_event_collection_settings_id"] = ''

@@ -370,8 +370,13 @@ class Judgement:
     def ConclusionLabelUsedInFilter(self, ConclusionLablesStr, filterIDMap):
         UsedFilterIdList = []
         # ConclusionLablesStr = "{'labels': {'httpd': 'down', 'server': 'web01'}}"
+
+        ConclusionLablesDict = json.loads(ConclusionLablesStr)["labels"]
+        tmp_msg = g.appmsg.get_log_message("BKY-90065", [str(ConclusionLablesDict)])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
         for FilterId, FilterRow in filterIDMap.items():
-            ret = self.ConclusionFilterJudge(ConclusionLablesStr, FilterRow)
+            ret = self.ConclusionFilterJudge(ConclusionLablesDict, FilterRow)
             if ret is True:
                 tmp_msg = g.appmsg.get_log_message("BKY-90063", [FilterId])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -385,11 +390,8 @@ class Judgement:
             return True, UsedFilterIdList
         return False, UsedFilterIdList
 
-    def ConclusionFilterJudge(self, ConclusionLablesStr, FilterRow):
-        ConclusionLablesDict = json.loads(ConclusionLablesStr)["labels"]
-        tmp_msg = g.appmsg.get_log_message("BKY-90065", [str(ConclusionLablesDict)])
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-        # ConclusionLablesStr = "{'labels': {'httpd': 'down', 'server': 'web01'}}"
+    def ConclusionFilterJudge(self, ConclusionLablesDict, FilterRow):
+        # ConclusionLablesDict = {'labels': {'httpd': 'down', 'server': 'web01'}}
         # FilterRow['FILTER_CONDITION_JSON'] = [{'key': 'c_01_name', 'condition': '0', 'value': 'c_01'}, {'key': 'c_02_name', 'condition': '0', 'value': 'c_02'}]
 
         if type(FilterRow["FILTER_CONDITION_JSON"]) is str:

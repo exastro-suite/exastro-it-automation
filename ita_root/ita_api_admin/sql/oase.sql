@@ -65,6 +65,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS
     PARAMETER                       TEXT,                                       -- パラメータ
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
+    EVENT_ID_KEY                    VARCHAR(255),                               -- イベントIDキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -95,6 +96,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS_JNL
     PARAMETER                       TEXT,                                       -- パラメータ
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
+    EVENT_ID_KEY                    VARCHAR(255),                               -- イベントIDキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -459,7 +461,8 @@ FROM
 ORDER BY
     ACTION_ID ASC
 ;
-CREATE VIEW V_OASE_ACTION_JNL AS
+
+CREATE VIEW V_OASE_ACTION_JNL AS 
 SELECT
     JOURNAL_SEQ_NO,
     JOURNAL_REG_DATETIME,

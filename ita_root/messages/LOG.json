@@ -1517,6 +1517,7 @@
     "AGT-10027": "SQLite Error: {}, data: {}",
     "AGT-10028": "IMAPClient Error: {}",
     "AGT-10029": "ApiClientCommon Error: {}",
+    "AGT-10030": "EVENT_ID_KEY '{}' does not exist. (Event Collection Settings ID: {})",
     "BKY-90000": "Process {}",
     "BKY-90001": "Rull maching process {}",
     "BKY-90002": "The action notification and logic event registration {}",

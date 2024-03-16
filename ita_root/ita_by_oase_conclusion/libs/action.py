@@ -298,9 +298,10 @@ class Action():
 
         # パラメータを生成してAPIに投げる（パターンB）
         request_data = self.generate_parameter_4apply_api(conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
-        g.applogger.debug("request_parameters for apply_api: {}".format(request_data))
         if request_data is False:
             return False,
+        g.applogger.debug("request_parameters for apply_api: {}".format(request_data))
+
         res = self.apply_api(request_data)
         return res
 

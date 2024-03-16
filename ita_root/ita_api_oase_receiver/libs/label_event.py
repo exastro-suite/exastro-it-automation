@@ -19,6 +19,9 @@ import jmespath
 import json
 from common_libs.common.exception import AppException
 from common_libs.common.util import stacktrace
+from common_libs.common.mongoconnect.const import Const as mongoConst
+# oase
+from common_libs.oase.const import oaseConst
 
 # 比較方法のキーから、比較方法を取り出すためのマスタ(正規表現の場合は正規表現オプション値がとれるように)
 # t_oase_comparison_methodに対応
@@ -68,7 +71,7 @@ LABEL_KEY_MAP = {}
 def label_event(wsDb, wsMongo, events):  # noqa: C901
     # ラベル付与の設定を取得
     labeling_settings = wsDb.table_select(
-        "T_OASE_LABELING_SETTINGS",
+        oaseConst.T_OASE_LABELING_SETTINGS,
         "WHERE DISUSE_FLAG=0"
     )
     if len(labeling_settings) == 0:
@@ -78,7 +81,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
 
     # ラベルのマスタを取得
     label_keys = wsDb.table_select(
-        "T_OASE_LABEL_KEY_INPUT",
+        oaseConst.V_OASE_LABEL_KEY_GROUP,
         "WHERE DISUSE_FLAG=0"
     )
     if len(label_keys) == 0:
@@ -91,7 +94,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
             LABEL_KEY_MAP[label_key["LABEL_KEY_ID"]] = label_key
 
     # ラベル付与したイベントデータを保存するためのコレクション
-    labeled_event_collection = wsMongo.collection("labeled_event_collection")
+    labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
     # ラベル付与されたイベント配列（MongoDBに保存予定）
     labeled_events = []
 
@@ -131,7 +134,8 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         # パターンA：収集したJSONデータのsearch_key_nameに対応する値とsearch_value_nameをcomparison_methodで比較し、trueの場合、labelのkey: labelのvalueのラベルを追加
         # パターンB：収集したJSONデータのsearch_key_nameに対応する値とsearch_value_nameをcomparison_methodで比較し、trueの場合、labelのkey: targetのvalueのラベルを追加（labelのvalueが空の場合、search_value_nameをlabelのvalueに流用する）# noqa: E501
         # パターンC：すべてのイベントに対してlabelのkey: labelのvalueのラベルを追加
-        # パターンD：search_key_nameが存在するデータに対してlabelのkey: labelのvalueのラベルを追加
+        # パターンD-1：search_key_nameが存在するデータに対してlabelのkey: labelのvalueのラベルを追加
+        # パターンD-2：search_key_nameが存在するデータに対してlabel_key: target_keyの持つ値のラベルを追加
         # パターンE：type_idが7であり、search_key_nameに対応する値がFalseの値（空文字、[]、{}、0、False）である際、labelのkey: labelのvalueのラベルを追加
         # パターンF: ラベルの正規表現での置換
         for setting in labeling_settings:
@@ -157,8 +161,9 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                 query = create_jmespath_query(setting["SEARCH_KEY_NAME"])
                 try:
                     is_key_exists = get_value_from_jsonpath(query, labeled_event_location)
-                except:  # noqa: E722
+                except Exception as e:  # noqa: E722
                     is_key_exists = False
+
                 # "event"もしくは"labels"配下にラベル付与設定のsearch_key_nameが存在しない場合
                 if is_key_exists is False:
                     # ラベル付与内type_idが7("空判定")、かつラベル付与内comparison_method_idが1（==）の場合
@@ -167,9 +172,13 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                     continue
 
                 # ラベル付与設定内にsearch_key_nameが存在するか確認 [パターンA,B,D,E用]
-                # ラベル付与設定内にtarget_type_id、target_valueのどちらも存在しなく、ラベル付与設定内type_idが7("空関数")以外の場合 [パターンD用]
-                if ((setting["TYPE_ID"] and setting["SEARCH_VALUE_NAME"]) is None) and setting["TYPE_ID"] != "7":
-                    labeled_event = add_label(labeled_event, setting)  # パターンD
+                # ラベル付与設定内にtarget_type_id、target_valueのどちらも存在しなく、ラベル付与設定内type_idが7("空判定")以外の場合 [パターンD用]
+                if not setting["TYPE_ID"] and not setting["SEARCH_VALUE_NAME"] and not setting["COMPARISON_METHOD_ID"]:
+                    if setting["LABEL_VALUE_NAME"]:
+                        labeled_event = add_label(labeled_event, setting)  # パターンD-1
+                    else:
+                        target_value_collection = get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], labeled_event_location)
+                        labeled_event = add_label(labeled_event, setting, target_value_collection)  # パターンD-2
                 # [パターンA,B,E,F用]
                 else:
                     # 取得してきたイベントの"event"もしくは"labels"配下に、ラベル付与設定のsearch_key_nameに該当する値を取得する
@@ -222,6 +231,13 @@ def create_jmespath_query(json_path):
     key_to_find = key_list[-1]
     return query.format(parent_key, key_to_find)
 
+# ドット区切りの文字列で辞書を指定して値を取得
+# 1.get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location) →　条件に合わせて値を返却
+# 2.get_value_from_jsonpath(query, event_collection_data_location) → 条件に合わせて真偽値を返却
+def get_value_from_jsonpath(jsonpath, data):
+    value = jmespath.search(jsonpath, data)
+    return value
+
 
 def comparison_values(comparison_method_id="1", collect_value=None, compare_value=None):
     """
@@ -262,15 +278,6 @@ def comparison_values(comparison_method_id="1", collect_value=None, compare_valu
 
     return compare_result, compare_match
 
-
-# ドット区切りの文字列で辞書を指定して値を取得
-# 1.get_value_from_jsonpath(setting["SEARCH_KEY_NAME"], event_collection_data_location) →　条件に合わせて値を返却
-# 2.get_value_from_jsonpath(query, event_collection_data_location) → 条件に合わせて真偽値を返却
-def get_value_from_jsonpath(jsonpath, data):
-    value = jmespath.search(jsonpath, data)
-    return value
-
-
 # ラベル付与処理
 def add_label(event, setting, compare_match=""):
     """
@@ -279,7 +286,7 @@ def add_label(event, setting, compare_match=""):
     Arguments:
         event: 収集したイベントデータ
         setting: ラベル付与の設定
-        compare_match: 正規表現で検索マッチした値
+        compare_match: 正規表現で検索マッチした値 or 検索キーに対応する値
     Returns:
         event: イベントデータ
     """
@@ -293,7 +300,7 @@ def add_label(event, setting, compare_match=""):
     # ラベルの値を決める
     if comparison_method_id in ["7", "8", "9"]:
         # 正規表現での比較および置換
-        if setting["LABEL_VALUE_NAME"] is None:
+        if setting["LABEL_VALUE_NAME"] is None or not setting["LABEL_VALUE_NAME"]:
             # [パターンB] label_valueが空の場合、matchした文字列をlabel_valueに代入
             label_value = compare_match
         else:
@@ -301,9 +308,15 @@ def add_label(event, setting, compare_match=""):
             regex_pattern = re.compile(setting["SEARCH_VALUE_NAME"], regex_option)
             label_value = regex_pattern.sub(setting["LABEL_VALUE_NAME"], compare_match)
     else:
-        if setting["LABEL_VALUE_NAME"] is None:
-            # [パターンB] label_valueが空の場合、target_valueをlabel_valueに流用する
-            label_value = setting["SEARCH_VALUE_NAME"]
+        if setting["LABEL_VALUE_NAME"] is None or not setting["LABEL_VALUE_NAME"]:
+
+            if setting["SEARCH_VALUE_NAME"]:
+                # [パターンB] label_valueが空の場合、target_valueをlabel_valueに流用する
+                label_value = setting["SEARCH_VALUE_NAME"]
+            else:
+                # [パターンD-2] label_valueが空の場合、target_keyに対応する値をlabel_valueに流用する
+                # 型に関わらず、文字列化する
+                label_value = str(compare_match)
         else:
             label_value = setting["LABEL_VALUE_NAME"]
 

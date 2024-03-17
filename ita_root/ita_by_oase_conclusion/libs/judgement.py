@@ -20,14 +20,12 @@ from libs.common_functions import addline_msg, getLabelGroup, getIDtoLabelName
 
 
 class Judgement:
-    def __init__(self, wsDb, wsMongo, EventObj):
+    def __init__(self, wsDb, EventObj):
         self.wsDb = wsDb
-        self.wsMongo = wsMongo
+        self.EventObj = EventObj
 
         # ラベルマスタ取得
         self.LabelMasterDict = getLabelGroup(wsDb)
-
-        self.EventObj = EventObj
 
     def getFilterMatch(self, FilterRow):
         # フィルターに引っかかったイベントを返す
@@ -41,17 +39,17 @@ class Judgement:
 
         for LabelRow in filter_condition_json:
             # ラベル毎のループ
-            LabelKey = str(LabelRow['label_name'])
+            LabelKeyId = str(LabelRow['label_name'])
             LabelValue = str(LabelRow['condition_value'])
             LabelCondition = str(LabelRow['condition_type'])
-            tmp_msg = g.appmsg.get_log_message("BKY-90041", [LabelKey, LabelValue, LabelCondition])
+            tmp_msg = g.appmsg.get_log_message("BKY-90041", [LabelKeyId, LabelValue, LabelCondition])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
             # ルールキーからルールラベル名を取得
-            LabelName = getIDtoLabelName(self.LabelMasterDict, LabelKey)
+            LabelKeyName = getIDtoLabelName(self.LabelMasterDict, LabelKeyId)
 
             # ラベリングされたイベントからデータを抜出す条件設定
-            EventJudgList.append(self.makeEventJudgList(LabelName, LabelValue, LabelCondition))
+            EventJudgList.append(self.makeEventJudgList(LabelKeyName, LabelValue, LabelCondition))
 
         ret, UseEventIdList = self.EventJudge(EventJudgList)
         if ret is False:
@@ -181,7 +179,7 @@ class Judgement:
 
         return TargetRuleList
 
-    def RuleJudge(self, RuleRow, IncidentDict, actionIdList, filterList):
+    def RuleJudge(self, RuleRow, IncidentDict, actionIdList, filterIDMap):
         UseEventIdList = []
 
         tmp_msg = g.appmsg.get_log_message("BKY-90050", [RuleRow['RULE_ID'], RuleRow['RULE_NAME'], RuleRow['FILTER_A'], RuleRow['FILTER_OPERATOR'], RuleRow['FILTER_B']])
@@ -228,7 +226,7 @@ class Judgement:
             tmp_msg = g.appmsg.get_log_message("BKY-90052", [FilterId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-            ret, EventRow = self.getFilterJudge(FilterId, IncidentDict, filterList)
+            ret, EventRow = self.getFilterJudge(FilterId, IncidentDict, filterIDMap)
 
             if ret is True:
                 FilterResultDict['EventList'].append(EventRow)
@@ -266,7 +264,7 @@ class Judgement:
 
         return True, UseEventIdList
 
-    def getFilterJudge(self, FilterId, IncidentDict, filterList):
+    def getFilterJudge(self, FilterId, IncidentDict, filterIDMap):
         # メモリーに保持しているIncidentDict[フィルターID:イベント]形式のリストの中から、これから判定に使うべきイベントを選ぶ
         # 判定につかうイベントは一つを想定している
         # 複数イベントがヒットしている場合はフィルターの「検索方法」項目を見て適切な値を返す。
@@ -276,35 +274,34 @@ class Judgement:
             return False, {}
 
         if type(IncidentDict[FilterId]) is list:
+        # フィルターに複数マッチ
             tmp_msg = g.appmsg.get_log_message("BKY-90059", [FilterId])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             # 取得しておいた「フィルター管理」から対象フィルターの検索方法をチェック
-            for filterRow in filterList:
-                t_oase_filterId = filterRow["FILTER_ID"]
-                search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
-                if FilterId != t_oase_filterId:
-                    continue
+            filterRow = filterIDMap[FilterId]
+            search_condition_Id = filterRow["SEARCH_CONDITION_ID"]
 
-                if search_condition_Id == '1':
-                    # 検索方法がユニークの場合
-                    # 一意のイベントしか許可しないのでFalseを返す
+            if search_condition_Id == '1':
+                # 検索方法がユニークの場合
+                # 一意のイベントしか許可しないのでFalseを返す
+                return False, {}
+            else:
+                # 検索方法がキューイングの場合
+                # 一番古いイベントの情報を返す
+                ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId][0])
+                if ret is False:
+                    tmp_msg = g.appmsg.get_log_message("BKY-90043", [FilterId])
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     return False, {}
+
+                if str(EventRow['labels']['_exastro_evaluated']) == '0':
+                    return True, EventRow
                 else:
-                    # 検索方法がキューイングの場合
-                    # 一番古いイベントの情報を返す
-                    ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId][0])
-                    if ret is False:
-                        tmp_msg = g.appmsg.get_log_message("BKY-90043", [FilterId])
-                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                        return False, {}
+                    tmp_msg = g.appmsg.get_log_message("BKY-90060", [FilterId])
+                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    return False, {}
 
-                    if str(EventRow['labels']['_exastro_evaluated']) == '0':
-                        return True, EventRow
-                    else:
-                        tmp_msg = g.appmsg.get_log_message("BKY-90060", [FilterId])
-                        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                        return False, {}
-
+        # フィルターに単一マッチ
         ret, EventRow = self.EventObj.get_events(IncidentDict[FilterId])
         if ret is False:
             tmp_msg = g.appmsg.get_log_message("BKY-90043", [FilterId])
@@ -370,60 +367,16 @@ class Judgement:
             return True
         return False
 
-    # def putRaccEvent(self, RuleRow, UseEventIdList):
-    #     # action.InsertConclusionEventとほとんど同じ関数だからまとめたい
-    #     addlabels = {}
-    #     label_key_inputs = {}
-    #     if type(RuleRow["CONCLUSION_LABEL_SETTINGS"]) is str:
-    #         RuleRow["CONCLUSION_LABEL_SETTINGS"] = json.loads(RuleRow["CONCLUSION_LABEL_SETTINGS"])
-    #     for row in RuleRow["CONCLUSION_LABEL_SETTINGS"]:
-    #         label_key = row.get('label_key')
-    #         name = self.getIDtoLabelName(label_key)
-    #         if name is False:
-    #             tmp_msg = g.appmsg.get_log_message("BKY-90061", [label_key])
-    #             g.applogger.info(tmp_msg)
-    #             return False, {}
-    #         label_key_inputs[name] = label_key
-    #         addlabels[name] = row.get('label_value')
-
-    #     RaccEventDict = {}
-
-    #     t1 = int(datetime.datetime.now().timestamp())
-    #     ttl = int(RuleRow['TTL'])
-
-    #     RaccEventDict["labels"] = {}
-    #     RaccEventDict["labels"]["_exastro_event_collection_settings_id"] = ''
-    #     RaccEventDict["labels"]["_exastro_fetched_time"] = t1
-    #     RaccEventDict["labels"]["_exastro_end_time"] = t1 + ttl
-    #     RaccEventDict["labels"]["_exastro_evaluated"] = "0"
-    #     RaccEventDict["labels"]["_exastro_undetected"] = "0"
-    #     RaccEventDict["labels"]["_exastro_timeout"] = "0"
-    #     RaccEventDict["labels"]["_exastro_checked"] = "1"
-    #     RaccEventDict["labels"]["_exastro_type"] = "conclusion"
-    #     RaccEventDict["labels"]["_exastro_rule_name"] = RuleRow['RULE_LABEL_NAME']
-    #     for name, value in addlabels.items():
-    #         RaccEventDict["labels"][name] = value
-    #     RaccEventDict["exastro_created_at"] = datetime.datetime.utcnow()
-    #     RaccEventDict["exastro_rules"] = []
-    #     rule_data = {'id': RuleRow['RULE_ID'], 'name': RuleRow['RULE_NAME']}
-    #     RaccEventDict["exastro_rules"].insert(0, rule_data)
-    #     RaccEventDict["exastro_events"] = list(map(repr, UseEventIdList))
-    #     RaccEventDict["exastro_label_key_inputs"] = {}
-    #     RaccEventDict["exastro_label_key_inputs"] = label_key_inputs
-
-    #     # MongoDBに結論イベント登録
-    #     _id = self.EventObj.insert_event(RaccEventDict)
-
-    #     tmp_msg = g.appmsg.get_log_message("BKY-90062", [_id])
-    #     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    #     return True, RaccEventDict
-
-    def ConclusionLabelUsedInFilter(self, FilterCheckLabelDict, FilterList):
+    def ConclusionLabelUsedInFilter(self, ConclusionLablesStr, filterIDMap):
         UsedFilterIdList = []
-        # FilterCheckLabelDict = [{'i_11': 'down', 'i_100': 'ap11'}]
-        for FilterRow in FilterList:
-            FilterId = FilterRow["FILTER_ID"]
-            ret = self.ConclusionFilterJudge(FilterCheckLabelDict, FilterRow)
+        # ConclusionLablesStr = "{'labels': {'httpd': 'down', 'server': 'web01'}}"
+
+        ConclusionLablesDict = json.loads(ConclusionLablesStr)["labels"]
+        tmp_msg = g.appmsg.get_log_message("BKY-90065", [str(ConclusionLablesDict)])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        for FilterId, FilterRow in filterIDMap.items():
+            ret = self.ConclusionFilterJudge(ConclusionLablesDict, FilterRow)
             if ret is True:
                 tmp_msg = g.appmsg.get_log_message("BKY-90063", [FilterId])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -437,51 +390,50 @@ class Judgement:
             return True, UsedFilterIdList
         return False, UsedFilterIdList
 
-    def ConclusionFilterJudge(self, FilterCheckLabelDict, FilterRow):
-        tmp_msg = g.appmsg.get_log_message("BKY-90065", [str(FilterCheckLabelDict)])
-        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    def ConclusionFilterJudge(self, ConclusionLablesDict, FilterRow):
+        # ConclusionLablesDict = {'labels': {'httpd': 'down', 'server': 'web01'}}
         # FilterRow['FILTER_CONDITION_JSON'] = [{'key': 'c_01_name', 'condition': '0', 'value': 'c_01'}, {'key': 'c_02_name', 'condition': '0', 'value': 'c_02'}]
 
         if type(FilterRow["FILTER_CONDITION_JSON"]) is str:
-            FilterRow['FILTER_CONDITION_JSON'] = json.loads(FilterRow['FILTER_CONDITION_JSON'])
-        LabelHitCount = 0
-        for FilterLabels in FilterRow['FILTER_CONDITION_JSON']:
-            FilterName = FilterLabels['label_name']
-            FilterValue = FilterLabels['condition_value']
-            FilterCondition = str(FilterLabels['condition_type'])
-            tmp_msg = g.appmsg.get_log_message("BKY-90066", [FilterName, FilterValue, FilterCondition])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            LabelHit = False
-            labeldict = {}
-            for row in FilterCheckLabelDict:
-                label_key = row.get('label_key')
-                labeldict[label_key] = row.get('label_value')
+            filter_condition_json = json.loads(FilterRow.get('FILTER_CONDITION_JSON'))
+        else:
+            filter_condition_json = FilterRow.get('FILTER_CONDITION_JSON')
 
-            for LabelName, LabelValue in labeldict.items():
-                if (FilterName == LabelName and FilterValue == LabelValue and FilterCondition == oaseConst.DF_TEST_EQ) or\
-                        (FilterName == LabelName and FilterValue != LabelValue and FilterCondition == oaseConst.DF_TEST_NE):
+        LabelHitCount = 0
+        for LabelRow in filter_condition_json:
+            LabelKeyName = getIDtoLabelName(self.LabelMasterDict, LabelRow['label_name'])
+            LabelValue = LabelRow['condition_value']
+            LabelCondition = str(LabelRow['condition_type'])
+            tmp_msg = g.appmsg.get_log_message("BKY-90066", [LabelKeyName, LabelValue, LabelCondition])
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+            LabelHit = False
+            for cLabelKeyName, cLabelValue in ConclusionLablesDict.items():
+                if (LabelKeyName == cLabelKeyName and LabelValue == cLabelValue and LabelCondition == oaseConst.DF_TEST_EQ) or\
+                        (LabelKeyName == cLabelKeyName and LabelValue != cLabelValue and LabelCondition == oaseConst.DF_TEST_NE):
                     LabelHit = True
                     LabelHitCount += 1
-                    tmp_msg = g.appmsg.get_log_message("BKY-90067", [LabelName, LabelValue])
+                    tmp_msg = g.appmsg.get_log_message("BKY-90067", [LabelKeyName, LabelValue])
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     break
+
             if LabelHit is True:
                 tmp_msg = g.appmsg.get_log_message("BKY-90068", [])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                pass
             else:
                 tmp_msg = g.appmsg.get_log_message("BKY-90069", [])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                 break
 
-        if LabelHitCount != len(FilterRow['FILTER_CONDITION_JSON']):
+        if LabelHitCount != len(filter_condition_json):
             tmp_msg = g.appmsg.get_log_message("BKY-90070", [])
             g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             return False
-        # 結論ラベル数＞フィルタラベル数の場合
-        if LabelHitCount != len(FilterCheckLabelDict):
-            tmp_msg = g.appmsg.get_log_message("BKY-90071", [])
-            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-            return False
+
+        # # 結論ラベル数＞フィルタラベル数の場合
+        # if LabelHitCount != len(ConclusionLablesDict):
+        #     tmp_msg = g.appmsg.get_log_message("BKY-90071", [])
+        #     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        #     return False
 
         return True

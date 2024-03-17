@@ -36,18 +36,16 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         event_collection_settings_enable_single = {}
 
         # 重複取得防止のため、event_collection_settings_nameに対応するidリストをDBから取得し、settingsに加える
-        if setting["CONNECTION_METHOD_ID"] == "4":
-            # メール
-            try:
-                sqliteDB.db_cursor.execute(
-                    "SELECT id FROM events WHERE event_collection_settings_name=?",
-                    (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
-                )
-                saved_ids = sqliteDB.db_cursor.fetchall()
-                saved_ids = [item[0] for item in saved_ids]
-            except sqlite3.OperationalError:  # テーブルがまだ作成されていない時の例外処理
-                saved_ids = []
-            setting["SAVED_IDS"] = saved_ids
+        try:
+            sqliteDB.db_cursor.execute(
+                "SELECT id FROM events WHERE event_collection_settings_name=? and id is not null",
+                (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
+            )
+            saved_ids = sqliteDB.db_cursor.fetchall()
+            saved_ids = [item[0] for item in saved_ids]
+        except sqlite3.OperationalError:  # テーブルがまだ作成されていない時の例外処理
+            saved_ids = []
+        setting["SAVED_IDS"] = saved_ids
 
         fetched_time = datetime.datetime.now()  # API取得時間
 

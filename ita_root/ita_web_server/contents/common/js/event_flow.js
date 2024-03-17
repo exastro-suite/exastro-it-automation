@@ -495,10 +495,11 @@ createCanvasData() {
                 const event = history.find(function(e){
                     return e.id === id;
                 });
-
-                if ( !event.after ) event.after = [];
-                if ( event.after.indexOf( ruleId ) === -1 ) {
-                    event.after.push( ruleId );
+                if ( event !== undefined ) {
+                    if ( !event.after ) event.after = [];
+                    if ( event.after.indexOf( ruleId ) === -1 ) {
+                        event.after.push( ruleId );
+                    }
                 }
             }
         }

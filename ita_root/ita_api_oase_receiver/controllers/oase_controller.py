@@ -19,8 +19,11 @@ import datetime
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.api import api_filter
+# oase
+from common_libs.oase.const import oaseConst
 from common_libs.oase.encrypt import agent_encrypt
 from libs.oase_receiver_common import check_menu_info, check_auth_menu
 from libs.label_event import label_event
@@ -60,7 +63,7 @@ def post_event_collection_settings(body, organization_id, workspace_id):  # noqa
     bind_values = tuple(body["event_collection_settings_names"])
 
     data_list = wsDb.table_select(
-        "T_OASE_EVENT_COLLECTION_SETTINGS",
+        oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS,
         where_str,
         bind_values
     )
@@ -125,7 +128,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         # event_collection_settings_nameもしくは、event_collection_settings_idは必須
         if "event_collection_settings_name" in event_group:
             event_collection_settings_name = event_group["event_collection_settings_name"]
-            event_collection_settings = wsDb.table_select("T_OASE_EVENT_COLLECTION_SETTINGS", "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s AND DISUSE_FLAG = 0", [event_collection_settings_name])  # noqa: E501
+            event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_NAME = %s AND DISUSE_FLAG = 0", [event_collection_settings_name])  # noqa: E501
             # 存在しないevent_collection_settings_name
             if len(event_collection_settings) == 0:
                 msg_code = "499-01801"
@@ -136,7 +139,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
             event_collection_settings_id = event_collection_settings[0]["EVENT_COLLECTION_SETTINGS_ID"]
         elif "event_collection_settings_id" in event_group:
             event_collection_settings_id = event_group["event_collection_settings_id"]
-            event_collection_settings = wsDb.table_select("T_OASE_EVENT_COLLECTION_SETTINGS", "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND DISUSE_FLAG = 0", [event_collection_settings_id])  # noqa: E501
+            event_collection_settings = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_SETTINGS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s AND DISUSE_FLAG = 0", [event_collection_settings_id])  # noqa: E501
             # 存在しないevent_collection_settings_id
             if len(event_collection_settings) == 0:
                 msg_code = "499-01801"
@@ -166,7 +169,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
         collection_group_data["FETCHED_TIME"] = fetched_time
 
         # イベント収集経過テーブルからイベント収集設定IDを基準にfetched_timeの最新1件を取得し、送信されてきたfetched_timeと比較
-        collection_progress = wsDb.table_select("T_OASE_EVENT_COLLECTION_PROGRESS", "WHERE EVENT_COLLECTION_SETTINGS_ID = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id])  # noqa: E501
+        collection_progress = wsDb.table_select(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, "WHERE EVENT_COLLECTION_SETTINGS_ID = %s ORDER BY `FETCHED_TIME` DESC LIMIT 1", [event_collection_settings_id])  # noqa: E501
         if len(collection_progress) == 0:
             collection_group_list.append(collection_group_data)
         else:
@@ -215,7 +218,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
     # そのままのイベントデータをMongoDBに保存する
     try:
-        event_collection = wsMongo.collection("event_collection")
+        event_collection = wsMongo.collection(mongoConst.EVENT_COLLECTION)
         event_collection.insert_many(events)
     except Exception as e:
         g.applogger.error(stacktrace())
@@ -227,7 +230,7 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
 
     # MySQLにイベント収集設定IDとfetched_timeを保存する処理を行う
     wsDb.db_transaction_start()
-    ret = wsDb.table_insert("T_OASE_EVENT_COLLECTION_PROGRESS", collection_group_list, "EVENT_COLLECTION_ID", True)  # noqa: F841
+    ret = wsDb.table_insert(oaseConst.T_OASE_EVENT_COLLECTION_PROGRESS, collection_group_list, "EVENT_COLLECTION_ID", True)  # noqa: F841
     wsDb.db_transaction_end(True)
 
     return '',

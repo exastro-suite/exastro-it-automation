@@ -65,6 +65,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS
     PARAMETER                       TEXT,                                       -- パラメータ
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
+    EVENT_ID_KEY                    VARCHAR(255),                               -- イベントIDキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -95,6 +96,7 @@ CREATE TABLE T_OASE_EVENT_COLLECTION_SETTINGS_JNL
     PARAMETER                       TEXT,                                       -- パラメータ
     RESPONSE_LIST_FLAG              VARCHAR(2),                                 -- レスポンスリストフラグ
     RESPONSE_KEY                    VARCHAR(255),                               -- レスポンスキー
+    EVENT_ID_KEY                    VARCHAR(255),                               -- イベントIDキー
     TTL                             INT,                                        -- TTL
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
@@ -459,7 +461,8 @@ FROM
 ORDER BY
     ACTION_ID ASC
 ;
-CREATE VIEW V_OASE_ACTION_JNL AS
+
+CREATE VIEW V_OASE_ACTION_JNL AS 
 SELECT
     JOURNAL_SEQ_NO,
     JOURNAL_REG_DATETIME,
@@ -573,6 +576,37 @@ CREATE TABLE T_OASE_RULE_JNL
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
     PRIMARY KEY(JOURNAL_SEQ_NO)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- 結論ラベルキー結合ビュー
+CREATE VIEW V_OASE_CONCLUSION_LABEL_KEY_GROUP AS
+SELECT
+    LABEL_KEY_ID,
+    LABEL_KEY_NAME,
+    COLOR_CODE,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_LABEL_KEY_INPUT
+UNION
+SELECT
+    LABEL_KEY_ID,
+    LABEL_KEY_NAME,
+    COLOR_CODE,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_LABEL_KEY_FIXED
+WHERE
+    LABEL_KEY_ID = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09'
+ORDER BY
+    LABEL_KEY_ID ASC
+;
 
 
 

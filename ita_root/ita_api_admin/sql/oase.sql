@@ -409,9 +409,8 @@ CREATE TABLE T_OASE_ACTION
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_NAME                       VARCHAR(40),                                -- 指定
-    PARAMETER_SHEET_NAME            VARCHAR(40),                                -- 利用パラメータシート
-    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
+    HOST_ID                         VARCHAR(40),                                -- 指定
+    PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -429,9 +428,8 @@ CREATE TABLE T_OASE_ACTION_JNL
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     CONDUCTOR_CLASS_ID              VARCHAR(40),                                -- ConductorクラスID
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_NAME                       VARCHAR(40),                                -- 指定
-    PARAMETER_SHEET_NAME            VARCHAR(40),                                -- 利用パラメータシート
-    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
+    HOST_ID                         VARCHAR(40),                                -- 指定
+    PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
@@ -449,9 +447,9 @@ SELECT
     OPERATION_ID,
     CONDUCTOR_CLASS_ID,
     EVENT_COLLABORATION,
-    HOST_NAME,
-    PARAMETER_SHEET_NAME,
-    PARAMETER_SHEET_NAME PARAMETER_SHEET_NAME_REST,
+    HOST_ID,
+    PARAMETER_SHEET_ID,
+    PARAMETER_SHEET_ID PARAMETER_SHEET_NAME_REST,
     NOTE,
     DISUSE_FLAG,
     LAST_UPDATE_TIMESTAMP,
@@ -461,8 +459,7 @@ FROM
 ORDER BY
     ACTION_ID ASC
 ;
-
-CREATE VIEW V_OASE_ACTION_JNL AS 
+CREATE VIEW V_OASE_ACTION_JNL AS
 SELECT
     JOURNAL_SEQ_NO,
     JOURNAL_REG_DATETIME,
@@ -472,9 +469,9 @@ SELECT
     OPERATION_ID,
     CONDUCTOR_CLASS_ID,
     EVENT_COLLABORATION,
-    HOST_NAME,
-    PARAMETER_SHEET_NAME,
-    PARAMETER_SHEET_NAME PARAMETER_SHEET_NAME_REST,
+    HOST_ID,
+    PARAMETER_SHEET_ID,
+    PARAMETER_SHEET_ID PARAMETER_SHEET_NAME_REST,
     NOTE,
     DISUSE_FLAG,
     LAST_UPDATE_TIMESTAMP,
@@ -537,6 +534,8 @@ CREATE TABLE T_OASE_RULE
     AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先
+    ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
+    EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
     CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
@@ -567,6 +566,8 @@ CREATE TABLE T_OASE_RULE_JNL
     AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先
+    ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
+    EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
     CONCLUSION_LABEL_SETTINGS       TEXT,                                       -- 結論ラベル設定
     TTL                             INT,                                        -- TTL
     EVENT_ID_LIST                   TEXT,                                       -- 使用イベント保存用
@@ -602,7 +603,7 @@ SELECT
     LAST_UPDATE_USER
 FROM
     T_OASE_LABEL_KEY_FIXED
-WHERE
+WHERE 
     LABEL_KEY_ID = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09'
 ORDER BY
     LABEL_KEY_ID ASC
@@ -623,7 +624,14 @@ CREATE TABLE T_OASE_ACTION_LOG
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
+    EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
+    HOST_ID                         VARCHAR(40),                                -- 指定
+    PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
+    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
+    EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
+    ACTION_PARAMETERS               TEXT,                                       -- アクションパラメータ
     CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
@@ -648,7 +656,14 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     CONDUCTOR_INSTANCE_NAME         VARCHAR(255),                               -- Conductor名称
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
+    EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
+    HOST_ID                         VARCHAR(40),                                -- 指定
+    PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
+    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
+    ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
+    EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
+    ACTION_PARAMETERS               TEXT,                                       -- アクションパラメータ
     CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考

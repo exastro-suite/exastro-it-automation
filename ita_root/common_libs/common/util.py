@@ -256,11 +256,6 @@ def file_encode(file_path):
     Returns:
         Encoded string
     """
-    print("---file_encode in file_path:" + file_path)
-#    if os.path.isdir("/tmp") is False:
-#        print("/tmp notfund")
-#    if os.path.isdir("/storage") is False:
-#        print("/storage notfund")
 
     is_file = os.path.isfile(file_path)
     if not is_file:
@@ -273,7 +268,6 @@ def file_encode(file_path):
         # /storage
         tmp_file_path = obj.make_temp_path(file_path)
         # /storageから/tmpにコピー
-        print("copy2 src path:" + file_path + " dest path:" + tmp_file_path)
         shutil.copy2(file_path, tmp_file_path)
     else:
         # not /storage

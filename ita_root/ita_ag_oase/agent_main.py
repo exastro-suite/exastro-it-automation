@@ -109,7 +109,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 {"event_collection_settings_names": setting_name_list}
             )
             if status_code == 200:
-                # CONNECTION_METHOD_ID="0"(エージェント不使用)のものを省く
+                # CONNECTION_METHOD_ID="99"(エージェント不使用)のものを省く
                 setting_list = [i for i in response["data"] if i["CONNECTION_METHOD_ID"] != oaseConst.DF_CON_METHOD_NOT_AGENT]
                 create_file(setting_list)
                 nodata = "(no data)" if response["data"] == [] else ""

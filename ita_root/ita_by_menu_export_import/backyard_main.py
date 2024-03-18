@@ -105,7 +105,7 @@ def backyard_main(organization_id, workspace_id):
             execute_log = f"{log_prefix}_{execution_no}.log"
             g.appmsg.set_lang(user_language)
             type_name = "Export" if execution_type == "1" else "Import"
-            msg = g.appmsg.get_log_message("MSG-140011", [type_name])
+            msg = g.appmsg.get_api_message("MSG-140011", [type_name])
             g.appmsg.set_lang(g.LANGUAGE)
         result, msg = _update_t_menu_export_import(objdbca, execution_no, status_id, user_language, execute_log, msg)
         if not result:
@@ -567,11 +567,7 @@ def _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_
     pass_column = ["8", "25", "26"]
     pass_column_list = []
     ret_pass_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s', [menu_id, pass_column])  # noqa: E501
-    if len(ret_pass_column) != 0:
-        for record in ret_pass_column:
-            # pass_col_name = record['COL_NAME']
-            pass_col_name_rest = record['COLUMN_NAME_REST']
-            pass_column_list.append(pass_col_name_rest)
+    pass_column_list = [record['COLUMN_NAME_REST'] for record in ret_pass_column] if len(ret_pass_column) != 0 else []
 
     # 環境移行、パラメータシートの場合
     if dp_mode == '1' and table_name.startswith('T_CMDB'):
@@ -609,18 +605,17 @@ def _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_
             last_update_date_time = last_update_timestamp.strftime('%Y/%m/%d %H:%M:%S.%f')
             param['last_update_date_time'] = last_update_date_time
 
-        # PasswordColumnかを判定
-        for k, v in param.items():
-            if k in pass_column_list:
-                if v is not None:
-                    v = ky_encrypt(v)
-                    param[k] = v
-
-
-        # ロール名をインポート先に置換
+        # PasswordColumn, ロール名置換対象の場合
         replace_role_menus = ['role_menu_link_list', 'menu_role_creation_info']
-        if menu_name_rest in replace_role_menus:
-            param = replace_role_name(workspace_id, export_workspace_id, param)
+        if menu_name_rest in replace_role_menus or len(pass_column_list) != 0:
+            # PasswordColumnかを判定
+            for _pass_column in pass_column_list:
+                if _pass_column in param and param[_pass_column] is not None:
+                    param[_pass_column] = ky_encrypt(param[_pass_column])
+
+            # ロール名をインポート先に置換
+            if menu_name_rest in replace_role_menus:
+                param = replace_role_name(workspace_id, export_workspace_id, param)
 
         # 登録用パラメータを作成
         parameters = {
@@ -673,10 +668,7 @@ def _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_res
     file_column = ["9", "20"]  # [FileUploadColumn, FileUploadEncryptColumn]
     file_column_list = []
     ret_file_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s AND DISUSE_FLAG = %s', [menu_id, file_column, 0])  # noqa: E501
-    if len(ret_file_column) != 0:
-        for record in ret_file_column:
-            file_col_name_rest = record['COLUMN_NAME_REST']
-            file_column_list.append(file_col_name_rest)
+    file_column_list = [record['COLUMN_NAME_REST'] for record in ret_file_column] if len(ret_file_column) != 0 else []
 
     # PKの rest_key取得
     _pk_rest_name = objmenu.get_rest_key(objmenu.get_primary_key())
@@ -780,20 +772,13 @@ def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, me
     pass_column = ["8", "25", "26"]
     pass_column_list = []
     ret_pass_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s', [menu_id, pass_column])  # noqa: E501
-    if len(ret_pass_column) != 0:
-        for record in ret_pass_column:
-            # pass_col_name = record['COL_NAME']
-            pass_col_name_rest = record['COLUMN_NAME_REST']
-            pass_column_list.append(pass_col_name_rest)
+    pass_column_list = [record['COLUMN_NAME_REST'] for record in ret_pass_column] if len(ret_pass_column) != 0 else []
 
     # ファイルアップロード系カラムを取得する
     file_column = ["9", "20"]  # [FileUploadColumn, FileUploadEncryptColumn]
     file_column_list = []
     ret_file_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s AND DISUSE_FLAG = %s', [menu_id, file_column, 0])  # noqa: E501
-    if len(ret_file_column) != 0:
-        for record in ret_file_column:
-            file_col_name_rest = record['COLUMN_NAME_REST']
-            file_column_list.append(file_col_name_rest)
+    file_column_list = [record['COLUMN_NAME_REST'] for record in ret_file_column] if len(ret_file_column) != 0 else []
 
     # PKの rest_key取得
     _pk_rest_name = objmenu.get_rest_key(objmenu.get_primary_key())
@@ -832,20 +817,17 @@ def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, me
             last_update_date_time = last_update_timestamp.strftime('%Y/%m/%d %H:%M:%S.%f')
             param['last_update_date_time'] = last_update_date_time
 
-        # PasswordColumnかを判定
-        for k, v in param.items():
-            if k in pass_column_list:
-                if v is not None:
-                    v = ky_encrypt(v)
-                    param[k] = v
+        # PasswordColumn, ロール名置換対象の場合
+        replace_role_menus = ['role_menu_link_list_JNL', 'menu_role_creation_info_JNL']
+        if menu_name_rest in replace_role_menus or len(pass_column_list) != 0:
+            # PasswordColumnかを判定
+            for _pass_column in pass_column_list:
+                if _pass_column in param and param[_pass_column] is not None:
+                    param[_pass_column] = ky_encrypt(param[_pass_column])
 
-        # ロール-メニュー紐付管理個別処理
-        if menu_name_rest == 'role_menu_link_list_JNL':
-            # 「_エクスポート元ワークスペース名-admin」ロールを
-            # 「_インポート先ワークスペース名-admin」に置換する
-            search_str = '_' + export_workspace_id + '-admin'
-            if param['role_name'] == search_str:
-                param['role_name'] = '_' + workspace_id + '-admin'
+            # ロール名をインポート先に置換
+            if menu_name_rest in replace_role_menus:
+                param = replace_role_name(workspace_id, export_workspace_id, param)
 
         colname_parameter = objmenu.convert_restkey_colname(param, [])
 
@@ -896,7 +878,10 @@ def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, me
                             os.remove(_tmp_old_file_path)
 
                         if not os.path.isfile(old_file_path):
-                            upload_file(old_file_path, file_param[file_column])  # noqa: F405
+                            if col_class_name == "FileUploadColumn":
+                                upload_file(old_file_path, file_param[file_column])  # noqa: F405
+                            elif col_class_name == "FileUploadEncryptColumn":
+                                encrypt_upload_file(old_file_path, file_param[file_column])  # noqa: F405
 
                         _tmp_old_file_path = old_file_path.replace("/storage/", "/tmp/")
                         if os.path.isfile(_tmp_old_file_path):

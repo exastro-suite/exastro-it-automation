@@ -40,7 +40,7 @@ class Action():
         action_parameters, conclusion_event_lables = self.generateConclusionLables(UseEventIdList, ruleInfo, LabelMasterDict, action_label_inheritance_flg, event_label_inheritance_flg)
 
         # 評価結果に登録するアクション情報を取得（ある場合）
-        action_id = ruleInfo.get("ACTION_ID")
+        action_id = ruleInfo.get("ACTION_ID", "")
         action_name = ""
         conductor_class_id = None
         conductor_name = ""
@@ -52,7 +52,7 @@ class Action():
         host_name = ""
         parameter_sheet_id = ""
         parameter_sheet_name = ""
-        if action_id is not None:
+        if action_id:
             # 「アクション」からレコードを取得
             ret_action = self.wsDb.table_select(oaseConst.T_OASE_ACTION, 'WHERE DISUSE_FLAG = %s AND ACTION_ID = %s', [0, action_id])
             if not ret_action:
@@ -88,14 +88,28 @@ class Action():
 
                 if host_id is not None:
                     # 「ホスト一覧」からレコードを取得
+                    # V_HGSP_UQ_HOST_LIST
                     # T_ANSC_DEVICE         HOST_NAME
                     # T_HGSP_HOSTGROUP_LIST HOSTGROUP_NAME
-                    ret_host = self.wsDb.table_select('T_ANSC_DEVICE', 'WHERE DISUSE_FLAG = %s AND SYSTEM_ID = %s', [0, host_id])
+                    ret_host = self.wsDb.table_select('V_HGSP_UQ_HOST_LIST', 'WHERE DISUSE_FLAG = %s AND KY_KEY = %s', [0, host_id])
                     if not ret_host:
-                        tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_ANSC_DEVICE'])
+                        tmp_msg = g.appmsg.get_log_message("BKY-90009", ['V_HGSP_UQ_HOST_LIST'])
                         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     else:
-                        host_name = ret_host[0].get("HOST_NAME")
+                        _host = ret_host[0].get("KY_VALUE")
+                        if _host.startswith("[HG]"):
+                        # ホストグループ
+                            ret_host = self.wsDb.table_select('T_HGSP_HOSTGROUP_LIST', 'WHERE DISUSE_FLAG = %s AND ROW_ID = %s', [0, host_id])
+                            if not ret_host:
+                                tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_HGSP_HOSTGROUP_LIST'])
+                                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                        # elif _host.startswith("[H]"):
+                        else:
+                            ret_host = self.wsDb.table_select('T_ANSC_DEVICE', 'WHERE DISUSE_FLAG = %s AND SYSTEM_ID = %s', [0, host_id])
+                            if not ret_host:
+                                tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_ANSC_DEVICE'])
+                                g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                        host_name = _host
 
                 if parameter_sheet_id is not None:
                     # 「パラメータシート一覧」からレコードを取得
@@ -160,7 +174,7 @@ class Action():
         self.wsDb.db_transaction_end(True)
 
         # アクションの事前処理（通知と承認）
-        if action_id is not None:
+        if action_id:
             # 事前承認が必要
             # if ruleInfo.get('BEFORE_APPROVAL_PENDING'):
             #     data_list = {
@@ -270,7 +284,7 @@ class Action():
                 dict
                     {"conductor_instance_id": conductor_instance_id}
         """
-
+        action_log_id = action_log_row['ACTION_LOG_ID']
         conductor_class_id = action_log_row.get("CONDUCTOR_INSTANCE_ID")
         conductor_class_name = action_log_row.get("CONDUCTOR_INSTANCE_NAME")
         operation_id = action_log_row.get("OPERATION_ID")
@@ -278,14 +292,17 @@ class Action():
 
         parameter_sheet_name_rest = action_log_row.get("PARAMETER_SHEET_NAME_REST")
         if not parameter_sheet_name_rest:
-            g.applogger.debug("call conductor_execute.")
-            # パラメータシートの指定がない（パターンA）
+            # パラメータシートの指定がないパターン
+            msg = g.appmsg.get_log_message("BKY-90073", [action_log_id])
+            g.applogger.debug(msg)
             res = self.conductor_execute(conductor_class_id, operation_id)
             return res
 
-        g.applogger.debug("call apply_api.")
-        # パラメータシートの指定がある
-        action_parameters = json.loads(action_log_row["ACTION_PARAMETERS"])
+        # パラメータシートの指定があるパターン
+        msg = g.appmsg.get_log_message("BKY-90074", [action_log_id])
+        g.applogger.debug(msg)
+
+        action_parameters = json.loads(action_log_row.get("ACTION_PARAMETERS", "{}"))
 
         # ホスト名
         host_name = None
@@ -295,12 +312,16 @@ class Action():
             host_name = action_parameters.get("_exastro_host", "")
         else:
             host_name = action_log_row.get("HOST_NAME", "")
+        if not host_name:
+            msg = g.appmsg.get_log_message("BKY-90075", ['host_name', action_log_id])
+            g.applogger.info(msg)
+            return False,
 
-        # パラメータを生成してAPIに投げる（パターンB）
-        request_data = self.generate_parameter_4apply_api(conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
+        # パラメータを生成してAPIに投げる
+        request_data = self.generate_parameter_4apply_api(action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
         if request_data is False:
             return False,
-        g.applogger.debug("request_parameters for apply_api: {}".format(request_data))
+        g.applogger.debug("request_parameters for apply_api: {}".format(action_log_id, request_data))
 
         res = self.apply_api(request_data)
         return res
@@ -322,21 +343,21 @@ class Action():
         _res = objcbkl.conductor_execute_no_transaction(parameter)
         return _res
 
-    def generate_parameter_4apply_api(self, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters):
+    def generate_parameter_4apply_api(self, action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters):
         request_data = {}
 
         # メニュー（パラメータシート）のカラム情報を取得
         menu_record = self.wsDb.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [parameter_sheet_name_rest, 0])
         if len(menu_record) == 0:
-            tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_COMN_MENU'])
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            msg = g.appmsg.get_log_message("BKY-90075", ['parameter_sheet_name_rest', action_log_id])
+            g.applogger.info(msg)
             return False
 
         menu_id = menu_record[0].get('MENU_ID')
         col_info_list = self.wsDb.table_select('T_COMN_MENU_COLUMN_LINK', 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s', ['0', menu_id])
         if len(col_info_list) == 0:
-            tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_COMN_MENU_COLUMN_LINK'])
-            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+            msg = g.appmsg.get_log_message("BKY-90075", ['parameter_sheet_name_rest→menu_id', action_log_id])
+            g.applogger.info(msg)
             return False
 
         # パラメータを作成
@@ -350,6 +371,11 @@ class Action():
             if col_name_rest in action_parameters.keys():
                 # ラベルの値をセット
                 val = action_parameters[col_name_rest]
+            else:
+                msg = g.appmsg.get_log_message("BKY-90075", ['col_name_rest[{}]'.format(col_name_rest), action_log_id])
+                g.applogger.info(msg)
+                return False
+
             parameter[col_name_rest] = val
         # ホスト名
         parameter['host_name'] = host_name
@@ -366,52 +392,47 @@ class Action():
         }
         if operation_name:
             request_data["operation_name"] = operation_name
+
         return request_data
 
-    def apply_api(self, request_data):
+    def apply_api(self, action_log_id, request_data):
         ret_bool = False
 
-        apply.check_params(request_data)
-
-        # チェック対象のメニューを抽出
-        check_menu_list = ["operation_list", "conductor_class_edit"]
-        specify_menu_list = apply.get_specify_menu(request_data)
-        check_menu_list = list(set(check_menu_list) | set(specify_menu_list))
-
-        # チェック項目の定義
-        check_items = {}
-        for menu in check_menu_list:
-            if menu not in check_items:
-                check_items[menu] = {
-                    "sheet_type" : None,
-                    "privilege"  : None,
-                }
-
-            if menu == "conductor_class_edit":
-                check_items[menu]["sheet_type"] = ["14", "15"]
-                check_items[menu]["privilege"]  = ["1", "2"]
-
-            elif menu == "operation_list":
-                check_items[menu]["sheet_type"] = ["0", ]
-                check_items[menu]["privilege"]  = ["1", ]
-
-            elif menu in specify_menu_list:
-                check_items[menu]["sheet_type"] = ["0", "1", "2", "3", "4"]
-                check_items[menu]["privilege"]  = ["1", ]
-
         try:
+            apply.check_params(request_data)
+
+            # チェック対象のメニューを抽出
+            check_menu_list = ["operation_list", "conductor_class_edit"]
+            specify_menu_list = apply.get_specify_menu(request_data)
+            check_menu_list = list(set(check_menu_list) | set(specify_menu_list))
+
+            # チェック項目の定義
+            check_items = {}
+            for menu in check_menu_list:
+                if menu not in check_items:
+                    check_items[menu] = {
+                        "sheet_type" : None,
+                        "privilege"  : None,
+                    }
+
+                if menu == "conductor_class_edit":
+                    check_items[menu]["sheet_type"] = ["14", "15"]
+                    check_items[menu]["privilege"]  = ["1", "2"]
+
+                elif menu == "operation_list":
+                    check_items[menu]["sheet_type"] = ["0", ]
+                    check_items[menu]["privilege"]  = ["1", ]
+
+                elif menu in specify_menu_list:
+                    check_items[menu]["sheet_type"] = ["0", "1", "2", "3", "4"]
+                    check_items[menu]["privilege"]  = ["1", ]
+
             # トランザクション開始
             self.wsDb.db_transaction_start()
 
-            # メニュー存在/シートチェック
+            # シートチェック
             parameter_sheet_list = []
             for menu, v in check_items.items():
-                menu_record = self.wsDb.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [menu, 0])
-                if not menu_record:
-                    tmp_msg = g.appmsg.get_log_message("499-00002", [menu])
-                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                    return False, {}
-
                 sheet_type = self.check_sheet_type(menu, v["sheet_type"])
 
                 if sheet_type in ['1', '3', '4']:
@@ -444,7 +465,15 @@ class Action():
                 self.wsDb.db_transaction_end(True)
             else:
                 self.wsDb.db_transaction_end(False)
-
+        except AppException as e:
+            result_code, log_msg_args, api_msg_args = e.args
+            log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
+            g.applogger.info(addline_msg('{}'.format(log_msg)))  # noqa: F405
+        except Exception as e:
+            t = traceback.format_exc()
+            print(arrange_stacktrace_format(t))
+            msg = g.appmsg.get_log_message("BKY-90076", [action_log_id, e])
+            g.applogger.info(addline_msg('{}'.format(msg)))  # noqa: F405
         finally:
             self.wsDb.db_transaction_end(False)
 

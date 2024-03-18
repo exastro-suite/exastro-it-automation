@@ -46,6 +46,7 @@ class ActionStatusMonitor():
                 # Actionのセットに失敗
                 tmp_msg = g.appmsg.get_log_message("BKY-90019", [result])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
                 # 評価結果の更新（ステータスを「完了（異常）」）
                 data_list = {
                     "ACTION_LOG_ID": action_log_row_info["ACTION_LOG_ID"],
@@ -58,6 +59,7 @@ class ActionStatusMonitor():
                 conductor_instance_id = result['conductor_instance_id']
                 tmp_msg = g.appmsg.get_log_message("BKY-90020", [conductor_instance_id])
                 g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
                 # 評価結果の更新（コンダクター情報のみをセット）
                 data_list = {
                     "ACTION_LOG_ID": action_log_row_info["ACTION_LOG_ID"],

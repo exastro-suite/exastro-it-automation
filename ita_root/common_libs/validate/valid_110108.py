@@ -46,7 +46,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         # ホスト名
         host_name = entry_parameter.get('host_name')
         # パラメータシート名
-        parameter_sheet_name = entry_parameter.get('parameter_sheet_name')
+        parameter_sheet_id = entry_parameter.get('parameter_sheet_id')
 
     # 「復活」の場合、currrent_parameterから各値を取得
     elif cmd_type == 'Restore':
@@ -57,19 +57,19 @@ def external_valid_menu_before(objdbca, objtable, option):
         # ホスト名
         host_name = current_parameter.get('host_name')
         # パラメータシート名
-        parameter_sheet_name = current_parameter.get('parameter_sheet_name')
+        parameter_sheet_id = current_parameter.get('parameter_sheet_id')
 
     else:
         return retBool, msg, option
 
     # オペレーション名が選択されている場合、イベント連携フラグ＆ホスト名＆パラメータシート名の指定は不可
-    if operation_id and (event_collaboration == "1" or host_name or parameter_sheet_name):
+    if operation_id and (event_collaboration == "1" or host_name or parameter_sheet_id):
         retBool = False
         msg = g.appmsg.get_api_message("499-01819")
         return retBool, msg, option,
 
     # オペレーション名が選択されていない場合、イベント連携フラグorホスト名andパラメータシート名の指定が必要
-    if not operation_id and event_collaboration != "1" and not host_name and not parameter_sheet_name:
+    if not operation_id and event_collaboration != "1" and not host_name and not parameter_sheet_id:
         retBool = False
         msg = g.appmsg.get_api_message("499-01820")
         return retBool, msg, option,
@@ -81,7 +81,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         return retBool, msg, option,
 
     # イベント連携フラグかホスト名が指定されている場合はパラメータシート名の指定が必要
-    if (event_collaboration == "1" or host_name) and not parameter_sheet_name:
+    if (event_collaboration == "1" or host_name) and not parameter_sheet_id:
         retBool = False
         msg = g.appmsg.get_api_message("499-01822")
         return retBool, msg, option,

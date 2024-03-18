@@ -26,6 +26,9 @@ class oaseConst():
     T_OASE_ACTION = 'T_OASE_ACTION'  # アクション
     T_OASE_ACTION_LOG = 'T_OASE_ACTION_LOG'  # 評価結果
 
+    # 接続方式
+    DF_CON_METHOD_NOT_AGENT = "99"  # エージェント不使用
+
     # イベントデータに一時的に追加する項目定期
     # 親ラベル
     DF_LOCAL_LABLE_NAME = "__exastro_local_labels__"

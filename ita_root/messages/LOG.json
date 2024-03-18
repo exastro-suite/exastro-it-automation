@@ -1211,6 +1211,7 @@
     "MSG-120010": "Access key ID is required if the connection method is shared key authentication,",
     "MSG-120011": "If the connection method is {}, please enter the request header in JSON format.",
     "MSG-120012": "If the connection method is {}, enter the parameters in JSON format.",
+    "MSG-120013": "Connection destination is required if the connection method is {},",
     "MSG-130001": "[Labeling Setting Name: {}]  All of Type, Comparison Method and Value to Compare must be blank if Key (Search conditions) is blank.",
     "MSG-130002": "[Labeling Setting Name: {}]  Value (Label) must have an entry if Key (Search conditions) is blank.",
     "MSG-130003": "[Labeling Setting Name: {}]  Comparison Method must be '==' or '≠' if Type is {}.",
@@ -1589,5 +1590,10 @@
     "BKY-90068": "Label matched",
     "BKY-90069": "Label did not match",
     "BKY-90070": "Filter mismatch 1",
-    "BKY-90071": "Filter mismatch 2"
+    "BKY-90071": "Filter mismatch 2",
+    "BKY-90072": "Kicking of the action is {}",
+    "BKY-90073": "calling 'ConductorExecute'.(action_log_id={})",
+    "BKY-90074": "calling 'apply API'.(action_log_id={})",
+    "BKY-90075": "Cannnot execute the Action because {} is invalid.(action_log_id={})",
+    "BKY-90076": "Failrue to call 'apply API'.(action_log_id={}, error = {})"
 }

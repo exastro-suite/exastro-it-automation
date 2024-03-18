@@ -14,6 +14,7 @@
 
 import json
 import base64
+import time
 import datetime
 from flask import g  # noqa: F401
 
@@ -313,6 +314,9 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
                         api_msg_args = [msg]
 
                     raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
+
+    # 10秒スリープ(適用データの反映待ち)
+    time.sleep(10)
 
     # Conductor作業実行の要求情報を作成
     data = {}

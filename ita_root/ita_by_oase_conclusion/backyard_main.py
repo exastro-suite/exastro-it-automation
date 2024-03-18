@@ -70,7 +70,11 @@ def backyard_main(organization_id, workspace_id):
     action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
 
     # アクションの実行
+    tmp_msg = g.appmsg.get_log_message("BKY-90072", ['Started'])
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
     action_status_monitor.checkRuleMatch(actionObj)
+    tmp_msg = g.appmsg.get_log_message("BKY-90072", ['Ended'])
+    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
     # アクション実行後の通知と結論イベント登録
     tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Started'])

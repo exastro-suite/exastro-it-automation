@@ -603,7 +603,7 @@ SELECT
     LAST_UPDATE_USER
 FROM
     T_OASE_LABEL_KEY_FIXED
-WHERE 
+WHERE
     LABEL_KEY_ID = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09'
 ORDER BY
     LABEL_KEY_ID ASC

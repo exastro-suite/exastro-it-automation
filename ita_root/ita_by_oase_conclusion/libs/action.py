@@ -40,7 +40,7 @@ class Action():
         action_parameters, conclusion_event_lables = self.generateConclusionLables(UseEventIdList, ruleInfo, LabelMasterDict, action_label_inheritance_flg, event_label_inheritance_flg)
 
         # 評価結果に登録するアクション情報を取得（ある場合）
-        action_id = ruleInfo.get("ACTION_ID")
+        action_id = ruleInfo.get("ACTION_ID", "")
         action_name = ""
         conductor_class_id = None
         conductor_name = ""
@@ -52,7 +52,7 @@ class Action():
         host_name = ""
         parameter_sheet_id = ""
         parameter_sheet_name = ""
-        if action_id is not None:
+        if action_id:
             # 「アクション」からレコードを取得
             ret_action = self.wsDb.table_select(oaseConst.T_OASE_ACTION, 'WHERE DISUSE_FLAG = %s AND ACTION_ID = %s', [0, action_id])
             if not ret_action:
@@ -160,7 +160,7 @@ class Action():
         self.wsDb.db_transaction_end(True)
 
         # アクションの事前処理（通知と承認）
-        if action_id is not None:
+        if action_id:
             # 事前承認が必要
             # if ruleInfo.get('BEFORE_APPROVAL_PENDING'):
             #     data_list = {

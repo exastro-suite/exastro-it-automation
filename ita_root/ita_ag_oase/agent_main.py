@@ -20,6 +20,7 @@ import sqlite3
 
 from common_libs.common import *  # noqa F403
 from common_libs.ci.util import app_exception, exception
+from common_libs.oase.const import oaseConst
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
@@ -108,7 +109,9 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 {"event_collection_settings_names": setting_name_list}
             )
             if status_code == 200:
-                create_file(response["data"])
+                # CONNECTION_METHOD_ID="0"(エージェント不使用)のものを省く
+                setting_list = [i for i in response["data"] if i["CONNECTION_METHOD_ID"] != oaseConst.DF_CON_METHOD_NOT_AGENT]
+                create_file(setting_list)
                 nodata = "(no data)" if response["data"] == [] else ""
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10009", [nodata]))
                 settings = get_settings()

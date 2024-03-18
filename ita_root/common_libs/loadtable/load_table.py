@@ -1635,9 +1635,9 @@ class loadTable():
                     if _jnl_uuid:
                         result_uuid_jnl = _jnl_uuid[0].get(COLNAME_JNL_SEQ_NO)
                     else:
-                        result_uuid_jnl = '00000000-0000-0000-0000-000000000000'
+                        result_uuid_jnl = result_uuid
                 else:
-                    result_uuid_jnl = '00000000-0000-0000-0000-000000000000'
+                    result_uuid_jnl = result_uuid
 
                 temp_rows = {primary_key: result[0].get(primary_key)}
                 tmp_result = self.convert_colname_restkey(temp_rows)

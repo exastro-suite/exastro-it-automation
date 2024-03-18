@@ -28,6 +28,7 @@ def agent_setting_valid(objdbca, objtable, option):
     if cmd_type in ["Register", "Update"]:
 
         connection_method = entry_parameter['connection_method_name']
+        access_point = entry_parameter['url']
         request_method = entry_parameter['request_method_name']
         password = entry_parameter.get("password")
         auth_token = entry_parameter.get("auth_token")
@@ -48,6 +49,11 @@ def agent_setting_valid(objdbca, objtable, option):
         secret_access_key_entered = False
         if secret_access_key:
             secret_access_key_entered = True
+
+        # 接続方式がエージェント不使用以外の場合
+        if connection_method != "99":
+            if access_point is None:
+                msg.append(g.appmsg.get_api_message("MSG-120013", [connection_method_name]))
 
         # 接続方式がIMAPパスワードの場合
         if connection_method == "4":

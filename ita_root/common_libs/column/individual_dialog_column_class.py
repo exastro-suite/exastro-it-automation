@@ -291,19 +291,6 @@ class IndividualDialogColumn(IDColumn):
                 status_code = 'MSG-00030'
                 msg_args = []
                 msg = g.appmsg.get_api_message(status_code, msg_args)
-            else:
-                val_decode = self.is_json_format(val)
-                if val_decode is False:
-                    retBool = False
-                    status_code = '499-01703'
-                    msg_args = []
-                    msg = g.appmsg.get_api_message(status_code, msg_args)
-                else:
-                    if len(val_decode) == 0:
-                        retBool = False
-                        status_code = 'MSG-00030'
-                        msg_args = []
-                        msg = g.appmsg.get_api_message(status_code, msg_args)
 
         return retBool, msg,
 

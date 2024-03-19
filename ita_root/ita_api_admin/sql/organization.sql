@@ -8,7 +8,7 @@ CREATE TABLE T_COMN_WORKSPACE_DB_INFO
     DB_DATABASE                             VARCHAR(255),                       -- DB名
     DB_USER                                 VARCHAR(255),                       -- ユーザ
     DB_PASSWORD                             VARCHAR(255),                       -- パスワード
-    MONGO_CONNECTION_STRING                 VARCHAR(255),                       -- MONGOの接続用URL
+    MONGO_CONNECTION_STRING                 VARCHAR(512),                       -- MONGOの接続用URL
     MONGO_DATABASE                          VARCHAR(255),                       -- MONGODB名
     MONGO_USER                              VARCHAR(255),                       -- MONGOユーザ
     MONGO_PASSWORD                          VARCHAR(255),                       -- MONGOパスワード

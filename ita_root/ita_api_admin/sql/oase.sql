@@ -625,7 +625,8 @@ CREATE TABLE T_OASE_ACTION_LOG
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_ID                         VARCHAR(40),                                -- 指定
+    HOST_ID                         VARCHAR(40),                                -- 指定ホストID 
+    HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
     PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
@@ -657,7 +658,8 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_ID                         VARCHAR(40),                                -- 指定
+    HOST_ID                         VARCHAR(40),                                -- 指定ホストID 
+    HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
     PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID

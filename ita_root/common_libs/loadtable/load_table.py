@@ -2491,13 +2491,15 @@ class loadTable():
             self.exec_unique_constraint(restore_chk_parameter, target_uuid)
 
     # [filter]:メニューのレコード取得
-    def rest_export_filter(self, parameter, mode='nomal'):
+    def rest_export_filter(self, parameter, mode='nomal', abolished_type="1"):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
                 parameter:検索条件
                 mode
                     export:内部処理用(IDColumn等は変換後の値、PasswordColumn等は復号化された状態で返却)
+                abolished_type
+                    "2": 「廃止を含まない」時の履歴データ取得用(本体のテーブルの廃止状態を参照してデータ取得)
             RETURN:
                 status_code, result, msg,
         """
@@ -2603,6 +2605,10 @@ class loadTable():
                 bind_value_list = []
                 view_name = self.get_view_name_jnl()
                 table_name = self.get_table_name_jnl()
+                table_tab = ""
+                if abolished_type == "2":
+                    table_tab = "`TAB_A`."
+                    where_str = " WHERE `TAB_B`.`DISUSE_FLAG` = 0 "
 
                 if mode not in ['jnl_all', 'excel_jnl_all', 'jnl_count_all', 'export_jnl',]:
                     tmp_jnl_conf = parameter.get('JNL')
@@ -2626,9 +2632,9 @@ class loadTable():
                             where_str += 'where '
 
                         if k == 'LAST_UPDATE_TIMESTAMP':
-                            where_str += k + ' >= ' + "'" + v + "' "
+                            where_str += table_tab + k + ' >= ' + "'" + v + "' "
                         else:
-                            where_str += k + ' = ' + "'" + v + "' "
+                            where_str += table_tab + k + ' = ' + "'" + v + "' "
 
                 target_uuid_key = self.get_rest_key(primary_key)
 
@@ -2639,16 +2645,28 @@ class loadTable():
                     """).format(col_name=primary_key).strip()
                 else:
                     where_str += textwrap.dedent("""
-                        ORDER BY `JOURNAL_REG_DATETIME` DESC
-                    """).format().strip()
+                        ORDER BY {}`JOURNAL_REG_DATETIME` DESC
+                    """).format(table_tab).strip()
 
                 sort_key = self.get_sort_key()
                 if sort_key is not None:
                     str_orderby = ''
                     where_str = where_str + str_orderby
 
-            # データ取得
-            tmp_result = self.objdbca.table_select(table_name, where_str, bind_value_list)
+            if abolished_type == "2":
+                query_str = textwrap.dedent("""
+                    SELECT `TAB_A`.* FROM `{}` `TAB_A`
+                    LEFT JOIN `{}` `TAB_B` ON ( `TAB_A`.`{}` = `TAB_B`.`{}` )
+                """).format(self.get_table_name_jnl(),
+                            self.get_table_name(),
+                            self.get_primary_key(),
+                            self.get_primary_key()
+                ).strip()
+                query_str = query_str + " " + where_str
+                tmp_result = self.objdbca.sql_execute(query_str, bind_value_list)
+            else:
+                # データ取得
+                tmp_result = self.objdbca.table_select(table_name, where_str, bind_value_list)
 
             # RESTパラメータへキー変換
             for rows in tmp_result:

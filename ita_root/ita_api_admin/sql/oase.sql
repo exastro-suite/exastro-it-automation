@@ -625,7 +625,7 @@ CREATE TABLE T_OASE_ACTION_LOG
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_ID                         VARCHAR(40),                                -- 指定ホストID 
+    HOST_ID                         VARCHAR(40),                                -- 指定ホストID
     HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
     PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
@@ -633,7 +633,7 @@ CREATE TABLE T_OASE_ACTION_LOG
     ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
     EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
     ACTION_PARAMETERS               TEXT,                                       -- アクションパラメータ
-    CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
+    CONCLUSION_EVENT_LABELS         TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
@@ -658,7 +658,7 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_ID                         VARCHAR(40),                                -- 指定ホストID 
+    HOST_ID                         VARCHAR(40),                                -- 指定ホストID
     HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
     PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
@@ -666,7 +666,7 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
     EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
     ACTION_PARAMETERS               TEXT,                                       -- アクションパラメータ
-    CONCLUSION_LABELS               TEXT,                                       -- 結論ラベル
+    CONCLUSION_EVENT_LABELS         TEXT,                                       -- 結論ラベル
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
     NOTE                            TEXT,                                       -- 備考
     DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ

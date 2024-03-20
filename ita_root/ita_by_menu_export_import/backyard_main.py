@@ -331,7 +331,6 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         )
         rpt.set_time("import: ita_create_menus ")
 
-
         if os.path.isfile(backupsql_path) is True:
             # 正常終了時はバックアップファイルを削除する
             os.remove(backupsql_path)
@@ -986,7 +985,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         elif mode == '1' and abolished_type == '2':
             # 環境移行/廃止を含まない
             filter_parameter = {"discard": {'NORMAL': '0'}}
-            filter_parameter_jnl = {"DISUSE_FLAG": "0"}
+            filter_parameter_jnl = {}
         elif mode == '2' and abolished_type == '1':
             # 時刻指定/廃止を含む
             filter_parameter = {"last_update_date_time": {"RANGE": {'START': specified_time}}}
@@ -994,7 +993,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         elif mode == '2' and abolished_type == '2':
             # 時刻指定/廃止を含まない
             filter_parameter = {"discard": {'NORMAL': '0'}, "last_update_date_time": {"RANGE": {'START': specified_time}}}
-            filter_parameter_jnl = {"DISUSE_FLAG": "0", "LAST_UPDATE_TIMESTAMP": specified_time}
+            filter_parameter_jnl = {"LAST_UPDATE_TIMESTAMP": specified_time}
 
         for menu in menu_list:
             DB_path = dir_path + '/' + menu
@@ -1026,7 +1025,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                 DB_path = dir_path + '/' + menu + '_JNL'
                 filter_mode = 'export_jnl'
 
-                status_code, result, msg = objmenu.rest_export_filter(filter_parameter_jnl, filter_mode)
+                # 廃止を含まない場合、本体のテーブルの廃止状態を確認してデータ取得
+                status_code, result, msg = objmenu.rest_export_filter(filter_parameter_jnl, filter_mode, abolished_type)
                 if status_code != '000-00000':
                     log_msg_args = [msg]
                     api_msg_args = [msg]

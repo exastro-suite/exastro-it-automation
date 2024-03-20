@@ -13,7 +13,16 @@
 #   limitations under the License.
 version: '3.7'
 services:
+  platform-init-containers:
+    # 監査ログ用の出力フォルダの権限を設定
+    # Set output folder permissions for audit logs
+    image: busybox:stable
+    volumes:
+      - ../.volumes/exastro/log:/var/log/exastro
+    command: "sh -c 'chmod 777 /var/log/exastro'"
   platform-auth:
+    volumes:
+      - ../.volumes/exastro/log:/var/log/exastro
     user: 1000:1000
     image: exastro/exastro-platform-auth:${PLATFORM_VERSION:-latest}
     environment:

@@ -58,7 +58,7 @@ def external_valid_menu_after(objDBCA, objtable, option):
                 msg = msg_tmp if len(msg) <= 0 else '%s\n%s' % (msg, msg_tmp)
 
         # 登録/更新時の場合、dialogの正常性チェック
-        elif cmd_type in ["Register", "Update"]:
+        elif cmd_type in ["Register", "Update"] and dialog_data is not None:
             dialog_data_binary = base64.b64decode(dialog_data)
             # 文字コードがUTF-8以外もありうるので'ignore'を付ける
             dialog_data_decoded = dialog_data_binary.decode('utf-8', 'ignore')

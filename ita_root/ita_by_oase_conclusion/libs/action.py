@@ -52,6 +52,7 @@ class Action():
         host_name = ""
         parameter_sheet_id = ""
         parameter_sheet_name = ""
+        parameter_sheet_name_rest = ""
         if action_id:
             # 「アクション」からレコードを取得
             ret_action = self.wsDb.table_select(oaseConst.T_OASE_ACTION, 'WHERE DISUSE_FLAG = %s AND ACTION_ID = %s', [0, action_id])
@@ -60,15 +61,14 @@ class Action():
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
             else:
                 action_name = ret_action[0].get("ACTION_NAME")
-                conductor_class_id = ret_action[0].get("CONDUCTOR_CLASS_ID")
-                operation_id = ret_action[0].get("OPERATION_ID")
+                conductor_class_id = ret_action[0].get("CONDUCTOR_CLASS_ID", "")
+                operation_id = ret_action[0].get("OPERATION_ID", "")
 
                 event_collaboration = ret_action[0].get("EVENT_COLLABORATION", "0")  # 未入力はFalse
-                host_id = ret_action[0].get("HOST_ID")
-                parameter_sheet_id = ret_action[0].get("PARAMETER_SHEET_ID")
-                parameter_sheet_name = ret_action[0].get("PARAMETER_SHEET_NAME_REST")
+                host_id = ret_action[0].get("HOST_ID", "")
+                parameter_sheet_id = ret_action[0].get("PARAMETER_SHEET_ID", "")
 
-                if conductor_class_id is not None:
+                if conductor_class_id:
                     # 「コンダクタークラス」からレコードを取得
                     ret_conductor = self.wsDb.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE DISUSE_FLAG = %s AND CONDUCTOR_CLASS_ID = %s', [0, conductor_class_id])
                     if not ret_conductor:
@@ -77,7 +77,7 @@ class Action():
                     else:
                         conductor_name = ret_conductor[0].get("CONDUCTOR_NAME")
 
-                if operation_id is not None:
+                if operation_id:
                     # 「オペレーション」からレコードを取得
                     ret_operation = self.wsDb.table_select('T_COMN_OPERATION', 'WHERE DISUSE_FLAG = %s AND OPERATION_ID = %s', [0, operation_id])
                     if not ret_operation:
@@ -86,7 +86,7 @@ class Action():
                     else:
                         operation_name = ret_operation[0].get("OPERATION_NAME")
 
-                if host_id is not None:
+                if host_id:
                     # 「ホスト一覧」からレコードを取得
                     # V_HGSP_UQ_HOST_LIST
                     # T_ANSC_DEVICE         HOST_NAME
@@ -103,22 +103,24 @@ class Action():
                             if not ret_host:
                                 tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_HGSP_HOSTGROUP_LIST'])
                                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                            host_name = _host
                         # elif _host.startswith("[H]"):
                         else:
                             ret_host = self.wsDb.table_select('T_ANSC_DEVICE', 'WHERE DISUSE_FLAG = %s AND SYSTEM_ID = %s', [0, host_id])
                             if not ret_host:
                                 tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_ANSC_DEVICE'])
                                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-                        host_name = _host
+                            host_name = ret_host[0].get('HOST_NAME')
 
-                if parameter_sheet_id is not None:
+                if parameter_sheet_id:
                     # 「パラメータシート一覧」からレコードを取得
                     ret_parameter = self.wsDb.table_select('T_MENU_DEFINE', 'WHERE DISUSE_FLAG = %s AND MENU_CREATE_ID = %s', [0, parameter_sheet_id])
                     if not ret_parameter:
                         tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_MENU_DEFINE'])
                         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     else:
-                        parameter_sheet_name = ret_parameter[0].get("MENU_NAME_REST")
+                        parameter_sheet_name = ret_parameter[0].get("MENU_NAME_EN")
+                        parameter_sheet_name_rest = ret_parameter[0].get("MENU_NAME_REST")
 
         # 評価結果へ登録
         # トランザクション開始
@@ -137,10 +139,11 @@ class Action():
             "HOST_ID": host_id,
             "HOST_NAME": host_name,
             "PARAMETER_SHEET_ID": parameter_sheet_id,
-            "PARAMETER_SHEET_NAME_REST": parameter_sheet_name,
+            "PARAMETER_SHEET_NAME": parameter_sheet_name,
+            "PARAMETER_SHEET_NAME_REST": parameter_sheet_name_rest,
+            "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
             "ACTION_LABEL_INHERITANCE_FLAG": action_label_inheritance_flg,
             "EVENT_LABEL_INHERITANCE_FLAG": event_label_inheritance_flg,
-            "EVENT_ID_LIST": ','.join(map(repr, UseEventIdList)),
             "ACTION_PARAMETERS": json.dumps(action_parameters),
             "CONCLUSION_EVENT_LABELS": json.dumps(conclusion_event_lables),
             "TIME_REGISTER": datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S'),
@@ -294,13 +297,13 @@ class Action():
         if not parameter_sheet_name_rest:
             # パラメータシートの指定がないパターン
             msg = g.appmsg.get_log_message("BKY-90073", [action_log_id])
-            g.applogger.debug(msg)
+            g.applogger.info(msg)
             res = self.conductor_execute(conductor_class_id, operation_id)
             return res
 
         # パラメータシートの指定があるパターン
         msg = g.appmsg.get_log_message("BKY-90074", [action_log_id])
-        g.applogger.debug(msg)
+        g.applogger.info(msg)
 
         action_parameters = json.loads(action_log_row.get("ACTION_PARAMETERS", "{}"))
 
@@ -314,16 +317,15 @@ class Action():
             host_name = action_log_row.get("HOST_NAME", "")
         if not host_name:
             msg = g.appmsg.get_log_message("BKY-90075", ['host_name', action_log_id])
-            g.applogger.info(msg)
-            return False,
+            return False, msg
 
         # パラメータを生成してAPIに投げる
-        request_data = self.generate_parameter_4apply_api(action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
-        if request_data is False:
-            return False,
-        g.applogger.debug("request_parameters for apply_api: {}".format(action_log_id, request_data))
+        ret_bool, request_data = self.generate_parameter_4apply_api(action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
+        if ret_bool is False:
+            return ret_bool, request_data
 
-        res = self.apply_api(request_data)
+        g.applogger.debug("request_parameters for apply_api: {}".format(request_data))
+        res = self.apply_api(action_log_id, request_data)
         return res
 
     def conductor_execute(self, conductor_class_id, operation_id):
@@ -344,21 +346,20 @@ class Action():
         return _res
 
     def generate_parameter_4apply_api(self, action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters):
+        ret_bool = False
         request_data = {}
 
         # メニュー（パラメータシート）のカラム情報を取得
         menu_record = self.wsDb.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [parameter_sheet_name_rest, 0])
         if len(menu_record) == 0:
             msg = g.appmsg.get_log_message("BKY-90075", ['parameter_sheet_name_rest', action_log_id])
-            g.applogger.info(msg)
-            return False
+            return ret_bool, msg
 
         menu_id = menu_record[0].get('MENU_ID')
         col_info_list = self.wsDb.table_select('T_COMN_MENU_COLUMN_LINK', 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s', ['0', menu_id])
         if len(col_info_list) == 0:
             msg = g.appmsg.get_log_message("BKY-90075", ['parameter_sheet_name_rest→menu_id', action_log_id])
-            g.applogger.info(msg)
-            return False
+            return ret_bool, msg
 
         # パラメータを作成
         parameter = {}
@@ -373,8 +374,7 @@ class Action():
                 val = action_parameters[col_name_rest]
             else:
                 msg = g.appmsg.get_log_message("BKY-90075", ['col_name_rest[{}]'.format(col_name_rest), action_log_id])
-                g.applogger.info(msg)
-                return False
+                return ret_bool, msg
 
             parameter[col_name_rest] = val
         # ホスト名
@@ -393,7 +393,7 @@ class Action():
         if operation_name:
             request_data["operation_name"] = operation_name
 
-        return request_data
+        return True, request_data
 
     def apply_api(self, action_log_id, request_data):
         ret_bool = False
@@ -468,12 +468,12 @@ class Action():
         except AppException as e:
             result_code, log_msg_args, api_msg_args = e.args
             log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
-            g.applogger.info(addline_msg('{}'.format(log_msg)))  # noqa: F405
+            result_data = addline_msg('{}'.format(log_msg))
         except Exception as e:
             t = traceback.format_exc()
             print(arrange_stacktrace_format(t))
-            msg = g.appmsg.get_log_message("BKY-90076", [action_log_id, e])
-            g.applogger.info(addline_msg('{}'.format(msg)))  # noqa: F405
+            log_msg = g.appmsg.get_log_message("BKY-90076", [action_log_id, e])
+            result_data = addline_msg('{}'.format(log_msg))
         finally:
             self.wsDb.db_transaction_end(False)
 

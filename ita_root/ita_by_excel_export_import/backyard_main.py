@@ -53,6 +53,9 @@ def backyard_main(organization_id, workspace_id):
     try:
         # DB接続
         objdbca = DBConnectWs(workspace_id)  # noqa: F405
+        
+        # インポート実行用のアップロードID
+        upload_id = ""
 
         # メンテナンスモードのチェック
         try:

@@ -247,6 +247,22 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
         api_msg_args = []
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
+    # オペレーション自動払い出しの自動設定が必要な標準メニューの定義
+    std_menu_list = {}
+    if ope_gen_flag is True:
+        std_menu_list = {
+            # Conductor定期作業実行
+            "conductor_regularly_execution": {
+                "col_name_rest" : "operation_name",
+                "value"         : operation_name
+            },
+            # ホスト紐付管理
+            "host_link_list": {
+                "col_name_rest" : "operation",
+                "value"         : operation_name
+            },
+        }
+
     # パラメーター適用
     if isinstance(parameter_info, dict):
         parameter_info = [parameter_info, ]
@@ -268,6 +284,12 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
                             v['parameter']['operation_name_select'] = '%s_%s' % (
                                 now.strftime('%Y/%m/%d %H:%M'), operation_name
                             )
+
+                    if ope_gen_flag is True and menu in std_menu_list:
+                        col_name_rest = std_menu_list[menu]['col_name_rest']
+                        if col_name_rest not in v['parameter'] \
+                        or not v['parameter'][col_name_rest]:
+                            v['parameter'][col_name_rest] = std_menu_list[menu]['value']
 
                     # テーブル情報（カラム、PK取得）
                     target_uuid = ''
@@ -316,7 +338,7 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
                     raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     # 10秒スリープ(適用データの反映待ち)
-    time.sleep(10)
+    # time.sleep(10)
 
     # Conductor作業実行の要求情報を作成
     data = {}

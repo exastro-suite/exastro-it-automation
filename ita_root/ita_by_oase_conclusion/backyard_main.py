@@ -15,9 +15,10 @@
 from flask import g
 import os
 import datetime
-
+import traceback
 
 from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.util import arrange_stacktrace_format
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 from common_libs.oase.const import oaseConst
@@ -41,8 +42,8 @@ def backyard_main(organization_id, workspace_id):
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Started'])
     g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-    strage_path = os.environ.get('STORAGEPATH')
-    workspace_path = strage_path + "/".join([organization_id, workspace_id])
+    # strage_path = os.environ.get('STORAGEPATH')
+    # workspace_path = strage_path + "/".join([organization_id, workspace_id])
 
     # connect MongoDB
     wsMongo = MONGOConnectWs()
@@ -56,32 +57,39 @@ def backyard_main(organization_id, workspace_id):
     # アクション　クラス生成
     actionObj = Action(wsDb, EventObj)
 
-    # ルールマッチ
-    tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Started'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    ret = JudgeMain(wsDb, judgeTime, EventObj, actionObj)
-    if ret is False:
+    try:
+        # ルールマッチ
+        tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Started'])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        ret = JudgeMain(wsDb, judgeTime, EventObj, actionObj)
+        if ret is False:
+            tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended without evaluating events'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        else:
+            tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended'])
+            g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        # 評価結果のステータスを監視するクラス
+        action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
+
+        # アクションの実行
+        tmp_msg = g.appmsg.get_log_message("BKY-90072", ['Started'])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        action_status_monitor.checkRuleMatch(actionObj)
+        tmp_msg = g.appmsg.get_log_message("BKY-90072", ['Ended'])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+        # アクション実行後の通知と結論イベント登録
+        tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Started'])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        action_status_monitor.checkExecuting()
+        tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Ended'])
+        g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    except Exception as e:
         tmp_msg = g.appmsg.get_log_message("BKY-90003", [])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Ended'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-    # 評価結果のステータスを監視するクラス
-    action_status_monitor = ActionStatusMonitor(wsDb, EventObj)
-
-    # アクションの実行
-    tmp_msg = g.appmsg.get_log_message("BKY-90072", ['Started'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    action_status_monitor.checkRuleMatch(actionObj)
-    tmp_msg = g.appmsg.get_log_message("BKY-90072", ['Ended'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-
-    # アクション実行後の通知と結論イベント登録
-    tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Started'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
-    action_status_monitor.checkExecuting()
-    tmp_msg = g.appmsg.get_log_message("BKY-90002", ['Ended'])
-    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+        t = traceback.format_exc()
+        print(arrange_stacktrace_format(t))
 
     # メイン処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Ended'])
@@ -259,7 +267,7 @@ def JudgeMain(wsDb, judgeTime, EventObj, actionObj):
                                     tmp_msg = g.appmsg.get_log_message("BKY-90022", [UsedFilterId, ConclusionEventRow['_id']])
                                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
-                                    if IncidentDict[UsedFilterId] :
+                                    if UsedFilterId in IncidentDict:
                                         if type(IncidentDict[UsedFilterId]) is list:
                                             IncidentDict[UsedFilterId].append(ConclusionEventRow['_id'])
                                         else:

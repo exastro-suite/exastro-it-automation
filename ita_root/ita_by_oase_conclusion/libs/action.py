@@ -294,13 +294,13 @@ class Action():
         if not parameter_sheet_name_rest:
             # パラメータシートの指定がないパターン
             msg = g.appmsg.get_log_message("BKY-90073", [action_log_id])
-            g.applogger.debug(msg)
+            g.applogger.info(msg)
             res = self.conductor_execute(conductor_class_id, operation_id)
             return res
 
         # パラメータシートの指定があるパターン
         msg = g.appmsg.get_log_message("BKY-90074", [action_log_id])
-        g.applogger.debug(msg)
+        g.applogger.info(msg)
 
         action_parameters = json.loads(action_log_row.get("ACTION_PARAMETERS", "{}"))
 
@@ -314,15 +314,14 @@ class Action():
             host_name = action_log_row.get("HOST_NAME", "")
         if not host_name:
             msg = g.appmsg.get_log_message("BKY-90075", ['host_name', action_log_id])
-            g.applogger.info(msg)
-            return False,
+            return False, msg
 
         # パラメータを生成してAPIに投げる
-        request_data = self.generate_parameter_4apply_api(action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
-        if request_data is False:
-            return False,
-        g.applogger.debug("request_parameters for apply_api: {}".format(action_log_id, request_data))
+        ret_bool, request_data = self.generate_parameter_4apply_api(action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters)
+        if ret_bool is False:
+            return ret_bool, request_data
 
+        g.applogger.debug("request_parameters for apply_api: {}".format(action_log_id, request_data))
         res = self.apply_api(request_data)
         return res
 
@@ -344,21 +343,20 @@ class Action():
         return _res
 
     def generate_parameter_4apply_api(self, action_log_id, conductor_class_name, operation_name, parameter_sheet_name_rest, host_name, action_parameters):
+        ret_bool = False
         request_data = {}
 
         # メニュー（パラメータシート）のカラム情報を取得
         menu_record = self.wsDb.table_select('T_COMN_MENU', 'WHERE `MENU_NAME_REST` = %s AND `DISUSE_FLAG` = %s', [parameter_sheet_name_rest, 0])
         if len(menu_record) == 0:
             msg = g.appmsg.get_log_message("BKY-90075", ['parameter_sheet_name_rest', action_log_id])
-            g.applogger.info(msg)
-            return False
+            return ret_bool, msg
 
         menu_id = menu_record[0].get('MENU_ID')
         col_info_list = self.wsDb.table_select('T_COMN_MENU_COLUMN_LINK', 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s', ['0', menu_id])
         if len(col_info_list) == 0:
             msg = g.appmsg.get_log_message("BKY-90075", ['parameter_sheet_name_rest→menu_id', action_log_id])
-            g.applogger.info(msg)
-            return False
+            return ret_bool, msg
 
         # パラメータを作成
         parameter = {}
@@ -373,8 +371,7 @@ class Action():
                 val = action_parameters[col_name_rest]
             else:
                 msg = g.appmsg.get_log_message("BKY-90075", ['col_name_rest[{}]'.format(col_name_rest), action_log_id])
-                g.applogger.info(msg)
-                return False
+                return ret_bool, msg
 
             parameter[col_name_rest] = val
         # ホスト名
@@ -393,7 +390,7 @@ class Action():
         if operation_name:
             request_data["operation_name"] = operation_name
 
-        return request_data
+        return True, request_data
 
     def apply_api(self, action_log_id, request_data):
         ret_bool = False
@@ -469,11 +466,13 @@ class Action():
             result_code, log_msg_args, api_msg_args = e.args
             log_msg = g.appmsg.get_log_message(result_code, log_msg_args)
             g.applogger.info(addline_msg('{}'.format(log_msg)))  # noqa: F405
+            result_data = log_msg
         except Exception as e:
             t = traceback.format_exc()
             print(arrange_stacktrace_format(t))
             msg = g.appmsg.get_log_message("BKY-90076", [action_log_id, e])
             g.applogger.info(addline_msg('{}'.format(msg)))  # noqa: F405
+            result_data = log_msg
         finally:
             self.wsDb.db_transaction_end(False)
 

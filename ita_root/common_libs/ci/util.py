@@ -194,6 +194,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WS_MONGO_DATABASE")
         g.db_connect_info.pop("WS_MONGO_USER")
         g.db_connect_info.pop("WS_MONGO_PASSWORD")
+        print("")
 
 
 def wrapper_job_all_org(main_logic, loop_count=500):

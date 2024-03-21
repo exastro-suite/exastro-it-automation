@@ -401,6 +401,37 @@ CREATE TABLE T_OASE_ACTION_STATUS
 
 
 
+-- 結論ラベルキー結合ビュー
+CREATE VIEW V_OASE_CONCLUSION_LABEL_KEY_GROUP AS
+SELECT
+    LABEL_KEY_ID,
+    LABEL_KEY_NAME,
+    COLOR_CODE,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_LABEL_KEY_INPUT
+UNION
+SELECT
+    LABEL_KEY_ID,
+    LABEL_KEY_NAME,
+    COLOR_CODE,
+    NOTE,
+    DISUSE_FLAG,
+    LAST_UPDATE_TIMESTAMP,
+    LAST_UPDATE_USER
+FROM
+    T_OASE_LABEL_KEY_FIXED
+WHERE
+    LABEL_KEY_ID = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09'
+ORDER BY
+    LABEL_KEY_ID ASC
+;
+
+
+
 -- アクション
 CREATE TABLE T_OASE_ACTION
 (
@@ -580,37 +611,6 @@ CREATE TABLE T_OASE_RULE_JNL
 
 
 
--- 結論ラベルキー結合ビュー
-CREATE VIEW V_OASE_CONCLUSION_LABEL_KEY_GROUP AS
-SELECT
-    LABEL_KEY_ID,
-    LABEL_KEY_NAME,
-    COLOR_CODE,
-    NOTE,
-    DISUSE_FLAG,
-    LAST_UPDATE_TIMESTAMP,
-    LAST_UPDATE_USER
-FROM
-    T_OASE_LABEL_KEY_INPUT
-UNION
-SELECT
-    LABEL_KEY_ID,
-    LABEL_KEY_NAME,
-    COLOR_CODE,
-    NOTE,
-    DISUSE_FLAG,
-    LAST_UPDATE_TIMESTAMP,
-    LAST_UPDATE_USER
-FROM
-    T_OASE_LABEL_KEY_FIXED
-WHERE
-    LABEL_KEY_ID = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx09'
-ORDER BY
-    LABEL_KEY_ID ASC
-;
-
-
-
 -- 評価結果
 CREATE TABLE T_OASE_ACTION_LOG
 (
@@ -625,10 +625,11 @@ CREATE TABLE T_OASE_ACTION_LOG
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_ID                         VARCHAR(40),                                -- 指定ホストID
+    HOST_ID                         VARCHAR(40),                                -- 指定ホストID 
     HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
-    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
+    PARAMETER_SHEET_NAME            VARCHAR(255),                               -- 利用パラメータシート名
+    PARAMETER_SHEET_NAME_REST       VARCHAR(255),                               -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
     ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
     EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
@@ -658,10 +659,11 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     OPERATION_ID                    VARCHAR(40),                                -- オペレーションID
     OPERATION_NAME                  VARCHAR(255),                               -- オペレーション名
     EVENT_COLLABORATION             VARCHAR(2),                                 -- イベント連携
-    HOST_ID                         VARCHAR(40),                                -- 指定ホストID
+    HOST_ID                         VARCHAR(40),                                -- 指定ホストID 
     HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
-    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
+    PARAMETER_SHEET_NAME            VARCHAR(255),                               -- 利用パラメータシート名
+    PARAMETER_SHEET_NAME_REST       VARCHAR(255),                               -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
     ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
     EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント

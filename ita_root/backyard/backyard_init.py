@@ -26,7 +26,6 @@ from backyard_main import backyard_main as main_logic
 
 
 def main():
-    print("")
     # load environ variables
     load_dotenv(override=True)
 

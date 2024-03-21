@@ -628,7 +628,8 @@ CREATE TABLE T_OASE_ACTION_LOG
     HOST_ID                         VARCHAR(40),                                -- 指定ホストID
     HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
-    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
+    PARAMETER_SHEET_NAME            VARCHAR(255),                               -- 利用パラメータシート名
+    PARAMETER_SHEET_NAME_REST       VARCHAR(255),                               -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
     ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
     EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント
@@ -661,7 +662,8 @@ CREATE TABLE T_OASE_ACTION_LOG_JNL
     HOST_ID                         VARCHAR(40),                                -- 指定ホストID
     HOST_NAME                       VARCHAR(255),                               -- 指定ホスト名
     PARAMETER_SHEET_ID              VARCHAR(40),                                -- 利用パラメータシート
-    PARAMETER_SHEET_NAME_REST       VARCHAR(40),                                -- 利用パラメータシート(rest)
+    PARAMETER_SHEET_NAME            VARCHAR(255),                               -- 利用パラメータシート名
+    PARAMETER_SHEET_NAME_REST       VARCHAR(255),                               -- 利用パラメータシート(rest)
     EVENT_ID_LIST                   TEXT,                                       -- 利用イベントID
     ACTION_LABEL_INHERITANCE_FLAG   VARCHAR(2),                                 -- アクション
     EVENT_LABEL_INHERITANCE_FLAG    VARCHAR(2),                                 -- イベント

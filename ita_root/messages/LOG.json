@@ -1521,7 +1521,7 @@
     "AGT-10029": "ApiClientCommon Error: {}",
     "AGT-10030": "EVENT_ID_KEY '{}' does not exist. (Event Collection Settings ID: {})",
     "BKY-90000": "Process {}",
-    "BKY-90001": "Rull maching process {}",
+    "BKY-90001": "Rull matching process {}",
     "BKY-90002": "The action notification and logic event registration {}",
     "BKY-90003": "The rule matching process failed",
     "BKY-90004": "No events to process",

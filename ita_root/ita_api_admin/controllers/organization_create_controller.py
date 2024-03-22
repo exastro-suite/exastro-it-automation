@@ -171,8 +171,9 @@ def organization_create(body, organization_id):
         g.db_connect_info["NO_INSTALL_DRIVER"] = data['NO_INSTALL_DRIVER']
 
         # 試しにmongoクライアントでエラーが出ないかチェックする
-        org_mongo = MONGOConnectOrg()
-        org_mongo.connect_check()
+        if additional_drivers["oase"] is True:
+            org_mongo = MONGOConnectOrg()
+            org_mongo.connect_check()
 
         org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
         # create organization-databse

@@ -155,7 +155,7 @@ class Action():
         action_log_row = action_log_row_list[0]
         action_log_id = action_log_row.get("ACTION_LOG_ID")
 
-        # 評価済みインシデントフラグを立てる  _exastro_evaluated='1'
+        # 判定済みインシデントフラグを立てる  _exastro_evaluated='1'
         update_Flag_Dict = {"_exastro_evaluated": '1'}
         # MongoDBに反映
         self.EventObj.update_label_flag(UseEventIdList, update_Flag_Dict)

@@ -79,7 +79,7 @@ class LabeledEventCollection(CollectionBase):
                 return "0"
 
         if collection_item_name == "labels._exastro_evaluated":
-            if value == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 評価済み
+            if value == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 判定済み
                 return "1"
             else:
                 return "0"
@@ -141,7 +141,7 @@ class LabeledEventCollection(CollectionBase):
                 "labels._exastro_undetected": "0"
             }
 
-        elif item == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 評価済み
+        elif item == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 判定済み
             return {
                 "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "1",
@@ -165,7 +165,7 @@ class LabeledEventCollection(CollectionBase):
         event_status_map = {
             "000": oaseConst.DF_EVENT_STATUS_NEW,  # 検討中
             "001": oaseConst.DF_EVENT_STATUS_UNDETECTED,  # 未知
-            "010": oaseConst.DF_EVENT_STATUS_EVALUATED,  # 評価済み
+            "010": oaseConst.DF_EVENT_STATUS_EVALUATED,  # 判定済み
             "100": oaseConst.DF_EVENT_STATUS_TIMEOUT  # 時間切れ
         }
 

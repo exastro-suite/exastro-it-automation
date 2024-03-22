@@ -58,7 +58,7 @@ def backyard_main(organization_id, workspace_id):
     actionObj = Action(wsDb, EventObj)
 
     try:
-        # ルールマッチ
+        # 評価
         tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Started'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
         ret = JudgeMain(wsDb, judgeTime, EventObj, actionObj)

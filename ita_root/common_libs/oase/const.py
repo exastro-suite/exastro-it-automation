@@ -29,6 +29,17 @@ class oaseConst():
     # 接続方式
     DF_CON_METHOD_NOT_AGENT = "99"  # エージェント不使用
 
+    # イベントの状態名
+    DF_EVENT_STATUS_NEW = "検討中"
+    DF_EVENT_STATUS_UNDETECTED = "未知"
+    DF_EVENT_STATUS_EVALUATED = "評価済み"
+    DF_EVENT_STATUS_TIMEOUT = "時間切れ"
+
+
+    # イベントのタイプ名
+    DF_EVENT_TYPE_EVENT = "イベント"
+    DF_EVENT_TYPE_CONCLUSION = "結論イベント"
+
     # イベントデータに一時的に追加する項目定期
     # 親ラベル
     DF_LOCAL_LABLE_NAME = "__exastro_local_labels__"

@@ -101,7 +101,7 @@ class sqliteConnect:
 
     def insert_event(self, event):
         table_name = "events"
-        message_id = None
+        unique_id = None
         self.db_cursor.execute(
             f"""
                 CREATE TABLE IF NOT EXISTS {table_name}(

@@ -1,0 +1,8 @@
+# This Playbook file deletes users specified by "ITA_DFLT_Win_User_Name".
+# "ITA_DFLT_Win_User_Name" can specify multiple user names (list type).
+- name: Delete user
+  ansible.windows.win_user:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ ITA_DFLT_Win_User_Name }}"

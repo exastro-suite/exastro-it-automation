@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (ahosts)
+  getent:
+    database: ahosts
+  register: ITA_DFLT_getent_ahosts

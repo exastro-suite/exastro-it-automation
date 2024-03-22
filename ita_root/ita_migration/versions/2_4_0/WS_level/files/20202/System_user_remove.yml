@@ -1,0 +1,7 @@
+- name: Remove user
+  user:
+    name: "{{ item }}"
+    state: absent
+    remove : yes
+  with_items:
+    - "{{ ITA_DFLT_User_Names }}"

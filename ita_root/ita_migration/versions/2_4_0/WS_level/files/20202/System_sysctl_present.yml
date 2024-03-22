@@ -1,0 +1,9 @@
+- name: Entry parameter
+  sysctl:
+    name: "{{ item.0 }}"
+    value: "{{ item.1 }}"
+    state: present
+    reload: yes
+  with_together:
+    - "{{ ITA_DFLT_Parameter_Names }}"
+    - "{{ ITA_DFLT_Parameter_Values }}"

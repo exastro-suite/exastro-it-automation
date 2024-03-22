@@ -1,0 +1,9 @@
+- name: Interacts with webservices using password
+  uri:
+    url: "http://platform-auth:8000/api/{{ ITA_DFLT_Organization_ID }}/platform/workspaces"
+    force_basic_auth: yes
+    user: "{{ ITA_DFLT_Basic_Username }}"
+    password: "{{ ITA_DFLT_Basic_Password }}"
+    status_code: 200
+    method: GET
+  register: ITA_DFLT_API_Response

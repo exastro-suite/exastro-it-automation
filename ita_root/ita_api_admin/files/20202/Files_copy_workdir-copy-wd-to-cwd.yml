@@ -1,0 +1,10 @@
+# This Playbook file copies files stored in "__workflowdir__" to "__conductor_workflowdir__".
+# The "__conductor_workflowdir__" files are accesible from subsequent Movements are the Movement ends.
+# Use this for transfering information over Movements.
+# Note that as this Playbook file does not contain variables that can be externally controlled, we do not recommend using it linked to a Movement alone, but together with other Playbook files.
+- name: Copy data from workdir to conductor_workdir
+  local_action:
+    module: copy
+    src: "{{ __workflowdir__ }}/"
+    dest: "{{ __conductor_workflowdir__ }}/"
+

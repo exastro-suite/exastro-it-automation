@@ -1,0 +1,8 @@
+# This Playbook material installs a list of update titles or KB numbers specified in "ITA_DFLT_Win_Update_Accept_List".
+# Note that this Platbook file specifies "category_names" with "＊".
+# "ITA_DFLT_Win_Update_Accept_List" can specify multiple items (list type).
+- name: Download and install Windows updates and restart（partial）
+  ansible.windows.win_updates:
+    category_names: '*'
+    accept_list: "{{ ITA_DFLT_Win_Update_Accept_List }}"
+    reboot: true

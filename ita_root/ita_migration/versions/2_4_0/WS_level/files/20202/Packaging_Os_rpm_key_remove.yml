@@ -1,0 +1,6 @@
+- name: Remove gpg key
+  rpm_key:
+    key: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ ITA_DFLT_Gpg_Key_Ids }}"

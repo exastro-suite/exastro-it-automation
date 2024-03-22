@@ -1,0 +1,14 @@
+# This Playbook file creates the users specified with "ITA_DFLT_Win_User_Name" with the passwords specified with "ITA_DFLT_Win_Password". The users are put in the groups specified by "ITA_DFLT_Win_Groups".
+# "ITA_DFLT_Win_User_Name" can specify multiple templates (list type).
+# "ITA_DFLT_Win_Password" can specify multiple files (list type).
+# "ITA_DFLT_Win_Groups" can specify multiple files (list type).
+- name: Add user
+  ansible.windows.win_user:
+    name: "{{ item.0 }}"
+    password: "{{ item.1 }}"
+    state: present
+    groups: "{{ item.2 }}"
+  with_together:
+    - "{{ ITA_DFLT_Win_User_Name }}"
+    - "{{ ITA_DFLT_Win_Password }}"
+    - "{{ ITA_DFLT_Win_Groups }}"

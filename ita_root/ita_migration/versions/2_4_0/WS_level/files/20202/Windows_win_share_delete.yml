@@ -1,0 +1,8 @@
+# This Playbook file deletes shared names specified by "ITA_DFLY_Share_Name".
+# "ITA_DFLT_Share_Name" can specify multiple share names (list type).
+- name: delete Windows shares
+  ansible.windows.win_share:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ ITA_DFLT_Share_Name }}"

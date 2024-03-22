@@ -150,12 +150,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
       x-openapi-router-controller: controllers.internal_health_check_service_controller
-  /internal-api/health-check/readness:
+  /internal-api/health-check/readiness:
     get:
       tags:
       - InternalHealthCheckService
-      summary: Internal health check readness
-      operationId: internal_health_check_readness
+      summary: Internal health check readiness
+      operationId: internal_health_check_readiness
       responses:
         "200":
           description: Success

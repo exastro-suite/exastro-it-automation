@@ -47,7 +47,7 @@ def before_request_handler():
 
         # ヘルスチェック用のURLの場合にorganization_id・workspace_idやUser-Id・Rolesを確認しない
         url = request.url
-        ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readness$", url)
+        ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readiness$", url)
         if ret is None:
             # get organization_id
             organization_id = request.path.split("/")[2]

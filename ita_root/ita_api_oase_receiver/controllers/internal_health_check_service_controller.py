@@ -32,6 +32,6 @@ def internal_health_check_liveness():
 
 
 @api_filter_admin
-def internal_health_check_readness():
+def internal_health_check_readiness():
     return internal_health_check_liveness(),
 

@@ -1,0 +1,7 @@
+# This Playbook file changes the SELinux settings to "Disabled".
+# Make sure to specify a policy name in "ITA_DFLT_Policy_Name".
+# (E.g. targeted)
+- name: Change the SELinux policy state to disabled
+  ansible.posix.selinux:
+    policy: "{{ ITA_DFLT_Policy_Name }}"
+    state: disabled

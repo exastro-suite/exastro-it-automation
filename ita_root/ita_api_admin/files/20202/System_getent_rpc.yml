@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (rpc)
+  getent:
+    database: rpc
+  register: ITA_DFLT_getent_rpc

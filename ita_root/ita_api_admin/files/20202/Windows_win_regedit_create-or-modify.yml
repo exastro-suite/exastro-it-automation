@@ -1,0 +1,18 @@
+# This Playbook file adds or edits registry keys and values.
+# The variables are as follows:
+# "ITA_DFLT_Regedit_Path": Registry Path name
+# "ITA_DFLT_Regedit_Name": Registry Entry name
+# "ITA_DFLT_Regedit_Data": Registry Entry value
+# "ITA_DFLT_Regedit_Type": Registry value Data type
+# Each of the variables can have multiple specified at the same time (list type).
+- name: Add, change registry keys and values
+  ansible.windows.win_regedit:
+    path: "{{ item.0 }}"
+    name: "{{ item.1 }}"
+    data: "{{ item.2 }}"
+    type: "{{ item.3 }}"
+  with_together:
+    - "{{ ITA_DFLT_Regedit_Path }}"
+    - "{{ ITA_DFLT_Regedit_Name }}"
+    - "{{ ITA_DFLT_Regedit_Data }}"
+    - "{{ ITA_DFLT_Regedit_Type }}"

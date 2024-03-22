@@ -1,0 +1,6 @@
+- name: Create directorys
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ ITA_DFLT_Create_Directories }}"

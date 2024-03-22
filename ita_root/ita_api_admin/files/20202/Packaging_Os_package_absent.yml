@@ -1,0 +1,6 @@
+- name: Uninstall packages with the generic OS package manager
+  package:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ ITA_DFLT_Uninstall_Target_packages }}"

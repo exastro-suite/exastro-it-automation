@@ -1,0 +1,6 @@
+- name: Update packages with the generic OS package manager
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - "{{ ITA_DFLT_Update_Target_packages }}"

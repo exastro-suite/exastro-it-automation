@@ -1,0 +1,8 @@
+- name: Copy data from remote to remote
+  copy:
+    src: "{{ item.0 }}"
+    dest: "{{ item.1 }}"
+    remote_src: yes
+  with_together:
+    - "{{ ITA_DFLT_Src_Files }}"
+    - "{{ ITA_DFLT_Dest_Files }}"

@@ -1,0 +1,6 @@
+- name: Remove groups
+  ansible.windows.win_group:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ ITA_DFLT_Remove_groups }}"

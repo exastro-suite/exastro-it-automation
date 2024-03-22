@@ -1,0 +1,6 @@
+- name: Disabled service
+  systemd:
+    name: "{{ item }}"
+    enabled: no
+  with_items:
+    - "{{ ITA_DFLT_Services }}"

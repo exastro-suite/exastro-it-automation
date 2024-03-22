@@ -1,0 +1,13 @@
+# This Playbook file removes the environment variable names specified by "ITA_DFLT_Environment_Name" with the path element specified by "ITA_DFLT_Elements".
+# "ITA_DFLT_Scope" specifies the level at which the specified environment variable must be managed.
+# Each of the variables can have multiple specified at the same time (list type).
+- name: remove Windows path environment variables
+  ansible.windows.win_path:
+    name: "{{ item.0 }}"
+    elements: "{{ item.1 }}"
+    scope: "{{ item.2 }}"
+    state: absent
+  with_together:
+    - "{{ ITA_DFLT_Environment_Name }}"
+    - "{{ ITA_DFLT_Elements }}"
+    - "{{ ITA_DFLT_Scope }}"

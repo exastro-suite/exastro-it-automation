@@ -1,0 +1,6 @@
+- name: Disable service
+  service:
+    name: "{{ item }}"
+    enabled: false
+  with_items:
+    - "{{ ITA_DFLT_Services }}"

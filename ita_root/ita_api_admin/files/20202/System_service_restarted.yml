@@ -1,0 +1,6 @@
+- name: Start service
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - "{{ ITA_DFLT_Services }}"

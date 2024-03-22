@@ -47,7 +47,7 @@ def before_request_handler():
         # request-header check
         # ヘルスチェック用のURLの場合にUser-IdとRolesを確認しない
         url = request.url
-        ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readness$", url)
+        ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readiness$", url)
         if ret is None:
             user_id = request.headers.get("User-Id")
             roles_org = request.headers.get("Roles")

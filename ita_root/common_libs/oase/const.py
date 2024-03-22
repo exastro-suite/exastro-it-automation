@@ -32,7 +32,7 @@ class oaseConst():
     # イベントの状態名
     DF_EVENT_STATUS_NEW = "検討中"
     DF_EVENT_STATUS_UNDETECTED = "未知"
-    DF_EVENT_STATUS_EVALUATED = "評価済み"
+    DF_EVENT_STATUS_EVALUATED = "判定済み"
     DF_EVENT_STATUS_TIMEOUT = "時間切れ"
 
 

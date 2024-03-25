@@ -1,0 +1,14 @@
+# This Playbook file changes the bool values for the names specified by "ITA_DFLT_Booleans_Name" 
+# using the values (true/false) specified by "ITA_DFLT_State" and uses the values (true/false) 
+# specified by "ITA_DFLT_Persistent" to configure the persistency of the files 
+# (If the files will keep the settings after reboot or not).
+# Each of the variables can have multiple specified at the same time (list type).
+- name: Toggles SELinux booleans
+  ansible.posix.seboolean:
+    name: "{{ item.0 }}"
+    state: "{{ item.1 }}"
+    persistent: "{{ item.2 }}"
+  with_together:
+    - "{{ ITA_DFLT_Booleans_Name }}"
+    - "{{ ITA_DFLT_State }}"
+    - "{{ ITA_DFLT_Persistent }}"

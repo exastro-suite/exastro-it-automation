@@ -1,0 +1,6 @@
+- name: Downloads files from HTTP, HTTPS, or FTP to node
+  get_url:
+    url: "{{ item }}"
+    dest: "{{ ITA_DFLT_Destination_Directory | default ('/tmp/') }}"
+  with_items:
+    - "{{ ITA_DFLT_Download_URL }}"

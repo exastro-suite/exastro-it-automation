@@ -1,0 +1,5 @@
+# This Playbook file connects to the Target host and checks for usable Python.
+# Note that as this Playbook file does not contain variables that can be externally controlled, we do not recommend using it linked to a Movement alone, but together with other Playbook files.
+- name: ping
+  ping:
+

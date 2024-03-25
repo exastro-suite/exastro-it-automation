@@ -18,10 +18,11 @@ import inspect
 import os
 
 from common_libs.oase.const import oaseConst
+from common_libs.common.mongoconnect.const import Const as mongoConst
 
 class ManageEvents:
     def __init__(self, wsMongo, judgeTime):
-        self.labeled_event_collection = wsMongo.collection("labeled_event_collection")
+        self.labeled_event_collection = wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
         # 以下条件のイベントを取得
         undetermined_search_value = {
             "labels._exastro_timeout": "0",

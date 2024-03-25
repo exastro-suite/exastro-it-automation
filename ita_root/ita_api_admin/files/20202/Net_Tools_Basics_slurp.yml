@@ -1,0 +1,4 @@
+- name: Slurps a file from remote nodes
+  slurp:
+    src: "{{ ITA_DFLT_Target_File }}"
+  register: ITA_DFLT_Files_text

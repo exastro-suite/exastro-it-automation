@@ -1,0 +1,8 @@
+# This Playbook file stops services specified by "ITA_DFLT_Service_Name".
+# "ITA_DFLT_Service_Name" can specify multiple service names (list type).
+- name: stop Windows services
+  ansible.windows.win_service:
+    name: "{{ item }}"
+    state: stopped
+  with_items:
+    - "{{ ITA_DFLT_Service_Name }}"

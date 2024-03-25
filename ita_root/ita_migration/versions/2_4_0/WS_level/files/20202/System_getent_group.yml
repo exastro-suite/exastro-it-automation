@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (group)
+  getent:
+    database: group
+  register: ITA_DFLT_getent_group

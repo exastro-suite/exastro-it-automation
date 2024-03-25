@@ -1,0 +1,4 @@
+- name: Print statements during execution
+  debug:
+    var: "{{ ITA_DFLT_Debug_Target }}"
+    verbosity: 3

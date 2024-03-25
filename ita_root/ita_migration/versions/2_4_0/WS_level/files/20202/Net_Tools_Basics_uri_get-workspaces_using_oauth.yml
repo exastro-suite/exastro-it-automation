@@ -1,0 +1,21 @@
+- name: Get access token
+  uri:
+    url: "http://platform-auth:8000/auth/realms/{{ ITA_DFLT_Organization_ID }}/protocol/openid-connect/token"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      client_id: "_{{ ITA_DFLT_Organization_ID }}-api"
+      grant_type: "refresh_token"
+      refresh_token: "{{ ITA_DFLT_Refresh_Token }}"
+  register: ITA_DFLT_Response
+
+- name: Interacts with webservices
+  uri:
+    url: "http://platform-auth:8000/api/{{ ITA_DFLT_Organization_ID }}/platform/workspaces" 
+    headers:
+      Accept: "application/json"
+      Authorization: "Bearer {{ ITA_DFLT_Response.json.access_token }}"
+      Content-Type: "application/json"
+    status_code: 200
+    method: GET
+  register: ITA_DFLT_API_Response

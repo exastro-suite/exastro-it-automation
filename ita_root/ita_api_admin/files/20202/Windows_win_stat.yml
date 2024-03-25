@@ -1,0 +1,9 @@
+# This Playbook file acquires the file path information specified by "ITA_DFLT_File_Path".
+# "ITA_DFLT_File_Path" can specify multiple file paths (list type).
+- name: Get information about Windows files
+  ansible.windows.win_stat:
+    path: "{{ item }}"
+    follow: true
+  with_items:
+    - "{{ ITA_DFLT_File_Path }}"
+  

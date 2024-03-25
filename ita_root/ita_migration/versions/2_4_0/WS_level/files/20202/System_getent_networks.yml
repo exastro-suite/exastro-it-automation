@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (networks)
+  getent:
+    database: networks
+  register: ITA_DFLT_getent_networks

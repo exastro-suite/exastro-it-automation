@@ -1,0 +1,6 @@
+- name: Enable service
+  service:
+    name: "{{ item }}"
+    enabled: true
+  with_items:
+    - "{{ ITA_DFLT_Services }}"

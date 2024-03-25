@@ -1,0 +1,8 @@
+- name: Change the owner of folders or files.
+  win_owner:
+    path: "{{ item.0 }}"
+    user: "{{ item.1 }}"
+    recurse: false
+  with_together:
+    - "{{ ITA_DFLT_Change_owner_paths }}"
+    - "{{ ITA_DFLT_Change_owner_users }}"

@@ -1,0 +1,6 @@
+- name: Downloads files from HTTP, HTTPS, or FTP to node
+  win_get_url:
+    url: "{{ item }}"
+    dest: "{{ ITA_DFLT_Destination_Directory | default ('%windir%\\Temp') }}"
+  with_items:
+    - "{{ ITA_DFLT_Download_URL }}"

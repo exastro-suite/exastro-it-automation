@@ -1,0 +1,7 @@
+- name: Create new domain in a new forest on the target host
+  ansible.windows.win_domain:
+    dns_domain_name: "{{ item.0 }}"
+    safe_mode_password: "{{ item.1 }}"
+  with_together:
+    - "{{ ITA_DFLT_dns_domain_name }}"
+    - "{{ ITA_DFLT_domain_safe_mode_password }}"

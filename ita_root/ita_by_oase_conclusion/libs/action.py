@@ -155,7 +155,7 @@ class Action():
         action_log_row = action_log_row_list[0]
         action_log_id = action_log_row.get("ACTION_LOG_ID")
 
-        # 評価済みインシデントフラグを立てる  _exastro_evaluated='1'
+        # 判定済みインシデントフラグを立てる  _exastro_evaluated='1'
         update_Flag_Dict = {"_exastro_evaluated": '1'}
         # MongoDBに反映
         self.EventObj.update_label_flag(UseEventIdList, update_Flag_Dict)
@@ -368,15 +368,13 @@ class Action():
             if col_info['COL_GROUP_ID'] in [None, '0000001']:
                 continue
 
-            val = ""
             if col_name_rest in action_parameters.keys():
+            # ラベルのキー名とパラメータシートのカラム名が一致するときのみ、値をセットする
                 # ラベルの値をセット
-                val = action_parameters[col_name_rest]
-            else:
-                msg = g.appmsg.get_log_message("BKY-90075", ['col_name_rest[{}]'.format(col_name_rest), action_log_id])
-                return ret_bool, msg
-
-            parameter[col_name_rest] = val
+                parameter[col_name_rest] = action_parameters[col_name_rest]
+            # else:
+            #     msg = g.appmsg.get_log_message("BKY-90075", ['col_name_rest[{}]'.format(col_name_rest), action_log_id])
+            #     return ret_bool, msg
         # ホスト名
         parameter['host_name'] = host_name
 

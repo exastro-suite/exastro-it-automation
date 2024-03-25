@@ -1,0 +1,7 @@
+# This Playbook file changes the SELinux settings to "Permissive".
+# Make sure to specify a policy name in "ITA_DFLT_Policy_Name".
+# (E.g. targeted)
+- name: Change the SELinux policy state to permissive
+  ansible.posix.selinux:
+    policy: "{{ ITA_DFLT_Policy_Name }}"
+    state: permissive

@@ -1,0 +1,4 @@
+- name: Unmount device.
+  ansible.posix.mount:
+    path: "{{ ITA_DFLT_mount_path }}"
+    state: absent

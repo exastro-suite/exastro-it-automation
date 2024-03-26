@@ -203,8 +203,6 @@ def post_events(body, organization_id, workspace_id):  # noqa: E501
                 single_event['_exastro_end_time'] = end_time
 
             # 未来の削除用に生成時刻をもたせておく
-            # db.event_collection.createIndex({'_exastro_created_at': 1}, {expireAfterSeconds: 1})
-            # db.labeled_event_collection.createIndex({'exastro_created_at': 1}, {expireAfterSeconds: 1})
             single_event['_exastro_created_at'] = datetime.datetime.utcnow()
 
             # 辞書化したイベントをリストに格納

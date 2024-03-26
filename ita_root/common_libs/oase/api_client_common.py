@@ -226,14 +226,9 @@ class APIClientCommon:
             # 過去のイベントidに存在していない場合
             event_id = str(event_id)
             if event_id not in self.saved_ids:
-
                 new_enevt_flg = True
                 new_event = raw_json
-                if "message_id" not in raw_json.keys():
-                    new_event["message_id"] = event_id
-                else:
-                    new_event["raw_message_id"] = new_event["message_id"]
-                    new_event["message_id"] = event_id
+                new_event["_exastro_oase_event_id"] = event_id
 
         return new_enevt_flg, new_event
 

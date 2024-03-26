@@ -172,7 +172,6 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         # job for workspace
         try:
             if allow_proc(organization_id, workspace_id) is True:
-                print("")
                 main_logic_exec = main_logic
                 main_logic_exec(organization_id, workspace_id)
                 del main_logic_exec
@@ -194,7 +193,7 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
         g.db_connect_info.pop("WS_MONGO_DATABASE")
         g.db_connect_info.pop("WS_MONGO_USER")
         g.db_connect_info.pop("WS_MONGO_PASSWORD")
-        print("")
+        # print("")
 
 
 def wrapper_job_all_org(main_logic, loop_count=500):

@@ -1,0 +1,17 @@
+- name: Return a list of files based on specific criteria
+  find:
+    age: "{{ ITA_DFLT_Age | default('0s') }}"
+    file_type: "{{ ITA_DFLT_File_Type | default('any') }}"
+    paths: "{{ item }}"
+    patterns:
+      - "{{ ITA_DFLT_Name_Pattern | default('.*') }}"
+    recurse: "{{ ITA_DFLT_Recurse | default('yes') }}"
+    use_regex: yes
+  with_items:
+    - "{{ ITA_DFLT_Target_Path }}"
+  register: ITA_RGST_File_Lists
+
+- name: Print a list of files
+  debug:
+    var: ITA_RGST_File_Lists
+    verbosity: 0

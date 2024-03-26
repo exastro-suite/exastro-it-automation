@@ -1,0 +1,13 @@
+# This Playbook file deletes the Registry key. 
+# The variables are as follows: 
+# "ITA_DFLT_Regedit_Path": Registry Path name
+# "ITA_DFLT_Regedit_Name": Registry Entry name
+# Each of the variables can have multiple specified at the same time (list type).
+- name: remove registry keys and values
+  ansible.windows.win_regedit:
+    path: "{{ item.0 }}"
+    name: "{{ item.1 }}"
+    state: absent
+  with_together:
+    - "{{ ITA_DFLT_Regedit_Path }}"
+    - "{{ ITA_DFLT_Regedit_Name }}"

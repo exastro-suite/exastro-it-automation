@@ -1,0 +1,6 @@
+- name: Retrieve file or file system status
+  stat:
+    path: "{{ item }}"
+  with_items:
+    - "{{ ITA_DFLT_Target_Path }}"
+  register: ITA_DFLT_Files_stat

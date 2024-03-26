@@ -1,0 +1,5 @@
+# This Playbook file checks the connection to the target host.
+# Note that as this Playbook file does not contain variables that can be externally controlled,
+# we do not recommend using it linked to a Movement alone, but together with other Playbook files.
+- name: A windows version of the classic ping module
+  win_ping:

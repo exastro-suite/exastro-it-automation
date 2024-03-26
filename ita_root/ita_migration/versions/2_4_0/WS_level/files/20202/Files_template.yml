@@ -1,0 +1,7 @@
+- name: Create template files
+  template:
+    src: "{{ item.0 }}"
+    dest: "{{ item.1 }}"
+  with_together:
+    - "{{ ITA_DFLT_Template_Src_Files }}"
+    - "{{ ITA_DFLT_Template_Dest_Files }}"

@@ -60,7 +60,17 @@ class APIClientCommon:
         parsed_url = urlparse(event_settings["URL"])
         location_parts = parsed_url.netloc.split(':')
         noproxy_host = location_parts[0]
-        if os.environ['NO_PROXY'].find(noproxy_host) > -1:
+        no_proxy_large = os.environ['NO_PROXY'] if "NO_PROXY" in os.environ else ""
+        no_proxy_small = os.environ['no_proxy'] if "no_proxy" in os.environ else ""
+        # SSL 証明書の検証無効(verify = False)の設定
+        if no_proxy_large.find(noproxy_host) > -1 or \
+           no_proxy_small.find(noproxy_host) > -1:
+            # 環境変数NO_PROXYに、接続先のドメインが存在していた場合、
+            # プロキシ軽油だと、Authorizationヘッダーがプロキシで破棄され、接続出来なくな
+            self.verify = False
+        elif self.url.find("https") > -1:
+            # 接続先のプロトコルが、HTTSの場合
+            # SSL照明書の指定がないため、SSLエラーが発生するため
             self.verify = False
 
         self.respons_listT_flag = event_settings["RESPONSE_LIST_FLAG"]

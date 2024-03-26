@@ -1,0 +1,6 @@
+- name: Remove group
+  group:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ ITA_DFLT_Groups }}"

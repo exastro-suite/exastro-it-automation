@@ -113,10 +113,10 @@ class Action():
                             host_name = ret_host[0].get('HOST_NAME')
 
                 if parameter_sheet_id:
-                    # 「パラメータシート一覧」からレコードを取得
-                    ret_parameter = self.wsDb.table_select('T_MENU_DEFINE', 'WHERE DISUSE_FLAG = %s AND MENU_CREATE_ID = %s', [0, parameter_sheet_id])
+                    # 「メニュー管理」からレコードを取得
+                    ret_parameter = self.wsDb.table_select('T_COMN_MENU', 'WHERE DISUSE_FLAG = %s AND MENU_ID = %s', [0, parameter_sheet_id])
                     if not ret_parameter:
-                        tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_MENU_DEFINE'])
+                        tmp_msg = g.appmsg.get_log_message("BKY-90009", ['T_COMN_MENU'])
                         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     else:
                         parameter_sheet_name = ret_parameter[0].get("MENU_NAME_EN")

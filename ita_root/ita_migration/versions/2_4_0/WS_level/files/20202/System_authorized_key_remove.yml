@@ -1,0 +1,8 @@
+- name: Remove authorized key
+  authorized_key:
+    user: "{{ item.0 }}"
+    key: "{{ item.1 }}"
+    state: absent
+  with_together:
+    - "{{ ITA_DFLT_Users }}"
+    - "{{ ITA_DFLT_Authorized_Keys }}"

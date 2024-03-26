@@ -1,0 +1,8 @@
+- name: Create new groups
+  ansible.windows.win_group:
+    name: "{{ item.0 }}"
+    description: "{{ item.1 }}"
+    state: present
+  with_together:
+    - "{{ ITA_DFLT_Create_group_names }}"
+    - "{{ ITA_DFLT_Create_group_discriptions }}"

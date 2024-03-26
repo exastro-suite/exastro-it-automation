@@ -1,0 +1,30 @@
+# This Playbook file configures shared settings for Windows folders.
+# The variables are as follows: 
+# "ITA_DFLT_Share_Name": Share name
+# "ITA_DFLT_Description": Share description
+# "ITA_DFLT_Directory_Path": Path of Share Directory
+# "ITA_DFLT_Filelist_Permission": Access base list
+# "ITA_DFLT_Full_Control": List of users who need to get full access (divide with comma).※1
+# "ITA_DFLT_Change": List over users who will get access to read and write (divide with comma).※1
+# "ITA__DFLT_Read_Only": List over users who will get access to read (divide with comma).※1
+# Each of the variables can have multiple specified at the same time (list type).
+# ※1 Assumes that null link is set to "True" in the Automatic substitute value registration settings.
+- name: Add or change Windows shares
+  ansible.windows.win_share:
+    name: "{{ item.0 }}"
+    description: "{{ item.1 }}"
+    path: "{{ item.2 }}"
+    list: "{{ item.3 }}"
+    full: "{{ item.4 | default(omit) }}"
+    change: "{{ item.5 | default(omit)}}"
+    read: "{{ item.6 | default(omit) }}"
+  when: item.0
+  with_together:
+    - "{{ ITA_DFLT_Share_Name }}"
+    - "{{ ITA_DFLT_Description }}"
+    - "{{ ITA_DFLT_Directory_Path }}"
+    - "{{ ITA_DFLT_Filelist_Permission }}"
+    - "{{ ITA_DFLT_Full_Control }}"
+    - "{{ ITA_DFLT_Change }}"
+    - "{{ ITA_DFLT_Read_Only }}"
+    

@@ -1,0 +1,5 @@
+# This Playbook file uses the time specified in "ITA_DFLT_Sleep_Minutes" to pause (sleep) Jobs and Jobflows.
+- name: pause
+  pause:
+    minutes: "{{ ITA_DFLT_Sleep_Minutes }}"
+

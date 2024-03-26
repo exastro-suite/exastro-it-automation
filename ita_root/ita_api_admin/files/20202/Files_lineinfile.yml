@@ -1,0 +1,6 @@
+- name: Insert or replace text lines.
+  lineinfile:
+    path: "{{ ITA_DFLT_file_path }}"
+    regexp: "{{ ITA_DFLT_regexp }}"
+    line: "{{ ITA_DFLT_line_string }}"
+    state: "{{ ITA_DFLT_line_state | default('present') }}"

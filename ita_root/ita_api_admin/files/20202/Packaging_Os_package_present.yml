@@ -1,0 +1,6 @@
+- name: Install packages with the generic OS package manager
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ ITA_DFLT_Install_Target_packages }}"

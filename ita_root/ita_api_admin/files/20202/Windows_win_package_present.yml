@@ -1,0 +1,16 @@
+- name: Install package with list of arguments instead of a string
+  ansible.windows.win_package:
+    path: "{{ item.0 | default(omit) }}"
+    product_id: "{{ item.1 | default(omit) }}"
+    arguments: "{{ item.2 | default(omit) }}"
+    state: present
+  with_together:
+    - "{{ ITA_DFLT_Install_Target_packages }}"
+    - "{{ ITA_DFLT_Install_Target_packages_product_id }}"
+    - "{{ ITA_DFLT_Install_Target_packages_with_args }}"
+  register: ITA_RGST_WinPackageInstall_Result
+
+- name: Debug the result
+  debug:
+    var: ITA_RGST_WinPackageInstall_Result
+    verbosity: 3

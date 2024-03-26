@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (netgroup)
+  getent:
+    database: netgroup
+  register: ITA_DFLT_getent_netgroup

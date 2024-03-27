@@ -73,13 +73,13 @@ class APIClientCommon:
             # SSL照明書の指定がないため、SSLエラーが発生するため
             self.verify = False
 
-        self.respons_listT_flag = event_settings["RESPONSE_LIST_FLAG"]
+        self.respons_list_flag = event_settings["RESPONSE_LIST_FLAG"]
         self.respons_key = event_settings["RESPONSE_KEY"]
         self.event_id_key = event_settings["EVENT_ID_KEY"] if "EVENT_ID_KEY" in event_settings else None
 
         # g.applogger.debug("-------------Settings ------------------------")
         g.applogger.debug("event_collection_nam........{}".format(self.event_collection_settings_name))
-        # g.applogger.debug("respons_listT_flag..........{}".format(self.respons_listT_flag))
+        # g.applogger.debug("respons_list_flag..........{}".format(self.respons_list_flag))
         # g.applogger.debug("respons_key.................{}".format(self.respons_key))
         # g.applogger.debug("env.event_id_key............{}".format(self.event_id_key))
         # g.applogger.debug("env.saved_ids............'{}'".format(self.saved_ids))
@@ -140,9 +140,9 @@ class APIClientCommon:
                 raise AppException("AGT-10029", [http_status])
 
             API_response = response.json()
-            # g.applogger.debug("Before duplicate check......{}".format(API_response))
+            g.applogger.debug("Before duplicate check......{}".format(API_response))
             respons_json = self.get_new_events(API_response)
-            # g.applogger.debug("fter duplicate check........{}".format(respons_json))
+            g.applogger.debug("After duplicate check.......{}".format(respons_json))
 
             return respons_json
 
@@ -177,12 +177,13 @@ class APIClientCommon:
             respons_key_json = result_json
 
         # RESPONSE_KEYの値がリスト形式ではない場合、そのまま辞書に格納する
-        if self.respons_listT_flag == 0:
+        if self.respons_list_flag == "0":
             new_enevt_flg, event = self.get_elements_new_event(respons_key_json)
             if new_enevt_flg and len(event) > 0:
                 respons_key_json = event
             else:
                 respons_key_json.clear()
+                result_json.clear()
 
         # RESPONSE_KEYの値がリスト形式の場合、1つずつ辞書に格納
         else:

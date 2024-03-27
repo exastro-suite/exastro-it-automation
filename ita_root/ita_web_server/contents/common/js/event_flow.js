@@ -614,6 +614,11 @@ createCanvasData() {
     };
 
     // グループの階層データの作成
+    const patternNumber = {
+        rule: 1,
+        conclusion: 2,
+        action: 3
+    };
     for ( const groupId in er.groupList.groupData ) {
         const group = er.groupList.groupData[ groupId ];
 
@@ -623,7 +628,16 @@ createCanvasData() {
             } else if ( a.datetime > b.datetime ) {
                 return 1;
             } else {
-                return 0;
+                // 同じ時間の場合
+                const a2 = ( patternNumber[ a.pattern ] )? patternNumber[ a.pattern ]: 0;
+                const b2 = ( patternNumber[ b.pattern ] )? patternNumber[ b.pattern ]: 0;
+                if ( a2 < b2 ) {
+                    return -1;
+                } else if ( a2 > b2 ) {
+                    return 1;
+                } else {
+                    return 0;
+                }
             }
         });
 

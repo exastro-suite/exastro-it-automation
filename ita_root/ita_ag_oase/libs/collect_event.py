@@ -85,7 +85,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             continue
 
         # RESPONSE_KEYの値がリスト形式ではない場合、そのまま辞書に格納する
-        if setting["RESPONSE_LIST_FLAG"] == 0:
+        if setting["RESPONSE_LIST_FLAG"] == "0":
             event = init_label(json_data, fetched_time, setting)
             events.append(event)
 

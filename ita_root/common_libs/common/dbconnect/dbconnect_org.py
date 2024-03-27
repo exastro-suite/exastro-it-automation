@@ -50,6 +50,8 @@ class DBConnectOrg(DBConnectCommon):
         self._port = int(connect_info.get('DB_PORT'))
         self._db_user = connect_info.get('DB_USER')
         self._db_passwd = connect_info.get('DB_PASSWORD')
+        self._db_admin_user = connect_info.get('DB_ADMIN_USER')
+        self._db_admin_passwd = connect_info.get('DB_ADMIN_PASSWORD')
         self._db = connect_info.get('DB_DATABASE')
 
         self._mongo_owner = connect_info.get('MONGO_OWNER')
@@ -82,6 +84,8 @@ class DBConnectOrg(DBConnectCommon):
             'DB_USER': self._db_user,
             'DB_PASSWORD': self._db_passwd,
             'DB_DATABASE': self._db,
+            'DB_ADMIN_USER': self._db_admin_user,
+            'DB_ADMIN_PASSWORD': self._db_admin_passwd,
             'MONGO_OWNER': self._mongo_owner,
             'MONGO_CONNECTION_STRING': self._mongo_connection_string,
             'MONGO_ADMIN_USER': self._mongo_admin_user,

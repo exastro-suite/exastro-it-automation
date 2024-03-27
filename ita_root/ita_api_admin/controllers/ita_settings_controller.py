@@ -50,12 +50,11 @@ def get_ita_settings():  # noqa: E501
 
         # OASEはMongoDBの設定有無でデフォルトのチェック有無を変更する
         mongo_host = os.environ.get('MONGO_HOST', '')
-        mongo_connection_string = os.environ.get('MONGO_CONNECTION_STRING', '')
 
         for driver_data in additional_driver:
             # デフォルトのチェック有無を設定
             if driver_data["id"] == "oase":
-                if not mongo_host and not mongo_connection_string:
+                if not mongo_host:
                     driver_data["enable"] = False
                 else:
                     driver_data["enable"] = True

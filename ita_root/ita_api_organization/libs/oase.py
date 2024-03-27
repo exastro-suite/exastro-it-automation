@@ -17,6 +17,7 @@ from flask import g
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 from common_libs.loadtable import *
 import datetime
@@ -61,9 +62,6 @@ def collect_event_history(wsMongo: MONGOConnectWs, parameter: dict):
     RETRUN:
         data
     """
-
-    # イベント履歴のコレクション名
-    COLLECTION_NAME = "labeled_event_collection"
 
     # MongoDBから取得するデータのソート条件
     SORT_KEY = [
@@ -123,7 +121,7 @@ def collect_event_history(wsMongo: MONGOConnectWs, parameter: dict):
 
         return filter
 
-    event_history = (wsMongo.collection(COLLECTION_NAME)
+    event_history = (wsMongo.collection(mongoConst.LABELED_EVENT_COLLECTION)
                      .find(create_filter())
                      .sort(SORT_KEY))
 

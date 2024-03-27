@@ -144,7 +144,7 @@ class SubValueAutoReg():
         data_cnt_ary = ret[5]
 
         # 紐付メニューへのSELECT文を生成する。
-        ret = self.createQuerySelectCMDB(lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToPKeyNameList)
+        ret = self.createQuerySelectCMDB(lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToPKeyNameList, self.ws_db)
         # 代入値紐付メニュー毎のSELECT文配列
         lv_tableNameToSqlList = ret
 
@@ -154,7 +154,7 @@ class SubValueAutoReg():
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
         warning_flag = 0
-        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, operation_id, warning_flag, self.ws_db, data_cnt_ary)
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, operation_id, warning_flag, self.ws_db, data_cnt_ary)
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]
@@ -308,7 +308,7 @@ class SubValueAutoReg():
         data_cnt_ary = ret[5]
 
         # 紐付メニューへのSELECT文を生成する。
-        ret = self.createQuerySelectCMDB(lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToPKeyNameList)
+        ret = self.createQuerySelectCMDB(lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToPKeyNameList, self.ws_db)
         # 代入値紐付メニュー毎のSELECT文配列
         lv_tableNameToSqlList = ret
 
@@ -318,7 +318,7 @@ class SubValueAutoReg():
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
         warning_flag = 0
-        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, lv_tableNameToMenuNameRestList, None, warning_flag, self.ws_db, data_cnt_ary)
+        ret = self.getCMDBdata(lv_tableNameToSqlList, lv_tableNameToMenuIdList, lv_tabColNameToValAssRowList, None, warning_flag, self.ws_db, data_cnt_ary)
         lv_varsAssList = ret[0]
         lv_arrayVarsAssList = ret[1]
         warning_flag = ret[2]
@@ -417,7 +417,7 @@ class SubValueAutoReg():
 
         return True
 
-    def createQuerySelectCMDB(self, in_tableNameToMenuIdList, in_tabColNameToValAssRowList, in_tableNameToPKeyNameList):
+    def createQuerySelectCMDB(self, in_tableNameToMenuIdList, in_tabColNameToValAssRowList, in_tableNameToPKeyNameList, WS_DB):
         """
         代入値紐付メニューへのSELECT文を生成する。
 
@@ -451,6 +451,7 @@ class SubValueAutoReg():
         # テーブル名+カラム名配列からテーブル名と配列名を取得
         inout_tableNameToSqlList = {}
         for table_name, col_list in in_tabColNameToValAssRowList.items():
+            input_order_flg = False
             pkey_name = in_tableNameToPKeyNameList[table_name]
 
             col_sql = ""
@@ -465,6 +466,13 @@ class SubValueAutoReg():
                 g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                 # 次のテーブルへ
                 continue
+            
+            # パラメータシートのテーブル構成確認
+            where = "WHERE DISUSE_FLAG = '0'"
+            ret = WS_DB.table_select(table_name, where, [])
+            for value in ret:
+                if "INPUT_ORDER" in value:
+                    input_order_flg = True
 
             # SELECT文を生成
             make_sql = "SELECT \n "
@@ -474,10 +482,21 @@ class SubValueAutoReg():
             make_sql += ", TBL_A.HOST_ID \n "
             for tmp_col_value in col_value.values():
                 # パラメータシートに縦メニュー用代入順序があるか判定
-                if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None:
+                if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is True:
                     make_sql += ", TBL_A.INPUT_ORDER \n "
                 else:
                     make_sql += ", '' AS INPUT_ORDER \n "
+                
+                # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出す
+                if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is False:
+                    msgstr = g.appmsg.get_api_message("MSG-10939", [tmp_col_value["COLUMN_ID"]])
+                    frame = inspect.currentframe().f_back
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                elif tmp_col_value["COLUMN_ASSIGN_SEQ"] is None and input_order_flg is True:
+                    msgstr = g.appmsg.get_api_message("MSG-10940", [tmp_col_value["COLUMN_ID"]])
+                    frame = inspect.currentframe().f_back
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+
             make_sql += col_sql + " \n "
             make_sql += " FROM `" + table_name + "` TBL_A \n "
             make_sql += " WHERE DISUSE_FLAG = '0' \n "
@@ -874,7 +893,7 @@ class SubValueAutoReg():
 
         return True, ina_if_info, err_code
 
-    def getCMDBdata(self, in_tableNameToSqlList, in_tableNameToMenuIdList, in_tabColNameToValAssRowList, in_tableNameToMenuNameRestList, operation_id, warning_flag, WS_DB, data_cnt_ary):
+    def getCMDBdata(self, in_tableNameToSqlList, in_tableNameToMenuIdList, in_tabColNameToValAssRowList, reg_operation_id, warning_flag, WS_DB, data_cnt_ary):
         """
         CMDB代入値紐付対象メニューから具体値を取得する。
 
@@ -916,15 +935,14 @@ class SubValueAutoReg():
 
         idx = 0
         for table_name, sql in in_tableNameToSqlList.items():
-
             # トレースメッセージ
             traceMsg = g.appmsg.get_api_message("MSG-10806", [in_tableNameToMenuIdList[table_name]])
             frame = inspect.currentframe().f_back
             g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
-            if operation_id is not None:
+            if reg_operation_id is not None:
                 sql += " AND OPERATION_ID = %s \n "
-                data_list = WS_DB.sql_execute(sql, [AnscConst.DF_ITA_LOCAL_HOST_CNT, AnscConst.DF_ITA_LOCAL_PKEY, operation_id])
+                data_list = WS_DB.sql_execute(sql, [AnscConst.DF_ITA_LOCAL_HOST_CNT, AnscConst.DF_ITA_LOCAL_PKEY, reg_operation_id])
             else:
                 data_list = WS_DB.sql_execute(sql, [AnscConst.DF_ITA_LOCAL_HOST_CNT, AnscConst.DF_ITA_LOCAL_PKEY])
 
@@ -987,7 +1005,7 @@ class SubValueAutoReg():
                     host_ary.append(row['HOST_ID'])
 
                 parameter = {}
-
+            
             for tmp_table_name, tmp_value in tmp_ary_data.items():
                 registered_data_cnt = 0
                 registered_host_ary = []
@@ -998,7 +1016,6 @@ class SubValueAutoReg():
                             exec_flag = False
                             menu_name_rest = col_data["MENU_NAME_REST"]
                             host_id = row['HOST_ID']
-
                             if tmp_table_name == table_name:
                                 # 縦メニューの場合
                                 if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":

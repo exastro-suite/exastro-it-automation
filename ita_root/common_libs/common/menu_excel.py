@@ -1543,7 +1543,7 @@ def execute_excel_maintenance(
     """
     # 言語設定取得
     lang = g.LANGUAGE
-    
+
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_write = storage_access.storage_write()
 
@@ -1741,7 +1741,11 @@ def execute_excel_maintenance(
         err_msgs = e.args[1]
         ret_msg = []
         for msg in err_msgs:
-            json_msg = json.loads(msg)
+            try:
+                json_msg = json.loads(msg)
+            except Exception:
+                g.applogger.info(e)
+                raise e
             for k, v in json_msg.items():
                 for vv in v.values():
                     # エラー文に行数を追加する

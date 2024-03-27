@@ -18,7 +18,6 @@ import requests
 import json
 from urllib.parse import urlparse
 import datetime
-from http.client import HTTPResponse
 from common_libs.common.exception import AppException
 import jmespath
 
@@ -133,11 +132,7 @@ class APIClientCommon:
             # g.applogger.debug("Respons: \n{}\n".format(API_response))
 
             if response.status_code < 200 or response.status_code > 299:
-                status_description = ""
-                if response.status_code in HTTPResponse:
-                    status_description = HTTPResponse[response.status_code]
-                http_status = "{} {}".format(response.status_code, status_description)
-                raise AppException("AGT-10029", [http_status])
+                raise AppException("AGT-10029", ["HTTP STATUS = {}".format(response.status_code)])
 
             API_response = response.json()
             g.applogger.debug("Before duplicate check......{}".format(API_response))
@@ -155,7 +150,7 @@ class APIClientCommon:
             return API_response
 
         except Exception as e:
-            raise AppException("AGT-10029", [e])
+            raise AppException("AGT-10029", [e, "HTTP-API Request"])
 
     # 新規イベント取得
     def get_new_events(self, raw_json):

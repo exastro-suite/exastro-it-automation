@@ -23,9 +23,11 @@ import json
 import shutil
 import time
 from pathlib import Path
+from pymongo import ASCENDING
 
 from common_libs.api import api_filter_admin, check_request_body_key
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
+from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.util import ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
 from libs.admin_common import initial_settings_ansible
@@ -155,6 +157,19 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
 
         # connect workspace-db
         g.db_connect_info = {}
+        g.db_connect_info["ORGDB_HOST"] = orgdb_connect_info['DB_HOST']
+        g.db_connect_info["ORGDB_PORT"] = orgdb_connect_info['DB_PORT']
+        g.db_connect_info["ORGDB_USER"] = orgdb_connect_info['DB_USER']
+        g.db_connect_info["ORGDB_PASSWORD"] = orgdb_connect_info['DB_PASSWORD']
+        g.db_connect_info["ORGDB_ADMIN_USER"] = orgdb_connect_info['DB_ADMIN_USER']
+        g.db_connect_info["ORGDB_ADMIN_PASSWORD"] = orgdb_connect_info['DB_ADMIN_PASSWORD']
+        g.db_connect_info["ORGDB_DATABASE"] = orgdb_connect_info['DB_DATABASE']
+        g.db_connect_info["ORG_MONGO_OWNER"] = orgdb_connect_info['MONGO_OWNER']
+        g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = orgdb_connect_info['MONGO_CONNECTION_STRING']
+        g.db_connect_info["ORG_MONGO_ADMIN_USER"] = orgdb_connect_info['MONGO_ADMIN_USER']
+        g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = orgdb_connect_info['MONGO_ADMIN_PASSWORD']
+        g.db_connect_info["NO_INSTALL_DRIVER"] = no_install_driver_tmp
+
         g.db_connect_info["WSDB_HOST"] = data["DB_HOST"]
         g.db_connect_info["WSDB_PORT"] = str(data["DB_PORT"])
         g.db_connect_info["WSDB_USER"] = data["DB_USER"]
@@ -259,6 +274,16 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_root_db.sql_execute(view_sql, [])
         view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSR_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
         org_root_db.sql_execute(view_sql, [])
+
+
+        if 'oase' not in no_install_driver:
+        # OASEのmongo設定（インデックスなど）
+            ws_mongo = MONGOConnectWs()
+            ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+            # # 元イベントデータの保持期限 90日
+            # ws_mongo.collection(mongoConst.EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
+            # # イベントデータの保持期限 90日
+            # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
 
         # register workspace-db connect infomation
         org_db.db_transaction_start()

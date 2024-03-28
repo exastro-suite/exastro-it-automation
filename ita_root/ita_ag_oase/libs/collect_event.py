@@ -84,12 +84,16 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             continue
 
-        # RESPONSE_KEYの値がリスト形式ではない場合、そのまま辞書に格納する
+        # RESPONSE_LIST_FLAGの値がリスト形式ではない場合、そのまま辞書に格納する
         if setting["RESPONSE_LIST_FLAG"] == "0":
+            # 値がリスト形式かチェック
+            if isinstance(json_data, list) is True:
+                g.applogger.info(g.appmsg.get_log_message("AGT-10031", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
+                continue
             event = init_label(json_data, fetched_time, setting)
             events.append(event)
 
-        # RESPONSE_KEYの値がリスト形式の場合、1つずつ辞書に格納
+        # RESPONSE_LIST_FLAの値がリスト形式の場合、1つずつ辞書に格納
         else:
             # 値がリスト形式かチェック
             if isinstance(json_data, list) is False:

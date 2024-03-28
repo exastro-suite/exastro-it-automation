@@ -194,15 +194,9 @@ class APIClientCommon:
                     target_events.append(event)
 
             if len(target_events) > 0:
-                none = False
-                # 対象イベントだけを追加するたね、レスポンスキーの値の全要素を削除する。
-                while not none:
-                    for i in range(len(respons_key_json)):
-                        respons_key_json.pop(i)
-                        break
-                    none = True
                 # 対象イベントを設定
-                respons_key_json = target_events
+                respons_key_json = []
+                respons_key_json.extend(target_events)
             else:
                 respons_key_json.clear()
 

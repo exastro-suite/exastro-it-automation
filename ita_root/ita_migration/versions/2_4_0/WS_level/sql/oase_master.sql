@@ -444,7 +444,7 @@ Available when the connection method is Bearer authentication, password authenti
 ・IMAP: Plaintext
 Available when the connection method is IMAP password authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010104';
 
-UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]4000バイト
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_CLASS = '2', DESCRIPTION_JA = '[最大長]4000バイト
 JSON形式で入力します。
 
 ・リクエストメソッドがGETの場合：
@@ -467,7 +467,7 @@ Input value: { "name": "test" }
 →Request URL: http://example.com/dir/?name=test
 ・If the request method is POST:
 Used as the payload of the request.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010115';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]4000バイト
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_CLASS = '2', DESCRIPTION_JA = '[最大長]4000バイト
 JSON形式で入力します。
 
 ・リクエストメソッドがGETの場合：

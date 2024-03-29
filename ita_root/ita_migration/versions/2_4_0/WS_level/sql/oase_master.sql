@@ -348,12 +348,12 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '以下の状態が存�
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_EN = 'The following conditions exist:
 ・Under consideration
-・Unknown event
+・Undetected
 ・Evaluated
 ・Time is up', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010405';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_EN = 'The following conditions exist:
 ・Under consideration
-・Unknown event
+・Undetected
 ・Evaluated
 ・Time is up', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010405';
 

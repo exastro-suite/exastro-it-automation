@@ -580,7 +580,7 @@ class CheckAnsibleRoleFiles():
                 ret, ina_copyvars_list, ina_tpfvars_list = self.chkRoleFiles(
                     WrappedStringReplaceAdminObj, fullpath, in_rolename, file,
                     # p1    p2     p3    p4    p5    p6
-                    True, False, True, True, True, False,
+                    True, False, True, True, True, True,
                     in_get_copyvar, ina_copyvars_list, in_get_tpfvar, ina_tpfvars_list, ina_system_vars
                 )
 
@@ -896,10 +896,11 @@ class CheckAnsibleRoleFiles():
                 if file == "main.yml":
                     main_yml = True
 
-                # ファイルの内容を読込む
-                # #2079 /storage配下は/tmp経由でアクセス
-                obj = storage_read_text()
-                dataString = obj.read_text(fullpath)
+                if in_get_rolevar or in_get_var_tgt_dir:
+                    # ファイルの内容を読込む
+                    # #2079 /storage配下は/tmp経由でアクセス
+                    obj = storage_read_text()
+                    dataString = obj.read_text(fullpath)
 
                 # ホスト変数の抜出が指定されている場合
                 if in_get_rolevar:

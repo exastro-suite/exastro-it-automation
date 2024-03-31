@@ -113,24 +113,28 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_EN = '[Minimum value] 10 (sec
 [Initial value] 3600 (seconds)
 TTL (Time To Live) is the period (in seconds) during which events acquired by an agent are treated as subject to rule evaluation.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010917';
 UPDATE T_COMN_MENU_COLUMN_LINK SET VALIDATE_REG_EXP = '^[a-zA-Z0-9!#%&()*+,-.;<=>?@[\\]^_{|}~]+$', DESCRIPTION_JA = '[最大長]255バイト
-検索条件となる、イベントのプロパティのキーを半角英数字と利用可能な記号(!#%&()*+,-.;<=>?@[]^_{|}~)で入力します。
-下記キーも入力可能です。
+検索条件となる、イベントのプロパティのキーをJSONのクエリ言語（JMESPath）で指定します。
+半角英数字と記号(!#%&()*+,-.;<=>?@[]^_{|}~)を使用できます。
+下記キーも指定可能です。
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
 ・_exastro_end_time', DESCRIPTION_EN = '[Maximum length] 255 bytes
-Enter the event property key as a search condition using half-width alphanumeric characters and available symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
-You can also enter the following keys.
+Specify the event property key as the search condition using the JSON query language (JMESPath).
+You can use half-width alphanumeric characters and symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
+The following keys can also be specified.
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
 ・_exastro_end_time', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010604';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_REG_EXP = '^[a-zA-Z0-9!#%&()*+,-.;<=>?@[\\]^_{|}~]+$', DESCRIPTION_JA = '[最大長]255バイト
-検索条件となる、イベントのプロパティのキーを半角英数字と利用可能な記号(!#%&()*+,-.;<=>?@[]^_{|}~)で入力します。
-下記キーも入力可能です。
+検索条件となる、イベントのプロパティのキーをJSONのクエリ言語（JMESPath）で指定します。
+半角英数字と記号(!#%&()*+,-.;<=>?@[]^_{|}~)を使用できます。
+下記キーも指定可能です。
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
 ・_exastro_end_time', DESCRIPTION_EN = '[Maximum length] 255 bytes
-Enter the event property key as a search condition using half-width alphanumeric characters and available symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
-You can also enter the following keys.
+Specify the event property key as the search condition using the JSON query language (JMESPath).
+You can use half-width alphanumeric characters and symbols (!#%&()*+,-.;<=>?@[]^_{|}~).
+The following keys can also be specified.
 ・_exastro_event_collection_settings_id
 ・_exastro_fetched_time
 ・_exastro_end_time', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010604';
@@ -346,6 +350,146 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '以下の状態が存�
 ・イベント
 ・結論イベント', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010406';
 
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_EN = 'The following conditions exist:
+・Under consideration
+・Undetected
+・Evaluated
+・Time is up', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010405';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_EN = 'The following conditions exist:
+・Under consideration
+・Undetected
+・Evaluated
+・Time is up', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010405';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_EN = 'The following conditions exist:
+・Event
+・Conclusion event', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010406';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_EN = 'The following conditions exist:
+・Event
+・Conclusion event', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010406';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_DISP_SEQ = '170', DESCRIPTION_JA = 'レスポンスのペイロード（※レスポンスキーで指定した階層）が配列かどうかを選択します。
+Trueの場合、配列を分割し、その単位をイベントとして処理します。', DESCRIPTION_EN = 'Select whether the response payload (*layer specified by response key) is an array.
+If True, splits the array and treats that unit as an event.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010116';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_DISP_SEQ = '170', DESCRIPTION_JA = 'レスポンスのペイロード（※レスポンスキーで指定した階層）が配列かどうかを選択します。
+Trueの場合、配列を分割し、その単位をイベントとして処理します。', DESCRIPTION_EN = 'Select whether the response payload (*layer specified by response key) is an array.
+If True, splits the array and treats that unit as an event.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010116';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_DISP_SEQ = '160', DESCRIPTION_JA = 'レスポンスのペイロードから、OASEのイベントとして受け取るプロパティの、親となるキーを指定します。
+レスポンスのペイロードの階層をJSONのクエリ言語（JMESPath）で指定します。', DESCRIPTION_EN = 'Specify the parent key of the property received as an OASE event from the response payload.
+Specify the response payload hierarchy using the JSON query language (JMESPath).', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010117';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_DISP_SEQ = '160', DESCRIPTION_JA = 'レスポンスのペイロードから、OASEのイベントとして受け取るプロパティの、親となるキーを指定します。
+レスポンスのペイロードの階層をJSONのクエリ言語（JMESPath）で指定します。', DESCRIPTION_EN = 'Specify the parent key of the property received as an OASE event from the response payload.
+Specify the response payload hierarchy using the JSON query language (JMESPath).', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010117';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = 'イベント収集対象への接続方式を選択します。
+・Bearer認証：
+リクエストメソッドがGETかPOSTであり、接続先、認証トークンの入力が必須です。
+・パスワード認証：
+リクエストメソッドがGETかPOSTであり、接続先、ユーザー名、パスワードの入力が必須です。
+・任意の認証：
+リクエストメソッドがGETかPOSTであり、接続先の入力が必須です。
+・IMAP　パスワード認証：
+リクエストメソッドがIMAP: Plaintextであり、接続先、ユーザー名、パスワードの入力が必須です。
+・エージェント不使用：
+TTL以外に入力する必要はありません。', DESCRIPTION_EN = 'Select the connection method to the event collection target.
+・Bearer certification:
+The request method is GET or POST, and the connection destination and authentication token are required.
+・Password authentication:
+The request method is GET or POST, and the connection destination, user name, and password are required.
+・Optional authentication:
+The request method is GET or POST, and the connection destination is required.
+・IMAP password authentication:
+The request method is IMAP: Plaintext, and the connection destination, user name, and password are required.
+・No agent used:
+There is no need to enter anything other than TTL.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010103';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = 'イベント収集対象への接続方式を選択します。
+・Bearer認証：
+リクエストメソッドがGETかPOSTであり、接続先、認証トークンの入力が必須です。
+・パスワード認証：
+リクエストメソッドがGETかPOSTであり、接続先、ユーザー名、パスワードの入力が必須です。
+・任意の認証：
+リクエストメソッドがGETかPOSTであり、接続先の入力が必須です。
+・IMAP　パスワード認証：
+リクエストメソッドがIMAP: Plaintextであり、接続先、ユーザー名、パスワードの入力が必須です。
+・エージェント不使用：
+TTL以外に入力する必要はありません。', DESCRIPTION_EN = 'Select the connection method to the event collection target.
+・Bearer certification:
+The request method is GET or POST, and the connection destination and authentication token are required.
+・Password authentication:
+The request method is GET or POST, and the connection destination, user name, and password are required.
+・Optional authentication:
+The request method is GET or POST, and the connection destination is required.
+・IMAP password authentication:
+The request method is IMAP: Plaintext, and the connection destination, user name, and password are required.
+・No agent used:
+There is no need to enter anything other than TTL.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010103';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = 'リクエストメソッドを選択します。
+・GET、POST
+接続方式がBearer認証、パスワード認証、任意の認証の場合に利用可能です。
+・IMAP: Plaintext
+接続方式がIMAP　パスワード認証の場合に利用可能です。', DESCRIPTION_EN = 'Select a request method.
+・GET, POST
+Available when the connection method is Bearer authentication, password authentication, or any authentication.
+・IMAP: Plaintext
+Available when the connection method is IMAP password authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010104';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = 'リクエストメソッドを選択します。
+・GET、POST
+接続方式がBearer認証、パスワード認証、任意の認証の場合に利用可能です。
+・IMAP: Plaintext
+接続方式がIMAP　パスワード認証の場合に利用可能です。', DESCRIPTION_EN = 'Select a request method.
+・GET, POST
+Available when the connection method is Bearer authentication, password authentication, or any authentication.
+・IMAP: Plaintext
+Available when the connection method is IMAP password authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010104';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_CLASS = '2', DESCRIPTION_JA = '[最大長]4000バイト
+JSON形式で入力します。
+
+・リクエストメソッドがGETの場合：
+クエリパラメータ(接続先に追加される、"?"以降の値）として使用されます。
+ex.
+　接続先：http://example.com/dir/
+　入力値：{ "name": "test" }
+　の場合
+　→リクエストURL：http://example.com/dir/?name=test
+・リクエストメソッドがPOSTの場合：
+リクエストのペイロードとして使用されます。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+Enter in JSON format.
+
+・If the request method is GET:
+It is used as a query parameter (the value after "?" that is added to the connection destination).
+ex.
+Connect to: http://example.com/dir/
+Input value: { "name": "test" }
+ in the case of
+→Request URL: http://example.com/dir/?name=test
+・If the request method is POST:
+Used as the payload of the request.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010115';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_CLASS = '2', DESCRIPTION_JA = '[最大長]4000バイト
+JSON形式で入力します。
+
+・リクエストメソッドがGETの場合：
+クエリパラメータ(接続先に追加される、"?"以降の値）として使用されます。
+ex.
+　接続先：http://example.com/dir/
+　入力値：{ "name": "test" }
+　の場合
+　→リクエストURL：http://example.com/dir/?name=test
+・リクエストメソッドがPOSTの場合：
+リクエストのペイロードとして使用されます。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+Enter in JSON format.
+
+・If the request method is GET:
+It is used as a query parameter (the value after "?" that is added to the connection destination).
+ex.
+Connect to: http://example.com/dir/
+Input value: { "name": "test" }
+ in the case of
+→Request URL: http://example.com/dir/?name=test
+・If the request method is POST:
+Used as the payload of the request.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010115';
 
 -- T_COMN_MENU_COLUMN_LINK: INSERT
 
@@ -439,11 +583,19 @@ False: Disabled',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010123','110101','イベントIDキー','EventId Key','event_id_key',NULL,'1',180,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'EVENT_ID_KEY',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 255
-}',NULL,NULL,NULL,'レスポンスキーで取り出した値から、イベントを識別するキーを入力します。','Enter the key to extract the value that identifies the event from the payload using the response key.',NULL,'0',_____DATE_____,1);
+}',NULL,NULL,NULL,'受け取ったイベントをユニークに判別するIDとなるキーがある場合に入力します。
+レスポンスのペイロードの階層をJSONのクエリ言語（JMESPath）で指定します。
+レスポンスキーの指定やレスポンスリストフラグの指定を考慮した、それ以下の階層を指定します。','Enter this if you have a key that serves as an ID to uniquely identify the received event.
+Specify the response payload hierarchy using the JSON query language (JMESPath).
+Specify the lower level, taking into account the response key specification and response list flag specification.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010123,_____DATE_____,'INSERT','11010123','110101','イベントIDキー','EventId Key','event_id_key',NULL,'1',180,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'EVENT_ID_KEY',NULL,'0','1','1','0','0','0','0',NULL,'{
 "min_length": 0,
 "max_length": 255
-}',NULL,NULL,NULL,'レスポンスキーで取り出した値から、イベントを識別するキーを入力します。','Enter the key to extract the value that identifies the event from the payload using the response key.',NULL,'0',_____DATE_____,1);
+}',NULL,NULL,NULL,'受け取ったイベントをユニークに判別するIDとなるキーがある場合に入力します。
+レスポンスのペイロードの階層をJSONのクエリ言語（JMESPath）で指定します。
+レスポンスキーの指定やレスポンスリストフラグの指定を考慮した、それ以下の階層を指定します。','Enter this if you have a key that serves as an ID to uniquely identify the received event.
+Specify the response payload hierarchy using the JSON query language (JMESPath).
+Specify the lower level, taking into account the response key specification and response list flag specification.',NULL,'0',_____DATE_____,1);
 
 
 -- T_OASE_COMPARISON_METHOD: UPDATE

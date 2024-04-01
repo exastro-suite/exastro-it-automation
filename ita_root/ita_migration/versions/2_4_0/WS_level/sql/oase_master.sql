@@ -368,17 +368,17 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_EN = 'The following condition
 ・Event
 ・Conclusion event', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010406';
 
-UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_DISP_SEQ = '170', DESCRIPTION_JA = 'レスポンスのペイロード（※レスポンスキーで指定した階層）が配列かどうかを選択します。
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_DISP_SEQ = '170', INPUT_ITEM = '1', VIEW_ITEM = '1', DISUSE_FLAG = '0', DESCRIPTION_JA = 'レスポンスのペイロード（※レスポンスキーで指定した階層）が配列かどうかを選択します。
 Trueの場合、配列を分割し、その単位をイベントとして処理します。', DESCRIPTION_EN = 'Select whether the response payload (*layer specified by response key) is an array.
 If True, splits the array and treats that unit as an event.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010116';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_DISP_SEQ = '170', DESCRIPTION_JA = 'レスポンスのペイロード（※レスポンスキーで指定した階層）が配列かどうかを選択します。
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_DISP_SEQ = '170', INPUT_ITEM = '1', VIEW_ITEM = '1', DISUSE_FLAG = '0', DESCRIPTION_JA = 'レスポンスのペイロード（※レスポンスキーで指定した階層）が配列かどうかを選択します。
 Trueの場合、配列を分割し、その単位をイベントとして処理します。', DESCRIPTION_EN = 'Select whether the response payload (*layer specified by response key) is an array.
 If True, splits the array and treats that unit as an event.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010116';
 
-UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_DISP_SEQ = '160', DESCRIPTION_JA = 'レスポンスのペイロードから、OASEのイベントとして受け取るプロパティの、親となるキーを指定します。
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_DISP_SEQ = '160', DISUSE_FLAG = '0', DESCRIPTION_JA = 'レスポンスのペイロードから、OASEのイベントとして受け取るプロパティの、親となるキーを指定します。
 レスポンスのペイロードの階層をJSONのクエリ言語（JMESPath）で指定します。', DESCRIPTION_EN = 'Specify the parent key of the property received as an OASE event from the response payload.
 Specify the response payload hierarchy using the JSON query language (JMESPath).', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010117';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_DISP_SEQ = '160', DESCRIPTION_JA = 'レスポンスのペイロードから、OASEのイベントとして受け取るプロパティの、親となるキーを指定します。
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_DISP_SEQ = '160', DISUSE_FLAG = '0', DESCRIPTION_JA = 'レスポンスのペイロードから、OASEのイベントとして受け取るプロパティの、親となるキーを指定します。
 レスポンスのペイロードの階層をJSONのクエリ言語（JMESPath）で指定します。', DESCRIPTION_EN = 'Specify the parent key of the property received as an OASE event from the response payload.
 Specify the response payload hierarchy using the JSON query language (JMESPath).', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010117';
 
@@ -444,7 +444,7 @@ Available when the connection method is Bearer authentication, password authenti
 ・IMAP: Plaintext
 Available when the connection method is IMAP password authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010104';
 
-UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_CLASS = '2', DESCRIPTION_JA = '[最大長]4000バイト
+UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_CLASS = '2', DISUSE_FLAG = '0', DESCRIPTION_JA = '[最大長]4000バイト
 JSON形式で入力します。
 
 ・リクエストメソッドがGETの場合：
@@ -467,7 +467,7 @@ Input value: { "name": "test" }
 →Request URL: http://example.com/dir/?name=test
 ・If the request method is POST:
 Used as the payload of the request.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010115';
-UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_CLASS = '2', DESCRIPTION_JA = '[最大長]4000バイト
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_CLASS = '2', DISUSE_FLAG = '0', DESCRIPTION_JA = '[最大長]4000バイト
 JSON形式で入力します。
 
 ・リクエストメソッドがGETの場合：
@@ -490,6 +490,42 @@ Input value: { "name": "test" }
 →Request URL: http://example.com/dir/?name=test
 ・If the request method is POST:
 Used as the payload of the request.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010115';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]4000バイト
+リクエストヘッダーを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter request header.', DISUSE_FLAG = '0', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010107';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]4000バイト
+リクエストヘッダーを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter request header.', DISUSE_FLAG = '0', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010107';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]10024バイト
+Bearer認証の認証トークンを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter the authentication token for Bearer authentication.', DISUSE_FLAG = '0', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010109';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]10024バイト
+Bearer認証の認証トークンを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter the authentication token for Bearer authentication.', DISUSE_FLAG = '0', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010109';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]1024バイト
+SharedKeyLite認証のアクセスキーIDを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter the access key ID for SharedKeyLite authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010113';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]1024バイト
+SharedKeyLite認証のアクセスキーIDを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter the access key ID for SharedKeyLite authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010113';
+
+UPDATE T_COMN_MENU_COLUMN_LINK SET DESCRIPTION_JA = '[最大長]4000バイト
+SharedKeyLite認証の秘密アクセスキーを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter the secret access key for SharedKeyLite authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010114';
+UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET DESCRIPTION_JA = '[最大長]4000バイト
+SharedKeyLite認証の秘密アクセスキーを入力します。', DESCRIPTION_EN = '[Maximum length] 4000 bytes
+For API
+   →Enter the secret access key for SharedKeyLite authentication.', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '11010114';
 
 -- T_COMN_MENU_COLUMN_LINK: INSERT
 

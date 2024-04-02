@@ -48,7 +48,6 @@ class APIClientCommon:
         self.access_key_id = event_settings["ACCESS_KEY_ID"]
         self.secret_access_key = event_settings["SECRET_ACCESS_KEY"]
         self.mailbox_name = event_settings["MAILBOXNAME"]
-        self.password = event_settings["PASSWORD"]
         self.parameter = event_settings["PARAMETER"]
         # 前回イベント収集日時（初回イベント収取時は、システム日時が設定されている）
         self.last_fetched_timestamp = event_settings["LAST_FETCHED_TIMESTAMP"] if event_settings["LAST_FETCHED_TIMESTAMP"] else None
@@ -111,7 +110,7 @@ class APIClientCommon:
             # g.applogger.debug("-------------Request Info ------------------------")
             # g.applogger.debug("METHOD.............{}".format(self.request_method))
             # g.applogger.debug("URL................{}".format(self.url))
-            # g.applogger.debug("AUTH_TOKEN.............{}".format(self.auth_token))
+            # g.applogger.debug("AUTH_TOKEN.........{}".format(self.auth_token))
             # g.applogger.debug("verify.............{}".format(self.verify))
             # g.applogger.debug("env.NO_PROXY.......{}".format(os.environ['NO_PROXY']))
             # g.applogger.debug("proxies............{}".format(proxies))
@@ -194,8 +193,10 @@ class APIClientCommon:
                     target_events.append(event)
 
             if len(target_events) > 0:
+                # 全要素を削除
+                for i in reversed(range(len(respons_key_json))):
+                    del respons_key_json[i]
                 # 対象イベントを設定
-                respons_key_json = []
                 respons_key_json.extend(target_events)
             else:
                 respons_key_json.clear()

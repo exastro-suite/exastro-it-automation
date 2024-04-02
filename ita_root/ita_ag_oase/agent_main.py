@@ -75,7 +75,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         sqliteDB.db_close()
         g.applogger.debug(g.appmsg.get_log_message("AGT-10025", []))
     except Exception:
-        g.applogger.error(g.appmsg.get_log_message("AGT-10026", []))
+        g.applogger.info(g.appmsg.get_log_message("AGT-10026", []))
 
 
 def collection_logic(sqliteDB, organization_id, workspace_id):
@@ -157,7 +157,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
         except AppException as e:  # noqa E405
             sqliteDB.db_connect.rollback()
-            g.applogger.error(g.appmsg.get_log_message("AGT-10015", []))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10015", []))
             app_exception(e)
 
     # ITAに送信するデータを取得

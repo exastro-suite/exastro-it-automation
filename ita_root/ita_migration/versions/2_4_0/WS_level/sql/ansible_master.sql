@@ -91,9 +91,9 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "max_length": 4000
 }',NULL,NULL,NULL,'ロールパッケージについての説明欄（英語）','Description of role package (English)',NULL,'0',_____DATE_____,1);
 
-INSERT INTO T_ANSC_DEVICE SELECT 1,'1','localhost',NULL,'127.0.0.1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'local','ansible_python_interpreter: /usr/bin/python3
-ansible_connection: local',NULL,'1',NULL,'0',_____DATE_____,1 WHERE NOT EXISTS (SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE HOST_NAME = 'localhost' AND DISUSE_FLAG='0');
 INSERT INTO T_ANSC_DEVICE_JNL SELECT 1,_____DATE_____,'INSERT',1,'1','localhost',NULL,'127.0.0.1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'local','ansible_python_interpreter: /usr/bin/python3
+ansible_connection: local',NULL,'1',NULL,'0',_____DATE_____,1 WHERE NOT EXISTS (SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE HOST_NAME = 'localhost' AND DISUSE_FLAG='0');
+INSERT INTO T_ANSC_DEVICE SELECT 1,'1','localhost',NULL,'127.0.0.1',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'local','ansible_python_interpreter: /usr/bin/python3
 ansible_connection: local',NULL,'1',NULL,'0',_____DATE_____,1 WHERE NOT EXISTS (SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE HOST_NAME = 'localhost' AND DISUSE_FLAG='0');
 
 UPDATE T_ANSC_IF_INFO     SET ANSIBLE_REFRESH_INTERVAL=1000 WHERE ANSIBLE_IF_INFO_ID='1' AND ANSIBLE_REFRESH_INTERVAL=3000;

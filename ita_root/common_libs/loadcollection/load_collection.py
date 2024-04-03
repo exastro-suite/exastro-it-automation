@@ -56,12 +56,16 @@ class loadCollection():
             where_str = collection.create_where(parameter)
 
             # MongoDB向けの記法に変換が必要なため、DBから取得した値はそのまま利用しない
-            sort_key = collection.create_sort_key(self.load_table.get_sort_key())
+            # sort_key = collection.create_sort_key(self.load_table.get_sort_key())
 
+            # if mode in ['mongo']:
+            #     tmp_result = (self.wsMongo.collection(mondodb_collection_name)
+            #                   .find(where_str)
+            #                   .sort(sort_key))
+
+            # 2.4.0暫定対応
             if mode in ['mongo']:
-                tmp_result = (self.wsMongo.collection(mondodb_collection_name)
-                              .find(where_str)
-                              .sort(sort_key))
+                tmp_result = (self.wsMongo.collection(mondodb_collection_name).find(where_str))
 
                 result_list = collection.create_result(tmp_result)
 

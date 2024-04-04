@@ -452,6 +452,7 @@ class SubValueAutoReg():
         inout_tableNameToSqlList = {}
         for table_name, col_list in in_tabColNameToValAssRowList.items():
             input_order_flg = False
+            data_cnt = 0
             pkey_name = in_tableNameToPKeyNameList[table_name]
 
             col_sql = ""
@@ -480,22 +481,33 @@ class SubValueAutoReg():
             make_sql += hostid_chk_sql + " \n "
             make_sql += " TBL_A." + pkey_name + " AS %s   \n "
             make_sql += ", TBL_A.HOST_ID \n "
-            for tmp_col_value in col_value.values():
+            for tmp_col_value in col_value.values():                
+                # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出してスキップする。
+                if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is False:
+                    msgstr = g.appmsg.get_api_message("MSG-10939", [tmp_col_value["COLUMN_ID"]])
+                    frame = inspect.currentframe().f_back
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    continue
+                elif tmp_col_value["COLUMN_ASSIGN_SEQ"] is None and input_order_flg is True:
+                    msgstr = g.appmsg.get_api_message("MSG-10940", [tmp_col_value["COLUMN_ID"]])
+                    frame = inspect.currentframe().f_back
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    continue
+                
                 # パラメータシートに縦メニュー用代入順序があるか判定
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is True:
                     make_sql += ", TBL_A.INPUT_ORDER \n "
                 else:
                     make_sql += ", '' AS INPUT_ORDER \n "
-                
-                # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出す
+                    
+                data_cnt += 1
+            
+            # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出してスキップする。
+            if data_cnt == 0:
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is False:
-                    msgstr = g.appmsg.get_api_message("MSG-10939", [tmp_col_value["COLUMN_ID"]])
-                    frame = inspect.currentframe().f_back
-                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    continue
                 elif tmp_col_value["COLUMN_ASSIGN_SEQ"] is None and input_order_flg is True:
-                    msgstr = g.appmsg.get_api_message("MSG-10940", [tmp_col_value["COLUMN_ID"]])
-                    frame = inspect.currentframe().f_back
-                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    continue
 
             make_sql += col_sql + " \n "
             make_sql += " FROM `" + table_name + "` TBL_A \n "
@@ -1062,7 +1074,7 @@ class SubValueAutoReg():
                                             continue
 
                                         exec_flag = True
-                                else:
+                                elif col_data["COLUMN_ASSIGN_SEQ"] is None:
                                     # パラメータシートから値を取得
                                     if menu_name_rest not in dict_objmenu:
                                         dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)

@@ -161,7 +161,7 @@
     "499-01901": "No Conductor Class name is specified. (conductor_class_id:{})",
     "499-01902": "The parameter information type is invalid.(menu:{}, type:{})",
     "499-01903": "A required item(type, parameter)is not filled in.(menu:{})",
-    "499-01904": "Records must have one of the following operation types specified to them: Register/Update/Restore/Discard.(type:{})",
+    "499-01904": "Records must have one of the following operation types specified to them: Register/Update/Restore/Discard.(menu:{}, type:{})",
     "499-01905": "If no existing operation name is specified, 'parameter_info' must be specified.",
     "999-00001": "[Database Error] Database({}) connect infomation is not found",
     "999-00002": "[Database Error] Database({}) : {}",

@@ -83,8 +83,8 @@ def check_params(request_data):
                     if isinstance(p['type'], str) is False \
                     or p['type'] not in ['Register', 'Update', 'Restore', 'Discard']:
                         status_code = "499-01904"
-                        log_msg_args = [p['type'], ]
-                        api_msg_args = [p['type'], ]
+                        log_msg_args = [menu, p['type']]
+                        api_msg_args = [menu, p['type']]
                         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
     return True
@@ -126,6 +126,22 @@ def get_specify_menu(request_data):
 def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_sheet_list, conductor_menu_list):
     """
     """
+
+    def _analyse_error_info(obj, func, menu):
+
+        tmp = obj
+        if isinstance(tmp, str) is True:
+            try:
+                tmp = json.loads(tmp)
+            except json.JSONDecodeError:
+                obj = '%s, menu:%s' % (obj, menu)
+                return obj
+
+        if type(tmp) in (list, dict):
+            for k, v in func(tmp):
+                tmp[k] = _analyse_error_info(v, func, menu)
+
+        return tmp
 
     def _generate_operation_name(obj, ope_name, now):
 
@@ -326,6 +342,10 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
 
                     elif len(status_code) == 0:
                         status_code = '999-99999'
+
+                    # エラーメッセージにメニュー名(REST)を付与
+                    func = lambda x: x.items() if isinstance(x, dict) else enumerate(x)
+                    msg = _analyse_error_info(msg, func, menu)
 
                     if isinstance(msg, list):
                         log_msg_args = msg

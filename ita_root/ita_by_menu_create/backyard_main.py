@@ -2186,6 +2186,7 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
     # テーブル名
     t_menu_other_link = 'T_MENU_OTHER_LINK'
     t_menu_reference_item = 'T_MENU_REFERENCE_ITEM'
+    v_menu_reference_item = 'V_MENU_REFERENCE_ITEM'
 
     try:
         # 「他メニュー連携」テーブルで対象のメニューIDのレコードを取得
@@ -2238,7 +2239,19 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
                         "LAST_UPDATE_USER": g.get('USER_ID')
                     }
                     primary_key_name = 'REFERENCE_ID'
-                    objdbca.table_insert(t_menu_reference_item, data_list, primary_key_name)
+
+                    target_reference_id = None
+                    ret = objdbca.table_select(v_menu_reference_item, 'WHERE LINK_ID = %s AND MENU_ID = %s AND COLUMN_NAME_REST = %s AND DISUSE_FLAG = %s', [link_id, menu_uuid, column_name_rest, 1])  # noqa: E501
+                    if ret:
+                        target_reference_id = ret[0].get('REFERENCE_ID')
+
+                    if target_reference_id:
+                        # 条件が一致するレコードがある場合は復活処理(カラム表示名のみ更新対象)
+                        data_list["REFERENCE_ID"] = target_reference_id
+                        objdbca.table_update(t_menu_reference_item, data_list, primary_key_name)
+                    else:
+                        # 条件が一致するレコードが無い場合は新規登録
+                        objdbca.table_insert(t_menu_reference_item, data_list, primary_key_name)
 
                     # 表示順序を加算
                     disp_seq_num = int(disp_seq_num) + 10
@@ -2555,6 +2568,30 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
 
         # 対象のメニューIDに紐づいたレコードを廃止
         for menu_id in target_menu_id_list:
+            # 「参照項目」にて対象のレコードを廃止
+            # 廃止レコードのUUIDを特定するため、VIEWから対象レコードを取得
+            ret = objdbca.table_select(v_menu_reference_item, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    reference_id = record.get('REFERENCE_ID')
+                    data = {
+                        'REFERENCE_ID': reference_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_menu_reference_item, data, "REFERENCE_ID")
+
+            # 「他メニュー連携」にて対象のレコードを廃止
+            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+            ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    link_id = record.get('LINK_ID')
+                    data = {
+                        'LINK_ID': link_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_menu_other_link, data, "LINK_ID")
+
             # 「ロール-メニュー紐付管理」にて対象のレコードを廃止
             # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
             ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
@@ -2602,30 +2639,6 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
                         'DISUSE_FLAG': "1"
                     }
                     objdbca.table_update(t_menu_table_link, data, "MENU_TABLE_LINK_ID")
-
-            # 「参照項目」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、VIEWから対象レコードを取得
-            ret = objdbca.table_select(v_menu_reference_item, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    reference_id = record.get('REFERENCE_ID')
-                    data = {
-                        'REFERENCE_ID': reference_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_menu_reference_item, data, "REFERENCE_ID")
-
-            # 「他メニュー連携」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
-            ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    link_id = record.get('LINK_ID')
-                    data = {
-                        'LINK_ID': link_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_menu_other_link, data, "LINK_ID")
 
     except Exception as msg:
         return False, msg

@@ -358,7 +358,7 @@ def _collect_common_menu_create_data(objdbca):
 
     # カラムクラス「プルダウン選択」の選択項目一覧
     pulldown_item_list = []
-    ret = objdbca.table_select(v_menu_other_link, 'ORDER BY MENU_GROUP_ID ASC')
+    ret = objdbca.table_select(v_menu_other_link, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC', [0])
     for record in ret:
         link_id = record.get('LINK_ID')
         menu_id = record.get('MENU_ID')

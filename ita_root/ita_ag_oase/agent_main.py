@@ -154,7 +154,12 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         try:
             sqliteDB.db_connect.execute("BEGIN")
             sqliteDB.insert_events(events, event_collection_settings_enable)
-            g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
+            # イベントが1件以上なら、イベントの中身・取得時間・最終取得時間をsqliteに保存する
+            if len(events) != 0:
+                g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
+            # イベントが0件なら、最終取得時間をsqliteに保存する
+            else:
+                g.applogger.debug(g.appmsg.get_log_message("AGT-10032", []))
         except AppException as e:  # noqa E405
             sqliteDB.db_connect.rollback()
             g.applogger.info(g.appmsg.get_log_message("AGT-10015", []))

@@ -75,12 +75,7 @@ class APIClientCommon:
         self.respons_key = event_settings["RESPONSE_KEY"]
         self.event_id_key = event_settings["EVENT_ID_KEY"] if "EVENT_ID_KEY" in event_settings else None
 
-        # g.applogger.debug("-------------Settings ------------------------")
-        g.applogger.debug("event_collection_nam........{}".format(self.event_collection_settings_name))
-        # g.applogger.debug("respons_list_flag..........{}".format(self.respons_list_flag))
-        # g.applogger.debug("respons_key.................{}".format(self.respons_key))
-        # g.applogger.debug("env.event_id_key............{}".format(self.event_id_key))
-        # g.applogger.debug("env.saved_ids............'{}'".format(self.saved_ids))
+        g.applogger.debug(g.appmsg.get_log_message("AGT-10042", [self.event_collection_settings_name]))
 
     def call_api(self, parameter):
         API_response = None
@@ -134,18 +129,18 @@ class APIClientCommon:
                 raise AppException("AGT-10029", ["HTTP STATUS = {}".format(response.status_code)])
 
             API_response = response.json()
-            g.applogger.debug("Before duplicate check......{}".format(API_response))
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10043", [API_response]))
             respons_json = self.get_new_events(API_response)
-            g.applogger.debug("After duplicate check.......{}".format(respons_json))
+            g.applogger.debug(g.appmsg.get_log_message("AGT-10044", [API_response]))
 
             return respons_json
 
         except requests.exceptions.InvalidJSONError:
-            g.applogger.info("Request data failed due to type error. Check the parameter settings.")
+            g.applogger.info(g.appmsg.get_log_message("AGT-10045", []))
             return API_response
 
         except requests.exceptions.JSONDecodeError:
-            g.applogger.info("Failed because the response was not in JSON format")
+            g.applogger.info(g.appmsg.get_log_message("AGT-10046", []))
             return API_response
 
         except Exception as e:

@@ -58,7 +58,7 @@ class IMAPAuthClient(APIClientCommon):
             return result
 
         except imapclient.exceptions.LoginError:
-            g.applogger.info("Failed to login to mailserver(event_collection_settings_name='{}'). Check login settings.".format(self.event_collection_settings_name))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10033", [self.event_collection_settings_name]))
             return result
         except Exception as e:
             raise AppException("AGT-10028", [e])
@@ -249,14 +249,14 @@ class IMAPAuthClient(APIClientCommon):
                                     try:
                                         item_value = address.decode()
                                     except:
-                                        g.applogger.info("decode adress error1:{}".format(address))
+                                        g.applogger.info(g.appmsg.get_log_message("AGT-10034", [address]))
                                         item_value = address
                                 item_value_list.append(str(item_value))
                         else:
                             try:
                                 item_value = _tupple_address.decode()
                             except:
-                                g.applogger.info("decode adress error2:{}".format(_tupple_address))
+                                g.applogger.info(g.appmsg.get_log_message("AGT-10035", [_tupple_address]))
                                 item_value = _tupple_address
                             item_value_list.append(str(item_value))
 
@@ -305,7 +305,7 @@ class IMAPAuthClient(APIClientCommon):
         if str.strip(str(row_b)) == '':
             return b
         if type(row_b) not in [bytes, str]:
-            g.applogger.info('cannnot decode(not bytes but {}) {}'.format(type(row_b), row_b))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10036", [type(row_b), row_b]))
             return row_b
 
         try:
@@ -319,7 +319,7 @@ class IMAPAuthClient(APIClientCommon):
             elif cte in {'7bit', '8bit', 'binary'}:
                 b = row_b
         except Exception as e:
-            g.applogger.info('cte decode error({}) {} {} {}'.format(e, cte, _charset, row_b))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10037", [e, cte, _charset, row_b]))
             b = row_b
 
         if type(b) not in [bytes]:
@@ -343,7 +343,7 @@ class IMAPAuthClient(APIClientCommon):
             else:
                 return b.decode("ascii", "ignore")
         except Exception as e:
-            g.applogger.info('charset decode error({}) {} {} {}'.format(e, cte, charset, row_b))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10038", [e, cte, _charset, row_b]))
 
             # 検知してみる
             try:
@@ -354,7 +354,7 @@ class IMAPAuthClient(APIClientCommon):
                 charset = detect['encoding'].lower()
                 return b.decode(charset, "ignore")
             except Exception as e_e:
-                g.applogger.info('charset detect decode error({}) {}'.format(e_e, charset))
+                g.applogger.info(g.appmsg.get_log_message("AGT-10039", [e_e, charset]))
 
             return b
 
@@ -373,12 +373,12 @@ class IMAPAuthClient(APIClientCommon):
                 else:
                     break
             else:
-                g.applogger.info("`begin` line not found")
+                g.applogger.info(g.appmsg.get_log_message("AGT-10040"))
                 return encoded
 
         for line in encoded_lines_iter:
             if not line:
-                g.applogger.info("Truncated input")
+                g.applogger.info(g.appmsg.get_log_message("AGT-10041"))
                 return encoded
             elif line.strip(b' \t\r\n\f') == b'end':
                 break

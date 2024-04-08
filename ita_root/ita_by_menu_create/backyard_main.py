@@ -118,11 +118,15 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(debug_msg)
             main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'initialize')
 
+            # 変数刈取りバックヤード起動フラグ設定
+            set_varslistup_flag(objdbca)
         elif create_type == "3":  # 3: 編集
             debug_msg = g.appmsg.get_log_message("BKY-20019", [menu_create_id, 'edit'])
             g.applogger.debug(debug_msg)
             main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'edit')
 
+            # 変数刈取りバックヤード起動フラグ設定
+            set_varslistup_flag(objdbca)
         else:
             # create_typeが想定外の値
             main_func_result = False
@@ -2799,3 +2803,12 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
         return False, msg
 
     return True, None,
+
+
+def set_varslistup_flag(objdbca):
+    # 変数刈取りバックヤード起動フラグ設定
+    table_name = "T_COMN_PROC_LOADED_LIST"
+    data_list = [{"LOADED_FLG": "0", "ROW_ID": "202"}, {"LOADED_FLG": "0", "ROW_ID": "203"}, {"LOADED_FLG": "0", "ROW_ID": "204"}]
+    primary_key_name = "ROW_ID"
+    for i in data_list:
+        objdbca.table_update(table_name, i, primary_key_name, False)

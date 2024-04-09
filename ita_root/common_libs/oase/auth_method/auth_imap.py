@@ -343,7 +343,7 @@ class IMAPAuthClient(APIClientCommon):
             else:
                 return b.decode("ascii", "ignore")
         except Exception as e:
-            g.applogger.info(g.appmsg.get_log_message("AGT-10038", [e, cte, _charset, row_b]))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10038", [e, cte, charset, row_b]))
 
             # 検知してみる
             try:

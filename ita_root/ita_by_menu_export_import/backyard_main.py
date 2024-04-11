@@ -1655,13 +1655,25 @@ def import_table_and_data(
                         if os.path.isdir(uploadfiles_dir + '/' + menu_id):
                             shutil.rmtree(uploadfiles_dir + '/' + menu_id)
                     rpt.set_time(f"{menu_name_rest}: clear uploadfiles")
+            create_table_flg = True
+        else:
+            # 環境移行モードでテーブル有無の確認
+            tmp_msg = "check information_schema.tables START: {}".format(table_name)
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+
+            chk_table_sql = " SELECT TABLE_NAME FROM information_schema.tables WHERE `TABLE_NAME` = %s "
+            chk_table_rtn = objdbca.sql_execute(chk_table_sql, [table_name])
+            create_table_flg = True if len(chk_table_rtn) == 0 else False
+
+            tmp_msg = "check information_schema.tables END: {}".format(table_name)
+            g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
         # DBデータファイル読み込み
         db_data_path = execution_no_path + '/' + table_name + '.sql'
         jnl_db_data_path = execution_no_path + '/' + table_name + '_JNL.sql'
 
-        # 環境移行モードの場合、データ削除実施
-        if dp_mode == '1':
+        # 環境移行モードの場合、データ削除実施, 環境移行モードでテーブル無しの場合テーブル作成
+        if dp_mode == '1' or (dp_mode == '2' and create_table_flg):
             # 標準メニュー: DELETE TABLE -> データ登録までトランザクション
             # パラメータシート:  データ登録でトランザクション
             if table_name not in imported_table_list:

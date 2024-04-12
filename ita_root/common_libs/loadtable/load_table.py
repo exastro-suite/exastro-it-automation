@@ -2321,8 +2321,7 @@ class loadTable():
                 parameter
         """
         # テーブル情報（カラム、PK取得）
-        column_list = self.get_column_list()
-        primary_key = self.get_primary_key()
+        column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
         # 入力項目 PK以外除外
         err_keys = []
         for tmp_keys in list(parameter.keys()):
@@ -2332,7 +2331,7 @@ class loadTable():
                     input_item = objcol.get(COLNAME_INPUT_ITEM)
                     tmp_col_name = self.get_col_name(tmp_keys)
                     if input_item != '1' and input_item != '3':
-                        if tmp_col_name not in primary_key:
+                        if tmp_col_name not in primary_key_list:
                             if tmp_keys in parameter:
                                 del parameter[tmp_keys]
 
@@ -2348,7 +2347,7 @@ class loadTable():
                                 del parameter[tmp_keys]
 
                     if cmd_type == CMD_DISCARD or cmd_type == CMD_RESTORE:
-                        if tmp_col_name not in primary_key:
+                        if tmp_col_name not in primary_key_list:
                             # 廃止時に備考の更新は例外で可
                             if tmp_col_name != 'NOTE':
                                 if tmp_keys in parameter:

@@ -175,6 +175,7 @@ class DBConnectCommon:
         Arguments:
             file_name: sql file path
         """
+        # #2079 /storage配下ではないので対象外
         with open(file_name, "r") as f:
             sql_list = f.read().split(";\n")
             for sql in sql_list:
@@ -441,10 +442,11 @@ class DBConnectCommon:
 
         res = self.sql_execute(sql, table_name_list)
 
+        res_table_name_list = [ _r.get("TABLE_NAME") for _r in res]
         # select for update no data: insert `t_comn_recode_lock_table` and retry select for update
         if len(res) != len(table_name_list):
             # create insert sql and sql_execute
-            target_table_name = [_tn.get('TABLE_NAME') for _tn in table_name_list if _tn.get('TABLE_NAME') not in res] if res else table_name_list
+            target_table_name = [_tn for _tn in table_name_list if _tn not in res_table_name_list] if res_table_name_list else table_name_list
             prepared_list = list(map(lambda t: "%s", target_table_name))
             sql_values = ["({})".format(_prepared) for _prepared in prepared_list]
             sql = "INSERT INTO `T_COMN_RECODE_LOCK_TABLE` (`TABLE_NAME`) VALUES " + "{};".format(",".join(sql_values))
@@ -453,8 +455,7 @@ class DBConnectCommon:
             # retry select for update
             prepared_list = list(map(lambda t: "%s", target_table_name))
             sql = "SELECT `TABLE_NAME` FROM `T_COMN_RECODE_LOCK_TABLE` WHERE `TABLE_NAME` IN ({}) FOR UPDATE".format(",".join(prepared_list))
-            res = self.sql_execute(sql, table_name_list)
-
+            res = self.sql_execute(sql, target_table_name)
         return res
 
     def prepared_val_escape(self, val):
@@ -586,6 +587,7 @@ class DBConnectCommon:
             'DB_ADMIN_USER': g.db_connect_info.get('ORGDB_ADMIN_USER'),
             'DB_ADMIN_PASSWORD': g.db_connect_info.get('ORGDB_ADMIN_PASSWORD'),
             'DB_DATABASE': g.db_connect_info.get('ORGDB_DATABASE'),
+            'MONGO_OWNER': g.db_connect_info.get('ORG_MONGO_OWNER'),
             'MONGO_CONNECTION_STRING': g.db_connect_info.get('ORG_MONGO_CONNECTION_STRING'),
             'MONGO_ADMIN_USER': g.db_connect_info.get('ORG_MONGO_ADMIN_USER'),
             'MONGO_ADMIN_PASSWORD': g.db_connect_info.get('ORG_MONGO_ADMIN_PASSWORD'),

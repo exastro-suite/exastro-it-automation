@@ -16,6 +16,7 @@ import datetime
 import json
 
 from bson.objectid import ObjectId
+from common_libs.oase.const import oaseConst
 from common_libs.common.mongoconnect.collection_base import CollectionBase
 
 
@@ -72,27 +73,27 @@ class LabeledEventCollection(CollectionBase):
             return int(datetime.datetime.strptime(tmp_value, '%Y/%m/%d %H:%M:%S').timestamp())
 
         if collection_item_name == "labels._exastro_timeout":
-            if value == "時間切れ":
+            if value == oaseConst.DF_EVENT_STATUS_TIMEOUT:  # 時間切れ
                 return "1"
             else:
                 return "0"
 
         if collection_item_name == "labels._exastro_evaluated":
-            if value == "ルールマッチ済み":
+            if value == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 判定済み
                 return "1"
             else:
                 return "0"
 
         if collection_item_name == "labels._exastro_undetected":
-            if value == "未知イベント":
+            if value == oaseConst.DF_EVENT_STATUS_UNDETECTED:  # 未知
                 return "1"
             else:
                 return "0"
 
         if collection_item_name == "labels._exastro_type":
-            if value == "イベント":
+            if value == oaseConst.DF_EVENT_TYPE_EVENT:  # イベント
                 return "event"
-            elif value == "再評価":
+            elif value == oaseConst.DF_EVENT_TYPE_CONCLUSION:  # 結論イベント
                 return "conclusion"
 
         if collection_item_name == "exastro_events":
@@ -126,28 +127,28 @@ class LabeledEventCollection(CollectionBase):
         return {rest_key_name: value}
 
     def __create_exastro_event_status_search_value(self, item):
-        if item == "検討中":
+        if item == oaseConst.DF_EVENT_STATUS_NEW:  # 検討中
             return {
                 "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "0"
             }
 
-        elif item == "時間切れ":
+        elif item == oaseConst.DF_EVENT_STATUS_TIMEOUT:  # 時間切れ
             return {
                 "labels._exastro_timeout": "1",
                 "labels._exastro_evaluated": "0",
                 "labels._exastro_undetected": "0"
             }
 
-        elif item == "ルールマッチ済み":
+        elif item == oaseConst.DF_EVENT_STATUS_EVALUATED:  # 判定済み
             return {
                 "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "1",
                 "labels._exastro_undetected": "0"
             }
 
-        elif item == "未知イベント":
+        elif item == oaseConst.DF_EVENT_STATUS_UNDETECTED:  # 未知
             return {
                 "labels._exastro_timeout": "0",
                 "labels._exastro_evaluated": "0",
@@ -162,16 +163,16 @@ class LabeledEventCollection(CollectionBase):
         # イベント状態の判定で使用するマップ。
         # 判定する値は左から_exastro_timeout, _exastro_evaluated, _exastro_undetectedの順に文字列結合する想定。
         event_status_map = {
-            "000": "検討中",
-            "001": "未知イベント",
-            "010": "ルールマッチ済み",
-            "100": "時間切れ"
+            "000": oaseConst.DF_EVENT_STATUS_NEW,  # 検討中
+            "001": oaseConst.DF_EVENT_STATUS_UNDETECTED,  # 未知
+            "010": oaseConst.DF_EVENT_STATUS_EVALUATED,  # 判定済み
+            "100": oaseConst.DF_EVENT_STATUS_TIMEOUT  # 時間切れ
         }
 
         # イベント種別の判定で使用するマップ
         event_type_map = {
-            "event": "イベント",
-            "conclusion": "再評価"
+            "event": oaseConst.DF_EVENT_TYPE_EVENT,
+            "conclusion": oaseConst.DF_EVENT_TYPE_CONCLUSION
         }
 
         # labels配下の特定項目は一段上に引き上げる必要がある。

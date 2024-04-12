@@ -58,12 +58,10 @@ def make_response(data=None, msg="", result_code="000-00000", status_code=200, t
     if result_code == "000-00000":
         res_body["data"] = data
 
-    log_status = "success" if result_code == "000-00000" else "error"
+    log_status = "SUCCESS" if result_code == "000-00000" else "FAILURE"
 
-    # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
-    if is_db_disuse() is False:
-        g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
-        g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
+    g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
+    g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
 
     return res_body, status_code
 
@@ -104,9 +102,9 @@ def app_exception_response(e, exception_log_need=False):
     # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
     if is_db_disuse() is False or exception_log_need is True:
         if status_code == 500:
-            g.applogger.error("[ts={}][error] {}".format(api_timestamp, log_msg))
+            g.applogger.error("[ts={}] {}".format(api_timestamp, log_msg))
         else:
-            g.applogger.info("[ts={}][error] {}".format(api_timestamp, log_msg))
+            g.applogger.info("[ts={}] {}".format(api_timestamp, log_msg))
 
     return make_response(None, api_msg, result_code, status_code)
 
@@ -138,8 +136,7 @@ def exception_response(e, exception_log_need=False):
     if is_db_disuse() is False or exception_log_need is True:
         # catch - other all error
         t = traceback.format_exc()
-        # g.applogger.exception("[error][ts={}]".format(api_timestamp))
-        g.applogger.error("[ts={}][error] {}".format(api_timestamp, arrange_stacktrace_format(t)))
+        g.applogger.error("[ts={}] {}".format(api_timestamp, arrange_stacktrace_format(t)))
 
     api_msg = g.appmsg.get_api_message("999-99999")
     return make_response(None, api_msg, "999-99999", 500)

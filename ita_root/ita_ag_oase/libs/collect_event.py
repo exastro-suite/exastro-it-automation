@@ -28,25 +28,31 @@ from common_libs.oase.encrypt import agent_decrypt
 ######################################################
 def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=None):
     events = []
+    event_collection_settings_enable = []  # イベント収集対象が収集可能な状態かどうか（eventの保存の可否に利用する）
     pass_phrase = g.ORGANIZATION_ID + " " + g.WORKSPACE_ID
 
     for setting in event_collection_settings:
         setting["LAST_FETCHED_TIMESTAMP"] = last_fetched_timestamps[setting["EVENT_COLLECTION_SETTINGS_NAME"]]
+        event_collection_settings_enable_single = {}
 
-        # メールの重複取得防止のため、event_collection_settings_nameに対応するmessage_idをDBから取得し、settingsに加える
-        if setting["CONNECTION_METHOD_ID"] == "4":
-            try:
-                sqliteDB.db_cursor.execute(
-                    "SELECT id FROM events WHERE event_collection_settings_name=?",
-                    (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
-                )
-                message_ids = sqliteDB.db_cursor.fetchall()
-                message_ids = [item[0] for item in message_ids]
-            except sqlite3.OperationalError:  # テーブルがまだ作成されていない時の例外処理
-                message_ids = []
-            setting["MESSAGE_IDS"] = message_ids
+        # 重複取得防止のため、event_collection_settings_nameに対応するidリストをDBから取得し、settingsに加える
+        try:
+            sqliteDB.db_cursor.execute(
+                "SELECT id FROM events WHERE event_collection_settings_name=? and id is not null",
+                (setting["EVENT_COLLECTION_SETTINGS_NAME"], )
+            )
+            saved_ids = sqliteDB.db_cursor.fetchall()
+            saved_ids = [item[0] for item in saved_ids]
+        except sqlite3.OperationalError:  # テーブルがまだ作成されていない時の例外処理
+            saved_ids = []
+        setting["SAVED_IDS"] = saved_ids
 
         fetched_time = datetime.datetime.now()  # API取得時間
+
+        # イベント収集設定名とfetched_timeをevent_collection_settings_enable_singleに追加する
+        event_collection_settings_enable_single["name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
+        event_collection_settings_enable_single["fetched_time"] = int(fetched_time.timestamp())
+        event_collection_settings_enable_single["is_save"] = True
 
         # パスワードカラムを複合化しておく
         setting['AUTH_TOKEN'] = agent_decrypt(setting['AUTH_TOKEN'], pass_phrase)
@@ -62,9 +68,14 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         except AppException as e:
             g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)
+            event_collection_settings_enable_single["is_save"] = False
+
+        # イベント収集数をevent_collection_settings_enable_singleに追加する
+        event_collection_settings_enable_single["len"] = len(json_data)
+        event_collection_settings_enable.append(event_collection_settings_enable_single)
 
         # イベントが0件の場合はスキップ
-        if json_data in [{}, []]:
+        if event_collection_settings_enable_single["len"] == 0:
             continue
 
         # 設定で指定したキーの値を取得
@@ -73,12 +84,16 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             continue
 
-        # RESPONSE_KEYの値がリスト形式ではない場合、そのまま辞書に格納する
-        if setting["RESPONSE_LIST_FLAG"] == 0:
+        # RESPONSE_LIST_FLAGの値がリスト形式ではない場合、そのまま辞書に格納する
+        if setting["RESPONSE_LIST_FLAG"] == "0":
+            # 値がリスト形式かチェック
+            if isinstance(json_data, list) is True:
+                g.applogger.info(g.appmsg.get_log_message("AGT-10031", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
+                continue
             event = init_label(json_data, fetched_time, setting)
             events.append(event)
 
-        # RESPONSE_KEYの値がリスト形式の場合、1つずつ辞書に格納
+        # RESPONSE_LIST_FLAの値がリスト形式の場合、1つずつ辞書に格納
         else:
             # 値がリスト形式かチェック
             if isinstance(json_data, list) is False:
@@ -88,17 +103,16 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
                 event = init_label(data, fetched_time, setting)
                 events.append(event)
 
-    return events
+    return events, event_collection_settings_enable
 
 
 def init_label(data, fetched_time, setting):
     event = {}
     event = data
+    event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
     event["_exastro_event_collection_settings_id"] = setting["EVENT_COLLECTION_SETTINGS_ID"]
     event["_exastro_fetched_time"] = int(fetched_time.timestamp())
     event["_exastro_end_time"] = int((fetched_time + datetime.timedelta(seconds=setting["TTL"])).timestamp())
-    event["_exastro_type"] = "event"
-    event["_exastro_event_collection_settings_name"] = setting["EVENT_COLLECTION_SETTINGS_NAME"]
 
     return event
 

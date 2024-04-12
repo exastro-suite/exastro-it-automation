@@ -1,0 +1,8 @@
+- name: Insert or replace text blocks.
+  blockinfile:
+    path: "{{ ITA_DFLT_file_path }}"
+    marker: "{{ ITA_DFLT_block_marker | default(omit) }}"
+    state: "{{ ITA_DFLT_block_state | default('present') }}"
+    insertafter: "{{ ITA_DFLT_insertafter | default(omit) }}"
+    block: |
+      {{ ITA_DFLT_block_string | default(omit) }}

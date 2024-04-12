@@ -38,19 +38,21 @@ def check_terraform_organization(organization_id, workspace_id, tf_organization_
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'organization_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'organization_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    data, msg = terraform_cloud_ep.check_organization(objdbca, tf_organization_name)
-
+        data, msg = terraform_cloud_ep.check_organization(objdbca, tf_organization_name)
+    finally:
+        objdbca.db_disconnect()
     return data, msg
 
 
@@ -74,19 +76,21 @@ def check_terraform_workspace(organization_id, workspace_id, tf_organization_nam
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'workspace_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'workspace_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    data, msg = terraform_cloud_ep.check_workspace(objdbca, tf_organization_name, tf_workspace_name)
-
+        data, msg = terraform_cloud_ep.check_workspace(objdbca, tf_organization_name, tf_workspace_name)
+    finally:
+        objdbca.db_disconnect()
     return data, msg
 
 
@@ -108,24 +112,26 @@ def create_terraform_organization(organization_id, workspace_id, body=None):  # 
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'organization_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'organization_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameters = {"tf_organization_name": "", "email_address": ""}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameters = body
+        parameters = {"tf_organization_name": "", "email_address": ""}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameters = body
 
-    data = terraform_cloud_ep.create_organization(objdbca, parameters)
-
+        data = terraform_cloud_ep.create_organization(objdbca, parameters)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -149,24 +155,26 @@ def create_terraform_workspace(organization_id, workspace_id, tf_organization_na
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'workspace_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'workspace_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameters = {"workspace_name": "", "terraform_version": ""}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameters = body
+        parameters = {"workspace_name": "", "terraform_version": ""}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameters = body
 
-    data = terraform_cloud_ep.create_workspace(objdbca, tf_organization_name, parameters)
-
+        data = terraform_cloud_ep.create_workspace(objdbca, tf_organization_name, parameters)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -188,19 +196,21 @@ def delete_terraform_organization(organization_id, workspace_id, tf_organization
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'organization_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'organization_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    data = terraform_cloud_ep.delete_organization(objdbca, tf_organization_name)
-
+        data = terraform_cloud_ep.delete_organization(objdbca, tf_organization_name)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -224,20 +234,22 @@ def delete_terraform_policy(organization_id, workspace_id, tf_organization_name,
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 連携先TerraformからPolicyを削除
-    data = terraform_cloud_ep.delete_policy(objdbca, tf_organization_name, policy_name)
-
+        # 連携先TerraformからPolicyを削除
+        data = terraform_cloud_ep.delete_policy(objdbca, tf_organization_name, policy_name)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -261,20 +273,22 @@ def delete_terraform_policy_set(organization_id, workspace_id, tf_organization_n
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 連携先TerraformからPolicyを削除
-    data = terraform_cloud_ep.delete_policy_set(objdbca, tf_organization_name, policy_set_name)
-
+        # 連携先TerraformからPolicyを削除
+        data = terraform_cloud_ep.delete_policy_set(objdbca, tf_organization_name, policy_set_name)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -300,20 +314,22 @@ def delete_terraform_policy_set_relationship_policy(organization_id, workspace_i
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # PolicySetからPolicyの紐付け削除
-    data = terraform_cloud_ep.policy_set_remove_policy(objdbca, tf_organization_name, policy_set_name, policy_name)
-
+        # PolicySetからPolicyの紐付け削除
+        data = terraform_cloud_ep.policy_set_remove_policy(objdbca, tf_organization_name, policy_set_name, policy_name)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -339,20 +355,22 @@ def delete_terraform_policy_set_relationship_workspace(organization_id, workspac
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # PolicySetからWorkspaceの紐付け削除
-    data = terraform_cloud_ep.policy_set_remove_workspace(objdbca, tf_organization_name, policy_set_name, tf_workspace_name)
-
+        # PolicySetからWorkspaceの紐付け削除
+        data = terraform_cloud_ep.policy_set_remove_workspace(objdbca, tf_organization_name, policy_set_name, tf_workspace_name)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -376,19 +394,21 @@ def delete_terraform_workspace(organization_id, workspace_id, tf_organization_na
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'workspace_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'workspace_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    data = terraform_cloud_ep.delete_workspace(objdbca, tf_organization_name, tf_workspace_name)
-
+        data = terraform_cloud_ep.delete_workspace(objdbca, tf_organization_name, tf_workspace_name)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -408,20 +428,22 @@ def get_terraform_organization_list(organization_id, workspace_id):  # noqa: E50
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # Organization一覧の取得
-    data = terraform_cloud_ep.get_organization_list(objdbca)
-
+        # Organization一覧の取得
+        data = terraform_cloud_ep.get_organization_list(objdbca)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -447,25 +469,27 @@ def get_terraform_policy_file(organization_id, workspace_id, tf_organization_nam
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameters = {"download_path": ""}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameters = body
+        parameters = {"download_path": ""}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameters = body
 
-    # Policyコードの取得
-    data = terraform_cloud_ep.get_policy_file(objdbca, tf_organization_name, policy_name, parameters)
-
+        # Policyコードの取得
+        data = terraform_cloud_ep.get_policy_file(objdbca, tf_organization_name, policy_name, parameters)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -485,20 +509,22 @@ def get_terraform_policy_list(organization_id, workspace_id):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # Policy一覧の取得
-    data = terraform_cloud_ep.get_policy_list(objdbca)
-
+        # Policy一覧の取得
+        data = terraform_cloud_ep.get_policy_list(objdbca)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -518,20 +544,22 @@ def get_terraform_policy_set_list(organization_id, workspace_id):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'linked_terraform_management'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'linked_terraform_management'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['24']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['24']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # PolicySet一覧の取得
-    data = terraform_cloud_ep.get_policy_set_list(objdbca)
-
+        # PolicySet一覧の取得
+        data = terraform_cloud_ep.get_policy_set_list(objdbca)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -551,20 +579,22 @@ def get_terraform_workspace_list(organization_id, workspace_id):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'workspace_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'workspace_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # Workspace一覧の取得
-    data = terraform_cloud_ep.get_workspace_list(objdbca)
-
+        # Workspace一覧の取得
+        data = terraform_cloud_ep.get_workspace_list(objdbca)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -588,23 +618,26 @@ def update_terraform_organization(organization_id, workspace_id, tf_organization
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'organization_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'organization_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameters = {"email_address": ""}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameters = body
+        parameters = {"email_address": ""}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameters = body
 
-    data = terraform_cloud_ep.update_organization(objdbca, tf_organization_name, parameters)
+        data = terraform_cloud_ep.update_organization(objdbca, tf_organization_name, parameters)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -630,21 +663,24 @@ def update_terraform_workspace(organization_id, workspace_id, tf_organization_na
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    menu = 'workspace_list_terraform_cloud_ep'
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        menu = 'workspace_list_terraform_cloud_ep'
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['0']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    parameters = {"terraform_version": ""}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameters = body
+        parameters = {"terraform_version": ""}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameters = body
 
-    data = terraform_cloud_ep.update_workspace(objdbca, tf_organization_name, tf_workspace_name, parameters)
+        data = terraform_cloud_ep.update_workspace(objdbca, tf_organization_name, tf_workspace_name, parameters)
+    finally:
+        objdbca.db_disconnect()
     return data,

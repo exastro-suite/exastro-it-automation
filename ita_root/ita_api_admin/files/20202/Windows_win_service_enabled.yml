@@ -1,0 +1,8 @@
+# This Playbook file changes the boot mode for services specified by "ITA_DFLT_Service_Name" to automatic.
+# "Ita_DFLT_Service_Name" can specify multiple service names (list type).
+- name: Automatic startup settings for Windows services
+  ansible.windows.win_service:
+    name: "{{ item }}"
+    start_mode: auto
+  with_items:
+    - "{{ ITA_DFLT_Service_Name }}"

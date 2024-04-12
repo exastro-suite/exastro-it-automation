@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (ahostsv6)
+  getent:
+    database: ahostsv6
+  register: ITA_DFLT_getent_ahostsv6

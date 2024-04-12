@@ -970,11 +970,16 @@ export function messageid_en() {
         'FTE13022': function( num ){ return `Last ${num} week${(num>1)?'s':''}`},
         'FTE13023': function( num ){ return `Last ${num} month${(num>1)?'s':''}`},
         'FTE13024': function( num ){ return `Last ${num} year${(num>1)?'s':''}`},
-        'FTE13025': '',
-        'FTE13026': '',
-        'FTE13027': '',
-        'FTE13028': '',
-        'FTE13029': '',
+        'FTE13025': 'RAW Event Data',
+        'FTE13026': 'Event information',
+        'FTE13027': 'OFF',
+        'FTE13028': function( sec ){ return `${sec}sec`},
+        'FTE13029': 'Auto Update',
+        'FTE13030': 'Rule',
+        'FTE13031': '',
+        'FTE13032': '',
+        'FTE13033': '',
+        'FTE13034': '',
 
     };
 

@@ -29,8 +29,10 @@ import requests
 import json
 import shutil
 import traceback
+from urllib.parse import urlparse
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
+from common_libs.common.storage_access import storage_base, storage_write, storage_write_text, storage_read_text
 
 
 def ky_encrypt(lcstr, input_encrypt_key=None):
@@ -80,22 +82,23 @@ def ky_file_encrypt(src_file, dest_file):
         is success:(bool)
     """
     try:
-        # ファイルオープン
-        fsrc = open(src_file)
-
         # ファイル読み込み
-        lcstr = Path(src_file).read_text(encoding="utf-8")
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        r_obj = storage_read_text()
+        lcstr = r_obj.read_text(src_file,encoding="utf-8")
 
         # エンコード関数呼び出し
         enc_data = ky_encrypt(lcstr)
 
         # ファイル書き込み
-        Path(dest_file).write_text(enc_data, encoding="utf-8")
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        w_obj = storage_write_text()
+        w_obj.write_text(dest_file, enc_data, encoding="utf-8")
+
     except Exception:
         return False
     finally:
-        # ファイルクローズ
-        fsrc.close()
+        pass
 
     return True
 
@@ -111,22 +114,23 @@ def ky_file_decrypt(src_file, dest_file):
         is success:(bool)
     """
     try:
-        # ファイルオープン
-        fsrc = open(src_file)
-
         # ファイル読み込み
-        lcstr = Path(src_file).read_text(encoding="utf-8")
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        r_obj = storage_read_text()
+        lcstr = r_obj.read_text(src_file,encoding="utf-8")
 
         # デコード関数呼び出し
         enc_data = ky_decrypt(lcstr)
 
         # ファイル書き込み
-        Path(dest_file).write_text(enc_data, encoding="utf-8")
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        w_obj = storage_write_text()
+        w_obj.write_text(dest_file, enc_data, encoding="utf-8")
+
     except Exception:
         return False
     finally:
-        # ファイルクローズ
-        fsrc.close()
+        pass
 
     return True
 
@@ -252,15 +256,32 @@ def file_encode(file_path):
     Returns:
         Encoded string
     """
-    try:
-        is_file = os.path.isfile(file_path)
-        if not is_file:
-            return ""
 
-        with open(file_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except Exception:
-        return False
+    is_file = os.path.isfile(file_path)
+    if not is_file:
+        return ""
+
+    # #2079 /storage配下は/tmpを経由してアクセスする
+    obj = storage_base()
+    storage_flg = obj.path_check(file_path)
+    if storage_flg is True:
+        # /storage
+        tmp_file_path = obj.make_temp_path(file_path)
+        # /storageから/tmpにコピー
+        shutil.copy2(file_path, tmp_file_path)
+    else:
+        # not /storage
+        tmp_file_path = file_path
+    # ファイル読み込み
+    with open(tmp_file_path, "rb") as f:
+        read_value = base64.b64encode(f.read()).decode()
+    f.close()
+
+    if storage_flg is True:
+        if os.path.isfile(tmp_file_path) is True:
+            os.remove(tmp_file_path)
+
+    return read_value
 
 
 def file_decode(file_path):
@@ -272,17 +293,33 @@ def file_decode(file_path):
     Returns:
         Encoded string
     """
-    try:
-        is_file = os.path.isfile(file_path)
-        if not is_file:
-            return ""
+    is_file = os.path.isfile(file_path)
+    if not is_file:
+        return ""
 
-        with open(file_path, "rb") as f:
-            text = f.read().decode()
-        text_decrypt = ky_decrypt(text)
-        return base64.b64encode(text_decrypt.encode()).decode()
-    except Exception:
-        return False
+    # #2079 /storage配下は/tmpを経由してアクセスする
+    obj = storage_base()
+    storage_flg = obj.path_check(file_path)
+    if storage_flg is True:
+        # /storage
+        tmp_file_path = obj.make_temp_path(file_path)
+        # /storageから/tmpにコピー
+        shutil.copy2(file_path, tmp_file_path)
+    else:
+        # not /storage
+        tmp_file_path = file_path
+
+    with open(tmp_file_path, "rb") as f:
+        text = f.read().decode()
+    f.close()
+
+    if storage_flg is True:
+        # /tmpゴミ掃除
+        if os.path.isfile(tmp_file_path) is True:
+            os.remove(tmp_file_path)
+
+    text_decrypt = ky_decrypt(text)
+    return base64.b64encode(text_decrypt.encode()).decode()
 
 
 def get_upload_file_path(workspace_id, menu_id, uuid, column_name_rest, file_name, uuid_jnl):
@@ -354,12 +391,14 @@ def upload_file(file_path, text):
         os.makedirs(path)
 
     try:
-        with open(file_path, "bx") as f:
-            f.write(text)
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        fd = obj.open(file_path, "bx")
+        obj.write(text)
+        obj.close()
+
     except Exception:
         return False
-
-    f.close
 
     return True
 
@@ -386,8 +425,12 @@ def encrypt_upload_file(file_path, text):
         os.makedirs(path)
 
     try:
-        with open(file_path, "w") as f:
-            f.write(text)
+        # #2079 /storage配下は/tmpを経由してアクセスする
+        obj = storage_write()
+        fd = obj.open(file_path, "w")
+        obj.write(text)
+        obj.close()
+
     except Exception:
         return False
 
@@ -664,6 +707,7 @@ def create_dirs(config_file_path, dest_dir):
     Returns:
         is success:(bool)
     """
+    # #2079 /storage配下ではないので対象外
     with open(config_file_path) as f:
         lines = f.readlines()
 
@@ -687,6 +731,7 @@ def put_uploadfiles(config_file_path, src_dir, dest_dir):
     Returns:
         is success:(bool)
     """
+    # #2079 /storage配下ではないので対象外
     with open(config_file_path, 'r') as material_conf_json:
         material_conf = json.load(material_conf_json)
         for menu_id, file_info_list in material_conf.items():
@@ -737,3 +782,31 @@ def get_maintenance_mode_setting():
     maintenance_mode = response_data.get('data')
 
     return maintenance_mode
+
+
+def url_check(url_string, scheme='', path=False, params=False, query=False, fragment=False, username=False, password=False, port=False):
+    # urlを解析
+    try:
+        parse_obj = urlparse(url_string, scheme='', allow_fragments=True)
+
+        assert len(parse_obj.scheme) > 0, "scheme"
+        assert len(parse_obj.netloc) > 0, "netloc"  # ネットワーク上の位置（hostname:port）
+        assert parse_obj.hostname is not None, "hostname"  # ホスト名 (小文字)
+        if path is True:
+            assert  len(parse_obj.path) > 0, "path"  # 階層的パス
+        if params is True:
+            assert len(parse_obj.params) > 0, "params"  # 最後のパス要素に対するパラメータ
+        if query is True:
+            assert len(parse_obj.query) > 0, "query"  # クエリ要素
+        if fragment is True:
+            assert len(parse_obj.fragment) > 0, "fragment"  # フラグメント識別子
+        if username is True:
+            assert parse_obj.username is not None, "username"  # ユーザ名
+        if password is True:
+            assert parse_obj.password is not None, "password"  # パスワード
+        if port is True:
+            assert parse_obj.port is not None, "port"  # ポート番号を表わす整数 (もしあれば)
+    except Exception as e:
+        return False, e
+
+    return True, parse_obj

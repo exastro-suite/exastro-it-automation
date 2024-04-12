@@ -1,0 +1,4 @@
+- name: A wrapper to the unix getent utility (shadow)
+  getent:
+    database: shadow
+  register: ITA_DFLT_getent_shadow

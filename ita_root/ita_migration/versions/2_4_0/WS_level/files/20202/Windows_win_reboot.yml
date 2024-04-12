@@ -1,0 +1,5 @@
+# This Playbook file reboots the Target host.
+# The user can specify timeout time with "ITA_DFLT_Reboot_Timeout".
+- name: Reboot a windows machine
+  win_reboot:
+    reboot_timeout: "{{ ITA_DFLT_Reboot_Timeout | default(600) }}"

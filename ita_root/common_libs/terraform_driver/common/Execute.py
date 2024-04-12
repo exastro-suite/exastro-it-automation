@@ -19,6 +19,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.terraform_driver.common.Const import Const as TFCommonConst
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
+from common_libs.common import storage_access
 import os
 import json
 import pathlib
@@ -209,6 +210,9 @@ def get_execution_info(objdbca, target, execution_no):
     """
     base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
     execution_list_menu_name_rest = target['execution_list']
+    
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read_text = storage_access.storage_read_text()
 
     # 該当の作業管理を取得(ID変換のためloadTableで取得)
     objmenu = load_table.loadTable(objdbca, execution_list_menu_name_rest)  # noqa: F405
@@ -264,12 +268,12 @@ def get_execution_info(objdbca, target, execution_no):
         for log in list_log:
             log_file_path = path + '/out/' + log
             if os.path.isfile(log_file_path):
-                lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+                lcstr = file_read_text.read_text(log_file_path)
                 execution_info['progress']['execution_log']['exec_log'][log] = lcstr
 
     log_file_path = path + '/out/error.log'
     if os.path.isfile(log_file_path):
-        lcstr = pathlib.Path(log_file_path).read_text(encoding="utf-8")
+        lcstr = file_read_text.read_text(log_file_path)
         execution_info['progress']['execution_log']['error_log'] = lcstr
 
     # 状態監視周期・進行状態表示件数

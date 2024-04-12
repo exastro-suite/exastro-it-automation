@@ -48,6 +48,7 @@ def external_valid_menu_before(objdbca, objtable, option):
                 tf_data_binary = base64.b64decode(tf_data)
                 tf_data_decoded = tf_data_binary.decode('utf-8')
                 filepath_tmp = "%s/80105_tf_file_%s.tf" % (temp_dir, os.getpid())
+                #  #2079 /storage配下ではないので対象外
                 with open(filepath_tmp, "w") as fd:
                     fd.write(tf_data_decoded)
 

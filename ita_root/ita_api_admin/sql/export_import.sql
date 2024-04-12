@@ -7,8 +7,10 @@ CREATE TABLE T_MENU_EXPORT_IMPORT
     MODE                            VARCHAR(40),                                -- モード
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     SPECIFIED_TIME                  DATETIME(6)  ,                              -- 指定時刻
-    FILE_NAME                       VARCHAR(64),                                -- ファイル名
+    FILE_NAME                       VARCHAR(255),                               -- ファイル名
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
+    LANGUAGE                        VARCHAR(40),                                -- 言語
+    EXEC_LOG                        TEXT,                                       -- 実行ログ
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -27,8 +29,10 @@ CREATE TABLE T_MENU_EXPORT_IMPORT_JNL
     MODE                            VARCHAR(40),                                -- モード
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     SPECIFIED_TIME                  DATETIME(6)  ,                              -- 指定時刻
-    FILE_NAME                       VARCHAR(64),                                -- ファイル名
+    FILE_NAME                       VARCHAR(255),                               -- ファイル名
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
+    LANGUAGE                        VARCHAR(40),                                -- 言語
+    EXEC_LOG                        TEXT,                                       -- 実行ログ
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目
     DISUSE_FLAG                     VARCHAR(1)  ,                               -- 廃止フラグ
     LAST_UPDATE_TIMESTAMP           DATETIME(6)  ,                              -- 最終更新日時
@@ -46,7 +50,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT
     EXECUTION_TYPE                  VARCHAR(40),                                -- 処理種別
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
-    FILE_NAME                       VARCHAR(64),                                -- ファイル名
+    FILE_NAME                       VARCHAR(255),                               -- ファイル名
     LANGUAGE                        VARCHAR(40),                                -- 言語
     RESULT_FILE                     VARCHAR(64),                                -- 結果
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目
@@ -66,7 +70,7 @@ CREATE TABLE T_BULK_EXCEL_EXPORT_IMPORT_JNL
     EXECUTION_TYPE                  VARCHAR(40),                                -- 処理種別
     ABOLISHED_TYPE                  VARCHAR(40),                                -- 廃止情報
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
-    FILE_NAME                       VARCHAR(64),                                -- ファイル名
+    FILE_NAME                       VARCHAR(255),                               -- ファイル名
     LANGUAGE                        VARCHAR(40),                                -- 言語
     RESULT_FILE                     VARCHAR(64),                                -- 結果
     JSON_STORAGE_ITEM               LONGTEXT,                                   -- JSON格納用項目

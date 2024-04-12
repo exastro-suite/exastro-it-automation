@@ -1,0 +1,7 @@
+# This Playbook file updates Windows.
+# Note that as this Playbook file does not contain variables that can be externally controlled,
+# we do not recommend using it linked to a Movement alone, but together with other Playbook files.
+- name: Download and install Windows updates and restart（all）
+  ansible.windows.win_updates:
+    category_names: '*'
+    reboot: true

@@ -1,0 +1,6 @@
+- name: Recursively remove directory or remove file
+  win_file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ ITA_DFLT_Remove_File_or_Directory }}"

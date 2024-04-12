@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.3.0';
+    const version = '2.4.0';
 
     // AbortController
     const controller = new AbortController();
@@ -459,6 +459,29 @@ jsonStringifyDelimiterSpace: function(vContent) {
 */
 regexpEscape: function( value ) {
     return value.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+},
+/*
+##################################################
+   改行コードをエスケープ
+##################################################
+*/
+nlcEscape: function( value ) {
+    if (this.typeof( value ) === 'string') {
+        const code = [
+            ['\b', '\\b'],
+            ['\t', '\\t'],
+            ['\n', '\\n'],
+            ['\f', '\\f'],
+            ['\r', '\\r']
+        ];
+        for ( var i = 0; i < code.length; i++ ) {
+            value = value.replace( new RegExp( code[i][0], 'g'), code[i][1] );
+        }
+        // value = value.replace(/\\[anrfRtvsSdDwWlLuU0]/g, '\\$&');
+        return value;
+    } else {
+        return value;
+    }
 },
 /*
 ##################################################
@@ -2126,9 +2149,11 @@ html: {
 
         if ( !labelData ) labelData = [];
 
+        // 文字列の場合はパースする
+        labels = ( cmn.typeof( labels ) === 'string')? cmn.jsonParse( labels, 'array'): labels;
+
         // ラベルリストの形式
-        if ( cmn.typeof( labels ) === 'string') {
-            labels = cmn.jsonParse( labels, 'array');
+        if ( cmn.typeof( labels ) === 'array') {
             for ( const label of labels ) {
                 if ( label.length === 2 ) {
                     html.push( this.labelHtml( labelData, label[0], label[1] ) );
@@ -2136,7 +2161,7 @@ html: {
                     html.push( this.labelHtml( labelData, label[0], label[2], label[1] ) );
                 }
             }
-        } else {
+        } else if ( cmn.typeof( labels ) === 'object') {
             for ( const key in labels ) {
                 html.push( this.labelHtml( labelData, key, labels[ key ] ) );
             }
@@ -2153,11 +2178,19 @@ html: {
             return key === item.parameter.label_key_name;
         });
 
+        const exastroLabelColor = '#CCC'; // _exastro_xxxラベル
+        const defaultLabelColor = '#002B62'; // ラベル設定の無いラベル
+
+        const color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code:
+            ( key.indexOf('_exastro_') === 0 )? exastroLabelColor: defaultLabelColor;
+
         const
-        color = ( label && label.parameter && label.parameter.color_code )? label.parameter.color_code: '#002B62',
         keyColor = cmn.blackOrWhite( color, 1 ),
         conColor = cmn.blackOrWhite( color, 1 ),
         valColor = cmn.blackOrWhite( color, .5 );
+
+        // 改行をエスケープ
+        value = cmn.nlcEscape( value );
 
         return ``
         + `<li class="eventFlowLabelItem">`
@@ -2915,9 +2948,13 @@ filterEncode: function( json ) {
     }
 },
 
-jsonStringify: function( json ) {
+jsonStringify: function( json, space ) {
     try {
-        return JSON.stringify( json );
+        if ( space ) {
+            return JSON.stringify( json, null, space );
+        } else {
+            return JSON.stringify( json );
+        }
     } catch( error ) {
         return '';
     }
@@ -3144,7 +3181,12 @@ settingListModalOpen: function( settingData ) {
                 $tr.find('.input').each(function(){
                     const $input = $( this );
                     const val = fn.cv( $input.val(), '');
-                    inputDate[ index ].push( val );
+                    if ( settingData.escape ) {
+                        // タブと円マーク（バックスラッシュ）エスケープ
+                        inputDate[ index ].push( val.replace(/\t/g, '\\t').replace(/\\(?![btnfr])/g, '\\\\') );
+                    } else {
+                        inputDate[ index ].push( val );
+                    }
                 });
                 // 全ての入力が空ならnull
                 if ( inputDate[ index ].join('') === '') inputDate[ index ] = null;
@@ -3227,7 +3269,8 @@ settingListRowHtml( settingData, index = 0, value = [] ) {
         width = ( item.width )? item.width: 'auto',
         idName = `${item.id}_${item.type}_${Date.now()}_${index}`,
         val = ( value[i] !== undefined )? value[i]: null,
-        input = ( item.type === 'text')? this.html.inputText('settingListInputText', val, idName ):
+        rVal = ( val !== null )? cmn.nlcEscape( cmn.escape( val ) ): val,
+        input = ( item.type === 'text')? this.html.inputText('settingListInputText', rVal, idName ):
             this.html.select( item.list, 'settingListInputSelect', val, idName, {}, { sort: false } );
 
         row.push(``
@@ -3817,7 +3860,7 @@ fileOrBase64ToText: function( data ) {
             cmn.base64Decode( data ).then(function( result ){
                 resolve( result );
             }).catch(function( error ){
-                resolve('');
+                resolve( data );
             });
         }
     });

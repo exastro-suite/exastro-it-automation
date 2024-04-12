@@ -35,51 +35,56 @@ def get_ita_settings():  # noqa: E501
 
     :rtype: InlineResponse2002
     """
-    # ITA_DB connect
-    common_db = DBConnectCommon()  # noqa: F405
 
-    # 『バージョン情報』テーブルからバージョン情報を取得
-    ret = common_db.table_select('T_COMN_VERSION', 'WHERE DISUSE_FLAG = %s', [0])
+    try:
+        # ITA_DB connect
+        common_db = DBConnectCommon()  # noqa: F405
 
-    additional_driver_json = ret[0].get('ADDITIONAL_DRIVER')
-    additional_driver = []
-    if additional_driver_json is not None:
-        additional_driver = json.loads(additional_driver_json)
+        # 『バージョン情報』テーブルからバージョン情報を取得
+        ret = common_db.table_select('T_COMN_VERSION', 'WHERE DISUSE_FLAG = %s', [0])
 
-    # OASEはMongoDBの設定有無でデフォルトのチェック有無を変更する
-    mongo_host = os.environ.get('MONGO_HOST', '')
-    mongo_connection_string = os.environ.get('MONGO_CONNECTION_STRING', '')
+        additional_driver_json = ret[0].get('ADDITIONAL_DRIVER')
+        additional_driver = []
+        if additional_driver_json is not None:
+            additional_driver = json.loads(additional_driver_json)
 
-    for driver_data in additional_driver:
-        # デフォルトのチェック有無を設定
-        if driver_data["id"] == "oase":
-            if not mongo_host and not mongo_connection_string:
-                driver_data["enable"] = False
+        # OASEはMongoDBの設定有無でデフォルトのチェック有無を変更する
+        mongo_host = os.environ.get('MONGO_HOST', '')
+
+        for driver_data in additional_driver:
+            # デフォルトのチェック有無を設定
+            if driver_data["id"] == "oase":
+                if not mongo_host:
+                    driver_data["enable"] = False
+                else:
+                    driver_data["enable"] = True
             else:
                 driver_data["enable"] = True
-        else:
-            driver_data["enable"] = True
 
-        # descriptionの言語を選定
-        if g.LANGUAGE == "ja":
-            if driver_data.get("description_ja"):
-                driver_data["description"] = driver_data.pop("description_ja")
-            else:
-                # descriptionの中身がない場合はkeyごと削除
-                del driver_data["description_ja"]
-            del driver_data["description_en"]
-        else:
-            if driver_data.get("description_en"):
-                driver_data["description"] = driver_data.pop("description_en")
-            else:
-                # descriptionの中身がない場合はkeyごと削除
+            # descriptionの言語を選定
+            if g.LANGUAGE == "ja":
+                if driver_data.get("description_ja"):
+                    driver_data["description"] = driver_data.pop("description_ja")
+                else:
+                    # descriptionの中身がない場合はkeyごと削除
+                    del driver_data["description_ja"]
                 del driver_data["description_en"]
-            del driver_data["description_ja"]
+            else:
+                if driver_data.get("description_en"):
+                    driver_data["description"] = driver_data.pop("description_en")
+                else:
+                    # descriptionの中身がない場合はkeyごと削除
+                    del driver_data["description_en"]
+                del driver_data["description_ja"]
 
-    result_data = {
-        'drivers': {
-            'options': additional_driver
+        result_data = {
+            'drivers': {
+                'options': additional_driver
+            }
         }
-    }
+
+    finally:
+        if "common_db" in locals():
+            common_db.db_disconnect()
 
     return result_data,

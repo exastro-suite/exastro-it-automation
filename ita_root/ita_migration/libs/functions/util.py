@@ -15,6 +15,7 @@ import datetime
 import os
 from flask import g
 from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common import storage_access
 """
 ライブラリ
 """
@@ -142,11 +143,13 @@ def stop_all_backyards():
     """
     全backyardを停止させる
     """
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_write = storage_access.storage_write()
 
     flag_file_path = os.path.join(os.environ.get('STORAGEPATH'), BACKYARD_STOP_FLAG_FILE_NAME)
-    with open(flag_file_path, "a") as f:
-        current_datetime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
-        f.write(current_datetime)
+    file_write.open(flag_file_path, mode="a")
+    current_datetime = datetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+    file_write.write(current_datetime)
 
 
 def restart_all_backyards():

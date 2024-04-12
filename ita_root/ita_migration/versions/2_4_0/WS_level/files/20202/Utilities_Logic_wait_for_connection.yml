@@ -1,0 +1,7 @@
+# This Playbook file makes the workflow wait until the Target host can be used or reached.
+# The user can specify how long to wait until the polling starts with "ITA_DFLT_Wait_Delay" and the maximum wait time with "ITA_DFLT_Wait_Timeout".
+- name: Wait until remote system is reachable/usable
+  wait_for_connection:
+    delay: "{{ ITA_DFLT_Wait_Delay | default(0) }}"
+    timeout: "{{ ITA_DFLT_Wait_Timeout | default(600) }}"
+

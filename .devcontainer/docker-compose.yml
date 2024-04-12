@@ -37,7 +37,6 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
       - MONGO_HOST=${MONGO_HOST-ita-mongodb}
@@ -69,7 +68,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
       - MONGO_HOST=${MONGO_HOST-ita-mongodb}
@@ -109,7 +107,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_ADMIN_USER=${DB_ADMIN_USER}
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
-      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
       - MONGO_HOST=${MONGO_HOST-ita-mongodb}
@@ -165,10 +162,10 @@ services:
 
   ita-mongodb:
     image: mongo:6.0.7
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
-      interval: 3s
-      retries: 200
+    # healthcheck:
+    #   test: echo 'db.runCommand("ping").ok' | mongosh mongodb://127.0.0.1:27017/test || exit 1
+    #   interval: 3s
+    #   retries: 200
     environment:
       - TZ=Asia/Tokyo
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
@@ -845,7 +842,6 @@ services:
       - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD}
       - PLATFORM_API_HOST=platform-api
       - PLATFORM_API_PORT=8000
-      - MONGO_CONNECTION_STRING=${MONGO_CONNECTION_STRING}
       - MONGO_OPTION_SSL=${MONGO_OPTION_SSL:-FALSE}
       - MONGO_SCHEME=${MONGO_SCHEME:-mongodb}
       - MONGO_HOST=${MONGO_HOST-ita-mongodb}
@@ -861,8 +857,8 @@ services:
     depends_on:
       ita-migration:
         condition: service_completed_successfully
-      ita-mongodb:
-        condition: service_healthy
+      # ita-mongodb:
+      #   condition: service_healthy
 
   ita-migration:
     user: 1000:1000

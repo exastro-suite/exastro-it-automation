@@ -23,6 +23,7 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_excel
+from common_libs.common import storage_access
 import util
 
 
@@ -52,6 +53,9 @@ def backyard_main(organization_id, workspace_id):
     try:
         # DB接続
         objdbca = DBConnectWs(workspace_id)  # noqa: F405
+        
+        # インポート実行用のアップロードID
+        upload_id = ""
 
         # メンテナンスモードのチェック
         try:
@@ -195,8 +199,12 @@ def backyard_main(organization_id, workspace_id):
 
                 # ファイル一覧をJSONに変換
                 tmpExportPath = EXPORT_PATH + "/" + taskId + "/tmp_zip"
-                fileputflg = pathlib.Path(tmpExportPath + "/MENU_LIST.txt").write_text(fileNameList, encoding="utf-8")
-
+                
+                # MENU_LIST作成
+                file_write = storage_access.storage_write()
+                file_write.open(tmpExportPath + "/MENU_LIST.txt", mode="w")
+                file_write.write(fileNameList)
+                file_write.close()
 
                 # パスの有無を確認
                 if not os.path.exists(DST_PATH):
@@ -239,8 +247,12 @@ def backyard_main(organization_id, workspace_id):
                         import_menu_list.append(menu_id)
 
                 targetImportPath = IMPORT_PATH + "/import/" + upload_id
-                tmpMenuIdFileAry = Path(targetImportPath + '/MENU_LIST.txt').read_text(encoding="utf-8")
-                tmpMenuIdFileAry = tmpMenuIdFileAry.split("\n")
+                
+                # tmp配下で読み取り
+                file_read = storage_access.storage_read()
+                file_read.open(targetImportPath + "/MENU_LIST.txt")
+                tmpMenuIdFileAry = file_read.read().split("\n")
+                file_read.close()
 
                 menuIdFileInfo = []
                 retImportAry = {}
@@ -358,13 +370,18 @@ def backyard_main(organization_id, workspace_id):
                     continue
 
                 # 一時ディレクトリ削除
-                shutil.rmtree(IMPORT_PATH + "/import/" + upload_id)
+                # アップロード後インポート実行しない場合、一時ディレクトリが残るのでimportディレクトリを削除してから、もう一度ディレクトリを作り直す
+                shutil.rmtree(IMPORT_PATH + "/import")
+                os.makedirs(IMPORT_PATH + "/import")
+                os.chmod(IMPORT_PATH + "/import", 0o777)
 
     except Exception as e:
         if os.path.exists(EXPORT_PATH + "/" + taskId):
             shutil.rmtree(EXPORT_PATH + "/" + taskId)
         if os.path.exists(IMPORT_PATH + "/import/" + upload_id):
-            shutil.rmtree(IMPORT_PATH + "/import/" + upload_id)
+            shutil.rmtree(IMPORT_PATH + "/import")
+            os.makedirs(IMPORT_PATH + "/import")
+            os.chmod(IMPORT_PATH + "/import", 0o777)
 
         # ステータスを完了(異常)に更新
         util.setStatus(task['EXECUTION_NO'], STATUS_FAILURE, objdbca)

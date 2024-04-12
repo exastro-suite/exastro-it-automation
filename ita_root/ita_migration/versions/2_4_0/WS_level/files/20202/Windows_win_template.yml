@@ -1,0 +1,7 @@
+- name: Fetch files from remote nodes
+  ansible.windows.win_template:
+    src: "{{ item.0 }}"
+    dest: "{{ item.1 }}\\{{ item.0 | basename }}"
+  with_together:
+    - "{{ ITA_DFLT_Win_Template_Src_File_Name }}"
+    - "{{ ITA_DFLT_Win_Template_Dest_Directory }}"

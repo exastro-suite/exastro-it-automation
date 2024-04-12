@@ -141,3 +141,109 @@ class ConclusionEventSettingColumn(IndividualDialogColumn):
 
         # 全角文字対応　ensure_ascii=False
         return True, msg, json.dumps(search_candidates, ensure_ascii=False),
+
+    def check_basic_valid(self, valnames, option={}):
+        """
+            バリデーション処理(カラムクラス毎)
+            ARGS:
+                val:値
+                option:オプション
+            RETRUN:
+                ( True / False , メッセージ )
+        """
+        retBool = True
+        val_decode = None
+        if valnames:
+            try:
+                val_decode = self.is_json_format(valnames)
+                if val_decode is False:
+                    raise Exception("JSON format is abnormal")
+
+            except Exception as e:
+                # dodo エラーコード見直し
+                retBool = False
+                status_code = '499-01704'
+                msg_args = []
+                msg = g.appmsg.get_api_message(status_code, msg_args)
+                return retBool, msg
+
+            if len(val_decode) > 0:
+                for val in val_decode:
+                    ret, msg, return_values = self.get_input_values_by_value(val)
+                    # 返却値が存在するか確認
+                    if ret is False:
+                        return False, msg
+
+                    # 同じ値が複数あるか判定
+
+        min_length = 0
+        max_length = None
+
+        if val_decode:
+            # カラムの閾値を取得
+            objcols = self.get_objcols()
+            if objcols is not None:
+                if self.get_rest_key_name() in objcols:
+                    dict_valid = self.get_dict_valid()
+                    # 閾値(文字列長)
+                    max_length = dict_valid.get('max_length')
+                    min_length = dict_valid.get('min_length')
+                    if min_length is None:
+                        min_length = 0
+                    if max_length is None:
+                        min_length = 1024 * 10
+            # 文字列長
+            if max_length is not None:
+                check_val = len(str(val_decode).encode('utf-8'))
+                if check_val != 0:
+                    if int(min_length) <= check_val <= int(max_length):
+                        retBool = True
+                    else:
+                        retBool = False
+                        msg = g.appmsg.get_api_message('MSG-00008', [max_length, check_val])
+                        return retBool, msg
+
+        return retBool,
+
+    # [load_table] 値を入力用の値へ変換
+    def convert_value_input(self, valnames=''):
+        """
+            値を出力用の値へ変換 (DB->UI)
+            DB: [{"label_key": "key01", "label_value": "True"}....]
+            UI: [[key01に対応した名称, "True"]....]
+            ARGS:
+                val:値
+            RETRUN:
+                retBool, msg, val
+        """
+        retBool = True
+        retdict = []
+        msg = ''
+        try:
+            if not valnames:
+                return True, '', valnames,
+            val_decode = self.is_json_format(valnames)
+            if val_decode is False:
+                raise Exception("JSON format is abnormal")
+            if len(val_decode) == 0:
+                return True, '', None,
+        except Exception:
+            retBool = False
+            status_code = '499-01704'
+            msg_args = []
+            msg = g.appmsg.get_api_message(status_code, msg_args)
+            return retBool, msg
+
+        if val_decode is not None:
+            for val in val_decode:
+                ret, msg, return_values = self.get_input_values_by_value(val)
+                if ret is False:
+                    return False, msg, val,
+                else:
+                    # val = list(return_values.keys())[0]
+                    retdict.append(return_values)
+
+        # ユニーク制約をする為に、Key値をソートしてDBに保存
+        sortdict = self.sort_for_unique_constraints(retdict)
+
+        return retBool, msg, json.dumps(sortdict),

@@ -41,6 +41,7 @@ class AnsibleVault:
             True
         """
         self.VaultPasswordFilePath = VaultPasswordFilePath
+        #  #2079 /storage配下は使用していないので対象外
         fd = open(VaultPasswordFilePath, 'w')
         fd.write(ky_decrypt(vaultPassword))
         fd.close()
@@ -93,7 +94,7 @@ class AnsibleVault:
         vault_value_file = "{}/ansible_vault_value_{}".format(get_OSTmpPath(), os.getpid())
         # /tmpに作成したファイルはゴミ掃除リストに追加
         addAnsibleCreateFilesPath(vault_value_file)
-
+        # #2079 /storage配下ではないので対象外
         fd = open(vault_value_file, 'w')
         fd.write(value)
         fd.close()
@@ -106,8 +107,9 @@ class AnsibleVault:
         VaultCmd = "cat {} | {}ansible-vault encrypt --vault-password-file {}".format(vault_value_file, ansible_path, password_file)
 
         # sshAgentの設定とPlaybookを実行するshellのテンプレートを読み込み
+        #  #2079 /storage配下ではないので対象外
         fd = open(strExecshellTemplateName, 'r')
-        strShell = fd.read(-1)
+        strShell = fd.read()
         fd.close()
 
         # テンプレート内の変数を実値に置き換え
@@ -115,6 +117,7 @@ class AnsibleVault:
         strShell = strShell.replace('<<virtualenv_path>>', engine_virtualenv_path)
 
         # ansible-vaultshell作成
+        #  #2079 /storage配下ではないので対象外
         fd = open(strExecshellName, 'w')
         fd.write(strShell)
         fd.close()
@@ -130,8 +133,10 @@ class AnsibleVault:
         ret = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # 一時ファイル削除
+
         os.remove(vault_value_file)
         os.remove(strExecshellName)
+
         if passwdFileDel is True:
             self.RemoveVaultPasswordFile()
 

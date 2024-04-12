@@ -17,6 +17,7 @@ import ast
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common import storage_access
 
 
 def backyard_main(organization_id, workspace_id):
@@ -117,11 +118,15 @@ def backyard_main(organization_id, workspace_id):
             g.applogger.debug(debug_msg)
             main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'initialize')
 
+            # 変数刈取りバックヤード起動フラグ設定
+            set_varslistup_flag(objdbca)
         elif create_type == "3":  # 3: 編集
             debug_msg = g.appmsg.get_log_message("BKY-20019", [menu_create_id, 'edit'])
             g.applogger.debug(debug_msg)
             main_func_result, msg = menu_create_exec(objdbca, menu_create_id, 'edit')
 
+            # 変数刈取りバックヤード起動フラグ設定
+            set_varslistup_flag(objdbca)
         else:
             # create_typeが想定外の値
             main_func_result = False
@@ -195,6 +200,9 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
     """
     # テーブル/ビュー名
     t_comn_column_group = 'T_COMN_COLUMN_GROUP'
+
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read = storage_access.storage_read()
 
     try:
         # パラメータシート作成用の各テーブルからレコードを取得
@@ -315,34 +323,36 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         if create_type == 'create_new' or create_type == 'initialize':
             debug_msg = g.appmsg.get_log_message("BKY-20008", [create_table_name, create_table_name_jnl])
             g.applogger.debug(debug_msg)
-            with open(sql_file_path, "r") as f:
-                file = f.read()
-                if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
-                    file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
-                    file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
-                elif sheet_type == "2":  # データシート
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            file_read.open(sql_file_path)
+            file = file_read.read()
+            file_read.close()
+            if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+                file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
+                file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
+            elif sheet_type == "2":  # データシート
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            sql_list = file.split(";\n")
+            for sql in sql_list:
+                if re.fullmatch(r'[\s\n\r]*', sql) is None:
+                    objdbca.sql_execute(sql)
+
+            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
+            if hostgroup_flag:
+                file_read.open(sql_file_path)
+                file = file_read.read()
+                file_read.close()
+                if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
+                    file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
+                    file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
+                    file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
+                    file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
                 sql_list = file.split(";\n")
                 for sql in sql_list:
                     if re.fullmatch(r'[\s\n\r]*', sql) is None:
                         objdbca.sql_execute(sql)
-
-            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
-            if hostgroup_flag:
-                with open(sql_file_path, "r") as f:
-                    file = f.read()
-                    if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
-                        file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
-                        file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
-                        file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
-                        file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
-                    sql_list = file.split(";\n")
-                    for sql in sql_list:
-                        if re.fullmatch(r'[\s\n\r]*', sql) is None:
-                            objdbca.sql_execute(sql)
 
         # 「編集」の場合、VIEWの置き換えSQLのみ実行
         elif create_type == 'edit':
@@ -350,38 +360,40 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             g.applogger.debug(debug_msg)
             # reg: CREATE OR REPLACE VIEW
             search_ptn = r'CREATE[\s]*OR[\s]*REPLACE[\s]*VIEW'
-            with open(sql_file_path, "r") as f:
-                file = f.read()
-                if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
-                    file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
-                    file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
-                elif sheet_type == "2":  # データシート
-                    file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
-                    file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            file_read.open(sql_file_path)
+            file = file_read.read()
+            file_read.close()
+            if sheet_type == "1" or sheet_type == "3":  # パラメータシート(ホスト/オペレーションあり) or パラメータシート(オペレーションあり)
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+                file = file.replace('____CMDB_VIEW_NAME____', create_view_name)
+                file = file.replace('____CMDB_VIEW_NAME_JNL____', create_view_name_jnl)
+            elif sheet_type == "2":  # データシート
+                file = file.replace('____CMDB_TABLE_NAME____', create_table_name)
+                file = file.replace('____CMDB_TABLE_NAME_JNL____', create_table_name_jnl)
+            sql_list = file.split(";\n")
+            for sql in sql_list:
+                if re.fullmatch(r'[\s\n\r]*', sql) is None:
+                    # VIEWの置き換えSQL実行
+                    if re.search(search_ptn, sql, re.IGNORECASE) is not None:
+                        objdbca.sql_execute(sql)
+
+            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
+            if hostgroup_flag:
+                file_read.open(sql_file_path)
+                file = file_read.read()
+                file_read.close()
+                if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
+                    file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
+                    file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
+                    file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
+                    file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
                 sql_list = file.split(";\n")
                 for sql in sql_list:
                     if re.fullmatch(r'[\s\n\r]*', sql) is None:
                         # VIEWの置き換えSQL実行
                         if re.search(search_ptn, sql, re.IGNORECASE) is not None:
                             objdbca.sql_execute(sql)
-
-            # ホストグループ利用時代入値自動登録用テーブル作成SQLを実行
-            if hostgroup_flag:
-                with open(sql_file_path, "r") as f:
-                    file = f.read()
-                    if sheet_type == "1":  # パラメータシート(ホスト/オペレーションあり)
-                        file = file.replace('____CMDB_TABLE_NAME____', sv_create_table_name)
-                        file = file.replace('____CMDB_TABLE_NAME_JNL____', sv_create_table_name_jnl)
-                        file = file.replace('____CMDB_VIEW_NAME____', sv_create_view_name)
-                        file = file.replace('____CMDB_VIEW_NAME_JNL____', sv_create_view_name_jnl)
-                    sql_list = file.split(";\n")
-                    for sql in sql_list:
-                        if re.fullmatch(r'[\s\n\r]*', sql) is None:
-                            # VIEWの置き換えSQL実行
-                            if re.search(search_ptn, sql, re.IGNORECASE) is not None:
-                                objdbca.sql_execute(sql)
 
         # カラムグループ登録の処理に必要な形式にフォーマット
         result, msg, dict_t_menu_column_group, target_column_group_list = _format_column_group_data(record_t_menu_column_group, record_t_menu_column, menu_create_id)  # noqa: E501
@@ -879,6 +891,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         if sheet_type == "1" and file_upload_only_flag:
             sheet_type = "4"
 
+        json_lock_table = json.dumps(["T_COMN_PROC_LOADED_LIST"])
+
         # 「メニュー-テーブル紐付管理」にレコードを登録もしくは更新する
         ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s', [menu_uuid])
         if ret:
@@ -902,6 +916,9 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "ROW_REUSE_FLAG": row_reuse_flag,
                 "SUBSTITUTION_VALUE_LINK_FLAG": substitution_value_link_flag,
                 "UNIQUE_CONSTRAINT": unique_constraint,
+                "LOCK_TABLE": None,
+                "BEFORE_VALIDATE_REGISTER": None,
+                "AFTER_VALIDATE_REGISTER": None,
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
@@ -911,6 +928,11 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 data_list["VIEW_NAME"] = sv_create_view_name
             elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
                 data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
+
+            # ホストありの入力用パラメータシート判定、BEFORE_VALIDATE_REGISTERにFunction登録
+            if row_insert_flag == "1" and sheet_type == "1":
+                data_list["BEFORE_VALIDATE_REGISTER"] = "varlistup_backyard_valid_menu_before"
+                data_list["LOCK_TABLE"] = json_lock_table
 
             primary_key_name = 'TABLE_DEFINITION_ID'
             objdbca.table_update(t_comn_menu_table_link, data_list, primary_key_name)
@@ -943,7 +965,14 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 data_list["VIEW_NAME"] = sv_create_view_name
             elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
                 data_list["AFTER_VALIDATE_REGISTER"] = "external_valid_menu_after"
+
+            # ホストありの入力用パラメータシート判定、BEFORE_VALIDATE_REGISTERにFunction登録
+            if row_insert_flag == "1" and sheet_type == "1":
+                data_list["BEFORE_VALIDATE_REGISTER"] = "varlistup_backyard_valid_menu_before"
+                data_list["LOCK_TABLE"] = json_lock_table
+
             primary_key_name = 'TABLE_DEFINITION_ID'
+
             objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
     except Exception as msg:
@@ -2161,6 +2190,7 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
     # テーブル名
     t_menu_other_link = 'T_MENU_OTHER_LINK'
     t_menu_reference_item = 'T_MENU_REFERENCE_ITEM'
+    v_menu_reference_item = 'V_MENU_REFERENCE_ITEM'
 
     try:
         # 「他メニュー連携」テーブルで対象のメニューIDのレコードを取得
@@ -2213,7 +2243,19 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
                         "LAST_UPDATE_USER": g.get('USER_ID')
                     }
                     primary_key_name = 'REFERENCE_ID'
-                    objdbca.table_insert(t_menu_reference_item, data_list, primary_key_name)
+
+                    target_reference_id = None
+                    ret = objdbca.table_select(v_menu_reference_item, 'WHERE LINK_ID = %s AND MENU_ID = %s AND COLUMN_NAME_REST = %s AND DISUSE_FLAG = %s', [link_id, menu_uuid, column_name_rest, 1])  # noqa: E501
+                    if ret:
+                        target_reference_id = ret[0].get('REFERENCE_ID')
+
+                    if target_reference_id:
+                        # 条件が一致するレコードがある場合は復活処理(カラム表示名のみ更新対象)
+                        data_list["REFERENCE_ID"] = target_reference_id
+                        objdbca.table_update(t_menu_reference_item, data_list, primary_key_name)
+                    else:
+                        # 条件が一致するレコードが無い場合は新規登録
+                        objdbca.table_insert(t_menu_reference_item, data_list, primary_key_name)
 
                     # 表示順序を加算
                     disp_seq_num = int(disp_seq_num) + 10
@@ -2530,6 +2572,30 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
 
         # 対象のメニューIDに紐づいたレコードを廃止
         for menu_id in target_menu_id_list:
+            # 「参照項目」にて対象のレコードを廃止
+            # 廃止レコードのUUIDを特定するため、VIEWから対象レコードを取得
+            ret = objdbca.table_select(v_menu_reference_item, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    reference_id = record.get('REFERENCE_ID')
+                    data = {
+                        'REFERENCE_ID': reference_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_menu_reference_item, data, "REFERENCE_ID")
+
+            # 「他メニュー連携」にて対象のレコードを廃止
+            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+            ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+            if ret:
+                for record in ret:
+                    link_id = record.get('LINK_ID')
+                    data = {
+                        'LINK_ID': link_id,
+                        'DISUSE_FLAG': "1"
+                    }
+                    objdbca.table_update(t_menu_other_link, data, "LINK_ID")
+
             # 「ロール-メニュー紐付管理」にて対象のレコードを廃止
             # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
             ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
@@ -2577,30 +2643,6 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
                         'DISUSE_FLAG': "1"
                     }
                     objdbca.table_update(t_menu_table_link, data, "MENU_TABLE_LINK_ID")
-
-            # 「参照項目」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、VIEWから対象レコードを取得
-            ret = objdbca.table_select(v_menu_reference_item, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    reference_id = record.get('REFERENCE_ID')
-                    data = {
-                        'REFERENCE_ID': reference_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_menu_reference_item, data, "REFERENCE_ID")
-
-            # 「他メニュー連携」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
-            ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    link_id = record.get('LINK_ID')
-                    data = {
-                        'LINK_ID': link_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_menu_other_link, data, "LINK_ID")
 
     except Exception as msg:
         return False, msg
@@ -2761,3 +2803,12 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
         return False, msg
 
     return True, None,
+
+
+def set_varslistup_flag(objdbca):
+    # 変数刈取りバックヤード起動フラグ設定
+    table_name = "T_COMN_PROC_LOADED_LIST"
+    data_list = [{"LOADED_FLG": "0", "ROW_ID": "202"}, {"LOADED_FLG": "0", "ROW_ID": "203"}, {"LOADED_FLG": "0", "ROW_ID": "204"}]
+    primary_key_name = "ROW_ID"
+    for i in data_list:
+        objdbca.table_update(table_name, i, primary_key_name, False)

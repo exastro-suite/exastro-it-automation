@@ -135,7 +135,7 @@ def child_process_exist_check(wsDb: DBConnectWs, organization_id, workspace_id):
             # 情報を再取得して、想定外エラーにする
             result = func.get_execution_process_info(wsDb, TFCLIConst, execution_no)
             if result[0] is False:
-                log_err(result[1])
+                g.applogger.error(result[1])
                 return False
             execute_data = result[1]
 

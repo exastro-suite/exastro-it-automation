@@ -43,28 +43,30 @@ def get_compares_info(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['17']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['17']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = {}
-    result_data = compare_controll.get_compares_data(objdbca, menu)
+        result_data = {}
+        result_data = compare_controll.get_compares_data(objdbca, menu)
 
-    #
-    # 標準メニュー関連情報
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        #
+        # 標準メニュー関連情報
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業実行関連のメニューの基本情報および項目情報の取得
-    tmp_data = get_compare_execute_info(organization_id, workspace_id, menu)
-    result_data.setdefault("menu_info", tmp_data[0]["data"])
-
+        # 作業実行関連のメニューの基本情報および項目情報の取得
+        tmp_data = get_compare_execute_info(organization_id, workspace_id, menu)
+        result_data.setdefault("menu_info", tmp_data[0]["data"])
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -93,26 +95,28 @@ def post_compare_execute(organization_id, workspace_id, menu, body=None):  # noq
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['17']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['17']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = {}
-    parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
+        result_data = {}
+        parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameter = body
 
-    options = {}
-    options.setdefault("compare_mode", "normal")
-    result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
-
+        options = {}
+        options.setdefault("compare_mode", "normal")
+        result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -141,27 +145,29 @@ def post_compare_execute_output(organization_id, workspace_id, menu, body=None):
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['17']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['17']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = {}
-    parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
+        result_data = {}
+        parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameter = body
 
-    options = {}
-    options.setdefault("compare_mode", "nomal")
-    options.setdefault("output_flg", True)
-    result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
-
+        options = {}
+        options.setdefault("compare_mode", "nomal")
+        options.setdefault("output_flg", True)
+        result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -190,26 +196,28 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['17']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['17']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    result_data = {}
-    parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        parameter = body
+        result_data = {}
+        parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            parameter = body
 
-    options = {}
-    options.setdefault("compare_mode", "file")
-    result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
-
+        options = {}
+        options.setdefault("compare_mode", "file")
+        result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
+    finally:
+        objdbca.db_disconnect()
     return result_data,
 
 
@@ -232,22 +240,24 @@ def get_compare_execute_info(organization_id, workspace_id, menu):  # noqa: E501
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['17']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['17']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # 作業実行関連のメニューの基本情報および項目情報の取得
-    target_menus = ['compare_list', 'device_list']
-    data = {}
-    for target in target_menus:
-        data[target] = menu_info.collect_menu_info(objdbca, target)
-
+        # 作業実行関連のメニューの基本情報および項目情報の取得
+        target_menus = ['compare_list', 'device_list']
+        data = {}
+        for target in target_menus:
+            data[target] = menu_info.collect_menu_info(objdbca, target)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -274,25 +284,28 @@ def get_compare_execute_search_candidates(organization_id, workspace_id, menu, t
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['17']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['17']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # targetのチェック
-    target_menus = ['compare_list', 'device_list']
-    if target not in target_menus:
-        log_msg_args = []
-        api_msg_args = []
-        raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
+        # targetのチェック
+        target_menus = ['compare_list', 'device_list']
+        if target not in target_menus:
+            log_msg_args = []
+            api_msg_args = []
+            raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
 
-    # 対象項目のプルダウン検索候補一覧を取得
-    data = menu_info.collect_search_candidates(objdbca, target, column)
+        # 対象項目のプルダウン検索候補一覧を取得
+        data = menu_info.collect_search_candidates(objdbca, target, column)
+    finally:
+        objdbca.db_disconnect()
     return data,
 
 
@@ -319,28 +332,31 @@ def post_copmare_execute_filter(organization_id, workspace_id, menu, target, bod
     # DB接続
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
-    # メニューの存在確認
-    check_menu_info(menu, objdbca)
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
 
-    # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-    sheet_type_list = ['17']
-    check_sheet_type(menu, sheet_type_list, objdbca)
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['17']
+        check_sheet_type(menu, sheet_type_list, objdbca)
 
-    # メニューに対するロール権限をチェック
-    check_auth_menu(menu, objdbca)
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
-    # targetのチェック
-    target_menus = ['compare_list', 'device_list']
-    if target not in target_menus:
-        log_msg_args = []
-        api_msg_args = []
-        raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
+        # targetのチェック
+        target_menus = ['compare_list', 'device_list']
+        if target not in target_menus:
+            log_msg_args = []
+            api_msg_args = []
+            raise AppException("499-00008", log_msg_args, api_msg_args)  # noqa: F405
 
-    filter_parameter = {}
-    if connexion.request.is_json:
-        body = dict(connexion.request.get_json())
-        filter_parameter = body
+        filter_parameter = {}
+        if connexion.request.is_json:
+            body = dict(connexion.request.get_json())
+            filter_parameter = body
 
-    # メニューのカラム情報を取得
-    result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
+        # メニューのカラム情報を取得
+        result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
+    finally:
+        objdbca.db_disconnect()
     return result_data,

@@ -358,7 +358,7 @@ def _collect_common_menu_create_data(objdbca):
 
     # カラムクラス「プルダウン選択」の選択項目一覧
     pulldown_item_list = []
-    ret = objdbca.table_select(v_menu_other_link, 'ORDER BY MENU_GROUP_ID ASC')
+    ret = objdbca.table_select(v_menu_other_link, 'WHERE DISUSE_FLAG = %s ORDER BY MENU_GROUP_ID ASC', [0])
     for record in ret:
         link_id = record.get('LINK_ID')
         menu_id = record.get('MENU_ID')
@@ -2172,221 +2172,278 @@ def collect_parameter_list(objdbca):
     t_comn_menu_group = 'T_COMN_MENU_GROUP'
     t_comn_role_menu_link = 'T_COMN_ROLE_MENU_LINK'
     t_comn_menu_table_link = 'T_COMN_MENU_TABLE_LINK'
-    t_menu_table_link = 'T_MENU_TABLE_LINK'
+    t_comn_oeration = 'T_COMN_OPERATION'
+    t_hgsp_hostgroup_list = 'T_HGSP_HOSTGROUP_LIST'
+    t_hgsp_split_target = 'T_HGSP_SPLIT_TARGET'
+    t_ansc_device = 'T_ANSC_DEVICE'
     lang = g.LANGUAGE
+    role_id_list = g.get('ROLES')
 
     operation_ary = []
     host_ary = []
     hostgroup_ary = []
     parameter_sheet_ary = []
     parameter_collection_list = {}
+    operation_id_list = []
+    host_id_list = []
+    hostgroup_id_list = []
 
-    # パラメータシートの一覧取得
-    where = 'WHERE  DISUSE_FLAG=%s AND SHEET_TYPE IN (%s, %s, %s) AND SUBSTITUTION_VALUE_LINK_FLAG = %s'
-    parameter = ['0', '1', '3', '4', '0']
-    ret = objdbca.table_select(t_comn_menu_table_link, where, parameter)
+    # メニューグループ管理を検索
+    where = 'WHERE  DISUSE_FLAG=%s'
+    parameter = ['0']
+    menu_group_list = objdbca.table_select(t_comn_menu_group, where, parameter)
 
-    if ret:
-        for record in ret:
-            # ロールが「メンテンス可」または「閲覧のみ」のメニューのみ取得
-            role_id_list = g.get('ROLES')
-            menu_id = record.get('MENU_ID')
-            vertical = record.get('VERTICAL')
-            sheet_type = record.get('SHEET_TYPE')
-            hostgroup = record.get('HOSTGROUP')
+    # メニュー管理を検索
+    where = 'WHERE  DISUSE_FLAG=%s'
+    parameter = ['0']
+    menu_list = objdbca.table_select(t_comn_menu, where, parameter)
 
-            where = 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s AND ROLE_ID IN %s'
-            parameter = [0, menu_id, role_id_list]
-            ret2 = objdbca.table_select(t_comn_role_menu_link, where, parameter)
+    # メニュー-テーブル紐付管理を検索
+    where = 'WHERE  DISUSE_FLAG=%s AND SHEET_TYPE IN (%s, %s, %s)'
+    parameter = ['0', '1', '3', '4']
+    menu_table_link_list = objdbca.table_select(t_comn_menu_table_link, where, parameter)
 
-            if ret2:
-                for record2 in ret2:
-                    loop_flag = False
-                    privilege = record2.get('PRIVILEGE')
-                table_name = record.get('TABLE_NAME')
-                ret3 = objdbca.table_select(table_name, 'WHERE  DISUSE_FLAG=%s', ['0'])
-                if ret3:
-                    for record3 in ret3:
-                        # パラメーターシート情報取得
-                        ret_menu = objdbca.table_select(t_comn_menu, 'WHERE  DISUSE_FLAG=%s AND MENU_ID=%s', ['0', menu_id])
-                        if ret_menu:
-                            for record_menu in ret_menu:
-                                where = 'WHERE  DISUSE_FLAG=%s AND TABLE_NAME=%s'
-                                ret_menu2 = objdbca.table_select(t_menu_table_link, where, ['0', table_name])
-                                if ret_menu2:
-                                    for record_menu2 in ret_menu2:
-                                        where = 'WHERE  DISUSE_FLAG=%s AND MENU_ID=%s AND MENU_GROUP_ID=%s'
-                                        ret_menu3 = objdbca.table_select(t_comn_menu, where, ['0', record_menu2.get('MENU_ID'), '503'])
-                                        if ret_menu3:
-                                            for record_menu3 in ret_menu3:
-                                                menu_id2 = record_menu3.get('MENU_ID')
-                                                menu_name2 = record_menu3.get('MENU_NAME_' + lang.upper())
-                                                menu_name_rest2 = record_menu3.get('MENU_NAME_REST')
-                                                menu_group_id2 = record_menu3.get('MENU_GROUP_ID')
-                                # hostgroupの場合、代入値自動登録用のメニュー情報、それ以外は入力用のメニュー情報
-                                if hostgroup == '1':
-                                    # hostgroupの場合、代入値自動登録用のメニューのロールチェック
-                                    where = 'WHERE  DISUSE_FLAG=%s AND MENU_ID = %s AND ROLE_ID IN %s'
-                                    parameter = [0, menu_id2, role_id_list]
-                                    ret_role = objdbca.table_select(t_comn_role_menu_link, where, parameter)
-                                    if ret_role:
-                                        for record_role in ret_role:
-                                            privilege = record_role.get('PRIVILEGE')
-                                    else:
-                                        # 2重ループから抜ける
-                                        loop_flag = True
-                                        continue
+    # ロール-メニュー紐付管理を検索
+    where = 'WHERE  DISUSE_FLAG=%s AND ROLE_ID IN %s'
+    parameter = ['0', role_id_list]
+    role_menu_link_list = objdbca.table_select(t_comn_role_menu_link, where, parameter)
 
-                                    menu_id = menu_id2
-                                    menu_name = menu_name2
-                                    menu_name_rest = menu_name_rest2
-                                    menu_group_id = menu_group_id2
-                                else:
-                                    menu_name = record_menu.get('MENU_NAME_' + lang.upper())
-                                    menu_name_rest = record_menu.get('MENU_NAME_REST')
-                                    menu_group_id = record_menu.get('MENU_GROUP_ID')
+    # ホストグループ分割対象を検索
+    where = 'WHERE  DISUSE_FLAG=%s'
+    parameter = ['0']
+    hgsp_split_target_list = objdbca.table_select(t_hgsp_split_target, where, parameter)
 
-                                if hostgroup == '1':
-                                    hg_menu_name_rest = record_menu.get('MENU_NAME_REST')
-                                else:
-                                    hg_menu_name_rest = ""
+    # メニュー-テーブル紐付管理の件数分ループ
+    for menu_table_link_data in menu_table_link_list:
 
-                            if loop_flag is True:
-                                continue
+        menu_id = menu_table_link_data.get('MENU_ID')
+        hostgroup = menu_table_link_data.get('HOSTGROUP')
+        substitution_value_link_flag = menu_table_link_data.get('SUBSTITUTION_VALUE_LINK_FLAG')
 
-                            ret_group = objdbca.table_select(t_comn_menu_group, 'WHERE  DISUSE_FLAG=%s AND MENU_GROUP_ID=%s', ['0', menu_group_id])
-                            if ret_group:
-                                for record_group in ret_group:
-                                    tmp_dict = {
-                                        'menu_id': menu_id,
-                                        'menu_group_name': record_group.get('MENU_GROUP_NAME_' + lang.upper()),
-                                        'menu_name': menu_name,
-                                        'menu_name_rest': menu_name_rest,
-                                        'privilege': privilege,
-                                        'vertical': vertical,
-                                        'sheet_type': sheet_type,
-                                        'hostgroup': hostgroup,
-                                        'hg_menu_name_rest': hg_menu_name_rest
-                                    }
-                                    # 重複チェック
-                                    duplication_flg = True
-                                    if len(parameter_sheet_ary) > 0:
-                                        for value in parameter_sheet_ary:
-                                            if value['menu_id'] == menu_id:
-                                                duplication_flg = False
-                                                break
-                                        if duplication_flg is True:
-                                            parameter_sheet_ary.append(tmp_dict)
-                                    else:
-                                        parameter_sheet_ary.append(tmp_dict)
+        # 入力用パラメータシート（代入値自動登録対象フラグがFalse）のデータが対象
+        if substitution_value_link_flag == '1':
+            continue
 
-                        host_id = record3.get('HOST_ID')
-                        operation_id = record3.get('OPERATION_ID')
-                        # オペレーション情報取得
-                        sql = "SELECT * FROM V_COMN_OPERATION WHERE DISUSE_FLAG=%s AND OPERATION_ID=%s"
-                        ret_operation = objdbca.sql_execute(sql, ['0', operation_id])
-                        if ret_operation:
-                            for record_operation in ret_operation:
-                                operation_date = record_operation.get('OPERATION_DATE').strftime('%Y/%m/%d %H:%M:%S')
-                                if record_operation.get('LAST_EXECUTE_TIMESTAMP') is not None:
-                                    last_run_date = record_operation.get('LAST_EXECUTE_TIMESTAMP').strftime('%Y/%m/%d %H:%M:%S')
-                                else:
-                                    last_run_date = record_operation.get('LAST_EXECUTE_TIMESTAMP')
-                                tmp_dict = {
-                                    'operation_id': operation_id,
-                                    'operation_name': record_operation.get('OPERATION_NAME'),
-                                    'scheduled_date_for_execution': operation_date,
-                                    'last_run_date': last_run_date
-                                }
-                                # 重複チェック
-                                duplication_flg = True
-                                if len(operation_ary) > 0:
-                                    for value in operation_ary:
-                                        if value['operation_id'] == operation_id:
-                                            duplication_flg = False
-                                            break
-                                    if duplication_flg is True:
-                                        operation_ary.append(tmp_dict)
-                                else:
-                                    operation_ary.append(tmp_dict)
+        # メニュー管理の存在確認
+        match_flg = False
+        for menu_data in menu_list:
+            if menu_table_link_data.get('MENU_ID') == menu_data.get('MENU_ID'):
+                match_flg = True
+                input_menu_data = menu_data
+                break
+        # メニュー管理に存在しない場合は対象外
+        if match_flg is False:
+            continue
 
-                        # ホストグループ情報取得
-                        sql = "SELECT * FROM T_HGSP_HOSTGROUP_LIST WHERE DISUSE_FLAG=%s AND ROW_ID=%s"
-                        ret_hostgroup = objdbca.sql_execute(sql, ['0', host_id])
-                        if ret_hostgroup:
-                            for record_hostgroup in ret_hostgroup:
-                                hostgroup_id = record_hostgroup.get('ROW_ID')
-                                tmp_dict = {
-                                    'hostgroup_id': hostgroup_id,
-                                    'hostgroup_name': record_hostgroup.get('HOSTGROUP_NAME')
-                                }
-                                # 重複チェック
-                                duplication_flg = True
-                                if len(hostgroup_ary) > 0:
-                                    for value in hostgroup_ary:
-                                        if value['hostgroup_id'] == hostgroup_id:
-                                            duplication_flg = False
-                                            break
-                                    if duplication_flg is True:
-                                        hostgroup_ary.append(tmp_dict)
-                                else:
-                                    hostgroup_ary.append(tmp_dict)
+        # ロール-メニュー紐付管理の存在確認
+        match_flg = False
+        for role_menu_link_data in role_menu_link_list:
+            if menu_table_link_data.get('MENU_ID') == role_menu_link_data.get('MENU_ID'):
+                privilege = role_menu_link_data.get('PRIVILEGE')
+                match_flg = True
+                if privilege == '1':
+                    break
+        # ロール-メニュー紐付管理に存在しない場合は対象外
+        if match_flg is False:
+            continue
 
-                                sql = "SELECT * FROM T_HGSP_HOST_LINK WHERE DISUSE_FLAG=%s AND HOSTGROUP_NAME=%s"
-                                ret_hostgroup_link = objdbca.sql_execute(sql, ['0', hostgroup_id])
-                                if ret_hostgroup_link:
-                                    for record_hostgroup_link in ret_hostgroup_link:
-                                        # ホスト情報取得(ホストグループに属する場合)
-                                        host_id = record_hostgroup_link.get('HOSTNAME')
-                                        sql = "SELECT * FROM T_ANSC_DEVICE WHERE DISUSE_FLAG=%s AND SYSTEM_ID=%s"
-                                        ret_host = objdbca.sql_execute(sql, ['0', host_id])
-                                        if ret_host:
-                                            for record_host in ret_host:
-                                                tmp_dict = {
-                                                    'managed_system_item_number': host_id,
-                                                    'host_name': record_host.get('HOST_NAME'),
-                                                    'host_dns_name': record_host.get('HOST_DNS_NAME'),
-                                                    'ip_address': record_host.get('IP_ADDRESS')
-                                                }
-                                                # 重複チェック
-                                                duplication_flg = True
-                                                if len(host_ary) > 0:
-                                                    for value in host_ary:
-                                                        if value['managed_system_item_number'] == host_id:
-                                                            duplication_flg = False
-                                                            break
-                                                    if duplication_flg is True:
-                                                        host_ary.append(tmp_dict)
-                                                else:
-                                                    host_ary.append(tmp_dict)
-                        else:
-                            # ホスト情報取得(ホストグループに属さない場合)
-                            sql = "SELECT * FROM T_ANSC_DEVICE WHERE DISUSE_FLAG=%s AND SYSTEM_ID=%s"
-                            ret_host = objdbca.sql_execute(sql, ['0', host_id])
-                            if ret_host:
-                                for record_host in ret_host:
-                                    tmp_dict = {
-                                        'managed_system_item_number': host_id,
-                                        'host_name': record_host.get('HOST_NAME'),
-                                        'host_dns_name': record_host.get('HOST_DNS_NAME'),
-                                        'ip_address': record_host.get('IP_ADDRESS')
-                                    }
-                                    # 重複チェック
-                                    duplication_flg = True
-                                    if len(host_ary) > 0:
-                                        for value in host_ary:
-                                            if value['managed_system_item_number'] == host_id:
-                                                duplication_flg = False
-                                                break
-                                        if duplication_flg is True:
-                                            host_ary.append(tmp_dict)
-                                    else:
-                                        host_ary.append(tmp_dict)
+        # ホストグループ用の場合
+        if hostgroup == '1':
+            # ホストグループ分割対象から代入値自動登録用パラメータシートを特定する
+            match_flg = False
+            for hgsp_split_target_data in hgsp_split_target_list:
+                if menu_id == hgsp_split_target_data.get('INPUT_MENU_ID'):
+                    match_flg = True
+                    sub_menu_id = hgsp_split_target_data.get('OUTPUT_MENU_ID')
+                    break
+            # ホストグループ分割対象に存在しない場合は対象外
+            if match_flg is False:
+                continue
 
-        parameter_collection_list['operation'] = operation_ary
-        parameter_collection_list['host'] = host_ary
-        parameter_collection_list['hostgroup'] = hostgroup_ary
-        parameter_collection_list['parameter_sheet'] = parameter_sheet_ary
+            # メニュー管理から代入値自動登録用パラメータシートを特定する
+            match_flg = False
+            for menu_data in menu_list:
+                if sub_menu_id == menu_data.get('MENU_ID'):
+                    match_flg = True
+                    sub_menu_data = menu_data
+                    break
+            # メニュー管理に存在しない場合は対象外
+            if match_flg is False:
+                continue
+
+            # メニュー-テーブル紐付管理から代入値自動登録用パラメータシートを特定する
+            match_flg = False
+            for menu_table_link_data_tmp in menu_table_link_list:
+                if sub_menu_id == menu_table_link_data_tmp.get('MENU_ID'):
+                    match_flg = True
+                    sub_menu_table_link_data = menu_table_link_data_tmp
+                    break
+            # メニュー-テーブル紐付管理に存在しない場合は対象外
+            if match_flg is False:
+                continue
+
+            # メニューグループ管理からメニューグループ名を特定する
+            match_flg = False
+            for menu_group_data in menu_group_list:
+                if menu_group_data.get('MENU_GROUP_ID') == sub_menu_data.get('MENU_GROUP_ID'):
+                    match_flg = True
+                    menu_group_name = menu_group_data.get('MENU_GROUP_NAME_' + lang.upper())
+                    break
+            # メニューグループ管理に存在しない場合は対象外
+            if match_flg is False:
+                continue
+
+            # パラメータシート（入力用）を検索
+            where = 'WHERE  DISUSE_FLAG=%s'
+            parameter = ['0']
+            parameter_sheet_list = objdbca.table_select(menu_table_link_data.get('TABLE_NAME'), where, parameter)
+
+            # パラメータシートに1件もなければ対象外
+            if len(parameter_sheet_list) == 0:
+                continue
+
+            # パラメータシートで使用しているホストグループIDの配列を作成
+            para_hostgroup_id_list = [d.get('HOST_ID') for d in parameter_sheet_list]
+            hostgroup_id_list.extend(para_hostgroup_id_list)
+
+            # ホストグループIDの重複削除
+            hostgroup_id_list = list(set(hostgroup_id_list))
+
+            rtn_menu_id = sub_menu_id
+            rtn_menu_group_name = menu_group_name
+            rtn_menu_name = sub_menu_data.get('MENU_NAME_' + lang.upper())
+            rtn_menu_name_rest = sub_menu_data.get('MENU_NAME_REST')
+            rtn_privilege = privilege
+            rtn_vertical = sub_menu_table_link_data.get('VERTICAL')
+            rtn_sheet_type = sub_menu_table_link_data.get('SHEET_TYPE')
+            rtn_hostgroup = hostgroup
+            rtn_hg_menu_name_rest = input_menu_data.get('MENU_NAME_REST')
+            para_table_name = sub_menu_table_link_data.get('TABLE_NAME')
+
+        # ホスト用の場合
+        else:
+            # メニューグループ管理からメニューグループ名を特定する
+            match_flg = False
+            for menu_group_data in menu_group_list:
+                if menu_group_data.get('MENU_GROUP_ID') == input_menu_data.get('MENU_GROUP_ID'):
+                    match_flg = True
+                    menu_group_name = menu_group_data.get('MENU_GROUP_NAME_' + lang.upper())
+                    break
+            # メニューグループ管理に存在しない場合は対象外
+            if match_flg is False:
+                continue
+
+            rtn_menu_id = menu_id
+            rtn_menu_group_name = menu_group_name
+            rtn_menu_name = input_menu_data.get('MENU_NAME_' + lang.upper())
+            rtn_menu_name_rest = input_menu_data.get('MENU_NAME_REST')
+            rtn_privilege = privilege
+            rtn_vertical = menu_table_link_data.get('VERTICAL')
+            rtn_sheet_type = menu_table_link_data.get('SHEET_TYPE')
+            rtn_hostgroup = hostgroup
+            rtn_hg_menu_name_rest = None
+            para_table_name = menu_table_link_data.get('TABLE_NAME')
+
+        # パラメータシートを検索
+        where = 'WHERE  DISUSE_FLAG=%s'
+        parameter = ['0']
+        parameter_sheet_list = objdbca.table_select(para_table_name, where, parameter)
+
+        # パラメータシートに1件もなければ対象外
+        if len(parameter_sheet_list) == 0:
+            continue
+
+        # パラメータシートで使用しているオペレーションIDの配列を作成
+        para_operation_id_list = [d.get('OPERATION_ID') for d in parameter_sheet_list]
+        operation_id_list.extend(para_operation_id_list)
+
+        # オペレーションIDの重複削除
+        operation_id_list = list(set(operation_id_list))
+
+        if rtn_vertical == '0':
+            # パラメータシートで使用しているホストIDの配列を作成
+            para_host_id_list = [d.get('HOST_ID') for d in parameter_sheet_list]
+            host_id_list.extend(para_host_id_list)
+
+            # ホストIDの重複削除
+            host_id_list = list(set(host_id_list))
+
+        tmp_dict = {
+            'menu_id': rtn_menu_id,
+            'menu_group_name': rtn_menu_group_name,
+            'menu_name': rtn_menu_name,
+            'menu_name_rest': rtn_menu_name_rest,
+            'privilege': rtn_privilege,
+            'vertical': rtn_vertical,
+            'sheet_type': rtn_sheet_type,
+            'hostgroup': rtn_hostgroup,
+            'hg_menu_name_rest': rtn_hg_menu_name_rest,
+        }
+
+        parameter_sheet_ary.append(tmp_dict)
+
+    # オペレーション一覧を検索
+    where = 'WHERE  DISUSE_FLAG=%s'
+    parameter = ['0']
+    operation_list = objdbca.table_select(t_comn_oeration, where, parameter)
+
+    # パラメータシート内のオペレーション情報を取得
+    for target_operation_id in operation_id_list:
+        for operation_data in operation_list:
+            if target_operation_id == operation_data.get('OPERATION_ID'):
+                operation_date = operation_data.get('OPERATION_DATE').strftime('%Y/%m/%d %H:%M:%S')
+                if operation_data.get('LAST_EXECUTE_TIMESTAMP') is not None:
+                    last_run_date = operation_data.get('LAST_EXECUTE_TIMESTAMP').strftime('%Y/%m/%d %H:%M:%S')
+                else:
+                    last_run_date = operation_data.get('LAST_EXECUTE_TIMESTAMP')
+                tmp_dict = {
+                    'operation_id': target_operation_id,
+                    'operation_name': operation_data.get('OPERATION_NAME'),
+                    'scheduled_date_for_execution': operation_date,
+                    'last_run_date': last_run_date
+                }
+                operation_ary.append(tmp_dict)
+                break
+
+    # 機器一覧を検索
+    where = 'WHERE  DISUSE_FLAG=%s'
+    parameter = ['0']
+    device_list = objdbca.table_select(t_ansc_device, where, parameter)
+
+    # パラメータシート内の機器一覧情報を取得
+    for target_host_id in host_id_list:
+        for device_data in device_list:
+            if target_host_id == device_data.get('SYSTEM_ID'):
+                tmp_dict = {
+                    'managed_system_item_number': target_host_id,
+                    'host_name': device_data.get('HOST_NAME'),
+                    'host_dns_name': device_data.get('HOST_DNS_NAME'),
+                    'ip_address': device_data.get('IP_ADDRESS')
+                }
+                host_ary.append(tmp_dict)
+                break
+
+    # ホストグループ一覧を検索
+    where = 'WHERE  DISUSE_FLAG=%s'
+    parameter = ['0']
+    hostgroup_list = objdbca.table_select(t_hgsp_hostgroup_list, where, parameter)
+
+    # パラメータシート内のホストグループ情報を取得
+    for target_hostgroup_id in hostgroup_id_list:
+        for hostgroup_data in hostgroup_list:
+            if target_hostgroup_id == hostgroup_data.get('ROW_ID'):
+
+                tmp_dict = {
+                    'hostgroup_id': target_hostgroup_id,
+                    'hostgroup_name': hostgroup_data.get('HOSTGROUP_NAME')
+                }
+                hostgroup_ary.append(tmp_dict)
+                break
+
+    parameter_collection_list['operation'] = operation_ary
+    parameter_collection_list['host'] = host_ary
+    parameter_collection_list['hostgroup'] = hostgroup_ary
+    parameter_collection_list['parameter_sheet'] = parameter_sheet_ary
 
     return parameter_collection_list
 

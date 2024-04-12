@@ -20,6 +20,7 @@ import sqlite3
 
 from common_libs.common import *  # noqa F403
 from common_libs.ci.util import app_exception, exception
+from common_libs.oase.const import oaseConst
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
@@ -74,7 +75,7 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         sqliteDB.db_close()
         g.applogger.debug(g.appmsg.get_log_message("AGT-10025", []))
     except Exception:
-        g.applogger.error(g.appmsg.get_log_message("AGT-10026", []))
+        g.applogger.info(g.appmsg.get_log_message("AGT-10026", []))
 
 
 def collection_logic(sqliteDB, organization_id, workspace_id):
@@ -99,9 +100,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集設定ファイルが無い場合、ITAから設定を取得 + 設定ファイル作成
     if settings is False:
-
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/event_collection/settings"
-
         g.applogger.info(g.appmsg.get_log_message("AGT-10008", []))
         try:
             status_code, response = exastro_api.api_request(
@@ -110,14 +109,14 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 {"event_collection_settings_names": setting_name_list}
             )
             if status_code == 200:
-                create_file(response["data"])
+                # CONNECTION_METHOD_ID="99"(エージェント不使用)のものを省く
+                setting_list = [i for i in response["data"] if i["CONNECTION_METHOD_ID"] != oaseConst.DF_CON_METHOD_NOT_AGENT]
+                create_file(setting_list)
                 nodata = "(no data)" if response["data"] == [] else ""
                 g.applogger.debug(g.appmsg.get_log_message("AGT-10009", [nodata]))
                 settings = get_settings()
             else:
-                g.applogger.info(g.appmsg.get_log_message("AGT-10010", []))
-                g.applogger.debug(status_code)
-                g.applogger.debug(response)
+                g.applogger.info(g.appmsg.get_log_message("AGT-10010", [status_code, response]))
                 settings = False
         except AppException as e:  # noqa E405
             app_exception(e)
@@ -142,22 +141,28 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
     # イベント収集
     events = []
+    event_collection_settings_enable = []
     if settings is not False:
         g.applogger.info(g.appmsg.get_log_message("AGT-10011", []))
-        events = collect_event(sqliteDB, settings, timestamp_dict)
+        events, event_collection_settings_enable = collect_event(sqliteDB, settings, timestamp_dict)
         g.applogger.info(g.appmsg.get_log_message("AGT-10012", [len(events)]))
     else:
         g.applogger.debug(g.appmsg.get_log_message("AGT-10013", []))
 
     # 収集したイベント, 取得時間をSQLiteに保存
-    if events != []:
+    if settings is not False:
         try:
             sqliteDB.db_connect.execute("BEGIN")
-            sqliteDB.insert_events(events)
-            g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
+            sqliteDB.insert_events(events, event_collection_settings_enable)
+            # イベントが1件以上なら、イベントの中身・取得時間・最終取得時間をsqliteに保存する
+            if len(events) != 0:
+                g.applogger.debug(g.appmsg.get_log_message("AGT-10014", []))
+            # イベントが0件なら、最終取得時間をsqliteに保存する
+            else:
+                g.applogger.debug(g.appmsg.get_log_message("AGT-10032", []))
         except AppException as e:  # noqa E405
             sqliteDB.db_connect.rollback()
-            g.applogger.error(g.appmsg.get_log_message("AGT-10015", []))
+            g.applogger.info(g.appmsg.get_log_message("AGT-10015", []))
             app_exception(e)
 
     # ITAに送信するデータを取得
@@ -189,7 +194,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         else:
             send_to_ita_flag = True
 
-        # 作成した辞書を使用してイベントを検索
+        # 作成した辞書を使用してイベントをDBから検索
         for item in unsent_timestamp:
             unsent_event = {}
             event_collection_settings_name = item[1]
@@ -206,9 +211,12 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 (event_collection_settings_name, fetched_time, 0)
             )
             unsent_events = sqliteDB.db_cursor.fetchall()
-            unsent_event["event"].extend([row[2] for row in unsent_events])
             for row in unsent_events:
                 unsent_event_rowids.append(row[0])
+                # 文字列で保存されていたイベントをJSON形式に再変換
+                json_event = json.loads(row[2])
+                unsent_event["event"].append(json_event)
+
             post_body["events"].append(unsent_event)
 
     # ITAにデータを送信
@@ -218,6 +226,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         event_count = 0
         for event in post_body["events"]:
             event_count = event_count + len(event["event"])
+        # "Sending {} events to Exastro IT Automation"
         g.applogger.info(g.appmsg.get_log_message("AGT-10017", [event_count]))
         endpoint = f"{baseUrl}/api/{organization_id}/workspaces/{workspace_id}/oase_agent/events"
         try:
@@ -231,6 +240,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
         # データ送信に成功した場合、sent_flagカラムの値をtrueにアップデート
         if status_code == 200:
+            # "Successfully sent events to Exastro IT Automation."
             g.applogger.info(g.appmsg.get_log_message("AGT-10018", []))
             for table_name, list in {"events": unsent_event_rowids, "sent_timestamp": unsent_timestamp_rowids}.items():
                 try:
@@ -243,53 +253,63 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
             g.applogger.debug(g.appmsg.get_log_message("AGT-10019", []))
         else:
-            g.applogger.info(g.appmsg.get_log_message("AGT-10020", []))
-            g.applogger.debug(response)
+            g.applogger.info(g.appmsg.get_log_message("AGT-10020", [status_code, response]))
+            g.applogger.info("post_body={}".format(post_body))
 
     else:
         g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))
 
-    # レコードのDELETE
-    # 最新のレコードと1ループ前のレコードを残す
-    remain_timestamp_dict = {}  # sent_timestampテーブルに残すレコードの{rowid: {id: xxx, fetched_time: nnn}}
-    remain_event_rowids = []  # eventsテーブルに残すレコードのrowid
+    # 不要なレコードのDELETE（1世代前までのイベントは残す）
+    to_delete_timestamp_rowids = []  # sent_timestampテーブルから削除するレコードのrowids
+    to_delete_events_rowids = []  # eventsテーブルから削除するレコードのrowids
+    remain_events_dict = {}  # eventsテーブルに残すレコードの{event_collection_settings_name: [...fetched_time]}
     g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
     for name in setting_name_list:
+
         try:
+            # sent_timestampテーブルから送信済みフラグが1のレコードを全件取得
             sqliteDB.db_cursor.execute(
                 """
                 SELECT rowid, event_collection_settings_name, fetched_time FROM sent_timestamp
                 WHERE event_collection_settings_name=? and sent_flag=1
-                ORDER BY fetched_time DESC LIMIT 2
+                ORDER BY fetched_time DESC
                 """,
                 (name, )
             )
-            remain_timestamp = sqliteDB.db_cursor.fetchall()
+            all_records = sqliteDB.db_cursor.fetchall()
+
+            # sent_timestampテーブルでnameあたりのレコードが2世代分以下の場合、処理をスキップ
+            if len(all_records) <= 2:
+                continue
+
+            remain_events_dict[name] = [all_records[0][2], all_records[1][2]]
+
+            # fetched_timeが最大値とその次の値の（テーブルに残す）レコードを排除したリストを作成
+            to_delete_timestamp = all_records[2:]
+            # rowidのみを抜き出したリスト
+            rowids = [item[0] for item in to_delete_timestamp]
+            to_delete_timestamp_rowids.extend(rowids)
+
+
         except sqlite3.OperationalError:
             # テーブルが作られていない（イベントが無い）場合、処理を終了
             return
 
-        if len(remain_timestamp) < 2:
-            continue
-        for item in remain_timestamp:
-            remain_timestamp_dict[item[0]] = {"event_collection_settings_name": item[1], "fetched_time": item[2]}
-
     # 削除対象イベントが無い場合、削除処理をスキップ
-    if len(remain_timestamp_dict) >= 1:
-        for rowid, item in remain_timestamp_dict.items():
-            sqliteDB.db_cursor.execute(
-                """
+    if len(remain_events_dict) >= 1:
+        #  eventsテーブルから削除対象のレコードを全件取得（remain_events_dictの情報に一致しないレコード）
+        for name, time_list in remain_events_dict.items():
+            target_placeholders = ",".join(f"'{time}'" for time in time_list)
+            where_str = f"""
                 SELECT rowid FROM events
-                WHERE ((event_collection_settings_name=? AND fetched_time=?) OR sent_flag=0)
-                """,
-                (item["event_collection_settings_name"], item["fetched_time"])
-            )
-            remain_event = sqliteDB.db_cursor.fetchall()
-            for item in remain_event:
-                remain_event_rowids.append(item[0])
+                WHERE event_collection_settings_name = ? AND fetched_time NOT IN ({target_placeholders}) AND sent_flag != ?
+            """
+            sqliteDB.db_cursor.execute(where_str, (name, 0))
+            rowids = sqliteDB.db_cursor.fetchall()
+            to_delete_events_rowids.extend([item[0] for item in rowids])
         try:
             sqliteDB.db_connect.execute("BEGIN")
-            sqliteDB.delete_unnecessary_records({"events": remain_event_rowids, "sent_timestamp": remain_timestamp_dict})
+            sqliteDB.delete_unnecessary_records({"events": to_delete_events_rowids, "sent_timestamp": to_delete_timestamp_rowids})
             g.applogger.debug(g.appmsg.get_log_message("AGT-10023", []))
         except AppException as e:  # noqa F405
             app_exception(e)

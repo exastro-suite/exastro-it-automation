@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API
   description: Exastro IT Automation API
-  version: "2.3"
+  version: "2.4"
 
 servers:
   - url: "https://{host}"
@@ -60,6 +60,10 @@ tags:
     description: CI/CD for IaCの操作
   - name: OASE
     description: OASE用
+  - name: Apply
+    description: パラメータ適用
+  - name: InternalHealthCheckService
+    description: ヘルスチェックに関する操作(内部用)
 
 paths:
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/info/:
@@ -497,6 +501,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: file
+          in: query
+          description: ファイルダウンロード指定
+          required: false
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -597,7 +607,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-  
+
   /api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/{id}/{column}/file/:
     get:
       tags:
@@ -6258,6 +6268,138 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /api/{organization_id}/workspaces/{workspace_id}/ita/apply/:
+    post:
+      tags:
+        - Apply
+      description: オペレーションの生成からパラメータの適用までを行いConductor作業実行する
+      operationId: post_apply_parameter
+      x-openapi-router-controller: controllers.apply_controller
+      parameters:
+        - name: organization_id
+          in: path
+          description: OrganizationID
+          required: true
+          schema:
+            type: string
+        - name: workspace_id
+          in: path
+          description: WorkspaceID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: 適用するパラメータ情報および作業実行するConductorの構成情報
+              type: object
+              properties:
+                conductor_class_name:
+                  type: string
+                operation_name:
+                  type: string
+                  nullable: true
+                schedule_date:
+                  type: string
+                  nullable: true
+                  example: "YYYY/MM/DD hh:mm"
+                parameter_info:
+                  anyOf:
+                    - $ref: '#/components/schemas/ApplyParameterTypeA'
+                    - $ref: '#/components/schemas/ApplyParameterTypeB'
+                    - $ref: '#/components/schemas/ApplyParameterTypeC'
+                    - $ref: '#/components/schemas/ApplyParameterTypeD'
+                  nullable: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /internal-api/health-check/liveness:
+    get:
+      tags:
+        - InternalHealthCheckService
+      summary: Internal health check liveness
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+      operationId: internal_health_check_liveness
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: string
+                    example: ""
+                  message:
+                    type: string
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
+  /internal-api/health-check/readiness:
+    get:
+      tags:
+        - InternalHealthCheckService
+      summary: Internal health check readiness
+      x-openapi-router-controller: controllers.internal_health_check_service_controller
+      operationId: internal_health_check_readiness
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    example: 000-00000
+                  data:
+                    type: string
+                    example: ""
+                  message:
+                    type: string
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ERROR_TEMPLATE'
+
 components:
   schemas:
     TABLE:
@@ -6757,6 +6899,94 @@ components:
           description: インポート対象をまとめたzipファイルを指定。
           type: string
           format: binary
+
+    ApplyParameterTypeA:
+      type: array
+      items:
+        type: object
+        properties:
+          rest_key_name:
+            type: array
+            items:
+              type: object
+              properties:
+                type:
+                  type: string
+                parameter:
+                  type: object
+                  properties:
+                    rest_key_name:
+                      type: string
+                file:
+                  type: object
+                  properties:
+                    rest_key_name:
+                      type: string
+                      example: base64 encode file
+
+    ApplyParameterTypeB:
+      type: array
+      items:
+        type: object
+        properties:
+          rest_key_name:
+            type: object
+            properties:
+              type:
+                type: string
+              parameter:
+                type: object
+                properties:
+                  rest_key_name:
+                    type: string
+              file:
+                type: object
+                properties:
+                  rest_key_name:
+                    type: string
+                    example: base64 encode file
+
+    ApplyParameterTypeC:
+      type: object
+      properties:
+        rest_key_name:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              parameter:
+                type: object
+                properties:
+                  rest_key_name:
+                    type: string
+              file:
+                type: object
+                properties:
+                  rest_key_name:
+                    type: string
+                    example: base64 encode file
+
+    ApplyParameterTypeD:
+      type: object
+      properties:
+        rest_key_name:
+          type: object
+          properties:
+            type:
+              type: string
+            parameter:
+              type: object
+              properties:
+                rest_key_name:
+                  type: string
+            file:
+              type: object
+              properties:
+                rest_key_name:
+                  type: string
+                  example: base64 encode file
 
   securitySchemes:
     BearerAuth:

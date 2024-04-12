@@ -1,0 +1,7 @@
+- name: Mount up device.
+  ansible.posix.mount:
+    path: "{{ ITA_DFLT_mount_path }}"
+    src: "{{ ITA_DFLT_mount_src }}"
+    fstype: "{{ ITA_DFLT_mount_fstype }}"
+    opts: "{{ ITA_DFLT_mount_opts | default(omit) }}"
+    state: mounted

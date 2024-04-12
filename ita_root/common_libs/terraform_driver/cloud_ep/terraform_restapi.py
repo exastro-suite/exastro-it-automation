@@ -13,6 +13,7 @@
 #
 import pathlib
 from common_libs.terraform_driver.cloud_ep.RestApiCaller import RestApiCaller
+from common_libs.common import storage_access
 
 
 def get_intarface_info_data(objdbca):
@@ -361,9 +362,12 @@ def module_upload(restApiCaller, gztar_path, upload_url):
             response_array: RESTAPI返却値
 
     """
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read = storage_access.storage_read_bytes()
+    
     # Moduleファイルアップロード用RESTAPIの特殊な仕様として、module_upload_flagをTrueとしてRESTAPIを実行する
     api_uri = None
-    content = pathlib.Path(gztar_path).read_bytes()
+    content = file_read.read_bytes(gztar_path)
     header = None
     module_upload_flag = True
     response_array = restApiCaller.rest_call('PUT', api_uri, content, header, module_upload_flag, upload_url)
@@ -854,10 +858,13 @@ def policy_file_upload(restApiCaller, tf_manage_policy_id, policy_file_data):
             response_array: RESTAPI返却値
 
     """
+    # /storage配下のファイルアクセスを/tmp経由で行うモジュール
+    file_read = storage_access.storage_read_bytes()
+    
     # Moduleファイルアップロード用RESTAPIの特殊な仕様として、module_upload_flagをTrueとしてRESTAPIを実行する
     api_uri = '/policies/%s/upload' % (tf_manage_policy_id)
     upload_url = None
-    content = pathlib.Path(policy_file_data).read_bytes()
+    content = file_read.read_bytes(policy_file_data)
     header = None
     module_upload_flag = True
     response_array = restApiCaller.rest_call('PUT', api_uri, content, header, module_upload_flag, upload_url)

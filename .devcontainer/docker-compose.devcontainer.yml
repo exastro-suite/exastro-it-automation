@@ -1,5 +1,10 @@
 version: '3.7'
 services:
+  ita-init-containers:
+    image: busybox:stable
+    volumes:
+      - ../.volumes/storage:/storage
+    command: "sh -c 'chmod 777 /storage'"
   ita-api-organization:
     build:
       target: develop_build

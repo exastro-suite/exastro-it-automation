@@ -85,7 +85,8 @@ init() {
 
             if ( ui.storageLang && ui.storageMenuGroups && ui.storagePanel && ui.storageUser ) {
                 ui.lang = ui.storageLang;
-                import(`/_/ita/js/messageid_${ui.lang}.js`).then(function( module ){
+                const uiVersion = fn.getUiVersion();
+                import(`/_/ita/js/messageid_${ui.lang}.js?v=${uiVersion}`).then(function( module ){
                     if ( ui.lang === 'ja') {
                         getMessage = module.messageid_ja();
                     } else {
@@ -143,7 +144,8 @@ setUi() {
         ui.lang = tmpLang;
 
         if ( $lang.length ) $('#lang').remove();
-        import(`/_/ita/js/messageid_${ui.lang}.js`).then(function( module ){
+        const uiVersion = fn.getUiVersion();
+        import(`/_/ita/js/messageid_${ui.lang}.js?v=${uiVersion}`).then(function( module ){
             if ( ui.lang === 'ja') {
                 getMessage = module.messageid_ja();
             } else {

@@ -29,7 +29,7 @@ const fn = ( function() {
     'use strict';
 
     // バージョン
-    const version = '2.4.0';
+    const version = '2.5.0';
 
     // AbortController
     const controller = new AbortController();
@@ -140,6 +140,14 @@ getCommonParams: function() {
 */
 getCmmonAuthFlag: function() {
     return cmmonAuthFlag;
+},
+/*
+##################################################
+   UIバージョンを返す
+##################################################
+*/
+getUiVersion: function() {
+    return version;
 },
 /*
 ##################################################

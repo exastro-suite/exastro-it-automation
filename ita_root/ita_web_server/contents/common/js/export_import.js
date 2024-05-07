@@ -836,12 +836,16 @@ importModal() {
                             + `<td class="commonTd">${menuCount}</td>`
                         + `</tr>`;
         if ( ex.type === 'menuImport') {
+            const specifiedTimeTr = ( ex.importData.mode === '2')?
+            `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th>`
+            + `<td class="commonTd">${fn.cv( ex.importData.specified_time, '', true )}</td></tr>`:
+            ``;
             html += ``
                         + `<tr class="commonTr">`
                             + `<th class="commonTh">${getMessage.FTE07007}</th>`
                             + `<td class="commonTd">${ex.exportModeText( ex.importData.mode )}</td>`
                         + `</tr>`
-                        + `${( ex.importData.mode === '2')? `<tr class="commonTr"><th class="commonTh">${getMessage.FTE07008}</th><td class="commonTd"></td></tr>`: ``}`
+                        + specifiedTimeTr
                         + `<tr class="commonTr">`
                             + `<th class="commonTh">${getMessage.FTE07009}</th>`
                             + `<td class="commonTd">${ex.exportDiscardText( ex.importData.abolished_type )}</td>`

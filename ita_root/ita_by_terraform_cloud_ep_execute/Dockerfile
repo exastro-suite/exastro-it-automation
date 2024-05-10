@@ -26,7 +26,8 @@ ENV LANGUAGE=en
 ENV STORAGEPATH=/storage/
 ENV SERVICE_NAME=ita-by-terraform-cloud-ep-execute
 
-RUN dnf install -y \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y \
     gcc \
     python39 \
     python39-devel \
@@ -43,8 +44,12 @@ RUN dnf install -y \
 WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_by_terraform_cloud_ep_execute/pyproject.toml ./ita_root/ita_by_terraform_cloud_ep_execute/poetry.lock $APP_PATH/
-RUN poetry install --only first_install
-RUN poetry install --without develop_build
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --only first_install
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --without develop_build
 
 #
 # Build for development
@@ -55,7 +60,8 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
-RUN dnf install -y \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y \
     sudo \
     git \
     vim \
@@ -65,7 +71,8 @@ RUN dnf install -y \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
-RUN poetry install --with develop_build
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --with develop_build
 
 USER $USERNAME
 

@@ -28,6 +28,7 @@ from flask import g
 import requests
 import json
 import shutil
+import inspect
 import traceback
 from urllib.parse import urlparse
 from common_libs.common.exception import AppException
@@ -810,3 +811,16 @@ def url_check(url_string, scheme='', path=False, params=False, query=False, frag
         return False, e
 
     return True, parse_obj
+
+
+def print_exception_msg(e):
+    """
+    例外メッセージを、infoログに出力する
+    """
+
+    # 例外と、発生したファイ名と行番号を出力
+    info = inspect.getouterframes(inspect.currentframe())[1]
+    msg_line = "({}:{})".format(os.path.basename(info.filename), info.lineno)
+    exception_msg = "exception_msg='{}'".format(e)
+    g.applogger.info('[timestamp={}] {} {}'.format(get_iso_datetime(), exception_msg, msg_line))
+

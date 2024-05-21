@@ -58,7 +58,7 @@ class DialogTable(TableBase):
             result_vars = dialog_analyzer.analyze(dialog_matter_id, file_name)
             if result_vars is None:
                 debug_msg = g.appmsg.get_log_message("MSG-10100", [f"{dialog_matter_id}:{file_name}"])
-                g.applogger.debug(debug_msg)
+                g.applogger.info(debug_msg)
                 continue
 
             if dialog_type_id not in result_dict:
@@ -75,6 +75,6 @@ class DialogTable(TableBase):
                 else:
                     dialog_name_with_pkey = f"{dialog_matter_id}:{dialog_matter_row['DIALOG_MATTER_FILE']}"
                     debug_msg = g.appmsg.get_log_message("MSG-10123", [dialog_name_with_pkey, ','.join([str(line_no) for line_no in line_array]), tpf_var_name])
-                    g.applogger.debug(debug_msg)
+                    g.applogger.info(debug_msg)
 
         return result_dict

@@ -464,10 +464,10 @@ class SubValueAutoReg():
                 # エラーがあるのでスキップ
                 msgstr = g.appmsg.get_api_message("MSG-10356", [in_tableNameToMenuIdList[table_name]])
                 frame = inspect.currentframe().f_back
-                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                 # 次のテーブルへ
                 continue
-            
+
             # パラメータシートのテーブル構成確認
             where = "WHERE DISUSE_FLAG = '0'"
             ret = WS_DB.table_select(table_name, where, [])
@@ -481,7 +481,7 @@ class SubValueAutoReg():
             make_sql += hostid_chk_sql + " \n "
             make_sql += " TBL_A." + pkey_name + " AS %s   \n "
             make_sql += ", TBL_A.HOST_ID \n "
-            for tmp_col_value in col_value.values():                
+            for tmp_col_value in col_value.values():
                 # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出してスキップする。
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is False:
                     msgstr = g.appmsg.get_api_message("MSG-10939", [tmp_col_value["COLUMN_ID"]])
@@ -493,15 +493,15 @@ class SubValueAutoReg():
                     frame = inspect.currentframe().f_back
                     g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                     continue
-                
+
                 # パラメータシートに縦メニュー用代入順序があるか判定
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is True:
                     make_sql += ", TBL_A.INPUT_ORDER \n "
                 else:
                     make_sql += ", '' AS INPUT_ORDER \n "
-                    
+
                 data_cnt += 1
-            
+
             # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出してスキップする。
             if data_cnt == 0:
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is False:
@@ -962,7 +962,7 @@ class SubValueAutoReg():
             if len(data_list) == 0:
                 msgstr = g.appmsg.get_api_message("MSG-10368", [in_tableNameToMenuIdList[table_name]])
                 frame = inspect.currentframe().f_back
-                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                 # 次のテーブルへ
                 continue
 
@@ -973,7 +973,7 @@ class SubValueAutoReg():
                     # オペレーションID未登録
                     msgstr = g.appmsg.get_api_message("MSG-10360", [in_tableNameToMenuIdList[table_name], row[AnscConst.DF_ITA_LOCAL_PKEY]])
                     frame = inspect.currentframe().f_back
-                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                     warning_flag = 1
                     # 次のデータへ
@@ -986,7 +986,7 @@ class SubValueAutoReg():
                     # ホストIDの紐付不正
                     msgstr = g.appmsg.get_api_message("MSG-10359", [in_tableNameToMenuIdList[table_name], row[AnscConst.DF_ITA_LOCAL_PKEY], row['HOST_ID']])
                     frame = inspect.currentframe().f_back
-                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                     warning_flag = 1
                     # 次のデータへ
@@ -996,7 +996,7 @@ class SubValueAutoReg():
                 if row['HOST_ID'] is None or len(row['HOST_ID']) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10361", [in_tableNameToMenuIdList[table_name], row[AnscConst.DF_ITA_LOCAL_PKEY]])
                     frame = inspect.currentframe().f_back
-                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                     warning_flag = 1
                     # 次のデータへ
@@ -1017,7 +1017,7 @@ class SubValueAutoReg():
                     host_ary.append(row['HOST_ID'])
 
                 parameter = {}
-            
+
             for tmp_table_name, tmp_value in tmp_ary_data.items():
                 registered_data_cnt = 0
                 registered_host_ary = []
@@ -1141,7 +1141,7 @@ class SubValueAutoReg():
                                         if not os.path.exists(col_filepath):
                                             msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
                                             frame = inspect.currentframe().f_back
-                                            g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                            g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                                             warning_flag = 1
                                             # 次のデータへ
                                             continue
@@ -1216,11 +1216,13 @@ class SubValueAutoReg():
                         if col_data["COLUMN_ASSIGN_SEQ"] is not None:
                             if col_data["COLUMN_ASSIGN_SEQ"] == row["INPUT_ORDER"]:
                                 chk_flag = True
+                        else:
+                            chk_flag = True
 
-                    if chk_flag == 0:
+                    if chk_flag is False:
                         msgstr = g.appmsg.get_api_message("MSG-10902", [col_data["COLUMN_ID"]])
                         frame = inspect.currentframe().f_back
-                        g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                        g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                         warning_flag = 1
 
         # オブジェクト解放
@@ -1474,7 +1476,7 @@ class SubValueAutoReg():
             if not self.getNullDataHandlingID(in_null_data_handling_flg, WS_DB) == '1':
                 msgstr = g.appmsg.get_api_message("MSG-10375", [in_menu_id, in_row_id, in_menu_title])
                 frame = inspect.currentframe().f_back
-                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                 return False
 
@@ -1497,7 +1499,7 @@ class SubValueAutoReg():
         if in_col_val is None:
             msgstr = g.appmsg.get_api_message("MSG-10377", [in_menu_id, in_row_id, in_menu_title])
             frame = inspect.currentframe().f_back
-            g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+            g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
             return False
 
@@ -1665,7 +1667,7 @@ class SubValueAutoReg():
 
                                 msgstr = g.appmsg.get_api_message("MSG-10369", [dup_info['COLUMN_ID'], in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
                                 frame = inspect.currentframe().f_back
-                                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
             if chk_flg == 1:
                 chk_status = True
                 # オペ+作業+ホスト+変数+メンバ変数の組合せの代入順序退避
@@ -1711,7 +1713,7 @@ class SubValueAutoReg():
 
                                     msgstr = g.appmsg.get_api_message("MSG-10369", [dup_info['COLUMN_ID'], in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
                                     frame = inspect.currentframe().f_back
-                                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
             if chk_flg == 1:
                 chk_status = True
                 # オペ+作業+ホスト+変数+メンバ変数の組合せの代入順序退避
@@ -2179,19 +2181,19 @@ class SubValueAutoReg():
         # 変数の選択判定
         if row[in_vars_link_id] is None or len(row[in_vars_link_id]) == 0:
             msgstr = g.appmsg.get_api_message("MSG-10354", [row['COLUMN_ID'], in_col_type])
-            g.applogger.debug(msgstr)
+            g.applogger.info(msgstr)
             return False, inout_vars_attr
 
         # 変数が作業パターン変数紐付にあるか判定
         if row[in_ptn_vars_link_cnt] is None or row[in_ptn_vars_link_cnt] == 0:
             msgstr = g.appmsg.get_api_message("MSG-10348", [row['COLUMN_ID'], in_col_type])
-            g.applogger.debug(msgstr)
+            g.applogger.info(msgstr)
             return False, inout_vars_attr
 
         # 設定されている変数が変数一覧にあるか判定
         if row[in_vars_name] is None or len(str(row[in_vars_name])) == 0:
             msgstr = g.appmsg.get_api_message("MSG-10345", [row['COLUMN_ID'], in_col_type])
-            g.applogger.debug(msgstr)
+            g.applogger.info(msgstr)
             return False, inout_vars_attr
 
         # ロールのみ変数タイプの判定
@@ -2200,7 +2202,7 @@ class SubValueAutoReg():
                 inout_vars_attr = row[in_vars_attribute_01]
             else:
                 msgstr = g.appmsg.get_api_message("MSG-10439", [row['COLUMN_ID'], in_col_type])
-                g.applogger.debug(msgstr)
+                g.applogger.info(msgstr)
                 return False, inout_vars_attr
 
             # メンバー変数がメンバー変数一覧にあるか判定
@@ -2208,31 +2210,31 @@ class SubValueAutoReg():
                 # メンバー変数の選択判定
                 if row[in_col_seq_combination_id] is None or len(row[in_col_seq_combination_id]) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10419", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
 
                 # カラムタイプ型に設定されているメンバー変数がメンバー変数一覧にあるか判定
                 if row[in_col_combination_member_alias] is None or len(row[in_col_combination_member_alias]) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10349", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
             else:
                 if not row[in_col_seq_combination_id] is None and not len(row[in_col_seq_combination_id]) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10418", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
 
             if inout_vars_attr == AnscConst.GC_VARS_ATTR_LIST:
                 if row[in_assign_seq] is None or len(str(row[in_assign_seq])) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10350", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
 
             elif inout_vars_attr == AnscConst.GC_VARS_ATTR_M_ARRAY:
                 if row[in_assign_seq_need] == 1:
                     if row[in_assign_seq] is None or row[in_assign_seq] == 0:
                         msgstr = g.appmsg.get_api_message("MSG-10350", [row['COLUMN_ID'], in_col_type])
-                        g.applogger.debug(msgstr)
+                        g.applogger.info(msgstr)
                         return False, inout_vars_attr
         else:
             # Legacy・Pioneerは一般変数として処理

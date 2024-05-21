@@ -57,7 +57,7 @@ class PlaybookTable(TableBase):
             result_vars = playbook_analyzer.analyze(playbook_matter_id, file_name)
             if result_vars is None:
                 debug_msg = g.appmsg.get_log_message("MSG-10100", [f"{playbook_matter_id}:{file_name}"])
-                g.applogger.debug(debug_msg)
+                g.applogger.info(debug_msg)
                 continue
 
             result_dict[playbook_matter_id] = set()
@@ -73,6 +73,6 @@ class PlaybookTable(TableBase):
                 else:
                     playbook_name_with_pkey = f"{playbook_matter_id}:{playbook_matter_row['PLAYBOOK_MATTER_NAME']}"
                     debug_msg = g.appmsg.get_log_message("MSG-10123", [playbook_name_with_pkey, ','.join([str(line_no) for line_no in line_array]), tpf_var_name])
-                    g.applogger.debug(debug_msg)
+                    g.applogger.info(debug_msg)
 
         return result_dict

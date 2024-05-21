@@ -35,6 +35,8 @@ from common_libs.ansible_driver.functions.util import getAnsibleConst
 from common_libs.ansible_driver.classes.controll_ansible_agent import DockerMode, KubernetesMode
 from common_libs.common.exception import AppException
 from libs import common_functions as cm
+import traceback
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 # ansible共通の定数をロード
 ansc_const = AnscConst()
@@ -74,8 +76,9 @@ def main_logic(common_db):
             if str(maintenance_mode['data_update_stop']) == "1":
                 g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
                 return True
-        except Exception:
-            # エラーログ出力
+        except Exception as e:
+            t = traceback.format_exc()  # 例外メッセージとトレース出力
+            g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
             return False
 

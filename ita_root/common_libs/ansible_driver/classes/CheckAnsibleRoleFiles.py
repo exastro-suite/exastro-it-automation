@@ -154,8 +154,9 @@ class CheckAnsibleRoleFiles():
             with zipfile.ZipFile(in_zip_path) as zip:
                 zip.extractall(in_dist_path)
 
-        except Exception:
+        except Exception as e:
             msgstr = g.appmsg.get_api_message("MSG-10259")
+            msgstr += " (exception meg:{})".format(str(e))  # 例外メッセージ結合
             self.SetLastError(os.path.basename(inspect.currentframe().f_code.co_filename), inspect.currentframe().f_lineno, msgstr)
             return False
 
@@ -1499,6 +1500,7 @@ class DefaultVarsFileAnalysis():
         try:
             float(s)
         except ValueError:
+            # #2199 数値判定をしているだけなのでログ出力不要
             return False
         else:
             return True
@@ -2617,6 +2619,7 @@ class DefaultVarsFileAnalysis():
             try:
                 result = php_array[str(idx)]
             except KeyError:
+                # #2199 Keyの存在確認をしているだけなのでログ出力不要
                 try:
                     result = php_array[idx]
                 except KeyError:
@@ -4131,13 +4134,12 @@ class VarStructAnalysisFileAccess():
                                 errormsg += g.appmsg.get_api_message("MSG-10581", [parammsg])
 
                             else:
-                                if self.log_level == "DEBUG":
-                                    # グローバル変数管理に変数未登録
-                                    # MSG-10600 = "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
-                                    if len(errormsg) > 0:
-                                        errormsg = '%s\n' % (errormsg)
+                                # グローバル変数管理に変数未登録
+                                # MSG-10600 = "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
+                                if len(errormsg) > 0:
+                                    errormsg = '%s\n' % (errormsg)
 
-                                    errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
+                                errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
 
                             # 次の変数へ
                             continue
@@ -4202,12 +4204,11 @@ class VarStructAnalysisFileAccess():
                     errormsg += g.appmsg.get_api_message("MSG-10606", [rolename, tpf_var_name])
 
                 else:
-                    if self.log_level == "DEBUG":
-                        # テンプレート管理に変数未登録
-                        if len(errormsg) > 0:
-                            errormsg = '%s\n' % (errormsg)
+                    # テンプレート管理に変数未登録
+                    if len(errormsg) > 0:
+                        errormsg = '%s\n' % (errormsg)
 
-                        errormsg += g.appmsg.get_api_message("MSG-10601", [rolename, tpf_var_name])
+                    errormsg += g.appmsg.get_api_message("MSG-10601", [rolename, tpf_var_name])
 
         return gbl_vars_list, tpf_vars_struct, errormsg
 
@@ -4320,12 +4321,11 @@ class VarStructAnalysisFileAccess():
                             errormsg += g.appmsg.get_api_message("MSG-10605", [var_name])
 
                         else:
-                            if self.log_level == "DEBUG":
-                                # MSG-10600 "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
-                                if len(errormsg) > 0:
-                                    errormsg = '%s\n' % (errormsg)
+                            # MSG-10600 "グローバル変数管理にグローバル変数が登録されていません。このグローバル変数の処理をスキップします。(グローバル>変数:{})"
+                            if len(errormsg) > 0:
+                                errormsg = '%s\n' % (errormsg)
 
-                                errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
+                            errormsg += g.appmsg.get_api_message("MSG-10600", [var_name])
 
         return tpf_vars_list, errormsg
 

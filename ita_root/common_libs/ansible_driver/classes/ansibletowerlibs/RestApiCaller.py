@@ -254,9 +254,11 @@ class RestApiCaller():
                                     if re.search('\s*application\/json', arrHeader[1]):
                                         try:
                                             response_array['responseContents'] = json.loads(responseContents)
+                                        except Exception as e:
+                                            response_array['statusCode'] = -3
+                                            # ログに出力されるレスポンスボディに例外メッセージを詰め込む
+                                            print_ResponseContents = "json decode error responseContents={}".format(str(responseContents)) + " (exception message:{})".format(str(e))
 
-                                        except json.JSONDecodeError as e:
-                                            response_array['responseContents'] = None
 
                             # 正常時
                             self.apperrorloger(self.backtrace(), False)

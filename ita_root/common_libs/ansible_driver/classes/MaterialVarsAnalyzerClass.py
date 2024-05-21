@@ -45,7 +45,7 @@ class MaterialVarsAnalyzer():
         try:
             data_string = self._read_material_file(uuid, file_name)
         except Exception as e:
-            g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+            g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
             type_, value, traceback_ = sys.exc_info()
             msg = traceback.format_exception(type_, value, traceback_)
             g.applogger.info(msg)

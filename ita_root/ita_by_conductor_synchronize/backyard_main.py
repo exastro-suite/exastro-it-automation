@@ -139,7 +139,7 @@ def backyard_main(organization_id, workspace_id):
                     g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     raise Exception()
 
-        except Exception:
+        except Exception as e:
             ci_update_flg = 0
             tmp_msg = g.appmsg.get_log_message("BKY-41008", ['Failed'])
             g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

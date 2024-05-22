@@ -57,7 +57,7 @@ class TemplateTable(TableBase):
                 if "1" == str(row['ROLE_ONLY_FLAG']):
                     msgstr = g.appmsg.get_api_message("MSG-10599", [tpl_var_name])
                     msgstr = g.appmsg.get_api_message("MSG-10579", [msgstr])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     continue
 
                 var_struct = json.loads(row['VAR_STRUCT_ANAL_JSON_STRING'])
@@ -70,10 +70,10 @@ class TemplateTable(TableBase):
 
             except Exception as e:
                 debug_msg = g.appmsg.get_log_message("BKY-30006", [tpl_var_id, tpl_var_name])
-                g.applogger.debug(debug_msg)
-                g.applogger.debug(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
+                g.applogger.info(debug_msg)
+                g.applogger.info(addline_msg('{}{}'.format(e, sys._getframe().f_code.co_name)))
                 type_, value, traceback_ = sys.exc_info()
                 msg = traceback.format_exception(type_, value, traceback_)
-                g.applogger.debug(msg)
+                g.applogger.info(msg)
 
         return result_dict

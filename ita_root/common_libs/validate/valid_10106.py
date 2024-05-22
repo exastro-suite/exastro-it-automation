@@ -21,35 +21,32 @@ def external_valid_menu_before(objdbca, objtable, option):
     retBool = True
     msg = ''
 
-    try:
-        cmd_type = option.get("cmd_type")
-        if cmd_type in ["Register", "Update", "Restore"]:
-            entry_parameter = option.get('entry_parameter')
-            directories_to_delete = entry_parameter.get('parameter').get('directories_to_delete')
-            chk_path = '{}/{}'.format(get_base_path(), directories_to_delete)
-            # 使用禁止: .. スペース
-            pattern = re.compile(r"(^(.*)\.{2}(.*)$)|[ \s\t\n\r\f\v]", re.DOTALL)
-            tmp_result = pattern.findall(chk_path)
-            if len(tmp_result) != 0:
-                msg = g.appmsg.get_api_message('MSG-110001', [directories_to_delete])
-                raise Exception()
+    cmd_type = option.get("cmd_type")
+    if cmd_type in ["Register", "Update", "Restore"]:
+        entry_parameter = option.get('entry_parameter')
+        directories_to_delete = entry_parameter.get('parameter').get('directories_to_delete')
+        chk_path = '{}/{}'.format(get_base_path(), directories_to_delete)
+        # 使用禁止: .. スペース
+        pattern = re.compile(r"(^(.*)\.{2}(.*)$)|[ \s\t\n\r\f\v]", re.DOTALL)
+        tmp_result = pattern.findall(chk_path)
+        if len(tmp_result) != 0:
+            msg = g.appmsg.get_api_message('MSG-110001', [directories_to_delete])
+            return False, msg, option,
 
-            # 有効削除日数を取得
-            now_time = datetime.datetime.now()
-            _unix_s_time = datetime.datetime.strptime("1970-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
-            _allow_days = now_time - _unix_s_time
-            allow_days = _allow_days.days
-            deletion_days = entry_parameter.get('parameter').get('deletion_days')
-            try:
-                if allow_days < deletion_days:
-                    msg = g.appmsg.get_api_message('MSG-110002', [1, allow_days, deletion_days])
-                    raise Exception()
-            except TypeError:
-                # Use validate:NumColumn.check_basic_valid
-                pass
+        # 有効削除日数を取得
+        now_time = datetime.datetime.now()
+        _unix_s_time = datetime.datetime.strptime("1970-01-01 00:00:00.000000", '%Y-%m-%d %H:%M:%S.%f')
+        _allow_days = now_time - _unix_s_time
+        allow_days = _allow_days.days
+        deletion_days = entry_parameter.get('parameter').get('deletion_days')
+        try:
+            if allow_days < deletion_days:
+                msg = g.appmsg.get_api_message('MSG-110002', [1, allow_days, deletion_days])
+                return False, msg, option,
+        except TypeError:
+            # Use validate:NumColumn.check_basic_valid
+            pass
 
-    except Exception:
-        retBool = False
     return retBool, msg, option,
 
 

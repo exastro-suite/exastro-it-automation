@@ -90,14 +90,14 @@ class RolePkgTable(TableBase):
                                     varmgr.merge_variable_list(tpl_varmng_dict[tpl_var_name].export_var_list())
                                 else:
                                     debug_msg = g.appmsg.get_log_message("MSG-10531", [tpl_var_name])
-                                    g.applogger.debug(debug_msg)
+                                    g.applogger.info(debug_msg)
 
             except Exception as e:
                 debug_msg = g.appmsg.get_log_message("BKY-30007", [role_pkg_id, role_pkg_name])
-                g.applogger.debug(debug_msg)
-                g.applogger.debug(addline_msg('{} {}'.format(e, sys._getframe().f_code.co_name)))
+                g.applogger.info(debug_msg)
+                g.applogger.info(addline_msg('{} {}'.format(e, sys._getframe().f_code.co_name)))
                 type_, value, traceback_ = sys.exc_info()
                 msg = traceback.format_exception(type_, value, traceback_)
-                g.applogger.debug(msg)
+                g.applogger.info(msg)
 
         return role_name_list, role_varmgr_dict

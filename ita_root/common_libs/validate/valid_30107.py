@@ -53,13 +53,13 @@ def conductor_regularly_valid(objdbca, objtable, option):  # noqa: C901
             try:
                 dt_start_date = datetime.datetime.strptime(start_date, '%Y/%m/%d %H:%M:%S')
             except Exception:
-                # 日時のフォーマットチェックは、カラムクラスのバリデーションチェックでエラー内容を返す
+                # 日時のフォーマットチェックは、のちに実行されるカラムクラスのバリデーションチェックでエラー内容を返すため、ここではエラーをスルーさせる
                 check_bool = False
 
             try:
                 dt_end_date = datetime.datetime.strptime(end_date, '%Y/%m/%d %H:%M:%S')
             except Exception:
-                # 日時のフォーマットチェックは、カラムクラスのバリデーションチェックでエラー内容を返す
+                # 日時のフォーマットチェックは、のちに実行されるカラムクラスのバリデーションチェックでエラー内容を返すため、ここではエラーをスルーさせる
                 check_bool = False
 
             if check_bool:
@@ -220,13 +220,13 @@ def conductor_regularly_valid(objdbca, objtable, option):  # noqa: C901
             dt_execution_stop_start_date = datetime.datetime.strptime(execution_stop_start_date, '%Y/%m/%d %H:%M:%S')
         except Exception:
             check_bool = False
-            # 日時のフォーマットチェックは、カラムクラスのバリデーションチェックでエラー内容を返す
+            # 日時のフォーマットチェックは、のちに実行されるカラムクラスのバリデーションチェックでエラー内容を返すため、ここではエラーをスルーさせる
 
         try:
             dt_execution_stop_end_date = datetime.datetime.strptime(execution_stop_end_date, '%Y/%m/%d %H:%M:%S')
         except Exception:
             check_bool = False
-            # 日時のフォーマットチェックは、カラムクラスのバリデーションチェックでエラー内容を返す
+            # 日時のフォーマットチェックは、のちに実行されるカラムクラスのバリデーションチェックでエラー内容を返すため、ここではエラーをスルーさせる
 
         if check_bool:
             # 日時フォーマットに問題なければ開始と終了の値を比較する

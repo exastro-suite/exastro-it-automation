@@ -26,6 +26,11 @@ from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
 from libs.event_collection_settings import set_dir, create_file, remove_file, get_settings
 
+import traceback
+from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime
+from common_libs.common.util import print_exception_msg
+
 
 def agent_main(organization_id, workspace_id, loop_count, interval):
     count = 1
@@ -74,7 +79,10 @@ def agent_main(organization_id, workspace_id, loop_count, interval):
         sqliteDB.db_connect.execute("VACUUM")
         sqliteDB.db_close()
         g.applogger.debug(g.appmsg.get_log_message("AGT-10025", []))
-    except Exception:
+    except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+        print_exception_msg(e)
         g.applogger.info(g.appmsg.get_log_message("AGT-10026", []))
 
 
@@ -135,6 +143,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
                 sqliteDB.insert_last_fetched_time(name, current_timestamp)
                 sqliteDB.db_connect.commit()
     except sqlite3.OperationalError:
+        # 最終取得日時テーブルが存在しない場合、最終取得日時テーブル作成語、再度、登録する
         for name in setting_name_list:
             sqliteDB.insert_last_fetched_time(name, current_timestamp)
             sqliteDB.db_connect.commit()
@@ -291,8 +300,11 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
             to_delete_timestamp_rowids.extend(rowids)
 
 
-        except sqlite3.OperationalError:
+        except sqlite3.OperationalError as e:
             # テーブルが作られていない（イベントが無い）場合、処理を終了
+            t = traceback.format_exc()
+            g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+            print_exception_msg(e)
             return
 
     # 削除対象イベントが無い場合、削除処理をスキップ

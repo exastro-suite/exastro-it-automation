@@ -4719,6 +4719,7 @@ class CreateAnsibleExecFiles():
                 return False
             return True
         except Exception:
+            # #2199 list形式か判定しているだけなのでログ出力不要
             return False
 
     def getAnsible_vault_host_var_file(self, in_hostname):
@@ -8511,6 +8512,7 @@ class CreateAnsibleExecFiles():
         try:
             n = float(s)
         except ValueError:
+            # #2199 数値判定をしているだけなのでログ出力不要
             return False
 
         return n

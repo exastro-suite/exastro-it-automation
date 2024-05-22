@@ -38,55 +38,48 @@ def external_valid_menu_before(objdbca, objtable, option):
             if os.path.exists(uploadPath):
                 shutil.rmtree(uploadPath)
 
-        try:
-            # ファイルがzip形式か確認
-            if not file_name.endswith('.zip'):
+        # ファイルがzip形式か確認
+        if not file_name.endswith('.zip'):
+            if os.path.exists(uploadPath):
+                shutil.rmtree(uploadPath)
+            errormsg = g.appmsg.get_api_message("499-00308")
+            return False, errormsg, option
+
+        if zipfile.is_zipfile(uploadPath + file_name):
+            with zipfile.ZipFile(uploadPath + file_name) as z:
+                for info in z.infolist():
+                    info.filename = info.orig_filename.encode('cp437').decode('cp932')
+                    if os.sep != "/" and os.sep in info.filename:
+                        info.filename = info.filename.replace(os.sep, "/")
+                    z.extract(info, path=uploadPath)
+
+            lst = os.listdir(uploadPath)
+
+            fileAry = []
+            for value in lst:
+                if not value == '.' and not value == '..':
+                    path = os.path.join(uploadPath, value)
+                    if os.path.isdir(path):
+                        dir_name = value
+                        sublst = os.listdir(path)
+                        for subvalue in sublst:
+                            if not subvalue == '.' and not subvalue == '..':
+                                fileAry.append(dir_name + "/" + subvalue)
+                    else:
+                        fileAry.append(value)
+
+            # 必須ファイルの確認
+            errFlg = True
+            for value in fileAry:
+                if 'main.html' == value:
+                    errFlg = False
+
+            if errFlg is True:
                 if os.path.exists(uploadPath):
                     shutil.rmtree(uploadPath)
-                errormsg = g.appmsg.get_api_message("499-00308")
+                errormsg = g.appmsg.get_api_message("499-00307")
                 return False, errormsg, option
-
-            if zipfile.is_zipfile(uploadPath + file_name):
-                with zipfile.ZipFile(uploadPath + file_name) as z:
-                    for info in z.infolist():
-                        info.filename = info.orig_filename.encode('cp437').decode('cp932')
-                        if os.sep != "/" and os.sep in info.filename:
-                            info.filename = info.filename.replace(os.sep, "/")
-                        z.extract(info, path=uploadPath)
-
-                lst = os.listdir(uploadPath)
-
-                fileAry = []
-                for value in lst:
-                    if not value == '.' and not value == '..':
-                        path = os.path.join(uploadPath, value)
-                        if os.path.isdir(path):
-                            dir_name = value
-                            sublst = os.listdir(path)
-                            for subvalue in sublst:
-                                if not subvalue == '.' and not subvalue == '..':
-                                    fileAry.append(dir_name + "/" + subvalue)
-                        else:
-                            fileAry.append(value)
-
-                # 必須ファイルの確認
-                errFlg = True
-                for value in fileAry:
-                    if 'main.html' == value:
-                        errFlg = False
-
-                if errFlg is True:
-                    if os.path.exists(uploadPath):
-                        shutil.rmtree(uploadPath)
-                    errormsg = g.appmsg.get_api_message("499-00307")
-                    return False, errormsg, option
-            else:
-                if os.path.exists(uploadPath):
-                    shutil.rmtree(uploadPath)
-                errormsg = g.appmsg.get_api_message("499-00308")
-                return False, errormsg, option
-
-        except Exception as e:
+        else:
             if os.path.exists(uploadPath):
                 shutil.rmtree(uploadPath)
             errormsg = g.appmsg.get_api_message("499-00308")

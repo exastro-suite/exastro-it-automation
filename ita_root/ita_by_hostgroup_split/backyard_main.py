@@ -118,7 +118,7 @@ def backyard_main(organization_id, workspace_id):
                 result, file_columns_info = get_file_columns_info(objdbca, input_table, output_table)  # noqa: F405
                 if result is False:
                     tmp_msg = g.appmsg.get_log_message("BKY-70006", [])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # config
@@ -154,7 +154,7 @@ def backyard_main(organization_id, workspace_id):
                         "BKY-70007",
                         [target['INPUT_MENU_NAME_REST'], target['OUTPUT_MENU_NAME_REST'], target['ROW_ID']]
                     )
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # 件数ログ

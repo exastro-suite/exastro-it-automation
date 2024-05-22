@@ -65,6 +65,8 @@ def get_compares_info(organization_id, workspace_id, menu):  # noqa: E501
         # 作業実行関連のメニューの基本情報および項目情報の取得
         tmp_data = get_compare_execute_info(organization_id, workspace_id, menu)
         result_data.setdefault("menu_info", tmp_data[0]["data"])
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -115,6 +117,8 @@ def post_compare_execute(organization_id, workspace_id, menu, body=None):  # noq
         options = {}
         options.setdefault("compare_mode", "normal")
         result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -166,6 +170,8 @@ def post_compare_execute_output(organization_id, workspace_id, menu, body=None):
         options.setdefault("compare_mode", "nomal")
         options.setdefault("output_flg", True)
         result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -216,6 +222,8 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  
         options = {}
         options.setdefault("compare_mode", "file")
         result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -256,6 +264,8 @@ def get_compare_execute_info(organization_id, workspace_id, menu):  # noqa: E501
         data = {}
         for target in target_menus:
             data[target] = menu_info.collect_menu_info(objdbca, target)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -304,6 +314,8 @@ def get_compare_execute_search_candidates(organization_id, workspace_id, menu, t
 
         # 対象項目のプルダウン検索候補一覧を取得
         data = menu_info.collect_search_candidates(objdbca, target, column)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -357,6 +369,8 @@ def post_copmare_execute_filter(organization_id, workspace_id, menu, target, bod
 
         # メニューのカラム情報を取得
         result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

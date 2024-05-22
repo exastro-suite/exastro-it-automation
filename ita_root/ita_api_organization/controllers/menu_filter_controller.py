@@ -59,6 +59,8 @@ def get_filter_count(organization_id, workspace_id, menu):  # noqa: E501
 
         filter_parameter = {}
         result_data = menu_filter.rest_count(objdbca, menu, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -107,6 +109,8 @@ def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
         if file == 'no':
             for value in result_data:
                 value['file'] = {}
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -147,6 +151,8 @@ def get_journal(organization_id, workspace_id, menu, uuid):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = menu_filter.rest_filter_journal(objdbca, menu, uuid)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -203,6 +209,8 @@ def post_filter(organization_id, workspace_id, menu, body=None, file=None):  # n
         if file == 'no':
             for value in result_data:
                 value['file'] = {}
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -251,6 +259,8 @@ def post_filter_count(organization_id, workspace_id, menu, body=None):  # noqa: 
 
         # メニューのカラム情報を取得
         result_data = menu_filter.rest_count(objdbca, menu, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -293,6 +303,8 @@ def download_file(organization_id, workspace_id, menu, id, column):
 
         # ファイルデータ取得
         result_data = menu_filter.get_file_data(objdbca, menu, filter_parameter, id, column)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

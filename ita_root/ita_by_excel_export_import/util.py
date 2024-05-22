@@ -21,6 +21,7 @@ import datetime
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import storage_access
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 
 """
@@ -54,6 +55,9 @@ def setStatus(taskId, status, objdbca=None, is_register_history=True):
         objdbca.db_transaction_end(True)
 
     except Exception as msg:
+        # スタックトレース出力
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         objdbca.db_transaction_end(False)
         return False, msg
 
@@ -137,7 +141,7 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
     """
 
     result = False
-    
+
     # tmp配下でzipに固める
     tmp_dir_path = "/tmp/{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')) + "/tmp_zip"
     shutil.copytree(dirPath + "/tmp_zip", tmp_dir_path)
@@ -183,9 +187,12 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
         objdbca.db_transaction_end(True)
 
     except Exception:
+        # スタックトレース出力
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         objdbca.db_transaction_end(False)
         return False
-    
+
     # tmp配下削除
     shutil.rmtree(tmp_dir_path)
     os.remove(tmp_dir_path + ".zip")
@@ -220,6 +227,9 @@ def registerResultFile(taskId, objdbca):
         objdbca.db_transaction_end(True)
 
     except Exception:
+        # スタックトレース出力
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         objdbca.db_transaction_end(False)
         return False
 

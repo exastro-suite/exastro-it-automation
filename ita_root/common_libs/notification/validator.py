@@ -15,6 +15,8 @@
 import chardet
 import jinja2
 import re
+from common_libs.common.util import print_exception_msg
+from flask import g
 
 
 def is_binary_file(template_data_binary):
@@ -42,7 +44,8 @@ def is_jinja2_template(template_data_decoded):
 
     try:
         jinja2.Template(template_data_decoded)
-    except Exception:
+    except Exception as e:
+        print_exception_msg(e)
         return False
 
     return True

@@ -21,7 +21,8 @@ from flask import g  # noqa: F401
 from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.conductor.classes.exec_util import *  # noqa: F403
-
+import traceback
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 def check_params(request_data):
     """
@@ -313,7 +314,7 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
                     primary_key = loadtable_obj_dict[menu].get_primary_key()
                     target_uuid_key = loadtable_obj_dict[menu].get_rest_key(primary_key)
                     if 'parameter' in v:
-                        target_uuid = v.get('parameter').get(target_uuid_key)
+                        target_uuid = v.get('parameter', {}).get(target_uuid_key)
 
                     # 更新系の操作の場合、最終更新日時を取得
                     if target_uuid and v['type'] in ['Update', 'Restore', 'Discard'] \
@@ -412,6 +413,8 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
         result_data["conductor_instance_id"] = conductor_instance_id
 
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         status_code = "499-00804"
         log_msg_args = [conductor_class_name, operation_name, schedule_date]
         api_msg_args = [conductor_class_name, operation_name, schedule_date]

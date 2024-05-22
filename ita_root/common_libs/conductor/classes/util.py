@@ -18,6 +18,9 @@ import re
 import json
 import copy
 
+import traceback
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
+
 
 class ConductorCommonLibs():
     config_data = {}
@@ -181,7 +184,7 @@ class ConductorCommonLibs():
                 return False, err_code, res_chk[1]
 
             # check node call loop
-            res_chk = self.chk_call_loop_base_1(tmp_c_all_data.get('conductor').get('id'), tmp_c_all_data)
+            res_chk = self.chk_call_loop_base_1(tmp_c_all_data.get('conductor', {}).get('id'), tmp_c_all_data)
             if res_chk[0] is False:
                 return False, err_code, res_chk[1]
 
@@ -189,6 +192,8 @@ class ConductorCommonLibs():
             tmp_msg_key = g.appmsg.get_api_message('MSG-00004')
             tmp_msg = g.appmsg.get_api_message('MSG-40004')
             err_msg = json.dumps([json.dumps({tmp_msg_key: tmp_msg}, ensure_ascii=False)], ensure_ascii=False)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             return False, err_code, err_msg,
 
         return True,
@@ -1002,80 +1007,71 @@ class ConductorCommonLibs():
         chk_num_1 = len(c_all_data)
         if c_all_data:
             res_check = self.chk_format_all(c_all_data)
-            if res_check[0] is False:
-                return res_check
 
-        try:
-            # conductor name
-            if self.conductor_data['id']:
-                if self.cmd_type != 'Register':
-                    data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [self.conductor_data['id']])  # noqa E501
-                    self.conductor_data['conductor_name'] = data_list[0]['CONDUCTOR_NAME']
+        # conductor name
+        if self.conductor_data['id']:
+            if self.cmd_type != 'Register':
+                data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [self.conductor_data['id']])  # noqa E501
+                self.conductor_data['conductor_name'] = data_list[0]['CONDUCTOR_NAME']
 
-            # notice_info
-            if self.conductor_data.get('notice_info') is None:
-                self.conductor_data['notice_info'] = {}
+        # notice_info
+        if self.conductor_data.get('notice_info') is None:
+            self.conductor_data['notice_info'] = {}
 
-            for key, block_1 in self.node_datas.items():
-                node_type = block_1['type']
+        for key, block_1 in self.node_datas.items():
+            node_type = block_1['type']
 
-                if node_type == 'movement':
-                    # movement_name
-                    if block_1.get('movement_id'):
-                        data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_id'], block_1['orchestra_id']])  # noqa E501
-                        if len(data_list) == 1:
-                            block_1['movement_name'] = data_list[0]['MOVEMENT_NAME']
-                        else:
-                            data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
-                            block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
-                    elif block_1.get('movement_name'):
+            if node_type == 'movement':
+                # movement_name
+                if block_1.get('movement_id'):
+                    data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_ID`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_id'], block_1['orchestra_id']])  # noqa E501
+                    if len(data_list) == 1:
+                        block_1['movement_name'] = data_list[0]['MOVEMENT_NAME']
+                    else:
                         data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
                         block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
-                    # operation_name
-                    if block_1.get('operation_id'):
-                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
-                        if len(data_list) == 1:
-                            block_1['operation_name'] = data_list[0]['OPERATION_NAME']
-                        else:
-                            data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_name']])  # noqa E501
-                            block_1['operation_id'] = data_list[0]['OPERATION_ID']
-                    elif block_1.get('operation_name'):
-                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
-                        block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                elif block_1.get('movement_name'):
+                    data_list = self.__db.table_select('T_COMN_MOVEMENT', 'WHERE `DISUSE_FLAG`=0 AND `MOVEMENT_NAME`=%s AND `ITA_EXT_STM_ID`=%s', [block_1['movement_name'], block_1['orchestra_id']])  # noqa E501
+                    block_1['movement_id'] = data_list[0]['MOVEMENT_ID']
+                # operation_name
+                if block_1.get('operation_id'):
+                    data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
+                    if len(data_list) == 1:
+                        block_1['operation_name'] = data_list[0]['OPERATION_NAME']
                     else:
-                        block_1['operation_id'] = None
+                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_name']])  # noqa E501
+                        block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                elif block_1.get('operation_name'):
+                    data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
+                    block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                else:
+                    block_1['operation_id'] = None
 
-                elif node_type == 'call':
-                    # call_conductor_name
-                    if block_1.get('call_conductor_id'):
-                        data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [block_1['call_conductor_id']])  # noqa E501
-                        if len(data_list) == 1:
-                            block_1['call_conductor_name'] = data_list[0]['CONDUCTOR_NAME']
-                        else:
-                            data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
-                            block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
+            elif node_type == 'call':
+                # call_conductor_name
+                if block_1.get('call_conductor_id'):
+                    data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_CLASS_ID`=%s', [block_1['call_conductor_id']])  # noqa E501
+                    if len(data_list) == 1:
+                        block_1['call_conductor_name'] = data_list[0]['CONDUCTOR_NAME']
                     else:
                         data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
                         block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
-                    # operation_name
-                    if block_1.get('operation_id'):
-                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
-                        if len(data_list) == 1:
-                            block_1['operation_name'] = data_list[0]['OPERATION_NAME']
-                        else:
-                            data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_name']])  # noqa E501
-                            block_1['operation_id'] = data_list[0]['OPERATION_ID']
-                    elif block_1.get('operation_name'):
-                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
-                        block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                else:
+                    data_list = self.__db.table_select('T_COMN_CONDUCTOR_CLASS', 'WHERE `DISUSE_FLAG`=0 AND `CONDUCTOR_NAME`=%s', [block_1['call_conductor_name']])  # noqa E501
+                    block_1['call_conductor_id'] = data_list[0]['CONDUCTOR_CLASS_ID']
+                # operation_name
+                if block_1.get('operation_id'):
+                    data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_id']])  # noqa E501
+                    if len(data_list) == 1:
+                        block_1['operation_name'] = data_list[0]['OPERATION_NAME']
                     else:
-                        block_1['operation_id'] = None
-
-        except Exception as e:
-            g.applogger.debug(e)
-            msg = g.appmsg.get_api_message('MSG-40013')
-            return False, msg
-            # return False, retCode
+                        data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_ID`=%s', [block_1['operation_name']])  # noqa E501
+                        block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                elif block_1.get('operation_name'):
+                    data_list = self.__db.table_select('T_COMN_OPERATION', 'WHERE `DISUSE_FLAG`=0 AND `OPERATION_NAME`=%s', [block_1['operation_name']])  # noqa E501
+                    block_1['operation_id'] = data_list[0]['OPERATION_ID']
+                else:
+                    block_1['operation_id'] = None
 
         res = {
             'config': self.config_data,
@@ -1127,6 +1123,8 @@ class ConductorCommonLibs():
             tmp_msg_key = g.appmsg.get_api_message('MSG-00004')
             tmp_msg = g.appmsg.get_api_message('MSG-40011')
             msg = json.dumps([json.dumps({tmp_msg_key: tmp_msg}, ensure_ascii=False)], ensure_ascii=False)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return retBool, msg,
 
     # parallel->margeNode検索
@@ -1144,7 +1142,7 @@ class ConductorCommonLibs():
         result = []
         try:
             # parallelからmergeを追跡
-            t_terminal = c_data.get(parallel_node).get('terminal')
+            t_terminal = c_data.get(parallel_node, {}).get('terminal')
             for tname, tinfo in t_terminal.items():
                 t_t_type = tinfo.get('type')
                 if t_t_type == 'out':
@@ -1163,6 +1161,8 @@ class ConductorCommonLibs():
                                     tmp_result = self.search_parallel_marge(tmp_result[0], 'merge', c_data)
         except Exception:
             result = False
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return result
 
     # Node検索in方向
@@ -1194,6 +1194,9 @@ class ConductorCommonLibs():
                         raise Exception()
         except Exception:
             result = False
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+            g.applogger.info("base_node_id={}\ntarget_node_type={}\nreverse_target_node_name={}\nc_data={}".format(base_node_id, target_node_type, reverse_target_node_name, c_data))  # noqa E501
         return result
 
     # Node検索処理呼び出し
@@ -1216,7 +1219,7 @@ class ConductorCommonLibs():
                 raise Exception()
             else:
                 for t_node_id in tmp_result:
-                    t_node_type = c_data.get(t_node_id).get('type')
+                    t_node_type = c_data.get(t_node_id, {}).get('type')
                     if t_node_type == target_node_type:
                         # 対象のnode_typeの場合
                         return tmp_result
@@ -1232,6 +1235,9 @@ class ConductorCommonLibs():
                         return tmp_result
         except Exception:
             result = False
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+            g.applogger.info("terminal_type={}\nbase_node_id={}\ntarget_node_type={}\nc_data={}".format(terminal_type, base_node_id, target_node_type, c_data))  # noqa E501
         return result
 
     # Node検索処理
@@ -1246,16 +1252,15 @@ class ConductorCommonLibs():
 
         """
         result = []
-        try:
-            base_node_info = c_data.get(base_node_id)
-            base_terminlal = base_node_info.get('terminal')
-            for tname, tinfo in base_terminlal.items():
-                next_node = tinfo.get('targetNode')
-                t_type = tinfo.get('type')
-                if t_type == terminal_type:
-                    result.append(next_node)
-        except Exception:
-            result = False
+
+        base_node_info = c_data.get(base_node_id)
+        base_terminlal = base_node_info.get('terminal')
+        for tname, tinfo in base_terminlal.items():
+            next_node = tinfo.get('targetNode')
+            t_type = tinfo.get('type')
+            if t_type == terminal_type:
+                result.append(next_node)
+
         return result
 
     # Callループチェック処理呼び出し用
@@ -1269,6 +1274,9 @@ class ConductorCommonLibs():
         except Exception:
             retBool = False
             msg = json.dumps([json.dumps({"Usecase": g.appmsg.get_api_message('MSG-40012')}, ensure_ascii=False)], ensure_ascii=False)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+            g.applogger.info("chk_conductor_id={}\nc_data={}\ncall_conductor_id_List={}".format(chk_conductor_id, c_data, call_conductor_id_List))  # noqa E501
         return retBool, msg,
 
     # Callループチェック処理
@@ -1341,6 +1349,9 @@ class ConductorCommonLibs():
                         else:
                             raise Exception()
 
-        except Exception as e:
+        except Exception:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+            g.applogger.info("chk_conductor_id={}\nc_data={}\ncall_conductor_id_List={}".format(chk_conductor_id, c_data, call_conductor_id_List))
             return False
         return call_conductor_id_List

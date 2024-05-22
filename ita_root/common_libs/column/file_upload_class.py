@@ -17,6 +17,7 @@ import base64
 from flask import g
 from .column_class import Column
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 
 class FileUploadColumn(Column):
@@ -82,7 +83,8 @@ class FileUploadColumn(Column):
                 # デコード値
                 try:
                     decode_option = base64.b64decode(option["file_data"].encode())
-                except Exception:
+                except Exception as e:
+                    print_exception_msg(e)
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00011')
                     # msg = "base64decodeに失敗しました"
@@ -160,7 +162,6 @@ class FileUploadColumn(Column):
         # 廃止の場合return
         if cmd_type == "Discard":
             return retBool
-
         if val is not None:
             if len(str(val)) != 0:
                 decode_option = option.get("file_data")
@@ -203,7 +204,8 @@ class FileUploadColumn(Column):
 
                         try:
                             os.unlink(old_file_path)
-                        except Exception:
+                        except Exception as e:
+                            print_exception_msg(e)
                             retBool = False
                             msg = g.appmsg.get_api_message('MSG-00014', [old_file_path])
                             return retBool, msg
@@ -215,7 +217,8 @@ class FileUploadColumn(Column):
                 # シンボリックリンク作成
                 try:
                     os.symlink(old_dir_path, dir_path)
-                except Exception:
+                except Exception as e:
+                    print_exception_msg(e)
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00015', [old_dir_path, dir_path])
                     return retBool, msg
@@ -381,7 +384,8 @@ class FileUploadColumn(Column):
                         if cmd_type == "Register":
                             os.rmdir(dir_path.replace(val, ''))
 
-                    except Exception:
+                    except Exception as e:
+                        print_exception_msg(e)
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00016', [old_dir_path])
 
@@ -403,6 +407,8 @@ class FileUploadColumn(Column):
                                     os.symlink(old_recovery_path, recovery_path)
                                     break
                     except Exception:
+                        t = traceback.format_exc()
+                        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00017', [old_dir_path])
 

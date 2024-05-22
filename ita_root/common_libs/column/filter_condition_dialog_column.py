@@ -15,6 +15,7 @@
 import json
 from flask import g
 from common_libs.common import *
+from common_libs.common.util import print_exception_msg
 
 # import column_class
 from .individual_dialog_column_class import IndividualDialogColumn  # noqa: F401
@@ -197,6 +198,7 @@ class FilterConditionSettingColumn(IndividualDialogColumn):
                 raise Exception(exp_args)
         except Exception as e:
             # エラーでリターンの処理がないのでException
+            print_exception_msg(e)
             status_code = '499-01708'
             msg_args = [str(val)]
             msg = g.appmsg.get_api_message(status_code, msg_args)

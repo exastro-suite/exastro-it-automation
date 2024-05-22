@@ -18,6 +18,7 @@ import datetime
 from .column_class import Column
 from flask import g
 from common_libs.common.exception import AppException
+from common_libs.common.util import print_exception_msg
 import json
 
 class LastUpdateDateColumn(Column):
@@ -105,6 +106,7 @@ class LastUpdateDateColumn(Column):
         try:
             dt_val = datetime.datetime.strptime(val, self.format_datetime)
         except ValueError as msg:
+            print_exception_msg(msg)
             msg = g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])
             retBool = False
             return retBool, msg
@@ -134,6 +136,7 @@ class LastUpdateDateColumn(Column):
             val = datetime.datetime.strptime(val, '%Y/%m/%d %H:%M:%S.%f')
             val = val.strftime('%Y/%m/%d %H:%M:%S.%f')
         except Exception as msg:
+            print_exception_msg(msg)
             retBool = False
             return retBool, msg, val
 

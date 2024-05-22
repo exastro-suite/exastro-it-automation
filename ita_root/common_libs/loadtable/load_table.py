@@ -24,6 +24,7 @@ import re
 from flask import g
 from common_libs.column import *  # noqa: F403
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 
 # 定数
@@ -473,10 +474,7 @@ class loadTable():
             RETRUN:
                 {}
         """
-        try:
-            result = self.objtable.get(MENUINFO).get(COLNAME_UNIQUE_CONSTRAINT)
-        except Exception:
-            result = []
+        result = self.objtable.get(MENUINFO, {}).get(COLNAME_UNIQUE_CONSTRAINT, [])
         return result
 
     def get_menu_id(self):
@@ -485,10 +483,7 @@ class loadTable():
             RETRUN:
                 {}
         """
-        try:
-            result = self.objtable.get(MENUINFO).get(COLNAME_MENU_ID)
-        except Exception:
-            result = ''
+        result = self.objtable.get(MENUINFO, {}).get(COLNAME_MENU_ID, '')
         return result
 
     def get_menu_before_validate_register(self):
@@ -497,10 +492,7 @@ class loadTable():
             RETRUN:
                 {}
         """
-        try:
-            result = self.objtable.get(MENUINFO).get(COLNAME_BEFORE_VALIDATE_REGISTER)
-        except Exception:
-            result = None
+        result = self.objtable.get(MENUINFO, {}).get(COLNAME_BEFORE_VALIDATE_REGISTER)
         return result
 
     def get_menu_after_validate_register(self):
@@ -509,10 +501,7 @@ class loadTable():
             RETRUN:
                 {}
         """
-        try:
-            result = self.objtable.get(MENUINFO).get(COLNAME_AFTER_VALIDATE_REGISTER)
-        except Exception:
-            result = None
+        result = self.objtable.get(MENUINFO, {}).get(COLNAME_AFTER_VALIDATE_REGISTER)
         return result
 
     def get_objcols(self):
@@ -521,7 +510,7 @@ class loadTable():
             RETRUN:
                 {}
         """
-        return self.objtable.get(COLINFO)
+        return self.objtable.get(COLINFO, {})
 
     def get_objcol(self, rest_key):
         """
@@ -529,10 +518,7 @@ class loadTable():
             RETRUN:
                 {}
         """
-        try:
-            result = self.get_objcols().get(rest_key)
-        except Exception:
-            result = None
+        result = self.get_objcols().get(rest_key)
         return result
 
     def get_save_type(self, rest_key):
@@ -541,9 +527,9 @@ class loadTable():
             RETRUN:
                 {}
         """
-        try:
+        if isinstance(self.get_objcol(rest_key), dict):
             result = self.get_objcol(rest_key).get(COLNAME_SAVE_TYPE)
-        except Exception:
+        else:
             result = None
         return result
 
@@ -553,10 +539,7 @@ class loadTable():
             RETRUN:
                 string
         """
-        try:
-            result = self.get_objtable().get(MENUINFO).get(COLNAME_TABLE_NAME)
-        except Exception:
-            result = None
+        result = self.get_objtable().get(MENUINFO, {}).get(COLNAME_TABLE_NAME)
         return result
 
     def get_table_name_jnl(self):
@@ -565,9 +548,9 @@ class loadTable():
             RETRUN:
                 string
         """
-        try:
+        if MENUINFO in self.get_objtable():
             result = "{}_JNL".format(self.get_objtable().get(MENUINFO).get(COLNAME_TABLE_NAME))
-        except Exception:
+        else:
             result = None
         return result
 
@@ -577,10 +560,7 @@ class loadTable():
             RETRUN:
                 string
         """
-        try:
-            result = self.get_objtable().get(MENUINFO).get(COLNAME_VIEW_NAME)
-        except Exception:
-            result = None
+        result = self.get_objtable().get(MENUINFO, {}).get(COLNAME_VIEW_NAME)
         return result
 
     def get_view_name_jnl(self):
@@ -601,10 +581,7 @@ class loadTable():
             RETRUN:
                 {} or [] ?
         """
-        try:
-            result = self.get_objtable().get(MENUINFO).get(COLNAME_SORT_KEY)
-        except Exception:
-            result = None
+        result = self.get_objtable().get(MENUINFO, {}).get(COLNAME_SORT_KEY)
         return result
 
     def get_sheet_type(self):
@@ -613,10 +590,7 @@ class loadTable():
             RETRUN:
                 {} or [] ?
         """
-        try:
-            result = self.get_objtable().get(MENUINFO).get(COLNAME_SHEET_TYPE)
-        except Exception:
-            result = 0
+        result = self.get_objtable().get(MENUINFO, {}).get(COLNAME_SHEET_TYPE, 0)
         return result
 
     def set_history_flg(self, val=True):
@@ -624,12 +598,9 @@ class loadTable():
             履歴テーブル有無を設定
             ARGS: 0 /1
         """
-        try:
-            if val is False:
-                self.objtable[MENUINFO][COLNAME_HISTORY_TABLE_FLAG] = '0'
-            else:
-                self.objtable[MENUINFO][COLNAME_HISTORY_TABLE_FLAG] = '1'
-        except Exception:
+        if val is False:
+            self.objtable[MENUINFO][COLNAME_HISTORY_TABLE_FLAG] = '0'
+        else:
             self.objtable[MENUINFO][COLNAME_HISTORY_TABLE_FLAG] = '1'
 
     def get_history_flg(self):
@@ -638,13 +609,13 @@ class loadTable():
             RETRUN:
                 bool
         """
-        try:
+        if MENUINFO in self.get_objtable():
             tmp_result = self.get_objtable().get(MENUINFO).get(COLNAME_HISTORY_TABLE_FLAG)
             if tmp_result in [0, '0']:
                 result = False
             else:
                 result = True
-        except Exception:
+        else:
             result = True
         return result
 
@@ -654,9 +625,9 @@ class loadTable():
             RETRUN:
                 self.col_name
         """
-        try:
+        if isinstance(self.get_objcol(rest_key), dict):
             result = self.get_objcol(rest_key).get(COLNAME_COL_NAME)
-        except Exception:
+        else:
             result = None
         return result
 
@@ -667,9 +638,9 @@ class loadTable():
                 {}
         """
 
-        try:
+        if isinstance(self.get_objcol(rest_key), dict):
             result = self.get_objcol(rest_key).get(COLNAME_COLUMN_CLASS_NAME)
-        except Exception:
+        else:
             result = None
         return result
 
@@ -683,15 +654,14 @@ class loadTable():
         """
         retBool = True
         tmp_objcolumn = None
-        try:
-            objcol = self.get_objcol(rest_key)
 
-            if objcol is not None:
-                tmp_objcolumn = objcol.get('objcolumn')
+        objcol = self.get_objcol(rest_key)
+        if isinstance(objcol, dict):
+            tmp_objcolumn = objcol.get('objcolumn')
 
             if tmp_objcolumn is None:
                 retBool = False
-        except Exception:
+        else:
             retBool = False
 
         return retBool
@@ -730,25 +700,25 @@ class loadTable():
             RETRUN:
                 obj
         """
-        try:
-            # objcolumnの有無
-            if self.is_columnclass(rest_key) is True:
-                objcol = self.get_objcol(rest_key)
-                objcolumn = objcol.get('objcolumn')
-                objcolumn.set_cmd_type(cmd_type)
+        # objcolumnの有無
+        if self.is_columnclass(rest_key) is True:
+            objcol = self.get_objcol(rest_key)
+            objcolumn = objcol.get('objcolumn')
+            objcolumn.set_cmd_type(cmd_type)
+        else:
+            # objcolumnの設定
+            self.set_columnclass(rest_key, cmd_type)
+            objcol = self.get_objcol(rest_key)
+            if objcol is None:
+                col_class_name = 'TextColumn'
+                eval_class_str = "{}(self.objdbca,self.objtable,rest_key,cmd_type)".format(col_class_name)
+                objcolumn = eval(eval_class_str)
             else:
-                # objcolumnの設定
-                self.set_columnclass(rest_key, cmd_type)
-                objcol = self.get_objcol(rest_key)
                 objcolumn = objcol.get('objcolumn')
-                if self.is_columnclass(rest_key) is False:
-                    col_class_name = 'TextColumn'
-                    eval_class_str = "{}(self.objdbca,self.objtable,rest_key,cmd_type)".format(col_class_name)
-                    objcolumn = eval(eval_class_str)
-        except Exception:
-            col_class_name = 'TextColumn'
-            eval_class_str = "{}(self.objdbca,self.objtable,rest_key,cmd_type)".format(col_class_name)
-            objcolumn = eval(eval_class_str)
+            if self.is_columnclass(rest_key) is False:
+                col_class_name = 'TextColumn'
+                eval_class_str = "{}(self.objdbca,self.objtable,rest_key,cmd_type)".format(col_class_name)
+                objcolumn = eval(eval_class_str)
 
         return objcolumn
 
@@ -897,6 +867,8 @@ class loadTable():
             """).format(table_name=table_name, primary_key=primary_key).strip()
             result = self.objdbca.sql_execute(query_str, [uuid])
         except Exception:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             result = []
 
         return result
@@ -1019,13 +991,10 @@ class loadTable():
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
                                             convert_search_conf = {}
                                             for k, v in search_conf.items():
-                                                try:
-                                                    if float(v) == 0:
-                                                        convert_search_conf[k] = v
-                                                    else:
-                                                        convert_search_conf[k] = float(v)
-                                                except Exception:
+                                                if float(v) == 0:
                                                     convert_search_conf[k] = v
+                                                else:
+                                                    convert_search_conf[k] = float(v)
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))
@@ -1815,10 +1784,7 @@ class loadTable():
         for col_name, col_val in rows.items():
             # パラメータシート作成パラメータDATA_JSON構造
             if col_name == 'DATA_JSON':
-                try:
-                    json_rows = json.loads(col_val)
-                except Exception:
-                    json_rows = col_val
+                json_rows = json.loads(col_val)
                 if json_rows:
                     for jsonkey, jsonval in json_rows.items():
                         if jsonkey in json_cols_base_key:
@@ -2237,7 +2203,8 @@ class loadTable():
                 lastupdatetime_current = datetime.datetime.strptime(lastupdatetime_current, '%Y/%m/%d %H:%M:%S.%f')
                 try:
                     lastupdatetime_parameter = datetime.datetime.strptime(lastupdatetime_parameter, '%Y/%m/%d %H:%M:%S.%f')
-                except Exception:
+                except Exception as e:
+                    print_exception_msg(e)
                     status_code = 'MSG-00028'
                     msg_args = [lastupdatetime_parameter]
                     msg = g.appmsg.get_api_message(status_code, msg_args)
@@ -2262,6 +2229,7 @@ class loadTable():
                     }
                     self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
         except ValueError as msg_args:
+            print_exception_msg(e)
             status_code = 'MSG-00028'
             msg_args = [lastupdatetime_parameter]
             msg = g.appmsg.get_api_message(status_code, msg_args)
@@ -2558,13 +2526,10 @@ class loadTable():
                                         elif objcolumn.__class__.__name__ == "FloatColumn":
                                             convert_search_conf = {}
                                             for k, v in search_conf.items():
-                                                try:
-                                                    if float(v) == 0:
-                                                        convert_search_conf[k] = v
-                                                    else:
-                                                        convert_search_conf[k] = float(v)
-                                                except Exception:
+                                                if float(v) == 0:
                                                     convert_search_conf[k] = v
+                                                else:
+                                                    convert_search_conf[k] = float(v)                                                convert_search_conf[k] = v
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))

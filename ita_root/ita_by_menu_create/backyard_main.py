@@ -18,6 +18,7 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import storage_access
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 
 def backyard_main(organization_id, workspace_id):
@@ -42,6 +43,8 @@ def backyard_main(organization_id, workspace_id):
             return
     except Exception:
         # エラーログ出力
+        t = traceback.format_exc()
+        g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
         return
 
@@ -538,6 +541,8 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         return True, msg
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         # 異常系リターン
         return False, msg
 
@@ -605,6 +610,8 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         record_v_parameter_sheet_reference = objdbca.table_select(v_parameter_sheet_reference, 'WHERE DISUSE_FLAG = %s', [0])
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg, None, None, None, None, None, None, None, None
 
     return True, None, record_t_menu_define, record_t_menu_column_group, record_t_menu_column, record_t_menu_unique_constraint, record_t_menu_role, record_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference  # noqa: E501
@@ -679,6 +686,8 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         ret_data = objdbca.table_insert(t_comn_menu, data_list, primary_key_name)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg, None
 
     return True, None, ret_data
@@ -746,6 +755,8 @@ def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, men
                 raise Exception(msg)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg, None
 
     return True, None, ret_data
@@ -791,6 +802,8 @@ def _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_ro
                     objdbca.table_insert(t_comn_role_menu_link, data_list, primary_key_name)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -976,6 +989,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
             objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -1048,6 +1063,8 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
             objdbca.table_insert(t_comn_column_group, data_list, primary_key_name)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2039,6 +2056,8 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2069,6 +2088,8 @@ def _update_t_menu_define(objdbca, menu_create_id, menu_create_done_status_id):
             objdbca.table_update(t_menu_define, data_list, 'MENU_CREATE_ID')
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2102,6 +2123,8 @@ def _insert_t_menu_table_link(objdbca, menu_uuid, create_table_name, create_tabl
         objdbca.table_insert(t_menu_table_link, data_list, primary_key_name)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2171,6 +2194,8 @@ def _insert_t_menu_other_link(objdbca, menu_uuid, create_table_name, record_t_me
                     objdbca.table_insert(t_menu_other_link, data_list, primary_key_name)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2261,6 +2286,8 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
                     disp_seq_num = int(disp_seq_num) + 10
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2288,6 +2315,8 @@ def _update_t_menu_create_history(objdbca, history_id, status_id):
         objdbca.table_update(t_menu_create_history, data_list, 'HISTORY_ID')
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2301,70 +2330,67 @@ def _create_validate_option(record):
         RETRUN:
             boolean, msg, validate_option, validate_regular_expression
     """
-    try:
-        validate_option = None
-        validate_regular_expression = None
-        tmp_validate_option = {}
-        column_class = str(record.get('COLUMN_CLASS'))
+    validate_option = None
+    validate_regular_expression = None
+    tmp_validate_option = {}
+    column_class = str(record.get('COLUMN_CLASS'))
 
-        # カラムクラスに応じて処理を分岐
-        if column_class == "1":  # SingleTextColumn
-            single_max_length = record.get('SINGLE_MAX_LENGTH')
-            single_regular_expression = str(record.get('SINGLE_REGULAR_EXPRESSION'))
-            tmp_validate_option['min_length'] = "0"
-            tmp_validate_option['max_length'] = single_max_length
-            if single_regular_expression:
-                validate_regular_expression = single_regular_expression
+    # カラムクラスに応じて処理を分岐
+    if column_class == "1":  # SingleTextColumn
+        single_max_length = record.get('SINGLE_MAX_LENGTH')
+        single_regular_expression = str(record.get('SINGLE_REGULAR_EXPRESSION'))
+        tmp_validate_option['min_length'] = "0"
+        tmp_validate_option['max_length'] = single_max_length
+        if single_regular_expression:
+            validate_regular_expression = single_regular_expression
 
-        elif column_class == "2":  # MultiTextColumn
-            multi_max_length = record.get('MULTI_MAX_LENGTH')
-            multi_regular_expression = str(record.get('MULTI_REGULAR_EXPRESSION'))
-            tmp_validate_option['min_length'] = "0"
-            tmp_validate_option['max_length'] = multi_max_length
-            if multi_regular_expression:
-                validate_regular_expression = multi_regular_expression
+    elif column_class == "2":  # MultiTextColumn
+        multi_max_length = record.get('MULTI_MAX_LENGTH')
+        multi_regular_expression = str(record.get('MULTI_REGULAR_EXPRESSION'))
+        tmp_validate_option['min_length'] = "0"
+        tmp_validate_option['max_length'] = multi_max_length
+        if multi_regular_expression:
+            validate_regular_expression = multi_regular_expression
 
-        elif column_class == "3":  # NumColumn
-            num_min = record.get('NUM_MIN')
-            num_max = record.get('NUM_MAX')
-            if num_min is not None:
-                tmp_validate_option["int_min"] = num_min
-            if num_max is not None:
-                tmp_validate_option["int_max"] = num_max
+    elif column_class == "3":  # NumColumn
+        num_min = record.get('NUM_MIN')
+        num_max = record.get('NUM_MAX')
+        if num_min is not None:
+            tmp_validate_option["int_min"] = num_min
+        if num_max is not None:
+            tmp_validate_option["int_max"] = num_max
 
-        elif column_class == "4":  # FloatColumn
-            float_min = record.get('FLOAT_MIN')
-            float_max = record.get('FLOAT_MAX')
-            float_digit = record.get('FLOAT_DIGIT')
-            if float_min is not None:
-                tmp_validate_option["float_min"] = float_min
-            if float_max is not None:
-                tmp_validate_option["float_max"] = float_max
-            if float_digit is not None:
-                tmp_validate_option["float_digit"] = float_digit
-            else:
-                tmp_validate_option["float_digit"] = "14"  # 桁数の指定が無い場合「14」を固定値とする。
+    elif column_class == "4":  # FloatColumn
+        float_min = record.get('FLOAT_MIN')
+        float_max = record.get('FLOAT_MAX')
+        float_digit = record.get('FLOAT_DIGIT')
+        if float_min is not None:
+            tmp_validate_option["float_min"] = float_min
+        if float_max is not None:
+            tmp_validate_option["float_max"] = float_max
+        if float_digit is not None:
+            tmp_validate_option["float_digit"] = float_digit
+        else:
+            tmp_validate_option["float_digit"] = "14"  # 桁数の指定が無い場合「14」を固定値とする。
 
-        elif column_class == "8":  # PasswordColumn
-            password_max_length = str(record.get('PASSWORD_MAX_LENGTH'))
-            tmp_validate_option['min_length'] = "0"
-            tmp_validate_option['max_length'] = password_max_length
-        elif column_class == "9":  # FileUploadColumn
-            upload_max_size = str(record.get('FILE_UPLOAD_MAX_SIZE'))
-            if upload_max_size:
-                tmp_validate_option["upload_max_size"] = upload_max_size
+    elif column_class == "8":  # PasswordColumn
+        password_max_length = str(record.get('PASSWORD_MAX_LENGTH'))
+        tmp_validate_option['min_length'] = "0"
+        tmp_validate_option['max_length'] = password_max_length
+    elif column_class == "9":  # FileUploadColumn
+        upload_max_size = str(record.get('FILE_UPLOAD_MAX_SIZE'))
+        if upload_max_size:
+            tmp_validate_option["upload_max_size"] = upload_max_size
 
-        elif column_class == "10":  # HostInsideLinkTextColumn
-            link_max_length = str(record.get('LINK_MAX_LENGTH'))
-            tmp_validate_option['min_length'] = "0"
-            tmp_validate_option['max_length'] = link_max_length
+    elif column_class == "10":  # HostInsideLinkTextColumn
+        link_max_length = str(record.get('LINK_MAX_LENGTH'))
+        tmp_validate_option['min_length'] = "0"
+        tmp_validate_option['max_length'] = link_max_length
 
-        # tmp_validate_optionをjson形式に変換
-        if tmp_validate_option:
-            validate_option = json.dumps(tmp_validate_option)
+    # tmp_validate_optionをjson形式に変換
+    if tmp_validate_option:
+        validate_option = json.dumps(tmp_validate_option)
 
-    except Exception as msg:
-        return False, msg, None, None
 
     return True, None, validate_option, validate_regular_expression
 
@@ -2377,34 +2403,30 @@ def _create_initial_value(record):
         RETRUN:
             boolean, msg, initial_value
     """
-    try:
-        column_class = str(record.get('COLUMN_CLASS'))
+    column_class = str(record.get('COLUMN_CLASS'))
 
-        # カラムクラスに応じて処理を分岐
+    # カラムクラスに応じて処理を分岐
+    initial_value = None
+    if column_class == "1":  # SingleTextColumn
+        initial_value = record.get('SINGLE_DEFAULT_VALUE')
+    elif column_class == "2":  # MultiTextColumn
+        initial_value = record.get('MULTI_DEFAULT_VALUE')
+    elif column_class == "3":  # NumColumn
+        initial_value = record.get('NUM_DEFAULT_VALUE')
+    elif column_class == "4":  # FloatColumn
+        initial_value = record.get('FLOAT_DEFAULT_VALUE')
+    elif column_class == "5":  # DateTimeColumn
+        initial_value = record.get('DATETIME_DEFAULT_VALUE')
+    elif column_class == "6":  # DateColumn
+        initial_value = record.get('DATE_DEFAULT_VALUE')
+    elif column_class == "7":  # IDColumn
+        initial_value = record.get('OTHER_MENU_LINK_DEFAULT_VALUE')
+    elif column_class == "10":  # HostInsideLinkTextColumn
+        initial_value = record.get('LINK_DEFAULT_VALUE')
+
+    # 「空白」の場合もデータベース上にNullを登録させるためNoneを挿入
+    if not initial_value:
         initial_value = None
-        if column_class == "1":  # SingleTextColumn
-            initial_value = record.get('SINGLE_DEFAULT_VALUE')
-        elif column_class == "2":  # MultiTextColumn
-            initial_value = record.get('MULTI_DEFAULT_VALUE')
-        elif column_class == "3":  # NumColumn
-            initial_value = record.get('NUM_DEFAULT_VALUE')
-        elif column_class == "4":  # FloatColumn
-            initial_value = record.get('FLOAT_DEFAULT_VALUE')
-        elif column_class == "5":  # DateTimeColumn
-            initial_value = record.get('DATETIME_DEFAULT_VALUE')
-        elif column_class == "6":  # DateColumn
-            initial_value = record.get('DATE_DEFAULT_VALUE')
-        elif column_class == "7":  # IDColumn
-            initial_value = record.get('OTHER_MENU_LINK_DEFAULT_VALUE')
-        elif column_class == "10":  # HostInsideLinkTextColumn
-            initial_value = record.get('LINK_DEFAULT_VALUE')
-
-        # 「空白」の場合もデータベース上にNullを登録させるためNoneを挿入
-        if not initial_value:
-            initial_value = None
-
-    except Exception as msg:
-        return False, msg, None
 
     return True, None, initial_value
 
@@ -2458,56 +2480,53 @@ def _format_column_group_data(record_t_menu_column_group, record_t_menu_column, 
             target_column_group_list,  # 使用されているカラムグループIDの親をたどり、最終的に使用されるすべてのカラムグループIDのlist
 
     """
-    try:
-        # 「カラムグループ作成情報」のレコードのidをkeyにしたdict型に整形
-        dict_t_menu_column_group = {}
-        for record in record_t_menu_column_group:
-            dict_t_menu_column_group[record.get('CREATE_COL_GROUP_ID')] = {
-                "pa_col_group_id": record.get('PA_COL_GROUP_ID'),
-                "col_group_name_ja": record.get('COL_GROUP_NAME_JA'),
-                "col_group_name_en": record.get('COL_GROUP_NAME_EN'),
-                "full_col_group_name_ja": record.get('FULL_COL_GROUP_NAME_JA'),
-                "full_col_group_name_en": record.get('FULL_COL_GROUP_NAME_EN'),
-            }
+    # 「カラムグループ作成情報」のレコードのidをkeyにしたdict型に整形
+    dict_t_menu_column_group = {}
+    for record in record_t_menu_column_group:
+        dict_t_menu_column_group[record.get('CREATE_COL_GROUP_ID')] = {
+            "pa_col_group_id": record.get('PA_COL_GROUP_ID'),
+            "col_group_name_ja": record.get('COL_GROUP_NAME_JA'),
+            "col_group_name_en": record.get('COL_GROUP_NAME_EN'),
+            "full_col_group_name_ja": record.get('FULL_COL_GROUP_NAME_JA'),
+            "full_col_group_name_en": record.get('FULL_COL_GROUP_NAME_EN'),
+        }
 
-        # 「パラメータシート項目作成情報」のレコードから、使用されているカラムグループのIDを抽出
-        tmp_target_column_group_list = []
-        for record in record_t_menu_column:
-            target_id = record.get('CREATE_COL_GROUP_ID')
-            # 対象のカラムグループIDをlistに追加
-            if target_id:
-                tmp_target_column_group_list.append(target_id)
+    # 「パラメータシート項目作成情報」のレコードから、使用されているカラムグループのIDを抽出
+    tmp_target_column_group_list = []
+    for record in record_t_menu_column:
+        target_id = record.get('CREATE_COL_GROUP_ID')
+        # 対象のカラムグループIDをlistに追加
+        if target_id:
+            tmp_target_column_group_list.append(target_id)
 
-        # 重複したIDをマージ
-        tmp_target_column_group_list = list(dict.fromkeys(tmp_target_column_group_list))
+    # 重複したIDをマージ
+    tmp_target_column_group_list = list(dict.fromkeys(tmp_target_column_group_list))
 
-        # 使用されているカラムグループIDの親をたどり、最終的に使用されるすべてのカラムグループIDをlistに格納
-        target_column_group_list = []
-        for column_group_id in tmp_target_column_group_list:
-            end_flag = False
-            while not end_flag:
-                target = dict_t_menu_column_group.get(column_group_id)
+    # 使用されているカラムグループIDの親をたどり、最終的に使用されるすべてのカラムグループIDをlistに格納
+    target_column_group_list = []
+    for column_group_id in tmp_target_column_group_list:
+        end_flag = False
+        while not end_flag:
+            target = dict_t_menu_column_group.get(column_group_id)
 
-                # 自分自身のIDをlistの先頭に格納
-                target_column_group_list.insert(0, column_group_id)
-                if target:
-                    pa_col_group_id = target.get('pa_col_group_id')
-                else:
-                    msg = g.appmsg.get_log_message("BKY-20213", [menu_create_id])
-                    raise Exception(msg)
+            # 自分自身のIDをlistの先頭に格納
+            target_column_group_list.insert(0, column_group_id)
+            if target:
+                pa_col_group_id = target.get('pa_col_group_id')
+            else:
+                msg = g.appmsg.get_log_message("BKY-20213", [menu_create_id])
+                raise Exception(msg)
 
-                if pa_col_group_id:
-                    # 親のIDを対象のIDにしてループ継続
-                    column_group_id = pa_col_group_id
-                else:
-                    # 親が無いためループ終了
-                    end_flag = True
+            if pa_col_group_id:
+                # 親のIDを対象のIDにしてループ継続
+                column_group_id = pa_col_group_id
+            else:
+                # 親が無いためループ終了
+                end_flag = True
 
-        # 重複したIDをマージ
-        target_column_group_list = list(dict.fromkeys(target_column_group_list))
+    # 重複したIDをマージ
+    target_column_group_list = list(dict.fromkeys(target_column_group_list))
 
-    except Exception as msg:
-        return False, msg, None, None
 
     return True, None, dict_t_menu_column_group, target_column_group_list
 
@@ -2524,14 +2543,10 @@ def _format_other_link(record_t_menu_other_link):
             dict_t_menu_other_link,  # 「他メニュー連携」のレコードのidをkeyにしたdict型に整形
 
     """
-    try:
-        # 「カラムグループ作成情報」のレコードのidをkeyにしたdict型に整形
-        dict_t_menu_other_link = {}
-        for record in record_t_menu_other_link:
-            dict_t_menu_other_link[record.get('LINK_ID')] = record
-
-    except Exception as msg:
-        return False, msg, None
+    # 「カラムグループ作成情報」のレコードのidをkeyにしたdict型に整形
+    dict_t_menu_other_link = {}
+    for record in record_t_menu_other_link:
+        dict_t_menu_other_link[record.get('LINK_ID')] = record
 
     return True, None, dict_t_menu_other_link
 
@@ -2645,6 +2660,8 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
                     objdbca.table_update(t_menu_table_link, data, "MENU_TABLE_LINK_ID")
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2695,6 +2712,8 @@ def _disuse_t_comn_menu(objdbca, record_t_menu_define, target_menu_group_list):
                 objdbca.table_update(t_comn_menu, data, "MENU_ID")
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None
@@ -2800,6 +2819,8 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
                     objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name, False)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return False, msg
 
     return True, None,

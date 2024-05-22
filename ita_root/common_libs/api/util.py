@@ -18,7 +18,7 @@ from flask import g, request
 import traceback
 
 from common_libs.common.exception import AppException
-from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 from common_libs.common.dbconnect import *
 
 api_timestamp = None
@@ -223,7 +223,8 @@ def check_request_body():
         if request_content_type == "application/json":
             try:
                 request.get_json()
-            except Exception:
+            except Exception as e:
+                print_exception_msg(e)
                 raise AppException("400-00002", ["json_format"], ["json_format"])
         elif "application/x-www-form-urlencoded" == request_content_type:
             if request.form:

@@ -14,6 +14,7 @@
 import json
 from flask import g
 from common_libs.common import *
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 # import column_class
 from .id_class import IDColumn
@@ -43,7 +44,7 @@ class MultiSelectIDColumn(IDColumn):
             if type(column_value['id']) != list:
                 raise Exception("JSON format is abnormal")
         except Exception as e:
-            raise Exception(e)
+            raise e
 
         if isinstance(column_value["id"], list):
             keys = column_value["id"]
@@ -146,6 +147,7 @@ class MultiSelectIDColumn(IDColumn):
                 raise Exception(exp_args)
         except Exception as e:
             # エラーでリターンの処理がないのでException
+            print_exception_msg(e)
             status_code = '499-01708'
             msg_args = [str(val)]
             msg = g.appmsg.get_api_message(status_code, msg_args)
@@ -185,20 +187,13 @@ class MultiSelectIDColumn(IDColumn):
         retBool = True
         retdict = {"id": []}
         msg = ''
-        try:
-            if not valnames:
-                return True, '', valnames,
-            val_decode = self.is_json_format(valnames)
-            if val_decode is False:
-                raise Exception("JSON format is abnormal")
-            if len(val_decode) == 0:
-                return True, '', None,
-        except Exception as e:
-            retBool = False
-            status_code = '499-01701'
-            msg_args = []
-            msg = g.appmsg.get_api_message(status_code, msg_args)
-            return retBool, msg
+        if not valnames:
+            return True, '', valnames,
+        val_decode = self.is_json_format(valnames)
+        if val_decode is False:
+            raise Exception("JSON format is abnormal")
+        if len(val_decode) == 0:
+            return True, '', None,
 
         if val_decode is not None:
             for val in val_decode:
@@ -237,6 +232,8 @@ class MultiSelectIDColumn(IDColumn):
                     raise Exception("JSON format is abnormal")
 
             except Exception:
+                t = traceback.format_exc()
+                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                 retBool = False
                 status_code = '499-01701'
                 msg_args = []
@@ -335,10 +332,11 @@ class MultiSelectIDColumn(IDColumn):
             if type(val) != list:
                 raise Exception("JSON format is abnormal")
             return val
-        except Exception:
+        except Exception as e:
             import inspect, os
             file_name = os.path.basename(inspect.currentframe().f_code.co_filename)
             line_no = str(inspect.currentframe().f_lineno)
             msg = "Exception: {} ({}:{})".format(str(e), file_name, line_no)
+            print_exception_msg(e)
             g.applogger.info(msg) # 外部アプリへの処理開始・終了ログ
             return False

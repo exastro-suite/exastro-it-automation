@@ -13,6 +13,7 @@
 #
 from flask import g
 from common_libs.common import *
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 # import column_class
 from .id_class import IDColumn
@@ -84,7 +85,7 @@ class IndividualDialogColumn(IDColumn):
                     if len(lable_row) != len(self.json_tag):
                         raise Exception("JSON format is (abnormal json data:({}))".format(str(column_value)))
         except Exception as e:
-            raise Exception(e)
+            raise e
 
         if isinstance(column_value, list):
             for lable_row in column_value:
@@ -187,6 +188,8 @@ class IndividualDialogColumn(IDColumn):
             if len(val_decode) == 0:
                 return True, '', None,
         except Exception:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             retBool = False
             status_code = '499-01703'
             msg_args = []
@@ -228,6 +231,8 @@ class IndividualDialogColumn(IDColumn):
 
             except Exception as e:
                 # dodo エラーコード見直し
+                t = traceback.format_exc()
+                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                 retBool = False
                 status_code = '499-01703'
                 msg_args = []
@@ -323,6 +328,7 @@ class IndividualDialogColumn(IDColumn):
             line_no = str(inspect.currentframe().f_lineno)
             msg = "Exception: {} ({}:{})".format(str(e), file_name, line_no)
             g.applogger.info(msg) # 外部アプリへの処理開始・終了ログ
+            print_exception_msg(e)
             return False
 
     # DBに登録するデータをユニーク制約用にKey値でソートする

@@ -65,6 +65,8 @@ def define_and_execute_menu_create(organization_id, workspace_id, body=None):  #
             create_param = body
 
         result_data = menu_create_lib.menu_create_define(objdbca, create_param)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -113,6 +115,8 @@ def get_exist_menu_create_data(organization_id, workspace_id, menu_create):  # n
 
         # パラメータシート定義・作成(既存)用の情報取得
         data = menu_create_lib.collect_exist_menu_create_data(objdbca, menu_create)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -148,6 +152,8 @@ def get_menu_create_data(organization_id, workspace_id):  # noqa: E501
 
         # パラメータシート定義・作成(新規)用の情報取得
         data = menu_create_lib.collect_menu_create_data(objdbca)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -209,6 +215,8 @@ def get_pulldown_initial(organization_id, workspace_id, menu, column):  # noqa: 
                     raise e
 
         data = menu_create_lib.collect_pulldown_initial_value(objdbca, menu, column)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -270,6 +278,8 @@ def get_reference_item(organization_id, workspace_id, menu, column):  # noqa: E5
                     raise e
 
         data = menu_create_lib.collect_pulldown_reference_item(objdbca, menu, column)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -297,6 +307,8 @@ def get_parameter_collection(organization_id, workspace_id):  # noqa: E501
 
         # パラメータシートの一覧を取得する
         data = menu_create_lib.collect_parameter_list(objdbca)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -325,6 +337,8 @@ def get_parameter_collection_filter_terms_get(organization_id, workspace_id):
 
         # パラメータシートの検索条件を取得する
         data = menu_create_lib.collect_filter_terms(objdbca)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -365,6 +379,8 @@ def get_parameter_collection_filter_terms_update(organization_id, workspace_id, 
 
         # パラメータシートの検索条件を取得する
         data = menu_create_lib.update_filter_terms(objdbca, parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -397,6 +413,8 @@ def get_parameter_collection_filter_terms_delete(organization_id, workspace_id, 
 
         # パラメータシートの検索条件を取得する
         data = menu_create_lib.delete_filter_terms(objdbca, uuid)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,

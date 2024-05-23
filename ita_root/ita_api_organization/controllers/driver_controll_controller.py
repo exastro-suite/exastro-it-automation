@@ -90,6 +90,8 @@ def get_driver_execute_data(organization_id, workspace_id, menu, execution_no): 
         else:
             # Terraform用 作業実行の状態取得
             result = t_get_execution_info(objdbca, target[menu], execution_no)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -147,6 +149,8 @@ def get_execute_populated_data(organization_id, workspace_id, menu, execution_no
         else:
             # Terraform用 投入データ取得
             result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'populated')
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -204,6 +208,8 @@ def get_execute_result_data(organization_id, workspace_id, menu, execution_no): 
         else:
             # Terraform用 結果データ取得
             result = t_get_populated_result_data(objdbca, target[menu], execution_no, 'result')
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -250,6 +256,8 @@ def get_driver_execute_info(organization_id, workspace_id, menu):  # noqa: E501
         data = {}
         for target in target_menus:
             data[target] = menu_info.collect_menu_info(objdbca, target)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -304,6 +312,8 @@ def get_driver_execute_search_candidates(organization_id, workspace_id, menu, ta
 
         # 対象項目のプルダウン検索候補一覧を取得
         data = menu_info.collect_search_candidates(objdbca, target, column)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -357,6 +367,8 @@ def post_driver_cancel(organization_id, workspace_id, menu, execution_no, body=N
         else:
             # Terraform用 予約取り消し
             result = t_reserve_cancel(objdbca, target[menu], execution_no)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -436,6 +448,8 @@ def post_driver_excecute(organization_id, workspace_id, menu, body=None):  # noq
             result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
         # コミット・トランザクション終了
         objdbca.db_transaction_end(True)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -515,6 +529,8 @@ def post_driver_execute_check_parameter(organization_id, workspace_id, menu, bod
             result = t_insert_execution_list(objdbca, run_mode, target[menu], operation_row, movement_row, schedule_date, conductor_id, conductor_name)
         # コミット・トランザクション終了
         objdbca.db_transaction_end(True)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -586,6 +602,8 @@ def post_driver_execute_delete_resource(organization_id, workspace_id, menu, bod
 
         # コミット・トランザクション終了
         objdbca.db_transaction_end(True)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -666,6 +684,8 @@ def post_driver_execute_dry_run(organization_id, workspace_id, menu, body=None):
 
         # コミット・トランザクション終了
         objdbca.db_transaction_end(True)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result,
@@ -725,6 +745,8 @@ def post_driver_execute_filter(organization_id, workspace_id, menu, target, body
 
         # メニューのカラム情報を取得
         result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -788,6 +810,8 @@ def post_driver_scram(organization_id, workspace_id, menu, execution_no, body=No
 
         # 緊急停止を受付ました
         result_msg = g.appmsg.get_api_message("MSG-10891", [execution_no])
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_msg,

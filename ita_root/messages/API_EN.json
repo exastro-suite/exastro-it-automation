@@ -1483,7 +1483,7 @@
     "MSG-40042": "Notice URL is invalid. The url value must be started with 'https://' or 'http://'",
     "MSG-40043": "Proxy URL is invalid. The url value must be started with 'https://' or 'http://'",
     "MSG-40044": "Confirmation URL is invalid. The url value must be started with 'https://' or 'http://'",
-    "MSG-40045": "Header is invalid. The value must be JSON format.",
+    "MSG-40045": "Header is invalid. The value must be of type dict in JSON format.",
     "MSG-40046": "Message is invalid. The value must be JSON format.",
     "MSG-50001": "Cannot set itself as the parent menu.",
     "MSG-50002": "A menu group that has already been set as the parent menu.",

@@ -129,6 +129,9 @@ def post_apply_parameter(organization_id, workspace_id, body=None, **kwargs):  #
         else:
             objdbca.db_transaction_end(False)
 
+    except Exception as e:
+        raise e
+
     finally:
         objdbca.db_transaction_end(False)
         objdbca.db_disconnect()

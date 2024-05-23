@@ -130,6 +130,8 @@ def post_cicd_for_iac_resume_filelink(organization_id, workspace_id, uuid, body=
         objdbca.db_transaction_end(True)
 
         result_msg = g.appmsg.get_api_message("MSG-90042", [uuid])
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_msg,
@@ -213,6 +215,8 @@ def post_cicd_for_iac_resume_repository(organization_id, workspace_id, uuid, bod
         objdbca.db_transaction_end(True)
 
         result_msg = g.appmsg.get_api_message("MSG-90041", [uuid])
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_msg,

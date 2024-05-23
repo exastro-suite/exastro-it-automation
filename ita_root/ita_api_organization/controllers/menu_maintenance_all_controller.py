@@ -78,6 +78,8 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

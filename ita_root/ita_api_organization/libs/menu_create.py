@@ -15,11 +15,13 @@
 import json
 import ast
 import datetime
+import traceback
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.exception import AppException
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import check_request_body_key
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 from libs.organization_common import check_auth_menu  # noqa: F401
 
 
@@ -460,6 +462,8 @@ def collect_pulldown_initial_value(objdbca, menu_name_rest, column_name_rest):
                 initial_value_dict[key] = value
 
     except AppException:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         initial_value_dict = {}
 
     return initial_value_dict
@@ -504,6 +508,8 @@ def collect_pulldown_reference_item(objdbca, menu_name_rest, column_name_rest):
                 reference_item_list.append(add_dict)
 
     except AppException:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         reference_item_list = []
 
     return reference_item_list

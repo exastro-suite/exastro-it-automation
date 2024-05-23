@@ -96,7 +96,7 @@ def backyard_main(organization_id, workspace_id):
                 tmp_result = pattern.findall(target_file_path)
                 if len(tmp_result) != 0:
                     tmp_msg = g.appmsg.get_log_message("BKY-60001", [target_file_path])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 tmp_msg = g.appmsg.get_log_message("BKY-60002", [target_dir, target_file, del_days])
@@ -105,7 +105,7 @@ def backyard_main(organization_id, workspace_id):
                 # Check: 削除日数 1-有効日数
                 if isinstance(del_days, int) is False:
                     tmp_msg = g.appmsg.get_log_message("BKY-60003", [del_days])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
                 else:
                     # 削除日数補正
@@ -116,14 +116,14 @@ def backyard_main(organization_id, workspace_id):
                 isabs_target_dir = os.path.isabs(target_dir)  # noqa: F405
                 if isabs_target_dir is False:
                     tmp_msg = g.appmsg.get_log_message("BKY-60004", [target_dir])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # Check: ディレクトリ存在確認
                 is_target_dir = os.path.isdir(target_dir)  # noqa: F405
                 if is_target_dir is False:
                     tmp_msg = g.appmsg.get_log_message("BKY-60005", [target_dir])
-                    g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+                    g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
                     continue
 
                 # 削除対象ディレクトリ内のファイル一覧取得

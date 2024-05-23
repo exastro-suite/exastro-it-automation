@@ -26,7 +26,7 @@ def internal_health_check_liveness():
     except AppException as e:
         raise AppException(e)
     except Exception as e:
-        raise Exception(e)
+        raise e
 
     return g.appmsg.get_api_message("000-00000"),
 

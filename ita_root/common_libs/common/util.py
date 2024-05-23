@@ -15,6 +15,7 @@
 """
 共通関数 module
 """
+from flask import g
 import secrets
 import string
 import base64
@@ -24,13 +25,13 @@ import pytz
 import datetime
 import re
 import os
-from flask import g
 import requests
 import json
 import shutil
 import inspect
 import traceback
 from urllib.parse import urlparse
+
 from common_libs.common.exception import AppException
 from common_libs.common.encrypt import *
 from common_libs.common.storage_access import storage_base, storage_write, storage_write_text, storage_read_text
@@ -86,7 +87,7 @@ def ky_file_encrypt(src_file, dest_file):
         # ファイル読み込み
         # #2079 /storage配下は/tmpを経由してアクセスする
         r_obj = storage_read_text()
-        lcstr = r_obj.read_text(src_file,encoding="utf-8")
+        lcstr = r_obj.read_text(src_file, encoding="utf-8")
 
         # エンコード関数呼び出し
         enc_data = ky_encrypt(lcstr)
@@ -96,7 +97,9 @@ def ky_file_encrypt(src_file, dest_file):
         w_obj = storage_write_text()
         w_obj.write_text(dest_file, enc_data, encoding="utf-8")
 
-    except Exception:
+    except Exception as e:
+        msg = "src_file:{} dest_file:{} err_msg:{}".format(src_file, dest_file, e)
+        print_exception_msg(msg)
         return False
     finally:
         pass
@@ -118,7 +121,7 @@ def ky_file_decrypt(src_file, dest_file):
         # ファイル読み込み
         # #2079 /storage配下は/tmpを経由してアクセスする
         r_obj = storage_read_text()
-        lcstr = r_obj.read_text(src_file,encoding="utf-8")
+        lcstr = r_obj.read_text(src_file, encoding="utf-8")
 
         # デコード関数呼び出し
         enc_data = ky_decrypt(lcstr)
@@ -128,7 +131,9 @@ def ky_file_decrypt(src_file, dest_file):
         w_obj = storage_write_text()
         w_obj.write_text(dest_file, enc_data, encoding="utf-8")
 
-    except Exception:
+    except Exception as e:
+        msg = "src_file:{} dest_file:{} err_msg:{}".format(src_file, dest_file, e)
+        print_exception_msg(msg)
         return False
     finally:
         pass
@@ -398,7 +403,9 @@ def upload_file(file_path, text):
         obj.write(text)
         obj.close()
 
-    except Exception:
+    except Exception as e:
+        msg = "file_path:{} err_msg:{}".format(file_path, e)
+        print_exception_msg(msg)
         return False
 
     return True
@@ -417,7 +424,9 @@ def encrypt_upload_file(file_path, text):
     try:
         text = base64.b64decode(text.encode()).decode()
         text = ky_encrypt(text)
-    except Exception:
+    except Exception as e:
+        msg = "file_path:{} err_msg:{}".format(file_path, e)
+        print_exception_msg(msg)
         return False
 
     path = os.path.dirname(file_path)
@@ -432,7 +441,9 @@ def encrypt_upload_file(file_path, text):
         obj.write(text)
         obj.close()
 
-    except Exception:
+    except Exception as e:
+        msg = "file_path:{} err_msg:{}".format(file_path, e)
+        print_exception_msg(msg)
         return False
 
     return True

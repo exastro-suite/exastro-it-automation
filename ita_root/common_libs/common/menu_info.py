@@ -12,16 +12,18 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from flask import g
 import textwrap
 import datetime
 import json
 import zipfile
+
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
+from common_libs.api import get_api_timestamp
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
-from flask import g
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectWs
 
 
 def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, privilege='1'):  # noqa: C901
@@ -216,19 +218,13 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
 
             # カラムクラスが「5: DateTimeColumn」かつ初期値が設定されている場合、初期値の値(日時)をフォーマット
             if str(column_class) == "5" and initial_value:
-                try:
-                    initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
-                    initial_value = initial_value.strftime('%Y/%m/%d %H:%M:%S')
-                except Exception:
-                    initial_value = None
+                initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
+                initial_value = initial_value.strftime('%Y/%m/%d')
 
             # カラムクラスが「6: DateTColumn」かつ初期値が設定されている場合、初期値の値(日付)をフォーマット
             if str(column_class) == "6" and initial_value:
-                try:
-                    initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
-                    initial_value = initial_value.strftime('%Y/%m/%d')
-                except Exception:
-                    initial_value = None
+                initial_value = datetime.datetime.strptime(initial_value, '%Y-%m-%d %H:%M:%S')
+                initial_value = initial_value.strftime('%Y/%m/%d')
 
             detail = {
                 'column_id': record.get('COLUMN_DEFINITION_ID'),
@@ -743,23 +739,20 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
     elif save_type == "JSON":
         for record in ret:
             target = record.get(col_name)
-            try:
-                json_rows = json.loads(target)
-            except Exception:
-                json_rows = None
-            if json_rows:
-                for jsonkey, jsonval in json_rows.items():
-                    if jsonkey == column_name_rest:
-                        if column_class_id in id_column_list:
-                            # プルダウンの一覧を取得
-                            objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
-                            objcolumn = objmenu.get_columnclass(column)
-                            column_pulldown_list = objcolumn.get_values_by_key()
-                            # レコードの中からIDに合致するデータを取得
-                            conv_jsonval = column_pulldown_list.get(jsonval)
-                            search_candidates.append(conv_jsonval)
-                        else:
-                            search_candidates.append(jsonval)
+            json_rows = json.loads(target)
+
+            for jsonkey, jsonval in json_rows.items():
+                if jsonkey == column_name_rest:
+                    if column_class_id in id_column_list:
+                        # プルダウンの一覧を取得
+                        objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
+                        objcolumn = objmenu.get_columnclass(column)
+                        column_pulldown_list = objcolumn.get_values_by_key()
+                        # レコードの中からIDに合致するデータを取得
+                        conv_jsonval = column_pulldown_list.get(jsonval)
+                        search_candidates.append(conv_jsonval)
+                    else:
+                        search_candidates.append(jsonval)
     else:
         if column_class_id in id_column_list:
             # プルダウンの一覧を取得
@@ -989,7 +982,10 @@ def unzip_file(file_path, uploadPath):
                     info.filename = info.filename.replace(os.sep, "/")
                 z.extract(info, path=uploadPath)
 
-    except Exception as e:
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_api_timestamp(), arrange_stacktrace_format(t)))
+
         return False
 
     return True

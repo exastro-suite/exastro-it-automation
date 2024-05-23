@@ -12,16 +12,22 @@
 # limitations under the License.
 #
 from flask import g
-from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import get_timestamp, ky_encrypt
-from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
-from libs.common_functions import update_execution_record
-from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
-from common_libs.common import storage_access
 import time
 import json
 import os
 import shutil
+import traceback
+
+from common_libs.common import storage_access
+from common_libs.common.exception import AppException
+from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.util import get_timestamp, ky_encrypt, get_iso_datetime, arrange_stacktrace_format, print_exception_msg
+
+from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
+from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
+
+from libs.common_functions import update_execution_record
+
 
 
 def check_terraform_condition(objdbca, instance_data):  # noqa: C901
@@ -60,7 +66,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
         plan_log = log_dir + '/plan.log'
         policy_check_log = log_dir + '/policyCheck.log'
         apply_log = log_dir + '/apply.log'
-        
+
         # /storage配下のファイルアクセスを/tmp経由で行うモジュール
         file_write = storage_access.storage_write()
 
@@ -70,7 +76,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             log_msg = g.appmsg.get_log_message("MSG-82001", [])
             g.applogger.info(log_msg)
             msg = g.appmsg.get_api_message("MSG-82001", [])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # RESTAPIコールクラス
         ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -78,7 +84,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             log_msg = g.appmsg.get_log_message("MSG-82002", [])
             g.applogger.info(log_msg)
             msg = g.appmsg.get_api_message("MSG-82002", [])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # tf_workspace_idをもとにORGANIZATION_WORKSPACEビューからレコードを取得
         where_str = 'WHERE WORKSPACE_ID = %s AND DISUSE_FLAG = %s'
@@ -87,7 +93,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             log_msg = g.appmsg.get_log_message("MSG-82003", [tf_workspace_name])
             g.applogger.info(log_msg)
             msg = g.appmsg.get_api_message("MSG-82003", [tf_workspace_name])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # 対象のtf_organizationとtf_workspaceを特定する
         tf_organization_name = ret[0].get('ORGANIZATION_NAME')
@@ -101,7 +107,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             log_msg = g.appmsg.get_log_message("MSG-82032", [tf_workspace_name])
             g.applogger.info(log_msg)
             msg = "[API Error]" + g.appmsg.get_api_message("MSG-82032", [tf_workspace_name])
-            raise Exception(msg)
+            raise AppException(msg)
         g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
         # Terraform Runの詳細からステータス/Planの実行ID/Applyの実行IDを取得する
@@ -124,7 +130,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             log_msg = g.appmsg.get_log_message("MSG-82033", [tf_workspace_name])
             g.applogger.info(log_msg)
             msg = "[API Error]" + g.appmsg.get_api_message("MSG-82033", [tf_workspace_name])
-            raise Exception(msg)
+            raise AppException(msg)
         g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
         # Planの詳細からステータス/PlanLog取得URLを取得
@@ -180,7 +186,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 log_msg = g.appmsg.get_log_message("MSG-82034", [tf_workspace_name])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82034", [tf_workspace_name])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # PolicyCheckの有無を判定(無ければ次の処理へ)
@@ -235,7 +241,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                         log_msg = g.appmsg.get_log_message("MSG-82035", [tf_workspace_name])
                         g.applogger.info(log_msg)
                         msg = "[API Error]" + g.appmsg.get_api_message("MSG-82035", [tf_workspace_name])
-                        raise Exception(msg)
+                        raise AppException(msg)
                     else:
                         # Applyの中止に成功。各フラグを設定
                         set_status_id = TFCloudEPConst.STATUS_COMPLETE  # 完了
@@ -252,7 +258,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                         log_msg = g.appmsg.get_log_message("MSG-82036", [tf_workspace_name])
                         g.applogger.info(log_msg)
                         msg = "[API Error]" + g.appmsg.get_api_message("MSG-82036", [tf_workspace_name])
-                        raise Exception(msg)
+                        raise AppException(msg)
                     g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             else:
@@ -265,7 +271,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                     log_msg = g.appmsg.get_log_message("MSG-82037", [tf_workspace_name])
                     g.applogger.info(log_msg)
                     msg = "[API Error]" + g.appmsg.get_api_message("MSG-82037", [tf_workspace_name])
-                    raise Exception(msg)
+                    raise AppException(msg)
                 g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
                 # Planの詳細からステータス/PlanLog取得URLを取得
@@ -327,7 +333,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 log_msg = g.appmsg.get_log_message("MSG-82038", [tf_workspace_name])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82038", [tf_workspace_name])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # 取得したStateの一覧をループし、RUN-IDが一致する対象を取得
@@ -448,7 +454,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                 log_msg = g.appmsg.get_log_message("MSG-82009", [tf_workspace_name])
                 g.applogger.error(log_msg)
                 msg = g.appmsg.get_api_message("MSG-82009", [tf_workspace_name])
-                raise Exception(msg)
+                raise AppException(msg)
             else:
                 # zipファイル名を変更 [execution_no].zip > InputData_[execution_no].zip
                 result_data_rename_dir_path = base_dir + TFCloudEPConst.DIR_TEMP
@@ -458,7 +464,7 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
                     log_msg = g.appmsg.get_log_message("MSG-82009", [tf_workspace_name])
                     g.applogger.error(log_msg)
                     msg = g.appmsg.get_api_message("MSG-82009", [tf_workspace_name])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
         # ステータス更新フラグがTrueの場合、ステータス更新を実行。
         if status_update_flag:
@@ -488,14 +494,27 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
                 g.applogger.error(log_msg)
-                raise Exception(log_msg)
+                raise AppException(log_msg)
 
         return True
 
-    except Exception as msg:
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg("execution_no={}, err_msg={}".format(execution_no, msg))
+
         # 受け取ったメッセージをerror_logに書き込み
         file_write.open(error_log, mode="w")
-        file_write.write(str(msg))
+        file_write.write(msg)
+        file_write.close()
+
+        return False
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+        # 受け取ったメッセージをerror_logに書き込み
+        file_write.open(error_log, mode="w")
+        file_write.write(str(t))
         file_write.close()
 
         return False

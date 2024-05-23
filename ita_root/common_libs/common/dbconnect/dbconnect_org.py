@@ -199,8 +199,6 @@ class DBConnectOrgRoot(DBConnectOrg):
             )
         except pymysql.Error as e:
             raise AppException("999-00002", ["ORGANIZATION_ID=" + self.organization_id, e])
-        except Exception:
-            raise AppException("999-00002", ["ORGANIZATION_ID=" + self.organization_id, "cannot access. connect info may be incorrect"])
 
         return True
 

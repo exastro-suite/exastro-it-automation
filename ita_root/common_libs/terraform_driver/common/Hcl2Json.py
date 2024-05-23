@@ -15,8 +15,10 @@ from flask import g
 import hcl2
 import json
 import re
-from common_libs.common import storage_access
 
+from common_libs.common import storage_access
+from common_libs.common.exception import AppException
+from common_libs.common.util import print_exception_msg
 
 class HCL2JSONParse():
     """
@@ -58,7 +60,7 @@ class HCL2JSONParse():
         """
         try:
             result = True
-            
+
             # /storage配下のファイルアクセスを/tmp経由で行うモジュール
             file_read = storage_access.storage_read()
 
@@ -99,7 +101,7 @@ class HCL2JSONParse():
                         # 変数名が128byte以上の場合はバリデーションエラー
                         if len(block_variable.encode()) > 128:
                             msg = g.appmsg.get_api_message("MSG-80025", [block_variable])
-                            raise Exception(msg)
+                            raise AppException(msg)
 
                     # type_strがNoneではない場合は整形処理を通す
                     if type_str:
@@ -253,8 +255,10 @@ class HCL2JSONParse():
                     # variable_block_listに格納
                     self.variable_block_list.append(convert_block)
 
-        except Exception as e:
-            self.error_msg = e
+        except AppException as e:
+            print_exception_msg("AppException occured in HCL2JSONParse.executeParse")
+            msg, arg1, arg2 = e.args
+            self.error_msg = msg
             result = False
 
         self.res = result

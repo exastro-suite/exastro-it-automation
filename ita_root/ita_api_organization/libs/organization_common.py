@@ -25,6 +25,7 @@ from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.common.util import get_maintenance_mode_setting
+from common_libs.common.util import print_exception_msg
 from common_libs.api import set_api_timestamp, get_api_timestamp, app_exception_response, exception_response, check_request_body
 from common_libs.ci.util import set_service_loglevel
 
@@ -140,9 +141,11 @@ def before_request_handler():
             # g.applogger.set_user_setting(ws_db)
             ws_db.db_disconnect()
     except AppException as e:
+        print_exception_msg(e)
         # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
         return app_exception_response(e)
     except Exception as e:
+        print_exception_msg(e)
         # catch - other all error
         return exception_response(e)
 

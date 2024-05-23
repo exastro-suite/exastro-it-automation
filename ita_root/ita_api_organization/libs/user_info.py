@@ -14,8 +14,10 @@
 
 import json
 import datetime
+import traceback
 from flask import g
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 from libs.organization_common import check_auth_menu, get_auth_menus
 
@@ -454,6 +456,8 @@ def collect_widget_settings(objdbca):
                         days = int(v['period'])
                         days = days if days >= 0 and days <= 365 else 0
                     except Exception:
+                        t = traceback.format_exc()
+                        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                         days = 0
 
                     break

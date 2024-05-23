@@ -55,6 +55,8 @@ def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
 
         filter_parameter = {'discard': {'NORMAL': ''}}
         result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -93,6 +95,8 @@ def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -131,6 +135,8 @@ def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
         check_auth_menu(menu, objdbca)
 
         result_data = menu_excel.collect_excel_journal(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -177,6 +183,8 @@ def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: 
 
         # メニューのカラム情報を取得
         result_data = menu_excel.collect_excel_filter(objdbca, organization_id, workspace_id, menu, menu_record, menu_table_link_record, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -239,6 +247,8 @@ def post_excel_maintenance(organization_id, workspace_id, menu, body=None, **kwa
 
         # メニューのカラム情報を取得
         result_data = menu_excel.execute_excel_maintenance(objdbca, organization_id, workspace_id, menu, menu_record, excel_data)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

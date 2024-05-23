@@ -58,6 +58,9 @@ def get_conductor_class_info(organization_id, workspace_id, menu):  # noqa: E501
 
         # メニューのカラム情報を取得
         result_data = conductor_controll.get_conductor_class_info(objdbca, menu)
+
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -96,6 +99,8 @@ def get_conductor_class_data(organization_id, workspace_id, menu, conductor_clas
 
         # メニューのカラム情報を取得
         result_data = conductor_controll.get_conductor_data(objdbca, menu, conductor_class_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -143,6 +148,8 @@ def post_conductor_data(organization_id, workspace_id, menu, body=None):  # noqa
         check_auth_menu(menu, objdbca)
 
         result_data = conductor_controll.conductor_maintenance(objdbca, menu, conductor_data)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -192,6 +199,8 @@ def patch_conductor_data(organization_id, workspace_id, menu, conductor_class_id
         check_auth_menu(menu, objdbca)
 
         result_data = conductor_controll.conductor_maintenance(objdbca, menu, conductor_data, conductor_class_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -232,6 +241,8 @@ def get_conductor_execute_info(organization_id, workspace_id, menu):  # noqa: E5
         data = {}
         for target in target_menus:
             data[target] = menu_info.collect_menu_info(objdbca, target)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -279,6 +290,8 @@ def get_execute_search_candidates(organization_id, workspace_id, menu, target, c
 
         # 対象項目のプルダウン検索候補一覧を取得
         data = menu_info.collect_search_candidates(objdbca, target, column)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return data,
@@ -331,6 +344,8 @@ def post_execute_filter(organization_id, workspace_id, menu, target, body=None):
 
         # メニューのカラム情報を取得
         result_data = menu_filter.rest_filter(objdbca, target, filter_parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -368,6 +383,8 @@ def get_conductor_execute_class_info(organization_id, workspace_id, menu):  # no
 
         # メニューのカラム情報を取得
         result_data = conductor_controll.get_conductor_execute_class_info(objdbca, menu)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -406,6 +423,8 @@ def get_conductor_execute_class_data(organization_id, workspace_id, menu, conduc
 
         # メニューのカラム情報を取得
         result_data = conductor_controll.get_conductor_data_execute(objdbca, menu, conductor_class_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -455,6 +474,8 @@ def post_conductor_excecute(organization_id, workspace_id, menu, body=None):  # 
 
         # メニューのカラム情報を取得
         result_data = conductor_controll.conductor_execute(objdbca, menu, parameter)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -494,6 +515,8 @@ def get_conductor_info(organization_id, workspace_id, menu, conductor_instance_i
 
         # メニューのカラム情報を取得
         result_data = conductor_controll.get_conductor_info(objdbca, menu, conductor_instance_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -532,6 +555,8 @@ def get_conductor_instance_data(organization_id, workspace_id, menu, conductor_i
 
         # メニューのカラム情報を取得
         result_data = conductor_controll.get_conductor_instance_data(objdbca, menu, conductor_instance_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -576,6 +601,8 @@ def patch_conductor_cancel(organization_id, workspace_id, menu, conductor_instan
         # 予約取消の実行
         action_type = "cancel"
         result_data = conductor_controll.conductor_execute_action(objdbca, menu, action_type, conductor_instance_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -622,6 +649,8 @@ def patch_conductor_relese(organization_id, workspace_id, menu, conductor_instan
         # 一時停止解除の実行
         action_type = "relese"
         result_data = conductor_controll.conductor_execute_action(objdbca, menu, action_type, conductor_instance_id, node_instance_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -666,6 +695,8 @@ def patch_conductor_scram(organization_id, workspace_id, menu, conductor_instanc
         # 緊急停止の実行
         action_type = "scram"
         result_data = conductor_controll.conductor_execute_action(objdbca, menu, action_type, conductor_instance_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,
@@ -712,6 +743,8 @@ def get_conductor_input_data(organization_id, workspace_id, menu, conductor_inst
         # 入力データ収集
         data_type = 'input'
         result_data = conductor_controll.create_movement_zip(objdbca, menu, data_type, conductor_instance_id)
+    except Exception as e:
+        raise e
     finally:
         objdbca.db_disconnect()
     return result_data,

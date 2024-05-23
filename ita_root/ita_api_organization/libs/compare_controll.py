@@ -27,6 +27,7 @@ import os
 import random
 import unicodedata
 import shutil
+import traceback
 
 import dictdiffer
 import difflib
@@ -44,6 +45,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
 from common_libs.common import storage_access
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 
 # 比較実行画面用情報取得(リスト情報、パラメータフォーマット)
@@ -254,7 +256,7 @@ def compare_execute(objdbca, menu, parameter, options={}):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "execute_compare_error", True)
         retBool = False
 
@@ -712,6 +714,8 @@ def _execute_compare_data(objdbca, compare_config, options):
                         input_orders = [int(copmare_target_column_io)]
                         target_column_flg = True
                     except Exception:
+                        t = traceback.format_exc()
+                        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                         copmare_target_column_io = None
                 else:
                     input_orders = ["__no_input_order__"]
@@ -863,7 +867,7 @@ def _execute_compare_data(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "execute_compare_error", True)
         retBool = False
 
@@ -931,6 +935,8 @@ def _get_line_values(target_key, origin_data, target_host, input_order, col_name
         base_datetime = menu_data.get("base_datetime")
         operation_name_disp = menu_data.get("operation_name_disp")
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         pass
     return menu_data, target_uuid, col_val_menu, base_datetime, operation_name_disp,
 
@@ -953,6 +959,8 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
             data_1_dec = base64.b64decode(data_1.encode()).decode().splitlines()
             data_2_dec = base64.b64decode(data_2.encode()).decode().splitlines()
         except Exception:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             # read file is faild
             status_code = "499-01006"
             log_msg_args = [filename_1, filename_2]
@@ -1159,6 +1167,8 @@ def _get_target_datas(objdbca, compare_config, options):
             try:
                 objmenu = load_table.loadTable(objdbca, target_menu)  # noqa: F405
             except Exception:
+                t = traceback.format_exc()
+                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                 # loadTable is faild
                 status_code = "401-00003"
                 log_msg_args = [target_menu]
@@ -1225,7 +1235,7 @@ def _get_target_datas(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
@@ -1390,7 +1400,7 @@ def _set_compare_config_info(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
@@ -1495,7 +1505,7 @@ def _set_compare_config(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_config_error", True)
         retBool = False
 
@@ -1691,7 +1701,7 @@ def _set_compare_detail_config(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_config_error", True)
         retBool = False
 
@@ -1878,7 +1888,7 @@ def _set_column_info(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
@@ -1945,7 +1955,7 @@ def _override_column_info_vertical_ver(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "compare_target_menu_error", True)
         retBool = False
 
@@ -1989,7 +1999,7 @@ def _chk_parameters(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         retBool = False
 
     return retBool, compare_config,
@@ -2045,7 +2055,7 @@ def _chk_parameter_compare(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -2081,7 +2091,7 @@ def _chk_parameter_base_date(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -2176,7 +2186,7 @@ def _chk_parameter_host(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -2218,7 +2228,7 @@ def _chk_parameter_copmare_target_column(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -2277,7 +2287,7 @@ def _chk_parameter_other_options(objdbca, compare_config, options):
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         compare_config = _set_flg(compare_config, "parameter_error", True)
 
     return compare_config
@@ -2311,7 +2321,7 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
     except Exception:
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
     return file_data, file_mimetype
 
 
@@ -2408,7 +2418,7 @@ def _create_outputfile(objdbca, compare_config, data, options):
             shutil.rmtree(work_dir_path)
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
-        g.applogger.debug(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
+        g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
         status_code = "499-01007"
         log_msg_args = [e]
         api_msg_args = [e]
@@ -2610,19 +2620,10 @@ def get_col_name_data(compare_data, row_no, target_host, col_name, compare_targe
     """
     row_no = row_no + 1
     # get value
-    try:
-        val_1 = compare_data.get(target_host).get("target_data_1").get(col_name)
-    except Exception:
-        val_1 = None
-    try:
-        val_2 = compare_data.get(target_host).get("target_data_2").get(col_name)
-    except Exception:
-        val_2 = None
+    val_1 = compare_data.get(target_host, {}).get('target_data_1', {}).get(col_name)
+    val_2 = compare_data.get(target_host, {}).get('target_data_2', {}).get(col_name)
     # get diff flg
-    try:
-        val_diff_flg = compare_data.get(target_host).get("_data_diff_flg").get(col_name)
-    except Exception:
-        val_diff_flg = False
+    val_diff_flg = compare_data.get(target_host, {}).get('_data_diff_flg', {}).get(col_name)
 
     if compare_target_flg is True:
         # convert compare diff flg
@@ -2896,7 +2897,7 @@ def no_mimetype_is_binary_chk(target_file_path, file_mimetype, encoding):
     encode = encoding
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read = storage_access.storage_read_bytes()
-    
+
     if file_mimetype is None:
         # check encode -> check ASCII -08
         fd = file_read.read_bytes(target_file_path)

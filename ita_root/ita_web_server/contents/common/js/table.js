@@ -1039,7 +1039,7 @@ theadHtml( filterFlag = true, filterHeaderFlag = true ) {
             if ( tb.menuMode === 'bundle') {
                 html[i] = fn.html.cell( getMessage.FTE11047, 'tHeadTh', 'th', rowLength, 1 ) + html[i];
             }
-            html[i] = fn.html.cell( '', 'parameterTheadTh tHeadTh tHeadLeftSticky', 'th', rowLength, 1 ) + html[i];
+            html[i] = fn.html.cell('', 'parameterTheadTh tHeadTh tHeadLeftSticky', 'th', rowLength, 1 ) + html[i];
         }
         // 行追加
         if ( html[i] !== '') {
@@ -2799,6 +2799,19 @@ filterSelectParamsOpen( filterParams ) {
 }
 /*
 ##################################################
+   名前リストを返す
+   [{name: ***1},{name: ***2}] > [***1,***2]
+##################################################
+*/
+getNameList( list ) {
+    const nameList = [];
+    for ( const item of list ) {
+        nameList.push( item.name );
+    }
+    return nameList;
+}
+/*
+##################################################
    tbodyデータのリクエスト
 ##################################################
 */
@@ -2834,16 +2847,18 @@ requestTbody() {
                 }
             } else {
                 tb.filterParams.host_name = {
-                    LIST: tb.option.parameterHostList
+                    LIST: tb.getNameList( tb.option.parameterHostList )
                 }
             }
         } else if ( tb.option.parameterMode === 'operation') {
+            const operationFilterList = [];
+            
             tb.filterParams.operation_name_disp = {
-                LIST: tb.option.parameterOperationList
+                LIST: tb.getNameList( tb.option.parameterOperationList )
             }
             if ( tb.option.parameterSheetType !== '3') {
                 tb.filterParams.host_name = {
-                    LIST: tb.option.parameterHostList
+                    LIST: tb.getNameList( tb.option.parameterHostList )
                 }
             }
         }
@@ -5976,9 +5991,14 @@ parameterBody() {
           nameKey = ( tb.option.parameterMode === 'host')? 'operation_name_disp': 'host_name';
 
     const length = tb.option[ listName ].length;
+    if ( tb.option.parameterMode === 'host' && length > 1 ) {
+        tb.option[ listName ].sort(function( a, b ){
+            return a.date.localeCompare( b.date );
+        });
+    }
     for ( let i = 0; i < length; i++ ) {
         // オペレーション名 or ホスト名
-        const parameter = tb.option[ listName ][i];
+        const parameter = fn.cv( tb.option[ listName ][i].name, '');
 
         const rows = [];
         let rowspan = 0;
@@ -6021,10 +6041,14 @@ parameterBody() {
             rowspan++;
         }
 
-        // オペレーションタイトル
+        // タイトル
         const parameterClass = ['parameterTh', 'tBodyLeftSticky', 'tBodyTh', 'parameterMainTh' + i ];
-        if ( i === length - 1 ) parameterClass.push('parameterLast')
-        rows[0].unshift( fn.html.cell( parameter, parameterClass.join(' '), 'th', rowspan ) );
+        if ( i === length - 1 ) parameterClass.push('parameterLast');
+        const parameterName = fn.escape( parameter );
+        const parameterTitle = ( tb.option.parameterMode === 'host')?
+            `${parameterName}<div class="parameterThOperationDate"><span>\n</span>${fn.cv( tb.option[ listName ][i].date, '', true )}</div>`:
+            parameterName;
+        rows[0].unshift( fn.html.cell( parameterTitle, parameterClass.join(' '), 'th', rowspan ) );
 
         const rowsLength = rows.length;
         for ( let j = 0; j < rowsLength; j++ ) {

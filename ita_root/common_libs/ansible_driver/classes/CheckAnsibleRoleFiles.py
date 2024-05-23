@@ -1884,51 +1884,6 @@ class DefaultVarsFileAnalysis():
 
         return errmsg
 
-    def chkDefVarsListPlayBookVarsList(self, ina_play_vars_list, ina_def_vars_list, ina_def_array_vars_list, in_errmsg, ina_system_vars):
-
-        """
-        処理内容
-          ロールパッケージ内のPlaybookで定義されている変数がデェフォルト変数定義
-          ファイルで定義されているか判定
-
-        パラメータ
-          ina_play_vars_list:     ロールパッケージ内のPlaybookで定義している変数リスト
-                                     [role名][変数名]=0
-          ina_def_vars_list:      defalte変数ファイルの変数リスト
-                                     非配列変数  ina_vars_list[ロール名][変数名] = 0;
-                                     配列変数    ina_vars_list[ロール名][変数名] = array(配列変数名, ....)
-
-        戻り値
-          true:   正常
-          false:  異常
-        """
-
-        in_errmsg = ""
-        ret_code = True
-
-        # ロールパッケージ内のPlaybookで定義している変数が無い場合は処理しない
-        if len(ina_play_vars_list) <= 0:
-            return ret_code, in_errmsg
-
-        for role_name, vars_list in self.php_array(ina_play_vars_list):
-            for vars_name, dummy in self.php_array(vars_list):
-                # ITA独自変数はチェック対象外とする
-                if vars_name in ina_system_vars:
-                    continue
-
-                if role_name not in ina_def_vars_list \
-                or vars_name not in ina_def_vars_list[role_name] \
-                or ina_def_vars_list[role_name][vars_name] is None \
-                or (type(ina_def_vars_list[role_name][vars_name]) in (list, dict) and len(ina_def_vars_list[role_name][vars_name]) <= 0):
-                    if role_name not in ina_def_array_vars_list \
-                    or vars_name not in ina_def_array_vars_list[role_name] \
-                    or ina_def_array_vars_list[role_name][vars_name] is None \
-                    or (type(ina_def_array_vars_list[role_name][vars_name] is None) in (list, dict) and len(ina_def_array_vars_list[role_name][vars_name]) <= 0):
-                        in_errmsg = '%s\n%s' % (in_errmsg, g.appmsg.get_api_message("MSG-10294", [role_name, vars_name]))
-                        ret_code = False
-
-        return ret_code, in_errmsg
-
     def margeDefaultVarsList(
         self,
         ina_vars_list, ina_vars_val_list,

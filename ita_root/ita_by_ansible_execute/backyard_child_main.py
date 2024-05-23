@@ -838,7 +838,7 @@ def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, dr
         if retBool is False:
             return False, g.appmsg.get_log_message("BKY-00004", ["CreateAnsibleExecFiles.getDBRoleVarList", "error occured"])
 
-    host_vars = ansdrv.addSystemvars(host_vars, hostinfolist)
+    host_vars = ansdrv.addSystemvars(host_vars, hostinfolist, execution_no, movement_id)
 
     # Legacy-Role 多次元配列　恒久版対応
     # ansibleで実行するファイル作成

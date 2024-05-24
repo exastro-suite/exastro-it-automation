@@ -1140,6 +1140,8 @@
     "MSG-10937": "The variable name is not defined. (template variable:{})",
     "MSG-10939": "Parameter sheet  not requiring assignment order. Skip this record. (item:{})",
     "MSG-10940": "Parameter sheet  requiring assignment order. Skip this record. (item:{})",
+    "MSG-10941": "For certificate authentication (winrm), the winrm public key file is a required item.",
+    "MSG-10942": "For certificate authentication (winrm), the winrm private key file is a required item.",
     "MSG-10938": "Out of the input range. (Minimum value: {}, Maximum value: {}, Input value: {})\nMaximum value can be changed in the Management console/System management.",
     "MSG-20001": "Main menu",
     "MSG-20002": "[Main Menu] can not be set.",

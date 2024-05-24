@@ -92,7 +92,9 @@ def create_maintenance_parameters(connexion_request):
             # json.loads
             try:
                 parameters = json.loads(connexion_request.form['json_parameters'])
-            except:   # noqa: E722
+            except Exception as e:   # noqa: E722
+                print_exception_msg(e)
+
                 parameters = connexion_request.form['json_parameters']
                 if isinstance(parameters, (list, dict)) is False:
                     return False, [],

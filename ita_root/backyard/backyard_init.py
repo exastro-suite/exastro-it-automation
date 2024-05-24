@@ -15,12 +15,12 @@ from flask import Flask, g
 from dotenv import load_dotenv  # python-dotenv
 import os
 import sys
-import logging
+import traceback
 
 # from common_libs.common.exception import AppException
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
-from common_libs.common.util import get_maintenance_mode_setting
+from common_libs.common.util import get_maintenance_mode_setting, get_iso_datetime, arrange_stacktrace_format
 from common_libs.ci.util import wrapper_job, wrapper_job_all_org
 from backyard_main import backyard_main as main_logic
 
@@ -34,23 +34,26 @@ def main():
     with flask_app.app_context():
         g.LANGUAGE = os.environ.get("LANGUAGE")
         g.appmsg = MessageTemplate(g.LANGUAGE)
+        # create app log instance and message class instance
+        g.applogger = AppLog()
 
         # メンテナンスモードの確認
         try:
             maintenance_mode = get_maintenance_mode_setting()
             # data_update_stopの値が"1"の場合、メンテナンス中のためreturnする。
             if str(maintenance_mode['data_update_stop']) == "1":
-                logging.debug(g.appmsg.get_log_message("BKY-00005", []))
+                g.applogger.debug(g.appmsg.get_log_message("BKY-00005", []))
                 return
         except Exception:
             # エラーログ出力
-            logging.error(g.appmsg.get_log_message("BKY-00007", []))
+            t = traceback.format_exc()
+            g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+            g.applogger.error(g.appmsg.get_log_message("BKY-00007", []))
             return
 
         g.USER_ID = os.environ.get("USER_ID")
         g.SERVICE_NAME = os.environ.get("SERVICE_NAME")
-        # create app log instance and message class instance
-        g.applogger = AppLog()
 
         args = sys.argv
         loop_count = 500 if len(args) == 1 else args[1]

@@ -12,19 +12,25 @@
 # limitations under the License.
 #
 from flask import g
-from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_decrypt
-from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
-from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
-from libs.policySetting import policySetting
-from libs.common_functions import update_execution_record
-from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
-from common_libs.terraform_driver.common.by_execute import \
-    get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl, generate_member_vars_array_for_hcl
-from common_libs.common import storage_access
 import json
 import os
 import shutil
+import traceback
+
+from common_libs.common import storage_access
+from common_libs.common.exception import AppException
+from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.util import ky_decrypt, get_iso_datetime, arrange_stacktrace_format, print_exception_msg
+from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
+from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
+from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
+from common_libs.terraform_driver.common.by_execute import \
+    get_type_info, encode_hcl, get_member_vars_ModuleVarsLinkID_for_hcl, generate_member_vars_array_for_hcl
+
+
+from libs.policySetting import policySetting
+from libs.common_functions import update_execution_record
+
 
 
 def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: C901
@@ -65,7 +71,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         gztar_path = None
         populated_data_rename_path = None
         populated_data_rename_dir_path = None
-        
+
         # /storage配下のファイルアクセスを/tmp経由で行うモジュール
         file_write = storage_access.storage_write()
 
@@ -104,7 +110,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             log_msg = g.appmsg.get_log_message("MSG-82001", [])
             g.applogger.info(log_msg)
             msg = g.appmsg.get_api_message("MSG-82001", [])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # RESTAPIコールクラス
         ret, restApiCaller = call_restapi_class(interface_info_data)  # noqa: F405
@@ -112,7 +118,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             log_msg = g.appmsg.get_log_message("MSG-82002", [])
             g.applogger.info(log_msg)
             msg = g.appmsg.get_api_message("MSG-82002", [])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # tf_workspace_idをもとにORGANIZATION_WORKSPACEビューからレコードを取得
         where_str = 'WHERE WORKSPACE_ID = %s AND DISUSE_FLAG = %s'
@@ -120,7 +126,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         if not ret:
             g.applogger.debug(g.appmsg.get_log_message("MSG-82003", [tf_workspace_name]))  # 想定内エラーのためdebug
             msg = g.appmsg.get_api_message("MSG-82003", [tf_workspace_name])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # 対象のtf_organizationとtf_workspaceを特定する
         tf_organization_name = ret[0].get('ORGANIZATION_NAME')
@@ -135,7 +141,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             log_msg = g.appmsg.get_log_message("MSG-82010", [])
             g.applogger.info(log_msg)
             msg = "[API Error]" + g.appmsg.get_api_message("MSG-82010", [])
-            raise Exception(msg)
+            raise AppException(msg)
         g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
         # Organization一覧から、対象のtf_organization_nameが存在するかをチェック
@@ -152,7 +158,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
         if not org_exist_flag:
             g.applogger.debug(g.appmsg.get_log_message("MSG-82011", []))  # 想定内エラーのためdebug
             msg = g.appmsg.get_api_message("MSG-82011", [])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # [RESTAPI]連携先TerraformからWorkspace一覧を取得
         g.applogger.info(g.appmsg.get_log_message("BKY-51008", [execution_no]))
@@ -162,7 +168,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             log_msg = g.appmsg.get_log_message("MSG-82012", [])
             g.applogger.info(log_msg)
             msg = "[API Error]" + g.appmsg.get_api_message("MSG-82012", [])
-            raise Exception(msg)
+            raise AppException(msg)
         g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
         # Workspace一覧から、対象のtf_workspace_nameが存在するかをチェック
@@ -182,7 +188,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             log_msg = g.appmsg.get_log_message("MSG-82003", [])  # 想定内エラーのためdebug
             g.applogger.info(log_msg)
             msg = g.appmsg.get_api_message("MSG-82003", [])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # WorkspaceのApplyMethodの設定がAuto Applyになっていないことをチェック。
         if run_mode == TFCloudEPConst.RUN_MODE_PLAN:
@@ -190,7 +196,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82004", [])  # 想定内エラーのためdebug
                 g.applogger.info(log_msg)
                 msg = g.appmsg.get_api_message("MSG-82004", [])
-                raise Exception(msg)
+                raise AppException(msg)
 
         # -----[START]実行種別が「作業実行」「Plan確認」の場合のみ実施-----
         if not destroy_flag:
@@ -208,7 +214,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82014", [])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82014", [])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # [RESTAPI]取得したVariable一覧について、削除するRESTAPIを実行する
@@ -224,7 +230,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                     log_msg = g.appmsg.get_log_message("MSG-82015", [])
                     g.applogger.info(log_msg)
                     msg = "[API Error]" + g.appmsg.get_api_message("MSG-82015", [])
-                    raise Exception(msg)
+                    raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # [RESTAPI]連携先Terraformに文字化け防止用の環境変数を設定する
@@ -237,21 +243,21 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82016", [])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82016", [])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # 連携先Terraformに代入値管理に登録されている値があれば、Variableを設定する
             ret = prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace_id)
             if not ret:
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82017", [])
-                raise Exception(msg)
+                raise AppException(msg)
         # -----[END]実行種別が「作業実行」「Plan確認」の場合のみ実施-----
 
         # Policy関連の処理スタート
         policy_setting = policySetting(objdbca, TFCloudEPConst, restApiCaller, tf_organization_name, tf_workspace_name, tf_workspace_id, tf_manage_workspace_id, execution_no)  # noqa: F405, E501
         result, msg, policy_data_dict = policy_setting.policy_setting_main()
         if not result:
-            raise Exception(msg)
+            raise AppException(msg)
 
         # -----[START]実行種別が「作業実行」「Plan確認」の場合のみ実施-----
         if not destroy_flag:
@@ -261,7 +267,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             if not ret:
                 g.applogger.debug(g.appmsg.get_log_message("MSG-82005", []))  # 想定内エラーのためdebug
                 msg = g.appmsg.get_api_message("MSG-82005", [])
-                raise Exception(msg)
+                raise AppException(msg)
             movement_module_list = ret
 
             # Movement-Module紐付から対象のModuleを取得
@@ -278,7 +284,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82006", [])
                 g.applogger.info(log_msg)
                 msg = g.appmsg.get_api_message("MSG-82006", [])
-                raise Exception(msg)
+                raise AppException(msg)
             module_file_list = []
             for record in ret:
                 module_matter_id = record.get('MODULE_MATTER_ID')
@@ -304,7 +310,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82007", [])
                 g.applogger.error(log_msg)
                 msg = g.appmsg.get_api_message("MSG-82007", [])
-                raise Exception(msg)
+                raise AppException(msg)
 
             # [RESTAPI]作成したtar.gzファイルをアップロードするためのURLを取得する
             g.applogger.info(g.appmsg.get_log_message("BKY-51037", [execution_no]))
@@ -314,7 +320,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82029", [])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82029", [])
-                raise Exception(msg)
+                raise AppException(msg)
             respons_contents_json = response_array.get('responseContents')
             respons_contents = json.loads(respons_contents_json)
             respons_contents_data = respons_contents.get('data')
@@ -330,7 +336,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82030", [])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82030", [])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # [RESTAPI]連携先Terraformに登録されているVariableの一覧を取得(設定値を保存するため)
@@ -341,7 +347,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82014", [])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82014", [])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # 取得したVariable一覧から、variables.jsonを作成する(登録した代入値をまとめたファイル)
@@ -377,7 +383,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82031", [])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82031", [])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # Terraform Runの実行返却値からRUN-IDを取得する
@@ -399,7 +405,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82008", [])
                 g.applogger.error(log_msg)
                 msg = g.appmsg.get_api_message("MSG-82008", [])
-                raise Exception(msg)
+                raise AppException(msg)
             else:
                 # zipファイル名を変更 [execution_no].zip > InputData_[execution_no].zip
                 populated_data_rename_dir_path = base_dir + TFCloudEPConst.DIR_TEMP
@@ -409,7 +415,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                     log_msg = g.appmsg.get_log_message("MSG-82008", [])
                     g.applogger.error(log_msg)
                     msg = g.appmsg.get_api_message("MSG-82008", [])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
             # 作業インスタンスのステータスを更新
             zip_file_name = "InputData_" + execution_no + ".zip"
@@ -425,7 +431,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
                 g.applogger.error(log_msg)
-                raise Exception(log_msg)
+                raise AppException(log_msg)
 
             # 一時利用ディレクトリを削除する
             shutil.rmtree(temp_dir)
@@ -444,7 +450,7 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 log_msg = g.appmsg.get_log_message("MSG-82031", [])
                 g.applogger.info(log_msg)
                 msg = "[API Error]" + g.appmsg.get_api_message("MSG-82031", [])
-                raise Exception(msg)
+                raise AppException(msg)
             g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
             # Terraform Runの実行返却値からRUN-IDを取得する
@@ -465,15 +471,39 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
                 g.applogger.error(log_msg)
-                raise Exception(log_msg)
+                raise AppException(log_msg)
         # -----[END]実行種別が「リソース削除」の場合のみ実施-----
 
         return True
 
-    except Exception as msg:
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg("execution_no={}, err_msg={}".format(execution_no, msg))
+
         # 受け取ったメッセージをerror_logに書き込み
         file_write.open(error_log, mode="w")
-        file_write.write(str(msg))
+        file_write.write(msg)
+        file_write.close()
+
+        # ディレクトリ/ファイル削除
+        if temp_dir:
+            if os.path.isdir(temp_dir) is True:
+                shutil.rmtree(temp_dir)
+        if gztar_path:
+            if os.path.isfile(gztar_path) is True:
+                os.remove(gztar_path)
+        if populated_data_rename_path:
+            if os.path.isfile(populated_data_rename_path) is True:
+                os.remove(populated_data_rename_path)
+
+        return False
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+        # 受け取ったメッセージをerror_logに書き込み
+        file_write.open(error_log, mode="w")
+        file_write.write(str(t))
         file_write.close()
 
         # ディレクトリ/ファイル削除
@@ -780,8 +810,10 @@ def prepare_variables(objdbca, restApiCaller, instance_data, tf_manage_workspace
                     return False
                 g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
-    except Exception as msg:
-        g.applogger.error(msg)
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
         return False
 
     return True

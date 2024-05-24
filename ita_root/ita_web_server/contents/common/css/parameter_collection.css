@@ -480,6 +480,12 @@ font-size: 24px;
 font-weight: bold;
 color: var(--mainColor100);
 }
+.mainTargetNameOperationDate {
+font-weight: normal;
+font-size: 70%;
+padding-left: 8px;
+color: var(--black60); 
+}
 /* Parameter menu */
 .parameterMenu {
 margin-top: 12px;
@@ -535,6 +541,7 @@ background-color: #F6F6F6;
 border-right-width: 1px;
 }
 .parameterArea .parameterTh .ci {
+max-width: none;
 padding: 4px 16px 2px;
 }
 .parameterArea .tableVertical .parameterSeparateTr .tBodyTh,
@@ -552,6 +559,15 @@ border-right-color: var(--mainColor60)!important;
 }
 .parameterArea .parameterTh {
 color: var(--mainColor100);
+}
+.parameterArea .parameterThOperationDate {
+padding-top: 2px;
+border-top: 1px dotted var(--mainColor100);
+font-size: 90%;
+opacity: .9;
+}
+.parameterArea .parameterThOperationDate > span {
+display: none;
 }
 .parameterArea .tableVertical .parameterTh {
 text-align: left;

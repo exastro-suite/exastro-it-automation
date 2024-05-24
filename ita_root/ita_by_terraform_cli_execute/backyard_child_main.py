@@ -17,6 +17,7 @@ import os
 import subprocess
 import time
 import json
+import traceback
 
 from shlex import quote
 from zc import lockfile
@@ -24,7 +25,7 @@ from zc.lockfile import LockError
 
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common.exception import AppException
-from common_libs.common.util import get_timestamp, ky_encrypt, ky_decrypt
+from common_libs.common.util import get_timestamp, ky_encrypt, ky_decrypt, get_iso_datetime, arrange_stacktrace_format
 from common_libs.ci.util import log_err
 from common_libs.driver.functions import operation_LAST_EXECUTE_TIMESTAMP_update
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
@@ -393,7 +394,7 @@ def update_status_error(wsDb: DBConnectWs, execute_data):
 def exec_command(wsDb, execute_data, command, cmd_log, error_log, init_flg=False):
     time_limit = execute_data['I_TIME_LIMIT']  # 遅延タイマ
     current_status = execute_data['STATUS_ID']
-    
+
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_write = storage_access.storage_write()
 
@@ -551,7 +552,7 @@ def save_encrypt_statefile(execute_data):
         # /storage配下のファイルアクセスを/tmp経由で行うモジュール
         file_read = storage_access.storage_read()
         file_write = storage_access.storage_write()
-        
+
         # 1:tfstate
         org_state_file = workspace_work_dir + "/terraform.tfstate"
         encrypt_state_file = tmp_execution_dir + "/terraform.tfstate"
@@ -595,8 +596,10 @@ def save_encrypt_statefile(execute_data):
         result_matter_arr.append(encrypt_state_file)
 
         return True
-    except Exception as e:
-        log_err(e)
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
         return False
 
 
@@ -684,7 +687,7 @@ def prepare_vars_file(wsDb: DBConnectWs, execute_data):  # noqa: C901
     run_mode = execute_data['RUN_MODE']
     movement_id = execute_data['MOVEMENT_ID']
     operation_id = execute_data['OPERATION_ID']
-    
+
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_write = storage_access.storage_write()
 

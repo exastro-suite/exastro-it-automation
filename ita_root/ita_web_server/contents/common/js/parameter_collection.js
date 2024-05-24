@@ -1358,7 +1358,7 @@ setParameterTables() {
          parameterHostList = [],
          filterHostList = [];
 
-         let targetModeName, targetName;
+         let targetModeName, targetName, targetDate;
 
          if ( pc.select.mode === 'host') {
             targetModeName = getMessage.FTE11008;
@@ -1369,8 +1369,8 @@ setParameterTables() {
 
                targetName = ( targetHost )? fn.cv( targetHost.host_name, ''): '';
                if ( targetName !== '') {
-                  parameterHostList.push( targetName );
-                  parameterHostList.push( '[H]' + targetName );
+                  parameterHostList.push({name: targetName});
+                  parameterHostList.push({name: '[H]' + targetName});
                   filterHostList.push( targetName );
                   filterHostList.push( '[H]' + targetName );
                }
@@ -1384,9 +1384,15 @@ setParameterTables() {
                   const targetOperation = pc.info.operation.find(function( ope ){
                      return ope.operation_id === operaationId;
                   });
-                  const operationName = ( targetOperation )? fn.cv( targetOperation.operation_name, ''): '';
-                  if ( operationName !== '') {
-                     parameterOperationList.push( operationName );
+                  if ( targetOperation ) {
+                    const operationName = fn.cv( targetOperation.operation_name, '');
+                    if ( operationName !== '') {
+                        const operationDate = ( targetOperation.last_run_date )? fn.cv( targetOperation.last_run_date, ''): fn.cv( targetOperation.scheduled_date_for_execution, '');
+                        parameterOperationList.push({
+                            name: operationName,
+                            date: operationDate
+                        });
+                    }
                   }
                }
             }
@@ -1395,10 +1401,12 @@ setParameterTables() {
             const targetOperation = pc.info.operation.find(function( ope ){
                return ope.operation_id === pc.select.mainOperation;
             });
-
-            targetName = ( targetOperation )? fn.cv( targetOperation.operation_name, ''): '';
-            if ( targetName !== '') {
-               parameterOperationList.push( targetName );
+            if ( targetOperation ) {
+                targetName = fn.cv( targetOperation.operation_name, '');
+                targetDate = ( targetOperation.last_run_date )? fn.cv( targetOperation.last_run_date, ''): fn.cv( targetOperation.scheduled_date_for_execution, '');
+                if ( targetName !== '') {
+                    parameterOperationList.push({name: targetName});
+                }
             }
 
             // 選択ホスト
@@ -1409,7 +1417,9 @@ setParameterTables() {
                   });
                   const hostName = ( targetHost )? fn.cv( targetHost.host_name, ''): '';
                   if ( hostName !== '') {
-                     parameterHostList.push( hostName );
+                     parameterHostList.push({
+                        name: hostName
+                     });
                      filterHostList.push( hostName );
                      filterHostList.push( '[H]' + hostName );
                   }
@@ -1417,13 +1427,20 @@ setParameterTables() {
             }
 
             // ホスト無し
-            if ( pc.select.targetNoHost ) parameterHostList.push( getMessage.FTE11014 );
+            if ( pc.select.targetNoHost ) parameterHostList.push({
+                name: getMessage.FTE11014
+            });
          }
+
+         const targetTitle = fn.cv( targetName, '', true );
+         const targetTitleBlock = ( pc.select.mode !== 'host')?
+            targetTitle + `<span class="mainTargetNameOperationDate">${targetDate}</span>`:
+            targetTitle;
 
          pc.$.param.addClass('parameterStandby').html(``
          + `<div class="mainTarget">`
             + `<div class="mainTargetType">${targetModeName}</div>`
-            + `<div class="mainTargetName">${fn.cv( targetName, '', true )}</div>`
+            + `<div class="mainTargetName">${targetTitleBlock}</div>`
          + `</div>`
          + `<div class="parameterMenu">`
             + `<ul class="parameterMenuList">`
@@ -1487,6 +1504,7 @@ setParameterTables() {
                resolve();
             });
          }).catch(function( error ){
+            console.error( error );
             alert( getMessage.FTE11019 );
             pc.$.param.removeClass('parameterStandby');
             pc.tableLoading = false;
@@ -2059,7 +2077,8 @@ outputExcel() {
                let colNum = 0, rowNum = 0;
 
                $( this ).find('.th,.td').each(function( c ){
-                  const $cell = $( this ), text = $cell.text();
+                  const $cell = $( this );
+                  const text = $cell.text();
 
                   // 縦横で別処理
                   if ( pc.select.tableDirection === 'vertical') {
@@ -2154,7 +2173,7 @@ outputExcel() {
                   size: '9'
                };
                cell.alignment = {
-                  vertical: 'middle', horizontal: horizontal
+                  vertical: 'middle', horizontal: horizontal, wrapText: true
                };
 
                const border = {};

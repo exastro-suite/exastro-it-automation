@@ -306,7 +306,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             if mongo_owner is True:
                 org_mongo.drop_user(ws_mongo_user, ws_mongo_name)
 
-        raise Exception(e)
+        raise e
     finally:
         if 'org_root_db' in locals():
             org_root_db.db_disconnect()
@@ -409,7 +409,6 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         exception_flg = True
         exception_log_need = True
         result_list = app_exception_response(e, exception_log_need)
-
     except Exception as e:
         # スキップファイルが存在する場合は削除する
         if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
@@ -418,7 +417,6 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         exception_flg = True
         exception_log_need = True
         result_list = exception_response(e, exception_log_need)
-
     finally:
         if exception_flg is True:
             # 廃止を復活

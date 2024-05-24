@@ -65,7 +65,6 @@ def before_request_handler():
             try:
                 roles_decode = base64.b64decode(roles_org.encode()).decode("utf-8")
             except Exception:
-                g.applogger.info("roles_org={}".format(roles_org))
                 raise AppException("400-00001", ["Roles"], ["Roles"])
             roles = roles_decode.split("\n")
             if user_id is None or roles is None or type(roles) is not list:
@@ -144,13 +143,9 @@ def before_request_handler():
             # g.applogger.set_user_setting(ws_db)
             ws_db.db_disconnect()
     except AppException as e:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
         return app_exception_response(e)
     except Exception as e:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         # catch - other all error
         return exception_response(e)
 

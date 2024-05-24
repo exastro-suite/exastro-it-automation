@@ -23,9 +23,6 @@ from common_libs.common.mongoconnect.const import Const as mongoConst
 # oase
 from common_libs.oase.const import oaseConst
 
-import traceback
-from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
-
 # 比較方法のキーから、比較方法を取り出すためのマスタ(正規表現の場合は正規表現オプション値がとれるように)
 # t_oase_comparison_methodに対応
 COMPARISON_OPERATOR = {
@@ -166,9 +163,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                     is_key_exists = get_value_from_jsonpath(query, labeled_event_location)
                 except Exception:  # noqa: E722
                     is_key_exists = False
-                    t = traceback.format_exc()
-                    g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-                    g.applogger.info("\nquery={}, \nlabeled_event_location={}".format(query, labeled_event_location))
 
                 # "event"もしくは"labels"配下にラベル付与設定のsearch_key_nameが存在しない場合
                 if is_key_exists is False:

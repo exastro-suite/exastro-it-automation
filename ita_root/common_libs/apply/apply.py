@@ -314,7 +314,7 @@ def rest_apply_parameter(objdbca, request_data, menu_list, lock_list, parameter_
                     primary_key = loadtable_obj_dict[menu].get_primary_key()
                     target_uuid_key = loadtable_obj_dict[menu].get_rest_key(primary_key)
                     if 'parameter' in v:
-                        target_uuid = v.get('parameter', {}).get(target_uuid_key)
+                        target_uuid = v.get('parameter').get(target_uuid_key)
 
                     # 更新系の操作の場合、最終更新日時を取得
                     if target_uuid and v['type'] in ['Update', 'Restore', 'Discard'] \

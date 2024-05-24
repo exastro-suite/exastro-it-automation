@@ -16,7 +16,6 @@ import chardet
 import jinja2
 import re
 from common_libs.common.util import print_exception_msg
-from flask import g
 
 
 def is_binary_file(template_data_binary):

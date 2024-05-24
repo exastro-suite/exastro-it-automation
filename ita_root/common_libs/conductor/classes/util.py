@@ -184,7 +184,7 @@ class ConductorCommonLibs():
                 return False, err_code, res_chk[1]
 
             # check node call loop
-            res_chk = self.chk_call_loop_base_1(tmp_c_all_data.get('conductor', {}).get('id'), tmp_c_all_data)
+            res_chk = self.chk_call_loop_base_1(tmp_c_all_data.get('conductor').get('id'), tmp_c_all_data)
             if res_chk[0] is False:
                 return False, err_code, res_chk[1]
 
@@ -1142,7 +1142,7 @@ class ConductorCommonLibs():
         result = []
         try:
             # parallelからmergeを追跡
-            t_terminal = c_data.get(parallel_node, {}).get('terminal')
+            t_terminal = c_data.get(parallel_node).get('terminal')
             for tname, tinfo in t_terminal.items():
                 t_t_type = tinfo.get('type')
                 if t_t_type == 'out':
@@ -1219,7 +1219,7 @@ class ConductorCommonLibs():
                 raise Exception()
             else:
                 for t_node_id in tmp_result:
-                    t_node_type = c_data.get(t_node_id, {}).get('type')
+                    t_node_type = c_data.get(t_node_id).get('type')
                     if t_node_type == target_node_type:
                         # 対象のnode_typeの場合
                         return tmp_result

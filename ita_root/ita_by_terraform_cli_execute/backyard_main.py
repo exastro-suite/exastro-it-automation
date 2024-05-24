@@ -17,12 +17,11 @@ import time
 import re
 import os
 import datetime
+import traceback
 
 from flask import g
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.common.util import get_timestamp, get_maintenance_mode_setting
-from common_libs.ci.util import log_err
-
+from common_libs.common.util import get_timestamp, get_maintenance_mode_setting, get_iso_datetime, arrange_stacktrace_format
 from common_libs.terraform_driver.cli.Const import Const as TFCLIConst
 from libs import functions as func
 
@@ -52,6 +51,9 @@ def main_logic(organization_id, workspace_id):
             return True
     except Exception:
         # エラーログ出力
+        t = traceback.format_exc()
+        g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
         g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
         return False
 

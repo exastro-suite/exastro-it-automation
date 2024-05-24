@@ -230,7 +230,7 @@ class RestApiCaller():
                                         try:
                                             response_array['responseContents'] = json.loads(responseContents)
 
-                                        except json.JSONDecodeError as e:  # noqa: F841
+                                        except json.JSONDecodeError:  # noqa: F841
                                             response_array['responseContents'] = None
 
                     else:

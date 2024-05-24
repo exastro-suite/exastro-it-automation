@@ -12,12 +12,17 @@
 # limitations under the License.
 #
 from flask import g
+import traceback
+
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import get_timestamp, get_maintenance_mode_setting
+from common_libs.common.exception import AppException
+from common_libs.common.util import get_timestamp, get_maintenance_mode_setting, get_iso_datetime, arrange_stacktrace_format, print_exception_msg
+
 from common_libs.terraform_driver.cloud_ep.Const import Const as TFCloudEPConst
 from common_libs.terraform_driver.common.SubValueAutoReg import SubValueAutoReg
-from libs.common_functions import update_execution_record
 from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
+
+from libs.common_functions import update_execution_record
 from libs.execute_terraform_run import execute_terraform_run
 from libs.check_terraform_condition import check_terraform_condition
 
@@ -54,6 +59,9 @@ def backyard_main(organization_id, workspace_id):
             skip_flag = True
     except Exception:
         # エラーログ出力
+        t = traceback.format_exc()
+        g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
         g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
         return
 
@@ -119,16 +127,25 @@ def instance_prepare(objdbca):
                 g.applogger.debug(g.appmsg.get_log_message("BKY-51001", [execution_no]))
             else:
                 log_msg = g.appmsg.get_log_message("BKY-50101", [])  # Failed to update status.
-                g.applogger.error(log_msg)
-                raise Exception()
+                raise AppException(log_msg)
 
             # トランザクション終了
             objdbca.db_transaction_end(True)
 
-        except Exception:
+        except AppException as e:
+            msg, arg1, arg2 = e.args
+            print_exception_msg("execution_no={}, err_msg={}".format(execution_no, msg))
             # トランザクション終了
             objdbca.db_transaction_end(False)
+            # エラーフラグ
+            error_flg = True
+        except Exception as e:
+            print_exception_msg("execution_no={}".format(execution_no))
+            t = traceback.format_exc()
+            g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
 
+            # トランザクション終了
+            objdbca.db_transaction_end(False)
             # エラーフラグ
             error_flg = True
 
@@ -157,6 +174,7 @@ def instance_execute(objdbca):
 
     # 「準備中」の対象レコードの分だけループし、TerraformのRUNまでの作業を行う。
     for record in prepare_list:
+        record_error_flg = False
         try:
             # トランザクション開始
             objdbca.db_transaction_start()
@@ -174,7 +192,7 @@ def instance_execute(objdbca):
                 result, msg = sub_value_auto_reg.set_assigned_value_from_parameter_sheet()
                 if not result:
                     # 代入値自動登録設定から代入値管理へのレコード登録に失敗
-                    raise Exception(msg)
+                    raise AppException(msg + "(Execution No.:{})".format(execution_no))
 
             # 実行種別が「パラメータ確認」ならステータスを「完了」としてcontinue。
             if run_mode == TFCloudEPConst.RUN_MODE_PARAM:
@@ -197,7 +215,7 @@ def instance_execute(objdbca):
                 result = execute_terraform_run(objdbca, record, False)
                 if not result:
                     # 作業実行に失敗
-                    raise Exception()
+                    raise AppException("[Process] Start execute terraform run failed.(Execution No.:{})".format(execution_no))
 
             elif run_mode == TFCloudEPConst.RUN_MODE_DESTROY:
                 # 実行種別が「リソース削除」なら連携先Terraformに対しDestroyを実行
@@ -205,17 +223,27 @@ def instance_execute(objdbca):
                 result = execute_terraform_run(objdbca, record, True)
                 if not result:
                     # リソース削除に失敗
-                    raise Exception()
+                    raise AppException("[Process] Start execute terraform run(Destroy) failed.(Execution No.:{})".format(execution_no))
             else:
                 # 実行種別が不正
                 log_msg = g.appmsg.get_log_message("MSG-00027", [execution_no])
-                g.applogger.info(log_msg)
-                raise Exception()
+                raise AppException(log_msg)
 
             # トランザクション終了
             objdbca.db_transaction_end(True)
 
-        except Exception:
+        except AppException as e:
+            msg, arg1, arg2 = e.args
+            print_exception_msg(msg)
+
+            record_error_flg = True
+        except Exception as e:
+            t = traceback.format_exc()
+            g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+            record_error_flg = True
+
+        if record_error_flg is True:
             # トランザクション終了
             objdbca.db_transaction_end(False)
 
@@ -263,6 +291,7 @@ def instance_check(objdbca):
 
     # 「実行中」の対象レコードの分だけループし、Terraformの実行状況の監視を行う。
     for record in executed_list:
+        record_error_flg = False
         try:
             # トランザクション開始
             objdbca.db_transaction_start()
@@ -275,12 +304,23 @@ def instance_check(objdbca):
             result = check_terraform_condition(objdbca, record)
             if not result:
                 # RUNの状態確認に失敗
-                raise Exception()
+                raise AppException("[Process] Check condition failed. (Execution No.:{})".format(execution_no))
 
             # トランザクション終了
             objdbca.db_transaction_end(True)
 
-        except Exception:
+        except AppException as e:
+            msg, arg1, arg2 = e.args
+            print_exception_msg(msg)
+
+            record_error_flg = True
+        except Exception as e:
+            t = traceback.format_exc()
+            g.applogger.error("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+
+            record_error_flg = True
+
+        if record_error_flg is True:
             # トランザクション終了
             objdbca.db_transaction_end(False)
 

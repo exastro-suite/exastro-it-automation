@@ -635,7 +635,7 @@ class DBConnectCommonRoot(DBConnectCommon):
                 collation='utf8mb4_general_ci',
                 cursorclass=pymysql.cursors.DictCursor
             )
-        except Exception as e:
+        except pymysql.Error as e:
             raise AppException("999-00002", [f"{self._host}:{self._port}", e])
 
         return True

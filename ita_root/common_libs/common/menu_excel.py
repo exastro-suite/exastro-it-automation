@@ -28,11 +28,12 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import absolute_coordinate
+
 from common_libs.common import *  # noqa: F403
-from common_libs.common import menu_maintenance_all, menu_info
+from common_libs.common import menu_maintenance_all, menu_info, storage_access
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import check_request_body_key
-from common_libs.common import storage_access
+
 
 # 「マスタ」シートを作成する
 def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  # noqa: E302
@@ -1743,8 +1744,9 @@ def execute_excel_maintenance(
         for msg in err_msgs:
             try:
                 json_msg = json.loads(msg)
-            except Exception:
-                g.applogger.info(e)
+            except Exception as ee:
+                ee_msg = "value:{}, error:{}".format(msg, ee)
+                print_exception_msg(ee_msg)
                 raise e
             for k, v in json_msg.items():
                 for vv in v.values():

@@ -12,9 +12,12 @@
 # limitations under the License.
 #
 from flask import g
-from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
 import json
 import os
+import traceback
+
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
+from common_libs.terraform_driver.cloud_ep.terraform_restapi import *  # noqa: F403
 
 
 class policySetting():
@@ -352,6 +355,9 @@ class policySetting():
                 g.applogger.info(g.appmsg.get_log_message("BKY-51041", []))
 
         except Exception as e:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
             result = False
             msg = e
 

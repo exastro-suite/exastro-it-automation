@@ -17,9 +17,11 @@ import os
 import sys
 import time
 import re
+import traceback
 
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 from common_libs.ci.util import app_exception, exception
 from agent_main import agent_main as main_logic
 
@@ -46,23 +48,26 @@ def main():
             g.applogger.set_level(os.environ.get("LOG_LEVEL", "INFO"))
             g.appmsg = MessageTemplate(g.LANGUAGE)
 
+            interval = int(os.environ.get("EXECUTE_INTERVAL", 5))
+            interval = 3 if interval <= 3 else interval  # 下限値
+
             # コマンドラインから引数を受け取る["自身のファイル名", "ループ回数"]
             args = sys.argv
             loop_count = int(os.environ.get("ITERATION", 10)) if len(args) == 1 else int(args[1])
             loop_count = 10 if loop_count <= 10 else loop_count  # 下限値
-            interval = int(os.environ.get("EXECUTE_INTERVAL", 5))
-            interval = 3 if interval <= 3 else interval  # 下限値
 
             # 妥当な設定（organization_id, workspace_id）でなければ、メイン処理に回さない
             is_setting_check = setting_check(organization_id, workspace_id)
             if is_setting_check is False:
-                g.applogger.info("setting is invalid.so, main_logic is skipped")
+                g.applogger.info("setting is invalid(organization_id or workspace_id). so, main_logic is skipped")
                 time.sleep(interval)
             else:
                 main_logic(organization_id, workspace_id, loop_count, interval)
         except Exception as e:
             # catch - other all error
-            g.applogger.error(e)
+            t = traceback.format_exc()
+            g.applogger.error("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
             time.sleep(interval)
 
 # 妥当な設定（organization_id, workspace_id）でなければ、メイン処理に回さない

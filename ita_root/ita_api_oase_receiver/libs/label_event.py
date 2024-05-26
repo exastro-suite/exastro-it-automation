@@ -214,7 +214,6 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
     except Exception as e:
         g.applogger.error(stacktrace())
         err_code = "499-01803"
-        g.applogger.info("labeled_events={}".format(labeled_events))
         raise AppException(err_code, [e], [e])
 
 

@@ -28,9 +28,6 @@ from common_libs.common.util import get_maintenance_mode_setting
 from common_libs.api import set_api_timestamp, get_api_timestamp, app_exception_response, exception_response, check_request_body
 from common_libs.ci.util import set_service_loglevel
 
-import traceback
-from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
-
 
 def before_request_handler():
     """

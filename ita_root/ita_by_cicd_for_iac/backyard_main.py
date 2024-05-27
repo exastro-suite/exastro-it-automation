@@ -1064,14 +1064,6 @@ class CICD_GrandChildWorkflow():
         zipFileNameBase = os.path.basename(inRolesDir)
         zipFileName = "%s.zip" % (zipFileNameBase)
 
-        """
-        try:
-            shutil.make_archive("%s/%s" % (outRolesDir, zipFileNameBase), 'zip', inRolesDir)
-
-        except Exception as e:
-            return str(e), outRolesDir, zipFileName
-        """
-
         cmd = "cd %s && zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
         ret = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if ret.returncode != 0:

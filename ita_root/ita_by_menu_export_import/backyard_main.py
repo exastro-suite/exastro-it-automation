@@ -1164,7 +1164,9 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         file_open_write_close(version_path, 'w', version_data["version"])
 
         # データをtar.gzにまとめる
-        gztar_path = shutil.make_archive(base_name=dir_path, format="gztar", root_dir=dir_path)
+        gztar_path = dir_path + '.tar.gz'
+        with tarfile.open(gztar_path, 'w:gz') as tar:
+            tar.add(dir_path, arcname="")
 
         # kymファイルに変換(拡張子変更)
         kym_name = dir_name + '.kym'

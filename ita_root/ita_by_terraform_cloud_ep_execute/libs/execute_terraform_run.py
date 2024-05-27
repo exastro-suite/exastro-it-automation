@@ -16,6 +16,8 @@ import json
 import os
 import shutil
 import traceback
+import zipfile
+import tarfile
 
 from common_libs.common import storage_access
 from common_libs.common.exception import AppException
@@ -305,7 +307,10 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 shutil.copy(module_file_full_path, temp_dir)
 
             # tempディレクトリにコピーしたファイルをtar.gzファイルにまとめる
-            gztar_path = shutil.make_archive(base_name=temp_dir, format="gztar", root_dir=temp_dir)
+            gztar_path = temp_dir + '.tar.gz'
+            with tarfile.open(gztar_path, 'w:gz') as tar:
+                tar.add(temp_dir, arcname="")
+
             if os.path.exists(gztar_path) is False:
                 log_msg = g.appmsg.get_log_message("MSG-82007", [])
                 g.applogger.error(log_msg)
@@ -400,7 +405,29 @@ def execute_terraform_run(objdbca, instance_data, destroy_flag=False):  # noqa: 
                 shutil.copy(policy_file_full_path, temp_dir)
 
             # 投入データ用のZIPファイルを作成する
-            populated_data_path = shutil.make_archive(base_name=temp_dir, format="zip", root_dir=temp_dir)
+            populated_data_path = temp_dir + '.zip'
+            with zipfile.ZipFile(file=populated_data_path, mode='w') as z:
+                # input_pathがファイルだった場合の処理
+                if os.path.isfile(temp_dir):
+                    z.write(
+                        filename=temp_dir,
+                        arcname=os.path.basename(temp_dir)
+                    )
+                # input_pathがディレクトリだった場合の処理
+                elif os.path.isdir(temp_dir):
+                    def _nest(_path):
+                        for x in os.listdir(_path):
+                            y = os.path.join(_path, x)
+                            z.write(
+                                filename=y,
+                                arcname=y.replace(temp_dir, '')
+                            )
+                            # ディレクトリの場合は再帰
+                            if os.path.isdir(y):
+                                _nest(y)
+
+                    _nest(temp_dir)
+
             if os.path.exists(populated_data_path) is False:
                 log_msg = g.appmsg.get_log_message("MSG-82008", [])
                 g.applogger.error(log_msg)

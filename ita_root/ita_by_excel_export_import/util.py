@@ -14,10 +14,9 @@
 from flask import g
 from common_libs.loadtable import *
 import os
-import pathlib
 import textwrap
 import shutil
-import datetime
+import zipfile
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import storage_access
@@ -144,8 +143,30 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
 
     # tmp配下でzipに固める
     tmp_dir_path = "/tmp/{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID')) + "/tmp_zip"
+    tmp_dir_file_path = tmp_dir_path + '.zip'
     shutil.copytree(dirPath + "/tmp_zip", tmp_dir_path)
-    shutil.make_archive(base_name=tmp_dir_path, format="zip", root_dir=tmp_dir_path)
+
+    with zipfile.ZipFile(file=tmp_dir_file_path, mode='w') as z:
+        # input_pathがファイルだった場合の処理
+        if os.path.isfile(tmp_dir_path):
+            z.write(
+                filename=tmp_dir_path,
+                arcname=os.path.basename(tmp_dir_path)
+            )
+        # input_pathがディレクトリだった場合の処理
+        elif os.path.isdir(tmp_dir_path):
+            def _nest(_path):
+                for x in os.listdir(_path):
+                    y = os.path.join(_path, x)
+                    z.write(
+                        filename=y,
+                        arcname=y.replace(tmp_dir_path, '')
+                    )
+                    # ディレクトリの場合は再帰
+                    if os.path.isdir(y):
+                        _nest(y)
+
+            _nest(tmp_dir_path)
 
     objdbca.db_transaction_start()
 
@@ -167,7 +188,7 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
         # ファイル更新用パラメータを作成
         parameters = {
             "file": {
-                "file_name": file_encode(tmp_dir_path + ".zip")
+                "file_name": file_encode(tmp_dir_file_path)
             },
             "parameter": {
                 "file_name": zipFileName,
@@ -195,7 +216,7 @@ def zip(execution_no, dirPath, status_id, zipFileName, objdbca):
 
     # tmp配下削除
     shutil.rmtree(tmp_dir_path)
-    os.remove(tmp_dir_path + ".zip")
+    os.remove(tmp_dir_file_path)
 
     return result
 

@@ -28,6 +28,7 @@ import re
 import shutil
 # from pprint import pprint  # noqa: F401
 import datetime
+import zipfile
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
@@ -2574,10 +2575,30 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
                         shutil.copy2(target_mv_zip, tmp_work_path + '/')
 
                 # 全MVをzip化,base64
-                tmp_result = shutil.make_archive(tmp_work_path_filename, ext, root_dir=tmp_work_path)
+                with zipfile.ZipFile(file=zip_file_path, mode='w') as z:
+                    # input_pathがファイルだった場合の処理
+                    if os.path.isfile(tmp_work_path):
+                        z.write(
+                            filename=tmp_work_path,
+                            arcname=os.path.basename(tmp_work_path)
+                        )
+                    # input_pathがディレクトリだった場合の処理
+                    elif os.path.isdir(tmp_work_path):
+                        def _nest(_path):
+                            for x in os.listdir(_path):
+                                y = os.path.join(_path, x)
+                                z.write(
+                                    filename=y,
+                                    arcname=y.replace(tmp_work_path, '')
+                                )
+                                # ディレクトリの場合は再帰
+                                if os.path.isdir(y):
+                                    _nest(y)
+
+                        _nest(tmp_work_path)
 
                 obj = storage_access.storage_read()
-                obj.open(tmp_result, "rb")
+                obj.open(zip_file_path, "rb")
                 zip_base64_str = base64.b64encode(obj.read()).decode('utf-8')  # noqa: F405
                 obj.close()
                 result.setdefault('file_name', zip_file_name)

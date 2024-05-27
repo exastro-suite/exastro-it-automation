@@ -1144,6 +1144,8 @@
     "MSG-10942": "For certificate authentication (winrm), the winrm private key file is a required item.",
     "MSG-10943": "Failed to decrypt winrm public key file. (file:{})",
     "MSG-10944": "Failed to decrypt winrm private key file.(file:{})",
+    "MSG-10945": "The winem public key file in the list of devices managed by the system does not exist. (Device list item number:{} File:{})",
+    "MSG-10946": "The winem private key in the list of devices managed by the system does not exist. (Device list item number:{} File:{})",
     "MSG-10938": "Out of the input range. (Minimum value: {}, Maximum value: {}, Input value: {})\nMaximum value can be changed in the Management console/System management.",
     "MSG-20001": "Main menu",
     "MSG-20002": "[Main Menu] can not be set.",

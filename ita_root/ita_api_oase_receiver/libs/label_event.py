@@ -161,7 +161,7 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
                 query = create_jmespath_query(setting["SEARCH_KEY_NAME"])
                 try:
                     is_key_exists = get_value_from_jsonpath(query, labeled_event_location)
-                except Exception as e:  # noqa: E722
+                except Exception:  # noqa: E722
                     is_key_exists = False
 
                 # "event"もしくは"labels"配下にラベル付与設定のsearch_key_nameが存在しない場合

@@ -854,23 +854,17 @@ class loadTable():
             RETRUN:
                 []
         """
-        try:
-            result = []
-            table_name = self.get_table_name()
-            column_list = self.get_column_list()
-            primary_key = self.get_primary_key()
-            query_str = textwrap.dedent("""
-                SELECT * FROM `{table_name}`
-                WHERE `{primary_key}` = %s
-                ORDER BY `LAST_UPDATE_TIMESTAMP` DESC
-                LIMIT 1
-            """).format(table_name=table_name, primary_key=primary_key).strip()
-            result = self.objdbca.sql_execute(query_str, [uuid])
-        except Exception:
-            t = traceback.format_exc()
-            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-            result = []
-
+        result = []
+        table_name = self.get_table_name()
+        column_list = self.get_column_list()
+        primary_key = self.get_primary_key()
+        query_str = textwrap.dedent("""
+            SELECT * FROM `{table_name}`
+            WHERE `{primary_key}` = %s
+            ORDER BY `LAST_UPDATE_TIMESTAMP` DESC
+            LIMIT 1
+        """).format(table_name=table_name, primary_key=primary_key).strip()
+        result = self.objdbca.sql_execute(query_str, [uuid])
         return result
 
     # [filter]:メニューのレコード取得
@@ -2229,7 +2223,7 @@ class loadTable():
                     }
                     self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
         except ValueError as msg_args:
-            print_exception_msg(e)
+            print_exception_msg(msg_args)
             status_code = 'MSG-00028'
             msg_args = [lastupdatetime_parameter]
             msg = g.appmsg.get_api_message(status_code, msg_args)
@@ -2529,7 +2523,7 @@ class loadTable():
                                                 if float(v) == 0:
                                                     convert_search_conf[k] = v
                                                 else:
-                                                    convert_search_conf[k] = float(v)                                                convert_search_conf[k] = v
+                                                    convert_search_conf[k] = float(v)
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, convert_search_conf))
                                         else:
                                             filter_querys.append(objcolumn.get_filter_query(search_mode, search_conf))

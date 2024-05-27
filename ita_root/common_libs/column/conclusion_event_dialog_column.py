@@ -122,8 +122,7 @@ class ConclusionEventSettingColumn(IndividualDialogColumn):
             print_exception_msg(e)
             status_code = '499-01708'
             msg_args = [str(val)]
-            msg = g.appmsg.get_api_message(status_code, msg_args)
-            raise Exception(status_code, msg)
+            raise AppException(status_code, msg_args)
 
         search_candidates = []
         if isinstance(json_val, list):
@@ -157,15 +156,9 @@ class ConclusionEventSettingColumn(IndividualDialogColumn):
         retBool = True
         val_decode = None
         if valnames:
-            try:
-                val_decode = self.is_json_format(valnames)
-                if val_decode is False:
-                    raise Exception("JSON format is abnormal")
-
-            except Exception as e:
-                # dodo エラーコード見直し
-                t = traceback.format_exc()
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+            val_decode = self.is_json_format(valnames)
+            if val_decode is False:
+                print_exception_msg("JSON format is abnormal")
                 retBool = False
                 status_code = '499-01704'
                 msg_args = []

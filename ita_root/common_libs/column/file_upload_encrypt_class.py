@@ -97,14 +97,8 @@ class FileUploadEncryptColumn(FileUploadColumn):
 
                 # old配下にファイルアップロード
                 if len(old_dir_path) > 0:
-                    try:
-                        result = encrypt_upload_file(old_dir_path, decode_option)  # noqa: F405
-                        if result is False:
-                            raise Exception()
-                    except Exception:
-                        t = traceback.format_exc()
-                        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-                        g.applogger.info(old_dir_path)
+                    result = encrypt_upload_file(old_dir_path, decode_option)  # noqa: F405
+                    if result is False:
                         retBool = False
                         msg = g.appmsg.get_api_message('MSG-00033', [val])
                         return retBool, msg
@@ -138,7 +132,6 @@ class FileUploadEncryptColumn(FileUploadColumn):
                 try:
                     os.symlink(old_dir_path, dir_path)
                 except Exception as e:
-                    print_exception_msg(e)
                     retBool = False
                     msg = g.appmsg.get_api_message('MSG-00015', [old_dir_path, dir_path])
                     return retBool, msg

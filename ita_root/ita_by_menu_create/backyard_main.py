@@ -223,7 +223,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             record_v_parameter_sheet_reference \
             = _collect_menu_create_data(objdbca, menu_create_id)  # noqa: E501
         if not result:
-            raise Exception(msg)
+            raise AppException(msg)
 
         # テーブル名を生成
         create_table_name = 'T_CMDB_' + str(menu_create_id)
@@ -267,7 +267,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                 # 「バンドル」が有効かつ「項目が0件」の場合はエラー判定
                 if not record_t_menu_column:
                     msg = g.appmsg.get_log_message("BKY-20214", [menu_create_id])
-                    raise Exception(msg)
+                    raise AppException(msg)
             else:
                 # パラメータシート用テーブル作成SQL
                 sql_file_path = "./sql/parameter_sheet_cmdb.sql"
@@ -282,7 +282,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 「データシート」かつ「項目が0件」の場合はエラー判定
             if not record_t_menu_column:
                 msg = g.appmsg.get_log_message("BKY-20202", [menu_create_id])
-                raise Exception(msg)
+                raise AppException(msg)
 
             # テーブル名を生成
             create_table_name = 'T_CMDB_' + str(menu_create_id)
@@ -300,7 +300,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # パラメータシート（オペレーションあり）かつ「項目が0件」の場合はエラー判定
             if not record_t_menu_column:
                 msg = g.appmsg.get_log_message("BKY-20215", [menu_create_id])
-                raise Exception(msg)
+                raise AppException(msg)
 
             # テーブル名/ビュー名を生成
             create_table_name = 'T_CMDB_' + str(menu_create_id)
@@ -320,7 +320,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
 
         else:
             msg = g.appmsg.get_log_message("BKY-20201", [menu_create_id, sheet_type])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # 「新規作成」「初期化」の場合のみ、テーブル作成SQLを実行
         if create_type == 'create_new' or create_type == 'initialize':
@@ -401,12 +401,12 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         # カラムグループ登録の処理に必要な形式にフォーマット
         result, msg, dict_t_menu_column_group, target_column_group_list = _format_column_group_data(record_t_menu_column_group, record_t_menu_column, menu_create_id)  # noqa: E501
         if not result:
-            raise Exception(msg)
+            raise AppException(msg)
 
         # 「他メニュー連携」を利用する処理に必要な形式にフォーマット
         result, msg, dict_t_menu_other_link = _format_other_link(record_t_menu_other_link)
         if not result:
-            raise Exception(msg)
+            raise AppException(msg)
 
         # 「初期化」「編集」の場合のみ以下の処理を実施
         if create_type == 'initialize' or create_type == 'edit':
@@ -416,12 +416,12 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             # 対象のメニューについて、現在登録されているメニュー用のレコードを廃止する
             result, msg = _disuse_menu_create_record(objdbca, record_t_menu_define)
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # 利用していないメニューグループのメニューを廃止
             result, msg = _disuse_t_comn_menu(objdbca, record_t_menu_define, target_menu_group_list)
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
         # 対象メニューグループ分だけ処理をループ
         input_menu_uuid = None
@@ -439,7 +439,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                 g.applogger.debug(debug_msg)
                 result, msg, ret_data = _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id)  # noqa: E501
                 if not result:
-                    raise Exception(msg)
+                    raise AppException(msg)
 
             # 「初期化」「編集」の場合「メニュー管理」のレコードを更新および登録
             if create_type == 'initialize' or create_type == 'edit':
@@ -447,7 +447,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                 g.applogger.debug(debug_msg)
                 result, msg, ret_data = _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id)  # noqa: E501
                 if not result:
-                    raise Exception(msg)
+                    raise AppException(msg)
 
             # 「メニュー管理」に登録したレコードのuuidを取得
             menu_uuid = ret_data[0].get('MENU_ID')
@@ -459,14 +459,14 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             g.applogger.debug(debug_msg)
             result, msg = _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_role)
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # 「メニュー-テーブル紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20013", [target_menu_group_type])
             g.applogger.debug(debug_msg)
             result, msg = _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, file_upload_only_flag, create_table_name, create_view_name, sv_create_table_name, sv_create_view_name, menu_uuid, record_t_menu_define, record_t_menu_unique_constraint, menu_group_col_name, menu_create_id)  # noqa: E501
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # 「カラムグループ管理」にレコードを登録(対象メニューグループ「入力用」の場合のみ実施)
             if menu_group_col_name == "MENU_GROUP_ID_INPUT":
@@ -474,7 +474,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                 g.applogger.debug(debug_msg)
                 result, msg = _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_column_group, menu_create_id)
                 if not result:
-                    raise Exception(msg)
+                    raise AppException(msg)
 
                 # 「カラムグループ管理」から全てのレコードを取得
                 record_t_comn_column_group = objdbca.table_select(t_comn_column_group, 'WHERE DISUSE_FLAG = %s', [0])
@@ -495,14 +495,14 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             g.applogger.debug(debug_msg)
             result, msg = _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag, hostgroup_flag, menu_uuid, input_menu_uuid, dict_t_comn_column_group, dict_t_menu_column_group, record_t_menu_column, dict_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference, menu_group_col_name, menu_create_id)  # noqa: E501
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # 「パラメータシート定義-テーブル紐付管理」にレコードを登録
             debug_msg = g.appmsg.get_log_message("BKY-20016", [target_menu_group_type])
             g.applogger.debug(debug_msg)
             result, msg = _insert_t_menu_table_link(objdbca, menu_uuid, create_table_name, create_table_name_jnl)
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # 対象メニューグループ「入力用」の場合のみ実施
             if menu_group_col_name == "MENU_GROUP_ID_INPUT":
@@ -511,14 +511,14 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
                 g.applogger.debug(debug_msg)
                 result, msg = _insert_t_menu_other_link(objdbca, menu_uuid, create_table_name, record_t_menu_column)
                 if not result:
-                    raise Exception(msg)
+                    raise AppException(msg)
 
                 # 「参照項目情報」にレコードを登録
                 debug_msg = g.appmsg.get_log_message("BKY-20018", [target_menu_group_type])
                 g.applogger.debug(debug_msg)
                 result, msg = _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_t_menu_column)
                 if not result:
-                    raise Exception(msg)
+                    raise AppException(msg)
 
         # ホストグループ利用時、ホストグループ分割対象へのレコード登録
         if hostgroup_flag:
@@ -527,7 +527,7 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             register_menu_name_rest = record_t_menu_define.get('MENU_NAME_REST') + "_subst"
             result, msg = _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest)
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
         else:
             # ホストグループ利用無しの場合、ホストグループ分割対象の対象確認、廃止
             # 「分割対象メニュー」「登録対象メニュー」の「MENU_NAME_REST」
@@ -535,14 +535,14 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
             register_menu_name_rest = record_t_menu_define.get('MENU_NAME_REST') + "_subst"
             result, msg = _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, register_menu_name_rest, 1)
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
         # 正常系リターン
         return True, msg
 
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         # 異常系リターン
         return False, msg
 
@@ -580,7 +580,7 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         record_t_menu_define = objdbca.table_select(t_menu_define, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         if not record_t_menu_define:
             msg = g.appmsg.get_log_message("BKY-20203", [menu_create_id])
-            raise Exception(msg)
+            raise AppException(msg)
         record_t_menu_define = record_t_menu_define[0]
 
         # 「カラムグループ作成情報」から全てのレコードを取得
@@ -598,7 +598,7 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         record_t_menu_role = objdbca.table_select(t_menu_role, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
         if not record_t_menu_role:
             msg = g.appmsg.get_log_message("BKY-20204", [menu_create_id])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # 「他メニュー連携」から全てのレコードを取得
         record_t_menu_other_link = objdbca.table_select(t_menu_other_link, 'WHERE DISUSE_FLAG = %s', [0])
@@ -609,9 +609,9 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         # 「パラメータシート参照」選択項目からすべてのレコードを取得
         record_v_parameter_sheet_reference = objdbca.table_select(v_parameter_sheet_reference, 'WHERE DISUSE_FLAG = %s', [0])
 
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         return False, msg, None, None, None, None, None, None, None, None
 
     return True, None, record_t_menu_define, record_t_menu_column_group, record_t_menu_column, record_t_menu_unique_constraint, record_t_menu_role, record_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference  # noqa: E501
@@ -644,7 +644,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [menu_name_rest, 0])
         if ret:
             msg = g.appmsg.get_log_message("BKY-20205", [menu_create_id, menu_name_rest])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # バリデーションチェック2: 同じメニューグループ内で同じmenu_name_jaかmenu_name_enが登録されている場合はエラー判定
         menu_name_ja = record_t_menu_define.get('MENU_NAME_JA')
@@ -653,7 +653,7 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_GROUP_ID = %s AND (MENU_NAME_JA = %s OR MENU_NAME_EN = %s) AND DISUSE_FLAG = %s', [target_menu_group_id, menu_name_ja, menu_name_en, 0])  # noqa: E501
         if ret:
             msg = g.appmsg.get_log_message("BKY-20206", [menu_create_id])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # シートタイプ毎にソートキーを生成
         sort_key = None
@@ -685,9 +685,9 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         primary_key_name = 'MENU_ID'
         ret_data = objdbca.table_insert(t_comn_menu, data_list, primary_key_name)
 
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         return False, msg, None
 
     return True, None, ret_data
@@ -752,11 +752,11 @@ def _insert_or_update_t_comn_menu(objdbca, sheet_type, record_t_menu_define, men
             # 更新対象が無い場合はレコードの新規登録
             result, msg, ret_data = _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_col_name, record_t_menu_column, menu_create_id)  # noqa: E501
             if not result:
-                raise Exception(msg)
+                raise AppException(msg)
 
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         return False, msg, None
 
     return True, None, ret_data
@@ -775,36 +775,30 @@ def _insert_or_update_t_comn_role_menu_link(objdbca, menu_uuid, record_t_menu_ro
     # テーブル名
     t_comn_role_menu_link = 'T_COMN_ROLE_MENU_LINK'
 
-    try:
-        if record_t_menu_role:
-            for record in record_t_menu_role:
-                role_id = record.get('ROLE_ID')
-                # 「ROLE_ID」「MENU_ID」で登録されているレコードを取得する
-                ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND ROLE_ID = %s', [menu_uuid, role_id])
-                if ret:
-                    link_id = ret[0].get('LINK_ID')
-                    data_list = {
-                        "LINK_ID": link_id,
-                        "DISUSE_FLAG": "0",
-                        "LAST_UPDATE_USER": g.get('USER_ID')
-                    }
-                    primary_key_name = 'LINK_ID'
-                    objdbca.table_update(t_comn_role_menu_link, data_list, primary_key_name)
-                else:
-                    data_list = {
-                        "MENU_ID": menu_uuid,
-                        "ROLE_ID": role_id,
-                        "PRIVILEGE": 1,
-                        "DISUSE_FLAG": "0",
-                        "LAST_UPDATE_USER": g.get('USER_ID')
-                    }
-                    primary_key_name = 'LINK_ID'
-                    objdbca.table_insert(t_comn_role_menu_link, data_list, primary_key_name)
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+    if record_t_menu_role:
+        for record in record_t_menu_role:
+            role_id = record.get('ROLE_ID')
+            # 「ROLE_ID」「MENU_ID」で登録されているレコードを取得する
+            ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND ROLE_ID = %s', [menu_uuid, role_id])
+            if ret:
+                link_id = ret[0].get('LINK_ID')
+                data_list = {
+                    "LINK_ID": link_id,
+                    "DISUSE_FLAG": "0",
+                    "LAST_UPDATE_USER": g.get('USER_ID')
+                }
+                primary_key_name = 'LINK_ID'
+                objdbca.table_update(t_comn_role_menu_link, data_list, primary_key_name)
+            else:
+                data_list = {
+                    "MENU_ID": menu_uuid,
+                    "ROLE_ID": role_id,
+                    "PRIVILEGE": 1,
+                    "DISUSE_FLAG": "0",
+                    "LAST_UPDATE_USER": g.get('USER_ID')
+                }
+                primary_key_name = 'LINK_ID'
+                objdbca.table_insert(t_comn_role_menu_link, data_list, primary_key_name)
 
     return True, None
 
@@ -835,7 +829,7 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_uuid, 0])
         if ret:
             msg = g.appmsg.get_log_message("BKY-20207", [menu_create_id, menu_uuid])
-            raise Exception(msg)
+            raise AppException(msg)
 
         # 対象メニューグループで変更がある値の設定
         row_insert_flag = "1"
@@ -988,9 +982,9 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
 
             objdbca.table_insert(t_comn_menu_table_link, data_list, primary_key_name)
 
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         return False, msg
 
     return True, None
@@ -1022,7 +1016,7 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
             ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [param_name_ja, param_name_en, 0])  # noqa: E501
             if not ret:
                 msg = g.appmsg.get_log_message("BKY-20208", [menu_create_id])
-                raise Exception(msg)
+                raise AppException(msg)
             param_col_group_id = ret[0].get('COL_GROUP_ID')
 
             # 対象のカラムグループのフルカラムグループ名(ja/en)がすでに登録されている場合はスキップ。
@@ -1041,7 +1035,7 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
                 ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [pa_full_col_group_name_ja, pa_full_col_group_name_en, 0])  # noqa: E501
                 if not ret:
                     msg = g.appmsg.get_log_message("BKY-20210", [menu_create_id, pa_full_col_group_name_en])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
                 pa_target_id = ret[0].get('COL_GROUP_ID')
 
@@ -1062,9 +1056,9 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
             primary_key_name = 'COL_GROUP_ID'
             objdbca.table_insert(t_comn_column_group, data_list, primary_key_name)
 
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         return False, msg
 
     return True, None
@@ -1103,7 +1097,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         # 「項番」用のレコードを登録
         res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "uuid")
         if not res_valid:
-            raise Exception(msg)
+            raise AppException(msg)
 
         data_list = {
             "MENU_ID": menu_uuid,
@@ -1158,7 +1152,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 # 「ホスト名」用のレコードを作成
                 res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "host_name")
                 if not res_valid:
-                    raise Exception(msg)
+                    raise AppException(msg)
 
                 data_list = {
                     "MENU_ID": menu_uuid,
@@ -1219,13 +1213,13 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [operation_name_ja, operation_name_en, 0])  # noqa: E501
             if not ret:
                 msg = g.appmsg.get_log_message("BKY-20209", [menu_create_id])
-                raise Exception(msg)
+                raise AppException(msg)
             operation_col_group_id = ret[0].get('COL_GROUP_ID')
 
             # 「オペレーション(日付:オペレーション名)」用のレコードを作成
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "operation_name_select")
             if not res_valid:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # シートタイプが「3: パラメータシート（オペレーションあり）」かつバンドルが有効場合のみ、一意制約をTrueにする。
             if sheet_type == "3" and not vertical_flag:
@@ -1296,7 +1290,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 「オペレーション名」用のレコードを作成
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "operation_name_disp")
             if not res_valid:
-                raise Exception(msg)
+                raise AppException(msg)
 
             data_list = {
                 "MENU_ID": menu_uuid,
@@ -1347,7 +1341,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 「オペレーション(基準日時)」用のレコードを作成
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "base_datetime")
             if not res_valid:
-                raise Exception(msg)
+                raise AppException(msg)
 
             data_list = {
                 "MENU_ID": menu_uuid,
@@ -1398,7 +1392,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 「オペレーション(実施予定日)」用のレコードを作成
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "operation_date")
             if not res_valid:
-                raise Exception(msg)
+                raise AppException(msg)
 
             data_list = {
                 "MENU_ID": menu_uuid,
@@ -1449,7 +1443,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 「オペレーション(最終実行日時)」用のレコードを作成
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "last_execute_timestamp")
             if not res_valid:
-                raise Exception(msg)
+                raise AppException(msg)
 
             data_list = {
                 "MENU_ID": menu_uuid,
@@ -1501,7 +1495,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             if vertical_flag:
                 res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "input_order")
                 if not res_valid:
-                    raise Exception(msg)
+                    raise AppException(msg)
 
                 data_list = {
                     "MENU_ID": menu_uuid,
@@ -1555,7 +1549,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         ret = objdbca.table_select(t_comn_column_group, 'WHERE (FULL_COL_GROUP_NAME_JA = %s OR FULL_COL_GROUP_NAME_EN = %s) AND DISUSE_FLAG = %s', [param_name_ja, param_name_en, 0])  # noqa: E501
         if not ret:
             msg = g.appmsg.get_log_message("BKY-20208", [menu_create_id])
-            raise Exception(msg)
+            raise AppException(msg)
         param_col_group_id = ret[0].get('COL_GROUP_ID')
 
         # 「パラメータシート作成機能で作成した項目」の対象の数だけループスタート
@@ -1567,12 +1561,12 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 初期値に登録する値を生成
             ret, msg, initial_value = _create_initial_value(record)
             if not ret:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # バリデーションに登録する値を生成
             ret, msg, validate_option, validate_regular_expression = _create_validate_option(record)
             if not ret:
-                raise Exception(msg)
+                raise AppException(msg)
 
             # IDColumn用の値
             ref_table_name = None
@@ -1621,7 +1615,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                     set_before_function = "set_reference_value"
                     if type(reference_item_list) is not list:
                         msg = g.appmsg.get_log_message("BKY-20212", [menu_create_id, reference_item])
-                        raise Exception(msg)
+                        raise AppException(msg)
 
                     # reference_itemの中のcolumn_name_restを「_ref_X」形式に変換
                     convert_reference_item_list = []
@@ -1657,7 +1651,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                 if not ref_table_name or not ref_col_name:
                     # パラメータシート参照の選択項目が不正
                     msg = g.appmsg.get_log_message("BKY-20216", [menu_create_id, parameter_sheet_link_id])
-                    raise Exception(msg)
+                    raise AppException(msg)
 
             # 「カラムグループ作成情報」のIDから同じフルカラムグループ名の対象を「カラムグループ管理」から探しIDを指定
             col_group_id = None
@@ -1680,7 +1674,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
             # 「パラメータシート作成機能で作成した項目」用のレコードを作成
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, column_name_rest)
             if not res_valid:
-                raise Exception(msg)
+                raise AppException(msg)
 
             data_list = {
                 "MENU_ID": menu_uuid,
@@ -1748,7 +1742,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
                         if target_column_name_rest == reference_column_name_rest and other_menu_link_id == reference_link_id:
                             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, ref_column_name_rest)
                             if not res_valid:
-                                raise Exception(msg)
+                                raise AppException(msg)
 
                             # 参照元のカラムクラスが「5:日時」「6:日付」の場合は代入値自動登録対象外とするため、autoreg_hide_itemを1とする。
                             autoreg_hide_item = 0
@@ -1805,7 +1799,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         if not record_t_menu_column:
             res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "no_item")
             if not res_valid:
-                raise Exception(msg)
+                raise AppException(msg)
             validate_option = '{"min_length": 0,"max_length": 255}'
             data_list = {
                 "MENU_ID": menu_uuid,
@@ -1856,7 +1850,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         # 「備考」用のレコードを作成
         res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "remarks")
         if not res_valid:
-            raise Exception(msg)
+            raise AppException(msg)
 
         validate_option = '{"min_length": 0,"max_length": 4000}'
         data_list = {
@@ -1908,7 +1902,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         # 「廃止フラグ」用のレコードを作成
         res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "discard")
         if not res_valid:
-            raise Exception(msg)
+            raise AppException(msg)
 
         data_list = {
             "MENU_ID": menu_uuid,
@@ -1959,7 +1953,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         # 「最終更新日時」用のレコードを作成
         res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "last_update_date_time")
         if not res_valid:
-            raise Exception(msg)
+            raise AppException(msg)
 
         data_list = {
             "MENU_ID": menu_uuid,
@@ -2010,7 +2004,7 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         # 「最終更新者」用のレコードを作成
         res_valid, msg, column_definition_id = _check_column_validation(objdbca, menu_uuid, "last_updated_user")
         if not res_valid:
-            raise Exception(msg)
+            raise AppException(msg)
 
         data_list = {
             "MENU_ID": menu_uuid,
@@ -2055,9 +2049,9 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         else:
             objdbca.table_insert(t_comn_menu_column_link, data_list, primary_key_name)
 
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+    except AppException as e:
+        msg, arg1, arg2 = e.args
+        print_exception_msg(msg)
         return False, msg
 
     return True, None
@@ -2076,21 +2070,15 @@ def _update_t_menu_define(objdbca, menu_create_id, menu_create_done_status_id):
     # テーブル名
     t_menu_define = 'T_MENU_DEFINE'
 
-    try:
-        t_menu_define_record = objdbca.table_select(t_menu_define, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
-        target_menu_create_done_status = str(t_menu_define_record[0].get('MENU_CREATE_DONE_STATUS'))
-        if target_menu_create_done_status == '1':
-            data_list = {
-                "MENU_CREATE_ID": menu_create_id,
-                "MENU_CREATE_DONE_STATUS": menu_create_done_status_id,
-                "LAST_UPDATE_USER": g.get('USER_ID')
-            }
-            objdbca.table_update(t_menu_define, data_list, 'MENU_CREATE_ID')
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+    t_menu_define_record = objdbca.table_select(t_menu_define, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
+    target_menu_create_done_status = str(t_menu_define_record[0].get('MENU_CREATE_DONE_STATUS'))
+    if target_menu_create_done_status == '1':
+        data_list = {
+            "MENU_CREATE_ID": menu_create_id,
+            "MENU_CREATE_DONE_STATUS": menu_create_done_status_id,
+            "LAST_UPDATE_USER": g.get('USER_ID')
+        }
+        objdbca.table_update(t_menu_define, data_list, 'MENU_CREATE_ID')
 
     return True, None
 
@@ -2109,23 +2097,17 @@ def _insert_t_menu_table_link(objdbca, menu_uuid, create_table_name, create_tabl
     # テーブル名
     t_menu_table_link = 'T_MENU_TABLE_LINK'
 
-    try:
-        data_list = {
-            "MENU_ID": menu_uuid,
-            "MENU_NAME_REST": menu_uuid,
-            "TABLE_NAME": create_table_name,
-            "KEY_COL_NAME": "ROW_ID",
-            "TABLE_NAME_JNL": create_table_name_jnl,
-            "DISUSE_FLAG": "0",
-            "LAST_UPDATE_USER": g.get('USER_ID')
-        }
-        primary_key_name = 'MENU_TABLE_LINK_ID'
-        objdbca.table_insert(t_menu_table_link, data_list, primary_key_name)
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+    data_list = {
+        "MENU_ID": menu_uuid,
+        "MENU_NAME_REST": menu_uuid,
+        "TABLE_NAME": create_table_name,
+        "KEY_COL_NAME": "ROW_ID",
+        "TABLE_NAME_JNL": create_table_name_jnl,
+        "DISUSE_FLAG": "0",
+        "LAST_UPDATE_USER": g.get('USER_ID')
+    }
+    primary_key_name = 'MENU_TABLE_LINK_ID'
+    objdbca.table_insert(t_menu_table_link, data_list, primary_key_name)
 
     return True, None
 
@@ -2144,59 +2126,53 @@ def _insert_t_menu_other_link(objdbca, menu_uuid, create_table_name, record_t_me
     # テーブル名
     t_menu_other_link = 'T_MENU_OTHER_LINK'
 
-    try:
-        # 他メニュー連携の対象とするカラムクラス一覧(1:SingleTextColumn, 2:MultiTextColumn, 3:NumColumn, 4:FloatColumn, 5:DateTimeColumn, 6:DateColumn, 10:HostInsideLinkTextColumn)  # noqa: E501
-        target_column_class_list = ["1", "2", "3", "4", "5", "6", "10"]
-        for record in record_t_menu_column:
-            column_class = str(record.get('COLUMN_CLASS'))
-            required = str(record.get('REQUIRED'))
-            uniqued = str(record.get('UNIQUED'))
+    # 他メニュー連携の対象とするカラムクラス一覧(1:SingleTextColumn, 2:MultiTextColumn, 3:NumColumn, 4:FloatColumn, 5:DateTimeColumn, 6:DateColumn, 10:HostInsideLinkTextColumn)  # noqa: E501
+    target_column_class_list = ["1", "2", "3", "4", "5", "6", "10"]
+    for record in record_t_menu_column:
+        column_class = str(record.get('COLUMN_CLASS'))
+        required = str(record.get('REQUIRED'))
+        uniqued = str(record.get('UNIQUED'))
 
-            # カラムクラスが他メニュー連携の対象かつ、必須かつ、一意制約の場合登録を実施
-            if column_class in target_column_class_list and required == "1" and uniqued == "1":
-                column_name_rest = record.get('COLUMN_NAME_REST')
-                column_disp_name_ja = record.get('COLUMN_NAME_JA')
-                column_disp_name_en = record.get('COLUMN_NAME_EN')
+        # カラムクラスが他メニュー連携の対象かつ、必須かつ、一意制約の場合登録を実施
+        if column_class in target_column_class_list and required == "1" and uniqued == "1":
+            column_name_rest = record.get('COLUMN_NAME_REST')
+            column_disp_name_ja = record.get('COLUMN_NAME_JA')
+            column_disp_name_en = record.get('COLUMN_NAME_EN')
 
-                # 廃止済みレコードの中から「MENU_ID」「REF_TABLE_NAME」「REF_COL_NAME_REST」「COLUMN_CLASS」が一致しているレコードを検索
-                sql_where = 'WHERE MENU_ID = %s AND REF_TABLE_NAME = %s AND REF_COL_NAME_REST = %s AND COLUMN_CLASS = %s AND DISUSE_FLAG = %s'
-                sql_bind = [menu_uuid, create_table_name, column_name_rest, column_class, 1]
-                ret = objdbca.table_select(t_menu_other_link, sql_where, sql_bind)
-                if ret:
-                    # 条件が一致するレコードがある場合は復活処理(カラム表示名のみ更新対象)
-                    link_id = ret[0].get('LINK_ID')
-                    data = {
-                        'LINK_ID': link_id,
-                        "COLUMN_DISP_NAME_JA": column_disp_name_ja,
-                        "COLUMN_DISP_NAME_EN": column_disp_name_en,
-                        'DISUSE_FLAG': "0"
-                    }
-                    objdbca.table_update(t_menu_other_link, data, "LINK_ID")
+            # 廃止済みレコードの中から「MENU_ID」「REF_TABLE_NAME」「REF_COL_NAME_REST」「COLUMN_CLASS」が一致しているレコードを検索
+            sql_where = 'WHERE MENU_ID = %s AND REF_TABLE_NAME = %s AND REF_COL_NAME_REST = %s AND COLUMN_CLASS = %s AND DISUSE_FLAG = %s'
+            sql_bind = [menu_uuid, create_table_name, column_name_rest, column_class, 1]
+            ret = objdbca.table_select(t_menu_other_link, sql_where, sql_bind)
+            if ret:
+                # 条件が一致するレコードがある場合は復活処理(カラム表示名のみ更新対象)
+                link_id = ret[0].get('LINK_ID')
+                data = {
+                    'LINK_ID': link_id,
+                    "COLUMN_DISP_NAME_JA": column_disp_name_ja,
+                    "COLUMN_DISP_NAME_EN": column_disp_name_en,
+                    'DISUSE_FLAG': "0"
+                }
+                objdbca.table_update(t_menu_other_link, data, "LINK_ID")
 
-                else:
-                    # 条件が一致するレコードが無い場合は新規登録
-                    data_list = {
-                        "MENU_ID": menu_uuid,
-                        "COLUMN_DISP_NAME_JA": column_disp_name_ja,
-                        "COLUMN_DISP_NAME_EN": column_disp_name_en,
-                        "REF_TABLE_NAME": create_table_name,
-                        "REF_PKEY_NAME": "ROW_ID",
-                        "REF_COL_NAME": "DATA_JSON",
-                        "REF_COL_NAME_REST": column_name_rest,
-                        "REF_SORT_CONDITIONS": None,
-                        "REF_MULTI_LANG": "0",
-                        "COLUMN_CLASS": column_class,
-                        "MENU_CREATE_FLAG": "1",
-                        "DISUSE_FLAG": "0",
-                        "LAST_UPDATE_USER": g.get('USER_ID')
-                    }
-                    primary_key_name = 'LINK_ID'
-                    objdbca.table_insert(t_menu_other_link, data_list, primary_key_name)
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+            else:
+                # 条件が一致するレコードが無い場合は新規登録
+                data_list = {
+                    "MENU_ID": menu_uuid,
+                    "COLUMN_DISP_NAME_JA": column_disp_name_ja,
+                    "COLUMN_DISP_NAME_EN": column_disp_name_en,
+                    "REF_TABLE_NAME": create_table_name,
+                    "REF_PKEY_NAME": "ROW_ID",
+                    "REF_COL_NAME": "DATA_JSON",
+                    "REF_COL_NAME_REST": column_name_rest,
+                    "REF_SORT_CONDITIONS": None,
+                    "REF_MULTI_LANG": "0",
+                    "COLUMN_CLASS": column_class,
+                    "MENU_CREATE_FLAG": "1",
+                    "DISUSE_FLAG": "0",
+                    "LAST_UPDATE_USER": g.get('USER_ID')
+                }
+                primary_key_name = 'LINK_ID'
+                objdbca.table_insert(t_menu_other_link, data_list, primary_key_name)
 
     return True, None
 
@@ -2217,78 +2193,72 @@ def _insert_t_menu_reference_item(objdbca, menu_uuid, create_table_name, record_
     t_menu_reference_item = 'T_MENU_REFERENCE_ITEM'
     v_menu_reference_item = 'V_MENU_REFERENCE_ITEM'
 
-    try:
-        # 「他メニュー連携」テーブルで対象のメニューIDのレコードを取得
-        ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_uuid, 0])  # noqa: E501
-        if not ret:
-            # 対象が無い場合は登録処理を実施せずにreturn
-            return True, None
+    # 「他メニュー連携」テーブルで対象のメニューIDのレコードを取得
+    ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_uuid, 0])  # noqa: E501
+    if not ret:
+        # 対象が無い場合は登録処理を実施せずにreturn
+        return True, None
 
-        for other_menu_record in ret:
-            other_menu_link_column_name_rest = other_menu_record.get('REF_COL_NAME_REST')
-            link_id = other_menu_record.get('LINK_ID')
-            disp_seq_num = 10
-            for column_record in record_t_menu_column:
-                column_name_rest = column_record.get('COLUMN_NAME_REST')
-                # 「他メニュー連携」のカラム名(rest)と「パラメータシート項目作成情報」のカラム名(rest)が同一の場合はスキップ
-                if other_menu_link_column_name_rest == column_name_rest:
-                    continue
+    for other_menu_record in ret:
+        other_menu_link_column_name_rest = other_menu_record.get('REF_COL_NAME_REST')
+        link_id = other_menu_record.get('LINK_ID')
+        disp_seq_num = 10
+        for column_record in record_t_menu_column:
+            column_name_rest = column_record.get('COLUMN_NAME_REST')
+            # 「他メニュー連携」のカラム名(rest)と「パラメータシート項目作成情報」のカラム名(rest)が同一の場合はスキップ
+            if other_menu_link_column_name_rest == column_name_rest:
+                continue
 
-                # 参照項目の対象とするカラムクラス一覧(1:SingleTextColumn, 2:MultiTextColumn, 3:NumColumn, 4:FloatColumn, 5:DateTimeColumn, 6:DateColumn, 8:PasswordColumn, 9:FileUploadColumn, 10:HostInsideLinkTextColumn)  # noqa: E501
-                target_column_class_list = ["1", "2", "3", "4", "5", "6", "8", "9", "10"]
-                column_class = column_record.get('COLUMN_CLASS')
+            # 参照項目の対象とするカラムクラス一覧(1:SingleTextColumn, 2:MultiTextColumn, 3:NumColumn, 4:FloatColumn, 5:DateTimeColumn, 6:DateColumn, 8:PasswordColumn, 9:FileUploadColumn, 10:HostInsideLinkTextColumn)  # noqa: E501
+            target_column_class_list = ["1", "2", "3", "4", "5", "6", "8", "9", "10"]
+            column_class = column_record.get('COLUMN_CLASS')
 
-                # カラムクラスが参照項目の対象であれば、「参照項目情報」にレコードを登録
-                if column_class in target_column_class_list:
-                    column_name_ja = column_record.get('COLUMN_NAME_JA')
-                    column_name_en = column_record.get('COLUMN_NAME_EN')
-                    description_ja = column_record.get('DESCRIPTION_JA')
-                    description_en = column_record.get('DESCRIPTION_EN')
+            # カラムクラスが参照項目の対象であれば、「参照項目情報」にレコードを登録
+            if column_class in target_column_class_list:
+                column_name_ja = column_record.get('COLUMN_NAME_JA')
+                column_name_en = column_record.get('COLUMN_NAME_EN')
+                description_ja = column_record.get('DESCRIPTION_JA')
+                description_en = column_record.get('DESCRIPTION_EN')
 
-                    # パスワードカラムはSENSITIVE_FLAGをTrueにする
-                    if str(column_class) == "8":
-                        sensitive_flag = "1"  # True
-                    else:
-                        sensitive_flag = "0"  # False
+                # パスワードカラムはSENSITIVE_FLAGをTrueにする
+                if str(column_class) == "8":
+                    sensitive_flag = "1"  # True
+                else:
+                    sensitive_flag = "0"  # False
 
-                    data_list = {
-                        "LINK_ID": link_id,
-                        "DISP_SEQ": disp_seq_num,
-                        "COLUMN_CLASS": column_class,
-                        "COLUMN_NAME_JA": column_name_ja,
-                        "COLUMN_NAME_EN": column_name_en,
-                        "COLUMN_NAME_REST": column_name_rest,
-                        "REF_COL_NAME": column_name_rest,
-                        "REF_SORT_CONDITIONS": None,
-                        "REF_MULTI_LANG": "0",  # False
-                        "SENSITIVE_FLAG": sensitive_flag,
-                        "DESCRIPTION_JA": description_ja,
-                        "DESCRIPTION_EN": description_en,
-                        "DISUSE_FLAG": "0",
-                        "LAST_UPDATE_USER": g.get('USER_ID')
-                    }
-                    primary_key_name = 'REFERENCE_ID'
+                data_list = {
+                    "LINK_ID": link_id,
+                    "DISP_SEQ": disp_seq_num,
+                    "COLUMN_CLASS": column_class,
+                    "COLUMN_NAME_JA": column_name_ja,
+                    "COLUMN_NAME_EN": column_name_en,
+                    "COLUMN_NAME_REST": column_name_rest,
+                    "REF_COL_NAME": column_name_rest,
+                    "REF_SORT_CONDITIONS": None,
+                    "REF_MULTI_LANG": "0",  # False
+                    "SENSITIVE_FLAG": sensitive_flag,
+                    "DESCRIPTION_JA": description_ja,
+                    "DESCRIPTION_EN": description_en,
+                    "DISUSE_FLAG": "0",
+                    "LAST_UPDATE_USER": g.get('USER_ID')
+                }
+                primary_key_name = 'REFERENCE_ID'
 
-                    target_reference_id = None
-                    ret = objdbca.table_select(v_menu_reference_item, 'WHERE LINK_ID = %s AND MENU_ID = %s AND COLUMN_NAME_REST = %s AND DISUSE_FLAG = %s', [link_id, menu_uuid, column_name_rest, 1])  # noqa: E501
-                    if ret:
-                        target_reference_id = ret[0].get('REFERENCE_ID')
+                target_reference_id = None
+                ret = objdbca.table_select(v_menu_reference_item, 'WHERE LINK_ID = %s AND MENU_ID = %s AND COLUMN_NAME_REST = %s AND DISUSE_FLAG = %s', [link_id, menu_uuid, column_name_rest, 1])  # noqa: E501
+                if ret:
+                    target_reference_id = ret[0].get('REFERENCE_ID')
 
-                    if target_reference_id:
-                        # 条件が一致するレコードがある場合は復活処理(カラム表示名のみ更新対象)
-                        data_list["REFERENCE_ID"] = target_reference_id
-                        objdbca.table_update(t_menu_reference_item, data_list, primary_key_name)
-                    else:
-                        # 条件が一致するレコードが無い場合は新規登録
-                        objdbca.table_insert(t_menu_reference_item, data_list, primary_key_name)
+                if target_reference_id:
+                    # 条件が一致するレコードがある場合は復活処理(カラム表示名のみ更新対象)
+                    data_list["REFERENCE_ID"] = target_reference_id
+                    objdbca.table_update(t_menu_reference_item, data_list, primary_key_name)
+                else:
+                    # 条件が一致するレコードが無い場合は新規登録
+                    objdbca.table_insert(t_menu_reference_item, data_list, primary_key_name)
 
-                    # 表示順序を加算
-                    disp_seq_num = int(disp_seq_num) + 10
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+                # 表示順序を加算
+                disp_seq_num = int(disp_seq_num) + 10
 
     return True, None
 
@@ -2305,19 +2275,13 @@ def _update_t_menu_create_history(objdbca, history_id, status_id):
     """
     # テーブル名
     t_menu_create_history = 'T_MENU_CREATE_HISTORY'
-    try:
-        # 「パラメータシート作成履歴」の対象レコードのステータスを更新
-        data_list = {
-            "HISTORY_ID": history_id,
-            "STATUS_ID": status_id,
-            "LAST_UPDATE_USER": g.get('USER_ID')
-        }
-        objdbca.table_update(t_menu_create_history, data_list, 'HISTORY_ID')
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+    # 「パラメータシート作成履歴」の対象レコードのステータスを更新
+    data_list = {
+        "HISTORY_ID": history_id,
+        "STATUS_ID": status_id,
+        "LAST_UPDATE_USER": g.get('USER_ID')
+    }
+    objdbca.table_update(t_menu_create_history, data_list, 'HISTORY_ID')
 
     return True, None
 
@@ -2515,7 +2479,7 @@ def _format_column_group_data(record_t_menu_column_group, record_t_menu_column, 
                 pa_col_group_id = target.get('pa_col_group_id')
             else:
                 msg = g.appmsg.get_log_message("BKY-20213", [menu_create_id])
-                raise Exception(msg)
+                raise AppException(msg)
 
             if pa_col_group_id:
                 # 親のIDを対象のIDにしてループ継続
@@ -2571,98 +2535,92 @@ def _disuse_menu_create_record(objdbca, record_t_menu_define):
     t_menu_reference_item = 'T_MENU_REFERENCE_ITEM'
     v_menu_reference_item = 'V_MENU_REFERENCE_ITEM'
 
-    try:
-        # 対象の「パラメータシート定義一覧」のメニュー名(rest)を取得
-        menu_name_rest = record_t_menu_define.get('MENU_NAME_REST')
-        menu_name_rest_subst = menu_name_rest + '_subst'
-        menu_name_rest_ref = menu_name_rest + '_ref'
-        menu_name_rest_list = [menu_name_rest, menu_name_rest_subst, menu_name_rest_ref]
+    # 対象の「パラメータシート定義一覧」のメニュー名(rest)を取得
+    menu_name_rest = record_t_menu_define.get('MENU_NAME_REST')
+    menu_name_rest_subst = menu_name_rest + '_subst'
+    menu_name_rest_ref = menu_name_rest + '_ref'
+    menu_name_rest_list = [menu_name_rest, menu_name_rest_subst, menu_name_rest_ref]
 
-        # 「メニュー管理」から対象のレコードを特定し、listに格納
-        target_menu_id_list = []
-        for name in menu_name_rest_list:
-            ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s', [name])
-            if ret:
-                target_menu_id_list.append(ret[0].get('MENU_ID'))
+    # 「メニュー管理」から対象のレコードを特定し、listに格納
+    target_menu_id_list = []
+    for name in menu_name_rest_list:
+        ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s', [name])
+        if ret:
+            target_menu_id_list.append(ret[0].get('MENU_ID'))
 
-        # 対象のメニューIDに紐づいたレコードを廃止
-        for menu_id in target_menu_id_list:
-            # 「参照項目」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、VIEWから対象レコードを取得
-            ret = objdbca.table_select(v_menu_reference_item, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    reference_id = record.get('REFERENCE_ID')
-                    data = {
-                        'REFERENCE_ID': reference_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_menu_reference_item, data, "REFERENCE_ID")
+    # 対象のメニューIDに紐づいたレコードを廃止
+    for menu_id in target_menu_id_list:
+        # 「参照項目」にて対象のレコードを廃止
+        # 廃止レコードのUUIDを特定するため、VIEWから対象レコードを取得
+        ret = objdbca.table_select(v_menu_reference_item, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+        if ret:
+            for record in ret:
+                reference_id = record.get('REFERENCE_ID')
+                data = {
+                    'REFERENCE_ID': reference_id,
+                    'DISUSE_FLAG': "1"
+                }
+                objdbca.table_update(t_menu_reference_item, data, "REFERENCE_ID")
 
-            # 「他メニュー連携」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
-            ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    link_id = record.get('LINK_ID')
-                    data = {
-                        'LINK_ID': link_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_menu_other_link, data, "LINK_ID")
+        # 「他メニュー連携」にて対象のレコードを廃止
+        # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+        ret = objdbca.table_select(t_menu_other_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+        if ret:
+            for record in ret:
+                link_id = record.get('LINK_ID')
+                data = {
+                    'LINK_ID': link_id,
+                    'DISUSE_FLAG': "1"
+                }
+                objdbca.table_update(t_menu_other_link, data, "LINK_ID")
 
-            # 「ロール-メニュー紐付管理」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
-            ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    link_id = record.get('LINK_ID')
-                    data = {
-                        'LINK_ID': link_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_comn_role_menu_link, data, "LINK_ID")
+        # 「ロール-メニュー紐付管理」にて対象のレコードを廃止
+        # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+        ret = objdbca.table_select(t_comn_role_menu_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+        if ret:
+            for record in ret:
+                link_id = record.get('LINK_ID')
+                data = {
+                    'LINK_ID': link_id,
+                    'DISUSE_FLAG': "1"
+                }
+                objdbca.table_update(t_comn_role_menu_link, data, "LINK_ID")
 
-            # 「メニュー-テーブル紐付管理」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
-            ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    table_definition_id = record.get('TABLE_DEFINITION_ID')
-                    data = {
-                        'TABLE_DEFINITION_ID': table_definition_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_comn_menu_table_link, data, "TABLE_DEFINITION_ID")
+        # 「メニュー-テーブル紐付管理」にて対象のレコードを廃止
+        # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+        ret = objdbca.table_select(t_comn_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+        if ret:
+            for record in ret:
+                table_definition_id = record.get('TABLE_DEFINITION_ID')
+                data = {
+                    'TABLE_DEFINITION_ID': table_definition_id,
+                    'DISUSE_FLAG': "1"
+                }
+                objdbca.table_update(t_comn_menu_table_link, data, "TABLE_DEFINITION_ID")
 
-            # 「メニュー-カラム紐付管理」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
-            ret = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    column_definition_id = record.get('COLUMN_DEFINITION_ID')
-                    data = {
-                        'COLUMN_DEFINITION_ID': column_definition_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_comn_menu_column_link, data, "COLUMN_DEFINITION_ID")
+        # 「メニュー-カラム紐付管理」にて対象のレコードを廃止
+        # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+        ret = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+        if ret:
+            for record in ret:
+                column_definition_id = record.get('COLUMN_DEFINITION_ID')
+                data = {
+                    'COLUMN_DEFINITION_ID': column_definition_id,
+                    'DISUSE_FLAG': "1"
+                }
+                objdbca.table_update(t_comn_menu_column_link, data, "COLUMN_DEFINITION_ID")
 
-            # 「パラメータシート定義-テーブル紐付管理」にて対象のレコードを廃止
-            # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
-            ret = objdbca.table_select(t_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
-            if ret:
-                for record in ret:
-                    menu_table_link_id = record.get('MENU_TABLE_LINK_ID')
-                    data = {
-                        'MENU_TABLE_LINK_ID': menu_table_link_id,
-                        'DISUSE_FLAG': "1"
-                    }
-                    objdbca.table_update(t_menu_table_link, data, "MENU_TABLE_LINK_ID")
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+        # 「パラメータシート定義-テーブル紐付管理」にて対象のレコードを廃止
+        # 廃止レコードのUUIDを特定するため、TABLEから対象レコードを取得
+        ret = objdbca.table_select(t_menu_table_link, 'WHERE MENU_ID = %s AND DISUSE_FLAG = %s', [menu_id, 0])
+        if ret:
+            for record in ret:
+                menu_table_link_id = record.get('MENU_TABLE_LINK_ID')
+                data = {
+                    'MENU_TABLE_LINK_ID': menu_table_link_id,
+                    'DISUSE_FLAG': "1"
+                }
+                objdbca.table_update(t_menu_table_link, data, "MENU_TABLE_LINK_ID")
 
     return True, None
 
@@ -2681,40 +2639,34 @@ def _disuse_t_comn_menu(objdbca, record_t_menu_define, target_menu_group_list):
     # テーブル名
     t_comn_menu = 'T_COMN_MENU'
 
-    try:
-        # メニュー名(rest)は対象メニューグループが「代入値自動登録」「参照用」の場合は末尾に_subst, _refを結合する。
-        menu_name_rest = record_t_menu_define.get('MENU_NAME_REST')
-        menu_name_rest_subst = menu_name_rest + "_subst"
-        menu_name_rest_ref = menu_name_rest + "_ref"
-        target_menu_name_rest_list = [menu_name_rest, menu_name_rest_subst, menu_name_rest_ref]
+    # メニュー名(rest)は対象メニューグループが「代入値自動登録」「参照用」の場合は末尾に_subst, _refを結合する。
+    menu_name_rest = record_t_menu_define.get('MENU_NAME_REST')
+    menu_name_rest_subst = menu_name_rest + "_subst"
+    menu_name_rest_ref = menu_name_rest + "_ref"
+    target_menu_name_rest_list = [menu_name_rest, menu_name_rest_subst, menu_name_rest_ref]
 
-        # 「パラメータシート定義一覧」の対象メニューグループ
-        menu_group_id_input = record_t_menu_define.get('MENU_GROUP_ID_INPUT')
-        menu_group_id_subst = record_t_menu_define.get('MENU_GROUP_ID_SUBST')
-        menu_group_id_ref = record_t_menu_define.get('MENU_GROUP_ID_REF')
-        target_menu_group_id_list = [menu_group_id_input, menu_group_id_subst, menu_group_id_ref]
+    # 「パラメータシート定義一覧」の対象メニューグループ
+    menu_group_id_input = record_t_menu_define.get('MENU_GROUP_ID_INPUT')
+    menu_group_id_subst = record_t_menu_define.get('MENU_GROUP_ID_SUBST')
+    menu_group_id_ref = record_t_menu_define.get('MENU_GROUP_ID_REF')
+    target_menu_group_id_list = [menu_group_id_input, menu_group_id_subst, menu_group_id_ref]
 
-        # 「メニュー管理」から対象のメニュー名(rest)のレコードを取得
-        ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST IN (%s, %s, %s) AND DISUSE_FLAG = %s', [menu_name_rest, menu_name_rest_subst, menu_name_rest_ref, 0])  # noqa: E501
-        for record in ret:
-            # 対象のメニュー名(rest)および対象メニューグループが一致するかをチェック
-            c_menu_group_id = record.get('MENU_GROUP_ID')
-            c_menu_name_rest = record.get('MENU_NAME_REST')
-            if (c_menu_name_rest in target_menu_name_rest_list) and (c_menu_group_id in target_menu_group_id_list):
-                continue
-            else:
-                # 一致が無い場合、利用しないメニューであるためレコードを廃止する
-                menu_id = record.get('MENU_ID')
-                data = {
-                    'MENU_ID': menu_id,
-                    'DISUSE_FLAG': "1"
-                }
-                objdbca.table_update(t_comn_menu, data, "MENU_ID")
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+    # 「メニュー管理」から対象のメニュー名(rest)のレコードを取得
+    ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST IN (%s, %s, %s) AND DISUSE_FLAG = %s', [menu_name_rest, menu_name_rest_subst, menu_name_rest_ref, 0])  # noqa: E501
+    for record in ret:
+        # 対象のメニュー名(rest)および対象メニューグループが一致するかをチェック
+        c_menu_group_id = record.get('MENU_GROUP_ID')
+        c_menu_name_rest = record.get('MENU_NAME_REST')
+        if (c_menu_name_rest in target_menu_name_rest_list) and (c_menu_group_id in target_menu_group_id_list):
+            continue
+        else:
+            # 一致が無い場合、利用しないメニューであるためレコードを廃止する
+            menu_id = record.get('MENU_ID')
+            data = {
+                'MENU_ID': menu_id,
+                'DISUSE_FLAG': "1"
+            }
+            objdbca.table_update(t_comn_menu, data, "MENU_ID")
 
     return True, None
 
@@ -2756,72 +2708,66 @@ def _insert_or_update_t_hgsp_split_target(objdbca, split_menu_name_rest, registe
     # テーブル名 - PK
     t_hgsp_split_target = 'T_HGSP_SPLIT_TARGET'
     primary_key_name = 'ROW_ID'
-    try:
-        # 分割対象:入力用/登録対象:代入値自動登録用 の「MENU_NAME_REST」を設定
-        split_target_menus = {
-            "split": split_menu_name_rest,
-            "register": register_menu_name_rest,
-        }
-        # 「MENU_NAME_REST」からmenu_idを取得
-        split_target_menu_ids = {}
-        for target_key, target_menu_name in split_target_menus.items():
-            t_comn_menu = 'T_COMN_MENU'
-            ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [target_menu_name, 0])
-            if ret:
-                menu_id = ret[0].get('MENU_ID')
-                split_target_menu_ids.setdefault(target_key, menu_id)
+    # 分割対象:入力用/登録対象:代入値自動登録用 の「MENU_NAME_REST」を設定
+    split_target_menus = {
+        "split": split_menu_name_rest,
+        "register": register_menu_name_rest,
+    }
+    # 「MENU_NAME_REST」からmenu_idを取得
+    split_target_menu_ids = {}
+    for target_key, target_menu_name in split_target_menus.items():
+        t_comn_menu = 'T_COMN_MENU'
+        ret = objdbca.table_select(t_comn_menu, 'WHERE MENU_NAME_REST = %s AND DISUSE_FLAG = %s', [target_menu_name, 0])
+        if ret:
+            menu_id = ret[0].get('MENU_ID')
+            split_target_menu_ids.setdefault(target_key, menu_id)
 
-        # 「ホストグループ分割対象」から対象のレコードを取得
-        if len(split_target_menu_ids) == 2:
+    # 「ホストグループ分割対象」から対象のレコードを取得
+    if len(split_target_menu_ids) == 2:
+        ret = objdbca.table_select(
+            t_hgsp_split_target,
+            'WHERE INPUT_MENU_ID = %s AND OUTPUT_MENU_ID = %s AND DISUSE_FLAG = %s',
+            [split_target_menu_ids.get('split'), split_target_menu_ids.get('register'), 0]
+        )
+        if ret:
+            # 対象の DIVIDED_FLG を '0' で更新 or 対象廃止
+            split_target_id = ret[0].get('ROW_ID')
+            divided_flg = ret[0].get('DIVIDED_FLG')
+            if divided_flg != "0" or discard == 1:
+                data_list = {
+                    'ROW_ID': split_target_id,
+                    'DIVIDED_FLG': '0',
+                    'DISUSE_FLAG': discard,
+                    'LAST_UPDATE_USER': g.get('USER_ID')
+                }
+                objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
+        else:
+            # 「ホストグループ分割対象」から対象のレコードを取得:廃止済み
             ret = objdbca.table_select(
                 t_hgsp_split_target,
                 'WHERE INPUT_MENU_ID = %s AND OUTPUT_MENU_ID = %s AND DISUSE_FLAG = %s',
-                [split_target_menu_ids.get('split'), split_target_menu_ids.get('register'), 0]
+                [split_target_menu_ids.get('split'), split_target_menu_ids.get('register'), 1]
             )
-            if ret:
-                # 対象の DIVIDED_FLG を '0' で更新 or 対象廃止
+            # 廃止済みありの場合、更新。
+            if ret and discard == 0:
                 split_target_id = ret[0].get('ROW_ID')
-                divided_flg = ret[0].get('DIVIDED_FLG')
-                if divided_flg != "0" or discard == 1:
-                    data_list = {
-                        'ROW_ID': split_target_id,
-                        'DIVIDED_FLG': '0',
-                        'DISUSE_FLAG': discard,
-                        'LAST_UPDATE_USER': g.get('USER_ID')
-                    }
-                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
-            else:
-                # 「ホストグループ分割対象」から対象のレコードを取得:廃止済み
-                ret = objdbca.table_select(
-                    t_hgsp_split_target,
-                    'WHERE INPUT_MENU_ID = %s AND OUTPUT_MENU_ID = %s AND DISUSE_FLAG = %s',
-                    [split_target_menu_ids.get('split'), split_target_menu_ids.get('register'), 1]
-                )
-                # 廃止済みありの場合、更新。
-                if ret and discard == 0:
-                    split_target_id = ret[0].get('ROW_ID')
-                    data_list = {
-                        'ROW_ID': split_target_id,
-                        'DIVIDED_FLG': '0',
-                        'DISUSE_FLAG': discard,
-                        'LAST_UPDATE_USER': g.get('USER_ID')
-                    }
-                    objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
-                elif discard == 0:
-                    # 「分割対象メニュー」*「登録対象メニュー」で DIVIDED_FLG を '0' で登録
-                    data_list = {
-                        'INPUT_MENU_ID': split_target_menu_ids.get('split'),
-                        'OUTPUT_MENU_ID': split_target_menu_ids.get('register'),
-                        'DIVIDED_FLG': '0',
-                        'DISUSE_FLAG': '0',
-                        'LAST_UPDATE_USER': g.get('USER_ID')
-                    }
-                    objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name, False)
-
-    except Exception as msg:
-        t = traceback.format_exc()
-        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        return False, msg
+                data_list = {
+                    'ROW_ID': split_target_id,
+                    'DIVIDED_FLG': '0',
+                    'DISUSE_FLAG': discard,
+                    'LAST_UPDATE_USER': g.get('USER_ID')
+                }
+                objdbca.table_update(t_hgsp_split_target, data_list, primary_key_name, False)
+            elif discard == 0:
+                # 「分割対象メニュー」*「登録対象メニュー」で DIVIDED_FLG を '0' で登録
+                data_list = {
+                    'INPUT_MENU_ID': split_target_menu_ids.get('split'),
+                    'OUTPUT_MENU_ID': split_target_menu_ids.get('register'),
+                    'DIVIDED_FLG': '0',
+                    'DISUSE_FLAG': '0',
+                    'LAST_UPDATE_USER': g.get('USER_ID')
+                }
+                objdbca.table_insert(t_hgsp_split_target, data_list, primary_key_name, False)
 
     return True, None,
 

@@ -20,7 +20,8 @@ import traceback
 from common_libs.conductor.classes.exec_util import ConductorExecuteLibs
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.util import get_exastro_platform_users
-from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.exception import AppException
 
 
 def backyard_main(organization_id, workspace_id):  # noqa: C901
@@ -63,6 +64,7 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
                 g.applogger.debug(debug_msg)
 
             except Exception as e:
+                objdbca.db_transaction_end(False)
                 t = traceback.format_exc()
                 g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                 debug_msg = g.appmsg.get_log_message("BKY-40012", [])
@@ -93,6 +95,10 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
     platform_users = {}
     try:
         platform_users = get_exastro_platform_users()
+    except AppException as e:
+        msg_code, logmsg_args = e.args
+        msg = g.appmsg.get_log_message(msg_code, [logmsg_args[0], logmsg_args[1]])
+        g.applogger.info(msg)
     except Exception:
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))

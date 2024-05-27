@@ -226,14 +226,9 @@ class MultiSelectIDColumn(IDColumn):
 
         val_decode = None
         if valnames:
-            try:
-                val_decode = self.is_json_format(valnames)
-                if val_decode is False:
-                    raise Exception("JSON format is abnormal")
-
-            except Exception:
-                t = traceback.format_exc()
-                g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+            val_decode = self.is_json_format(valnames)
+            if val_decode is False:
+                print_exception_msg("JSON format is abnormal")
                 retBool = False
                 status_code = '499-01701'
                 msg_args = []
@@ -333,10 +328,5 @@ class MultiSelectIDColumn(IDColumn):
                 raise Exception("JSON format is abnormal")
             return val
         except Exception as e:
-            import inspect, os
-            file_name = os.path.basename(inspect.currentframe().f_code.co_filename)
-            line_no = str(inspect.currentframe().f_lineno)
-            msg = "Exception: {} ({}:{})".format(str(e), file_name, line_no)
             print_exception_msg(e)
-            g.applogger.info(msg) # 外部アプリへの処理開始・終了ログ
             return False

@@ -136,7 +136,7 @@ class NumColumn(Column):
                         msg_args = [max_num, val]
                         msg = g.appmsg.get_api_message(status_code, msg_args)
                         return retBool, msg
-            except ValueError:
+            except Exception:
                 t = traceback.format_exc()
                 g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                 retBool = False

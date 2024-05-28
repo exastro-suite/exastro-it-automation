@@ -17,6 +17,7 @@ import datetime
 from .column_class import Column
 from flask import g
 from common_libs.common.exception import AppException
+from common_libs.common.util import print_exception_msg
 import json
 
 
@@ -100,10 +101,10 @@ class DateColumn(Column):
         try:
             dt_val = datetime.datetime.strptime(val, self.format_datetime)
         except ValueError as msg:
+            print_exception_msg(msg)
             msg = g.appmsg.get_api_message("MSG-00002", [self.format_for_log, val])
             retBool = False
             return retBool, msg
-
         # 上限、下限チェック
         if min_datetime is not None and max_datetime is not None:
             if min_datetime > dt_val or dt_val > max_datetime:

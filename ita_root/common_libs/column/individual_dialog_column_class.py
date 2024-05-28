@@ -13,6 +13,7 @@
 #
 from flask import g
 from common_libs.common import *
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 # import column_class
 from .id_class import IDColumn
@@ -84,7 +85,7 @@ class IndividualDialogColumn(IDColumn):
                     if len(lable_row) != len(self.json_tag):
                         raise Exception("JSON format is (abnormal json data:({}))".format(str(column_value)))
         except Exception as e:
-            raise Exception(e)
+            raise e
 
         if isinstance(column_value, list):
             for lable_row in column_value:
@@ -178,21 +179,19 @@ class IndividualDialogColumn(IDColumn):
         retBool = True
         retdict = []
         msg = ''
-        try:
-            if not valnames:
-                return True, '', valnames,
-            val_decode = self.is_json_format(valnames)
-            if val_decode is False:
-                raise Exception("JSON format is abnormal")
-            if len(val_decode) == 0:
-                return True, '', None,
-        except Exception:
+
+        if not valnames:
+            return True, '', valnames,
+        val_decode = self.is_json_format(valnames)
+        if val_decode is False:
+            print_exception_msg("JSON format is abnormal")
             retBool = False
             status_code = '499-01703'
             msg_args = []
             msg = g.appmsg.get_api_message(status_code, msg_args)
             return retBool, msg
-
+        if len(val_decode) == 0:
+            return True, '', None,
         if val_decode is not None:
             for val in val_decode:
                 ret, msg, return_values = self.get_input_values_by_value(val)
@@ -221,13 +220,9 @@ class IndividualDialogColumn(IDColumn):
         val_decode = None
 
         if valnames:
-            try:
-                val_decode = self.is_json_format(valnames)
-                if val_decode is False:
-                    raise Exception("JSON format is abnormal")
-
-            except Exception as e:
-                # dodo エラーコード見直し
+            val_decode = self.is_json_format(valnames)
+            if val_decode is False:
+                print_exception_msg("JSON format is abnormal")
                 retBool = False
                 status_code = '499-01703'
                 msg_args = []
@@ -307,22 +302,19 @@ class IndividualDialogColumn(IDColumn):
         try:
             val = json.loads(val)
             if type(val) is not list:
-                raise Exception("JSON format is abnormal (1) json data:{}".format(str(val)))
+                raise AppException("JSON format is abnormal (1) json data:{}".format(str(val)))
             else:
                 if len(val) > 0:
                     for val_line in val:
                         if type(val) is not list:
-                            raise Exception("JSON format is abnormal (2) json data:{}".format(str(val)))
+                            raise AppException("JSON format is abnormal (2) json data:{}".format(str(val)))
                         else:
                             if len(val_line) != len(self.json_tag):
-                                raise Exception("JSON format is abnormal (3) json data:{}".format(str(val)))
+                                raise AppException("JSON format is abnormal (3) json data:{}".format(str(val)))
             return val
-        except Exception as e:
-            import inspect, os
-            file_name = os.path.basename(inspect.currentframe().f_code.co_filename)
-            line_no = str(inspect.currentframe().f_lineno)
-            msg = "Exception: {} ({}:{})".format(str(e), file_name, line_no)
-            g.applogger.info(msg) # 外部アプリへの処理開始・終了ログ
+        except AppException as e:
+            msg, arg1, arg2 = e.args
+            print_exception_msg(msg)
             return False
 
     # DBに登録するデータをユニーク制約用にKey値でソートする

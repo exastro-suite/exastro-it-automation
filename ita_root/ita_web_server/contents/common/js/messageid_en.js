@@ -370,11 +370,14 @@ export function messageid_en() {
         'FTE01152' : "There are no items available for reference.",
         'FTE01153' : "Create as hostgroup",
         'FTE01154' : "If the &quot;use&quot; checkbox is checked, a &quot;Host name/Host Group name&quot; parameter sheet will be created in the &quot;Input&quot; Menu group.\nIf the &quot;use &quot; checkbox is unchecked, a &quot;host name&quot; parameter sheet will be created.",
+        'FTE01155' : function(id){ return `Duplicate ID（${id}）.`;},
+        'FTE01156' : function(id){ return `ID（${id}） specified in columns was not found.`;},
+        'FTE01157': 'Failed to load JSON.',
 
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
         'FTE02002' : "Enter the Conductor instance ID and click the Work Confirm button, or",
-        'FTE02003' : "Conductor list",
+        'FTE02003' : "Conductor history",
         'FTE02004' : " click the Details button on the page.",
         'FTE02005' : "Select",
         'FTE02006' : "Register",

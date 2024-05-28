@@ -469,7 +469,7 @@ class Action():
             result_data = addline_msg('{}'.format(log_msg))
         except Exception as e:
             t = traceback.format_exc()
-            print(arrange_stacktrace_format(t))
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             log_msg = g.appmsg.get_log_message("BKY-90076", [action_log_id, e])
             result_data = addline_msg('{}'.format(log_msg))
         finally:

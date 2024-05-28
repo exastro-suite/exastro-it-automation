@@ -28,6 +28,10 @@ from common_libs.ansible_driver.classes.YamlParseClass import YamlParse
 from common_libs.ansible_driver.classes.AnscConstClass import AnscConst
 from common_libs.ansible_driver.classes.CreateAnsibleExecFiles import CreateAnsibleExecFiles
 from common_libs.ansible_driver.functions.util import getAnsibleConst, getDataRelayStorageDir
+import traceback
+from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime
+from common_libs.common.util import print_exception_msg
 
 
 def addFuncionsPerOrchestrator(varOrchestratorId, strRPathFromOrcLibRoot):
@@ -852,7 +856,11 @@ def backyard_main(organization_id, workspace_id):
                                                             if len(ret) >= 3:
                                                                 g.applogger.debug(ret[2])
                                                                 collection_log = '%s\n%s' % (collection_log, ret[2]) if collection_log else ret[2]
-                                                    except Exception:
+                                                    except Exception as e:
+                                                        t = traceback.format_exc()
+                                                        g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+                                                        print_exception_msg(e)
+
                                                         # 言語設定を変更:デフォルトへ戻す
                                                         setattr(g, 'LANGUAGE', 'en')
                                                         raise Exception()
@@ -899,10 +907,14 @@ def backyard_main(organization_id, workspace_id):
 
             except Exception as e:
                 dbAccess.db_rollback()
-                g.applogger.debug(e)
+                t = traceback.format_exc()
+                g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+                print_exception_msg(e)
 
     except Exception as e:
-        g.applogger.debug(e)
+        t = traceback.format_exc()
+        g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+        print_exception_msg(e)
 
     ################################
     # 結果出力

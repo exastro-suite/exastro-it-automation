@@ -223,7 +223,7 @@ def check_request_body():
         if request_content_type == "application/json":
             try:
                 request.get_json()
-            except Exception:
+            except Exception as e:
                 raise AppException("400-00002", ["json_format"], ["json_format"])
         elif "application/x-www-form-urlencoded" == request_content_type:
             if request.form:

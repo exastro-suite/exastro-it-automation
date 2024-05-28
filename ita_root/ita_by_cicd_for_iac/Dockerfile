@@ -27,7 +27,8 @@ ENV STORAGEPATH=/storage/
 ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=1
 ENV SERVICE_NAME=ita-by-cicd-for-iac
 
-RUN dnf install -y \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y \
     gcc \
     python39 \
     python39-devel \
@@ -45,12 +46,17 @@ RUN dnf install -y \
 WORKDIR $APP_PATH
 
 COPY ./ita_root/ita_by_cicd_for_iac/pyproject.toml ./ita_root/ita_by_cicd_for_iac/poetry.lock $APP_PATH/
-RUN poetry install --only first_install
-RUN poetry install --without develop_build
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --only first_install
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --without develop_build
 
 COPY ./ita_root/ita_by_cicd_for_iac/config/centos8.repo /etc/yum.repos.d/centos8.repo
 
-RUN dnf install -y --enablerepo=baseos expect
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y --enablerepo=baseos expect
 
 #
 # Build for development
@@ -61,7 +67,8 @@ ARG USERNAME
 ARG GROUPNAME
 ARG APP_PATH
 
-RUN dnf install -y \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y \
     sudo \
     vim \
     diffutils \
@@ -70,7 +77,8 @@ RUN dnf install -y \
 &&  usermod -G wheel $USERNAME \
 &&  echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
-RUN poetry install --with develop_build
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --with develop_build
 
 USER $USERNAME
 

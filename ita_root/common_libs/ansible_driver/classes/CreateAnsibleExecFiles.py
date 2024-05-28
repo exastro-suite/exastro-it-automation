@@ -469,17 +469,7 @@ class CreateAnsibleExecFiles():
         Returns:
             ITA独自変数名リスト
         """
-        system_vars = []
-        system_vars.append(self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_ANS_OUTDIR_VAR_NAME)
-        system_vars.append(self.AnscObj.ITA_SP_VAR_CONDUCTO_DIR_VAR_NAME)
-        return system_vars
+        return  self.AnscObj.notHaveSpecificValues_ITA_sp_varlist
 
     def getAnsibleDriverCommonShellPath(self):
         path = "{}{}/{}/{}".format(os.environ["PYTHONPATH"], g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'), "/common_libs/ansible_driver/shells")
@@ -2878,12 +2868,14 @@ class CreateAnsibleExecFiles():
                 continue
         return True, mt_MultiArray_vars_list
 
-    def addSystemvars(self, mt_host_vars, ina_hostinfolist):
+    def addSystemvars(self, mt_host_vars, ina_hostinfolist, execution_no, movement_id):
         """
-        システム予約変数を設定する
+        ITA独自変数を設定する
         Arguments:
             mt_host_vars: ホスト変数一覧
             hostinfolist: 機器一覧
+            execution_no: 作業番号
+            movement_id:  MovementID
         Returns:
             mt_host_vars
         """
@@ -2915,6 +2907,9 @@ class CreateAnsibleExecFiles():
                 mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = self.lv_conductor_instance_no
             else:
                 mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = self.LC_ANS_UNDEFINE_NAME
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_EXECUTION_NO] = execution_no
+            mt_host_vars[host_name][self.AnscObj.ITA_SP_VAR_ANS_MOVEMENT_ID] = movement_id
+
         return mt_host_vars
 
     def getDBTemplateMaster(self, in_tpf_var_name, mt_tpf_key, mt_tpf_file_name, mt_tpf_role_only, mt_tpf_vars_struct):
@@ -3307,7 +3302,6 @@ class CreateAnsibleExecFiles():
                         chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10267"
                         chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME] = "MSG-10268"
                         chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "MSG-10269"
-                        chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME] = "MSG-10270"
                         chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = "MSG-10914"
                         chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = "MSG-10915"
                         chkVarDict[self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = "MSG-10926"
@@ -4238,7 +4232,6 @@ class CreateAnsibleExecFiles():
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10534"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME] = "MSG-10535"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "MSG-10536"
-                chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME] = "MSG-10537"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = "MSG-10916"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = "MSG-10917"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = "MSG-10927"
@@ -4719,6 +4712,7 @@ class CreateAnsibleExecFiles():
                 return False
             return True
         except Exception:
+            # #2199 list形式か判定しているだけなのでログ出力不要
             return False
 
     def getAnsible_vault_host_var_file(self, in_hostname):
@@ -5763,7 +5757,6 @@ class CreateAnsibleExecFiles():
             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10534"
             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME] = "MSG-10535"
             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "MSG-10536"
-            chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME] = "MSG-10537"
             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = "MSG-10916"
             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = "MSG-10917"
             chkVarDict[self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = "MSG-10927"
@@ -5961,7 +5954,6 @@ class CreateAnsibleExecFiles():
                             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10206"
                             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME] = "MSG-10204"
                             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "MSG-10205"
-                            chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME] = "MSG-10203"
                             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = "MSG-10918"
                             chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = "MSG-10919"
                             chkVarDict[self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = "MSG-10928"
@@ -6042,7 +6034,6 @@ class CreateAnsibleExecFiles():
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10246"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME] = "MSG-10244"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "MSG-10245"
-                chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME] = "MSG-10243"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = "MSG-10920"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = "MSG-10921"
                 chkVarDict[self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = "MSG-10929"
@@ -6264,7 +6255,6 @@ class CreateAnsibleExecFiles():
                     chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10135"
                     chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME] = "MSG-10136"
                     chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "MSG-10137"
-                    chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME] = "MSG-10138"
                     chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = "MSG-10924"
                     chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = "MSG-10925"
                     chkVarDict[self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = "MSG-10931"
@@ -7213,7 +7203,6 @@ class CreateAnsibleExecFiles():
                                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PROTOCOL_VAR_NAME] = "MSG-10202"
                                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_USERNAME_VAR_NAME] = "MSG-10200"
                                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_PASSWD_VAR_NAME] = "MSG-10201"
-                                chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_INVENTORYHOST_VAR_NAME] = "MSG-10199"
                                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_DNSHOSTNAME_VAR_NAME] = "MSG-10922"
                                 chkVarDict[self.AnscObj.ITA_SP_VAR_ANS_IPADDRESS_VAR_NAME] = "MSG-10923"
                                 chkVarDict[self.AnscObj.ITA_SP_VAR_CONDUCTOR_ID] = "MSG-10930"
@@ -8511,6 +8500,7 @@ class CreateAnsibleExecFiles():
         try:
             n = float(s)
         except ValueError:
+            # #2199 数値判定をしているだけなのでログ出力不要
             return False
 
         return n

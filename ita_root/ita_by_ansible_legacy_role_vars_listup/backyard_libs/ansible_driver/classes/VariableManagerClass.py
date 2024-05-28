@@ -41,7 +41,7 @@ class VariableManager:
                 # オプションによる変数では無い場合。（オプション変数のときは同名があった場合、既存側を優先する）
                 if not stored_item.is_same_struct(inserted_item) and not is_option_var:
                     debug_msg = g.appmsg.get_log_message("BKY-30008", [stored_item.var_name])
-                    g.applogger.debug(debug_msg)
+                    g.applogger.info(debug_msg)
                     stored_item.set_not_use()
                     return False
 

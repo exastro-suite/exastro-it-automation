@@ -22,7 +22,7 @@ import json
 
 from common_libs.common.dbconnect import *
 from common_libs.common.exception import AppException, ValidationException
-from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 from common_libs.common.storage_access import storage_write
 
 
@@ -112,9 +112,11 @@ def wrapper_job(main_logic, organization_id=None, workspace_id=None, loop_count=
                 organization_job(main_logic, organization_id, workspace_id)
             except AppException as e:
                 # catch - raise AppException("xxx-xxxxx", log_format)
+                print_exception_msg(e)
                 app_exception(e)
             except Exception as e:
                 # catch - other all error
+                print_exception_msg(e)
                 exception(e)
 
         if count >= max:
@@ -177,9 +179,11 @@ def organization_job(main_logic, organization_id=None, workspace_id=None):
                 del main_logic_exec
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
+            print_exception_msg(e)
             app_exception(e)
         except Exception as e:
             # catch - other all error
+            print_exception_msg(e)
             exception(e)
 
         # delete environment of workspace
@@ -224,9 +228,11 @@ def wrapper_job_all_org(main_logic, loop_count=500):
             common_db.db_disconnect()
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format)
+            print_exception_msg(e)
             app_exception(e)
         except Exception as e:
             # catch - other all error
+            print_exception_msg(e)
             exception(e)
 
         del main_logic_exec
@@ -550,6 +556,8 @@ def set_service_loglevel(common_db=None):
                 if loglevel is None:
                     raise Exception()
     except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         if "SERVICE_LOGLEVEL_FLG" in g:
             g.SERVICE_LOGLEVEL_FLG = None
     finally:

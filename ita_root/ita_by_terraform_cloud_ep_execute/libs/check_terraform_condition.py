@@ -17,6 +17,7 @@ import json
 import os
 import shutil
 import traceback
+import zipfile
 
 from common_libs.common import storage_access
 from common_libs.common.exception import AppException
@@ -448,15 +449,37 @@ def check_terraform_condition(objdbca, instance_data):  # noqa: C901
 
         # zipファイル作成フラグがTrueの場合、結果データ用のZIPファイルを作成する
         if make_zip_flag:
-            # 投入データ用のZIPファイルを作成する
-            result_data_path = shutil.make_archive(base_name=temp_dir, format="zip", root_dir=log_dir)
+            # 結果データ用のZIPファイルを作成する
+            result_data_path = temp_dir + '.zip'
+            with zipfile.ZipFile(file=result_data_path, mode='w') as z:
+                # input_pathがファイルだった場合の処理
+                if os.path.isfile(log_dir):
+                    z.write(
+                        filename=log_dir,
+                        arcname=os.path.basename(log_dir)
+                    )
+                # input_pathがディレクトリだった場合の処理
+                elif os.path.isdir(log_dir):
+                    def _nest(_path):
+                        for x in os.listdir(_path):
+                            y = os.path.join(_path, x)
+                            z.write(
+                                filename=y,
+                                arcname=y.replace(log_dir, '')
+                            )
+                            # ディレクトリの場合は再帰
+                            if os.path.isdir(y):
+                                _nest(y)
+
+                    _nest(log_dir)
+
             if os.path.exists(result_data_path) is False:
                 log_msg = g.appmsg.get_log_message("MSG-82009", [tf_workspace_name])
                 g.applogger.error(log_msg)
                 msg = g.appmsg.get_api_message("MSG-82009", [tf_workspace_name])
                 raise AppException(msg)
             else:
-                # zipファイル名を変更 [execution_no].zip > InputData_[execution_no].zip
+                # zipファイル名を変更 [execution_no].zip > ResultData_[execution_no].zip
                 result_data_rename_dir_path = base_dir + TFCloudEPConst.DIR_TEMP
                 result_data_rename_path = result_data_rename_dir_path + '/ResultData_' + execution_no + '.zip'
                 os.rename(result_data_path, result_data_rename_path)

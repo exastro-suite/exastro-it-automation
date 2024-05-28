@@ -116,7 +116,7 @@ def backyard_child_main(organization_id, workspace_id):
             # 例外ログ生成
             app_exception_driver_log(e, driver_error_log_file)
             update_status_error(wsDb, ansc_const, execution_no)
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+            g.applogger.error(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
         raise AppException(e)
 
@@ -130,7 +130,7 @@ def backyard_child_main(organization_id, workspace_id):
 
             update_status_error(wsDb, ansc_const, execution_no)
 
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+            g.applogger.error(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
     except Exception as e:
         # OrganizationとWorkspace削除確認　削除されている場合のエラーログ抑止
@@ -140,7 +140,7 @@ def backyard_child_main(organization_id, workspace_id):
 
             update_status_error(wsDb, ansc_const, execution_no)
 
-            g.applogger.debug(g.appmsg.get_log_message("MSG-10722", [execution_no]))
+            g.applogger.error(g.appmsg.get_log_message("MSG-10722", [execution_no]))
 
         raise Exception(e)
 
@@ -838,7 +838,7 @@ def call_CreateAnsibleExecFiles(ansdrv: CreateAnsibleExecFiles, execute_data, dr
         if retBool is False:
             return False, g.appmsg.get_log_message("BKY-00004", ["CreateAnsibleExecFiles.getDBRoleVarList", "error occured"])
 
-    host_vars = ansdrv.addSystemvars(host_vars, hostinfolist)
+    host_vars = ansdrv.addSystemvars(host_vars, hostinfolist, execution_no, movement_id)
 
     # Legacy-Role 多次元配列　恒久版対応
     # ansibleで実行するファイル作成
@@ -1153,9 +1153,9 @@ def makeJobTemplateProperty(key_string, property_type, property_name, param_arr,
                     res_retBool = False
                 else:
                     ext_var_string = property_arr[1].strip()
-                    ret = makeExtraVarsParameter(ext_var_string)
-                    if ret is False:
-                        err_msg_arr.append(g.appmsg.get_log_message("MSG-10555", [chk_param_string]))
+                    ret, error_msg = makeExtraVarsParameter(ext_var_string)
+                    if ret is False:  # メッセージ結合
+                        err_msg_arr.append(g.appmsg.get_log_message("MSG-10555", [chk_param_string]) + " {}".format(error_msg))
                         res_retBool = False
 
     return res_retBool, err_msg_arr, excist_list, tag_skip_value_key, verbose_cnt
@@ -1196,21 +1196,27 @@ def makeExtraVarsParameter(ext_var_string):
     ext_var_string = ext_var_string.strip("\"").strip("\'")
     ext_var_string = ext_var_string.replace("\\n", "\n")
 
+    error_msg = ""
+    # ext_var_stringはyamlとjsonの両方を許容している
     # JSON形式のチェック
     try:
         json.loads(ext_var_string)
-        return True
-    except json.JSONDecodeError:
+        return True, ""
+    except json.JSONDecodeError as e:
+        # 例外を返却して呼出し側でエラーメッセージに結合
+        error_msg = "If the specified parameter is in JSON format, json syntax error. (exception message:{})".format(str(e))
         pass
 
     # YAML形式のチェック
     try:
         yaml.safe_load(ext_var_string)
-        return True
-    except Exception:
+        return True, ""
+    except Exception as e:
+        # 例外を返却して呼出し側でエラーメッセージに結合
+        error_msg += " If the specified parameter is in yaml format, yaml syntax error. (exception message:{})".format(str(e))
         pass
 
-    return False
+    return False, error_msg
 
 
 def createTmpZipFile(execution_no, zip_data_source_dir, zip_type, zip_file_pfx):

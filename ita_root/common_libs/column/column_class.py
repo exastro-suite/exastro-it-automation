@@ -175,10 +175,8 @@ class Column():
             RETRUN:
                 {} or [] ?
         """
-        try:
-            result = self.get_objtable().get('MENUINFO').get('SHEET_TYPE')
-        except Exception:
-            result = 0
+
+        result = self.get_objtable().get('MENUINFO', {}).get('SHEET_TYPE', 0)
         return result
 
     def set_encrypt_name(self, encrypt_name):

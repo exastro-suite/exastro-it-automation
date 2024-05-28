@@ -39,6 +39,8 @@ from common_libs.terraform_driver.common.Execute import insert_execution_list as
 from common_libs.cicd.classes.cicd_definition import TD_SYNC_STATUS_NAME_DEFINE, TD_B_CICD_MATERIAL_FILE_TYPE_NAME, TD_B_CICD_MATERIAL_TYPE_NAME, TD_C_PATTERN_PER_ORCH, TD_B_CICD_GIT_PROTOCOL_TYPE_NAME, TD_B_CICD_GIT_REPOSITORY_TYPE_NAME, TD_B_CICD_MATERIAL_LINK_LIST
 from common_libs.cicd.functions.local_functions import MatlLinkColumnValidator2, MatlLinkColumnValidator3, MatlLinkColumnValidator5
 from common_libs.common import storage_access
+import traceback
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 
 ################################################################
@@ -94,7 +96,7 @@ class CICDMakeParamBase():
         data['last_updated_user'] = g.USER_ID
 
     def diff_file(self, filedata, cur_filedata, *args, **kwargs):
-        
+
         # /storage配下のファイルアクセスを/tmp経由で行うモジュール
         file_read = storage_access.storage_read()
         file_read_bytes = storage_access.storage_read_bytes()
@@ -547,8 +549,8 @@ class ControlGit():
 
         try:
             return int(d[k])
-
-        except Exception:
+        except Exception as e:
+            # 未設定の場合に初期値を設定しているので例外メッセージを出力する必要なし
             return default_val
 
     def SetGitCommandLastErrorMsg(self, errorDetail):
@@ -1062,14 +1064,6 @@ class CICD_GrandChildWorkflow():
         zipFileNameBase = os.path.basename(inRolesDir)
         zipFileName = "%s.zip" % (zipFileNameBase)
 
-        """
-        try:
-            shutil.make_archive("%s/%s" % (outRolesDir, zipFileNameBase), 'zip', inRolesDir)
-
-        except Exception as e:
-            return str(e), outRolesDir, zipFileName
-        """
-
         cmd = "cd %s && zip -r %s/%s *" % (inRolesDir, outRolesDir, zipFileName)
         ret = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         if ret.returncode != 0:
@@ -1324,7 +1318,7 @@ class CICD_GrandChildWorkflow():
         return True, result['execution_no']
 
     def MailLinkExecute(self):
-        
+
         # /storage配下のファイルアクセスを/tmp経由で行うモジュール
         file_read = storage_access.storage_read()
         file_read_bytes = storage_access.storage_read_bytes()
@@ -2544,11 +2538,13 @@ class CICD_ChildWorkflow():
 
         except CICDException as e:
             self.DBobj.db_transaction_end(False)
-            FREE_LOG = str(e)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
 
         except Exception as e:
             self.DBobj.db_transaction_end(False)
-            FREE_LOG = str(e)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
 
         if RepoListSyncStatusUpdate_Flg is False:
             if len(self.UIDisplayMsg) <= 0:
@@ -2566,7 +2562,7 @@ class CICD_ChildWorkflow():
                 # データベースの更新に失敗しました
                 logstr = g.appmsg.get_api_message("MSG-90079", [self.RepoId, ])
                 FREE_LOG = makeLogiFileOutputString(inspect.currentframe().f_code.co_filename, inspect.currentframe().f_lineno, logstr, ret)
-                g.applogger.debug(FREE_LOG)
+                g.applogger.info(FREE_LOG)
 
             self.DBobj.db_transaction_end(True)
 
@@ -2647,9 +2643,9 @@ def backyard_main(organization_id, workspace_id):
                 child_obj = CICD_ChildWorkflow(organization_id, workspace_id, DBobj, RepoId, ExecMode, row)
                 child_obj.main()
 
-    except Exception:
+    except Exception as e:
         error_flag = 1
-        raise
+        raise Exception(e)
 
     # 結果出力
     FREE_LOG = ""

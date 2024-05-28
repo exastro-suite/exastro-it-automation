@@ -14,8 +14,10 @@
 
 import json
 import datetime
+import traceback
 from flask import g
 from common_libs.common import *  # noqa: F403
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 
 from libs.organization_common import check_auth_menu, get_auth_menus
 
@@ -411,7 +413,7 @@ def collect_widget_settings(objdbca):
     work_info = {}
     work_info['conductor'] = []
 
-    if '30105' in menus:  # 30105:Conductor作業一覧
+    if '30105' in menus:  # 30105:Conductor作業履歴
         status_list = ['1', '2', '3', '4', '5']  # 1:未実行, 2:未実行(予約), 3:実行中, 4:実行中(遅延), 5:一時停止
         rset = get_conductor_info(objdbca, status_list, lang)
         for r in rset:
@@ -428,7 +430,7 @@ def collect_widget_settings(objdbca):
     work_result_info = {}
     work_result_info['conductor'] = []
 
-    if '30105' in menus:  # 30105:Conductor作業一覧
+    if '30105' in menus:  # 30105:Conductor作業履歴
         status_list = ['6', '7', '8', '9', '10', '11']  # 6:正常, 7:異常, 8:警告, 9:緊急停止, 10:予約取消, 11:想定外
         rset = get_conductor_info(objdbca, status_list, lang)
         for r in rset:
@@ -445,7 +447,7 @@ def collect_widget_settings(objdbca):
     work_reserve_info = {}
     work_reserve_info['conductor'] = []
 
-    if '30105' in menus:  # 30105:Conductor作業一覧
+    if '30105' in menus:  # 30105:Conductor作業履歴
         days = 0
         if 'widget' in current_widget:
             for k, v in current_widget['widget'].items():
@@ -454,6 +456,8 @@ def collect_widget_settings(objdbca):
                         days = int(v['period'])
                         days = days if days >= 0 and days <= 365 else 0
                     except Exception:
+                        t = traceback.format_exc()
+                        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
                         days = 0
 
                     break

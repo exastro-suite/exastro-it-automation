@@ -160,7 +160,6 @@ class FileUploadColumn(Column):
         # 廃止の場合return
         if cmd_type == "Discard":
             return retBool
-
         if val is not None:
             if len(str(val)) != 0:
                 decode_option = option.get("file_data")

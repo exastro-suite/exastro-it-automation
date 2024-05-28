@@ -19,6 +19,7 @@ from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.storage_access import *  # noqa: F403
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
 from pathlib import Path
@@ -60,6 +61,8 @@ def backyard_main(organization_id, workspace_id):
     except Exception:
         # エラーログ出力
         g.applogger.error(g.appmsg.get_log_message("BKY-00008", []))
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         return
 
     strage_path = os.environ.get('STORAGEPATH')
@@ -255,6 +258,7 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
             raise AppException("MSG-140003", [_file_name], [_file_name])
         # インポート対象メニュー取得
         menu_name_rest_list = json_storage_item.split(',')
+        g.applogger.info(f"{menu_name_rest_list=}")
 
         backupsql_dir = workspace_path + "/tmp/driver/import_menu/backup"
         backupsql_path = backupsql_dir + '/backup.sql'
@@ -346,8 +350,8 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         return True, msg, None
     except AppException as msg:
         trace_msg = traceback.format_exc()
-        g.applogger.error(msg)
-        g.applogger.info(trace_msg)
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        g.applogger.info(f"{record=}")
         trace_msg = None
 
         if objdbca._is_transaction is True:
@@ -368,8 +372,8 @@ def menu_import_exec(objdbca, record, workspace_id, workspace_path, uploadfiles_
         return False, msg, trace_msg
     except Exception as msg:
         trace_msg = traceback.format_exc()
-        g.applogger.error(msg)
-        g.applogger.info(trace_msg)
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        g.applogger.info(f"{record=}")
 
         if objdbca._is_transaction is True:
             # コミット/トランザクション終了
@@ -508,9 +512,9 @@ def _update_t_menu_export_import(objdbca, execution_no, status, user_language="e
                     data_list.setdefault("EXEC_LOG", log_filename)
 
         except Exception as e:
-            trace_msg = traceback.format_exc()
-            g.applogger.error(traceback.format_exc())
-            g.applogger.info(trace_msg)
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+            g.applogger.info(f"{execution_no=}, {status=}")
         objdbca.table_update(t_menu_export_import, data_list, 'EXECUTION_NO')
 
         # ログファイルの書き込み
@@ -518,6 +522,9 @@ def _update_t_menu_export_import(objdbca, execution_no, status, user_language="e
             file_open_write_close(file_path, 'w', error_msg)
 
     except Exception as msg:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
+        g.applogger.info(f"{execution_no=}, {status=}")
         return False, msg
 
     return True, None
@@ -1157,7 +1164,9 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         file_open_write_close(version_path, 'w', version_data["version"])
 
         # データをtar.gzにまとめる
-        gztar_path = shutil.make_archive(base_name=dir_path, format="gztar", root_dir=dir_path)
+        gztar_path = dir_path + '.tar.gz'
+        with tarfile.open(gztar_path, 'w:gz') as tar:
+            tar.add(dir_path, arcname="")
 
         # kymファイルに変換(拡張子変更)
         kym_name = dir_name + '.kym'
@@ -1213,8 +1222,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         return True, msg, None
     except AppException as msg:
         trace_msg = traceback.format_exc()
-        g.applogger.error(msg)
-        g.applogger.info(trace_msg)
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        g.applogger.info(f"{record=}, {workspace_id=}, {export_menu_dir=}")
         trace_msg = None
 
         # エラー時はtmpの作業ファイルを削除する
@@ -1224,8 +1233,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         return False, msg, trace_msg
     except Exception as msg:
         trace_msg = traceback.format_exc()
-        g.applogger.error(msg)
-        g.applogger.info(trace_msg)
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        g.applogger.info(f"{record=}, {workspace_id=}, {export_menu_dir=}")
 
         # エラー時はtmpの作業ファイルを削除する
         if os.path.isdir(export_menu_dir):
@@ -1557,6 +1566,9 @@ def file_open_write_close(path, mode, value, encoding='utf-8', file_del=True):
         if os.path.isfile(objsw.make_temp_path(path)):
             os.remove(objsw.make_temp_path(path))
     except Exception as e:
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        g.applogger.info(f"{path=}, {mode=}, {encoding=} {file_del=}")
         raise AppException("MSG-140009", [e], [e])
 
 def file_open_read_close(path, encoding='utf-8'):
@@ -1575,6 +1587,9 @@ def file_open_read_close(path, encoding='utf-8'):
         value = objsr.read_text(path, encoding)
         return value
     except Exception as e:
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        g.applogger.info(f"{path=}, {encoding=}")
         raise AppException("MSG-140010", [e], [e])
 
 
@@ -1839,6 +1854,8 @@ class RecordProcessingTimes():
             if "start" in self.data[key] and "end" in self.data[key]:
                 self.result(key)
         except:
+            trace_msg = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
             pass
     def result(self, key):
         try:
@@ -1853,5 +1870,7 @@ class RecordProcessingTimes():
                 res = f"{key}: Failed"
             g.applogger.info(res)  # noqa: F405
         except:
+            trace_msg = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
             res = None
         return res

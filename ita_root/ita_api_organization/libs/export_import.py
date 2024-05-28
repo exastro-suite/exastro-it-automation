@@ -32,6 +32,7 @@ from common_libs.common.dbconnect import DBConnectCommon
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common import storage_access
 from common_libs.column import *  # noqa: F403
+from common_libs.common.util import print_exception_msg
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
@@ -453,12 +454,13 @@ def execute_excel_bulk_export(objdbca, menu, body):
         if not exec_result[0]:
             result_msg = _format_loadtable_msg(exec_result[2])
             result_msg = json.dumps(result_msg, ensure_ascii=False)
-            raise Exception("499-00701", [result_msg])  # loadTableバリデーションエラー
+            raise AppException("499-00701", [result_msg])  # loadTableバリデーションエラー
 
         # コミット/トランザクション終了
         objdbca.db_transaction_end(True)
 
-    except Exception as e:
+    except AppException as e:
+        print_exception_msg(e)
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
@@ -733,6 +735,7 @@ def execute_excel_bulk_import(objdbca, menu, body):
         objdbca.db_transaction_end(True)
 
     except Exception as e:
+        print_exception_msg(e)
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
@@ -783,6 +786,7 @@ def unzip_file(fileName, tmp_dir_path, upload_id):
                 z.extract(info, path=tmp_dir_path + "/" + upload_id)
 
     except Exception as e:
+        print_exception_msg(e)
         return False
 
     return True
@@ -1474,6 +1478,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         objdbca.db_transaction_end(False)
         raise e
     except Exception as e:
+        print_exception_msg(e)
         # ロールバック トランザクション終了
         objdbca.db_transaction_end(False)
 
@@ -1486,7 +1491,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
         if os.path.isdir(import_path):
             shutil.rmtree(import_path)
     except Exception as e:
-        g.applogger.debug("Failed to delete: {} ({})".format(e, import_path))
+        g.applogger.info("Failed to delete: {} ({})".format(e, import_path))
 
     # 返却用の値を取得
     execution_no = exec_result[1].get('execution_no')

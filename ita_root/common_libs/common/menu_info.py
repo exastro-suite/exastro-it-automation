@@ -739,20 +739,21 @@ def collect_search_candidates(objdbca, menu, column, menu_record={}, menu_table_
     elif save_type == "JSON":
         for record in ret:
             target = record.get(col_name)
-            json_rows = json.loads(target)
+            json_rows = None if target is None else json.loads(target)
 
-            for jsonkey, jsonval in json_rows.items():
-                if jsonkey == column_name_rest:
-                    if column_class_id in id_column_list:
-                        # プルダウンの一覧を取得
-                        objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
-                        objcolumn = objmenu.get_columnclass(column)
-                        column_pulldown_list = objcolumn.get_values_by_key()
-                        # レコードの中からIDに合致するデータを取得
-                        conv_jsonval = column_pulldown_list.get(jsonval)
-                        search_candidates.append(conv_jsonval)
-                    else:
-                        search_candidates.append(jsonval)
+            if json_rows:
+                for jsonkey, jsonval in json_rows.items():
+                    if jsonkey == column_name_rest:
+                        if column_class_id in id_column_list:
+                            # プルダウンの一覧を取得
+                            objmenu = load_table.loadTable(objdbca, menu)  # noqa: F405
+                            objcolumn = objmenu.get_columnclass(column)
+                            column_pulldown_list = objcolumn.get_values_by_key()
+                            # レコードの中からIDに合致するデータを取得
+                            conv_jsonval = column_pulldown_list.get(jsonval)
+                            search_candidates.append(conv_jsonval)
+                        else:
+                            search_candidates.append(jsonval)
     else:
         if column_class_id in id_column_list:
             # プルダウンの一覧を取得

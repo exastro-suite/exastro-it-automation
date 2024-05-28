@@ -1778,7 +1778,7 @@ class loadTable():
         for col_name, col_val in rows.items():
             # パラメータシート作成パラメータDATA_JSON構造
             if col_name == 'DATA_JSON':
-                json_rows = json.loads(col_val)
+                json_rows = col_val if col_val is None else json.loads(col_val)
                 if json_rows:
                     for jsonkey, jsonval in json_rows.items():
                         if jsonkey in json_cols_base_key:

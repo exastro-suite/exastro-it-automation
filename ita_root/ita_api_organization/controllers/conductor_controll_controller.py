@@ -734,7 +734,7 @@ def get_conductor_input_data(organization_id, workspace_id, menu, conductor_inst
         # メニューに対するロール権限をチェック
         check_auth_menu(menu, objdbca)
 
-        # このRestAPIは「Conductor作業一覧」専用
+        # このRestAPIは「Conductor作業履歴」専用
         if menu != 'conductor_list':
             log_msg_args = [menu]
             api_msg_args = [menu]
@@ -780,7 +780,7 @@ def get_conductor_result_data(organization_id, workspace_id, menu, conductor_ins
         # メニューに対するロール権限をチェック
         check_auth_menu(menu, objdbca)
 
-        # このRestAPIは「Conductor作業一覧」専用
+        # このRestAPIは「Conductor作業履歴」専用
         if menu != 'conductor_list':
             log_msg_args = [menu]
             api_msg_args = [menu]

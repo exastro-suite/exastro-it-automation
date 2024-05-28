@@ -373,11 +373,11 @@ export function messageid_en() {
         'FTE01155' : function(id){ return `Duplicate ID（${id}）.`;},
         'FTE01156' : function(id){ return `ID（${id}） specified in columns was not found.`;},
         'FTE01157': 'Failed to load JSON.',
-        
+
         // Conductor
         'FTE02001' : "Conductor instance id is not yet set.",
         'FTE02002' : "Enter the Conductor instance ID and click the Work Confirm button, or",
-        'FTE02003' : "Conductor list",
+        'FTE02003' : "Conductor history",
         'FTE02004' : " click the Details button on the page.",
         'FTE02005' : "Select",
         'FTE02006' : "Register",

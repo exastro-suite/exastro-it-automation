@@ -382,7 +382,7 @@ export function messageid_ja() {
         // Conductor
         'FTE02001' : "ConductorインスタンスIDが未設定です。",
         'FTE02002' : "ConductorインスタンスIDを入力し作業確認ボタンを押下するか、",
-        'FTE02003' : "Conductor作業一覧",
+        'FTE02003' : "Conductor作業履歴",
         'FTE02004' : "ページにて詳細ボタンを押下してください。",
         'FTE02005' : "選択",
         'FTE02006' : "登録",

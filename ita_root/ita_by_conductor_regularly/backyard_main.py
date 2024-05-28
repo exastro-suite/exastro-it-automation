@@ -20,7 +20,7 @@ import traceback
 from common_libs.conductor.classes.exec_util import ConductorExecuteLibs
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common.util import get_exastro_platform_users
-from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
 from common_libs.common.exception import AppException
 
 
@@ -98,12 +98,10 @@ def backyard_main(organization_id, workspace_id):  # noqa: C901
     except AppException as e:
         msg_code, logmsg_args = e.args
         msg = g.appmsg.get_log_message(msg_code, [logmsg_args[0], logmsg_args[1]])
-        g.applogger.info(msg)
+        print_exception_msg(msg)
     except Exception:
         t = traceback.format_exc()
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
-        debug_msg = g.appmsg.get_log_message("BKY-40010", [])
-        g.applogger.info(debug_msg)
 
     active_user_list = []
     for user_id in platform_users.keys():

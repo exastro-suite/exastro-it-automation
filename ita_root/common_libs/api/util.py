@@ -18,7 +18,7 @@ from flask import g, request
 import traceback
 
 from common_libs.common.exception import AppException
-from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format, print_exception_msg
+from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 from common_libs.common.dbconnect import *
 
 api_timestamp = None

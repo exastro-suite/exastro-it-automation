@@ -78,7 +78,6 @@ def check_loop(objdbca, objtable, option):
                 loopCnt = 0
                 loop_flg, loopCnt = loopCheck(hostgroup_pc_list, checkhgc, paHg, loopCnt)
                 # loop
-                loop_flg = True
                 if loop_flg is True:
                     retBool = False
                     msg = g.appmsg.get_api_message("MSG-70001", [])

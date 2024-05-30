@@ -88,15 +88,18 @@ class SubValueAutoReg():
             # Exceptionの処理なのでログレベルはerrorにする
             msg, arg1, arg2 = e.args
             print_exception_msg(msg)
+
             result = False
             # トランザクション終了(異常)
             self.ws_db.db_transaction_end(False)
 
         except Exception as e:
+            t = traceback.format_exc()
+            g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+            result = False
             # トランザクション終了(異常)
             self.ws_db.db_transaction_end(False)
-
-            raise e
 
         return result, msg
 

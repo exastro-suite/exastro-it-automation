@@ -191,7 +191,7 @@ class MultiSelectIDColumn(IDColumn):
             return True, '', valnames,
         val_decode = self.is_json_format(valnames)
         if val_decode is False:
-            raise Exception("JSON format is abnormal")
+            return False, 'JSON format is abnormal', valnames,
         if len(val_decode) == 0:
             return True, '', None,
 

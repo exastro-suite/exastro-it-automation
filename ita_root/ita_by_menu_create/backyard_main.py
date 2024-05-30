@@ -546,6 +546,11 @@ def menu_create_exec(objdbca, menu_create_id, create_type):  # noqa: C901
         # 異常系リターン
         return False, msg
 
+    except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+        # 異常系リターン
+        return False, e
 
 def _collect_menu_create_data(objdbca, menu_create_id):
     """
@@ -613,6 +618,12 @@ def _collect_menu_create_data(objdbca, menu_create_id):
         msg, arg1, arg2 = e.args
         print_exception_msg(msg)
         return False, msg, None, None, None, None, None, None, None, None
+
+    except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+        return False, e, None, None, None, None, None, None, None, None
 
     return True, None, record_t_menu_define, record_t_menu_column_group, record_t_menu_column, record_t_menu_unique_constraint, record_t_menu_role, record_t_menu_other_link, record_v_menu_reference_item, record_v_parameter_sheet_reference  # noqa: E501
 
@@ -689,6 +700,12 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
         msg, arg1, arg2 = e.args
         print_exception_msg(msg)
         return False, msg, None
+
+    except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+        return False, e, None
 
     return True, None, ret_data
 
@@ -987,6 +1004,12 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
         print_exception_msg(msg)
         return False, msg
 
+    except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+        return False, e
+
     return True, None
 
 
@@ -1060,6 +1083,12 @@ def _insert_t_comn_column_group(objdbca, target_column_group_list, dict_t_menu_c
         msg, arg1, arg2 = e.args
         print_exception_msg(msg)
         return False, msg
+
+    except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+        return False, e
 
     return True, None
 
@@ -2053,6 +2082,12 @@ def _insert_or_update_t_comn_menu_column_link(objdbca, sheet_type, vertical_flag
         msg, arg1, arg2 = e.args
         print_exception_msg(msg)
         return False, msg
+
+    except Exception as e:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+
+        return False, e
 
     return True, None
 

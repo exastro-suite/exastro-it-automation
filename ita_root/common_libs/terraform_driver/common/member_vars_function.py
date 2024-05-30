@@ -16,9 +16,10 @@ from dictknife import deepmerge
 import re
 import json
 import uuid
+import traceback
 
 from common_libs.common.exception import AppException
-from common_libs.common.util import print_exception_msg
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 
 def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_member_vars_list):  # noqa: C901
@@ -309,6 +310,10 @@ def set_member_vars(objdbca, TFConst, module_matter_id, variable_data, exist_mem
     except AppException as e:
         msg, arg1, arg2 = e.args
         print_exception_msg(msg)
+        result = False
+    except Exception:
+        t = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
         result = False
 
     return result, msg, exist_member_vars_list

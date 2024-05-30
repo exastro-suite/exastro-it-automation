@@ -19,14 +19,9 @@ from common_libs.common.exception import AppException
 
 @api_filter_admin
 def internal_health_check_liveness():
-    try:
-        common_db_root = DBConnectCommonRoot()  # noqa: F405
-        organization_info_list = common_db_root.sql_execute("SELECT 1 AS DATA", [])
-        common_db_root.db_disconnect()
-    except AppException as e:
-        raise AppException(e)
-    except Exception as e:
-        raise e
+    common_db_root = DBConnectCommonRoot()  # noqa: F405
+    organization_info_list = common_db_root.sql_execute("SELECT 1 AS DATA", [])
+    common_db_root.db_disconnect()
 
     return g.appmsg.get_api_message("000-00000"),
 

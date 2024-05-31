@@ -64,13 +64,17 @@ def ky_decrypt(lcstr, input_encrypt_key=None):
     Returns:
         Decoded string
     """
-    if lcstr is None:
-        return ""
+    try:
+        if lcstr is None:
+            return ""
 
-    if len(lcstr) == 0:
-        return ""
+        if len(lcstr) == 0:
+            return ""
 
-    return decrypt_str(lcstr, input_encrypt_key)
+        return decrypt_str(lcstr, input_encrypt_key)
+    except Exception as e:
+        print_exception_msg(e)
+        return ""
 
 
 def ky_file_encrypt(src_file, dest_file):

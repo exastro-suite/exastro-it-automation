@@ -1966,7 +1966,7 @@ class loadTable():
                             if seve_type == 'JSON':
                                 val = parameter.get(tmp_constraint_key)
                                 if val:
-                                    if val.lower() == "null":
+                                    if type(val) is str and val.lower() == "null":
                                         # 文字列としての"null"はjsonとしてのnullと区別するようにwhere_strを作成する
                                         where_str = where_str + conjunction + ' JSON_UNQUOTE(JSON_EXTRACT(`{0}`,"$.{1}")) = %s AND JSON_TYPE(JSON_EXTRACT(`{0}`,"$.{1}")) != "NULL"'.format(  # noqa: E501
                                             self.get_col_name(tmp_constraint_key),

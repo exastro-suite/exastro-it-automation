@@ -300,17 +300,19 @@ class IndividualDialogColumn(IDColumn):
                 ( True / False , メッセージ )
         """
         try:
+            if val is None:
+                raise AppException("JSON format is abnormal (1) json data:{}".format(str(val)))
             val = json.loads(val)
             if type(val) is not list:
-                raise AppException("JSON format is abnormal (1) json data:{}".format(str(val)))
+                raise AppException("JSON format is abnormal (2) json data:{}".format(str(val)))
             else:
                 if len(val) > 0:
                     for val_line in val:
                         if type(val) is not list:
-                            raise AppException("JSON format is abnormal (2) json data:{}".format(str(val)))
+                            raise AppException("JSON format is abnormal (3) json data:{}".format(str(val)))
                         else:
                             if len(val_line) != len(self.json_tag):
-                                raise AppException("JSON format is abnormal (3) json data:{}".format(str(val)))
+                                raise AppException("JSON format is abnormal (4) json data:{}".format(str(val)))
             return val
         except AppException as e:
             msg, arg1, arg2 = e.args

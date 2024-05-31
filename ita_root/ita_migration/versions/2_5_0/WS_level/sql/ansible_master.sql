@@ -162,3 +162,47 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2010123,_____DATE_____,'INSERT','2010123','20101','最終更新日時','Last update date/time','last_update_date_time',NULL,'13',230,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_TIMESTAMP',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'レコードの最終更新日。更新可否判定に使用。自動登録のため編集不可。','Last update date of record. Useful for judging the possibility of an update. Cannot edit because of auto-numbering.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('2010124','20101','最終更新者','Last updated by','last_updated_user',NULL,'14',240,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_USER',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'更新者。ログインユーザのIDが自動的に登録される。編集不可。','Updated by. Login user ID is automatically registered. Cannot edit.',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(2010124,_____DATE_____,'INSERT','2010124','20101','最終更新者','Last updated by','last_updated_user',NULL,'14',240,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'LAST_UPDATE_USER',NULL,'1','0','1','0','1','1','0',NULL,NULL,NULL,NULL,NULL,'更新者。ログインユーザのIDが自動的に登録される。編集不可。','Updated by. Login user ID is automatically registered. Cannot edit.',NULL,'0',_____DATE_____,1);
+
+-- ------------------------------------------------------------
+-- T_COMN_MENU : UPDATE
+-- ------------------------------------------------------------
+-- - ソートキーの修正
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"member_variables"},{"ASC":"variable_name"},{"ASC":"prefix_file_name"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20109';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"member_variables"},{"ASC":"variable_name"},{"ASC":"prefix_file_name"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20109';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"include_order"},{"ASC":"playbook_file"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20203';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"include_order"},{"ASC":"playbook_file"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20203';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"host"},{"ASC":"movement"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20206';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"host"},{"ASC":"movement"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20206';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"substitution_order"},{"ASC":"variable_name"},{"ASC":"host"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20207';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"substitution_order"},{"ASC":"variable_name"},{"ASC":"host"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20207';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"include_order"},{"ASC":"dialog_type"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20305';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"include_order"},{"ASC":"dialog_type"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20305';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"host"},{"ASC":"movement"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20308';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"host"},{"ASC":"movement"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20308';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"substitution_order"},{"ASC":"variable_name"},{"ASC":"host"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20309';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"substitution_order"},{"ASC":"variable_name"},{"ASC":"host"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20309';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"include_order"},{"ASC":"role_package_name_role_name"},{"ASC":"role_package_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20404';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"include_order"},{"ASC":"role_package_name_role_name"},{"ASC":"role_package_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20404';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"iteration_member_variable_name"},{"ASC":"variable_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20406';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"iteration_member_variable_name"},{"ASC":"variable_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20406';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"host"},{"ASC":"movement"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20408';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"host"},{"ASC":"movement"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20408';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"substitution_order"},{"ASC":"member_variable_name"},{"ASC":"variable_name"},{"ASC":"host"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20409';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"substitution_order"},{"ASC":"member_variable_name"},{"ASC":"variable_name"},{"ASC":"host"},{"ASC":"operation"},{"ASC":"execution_no"},{"ASC":"last_update_date_time"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20409';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"parent_variable_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20413';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"parent_variable_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20413';
+
+UPDATE T_COMN_MENU SET SORT_KEY = '[{"ASC":"dropdown_display_member_variable"},{"ASC":"variable_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20414';
+UPDATE T_COMN_MENU_JNL SET SORT_KEY = '[{"ASC":"dropdown_display_member_variable"},{"ASC":"variable_name"},{"ASC":"movement"}]', LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE MENU_ID ='20414';

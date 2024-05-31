@@ -15,10 +15,11 @@ from flask import g
 import hcl2
 import json
 import re
+import traceback
 
 from common_libs.common import storage_access
 from common_libs.common.exception import AppException
-from common_libs.common.util import print_exception_msg
+from common_libs.common.util import print_exception_msg, get_iso_datetime, arrange_stacktrace_format
 
 class HCL2JSONParse():
     """
@@ -66,8 +67,13 @@ class HCL2JSONParse():
 
             # 対象ファイルの解析を実行
             file_read.open(self.file_path)
-            parse_result = hcl2.loads(file_read.read())
-            result_json = json.dumps(parse_result)
+            try:
+                parse_result = hcl2.loads(file_read.read())
+                result_json = json.dumps(parse_result)
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.info("[timestamp={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+                raise AppException(e)
             file_read.close()
 
             # typeがnullの場合を考慮し、処理しやすい形に変換
@@ -256,8 +262,8 @@ class HCL2JSONParse():
                     self.variable_block_list.append(convert_block)
 
         except AppException as e:
-            print_exception_msg("AppException occured in HCL2JSONParse.executeParse")
             msg, arg1, arg2 = e.args
+            print_exception_msg(msg)
             self.error_msg = msg
             result = False
 

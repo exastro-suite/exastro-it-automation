@@ -4,5 +4,10 @@
     ["ansible.sql", "ansible_master.sql"],
     ["", "terraform_cli_master.sql"],
     ["", "terraform_cloud_ep_master.sql"],
-    ["", "oase_master.sql"]
+    ["", "oase_master.sql"],
+    ["", "cicd_master.sql"],
+    ["", "compare_master.sql"],
+    ["", "export_import_master.sql"],
+    ["", "hostgroup_master.sql"],
+    ["", "terraform_cloud_ep_master.sql"]
 ]

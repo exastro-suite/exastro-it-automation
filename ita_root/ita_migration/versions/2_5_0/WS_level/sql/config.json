@@ -9,5 +9,5 @@
     ["", "compare_master.sql"],
     ["", "export_import_master.sql"],
     ["", "hostgroup_master.sql"],
-    ["", "terraform_cloud_ep_master.sql"]
+    ["", "menu_create_master.sql"]
 ]

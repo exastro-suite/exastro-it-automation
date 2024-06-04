@@ -688,7 +688,9 @@ def _insert_t_comn_menu(objdbca, sheet_type, record_t_menu_define, menu_group_co
             "MENU_NAME_REST": menu_name_rest,
             "DISP_SEQ": record_t_menu_define.get('DISP_SEQ'),
             "AUTOFILTER_FLG": "1",
-            "INITIAL_FILTER_FLG": "0",
+            "INITIAL_FILTER_FLG": "1",
+            "WEB_PRINT_LIMIT": 10000,
+            "WEB_PRINT_CONFIRM": 1000,
             "SORT_KEY": sort_key,
             "DISUSE_FLAG": "0",
             "LAST_UPDATE_USER": g.get('USER_ID')

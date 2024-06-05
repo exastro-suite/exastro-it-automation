@@ -403,6 +403,15 @@ zeroPadding: function( num, digit, zeroSpan = false ){
 */
 cv: function( value, subValue, escape ){
     const type = typeofValue( value );
+    if ( type === 'boolean') {
+        if ( value === true ) {
+            value = 'true';
+        } else if ( value === false ) {
+            value = 'false';
+        } else {
+            value = '';
+        }
+    }
     if ( type === 'undefined' || type === 'null') value = subValue;
     if ( value && escape ) value = cmn.escape( value );
 

@@ -123,15 +123,12 @@ class DateColumn(Column):
             RETRUN:
                 retBool, msg, val
         """
-        try:
-            retBool = True
-            msg = ''
 
-            if val is not None and len(str(val)) > 0:
-                val = val[0:10]
-        except Exception as e:
-            print_exception_msg(e)
-            return retBool, msg, ""
+        retBool = True
+        msg = ''
+
+        if val is not None and type(val) is str and len(val) > 0:
+            val = val[0:10]
 
         return retBool, msg, val
 

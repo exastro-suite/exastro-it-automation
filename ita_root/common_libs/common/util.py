@@ -64,13 +64,16 @@ def ky_decrypt(lcstr, input_encrypt_key=None):
     Returns:
         Decoded string
     """
+
+    if lcstr is None:
+        return ""
+
+    if len(str(lcstr)) == 0:
+        return ""
+
+    # パラメータシート更新で任意の項目からパスワード項目に変更した場合システムエラーになるので、
+    # try~exceptで対応する
     try:
-        if lcstr is None:
-            return ""
-
-        if len(lcstr) == 0:
-            return ""
-
         return decrypt_str(lcstr, input_encrypt_key)
     except Exception as e:
         print_exception_msg(e)

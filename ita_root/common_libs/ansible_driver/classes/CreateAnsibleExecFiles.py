@@ -108,11 +108,10 @@
 # getITA_ssh_key_file
 # getIN_ssh_key_file
 # CreateSSH_key_file
-# setAnsible_win_ca_files_Dir
-# getAnsible_win_ca_files_Dir
-# getITA_win_ca_file
-# getIN_win_ca_file
-# CreateWIN_cs_file
+# setAnsible_win_key_files_Dir
+# getIN_win_key_file
+# CreateWinrmPublicKeyFile
+# CreateWinrmPrivateKeyFile
 # LegacyRoleCheckConcreteValueIsVarTemplatefile
 # LegacyRoleCheckConcreteValueIsVar
 # CreateLegacyRoleTemplateFiles
@@ -215,7 +214,7 @@ from common_libs.ansible_driver.functions.util import getRolePackageContentUploa
 from common_libs.ansible_driver.functions.util import getFileContentUploadDirPath
 from common_libs.ansible_driver.functions.util import getTemplateContentUploadDirPath
 from common_libs.ansible_driver.functions.util import getDeviceListSSHPrivateKeyUploadDirPath
-from common_libs.ansible_driver.functions.util import getDeviceListServerCertificateUploadDirPath
+from common_libs.ansible_driver.functions.util import getDeviceListWinrmPrivateKeyFileUploadDirPath, getDeviceListWinrmPublicKeyFileUploadDirPath
 from common_libs.ansible_driver.functions.util import get_OSTmpPath
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath
@@ -326,8 +325,8 @@ class CreateAnsibleExecFiles():
         self.LC_ANS_SSH_EXTRA_ARGS_VAR_NAME = "__ssh_extra_args__"
         self.LC_ANS_PIONEER_LANG_VAR_NAME = "__pioneer_lang__"
         self.v_Ansible_ssh_key_files_Dir = ""
-        self.LC_ANS_WIN_CA_FILES_DIR = "winrm_ca_files"
-        self.lv_Ansible_win_ca_files_Dir = ""
+        self.LC_ANS_WIN_KEY_FILES_DIR = "winrm_key_files"
+        self.lv_Ansible_win_key_files_Dir = ""
         self.lv_legacy_Role_cpf_vars_list = {}
         self.lv_legacy_Role_tpf_vars_list = {}
         self.lv_tpf_vars_list = {}
@@ -660,10 +659,10 @@ class CreateAnsibleExecFiles():
         self.setAnsible_ssh_key_files_Dir(c_dirwk)
 
         # win_ca_filesディレクトリ作成
-        c_dirwk = c_indir + "/" + self.LC_ANS_WIN_CA_FILES_DIR
+        c_dirwk = c_indir + "/" + self.LC_ANS_WIN_KEY_FILES_DIR
         os.mkdir(c_dirwk)
         os.chmod(c_dirwk, 0o777)
-        self.setAnsible_win_ca_files_Dir(c_dirwk)
+        self.setAnsible_win_key_files_Dir(c_dirwk)
 
         # ドライバ区分がPIONEERの場合にdialog_filesディレクトリ作成
         if self.getAnsibleDriverID() == self.AnscObj.DF_PIONEER_DRIVER_ID:
@@ -1378,13 +1377,15 @@ class CreateAnsibleExecFiles():
                         passwd = "ansible_password: " + make_vaultpass
 
                 # Winrm接続情報
-                if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_PW_WINRM:
+                if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] in (self.AnscObj.DF_LOGIN_AUTH_TYPE_PW_WINRM,self.AnscObj.DF_LOGIN_AUTH_TYPE_KEY_WINRM):
                     # WINRM接続プロトコルよりポート番号が未設定時は、self.LC_WINRM_PORTが設定されている
                     port = "ansible_port: " + str(ina_hostinfolist[host_name]['WINRM_PORT'])
                     port += "\n" + indento_sp_param + "ansible_connection: winrm"
 
             ssh_key_file = ''
-            win_ca_file = ''
+            win_private_key_file = ''
+            win_public_key_file = ''
+            win_transport = ''
             # 秘密鍵ファイルが必要な認証方式か判定
             if ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_KEY or\
                ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_KEY_PP_USE:
@@ -1415,33 +1416,63 @@ class CreateAnsibleExecFiles():
                     else:
                         mt_pioneer_sshkeyfilelist[host_name] = ssh_key_file_path
 
-            elif ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_PW_WINRM:
-                if ina_hostinfolist[host_name]['WINRM_SSL_CA_FILE']:
-                    # 機器一覧にサーバー証明書ファイルが登録されている場合はサーバー証明書ファイルをinディレクトリ配下にコピーする
-                    retAry = self.CreateWIN_cs_file(ina_hostinfolist[host_name]['SYSTEM_ID'],
-                                                    ina_hostinfolist[host_name]['WINRM_SSL_CA_FILE'])
+            elif ina_hostinfolist[host_name]['LOGIN_AUTH_TYPE'] == self.AnscObj.DF_LOGIN_AUTH_TYPE_KEY_WINRM:
+                win_transport = 'ansible_winrm_transport: certificate'
+
+                # winRM公開鍵ファイルをインベントリファイルに追加
+                if ina_hostinfolist[host_name]['WINRM_CERT_PEM_FILE']:
+                    # 機器一覧のwinRM公開鍵ファイルに登録ファイルをinディレクトリ配下にコピーする
+                    retAry = self.CreateWinrmPublicKeyFile(ina_hostinfolist[host_name]['SYSTEM_ID'],
+                                                            ina_hostinfolist[host_name]['WINRM_CERT_PEM_FILE'])
 
                     ret = retAry[0]
-                    win_ca_file_path = retAry[1]
+                    win_private_key_file_path = retAry[1]
 
                     if ret is not True:
                         return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
 
                     # ky_encryptで中身がスクランブルされているので、復元
-                    ret = ky_file_decrypt(win_ca_file_path, win_ca_file_path)
+                    ret = ky_file_decrypt(win_private_key_file_path, win_private_key_file_path)
                     if ret is False:
-                        msgstr = g.appmsg.get_api_message("MSG-10646", [ina_hostinfolist[host_name]['SYSTEM_ID']])
+                        msgstr = g.appmsg.get_api_message("MSG-10943", [ina_hostinfolist[host_name]['WINRM_CERT_PEM_FILE']])
                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                            str(inspect.currentframe().f_lineno), msgstr)
                         return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
 
                     # ansible実行時のパスに変更
-                    win_ca_file_path = self.setAnsibleSideFilePath(win_ca_file_path, self.LC_ITA_IN_DIR)
+                    win_private_key_file_path = self.setAnsibleSideFilePath(win_private_key_file_path, self.LC_ITA_IN_DIR)
 
                     if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID or\
                        self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
                         # hostsファイルに追加するサーバー証明書ファイルのパラメータ生成
-                        win_ca_file = 'ansible_winrm_ca_trust_path: ' + win_ca_file_path
+                        win_private_key_file = 'ansible_winrm_cert_pem: ' + win_private_key_file_path
+                # winRM秘密鍵ファイルをインベントリファイルに追加
+                if ina_hostinfolist[host_name]['WINRM_CERT_KEY_PEM_FILE']:
+                    # 機器一覧のwinRM秘密鍵ファイルに登録ファイルをinディレクトリ配下にコピーする
+                    retAry = self.CreateWinrmPrivateKeyFile(ina_hostinfolist[host_name]['SYSTEM_ID'],
+                                                            ina_hostinfolist[host_name]['WINRM_CERT_KEY_PEM_FILE'])
+
+                    ret = retAry[0]
+                    win_public_key_file_path = retAry[1]
+
+                    if ret is not True:
+                        return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
+
+                    # ky_encryptで中身がスクランブルされているので、復元
+                    ret = ky_file_decrypt(win_public_key_file_path, win_public_key_file_path)
+                    if ret is False:
+                        msgstr = g.appmsg.get_api_message("MSG-10944", [ina_hostinfolist[host_name]['WINRM_CERT_KEY_PEM_FILE']])
+                        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                                           str(inspect.currentframe().f_lineno), msgstr)
+                        return False, mt_pioneer_sshkeyfilelist, mt_pioneer_sshextraargslist
+
+                    # ansible実行時のパスに変更
+                    win_public_key_file_path = self.setAnsibleSideFilePath(win_public_key_file_path, self.LC_ITA_IN_DIR)
+
+                    if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID or\
+                       self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
+                        # hostsファイルに追加するサーバー証明書ファイルのパラメータ生成
+                        win_public_key_file = 'ansible_winrm_cert_key_pem: ' + win_public_key_file_path
 
             now_host_name = ""
             host_name_string = ""
@@ -1481,8 +1512,14 @@ class CreateAnsibleExecFiles():
             if len(hosts_extra_args) != 0:
                 host_name_string += indento_sp_param + hosts_extra_args + "\n"
 
-            if len(win_ca_file) != 0:
-                host_name_string += indento_sp_param + win_ca_file + "\n"
+            if len(win_transport) != 0:
+                host_name_string += indento_sp_param + win_transport + "\n"
+
+            if len(win_private_key_file) != 0:
+                host_name_string += indento_sp_param + win_private_key_file + "\n"
+
+            if len(win_public_key_file) != 0:
+                host_name_string += indento_sp_param + win_public_key_file + "\n"
 
             obj.write(host_name_string)
 
@@ -2314,10 +2351,9 @@ class CreateAnsibleExecFiles():
                 login_auth_type = row['LOGIN_AUTH_TYPE']
                 if self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_DRIVER_ID or\
                    self.getAnsibleDriverID() == self.AnscObj.DF_LEGACY_ROLE_DRIVER_ID:
-                    #
                     # Movement一覧でwinrm接続が選択されている場合
                     # 機器一覧の認証方式がパスワード認証(winrm)以外か判定
-                    if in_winrm_id == "1" and login_auth_type != self.AnscObj.DF_LOGIN_AUTH_TYPE_PW_WINRM:
+                    if in_winrm_id == "1" and login_auth_type not in (self.AnscObj.DF_LOGIN_AUTH_TYPE_PW_WINRM, self.AnscObj.DF_LOGIN_AUTH_TYPE_KEY_WINRM):
                         #
                         msgstr = g.appmsg.get_api_message("MSG-10207", [row['HOST_NAME']])
                         self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
@@ -4056,17 +4092,17 @@ class CreateAnsibleExecFiles():
         ssh_key_file = dst_file
         return True, ssh_key_file
 
-    def setAnsible_win_ca_files_Dir(self, in_indir):
+    def setAnsible_win_key_files_Dir(self, in_indir):
         """
-        inディレクトリからのwinRMサーバー証明書ファイル格納ディレクトリパス(win_ca_files)を記憶
+        inディレクトリからのwinRM鍵ファイル格納ディレクトリパス(win_key_files)を記憶
         Arguments:
-            in_pkey:    win_ca_filesディレクトリ
+            in_pkey:    win_key_filesディレクトリ
         Returns:
             なし
         """
-        self.lv_Ansible_win_ca_files_Dir = in_indir
+        self.lv_Ansible_win_key_files_Dir = in_indir
 
-    def getAnsible_win_ca_files_Dir(self):
+    def getAnsible_win_key_files_Dir(self):
         """
         inディレクトリからのSSH秘密鍵ファイルパス(ssh_key_files)を取得
         Arguments:
@@ -4075,21 +4111,34 @@ class CreateAnsibleExecFiles():
         Returns:
             inディレクトリ内のSSH秘密鍵ファイルパス
         """
-        return self.lv_Ansible_win_ca_files_Dir
+        return self.lv_Ansible_win_key_files_Dir
 
-    def getITA_win_ca_file(self, in_key, in_filename):
+
+    def getITA_win_private_key_file(self, in_pkey, in_file):
         """
-        ITAが機器一覧で管理しているwinRMサーバー証明書ファイルのパスを取得
+        inディレクトリからのwinRM秘密鍵ファイルパス(win_ca_files)を取得
         Arguments:
-            in_pkey:    winRMサーバー証明書ファイルのPkey(データベース)
-            in_file:    winRMサーバー証明書ファイル名
+            in_pkey: winRM秘密鍵ファイルのPkey(データベース)
+            in_file: winRM秘密鍵ファイル名
         Returns:
-            ITAが機器一覧で管理しているwinRMサーバー証明書ファイルのパス
+            inディレクトリ内のwinRM秘密鍵ファイルパス
         """
-        path = "{}/{}/{}".format(getDeviceListServerCertificateUploadDirPath(), in_key, in_filename)
+        path = "{}/{}/{}".format(getDeviceListWinrmPrivateKeyFileUploadDirPath(), in_pkey, in_file)
         return path
 
-    def getIN_win_ca_file(self, in_pkey, in_file):
+    def getITA_win_public_key_file(self, in_pkey, in_file):
+        """
+        inディレクトリからのwinRM公開鍵ファイルパス(win_ca_files)を取得
+        Arguments:
+            in_pkey: winRM公開鍵ファイルのPkey(データベース)
+            in_file: winRM公開鍵ファイル名
+        Returns:
+            inディレクトリ内のwinRM公開鍵ファイルパス
+        """
+        path = "{}/{}/{}".format(getDeviceListWinrmPublicKeyFileUploadDirPath(), in_pkey, in_file)
+        return path
+
+    def getIN_win_key_file(self, in_pkey, in_file):
         """
         inディレクトリからのwinRMサーバー証明書ファイルパス(win_ca_files)を取得
         Arguments:
@@ -4098,30 +4147,72 @@ class CreateAnsibleExecFiles():
         Returns:
             inディレクトリ内のSSH認証ファイルパス
         """
-        path = "{}/{}-{}".format(self.getAnsible_win_ca_files_Dir(), in_pkey, in_file)
+        path = "{}/{}-{}".format(self.getAnsible_win_key_files_Dir(), in_pkey, in_file)
         return path
 
-    def CreateWIN_cs_file(self, in_pkey, in_win_ca_file):
+    def CreateWinrmPublicKeyFile(self, in_pkey, in_win_key_file):
         """
-        inディレクトリにwinRMサーバー証明書ファイルをコピーする。
+        inディレクトリにwinRM公開鍵ファイルをコピーする。
         Arguments:
-            in_pkey:    winRMサーバー証明書ファイルのPkey(データベース)
-            in_file:    winRMサーバー証明書ファイル名
+            in_pkey:            winRM公開鍵ファイルのPkey(データベース)
+            in_win_key_file:    winRM公開鍵ファイル
         Returns:
-            inディレクトリにwinRMサーバー証明書ファイルパス
+            inディレクトリにwinRM公開鍵ファイルパス
         """
-        win_ca_file = ""
-
-        # サーバー証明書が存在しているか確認
-        src_file = self.getITA_win_ca_file(in_pkey, in_win_ca_file)
+        win_key_file = ""
+        # winRM公開鍵ファイルが存在しているか確認
+        src_file = self.getITA_win_public_key_file(in_pkey, in_win_key_file)
         if os.path.isfile(src_file) is False:
-            msgstr = g.appmsg.get_api_message("MSG-10548", [src_file])
+            msgstr = g.appmsg.get_api_message("MSG-10945", [in_pkey, in_win_key_file])
             self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
                                str(inspect.currentframe().f_lineno), msgstr)
-            return False, win_ca_file
+            return False, win_key_file
 
-        #  Ansible実行時のサーバー証明書パス取得
-        dst_file = self.getIN_win_ca_file(in_pkey, in_win_ca_file)
+        #  Ansible実行時のwinRM公開鍵ファイルパス取得
+        dst_file = self.getIN_win_key_file(in_pkey, in_win_key_file)
+
+        # Ansible実行時のwinRM公開鍵ファイルをansible用ディレクトリにコピーする。
+        shutil.copyfile(src_file, dst_file)
+
+        # パミッション設定
+        os.chmod(dst_file, 0o600)
+
+        # 今後修正が必要
+        # 実行ユーザーがroot以外の場合、鍵ファイルのオーナーを変更
+        # ExecUser = self.getAnsibleExecuteUser()
+        # if((ExecUser != 'root') && (self.lv_exec_mode == DF_EXEC_MODE_ANSIBLE)) {
+        #    if( !chown( dst_file, ExecUser) ){
+        #        msgstr = self.lv_objMTS->getSomeMessage("ITAANSIBLEH-ERR-5000038", array(__LINE__))
+        #        self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename) + str(inspect.currentframe().f_lineno), msgstr)
+        #        return False
+        #    }
+        # }
+
+        # Ansible実行時のwinrm公開鍵ファイルパス退避
+        win_key_file = dst_file
+        return True, win_key_file
+
+    def CreateWinrmPrivateKeyFile(self, in_pkey, in_win_key_file):
+        """
+        inディレクトリにwinRM秘密鍵ファイルをコピーする。
+        Arguments:
+            in_pkey:            winRM秘密鍵ファイルのPkey(データベース)
+            in_win_key_file:    winRM秘密鍵ファイル
+        Returns:
+            inディレクトリにwinRM秘密鍵ファイルパス
+        """
+        win_key_file = ""
+
+        # winrm秘密鍵ファイルが存在しているか確認
+        src_file = self.getITA_win_private_key_file(in_pkey, in_win_key_file)
+        if os.path.isfile(src_file) is False:
+            msgstr = g.appmsg.get_api_message("MSG-10946", [in_pkey, in_win_key_file])
+            self.LocalLogPrint(os.path.basename(inspect.currentframe().f_code.co_filename),
+                               str(inspect.currentframe().f_lineno), msgstr)
+            return False, win_key_file
+
+        #  Ansible実行時のwinrm秘密鍵ファイルパス取得
+        dst_file = self.getIN_win_key_file(in_pkey, in_win_key_file)
 
         # サーバー証明書をansible用ディレクトリにコピーする。
         shutil.copyfile(src_file, dst_file)
@@ -4140,9 +4231,9 @@ class CreateAnsibleExecFiles():
         #    }
         # }
 
-        # Ansible実行時のサーバー証明書ファイルパス退避
-        win_ca_file = dst_file
-        return True, win_ca_file
+        # Ansible実行時のwinrm秘密鍵ファイルパス退避
+        win_key_file = dst_file
+        return True, win_key_file
 
     def LegacyRoleCheckConcreteValueIsVarTemplatefile(self,
                                                       in_host_name,

@@ -24,7 +24,6 @@ import re
 
 from flask import g
 from pathlib import Path
-from pprint import pprint
 
 from common_libs.common import *
 from common_libs.loadtable import *

@@ -105,6 +105,8 @@ from common_libs.ansible_driver.classes.ansibletowerlibs.restapi_command.Ansible
 from common_libs.ansible_driver.functions.ansibletowerlibs import AnsibleTowerCommonLib as FuncCommonLib
 from common_libs.ansible_driver.functions.util import getFileupLoadColumnPath, getAnsibleTmpDir, getDataRelayStorageDir, get_AnsibleDriverShellPath, getAnsibleExecutDirPath, getAACListSSHPrivateKeyUploadDirPath, getAnsibleConst
 from common_libs.ansible_driver.functions.util import getDeviceListSSHPrivateKeyUploadDirPath
+from common_libs.ansible_driver.functions.util import getDeviceListWinrmPrivateKeyFileUploadDirPath
+from common_libs.ansible_driver.functions.util import getDeviceListWinrmPublicKeyFileUploadDirPath
 from common_libs.ansible_driver.functions.util import get_OSTmpPath, getGitRepositorieDir
 from common_libs.ansible_driver.functions.util import addAnsibleCreateFilesPath
 from common_libs.common.storage_access import storage_base, storage_read, storage_write, storage_write_text, storage_read_text
@@ -1182,9 +1184,10 @@ class ExecuteDirector():
             if row['ANSTWR_LOGIN_AUTH_TYPE'] in [AnscConst.DF_LOGIN_AUTH_TYPE_KEY, AnscConst.DF_LOGIN_AUTH_TYPE_KEY_PP_USE]:
                 auth_type = "key"
 
+            # 現在、未使用
             # 鍵認証(鍵交換済み)
-            elif row['ANSTWR_LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_KEY_EXCH:
-                auth_type = "none"
+            # elif row['ANSTWR_LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_KEY_EXCH:
+            #    auth_type = "none"
 
             # パスワード認証
             elif row['ANSTWR_LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_PW:
@@ -1240,7 +1243,7 @@ class ExecuteDirector():
             hostInfo = hostInfo[0]
             username = hostInfo['LOGIN_USER']
 
-            # 認証方式:パスワード認証、パスワード認証(winrm)
+            # 認証方式：パスワード認証、パスワード認証(winrm)
             password = ""
             if hostInfo['LOGIN_AUTH_TYPE'] in [AnscConst.DF_LOGIN_AUTH_TYPE_PW, AnscConst.DF_LOGIN_AUTH_TYPE_PW_WINRM]:
                 password = hostInfo['LOGIN_PW']
@@ -1274,15 +1277,27 @@ class ExecuteDirector():
                     self.errorLogOut(errorMessage)
                     return False, inventoryForEachCredentials
 
+            # 認証方式：証明書認証(winrm)、
+            winrmPrivateKey = ""
+            winrmPublicKey = ""
+            if hostInfo['LOGIN_AUTH_TYPE'] in [AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM]:
+                if 'WINRM_CERT_PEM_FILE' in hostInfo and hostInfo['WINRM_CERT_PEM_FILE']:
+                    winrmPublicKey = self.getDeviceListWinrmPublicKeyFileContent(hostInfo['SYSTEM_ID'], hostInfo['WINRM_CERT_PEM_FILE'])
+                    # ky_encrptのスクランブルを復号
+                    winrmPublicKey = ky_decrypt(winrmPublicKey)
+                if 'WINRM_CERT_KEY_PEM_FILE' in hostInfo and hostInfo['WINRM_CERT_KEY_PEM_FILE']:
+                    winrmPrivateKey = self.getDeviceListWinrmPrivateKeyFileContent(hostInfo['SYSTEM_ID'], hostInfo['WINRM_CERT_KEY_PEM_FILE'])
+                    # ky_encrptのスクランブルを復号
+                    winrmPrivateKey = ky_decrypt(winrmPrivateKey)
+
             credential_type_id = hostInfo['CREDENTIAL_TYPE_ID']
 
-            # 配列のキーに使いたいだけ
-            # 配列のキーに使いたいだけ
+            # ansible認証情報を分ける為。配列のキーに使いたいだけ
             # 同じワードを同じエンコード値にならないので、デコードした値で重複確認.
             enc_password = ky_decrypt(password)
             key = (
-                'username_%s_password_%s_sshPrivateKey_%s_sshPrivateKeyPass_%s_instanceGroupId_%s_credential_type_id_%s'
-            ) % (username, enc_password, sshPrivateKey, sshPrivateKeyPass, instanceGroupId, credential_type_id)
+                'username_%s_password_%s_sshPrivateKey_%s_sshPrivateKeyPass_%s_instanceGroupId_%s_credential_type_id_%s_winrmPublicKey_%s_winrmPrivateKey_%s'
+            ) % (username, enc_password, sshPrivateKey, sshPrivateKeyPass, instanceGroupId, credential_type_id, winrmPublicKey, winrmPrivateKey)
             credential = {
                 "username": username,
                 "password": password,
@@ -1312,19 +1327,26 @@ class ExecuteDirector():
                 hostData['ansible_host'] = hostInfo['HOST_DNS_NAME']
 
             # WinRM接続
-            # 認証方式:パスワード認証(winrm)
+            # 認証方式:パスワード認証(winrm) / 証明書認証(winrm)
             hostData['winrm'] = False
-            if hostInfo['LOGIN_AUTH_TYPE'] == AnscConst.DF_LOGIN_AUTH_TYPE_PW_WINRM:
+            if hostInfo['LOGIN_AUTH_TYPE'] in (AnscConst.DF_LOGIN_AUTH_TYPE_PW_WINRM, AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM):
                 hostData['winrm'] = True
                 if not hostInfo['WINRM_PORT']:
                     hostInfo['WINRM_PORT'] = AnscConst.LC_WINRM_PORT
 
                 hostData['winrmPort'] = hostInfo['WINRM_PORT']
 
-                # username/password delete
-                if 'WINRM_SSL_CA_FILE' in hostInfo and hostInfo['WINRM_SSL_CA_FILE'] is not None and len(hostInfo['WINRM_SSL_CA_FILE']) > 0:
-                    filePath = "winrm_ca_files/%s-%s" % (hostInfo['SYSTEM_ID'], hostInfo['WINRM_SSL_CA_FILE'])
-                    hostData['ansible_winrm_ca_trust_path'] = filePath
+            if hostInfo['LOGIN_AUTH_TYPE'] in AnscConst.DF_LOGIN_AUTH_TYPE_KEY_WINRM:
+                # 公開鍵ファイル/秘密鍵ファイル
+                if 'WINRM_CERT_PEM_FILE' in hostInfo and hostInfo['WINRM_CERT_PEM_FILE'] is not None and len(hostInfo['WINRM_CERT_PEM_FILE']) > 0:
+                    filePath = "winrm_key_files/%s-%s" % (hostInfo['SYSTEM_ID'], hostInfo['WINRM_CERT_PEM_FILE'])
+                    hostData['ansible_winrm_cert_pem'] = filePath
+
+                if 'WINRM_CERT_KEY_PEM_FILE' in hostInfo and hostInfo['WINRM_CERT_KEY_PEM_FILE'] is not None and len(hostInfo['WINRM_CERT_KEY_PEM_FILE']) > 0:
+                    filePath = "winrm_key_files/%s-%s" % (hostInfo['SYSTEM_ID'], hostInfo['WINRM_CERT_KEY_PEM_FILE'])
+                    hostData['ansible_winrm_cert_key_pem'] = filePath
+
+                hostData['ansible_winrm_transport'] = "certificate"
 
             hostData['hosts_extra_args'] = hostInfo['HOSTS_EXTRA_ARGS']
             hostData['ansible_ssh_extra_args'] = hostInfo['SSH_EXTRA_ARGS']
@@ -1511,8 +1533,12 @@ class ExecuteDirector():
             if hostData['winrm'] == True:
                 variables_array.append("ansible_connection: winrm")
                 variables_array.append("ansible_port: %s" % (hostData['winrmPort']))
-                if 'ansible_winrm_ca_trust_path' in hostData and hostData['ansible_winrm_ca_trust_path'] is not None:
-                    variables_array.append("ansible_winrm_ca_trust_path: %s" % (hostData['ansible_winrm_ca_trust_path']))
+                if 'ansible_winrm_cert_pem' in hostData and hostData['ansible_winrm_cert_pem'] is not None:
+                    variables_array.append("ansible_winrm_cert_pem: %s" % (hostData['ansible_winrm_cert_pem']))
+                if 'ansible_winrm_cert_key_pem' in hostData and hostData['ansible_winrm_cert_key_pem'] is not None:
+                    variables_array.append("ansible_winrm_cert_key_pem: %s" % (hostData['ansible_winrm_cert_key_pem']))
+                if 'ansible_winrm_transport' in hostData and hostData['ansible_winrm_transport'] is not None:
+                    variables_array.append("ansible_winrm_transport: %s" % (hostData['ansible_winrm_transport']))
 
             if 'ansible_ssh_extra_args' in hostData and hostData['ansible_ssh_extra_args'] is not None and len(hostData['ansible_ssh_extra_args'].strip()) > 0:
                 variables_array.append("ansible_ssh_extra_args: %s" % (hostData['ansible_ssh_extra_args'].strip()))
@@ -2511,11 +2537,13 @@ class ExecuteDirector():
         execute_path = getAnsibleExecutDirPath(self.AnsConstObj, execution_no)
         filePath = "{}/tmp/GitlabProjectId.txt".format(execute_path)
         # #2079 /storage配下は/tmpを経由してアクセスする
-        obj = storage_read()
-        obj.open(filePath)
-        project_id = obj.read()
-        obj.close()
-
+        if os.path.exists(filePath):
+            obj = storage_read()
+            obj.open(filePath)
+            project_id = obj.read()
+            obj.close()
+        else:
+            project_id = False
         return project_id
 
     def deleteMaterialsTransferTempDir(self, execution_no):
@@ -2671,6 +2699,26 @@ class ExecuteDirector():
     @staticmethod
     def getDeviceListSshKeyFileContent(systemId, sshKeyFileName):
         filePath = '%s/%s/%s' % (getDeviceListSSHPrivateKeyUploadDirPath(), systemId, sshKeyFileName)
+
+        # #2079 /storage配下のアクセスは/tmp経由にする。
+        obj = storage_read_text()
+        content = obj.read_text(filePath)
+
+        return content
+
+    @staticmethod
+    def getDeviceListWinrmPrivateKeyFileContent(systemId, sshKeyFileName):
+        filePath = '%s/%s/%s' % (getDeviceListWinrmPrivateKeyFileUploadDirPath(), systemId, sshKeyFileName)
+
+        # #2079 /storage配下のアクセスは/tmp経由にする。
+        obj = storage_read_text()
+        content = obj.read_text(filePath)
+
+        return content
+
+    @staticmethod
+    def getDeviceListWinrmPublicKeyFileContent(systemId, sshKeyFileName):
+        filePath = '%s/%s/%s' % (getDeviceListWinrmPublicKeyFileUploadDirPath(), systemId, sshKeyFileName)
 
         # #2079 /storage配下のアクセスは/tmp経由にする。
         obj = storage_read_text()

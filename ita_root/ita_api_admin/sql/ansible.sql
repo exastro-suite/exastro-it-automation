@@ -504,6 +504,7 @@ CREATE TABLE T_ANSL_MVMT_MATL_LINK_JNL
 CREATE TABLE T_ANSL_VALUE_AUTOREG
 (
     COLUMN_ID                       VARCHAR(40),                                -- 項番
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
@@ -525,6 +526,7 @@ CREATE TABLE T_ANSL_VALUE_AUTOREG_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     COLUMN_ID                       VARCHAR(40),                                -- 項番
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
@@ -875,6 +877,7 @@ CREATE TABLE T_ANSP_MVMT_MATL_LINK_JNL
 CREATE TABLE T_ANSP_VALUE_AUTOREG
 (
     COLUMN_ID                       VARCHAR(40),                                -- 項番
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
@@ -896,6 +899,7 @@ CREATE TABLE T_ANSP_VALUE_AUTOREG_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     COLUMN_ID                       VARCHAR(40),                                -- 項番
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
@@ -1235,6 +1239,7 @@ CREATE TABLE T_ANSR_NESTVAR_MEMBER_MAX_COL_JNL
 CREATE TABLE T_ANSR_VALUE_AUTOREG
 (
     COLUMN_ID                       VARCHAR(40),                                -- 項番
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
@@ -1257,6 +1262,7 @@ CREATE TABLE T_ANSR_VALUE_AUTOREG_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     COLUMN_ID                       VARCHAR(40),                                -- 項番
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序

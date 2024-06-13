@@ -137,7 +137,7 @@ def external_valid_menu_after(objdbca, objtable, option):
                         rg_menu_id = row[0]['MENU_ID']
                         rg_column_list_id = row[0]['COLUMN_DEFINITION_ID']
                         table_name = "T_ANSR_VALUE_AUTOREG"
-                        data_list = [{"COLUMN_ID": columnId, "MENU_ID": rg_menu_id}]
+                        data_list = [{"COLUMN_ID": columnId, "MENU_ID": rg_menu_id, "MENU_NAME_REST": rg_menu_id}]
                         primary_key_name = "COLUMN_ID"
                         objdbca.table_update(table_name, data_list, primary_key_name, False)
                         # 変数の無いパラメーターシートのフラグとして使用

@@ -175,7 +175,9 @@ def collect_menu_info(objdbca, menu, menu_record={}, menu_table_link_record={}, 
     if ret:
         for count, record in enumerate(ret, 1):
 
-            if record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['0']:
+            if ((record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['0']) or
+               # issue 2477 INPUT_ITEM:2 and VIEW_ITEM: 2の場合
+               (record.get('INPUT_ITEM') in ['2'] and record.get('VIEW_ITEM') in ['2'])):
                 continue
 
             # json形式のレコードは改行を削除

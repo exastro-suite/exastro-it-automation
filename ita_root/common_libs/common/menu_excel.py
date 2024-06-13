@@ -34,7 +34,6 @@ from common_libs.common import menu_maintenance_all, menu_info, storage_access
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.api import check_request_body_key
 
-
 # 「マスタ」シートを作成する
 def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  # noqa: E302
     # マスタシートを指定して編集
@@ -438,7 +437,8 @@ def create_excel_headerlist(
             view_item = dict_menu_column.get('VIEW_ITEM')
             column_class = dict_menu_column.get('COLUMN_CLASS')
 
-            if input_item == '2' and view_item == '0':
+            # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+            if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
                 # excelに表示しない
                 continue
 
@@ -613,7 +613,8 @@ def create_column_info(
         view_item = dict_menu_column.get('view_item')
         column_num = 0
 
-        if input_item == '2' and view_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+        if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
             # excelに表示しない
             skip_cnt += 1
             continue
@@ -774,7 +775,8 @@ def create_column_info_trace_history(
         view_item = dict_menu_column.get('view_item')
         column_num = 0
 
-        if input_item == '2' and view_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+        if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
             # excelに表示しない
             skip_cnt += 1
             continue
@@ -825,7 +827,8 @@ def create_column_info_trace_history(
         ws.cell(row=startRow, column=column_num).data_type = 's'
 
         # 最後に列をグレーにするために登録不可の行を記憶しておく
-        if auto_input == '1' or input_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合
+        if input_item == '1' or view_item == '0' or not (input_item == '2' and view_item == '2'):
             gray_column.append(get_column_letter(column_num))
 
     # フィルター設定
@@ -1629,7 +1632,8 @@ def execute_excel_maintenance(
         view_item = str(recode.get('VIEW_ITEM'))
 
         # 登録更新時に不要な項目
-        if auto_input == '1' or input_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合
+        if input_item == '1' or view_item == '0' or not (input_item == '2' and view_item == '2'):
             register_list.append(column_name_rest)
 
         # カラムクラスIDがファイルアップロードのものは除外する
@@ -1639,7 +1643,8 @@ def execute_excel_maintenance(
             file_param[column_name_rest] = None
 
         # Excelには表示しない項目
-        if input_item == '2' and view_item == '0':
+        # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合 excelは非表示
+        if input_item == '2' and view_item == '0' or (input_item == '2' and view_item == '2'):
             continue
 
         # Excelには表示しない項目

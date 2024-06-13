@@ -1895,10 +1895,17 @@ class loadTable():
 
                     if mode in ['input', 'inner', 'export', 'export_jnl']:
                         rest_parameter.setdefault(rest_key, col_val)
-                    else:
-                        # if view_item == '1' or auto_input_item == '1':
-                        if (auto_input_item == '1' or not (input_item == '2' and view_item == '0')):
+                    elif mode in ['excel']:
+                        # issue 2477 input_item='2' and view_item='2'の場合に出力対象
+                        if (auto_input_item == '1' or not (input_item == '2' and view_item == '0') and not (input_item == '2' and view_item == '2')):
                             rest_parameter.setdefault(rest_key, col_val)
+                    else:
+                        # issue 2477 input_item='2' and view_item='2'の場合に出力対象
+                        if (auto_input_item == '1' or not (input_item == '2' and view_item == '0') or (input_item == '2' and view_item == '2')):
+                            print("set rest_key:" + rest_key + "  input_item:[" + input_item + "] view_item:[" + view_item + "]")
+                            rest_parameter.setdefault(rest_key, col_val)
+                        else:
+                            print("notttt set rest_key:" + rest_key + "  input_item:[" + input_item + "] view_item:[" + view_item + "]")
 
                     if mode not in ['excel', 'excel_jnl']:
                         if self.get_col_class_name(rest_key) == 'FileUploadColumn':

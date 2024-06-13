@@ -1902,10 +1902,7 @@ class loadTable():
                     else:
                         # issue 2477 input_item='2' and view_item='2'の場合に出力対象
                         if (auto_input_item == '1' or not (input_item == '2' and view_item == '0') or (input_item == '2' and view_item == '2')):
-                            print("set rest_key:" + rest_key + "  input_item:[" + input_item + "] view_item:[" + view_item + "]")
                             rest_parameter.setdefault(rest_key, col_val)
-                        else:
-                            print("notttt set rest_key:" + rest_key + "  input_item:[" + input_item + "] view_item:[" + view_item + "]")
 
                     if mode not in ['excel', 'excel_jnl']:
                         if self.get_col_class_name(rest_key) == 'FileUploadColumn':

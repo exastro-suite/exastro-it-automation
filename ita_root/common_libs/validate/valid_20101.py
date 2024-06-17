@@ -92,6 +92,17 @@ def external_valid_menu_before(objdbca, objtable, option):
         else:
             in_string = ""
 
+        # winrm秘密鍵ファイル取得
+        if "winrm_private_key_file" in option["entry_parameter"]["parameter"]:
+            str_winrm_private_key_file = option["entry_parameter"]["parameter"]["winrm_private_key_file"]
+        else:
+            str_winrm_private_key_file = ""
+        # winrm公開鍵ファイル取得
+        if "winrm_public_key_file" in option["entry_parameter"]["parameter"]:
+            str_winrm_public_key_file = option["entry_parameter"]["parameter"]["winrm_public_key_file"]
+        else:
+            str_winrm_public_key_file = ""
+
         # Pioneerプロトコルの設定値取得
         # if "protocol" in option["entry_parameter"]["parameter"]:
         #     str_protocol_id = option["entry_parameter"]["parameter"]["protocol"]
@@ -121,6 +132,13 @@ def external_valid_menu_before(objdbca, objtable, option):
         in_string = option["current_parameter"]["parameter"]["inventory_file_additional_option"]
         if not in_string:
             in_string = ""
+
+        # winrm秘密鍵ファイル取得
+        str_winrm_private_key_file = option["current_parameter"]["parameter"]["winrm_private_key_file"]
+
+        # winrm公開鍵ファイル取得
+        str_winrm_public_key_file = option["current_parameter"]["parameter"]["winrm_public_key_file"]
+
         # Pioneerプロトコルの設定値取得
         # str_protocol_id = option["current_parameter"]["parameter"]["protocol"]
 
@@ -157,6 +175,12 @@ def external_valid_menu_before(objdbca, objtable, option):
         # 公開鍵ファイルの設定値取得
         str_ssh_key_file = getSpecialColumnVaule("ssh_private_key_file", option)
 
+        # winrm秘密鍵ファイル取得
+        str_winrm_private_key_file = getSpecialColumnVaule("winrm_private_key_file", option)
+
+        # winrm公開鍵ファイル取得
+        str_winrm_public_key_file = getSpecialColumnVaule("winrm_public_key_file", option)
+
         # Pioneerプロトコルの設定値取得
         # str_protocol_id = option["current_parameter"]["parameter"]["protocol"]
 
@@ -166,7 +190,16 @@ def external_valid_menu_before(objdbca, objtable, option):
         err_msg_parameter_ary = []
         driver_id = ""
         chkobj = AuthTypeParameterRequiredCheck()
-        ret_str_body = chkobj.DeviceListAuthTypeRequiredParameterCheck(AuthTypeParameterRequiredCheck.chkType_Loadtable_TowerHostList, err_msg_parameter_ary, str_auth_mode, str_login_user, str_passwd, str_ssh_key_file, str_passphrase, driver_id)   # str_protocol_idを後で引数に追加
+        ret_str_body = chkobj.DeviceListAuthTypeRequiredParameterCheck(AuthTypeParameterRequiredCheck.chkType_Loadtable_DeviceList,
+                                                                       err_msg_parameter_ary,
+                                                                       str_auth_mode,
+                                                                       str_login_user,
+                                                                       str_passwd,
+                                                                       str_ssh_key_file,
+                                                                       str_passphrase,
+                                                                       driver_id,
+                                                                       str_winrm_private_key_file,
+                                                                       str_winrm_public_key_file)
 
     if ret_str_body[0] is True:
         msg = ""

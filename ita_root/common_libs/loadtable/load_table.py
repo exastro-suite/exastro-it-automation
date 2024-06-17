@@ -1895,9 +1895,13 @@ class loadTable():
 
                     if mode in ['input', 'inner', 'export', 'export_jnl']:
                         rest_parameter.setdefault(rest_key, col_val)
+                    elif mode in ['excel']:
+                        # issue 2477 input_item='2' and view_item='2'の場合に出力対象
+                        if (auto_input_item == '1' or not (input_item == '2' and view_item == '0') and not (input_item == '2' and view_item == '2')):
+                            rest_parameter.setdefault(rest_key, col_val)
                     else:
-                        # if view_item == '1' or auto_input_item == '1':
-                        if (auto_input_item == '1' or not (input_item == '2' and view_item == '0')):
+                        # issue 2477 input_item='2' and view_item='2'の場合に出力対象
+                        if (auto_input_item == '1' or not (input_item == '2' and view_item == '0') or (input_item == '2' and view_item == '2')):
                             rest_parameter.setdefault(rest_key, col_val)
 
                     if mode not in ['excel', 'excel_jnl']:

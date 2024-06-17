@@ -82,16 +82,25 @@ def getDeviceListSSHPrivateKeyUploadDirPath():
     return getDataRelayStorageDir() + "/uploadfiles/20101/ssh_private_key_file"
 
 
-def getDeviceListServerCertificateUploadDirPath():
+def getDeviceListWinrmPrivateKeyFileUploadDirPath():
     """
-      機器一覧サーバー証明書ディレクトリバスを取得する。
+      機器一覧ssh秘密鍵ファイルディレクトリバスを取得する。
       Arguments:
         なし
       Returns:
-        機器一覧サーバー証明書ディレクトリバスを取得
+        機器一覧ssh秘密鍵ファイルディレクトリバスを取得
     """
-    return getDataRelayStorageDir() + "/uploadfiles/20101/server_certificate"
+    return getDataRelayStorageDir() + "/uploadfiles/20101/winrm_private_key_file"
 
+def getDeviceListWinrmPublicKeyFileUploadDirPath():
+    """
+      機器一覧winrm公開鍵ファイルバスを取得する。
+      Arguments:
+        なし
+      Returns:
+        機器一覧winrm公開鍵ファイルディレクトリバスを取得
+    """
+    return getDataRelayStorageDir() + "/uploadfiles/20101/winrm_public_key_file"
 
 def getAnsibleIFSSHPrivateKeyUploadDirPath():
     """

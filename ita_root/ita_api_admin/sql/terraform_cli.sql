@@ -193,6 +193,7 @@ CREATE TABLE T_TERC_NESTVAR_MEMBER_MAX_COL_JNL
 CREATE TABLE T_TERC_VALUE_AUTOREG
 (
     VALUE_AUTOREG_ID                VARCHAR(40),                                -- 項番(UUID)
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序
@@ -216,6 +217,7 @@ CREATE TABLE T_TERC_VALUE_AUTOREG_JNL
     JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
     JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
     VALUE_AUTOREG_ID                VARCHAR(40),                                -- 項番(UUID)
+    MENU_NAME_REST                  VARCHAR(40),                                -- メニュー名(REST)
     MENU_ID                         VARCHAR(40),                                -- メニュー名
     COLUMN_LIST_ID                  VARCHAR(40),                                -- 項目名
     COLUMN_ASSIGN_SEQ               INT,                                        -- 代入順序

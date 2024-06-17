@@ -21,10 +21,12 @@ import os
 import shutil
 import json
 import re
+# from pymongo import ASCENDING
 
 from common_libs.api import api_filter_admin
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.mongoconnect.mongoconnect import MONGOConnectCommon, MONGOConnectOrg
+from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
+# from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
@@ -327,7 +329,8 @@ def organization_delete(organization_id):  # noqa: E501
             org_root_db.database_drop(workspace_data['DB_DATABASE'])
             org_root_db.user_drop(workspace_data['DB_USER'])
             # drop ws-mongodb and ws-mongodb-user
-            if 'oase' not in no_install_driver:
+
+            if 'oase' not in no_install_driver and workspace_data.get('MONGO_DATABASE'):
                 org_mongo.drop_database(workspace_data['MONGO_DATABASE'])
                 if mongo_owner is True:
                     org_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
@@ -526,17 +529,12 @@ def organization_update(organization_id, body=None):  # noqa: E501
             if driver_name in no_install_driver and driver_bool is True:
                 add_drivers.append(driver_name)
                 update_no_install_driver.remove(driver_name)
+        g.applogger.info("plan to add these drivers({})".format(add_drivers))
 
-        # Terraformについて、terraform_cloud_ep, terraform_cliどちらもインストールされていない状態の場合、terraform_commonをインストール対象に追加する。
+        # Terraformについて、terraform_cloud_ep, terraform_cliどちらもインストールされていない状態の場合、下記のsqlファイルを実行するため、terraform_commonを対象に追加する。
         if "terraform_cloud_ep" in add_drivers or "terraform_cli" in add_drivers:
             if "terraform_cloud_ep" in no_install_driver and "terraform_cli" in no_install_driver:
                 add_drivers.insert(0, "terraform_common")
-
-        # Organization DB connect
-        org_db = DBConnectOrg(organization_id)  # noqa: F405
-
-        # OrganizationのWorkspace一覧を取得
-        workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
 
         # インストール時に利用するSQLファイル名の一覧
         driver_sql = {
@@ -546,6 +544,14 @@ def organization_update(organization_id, body=None):  # noqa: E501
             "ci_cd": ['cicd.sql', 'cicd_master.sql'],
             "oase": ['oase.sql', 'oase_master.sql'],
         }
+
+        # Organization DB connect
+        org_db = DBConnectOrg(organization_id)  # noqa: F405
+
+        # OrganizationのWorkspace一覧を取得
+        workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
+        g.applogger.info("target workspace_id = {}".format([i.get('WORKSPACE_ID') for i in workspace_data_list]))
+
 
         # OASEが有効な場合
         is_exists_mongo_info = False
@@ -582,19 +588,22 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
             if "oase" not in no_install_driver:
             # インストール済みの場合（接続情報のみを変更する）
+                g.applogger.info("oase is already installed. Connection infocation of mongo will be updated.(oase update pattern 2)")
                 # v2.4ではpattern2→pattern2しか許さない
                 if mongo_owner is True or not mongo_connection_string or bool(org_connect_info['MONGO_OWNER']) is True or not org_connect_info['MONGO_CONNECTION_STRING']:
                     return "", "This change of mongo connection infomation is not allowed", "499-00010", 499
                 # 同じ文字列の送信は許さない
-                if mongo_connection_string == ky_decrypt(org_connect_info['MONGO_CONNECTION_STRING']):
+                if mongo_connection_string == ky_decrypt(org_connect_info.get('MONGO_CONNECTION_STRING')):
                     return "", "this mongo connection infomation is already changed", "499-00011", 499
 
             # v2.4ではmongo_owner=Trueは、内部コンテナしか許さないので、pattern1に流す
             if mongo_owner is True:
+                g.applogger.info("oase update pattern 1-force")
                 mongo_connection_string = ''
 
             if mongo_owner is True and not mongo_connection_string:
                 # pattern1
+                g.applogger.info("oase update pattern 1")
                 mongo_admin_user = os.environ.get("MONGO_ADMIN_USER")
                 mongo_admin_password = os.environ.get("MONGO_ADMIN_PASSWORD")
 
@@ -620,14 +629,12 @@ def organization_update(organization_id, body=None):  # noqa: E501
         # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
         for workspace_data in workspace_data_list:
             workspace_id = workspace_data['WORKSPACE_ID']
+            g.applogger.info("Updating to workspace(workspace_id = {})".format(workspace_id))
             role_id = f'_{workspace_id}-admin'
-
-            # Workspace DB connect
-            ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
-            last_update_timestamp = str(get_timestamp())
 
             # OASEがインストールされる場合 or インストール済みで接続情報を変更したい場合
             if "oase" in add_drivers or ("oase" not in no_install_driver and is_exists_mongo_info is True):
+                g.applogger.info(" Updating connection infomation of mongo start")
                 if "oase" in add_drivers:
                     # 初めてインストールするときは、DB名とユーザ名を払い出す
                     ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
@@ -635,6 +642,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     # 接続情報の変更はDB名を継続利用
                     # v2.4ではpattern2のみ
                     ws_mongo_name = workspace_data['MONGO_DATABASE']
+                g.applogger.info(" MONGO_DATABASE={}".format(ws_mongo_name))
 
                 # pattern1 pattern3
                 if mongo_owner is True:
@@ -661,15 +669,39 @@ def organization_update(organization_id, body=None):  # noqa: E501
                     "MONGO_USER": ws_mongo_user,
                     "MONGO_PASSWORD": ky_encrypt(ws_mongo_password)
                 }
+                # 新規インストールの場合の接続文字列の埋め込み
+                # もしくは
                 # organizationの接続文字列を継承しているものだけ、変更を反映する
-                if mongo_connection_string and ky_decrypt(org_connect_info['MONGO_CONNECTION_STRING']) == ky_decrypt(workspace_data['MONGO_CONNECTION_STRING']):
+                if mongo_connection_string and ("oase" in add_drivers or ky_decrypt(org_connect_info.get('MONGO_CONNECTION_STRING')) == ky_decrypt(workspace_data.get('MONGO_CONNECTION_STRING'))):
                     update_data['MONGO_CONNECTION_STRING'] = ky_encrypt(mongo_connection_string)
+
+                # g.db_connect_info["WS_MONGO_CONNECTION_STRING"] = update_data.get('MONGO_CONNECTION_STRING')
+                # g.db_connect_info["WS_MONGO_DATABASE"] = update_data['MONGO_DATABASE']
+                # g.db_connect_info["WS_MONGO_USER"] = update_data.get('MONGO_USER')
+                # g.db_connect_info["WS_MONGO_PASSWORD"] = update_data.get('MONGO_PASSWORD')
+
+                # # OASEのmongo設定（インデックスなど）
+                # ws_mongo = MONGOConnectWs()
+                # # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
+                # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+
+                # g.db_connect_info.pop("WS_MONGO_CONNECTION_STRING")
+                # g.db_connect_info.pop("WS_MONGO_DATABASE")
+                # g.db_connect_info.pop("WS_MONGO_USER")
+                # g.db_connect_info.pop("WS_MONGO_PASSWORD")
+
                 org_db.db_transaction_start()
                 org_db.table_update("T_COMN_WORKSPACE_DB_INFO", update_data, "PRIMARY_KEY")
                 org_db.db_commit()
+                g.applogger.info(" Updating connection infomation of mongo end")
 
             # 追加対象のドライバをループし、SQLファイルを実行する。
+            # Workspace DB connect
+            ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
+            last_update_timestamp = str(get_timestamp())
+
             for install_driver in add_drivers:
+                g.applogger.info(" INSTALLING {} START".format(install_driver))
                 # SQLファイルを特定する。
                 sql_files = driver_sql[install_driver]
                 ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
@@ -677,7 +709,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
                 # create table of workspace-db
                 ws_db.sqlfile_execute(ddl_file)
-                g.applogger.debug("executed " + ddl_file)
+                g.applogger.debug(" executed " + ddl_file)
 
                 # insert initial data of workspace-db
                 ws_db.db_transaction_start()
@@ -697,10 +729,11 @@ def organization_update(organization_id, body=None):  # noqa: E501
                             sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
 
                         ws_db.sql_execute(sql, prepared_list)
-                g.applogger.debug("executed " + dml_file)
+                g.applogger.debug(" executed " + dml_file)
                 ws_db.db_commit()
+                g.applogger.info(" INSTALLING {} END".format(install_driver))
 
-        # t_comn_organization_db_infoテーブルのMONGODB接続情報, NO_INSTALL_DRIVERを更新する
+        # t_comn_organization_db_infoテーブルのNO_INSTALL_DRIVERを更新する
         if len(update_no_install_driver) > 0:
             update_no_install_driver_json = json.dumps(update_no_install_driver)
         else:

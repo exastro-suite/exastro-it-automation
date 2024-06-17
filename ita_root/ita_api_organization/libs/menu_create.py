@@ -128,8 +128,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         "menu_name": ret[0].get('MENU_NAME_' + lang.upper()),
         "menu_name_rest": ret[0].get('MENU_NAME_REST'),
         "sheet_type_id": sheet_type_id,
-        "sheet_type_name": sheet_type_name,
-        "disp_seq": ret[0].get('DISP_SEQ'),
+        "sheet_type": sheet_type_name,
+        "disp_order": ret[0].get('DISP_SEQ'),
         "vertical": vertical,
         "hostgroup": hostgroup,
         "menu_group_for_input_id": menu_group_for_input_id,
@@ -138,7 +138,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         "menu_group_for_input": menu_group_for_input,
         "menu_group_for_subst": menu_group_for_subst,
         "menu_group_for_ref": menu_group_for_ref,
-        "selected_role_id": selected_role_list,
+        "role_list": selected_role_list,
         "description": ret[0].get('DESCRIPTION_' + lang.upper()),
         "remarks": ret[0].get('NOTE'),
         "menu_create_done_status_id": ret[0].get('MENU_CREATE_DONE_STATUS'),
@@ -147,10 +147,10 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     }
 
     # 「一意制約(複数項目)作成情報」から対象のレコードを取得
-    menu['unique_constraint_current'] = None
+    menu['unique_constraint'] = None
     ret = objdbca.table_select(t_menu_unique_constraint, 'WHERE MENU_CREATE_ID = %s AND DISUSE_FLAG = %s', [menu_create_id, 0])
     if ret:
-        menu['unique_constraint_current'] = ast.literal_eval(ret[0].get('UNIQUE_CONSTRAINT_ITEM'))
+        menu['unique_constraint'] = ast.literal_eval(ret[0].get('UNIQUE_CONSTRAINT_ITEM'))
 
     # メニュー情報を格納
     menu_info['menu'] = menu
@@ -161,10 +161,9 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
     col_group_record_count = len(ret)  # 「カラムグループ作成情報」のレコード数を格納
     for record in ret:
         add_data = {
-            "column_group_id": record.get('CREATE_COL_GROUP_ID'),
-            "column_group_name": record.get('COL_GROUP_NAME_' + lang.upper()),
-            "full_column_group_name": record.get('FULL_COL_GROUP_NAME_' + lang.upper()),
-            "parent_column_group_id": record.get('PA_COL_GROUP_ID')
+            "group_id": record.get('CREATE_COL_GROUP_ID'),
+            "group_name": record.get('COL_GROUP_NAME_' + lang.upper()),
+            "full_column_group_name": record.get('FULL_COL_GROUP_NAME_' + lang.upper())
         }
         column_group_list[record.get('CREATE_COL_GROUP_ID')] = add_data
 
@@ -189,7 +188,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 "required": record.get('REQUIRED'),
                 "uniqued": record.get('UNIQUED'),
                 "column_class_id": "",
-                "column_class_name": "",
+                "column_class": "",
                 "description": record.get('DESCRIPTION_' + lang.upper()),
                 "remarks": record.get('NOTE'),
                 "last_update_date_time": last_update_date_time
@@ -197,20 +196,17 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
             # フルカラムグループ名を格納
             column_group_id = record.get('CREATE_COL_GROUP_ID')
-            col_detail['column_group_id'] = column_group_id
-            col_detail['column_group_name'] = None
+            col_detail['group_id'] = column_group_id
+            col_detail['group_name'] = None
             if column_group_id:
                 target_data = column_group_list.get(column_group_id)
                 if target_data:
-                    col_detail['column_group_name'] = target_data.get('full_column_group_name')
+                    col_detail['group_name'] = target_data.get('full_column_group_name')
 
             # カラムクラス情報を格納
             column_class_id = record.get('COLUMN_CLASS')
             column_class_name = format_column_class_list.get(column_class_id).get('column_class_name')
-            column_class_disp_name = format_column_class_list.get(column_class_id).get('column_class_disp_name')
             col_detail['column_class_id'] = column_class_id
-            col_detail['column_class_name'] = column_class_name
-            col_detail['column_class_disp_name'] = column_class_disp_name
 
             # カラムクラスに応じて必要な値を格納
             # カラムクラス「文字列(単一行)」用のパラメータを追加
@@ -295,10 +291,6 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
         # 大元のカラムの並び順を作成し格納
         menu_info['menu']['columns'] = collect_parent_sord_order(column_info_data, column_group_parent_of_child, key_to_id)
-
-    # カラム情報およびカラムグループ情報の個数を取得し、menu_info['menu']に格納
-    menu_info['menu']['number_item'] = len(column_info_data)
-    menu_info['menu']['number_group'] = len(column_group_info_data)
 
     # カラム情報を格納
     menu_info['column'] = column_info_data
@@ -863,13 +855,17 @@ def _insert_t_menu_define(objdbca, menu_data):
 
         # バンドルのkeyが無い場合はFalseを指定
         vertical = menu_data.get('vertical')
-        if not vertical:
+        if not vertical or vertical is False:
             vertical = "False"
+        else:
+            vertical = "True"
 
         # ホストグループ利用のkeyが無い場合はFalseを指定
         hostgroup = menu_data.get('hostgroup')
-        if not hostgroup:
+        if not hostgroup or hostgroup is False:
             hostgroup = "False"
+        else:
+            hostgroup = "True"
 
         # 登録用パラメータを作成
         parameters = {
@@ -948,12 +944,16 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         hostgroup = menu_data.get('hostgroup')
 
         # バンドル有無のkeyが無い場合はFalseを指定
-        if not vertical:
+        if not vertical or vertical is False:
             vertical = "False"
+        else:
+            vertical = "True"
 
         # ホストグループ利用有無のkeyが無い場合はFalseを指定
-        if not hostgroup:
+        if not hostgroup or hostgroup is False:
             hostgroup = "False"
+        else:
+            hostgroup = "True"
 
         # 「初期化」「編集」の場合のみチェックするバリデーション
         if type_name == 'initialize' or type_name == 'edit':
@@ -1073,8 +1073,8 @@ def _insert_t_menu_column_group(objdbca, group_data_list):
         # 「カラムグループ作成情報」登録処理のループスタート
         for num, group_data in group_data_list.items():
             # 登録用パラメータを作成
-            col_group_name_ja = group_data.get('col_group_name')
-            col_group_name_en = group_data.get('col_group_name')
+            col_group_name_ja = group_data.get('group_name')
+            col_group_name_en = group_data.get('group_name')
             parent_full_col_group_name = group_data.get('parent_full_col_group_name')
 
             # 親カラムグループがあれば、対象の「フルカラムグループ名」を取得
@@ -1158,6 +1158,19 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
 
         # 「パラメータシート項目作成情報」登録処理のループスタート
         for column_data in column_data_list.values():
+            # 0,1を文字列のTrue,Falseに変換
+            required = column_data.get('required')
+            if required is True:
+                required = 'True'
+            else:
+                required = 'False'
+
+            uniqued = column_data.get('required')
+            if uniqued is True:
+                uniqued = 'True'
+            else:
+                uniqued = 'False'
+
             # create_column_idが空(null)のもののみ対象とする
             create_column_id = column_data.get('create_column_id')
             if not create_column_id:
@@ -1172,8 +1185,8 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                     "description_en": column_data.get('description'),  # 説明(en)
                     "column_class": column_class,  # カラムクラス
                     "display_order": column_data.get('display_order'),  # 表示順序
-                    "required": column_data.get('required'),  # 必須
-                    "uniqued": column_data.get('uniqued'),  # 一意制約
+                    "required": required,  # 必須
+                    "uniqued": uniqued,  # 一意制約
                     "remarks": column_data.get('remarks'),  # 備考
                 }
 
@@ -1341,6 +1354,19 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # 「編集」の場合、登録済みレコードとの差分によるバリデーションチェックを行う
                 if type_name == 'edit':
+                    # 0,1を文字列のTrue,Falseに変換
+                    required = column_data.get('required')
+                    if required is True:
+                        required = 'True'
+                    else:
+                        required = 'False'
+
+                    uniqued = column_data.get('required')
+                    if uniqued is True:
+                        uniqued = 'True'
+                    else:
+                        uniqued = 'False'
+
                     # カラムクラスのIDと名称の紐付け取得
                     column_class_list = objdbca.table_select(v_menu_column_class, 'ORDER BY DISP_SEQ ASC')
                     column_class_dict = {}
@@ -1497,8 +1523,8 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     "description_en": column_data.get('description'),  # 説明(en)
                     "column_class": column_class,  # カラムクラス
                     "display_order": column_data.get('display_order'),  # 表示順序
-                    "required": column_data.get('required'),  # 必須
-                    "uniqued": column_data.get('uniqued'),  # 一意制約
+                    "required": required,  # 必須
+                    "uniqued": uniqued,  # 一意制約
                     "remarks": column_data.get('remarks'),  # 備考
                     "last_update_date_time": last_update_date_time  # 最終更新日時
                 }
@@ -1968,11 +1994,11 @@ def _check_before_registar_validate(objdbca, menu_data, column_data_list):
             raise AppException("499-00714", [])  # シートタイプが「パラメータシート（オペレーションあり）」の場合、項目数が0件のメニューを作成できません。
 
         # 「バンドル」有効かつ、登録する項目が無い場合エラー判定
-        if vertical == "True" and not column_data_list:
+        if vertical is True and not column_data_list:
             raise AppException("499-00712", [])  # 「バンドル」が有効の場合、項目数が0件のメニューを作成できません。
 
         # シートタイプが「2: データシート」かつ、ホストグループ利用の場合エラー判定
-        if sheet_id == "2" and hostgroup == "True":
+        if sheet_id == "2" and hostgroup is True:
             raise AppException("499-00713", [])
 
         # シートタイプが「1: パラメータシート（ホスト/オペレーションあり）」以外で「パラメータシート参照」項目を利用している場合
@@ -2115,16 +2141,14 @@ def collect_column_group_sort_order(column_group_list, tmp_column_group, column_
                 columns.append(col)
 
         add_data['columns'] = columns
-        add_data['column_group_id'] = group_id
-        add_data['column_group_name'] = None
-        add_data['parent_column_group_id'] = None
+        add_data['group_id'] = group_id
+        add_data['group_name'] = None
         add_data['parent_column_group_name'] = None
         target_data = column_group_list.get(group_id)
         if target_data:
-            add_data['column_group_name'] = target_data.get('column_group_name')
+            add_data['group_name'] = target_data.get('column_group_name')
             parent_id = target_data.get('parent_column_group_id')
             if parent_id:
-                add_data['parent_column_group_id'] = parent_id
                 add_data['parent_column_group_name'] = column_group_list.get(parent_id).get('column_group_name')
 
         column_group_info_data[key_to_id[group_id]] = add_data
@@ -2144,7 +2168,7 @@ def collect_parent_sord_order(column_info_data, column_group_parent_of_child, ke
     """
     columns = []
     for col_num, col_data in column_info_data.items():
-        column_group_id = col_data['column_group_id']
+        column_group_id = col_data['group_id']
         if not column_group_id:
             # カラムグループが無い場合はcol_num(c1, c2, c3...)を格納
             columns.append(col_num)

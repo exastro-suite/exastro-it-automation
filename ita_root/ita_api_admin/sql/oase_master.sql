@@ -325,10 +325,10 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "max_length": 4000
 }',NULL,NULL,NULL,'[最大長]4000バイト
 JSON形式で入力します。
-
+ 
 ・リクエストメソッドがGETの場合：
 クエリパラメータ(接続先に追加される、"?"以降の値）として使用されます。
-ex.
+ex. 
 　接続先：http://example.com/dir/
 　入力値：{ "name": "test" }
 　の場合
@@ -336,7 +336,7 @@ ex.
 ・リクエストメソッドがPOSTの場合：
 リクエストのペイロードとして使用されます。','[Maximum length] 4000 bytes
 Enter in JSON format.
-
+ 
 ・If the request method is GET:
 It is used as a query parameter (the value after "?" that is added to the connection destination).
 ex.
@@ -351,10 +351,10 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "max_length": 4000
 }',NULL,NULL,NULL,'[最大長]4000バイト
 JSON形式で入力します。
-
+ 
 ・リクエストメソッドがGETの場合：
 クエリパラメータ(接続先に追加される、"?"以降の値）として使用されます。
-ex.
+ex. 
 　接続先：http://example.com/dir/
 　入力値：{ "name": "test" }
 　の場合
@@ -362,7 +362,7 @@ ex.
 ・リクエストメソッドがPOSTの場合：
 リクエストのペイロードとして使用されます。','[Maximum length] 4000 bytes
 Enter in JSON format.
-
+ 
 ・If the request method is GET:
 It is used as a query parameter (the value after "?" that is added to the connection destination).
 ex.
@@ -725,7 +725,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 ラベル付与したい値を入力します。
-
+ 
 正規表現で使用したい場合は、以下のように入力してください。
 ①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
 任意の値を入力してください。
@@ -733,13 +733,13 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 値を空欄にしてください。
 ③②のマッチした結果に対して、正規表現置換を行いたい場合
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
-ex.
+ex. 
 ・キャプチャグループの1個目をラベルの値にしたい場合
 　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
 　→ \\1.com','[Maximum length] 255 bytes
 Enter the value you want to label.
-
+ 
 If you want to use it as a regular expression, enter it as follows.
 ① I want to search using regular expressions (by "value to compare") and add any value to the label.
 Please enter any value.
@@ -757,7 +757,7 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 ラベル付与したい値を入力します。
-
+ 
 正規表現で使用したい場合は、以下のように入力してください。
 ①正規表現を使って（「比較する値」による）検索を行い、任意の値をラベルにつけたい
 任意の値を入力してください。
@@ -765,13 +765,13 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOU
 値を空欄にしてください。
 ③②のマッチした結果に対して、正規表現置換を行いたい場合
 検索結果のキャプチャグループの値を使いたい場合などを想定しています
-ex.
+ex. 
 ・キャプチャグループの1個目をラベルの値にしたい場合
 　→ \\1
 ・キャプチャグループの1個目 + 任意の値（.com）をラベルの値にしたい場合
 　→ \\1.com','[Maximum length] 255 bytes
 Enter the value you want to label.
-
+ 
 If you want to use it as a regular expression, enter it as follows.
 ① I want to search using regular expressions (by "value to compare") and add any value to the label.
 Please enter any value.
@@ -951,17 +951,17 @@ INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 どのルールから作成された結論イベントなのかを、恒久的に判別するため"_exastro_rule_name"ラベルに設定する任意の名前を入力します。
-※後から変更することはできません。','[Maximum length] 255 bytes
+※編集不可','[Maximum length] 255 bytes
 Enter any name you want to set in the "_exastro_rule_name" label to permanently identify which rule the conclusion event was created from.
-*You cannot change it later.',NULL,'0',_____DATE_____,1);
+* Unable to edit',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(11010904,_____DATE_____,'INSERT','11010904','110109','ルールラベル名','Rule Label Name','rule_label_name',NULL,'1',40,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'RULE_LABEL_NAME',NULL,'0','1','1','1','1','0','0',NULL,'{
 "min_length": 0,
 "max_length": 255
 }',NULL,NULL,NULL,'[最大長]255バイト
 どのルールから作成された結論イベントなのかを、恒久的に判別するため"_exastro_rule_name"ラベルに設定する任意の名前を入力します。
-※後から変更することはできません。','[Maximum length] 255 bytes
+※編集不可','[Maximum length] 255 bytes
 Enter any name you want to set in the "_exastro_rule_name" label to permanently identify which rule the conclusion event was created from.
-*You cannot change it later.',NULL,'0',_____DATE_____,1);
+* Unable to edit',NULL,'0',_____DATE_____,1);
 INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11010905','110109','優先順位','Rule Priority','rule_priority',NULL,'3',50,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'RULE_PRIORITY',NULL,'0','1','1','0','1','1','0',NULL,'{"int_min": 1}',NULL,NULL,NULL,'優先順位を正の整数で入力してください。
 数値が小さいものを優先します。','Please enter the priority as a positive integer.
 Prioritize the one with the smaller number.',NULL,'0',_____DATE_____,1);

@@ -8,7 +8,9 @@ RUN for i in `ls -1`;do sed -i.org -e "/^gpgcheck.*/i sslverify=0" $i;done
 
 WORKDIR /
 # RUN dnf -y install dovecot \
-RUN yum -y install dovecot \
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    yum -y install dovecot \
     postfix \
     mailx \
     telnet \

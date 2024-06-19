@@ -540,7 +540,7 @@ CREATE TABLE T_OASE_RULE
     BEFORE_NOTIFICATION             VARCHAR(255),                               -- 事前_通知
     BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 事前_承認待ち
     BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 事前_通知先
-    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    ACTION_ID                       VARCHAR(40),                                -- アクション名
     AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先
@@ -572,7 +572,7 @@ CREATE TABLE T_OASE_RULE_JNL
     BEFORE_NOTIFICATION             VARCHAR(255),                               -- 事前_通知
     BEFORE_APPROVAL_PENDING         VARCHAR(1)  ,                               -- 事前_承認待ち
     BEFORE_NOTIFICATION_DESTINATION TEXT,                                       -- 事前_通知先
-    ACTION_ID                       VARCHAR(40),                                -- アクションID
+    ACTION_ID                       VARCHAR(40),                                -- アクション名
     AFTER_NOTIFICATION              VARCHAR(255),                               -- 事後_通知
     AFTER_APPROVAL_PENDING          VARCHAR(1)  ,                               -- 事後_承認待ち
     AFTER_NOTIFICATION_DESTINATION  TEXT,                                       -- 事後_通知先

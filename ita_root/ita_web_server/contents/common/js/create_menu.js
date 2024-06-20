@@ -1027,9 +1027,9 @@ const columnEmptyHTML = ''
 const getColumnGroupHTML = function( columnHeaderGroup = {}, bodyHTML = '') {
     const sv = function( v, f = true ) { return fn.cv( columnHeaderGroup[v], '', f ); };
     return ''
-  + '<div class="menu-column-group" data-group-id="' + sv('column_group_id') + '">'
+  + '<div class="menu-column-group" data-group-id="' + sv('group_id') + '">'
     + '<div class="menu-column-group-header">'
-      + getColumnHeaderGroupHTML( sv('column_group_name') )
+      + getColumnHeaderGroupHTML( sv('group_name') )
     + '</div>'
     + '<div class="menu-column-group-body">'
         + bodyHTML
@@ -1424,7 +1424,7 @@ const addColumn = function( $target, type ) {
         id = '',
         title = '',
         number = 0;
-    
+
     // IDがすでに使用されているかチェックする
     const idCheck = function( t, n ){
         while ( menuIdList.indexOf(`${t}${n}`) !== -1 ) {
@@ -1458,7 +1458,6 @@ const addColumn = function( $target, type ) {
 
     $addColumn.attr('id', id );
     menuIdList.push( id );
-    console.log(menuIdList)
 
     // グループの場合空HTMLを追加
     if ( type === 'group') {
@@ -1684,7 +1683,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
             $button.prop('disabled', true );
             fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01136 ).then(function( flag ){
                 if ( flag ) {
-                  createRegistrationData('create_new').catch(function(){
+                    registrationMenu('create_new').catch(function(){
                     $button.prop('disabled', false );
                   });
                 } else {
@@ -1698,7 +1697,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
             if(menuEditorArray['menu_info']['menu']['menu_create_done_status_id'] == 1){
                 fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01136 ).then(function( flag ){
                     if ( flag ) {
-                      createRegistrationData('create_new').catch(function(){
+                      registrationMenu('create_new').catch(function(){
                         $button.prop('disabled', false );
                       });
                     } else {
@@ -1708,7 +1707,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
             }else{
                 fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01137 ).then(function( flag ){
                     if ( flag ) {
-                      createRegistrationData('initialize').catch(function(){
+                      registrationMenu('initialize').catch(function(){
                         $button.prop('disabled', false );
                       });
                     } else {
@@ -1721,7 +1720,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
           $button.prop('disabled', true );
             fn.iconConfirm('plus', getMessage.FTE10059, getMessage.FTE01138 ).then(function( flag ){
                 if ( flag ) {
-                  createRegistrationData('edit').catch(function(){
+                  registrationMenu('edit').catch(function(){
                     $button.prop('disabled', false );
                   });
                 } else {
@@ -1788,10 +1787,10 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
         case 'jsonSave':
             const inputName = $('#create-menu-name').val();
             const fileName = ( inputName !== '')? inputName: 'parameter_sheet';
-            fn.download('json', createJsonData(), fileName );
+            fn.download('json', createJsonData('file'), fileName );
             break;
         case 'jsonRead':
-            fn.fileSelect('json').then(function( result ){                
+            fn.fileSelect('json').then(function( result ){
                 try {
                     // リセット
                     menuEditorArray.menu_info = result.json;
@@ -1816,7 +1815,7 @@ $menuEditor.find('.menu-editor-menu-button').on('click', function() {
                     groupCounter = 1;
                 }
             });
-            
+
             break;
     }
 });
@@ -3506,16 +3505,6 @@ const getItemDate = function( $column, type, setData, mode = 'registration') {
             break;
         case '7':
             setData['pulldown_selection'] = $column.find('.pulldown-select').val();
-            // 登録時はIDから名称に変換
-            if ( mode === 'registration') {
-                const selectPulldownListData = menuEditorArray.pulldown_item_list,
-                selectPulldownListDataLength = selectPulldownListData.length;
-                for ( let i = 0; i < selectPulldownListDataLength; i++ ) {
-                    if ( setData['pulldown_selection'] == selectPulldownListData[i].link_id ) {
-                        setData['pulldown_selection'] = selectPulldownListData[i].link_pulldown;
-                    }
-                }
-            }
             setData['pulldown_selection_default_value'] = $column.find('.pulldown-default-select').val();
             let reference_item = $column.find('.reference-item').attr('data-reference-item-id');
             if ( reference_item ){
@@ -3537,13 +3526,6 @@ const getItemDate = function( $column, type, setData, mode = 'registration') {
             break;
         case '11':
             setData['parameter_sheet_reference'] = $column.find('.reference-parameter-sheet').val();
-            const parameterSheetReferenceListData = menuEditorArray.parameter_sheet_reference_list,
-            parameterSheetReferenceListDataLength = parameterSheetReferenceListData.length;
-            for ( let i = 0; i < parameterSheetReferenceListDataLength; i++ ) {
-                if ( setData['parameter_sheet_reference'] == parameterSheetReferenceListData[i].column_definition_id ) {
-                    setData['parameter_sheet_reference'] = parameterSheetReferenceListData[i].select_full_name;
-                }
-            }
             break;
         default:
     }
@@ -3553,19 +3535,27 @@ const getItemDate = function( $column, type, setData, mode = 'registration') {
 //  メニュー情報JSONデータ作成
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-const createJsonData = function(){
+const createJsonData = function( mode = 'registration'){
     const json = {
         group: {}, column: {}, menu: {}
     };
 
     // パネル情報
-    getPanelParameterForJson( json.menu );
+    getPanelParameter( json.menu, mode );
+
+    // 最終更新日時
+    if ( mode !== 'file' && ( menuEditorMode === 'initialize' || menuEditorMode === 'edit') ) {
+        json.menu.last_update_date_time = menuEditorArray.menu_info.menu.last_update_date_time;
+    }
 
     // トップ階層のカラム情報
     json.menu.columns = [];
     $menuTable.children().each( function() {
         json.menu.columns.push( $( this ).attr('id') );
     });
+
+    // Item Order用カウンター
+    let itemCount = 0;
 
     // テーブル情報
     const tableAnalysis = function( $cols ) {
@@ -3576,44 +3566,82 @@ const createJsonData = function(){
             if ( $column.is('.menu-column') ) {
                 // 項目
                 const key = $column.attr('id');
-
                 // 項目タイプ
+                const columnTypeName = $column.find('.menu-column-type-select').find('option:selected').attr('data-value');
                 const columnType = $column.find('.menu-column-type-select').val();
-
                 // 必須
                 const required = ( $column.find('.config-checkbox.required').prop('checked') === false )? '0': '1';
-
                 // 一意制約
                 const uniqued = ( $column.find('.config-checkbox.unique').prop('checked') === false )? '0': '1';
-
-                // 共通
+                // 親グループ名
+                const parentArray = [];
+                $column.parents('.menu-column-group').each( function() {
+                    parentArray.unshift( $( this ).find('.menu-column-title-input').val() );
+                });
+                const parents = ( parentArray.length )? parentArray.join('/'): null;
+                // アイテム情報
                 json.column[key] = {
                     item_name: $column.find('.menu-column-title-input').val(),
                     item_name_rest: $column.find('.menu-column-title-rest-input').val(),
                     required: required,
                     uniqued: uniqued,
+                    column_class: columnTypeName,
                     column_class_id: columnType,
                     description: $column.find('.explanation').val(),
-                    remarks: $column.find('.note').val()
+                    remarks: $column.find('.note').val(),
+                    column_group: parents,
+                    display_order: itemCount++
                 };
-
-                // タイプ別
-                getItemDate( $column, columnType, json.column[key], 'json');
-
+                // 親グループID
+                const parentGroupId = $column.closest('.menu-column-group').attr('data-group-id');
+                json.column[key].column_group_id = ( mode === 'file' || parentGroupId === '')? null: parentGroupId;
+                // アイテムID
+                const itemId = $column.attr('data-item-id');
+                if ( itemId === '' || menuEditorMode === 'diversion' || mode === 'file') {
+                    json.column[key].create_column_id = null;
+                } else {
+                    json.column[key].create_column_id = itemId;
+                }
+                // アイテム最終更新日時
+                if ( mode !== 'file' && ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) ) {
+                    if ( menuEditorArray.menu_info.column[key] ) {
+                        json.column[key].last_update_date_time = menuEditorArray.menu_info.column[key].last_update_date_time;
+                    }
+                }
+                // タイプ別情報
+                getItemDate( $column, columnType, json.column[key], mode );
             } else if ( $column.is('.menu-column-group') ) {
                 // グループ
                 const key = $column.attr('id');
-
                 // グループ内項目
                 const columns = [];
                 $column.children('.menu-column-group-body').children().each( function() {
                     const $groupChildren = $( this )
                     if ( !$groupChildren.is('.column-empty') ) columns.push( $( this ).attr('id') );
                 });
+                // 親カラムグループ名
+                const parentArray = [];
+                $column.parents('.menu-column-group').each( function() {
+                    parentArray.unshift( $( this ).find('.menu-column-title-input').val() );
+                });
+                const parents = ( parentArray.length )? parentArray.join('/'): null;
+                // グループ情報
                 json.group[key] = {
-                    column_group_name: $column.find('.menu-column-title-input').val(),
+                    group_name: $column.find('.menu-column-title-input').val(),
                     columns: columns,
+                    parent_full_col_group_name: parents
                 }
+                // 親グループID
+                const parentGroupId = $column.closest('.menu-column-group').attr('data-group-id');
+                json.group[key].parent_column_group_id = ( mode === 'file' || parentGroupId === '')? null: parentGroupId;
+                // グループID
+                const groupID = $column.attr('data-group-id');
+                if ( groupID === '' || menuEditorMode === 'diversion' || mode === 'file') {
+                    json.group[key].group_id = null;
+                } else {
+                    json.group[key].group_id = groupID;
+                }
+                // 再帰
                 tableAnalysis( $column.children('.menu-column-group-body') );
             }
         });
@@ -3622,25 +3650,31 @@ const createJsonData = function(){
 
     return json;
 };
-
-const getPanelParameterForJson = function( menuData ) {
+/*
+##################################################
+    パネル情報取得
+##################################################
+*/
+const getPanelParameter = function( menuData, mode = 'registration') {
 
     // 作成対象
     const $selectMenuType = $('#create-menu-type').find('option:selected');
 
+    menuData.menu_create_id = ( mode !== 'file')? $('#create-menu-id').attr('data-value'): null;
     menuData.menu_name = $('#create-menu-name').val();
     menuData.menu_name_rest = $('#create-menu-name-rest').val();
-    menuData.disp_seq = $('#create-menu-order').val();
+    menuData.display_order = $('#create-menu-order').val();
     menuData.description = $('#create-menu-explanation').val();
     menuData.remarks = $('#create-menu-note').val();
     menuData.sheet_type_id = $selectMenuType.val();
+    menuData.sheet_type = $selectMenuType.text();
 
     // ロール
     const role = getRoleListValidID( $('#permission-role-name-list').attr('data-role-id') );
     if ( role === "") {
-        menuData.selected_role_id = role;
+        menuData.role_list = role;
     } else {
-        menuData.selected_role_id = role.split(','); // ロール
+        menuData.role_list = role.split(','); // ロール
     }
 
     // 一意制約
@@ -3657,9 +3691,9 @@ const getPanelParameterForJson = function( menuData ) {
             }
             uniqueConstraint[i] = list;
         }
-        menuData.unique_constraint_current = uniqueConstraint;
+        menuData.unique_constraint = uniqueConstraint;
     } else {
-        menuData.unique_constraint_current = null;
+        menuData.unique_constraint = null;
     }
 
     // 作成対象別項目
@@ -3685,12 +3719,21 @@ const getPanelParameterForJson = function( menuData ) {
         } else {
             menuData.vertical = "0";
         }
-        menuData.menu_group_for_input_id = $('#create-menu-for-input').attr('data-id'); // 入力用ID
-        menuData.menu_group_for_subst_id = $('#create-menu-for-substitution').attr('data-id'); // 代入値用ID
-        menuData.menu_group_for_ref_id = $('#create-menu-for-reference').attr('data-id'); // 参照用ID
+        // 入力用
+        menuData.menu_group_for_input = $('#create-menu-for-input').text();
+        menuData.menu_group_for_input_id = $('#create-menu-for-input').attr('data-id');
+        // 代入値用
+        menuData.menu_group_for_subst = $('#create-menu-for-substitution').text();
+        menuData.menu_group_for_subst_id = $('#create-menu-for-substitution').attr('data-id');
+        // 参照用
+        menuData.menu_group_for_ref = $('#create-menu-for-reference').text();
+        menuData.menu_group_for_ref_id = $('#create-menu-for-reference').attr('data-id');
     } else if ( type === '2') {
         // データシート
-        menuData.menu_group_for_input_id = $('#create-menu-for-input').attr('data-id'); // 入力用ID
+
+        // 入力用
+        menuData.menu_group_for_input = $('#create-menu-for-input').text();
+        menuData.menu_group_for_input_id = $('#create-menu-for-input').attr('data-id');
     }
 
     // undefined,''をnullに
@@ -3703,193 +3746,59 @@ const getPanelParameterForJson = function( menuData ) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//  登録情報作成
+//  メニュー登録
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-const createRegistrationData = function( type ){
+const registrationMenu = function( type ){
+    return new Promise(function( resolve, reject ){
+        // 登録データ
+        const registrationData = createJsonData();
+        registrationData.type = type;
 
-  return new Promise(function( resolve, reject ){
-    let createMenuJSON = {
-      'menu'   : {},
-      'group'  : {},
-      'column' : {},
-      'type'   : {}
-    };
+        // 進行中モーダル
+        let process = fn.processingModal('');
 
-    // Order用カウンター
-    let itemCount = 0;
+        fn.fetch('/create/define/execute/', null, 'POST', registrationData ).then(function(result){
+            let id  = result['history_id'];
+            let string = getMessage.FTE01140;
+            let log = string + id;
+            menuEditorLog.set( 'done', log );
 
-    // メニュー作成情報
-    createMenuJSON['menu'] = getPanelParameter();
-    if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit') {
-      createMenuJSON['menu']['last_update_date_time'] = menuEditorArray.menu_info['menu']['last_update_date_time'];
-    }
+            fn.alert('', fn.escape( log, true ) ).then(function(){
+                let url_path = location.pathname,
+                splitstr = url_path.split('/'),
+                organization_id = splitstr[1],
+                workspace_id = splitstr[3],
+                menu_name_rest = result['menu_name_rest'],
+                menu = getParam('menu');
+                process.close();
+                process = null;
+                resolve();
 
-    // COL_GROUP_IDからKEYを返す
-    const COL_GROUP_ID_to_KEY = function( groupID ) {
-      for ( let key in menuEditorArray.menu_info['group'] ) {
-        if ( menuEditorArray.menu_info['group'][ key ]['column_group_id'] === groupID ) {
-          return menuEditorArray.menu_info['group'][ key ]['column_group_name'];
-        }
-      }
-    }
-
-    const tableAnalysis = function( $cols, repeatCount ) {
-
-      // 子セルを調べる
-      $cols.children().each( function(){
-        const $column = $( this );
-
-        if ( $column.is('.menu-column') ) {
-            // 項目ここから
-              const order = itemCount++,
-                    selectTypeValue = $column.find('.menu-column-type-select').val();
-              let key = $column.attr('id'),
-                  repeatFlag = false,
-                  CREATE_ITEM_ID = $column.attr('data-item-id'),
-                  LAST_UPDATE_TIMESTAMP = null;
-
-              let select = document.getElementById('menu-column-type-select');
-              let column_class  = select.options[selectTypeValue - 1].dataset.value;
-
-              if ( CREATE_ITEM_ID === '') CREATE_ITEM_ID = null;
-              if ( menuEditorMode === 'diversion') CREATE_ITEM_ID = null;
-              if ( menuEditorMode === 'initialize' || menuEditorMode === 'edit' ) {
-                  if ( menuEditorArray.menu_info['column'][key] ) {
-                      LAST_UPDATE_TIMESTAMP = menuEditorArray.menu_info['column'][key]['last_update_date_time'];
-                  }
-              }
-              // 親カラムグループ
-              let parentArray = [];
-              $column.parents('.menu-column-group').each( function() {
-                parentArray.unshift( $( this ).find('.menu-column-title-input').val() );
-              });
-              const parents = parentArray.join('/');
-              let   parentsID = $column.closest('.menu-column-group').attr('data-group-id');
-              if ( parentsID === undefined ) parentsID = null;
-              // 項目名
-              let itemName = $column.find('.menu-column-title-input').val();
-              let itemNameRest = $column.find('.menu-column-title-rest-input').val();
-
-              let required = $column.find('.config-checkbox.required').prop('checked');
-              if ( required === false ){
-                required = "False";
-              } else {
-                required = "True";
-              }
-
-              let uniqued = $column.find('.config-checkbox.unique').prop('checked');
-              if ( uniqued === false ){
-                uniqued = "False";
-              } else {
-                uniqued = "True";
-              }
-
-              // JSONデータ
-              createMenuJSON['column'][key] = {
-                  'create_column_id' : CREATE_ITEM_ID,
-                  'item_name' : itemName,
-                  'item_name_rest' : itemNameRest,
-                  'display_order' : order,
-                  'required' : required, //パラメータシート参照の場合「必須」はfalse
-                  'uniqued' : uniqued, //パラメータシート参照の場合「一意制約」はfalse
-                  'column_group' : parents,
-                  'column_class' : column_class,
-                  'description' : $column.find('.explanation').val(),
-                  'remarks' : $column.find('.note').val(),
-                  'last_update_date_time' : LAST_UPDATE_TIMESTAMP
-              }
-              // 項目タイプ
-              getItemDate( $column, selectTypeValue, createMenuJSON['column'][key] );
-
-          } else if ( $column.is('.menu-column-group') ) {
-            // グループ
-              let groupID = $column.attr('data-group-id'),
-                  groupName = $column.find('.menu-column-title-input').val(),
-                  key = $column.attr('id'),
-                  parents = '',
-                  parentArray = [],
-                  columns = [],
-                  repeatFlag = false;
-              if ( menuEditorMode === 'diversion') groupID = null;
-              // 親グループ
-              $column.parents('.menu-column-group').each( function() {
-                parentArray.unshift( $( this ).find('.menu-column-title-input').val() );
-              });
-              parents = parentArray.join('/');
-              // グループ内項目リスト
-              $column.children('.menu-column-group-body').children().each( function() {
-                columns.push( $( this ).attr('id') );
-              });
-              // グループJSON
-              createMenuJSON['group'][key] = {
-                'col_group_id' : groupID,
-                'col_group_name' : groupName,
-                'parent_full_col_group_name' : parents,
-                'columns' : columns,
-              }
-              tableAnalysis( $column.children('.menu-column-group-body'), repeatCount );
-          }
-
-      });
-
-    };
-
-    // トップ階層のカラム情報
-    let topColumns = [];
-    $menuTable.children().each( function() {
-      topColumns.push( $( this ).attr('id') );
-    });
-    createMenuJSON['menu']['columns'] = topColumns;
-
-    //メニュー作成タイプを格納
-    createMenuJSON['type'] = type;
-
-    // 解析スタート
-    tableAnalysis( $menuTable, 0 );
-
-    // 進行中モーダル
-    let process = fn.processingModal('');
-
-    fn.fetch('/create/define/execute/', null, 'POST', createMenuJSON ).then(function(result){
-      let id  = result['history_id'];
-      let string = getMessage.FTE01140;
-      let log = string + id;
-      menuEditorLog.set( 'done', log );
-
-      fn.alert('', fn.escape( log, true ) ).then(function(){
-          let url_path = location.pathname,
-          splitstr = url_path.split('/'),
-          organization_id = splitstr[1],
-          workspace_id = splitstr[3],
-          menu_name_rest = result['menu_name_rest'],
-          menu = getParam('menu');
-          process.close();
-          process = null;
-          resolve();
-
-          window.location.href = '/' + organization_id + '/workspaces/' + workspace_id + '/ita/?menu=' + menu + '&menu_name_rest=' + menu_name_rest + '&history_id=' + id;
-      });
-
-    }).catch(function( error ){
-        if ( fn.typeof( error ) === 'object') {
-            if ( error.result === '498-00004') {
-                if ( fn.typeof( error.message ) === 'string') window.alert( error.message );
-            } else {
-                let message = errorFormat(error.message);
-                menuEditorLog.clear();
-                menuEditorLog.set('error', message );
-                window.alert(getMessage.FTE01141);
+                window.location.href = '/' + organization_id + '/workspaces/' + workspace_id + '/ita/?menu=' + menu + '&menu_name_rest=' + menu_name_rest + '&history_id=' + id;
+            });
+        }).catch(function( error ){
+            if ( fn.typeof( error ) === 'object') {
+                if ( error.result === '498-00004') {
+                    if ( fn.typeof( error.message ) === 'string') window.alert( error.message );
+                } else {
+                    let message = errorFormat(error.message);
+                    menuEditorLog.clear();
+                    menuEditorLog.set('error', message );
+                    window.alert(getMessage.FTE01141);
+                }
             }
-        }
-        process.close();
-        process = null;
-        reject();
+            process.close();
+            process = null;
+            reject();
+        });
     });
-
-  });
 };
-
+/*
+##################################################
+    登録エラー
+##################################################
+*/
 const errorFormat = function( error ) {
     let errorMessage;
     let message;
@@ -3940,7 +3849,7 @@ const setMenu = function() {
         menuInfo['menu']['menu_create_id'] = null;
         menuInfo['menu']['menu_name'] = null;
         menuInfo['menu']['menu_name_rest'] = null;
-        menuInfo['menu']['disp_seq'] = null;
+        menuInfo['menu']['display_order'] = null;
         menuInfo['menu']['last_update_date_time'] = null;
         menuInfo['menu']['description'] = null;
         menuInfo['menu']['remarks'] = null;
@@ -3966,9 +3875,9 @@ const setMenu = function() {
                             const sv = function( v, f = true ) { return fn.cv( groupData[v], '', f ); };
 
                             setMenuHTML += ''
-                            + '<div class="menu-column-group" data-group-id="' + sv('column_group_id') + '" id="' + id + '">'
+                            + '<div class="menu-column-group" data-group-id="' + sv('group_id') + '" id="' + id + '">'
                                 + '<div class="menu-column-group-header">'
-                                + getColumnHeaderGroupHTML( sv('column_group_name') )
+                                + getColumnHeaderGroupHTML( sv('group_name') )
                                 + '</div>'
                                 + '<div class="menu-column-group-body">';
 
@@ -4056,103 +3965,9 @@ const setMenu = function() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//   メニューデータ取得・セット
+//   パネル情報セット
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-const getPanelParameter = function() {
-    // 入力値を取得する
-    const parameterArray = {};
-
-    parameterArray['menu_create_id'] = $('#create-menu-id').attr('data-value'); // 項番
-    parameterArray['menu_name'] = $('#create-menu-name').val(); // メニュー名
-    parameterArray['menu_name_rest'] = $('#create-menu-name-rest').val(); // メニュー名(REST)
-    //parameterArray['TARGET'] = $('#create-menu-type').val(); // 作成対象
-
-    let select = document.getElementById('create-menu-type');
-    let idx = select.selectedIndex;
-    let sheet_type  = select.options[idx].text;
-    parameterArray['sheet_type'] = sheet_type; // 作成対象
-
-    parameterArray['display_order'] = $('#create-menu-order').val(); // 表示順序
-    parameterArray['last_update_date_time'] = $('#create-menu-last-modified').attr('data-value'); // 最終更新日時
-    //parameterArray['LAST_UPDATE_USER'] = $('#create-last-update-user').attr('data-value'); // 最終更新者
-    parameterArray['description'] = $('#create-menu-explanation').val(); // 説明
-
-    let role = getRoleListValidID( $('#permission-role-name-list').attr('data-role-id') );
-    if (role == "" ){
-      parameterArray['role_list'] = role; // ロール
-    } else {
-      let role_list = role.split(',');
-      parameterArray['role_list'] = role_list; // ロール
-    }
-
-    let unique = $('#unique-constraint-list').attr('data-unique-list');
-    if (unique == null ){
-      parameterArray['unique_constraint'] = unique; //一意制約(複数項目)
-    } else if(unique == [['']]) {
-      parameterArray['unique_constraint'] = null;
-    } else {
-      let unique_list = unique.split(',');
-      let unique_constraint = [];
-      let list;
-      for (let i = 0; i < unique_list.length; i++) {
-        list = unique_list[i].split('-');
-        for (let j = 0; j < list.length; j++) {
-          list[j] = $menuTable.find('#'+list[j]).find('.menu-column-title-rest-input').val();
-        }
-        unique_constraint[i] = list;
-      }
-      parameterArray['unique_constraint'] = unique_constraint; //一意制約(複数項目)
-    }
-
-    parameterArray['remarks'] = $('#create-menu-note').val(); // 備考
-
-    // 作成対象別項目
-    //const type = parameterArray['sheet_type_id'];
-    const type = $('#create-menu-type').val();
-    if ( type === '1' || type === '3') {
-      // パラメータシート
-        if ( type === '1' ) {
-          // ホストグループ利用有無
-          const hostgroup = $('#create-menu-use-host-group').prop('checked');
-          if ( hostgroup ) {
-            parameterArray['hostgroup'] = "True";
-          } else {
-            parameterArray['hostgroup'] = "False";
-          }
-        } else {
-          parameterArray['hostgroup'] = null;
-        }
-        // 縦メニュー利用有無
-        const vertical = $('#create-menu-use-vertical').prop('checked');
-        if ( vertical ) {
-          parameterArray['vertical'] = "True";
-        } else {
-          parameterArray['vertical'] = "False";
-        }
-        parameterArray['menu_group_for_input'] = $('#create-menu-for-input').text(); // 入力用
-        parameterArray['menu_group_for_subst'] = $('#create-menu-for-substitution').text(); // 代入値用
-        parameterArray['menu_group_for_ref'] = $('#create-menu-for-reference').text(); // 参照用
-        //parameterArray['menu_group_for_input_id'] = $('#create-menu-for-input').attr('data-id'); // 入力用
-        //parameterArray['menu_group_for_subst_id'] = $('#create-menu-for-substitution').attr('data-id'); // 代入値
-        //parameterArray['menu_group_for_ref_id'] = $('#create-menu-for-reference').attr('data-id'); // 参照用
-    } else if ( type === '2') {
-      // データシート
-        //parameterArray['PURPOSE'] = null;
-        //parameterArray['menu_group_for_input'] = $('#create-menu-for-input').attr('data-id'); // 入力用
-        parameterArray['menu_group_for_input'] = $('#create-menu-for-input').text(); // 入力用
-    }
-    // undefined, ''をnullに
-    for ( let key in parameterArray ) {
-      if ( parameterArray[key] === undefined || parameterArray[key] === '') {
-        parameterArray[key] = null;
-      }
-    }
-
-    return parameterArray;
-};
-
 const setPanelParameter = function( setData ) {
   // nullを空白に
   for ( let key in setData['menu'] ) {
@@ -4187,19 +4002,19 @@ const setPanelParameter = function( setData ) {
     }
   }
   // ロール
-  const roleList = ( setData['menu']['selected_role_id'] === undefined )? '': setData['menu']['selected_role_id'];
+  const roleList = ( setData['menu']['role_list'] === undefined )? '': setData['menu']['role_list'];
   $('#permission-role-name-list')
     .attr('data-role-id', roleList )
     .text( getRoleListIdToName( roleList ) );
 
   // 一意制約(複数項目)
-  let unique_constraint_current = setData['menu']['unique_constraint_current'];
+  let unique_constraint = setData['menu']['unique_constraint'];
   let unique_dict = {};
   let unique_list = [];
   let all_unique_list = [];
-  for ( let i = 0; i < unique_constraint_current.length; i++ ) {
+  for ( let i = 0; i < unique_constraint.length; i++ ) {
     unique_list = [];
-    let list = unique_constraint_current[i];
+    let list = unique_constraint[i];
     for ( let j = 0; j < list.length; j++ ) {
       let data = list[j];
       unique_dict = {};
@@ -4215,21 +4030,21 @@ const setPanelParameter = function( setData ) {
   $('#unique-constraint-list')
     .text(initUniqueConstraintName)
     .attr('data-unique-list', initUniqueConstraintConv);
-  menuEditorArray['unique-constraints-current'] = setData['menu']['unique_constraint_current']; //更新用に格納しなおす
+  menuEditorArray['unique-constraints-current'] = setData['menu']['unique_constraint']; //更新用に格納しなおす
 
   // エディットモード別
   if ( menuEditorMode === 'view') {
     $('#create-menu-name').text( setData['menu']['menu_name'] ); // メニュー名
     $('#create-menu-name-rest').text( setData['menu']['menu_name_rest'] ); // メニュー名(REST)
     $('#create-menu-type').text( listIdName('target', setData['menu']['sheet_type_id'] )); // 作成対象
-    $('#create-menu-order').text( setData['menu']['disp_seq'] ); // 表示順序
+    $('#create-menu-order').text( setData['menu']['display_order'] ); // 表示順序
     $('#create-menu-explanation').text( setData['menu']['description'] );  // 説明
     $('#create-menu-note').text( setData['menu']['remarks'] ); // 備考
   } else {
     $('#create-menu-name').val( setData['menu']['menu_name'] ); // メニュー名
     $('#create-menu-name-rest').val( setData['menu']['menu_name_rest'] ); // メニュー名(REST)
     $('#create-menu-type').val( setData['menu']['sheet_type_id'] ); // 作成対象
-    $('#create-menu-order').val( setData['menu']['disp_seq'] ); // 表示順序
+    $('#create-menu-order').val( setData['menu']['display_order'] ); // 表示順序
     $('#create-menu-explanation').val( setData['menu']['description'] );  // 説明
     $('#create-menu-note').val( setData['menu']['remarks'] ); // 備考
   }

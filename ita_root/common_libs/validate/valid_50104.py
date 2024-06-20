@@ -17,6 +17,7 @@ import binascii
 import ast
 from libs.organization_common import check_auth_menu  # noqa: F401
 from flask import g
+from common_libs.common import *  # noqa: F403
 
 
 def menu_column_valid(objdbca, objtable, option):
@@ -1220,3 +1221,27 @@ def menu_column_valid(objdbca, objtable, option):
                     return retBool, msg, option
 
     return retBool, msg, option
+
+
+def file_upload_maximum_bytes_valid_before(objdbca, objtable, option):
+
+    retBool = True
+    msg = ''
+
+    if option["cmd_type"] in ["Update", "Register", "Restore"]:
+        # 更新後レコードから値を取得
+        # ファイルアップロード/最大バイト数
+        file_upload_maximum_bytes = option["entry_parameter"]["parameter"]["file_upload_maximum_bytes"]
+
+        # Organization毎のアップロードファイルサイズ上限取得
+        org_upload_file_size_limit = get_org_upload_file_size_limit()
+
+        if file_upload_maximum_bytes is not None and org_upload_file_size_limit is not None:
+            if int(file_upload_maximum_bytes) > org_upload_file_size_limit:
+                retBool = False
+                status_code = 'MSG-00019'
+                msg_args = [1, org_upload_file_size_limit, file_upload_maximum_bytes]
+                msg = g.appmsg.get_api_message(status_code, msg_args)
+
+    return retBool, msg, option,
+

@@ -129,7 +129,7 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         "menu_name_rest": ret[0].get('MENU_NAME_REST'),
         "sheet_type_id": sheet_type_id,
         "sheet_type": sheet_type_name,
-        "disp_order": ret[0].get('DISP_SEQ'),
+        "display_order": ret[0].get('DISP_SEQ'),
         "vertical": vertical,
         "hostgroup": hostgroup,
         "menu_group_for_input_id": menu_group_for_input_id,
@@ -163,7 +163,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
         add_data = {
             "group_id": record.get('CREATE_COL_GROUP_ID'),
             "group_name": record.get('COL_GROUP_NAME_' + lang.upper()),
-            "full_column_group_name": record.get('FULL_COL_GROUP_NAME_' + lang.upper())
+            "full_column_group_name": record.get('FULL_COL_GROUP_NAME_' + lang.upper()),
+            "parent_column_group_id": record.get('PA_COL_GROUP_ID')
         }
         column_group_list[record.get('CREATE_COL_GROUP_ID')] = add_data
 
@@ -1156,17 +1157,20 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
         # menu_dataから登録用のメニュー名を取得
         menu_name = menu_data.get('menu_name')
 
+        # 変数定義
+        lang = g.get('LANGUAGE')
+
         # 「パラメータシート項目作成情報」登録処理のループスタート
         for column_data in column_data_list.values():
             # 0,1を文字列のTrue,Falseに変換
             required = column_data.get('required')
-            if required is True:
+            if required == '1':
                 required = 'True'
             else:
                 required = 'False'
 
             uniqued = column_data.get('required')
-            if uniqued is True:
+            if uniqued == '1':
                 uniqued = 'True'
             else:
                 uniqued = 'False'
@@ -1239,7 +1243,12 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
-                    parameter["pulldown_selection"] = column_data.get('pulldown_selection')  # プルダウン選択 メニューグループ:メニュー:項目
+                    parameter["pulldown_selection"] = None
+                    pulldown_selection_id = column_data.get('pulldown_selection')
+                    # IDから名称を取得
+                    other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [pulldown_selection_id, 0])
+                    for record in other_menu_link_list:
+                        parameter["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper())
                     parameter["pulldown_selection_default_value"] = column_data.get('pulldown_selection_default_value')  # プルダウン選択 初期値
                     reference_item = column_data.get('reference_item')
                     if reference_item:
@@ -1267,6 +1276,12 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                 # カラムクラス「パラメータシート参照」用のパラメータを追加
                 if column_class == "ParameterSheetReference":
                     parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                    parameter["parameter_sheet_reference"] = None
+                    parameter_sheet_reference_id = column_data.get('parameter_sheet_reference')
+                    # IDから名称を取得
+                    parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [parameter_sheet_reference_id, 0])
+                    for record in parameter_sheet_reference_list:
+                        parameter["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper())
                 parameters = {
                     "parameter": parameter,
                     "type": "Register"
@@ -1356,13 +1371,13 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                 if type_name == 'edit':
                     # 0,1を文字列のTrue,Falseに変換
                     required = column_data.get('required')
-                    if required is True:
+                    if required == '1':
                         required = 'True'
                     else:
                         required = 'False'
 
                     uniqued = column_data.get('required')
-                    if uniqued is True:
+                    if uniqued == '1':
                         uniqued = 'True'
                     else:
                         uniqued = 'False'
@@ -1385,13 +1400,13 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # 「必須」が変更されている場合エラー判定
                     current_required_id = str(target_record.get('REQUIRED'))
-                    update_required_id = "1" if column_data.get('required') == "True" else "0"
+                    update_required_id = column_data.get('required')
                     if not current_required_id == update_required_id:
                         raise AppException("499-00706", [item_name, "required"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # 「一意制約」が変更されている場合エラー判定
                     current_uniqued_id = str(target_record.get('UNIQUED'))
-                    update_uniqued_id = "1" if column_data.get('uniqued') == "True" else "0"
+                    update_uniqued_id = column_data.get('uniqued')
                     if not current_uniqued_id == update_uniqued_id:
                         raise AppException("499-00706", [item_name, "uniqued"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
@@ -2090,7 +2105,7 @@ def add_tmp_column_group(column_group_list, col_group_record_count, column_group
     max_loop = int(col_group_record_count) ** 2  # 「カラムグループ作成情報」のレコード数の二乗がループ回数の上限
     while not end_flag:
         for target in column_group_list.values():
-            if target.get('column_group_id') == target_column_group_id:
+            if target.get('group_id') == target_column_group_id:
                 parent_column_group_id = target.get('parent_column_group_id')
                 if not parent_column_group_id:
                     end_flag = True
@@ -2143,13 +2158,16 @@ def collect_column_group_sort_order(column_group_list, tmp_column_group, column_
         add_data['columns'] = columns
         add_data['group_id'] = group_id
         add_data['group_name'] = None
-        add_data['parent_column_group_name'] = None
+        add_data['parent_column_group_id'] = None
+        add_data['parent_full_col_group_name'] = None
         target_data = column_group_list.get(group_id)
         if target_data:
-            add_data['group_name'] = target_data.get('column_group_name')
+            add_data['group_name'] = target_data.get('group_name')
             parent_id = target_data.get('parent_column_group_id')
-            if parent_id:
-                add_data['parent_column_group_name'] = column_group_list.get(parent_id).get('column_group_name')
+            parent_column_group_name = target_data.get('parent_full_col_group_name')
+            if parent_column_group_name:
+                add_data['parent_column_group_id'] = parent_id
+                add_data['parent_column_group_name'] = parent_column_group_name
 
         column_group_info_data[key_to_id[group_id]] = add_data
 

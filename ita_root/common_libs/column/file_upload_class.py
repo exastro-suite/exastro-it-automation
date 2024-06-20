@@ -101,7 +101,23 @@ class FileUploadColumn(Column):
                         # 閾値(文字列長)
                         upload_max_size = dict_valid.get('upload_max_size')
 
-                # 文字列長
+                # Organization毎のアップロードファイルサイズ上限取得
+                org_upload_file_size_limit = get_org_upload_file_size_limit()
+
+                # 比較するアップロードファイルサイズ上限を設定
+                if upload_max_size is None and org_upload_file_size_limit is None:
+                    compare_upload_max_size = None
+                elif upload_max_size is not None and org_upload_file_size_limit is None:
+                    compare_upload_max_size = upload_max_size
+                elif upload_max_size is None and org_upload_file_size_limit is not None:
+                    compare_upload_max_size = org_upload_file_size_limit
+                else:
+                    if upload_max_size < org_upload_file_size_limit:
+                        compare_upload_max_size = upload_max_size
+                    else:
+                        compare_upload_max_size = org_upload_file_size_limit
+
+                # ファイル名の文字列長チェック
                 if max_length is not None:
                     check_val = len(str(val).encode('utf-8'))
                     if check_val != 0:
@@ -112,7 +128,7 @@ class FileUploadColumn(Column):
                             msg = g.appmsg.get_api_message('MSG-00008', [max_length, check_val])
                             return retBool, msg
 
-                # ファイル名のチェック
+                # ファイル名の正規表現チェック
                 if preg_match is not None:
                     if len(preg_match) != 0:
                         pattern = re.compile(preg_match, re.DOTALL)
@@ -123,10 +139,10 @@ class FileUploadColumn(Column):
                             return retBool, msg
 
                 # バイト数比較
-                if decode_option and upload_max_size is not None:
-                    if len(decode_option) > int(upload_max_size):
+                if decode_option and compare_upload_max_size is not None:
+                    if len(decode_option) > int(compare_upload_max_size):
                         retBool = False
-                        msg = g.appmsg.get_api_message('MSG-00010', [upload_max_size, len(decode_option)])
+                        msg = g.appmsg.get_api_message('MSG-00010', [compare_upload_max_size, len(decode_option)])
                         return retBool, msg
 
                 # 禁止拡張子チェック
@@ -296,7 +312,7 @@ class FileUploadColumn(Column):
 
         return result
 
-    def get_file_data_path(self, file_name, target_uuid, target_uuid_jnl='', file_chk=True):
+    def get_file_data_path(self, file_name, target_uuid, target_uuid_jnl='', file_chk=False):
         """
             ファイルのパスを取得
             ARGS:
@@ -322,20 +338,20 @@ class FileUploadColumn(Column):
                 dir_path = path["file_path"]
                 old_file_path = path["old_file_path"]
                 if target_uuid_jnl:
-                    # target_uuid_jnl指定時
-                    # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
-                    result = file_encode(old_file_path)  # noqa: F405
-                    if result is False or result == "" and file_chk is True:
-                        result = None
-                    else:
-                        result = old_file_path  # noqa: F405
+                    result = old_file_path  # noqa: F405
+                    if file_chk is True:
+                        # target_uuid_jnl指定時
+                        # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
+                        result = file_encode(old_file_path)  # noqa: F405
+                        if result is False or result == "":
+                            result = None
                 else:
-                    # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
-                    result = file_encode(dir_path)  # noqa: F405
-                    if result is False or result == "" and file_chk is True:
-                        result = None
-                    else:
-                        result = dir_path  # noqa: F405
+                    result = dir_path  # noqa: F405
+                    if file_chk is True:
+                        # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
+                        result = file_encode(dir_path)  # noqa: F405
+                        if result is False or result == "":
+                            result = None
 
         return result
 

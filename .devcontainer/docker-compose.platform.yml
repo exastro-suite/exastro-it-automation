@@ -90,11 +90,13 @@ services:
       - KC_DB_URL_DATABASE=keycloak
       - KC_DB_USERNAME=keycloak
       - KC_DB_PASSWORD=password
-      - KC_PROXY=passthrough
-      - KC_HTTP_RELATIVE_PATH=/auth
+      # - KC_PROXY=passthrough
+      # - KC_HTTP_RELATIVE_PATH=/auth
+      - JAVA_OPTS_APPEND=-Xms256m -Xmx256m
     command:
       # 開発モードで起動
-      - start-dev --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+      # - start-dev --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+      - start
     networks:
       - exastro
     depends_on:

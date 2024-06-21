@@ -856,17 +856,17 @@ def _insert_t_menu_define(objdbca, menu_data):
 
         # バンドルのkeyが無い場合はFalseを指定
         vertical = menu_data.get('vertical')
-        if not vertical or vertical is False:
-            vertical = "False"
-        else:
+        if vertical == '1':
             vertical = "True"
+        else:
+            vertical = "False"
 
         # ホストグループ利用のkeyが無い場合はFalseを指定
         hostgroup = menu_data.get('hostgroup')
-        if not hostgroup or hostgroup is False:
-            hostgroup = "False"
-        else:
+        if hostgroup == '1':
             hostgroup = "True"
+        else:
+            hostgroup = "False"
 
         # 登録用パラメータを作成
         parameters = {
@@ -945,16 +945,16 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         hostgroup = menu_data.get('hostgroup')
 
         # バンドル有無のkeyが無い場合はFalseを指定
-        if not vertical or vertical is False:
-            vertical = "False"
-        else:
+        if vertical == '1':
             vertical = "True"
+        else:
+            vertical = "False"
 
         # ホストグループ利用有無のkeyが無い場合はFalseを指定
-        if not hostgroup or hostgroup is False:
-            hostgroup = "False"
-        else:
+        if hostgroup == '1':
             hostgroup = "True"
+        else:
+            hostgroup = "False"
 
         # 「初期化」「編集」の場合のみチェックするバリデーション
         if type_name == 'initialize' or type_name == 'edit':
@@ -1354,6 +1354,10 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
         # menu_dataから登録用のメニュー名を取得
         menu_name = menu_data.get('menu_name')
 
+        # プルダウン選択、パラメータシート参照の選択項目
+        update_pulldown_selection = None
+        update_parameter_sheet_reference = None
+
         # 「パラメータシート項目作成情報」更新処理のループスタート
         for column_data in column_data_list.values():
             # 更新対象のuuidを取得
@@ -1468,8 +1472,12 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     # カラムクラス「プルダウン選択」の場合のバリデーションチェック
                     if column_class == "IDColumn":
                         update_pulldown_selection = column_data.get('pulldown_selection')
+                        # IDから名称を取得
+                        tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [update_pulldown_selection, 0])
+                        for record in tmp_other_menu_link_list:
+                            update_pulldown_selection = record.get('LINK_PULLDOWN_' + lang.upper())
 
-                        # 現在設定されているIDのlink_pulldownを取得
+                        # 現在設定されているlink_pulldownを取得
                         current_other_menu_link_id = target_record.get('OTHER_MENU_LINK_ID')
                         current_other_menu_link_data = format_other_menu_link_list.get(current_other_menu_link_id)
                         current_pulldown_selection = current_other_menu_link_data.get('link_pulldown_' + lang.lower())
@@ -1518,8 +1526,12 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                     # カラムクラス「パラメータシート参照」の場合のバリデーションチェック
                     if column_class == "ParameterSheetReference":
                         update_parameter_sheet_reference = column_data.get('parameter_sheet_reference')
+                        # IDから名称を取得
+                        tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [update_parameter_sheet_reference, 0])
+                        for record in tmp_parameter_sheet_reference_list:
+                            update_parameter_sheet_reference = record.get('SELECT_FULL_NAME_' + lang.upper())
 
-                        # 現在設定されているIDのparameter_sheet_referenceを取得
+                        # 現在設定されているparameter_sheet_referenceを取得
                         current_parameter_sheet_reference_id = target_record.get('PARAM_SHEET_LINK_ID')
                         current_parameter_sheet_reference_data = format_parameter_sheet_reference_list.get(current_parameter_sheet_reference_id)
                         current_parameter_sheet_reference = current_parameter_sheet_reference_data.get('select_full_name_' + lang.lower())
@@ -1614,7 +1626,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
-                    parameter["pulldown_selection"] = column_data.get('pulldown_selection')  # プルダウン選択 メニューグループ:メニュー:項目
+                    parameter["pulldown_selection"] = update_pulldown_selection  # プルダウン選択 メニューグループ:メニュー:項目
                     parameter["pulldown_selection_default_value"] = column_data.get('pulldown_selection_default_value')  # プルダウン選択 初期値
                     reference_item = column_data.get('reference_item')
                     if reference_item:
@@ -1638,7 +1650,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # カラムクラス「パラメータシート参照」用のパラメータを追加
                 if column_class == "ParameterSheetReference":
-                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
+                    parameter["parameter_sheet_reference"] = update_parameter_sheet_reference  # パラメータシート参照
 
                 parameters = {
                     "parameter": parameter,

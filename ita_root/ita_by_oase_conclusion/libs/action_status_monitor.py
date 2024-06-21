@@ -17,6 +17,7 @@ from flask import g
 from common_libs.oase.const import oaseConst
 from common_libs.notification.sub_classes.oase import OASE, OASENotificationType
 from libs.common_functions import addline_msg, InsertConclusionEvent, getLabelGroup
+from libs.notification_data import Notification_data
 
 class ActionStatusMonitor():
     def __init__(self, wsDb, EventObj):
@@ -156,8 +157,9 @@ class ActionStatusMonitor():
 
             # 通知先が設定されている場合、通知処理(事後通知)を実行する
             if action_log_row_info.get('AFTER_NOTIFICATION_DESTINATION'):
-                # 2.3の時点では、イベントの情報は空にしておく
-                after_Action_Event_List = [{}]
+
+                notification_data = Notification_data(self.wsDb, self.EventObj)
+                after_Action_Event_List = notification_data.getAfterActionEventList(action_log_row_info)
 
                 tmp_msg = g.appmsg.get_log_message("BKY-90008", ['Post-event notification'])
                 g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405

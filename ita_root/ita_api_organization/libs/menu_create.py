@@ -393,6 +393,9 @@ def _collect_common_menu_create_data(objdbca):
         else:
             name_convert_list[column_name_ret] = column_name
 
+    # Organization毎のアップロードファイルサイズ上限取得
+    org_upload_file_size_limit = get_org_upload_file_size_limit()
+
     common_data = {
         "column_class_list": column_class_list,
         "target_menu_group_list": target_menu_group_list,
@@ -400,7 +403,8 @@ def _collect_common_menu_create_data(objdbca):
         "pulldown_item_list": pulldown_item_list,
         "parameter_sheet_reference_list": parameter_sheet_reference_list,
         "role_list": role_list,
-        "name_convert_list": name_convert_list
+        "name_convert_list": name_convert_list,
+        "org_upload_file_size_limit": org_upload_file_size_limit
     }
 
     return common_data

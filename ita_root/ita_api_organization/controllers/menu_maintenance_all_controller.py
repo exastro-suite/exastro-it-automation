@@ -59,6 +59,8 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
 
         # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
         sheet_type_list = ['0', '1', '2', '3', '4']
+        # 28 : 作業管理のシートタイプ追加
+        sheet_type_list.append('28')
         check_sheet_type(menu, sheet_type_list, objdbca)
 
         # メニューに対するロール権限をチェック

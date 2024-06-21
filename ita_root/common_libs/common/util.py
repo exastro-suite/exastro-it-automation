@@ -382,7 +382,7 @@ def get_upload_file_path_specify(workspace_id, place, uuid, file_name, uuid_jnl)
     return {"file_path": file_path, "old_file_path": old_file_path}
 
 
-def upload_file(file_path, text):
+def upload_file(file_path, text, mode="bw"):
     """
     Upload a file
 
@@ -406,7 +406,7 @@ def upload_file(file_path, text):
     try:
         # #2079 /storage配下は/tmpを経由してアクセスする
         obj = storage_write()
-        fd = obj.open(file_path, "bx")
+        fd = obj.open(file_path, mode)
         obj.write(text)
         obj.close()
 
@@ -418,7 +418,7 @@ def upload_file(file_path, text):
     return True
 
 
-def encrypt_upload_file(file_path, text):
+def encrypt_upload_file(file_path, text, mode="w"):
     """
     Encode and upload file
 
@@ -444,7 +444,7 @@ def encrypt_upload_file(file_path, text):
     try:
         # #2079 /storage配下は/tmpを経由してアクセスする
         obj = storage_write()
-        fd = obj.open(file_path, "w")
+        fd = obj.open(file_path, mode)
         obj.write(text)
         obj.close()
 

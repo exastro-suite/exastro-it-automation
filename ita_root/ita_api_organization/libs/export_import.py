@@ -263,6 +263,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
     t_dp_execution_type = 'T_DP_EXECUTION_TYPE'
     t_dp_mode = 'T_DP_MODE'
     t_dp_abolished_type = 'T_DP_ABOLISHED_TYPE'
+    t_dp_journal_type = 'T_DP_JOURNAL_TYPE'
 
     try:
         # トランザクション開始
@@ -278,6 +279,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
         body_specified_time = None
         body_mode = body.get('mode')
         body_abolished_type = body.get('abolished_type')
+        body_journal_type = body.get('journal_type') if body.get('journal_type') is not None else "1"
         if body_mode == '2':
             # 日付のフォーマットチェック
             chk_date = body.get('specified_timestamp')
@@ -286,6 +288,12 @@ def execute_menu_bulk_export(objdbca, menu, body):
             except Exception:
                 raise AppException("499-01501")  # noqa: F405
             body_specified_time = body.get('specified_timestamp')
+
+        # journal_type 設定時のチェック
+        if body_journal_type not in ['1', '2']:
+            log_msg_args = "body_journal_type not in ['1', '2']"
+            api_msg_args = "body_journal_type not in ['1', '2']"
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405 ###
 
         # 『ステータスマスタ』テーブルから対象のデータを取得
         # 形式名を取得
@@ -327,6 +335,16 @@ def execute_menu_bulk_export(objdbca, menu, body):
 
         abolished_type = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
+        # 『履歴情報マスタ』テーブルから対象のデータを取得
+        # 形式名を取得
+        ret_dp_journal_type = objdbca.table_select(t_dp_journal_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [body_journal_type, 0])
+        if not ret_dp_journal_type:
+            log_msg_args = [menu]
+            api_msg_args = [menu]
+            raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+        journal_type = ret_dp_journal_type[0].get('JOURNAL_TYPE_NAME_' + lang.upper(), "1")
+
         user_name = util.get_user_name(user_id)
 
         # 登録用パラメータを作成
@@ -337,6 +355,7 @@ def execute_menu_bulk_export(objdbca, menu, body):
                 "mode": mode,
                 "abolished_type": abolished_type,
                 "specified_time": body_specified_time,
+                "journal_type": journal_type,
                 "file_name": None,
                 "execution_user": user_name,
                 "language": lang,
@@ -1345,6 +1364,9 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         'import_list': menu_group_info
     }
 
+    journal_type = dp_info_file['JOURNAL_TYPE'] if 'JOURNAL_TYPE' in dp_info_file else "1"
+    result_data["journal_type"] = journal_type
+
     return result_data
 
 def execute_menu_import(objdbca, organization_id, workspace_id, menu, body):
@@ -1401,6 +1423,8 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
     specified_time = dp_info['SPECIFIED_TIMESTAMP']
     dp_mode_name = dp_info['DP_MODE_NAME']
     abolished_type_name = dp_info['ABOLISHED_TYPE_NAME']
+
+    journal_type_name = dp_info['JOURNAL_TYPE_NAME']
 
     try:
         # トランザクション開始
@@ -1462,7 +1486,7 @@ def _menu_import_execution_from_rest(objdbca, menu, dp_info, import_path, file_n
             },
             "type": "Register"
         }
-
+        parameters["parameter"]["journal_type"] = journal_type_name
         # 登録を実行
         exec_result = objmenu.exec_maintenance(parameters, "", "", False, False, True)  # noqa: E999
         if not exec_result[0]:
@@ -1508,9 +1532,11 @@ def _check_dp_info(objdbca, menu, dp_info_file):
     # テーブル名
     t_dp_mode = 'T_DP_MODE'
     t_dp_abolished_type = 'T_DP_ABOLISHED_TYPE'
+    t_dp_journal_type = 'T_DP_JOURNAL_TYPE'
 
     dp_mode = dp_info_file['DP_MODE']
     abolished_type = dp_info_file['ABOLISHED_TYPE']
+    journal_type = dp_info_file['JOURNAL_TYPE'] if 'JOURNAL_TYPE' in dp_info_file else "1"
     specified_time = dp_info_file['SPECIFIED_TIMESTAMP']
 
     # 『モードマスタ』テーブルから対象のデータを取得
@@ -1533,6 +1559,16 @@ def _check_dp_info(objdbca, menu, dp_info_file):
 
     abolished_type_name = ret_dp_abolished_type[0].get('ABOLISHED_TYPE_NAME_' + lang.upper())
 
+    # 『履歴情報マスタ』テーブルから対象のデータを取得
+    # 形式名を取得
+    ret_dp_journal_type = objdbca.table_select(t_dp_journal_type, 'WHERE ROW_ID = %s AND DISUSE_FLAG = %s', [journal_type, 0])
+    if not ret_dp_journal_type:
+        log_msg_args = [menu]
+        api_msg_args = [menu]
+        raise AppException("499-00005", log_msg_args, api_msg_args)  # noqa: F405
+
+    journal_type_name = ret_dp_journal_type[0].get('JOURNAL_TYPE_NAME_' + lang.upper(), "1")
+
     if dp_mode != '2':
         specified_time = None
 
@@ -1543,6 +1579,8 @@ def _check_dp_info(objdbca, menu, dp_info_file):
         'ABOLISHED_TYPE_NAME': abolished_type_name,
         'SPECIFIED_TIMESTAMP': specified_time,
     }
+    result_data["JOURNAL_TYPE"] = journal_type
+    result_data["JOURNAL_TYPE_NAME"] = journal_type_name
 
     return result_data
 

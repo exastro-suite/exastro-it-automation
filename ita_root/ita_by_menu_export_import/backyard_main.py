@@ -15,6 +15,10 @@ import json
 import os
 import datetime
 import tarfile
+import pandas as pd
+import csv
+from io import StringIO
+import textwrap
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import *  # noqa: F403
@@ -30,6 +34,13 @@ import inspect
 import re
 import traceback
 
+# ドライバ一覧
+driver_list = [
+    'terraform_cloud_ep',
+    'terraform_cli',
+    'ci_cd',
+    'oase'
+]
 
 def backyard_main(organization_id, workspace_id):
     g.applogger.debug("backyard_main ita_by_menu_export_import called")
@@ -444,7 +455,7 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
             objdbca.sql_execute(delete_jnl_sql, [])
         imported_table_list.append(table_name + '_JNL')
         rpt.set_time(f"{menu_name_rest}: register data jnl")
-        _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name)
+        _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest + '_JNL', menu_id, table_name + "_JNL", dp_mode)
         rpt.set_time(f"{menu_name_rest}: register data jnl")
 
     if dp_mode == '1':
@@ -454,7 +465,7 @@ def _basic_table_preparation(objdbca, workspace_id, menu_name_rest_list, menu_na
         rpt.set_time(f"{menu_name_rest}: delete table")
     imported_table_list.append(table_name)
     rpt.set_time(f"{menu_name_rest}: register data")
-    _register_basic_data(objdbca, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode, objmenu=objmenu)
+    _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
     rpt.set_time(f"{menu_name_rest}: register data")
 
     menu_name_rest_list.remove(menu_name_rest)
@@ -897,6 +908,257 @@ def _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, me
 
     return objmenu
 
+# 一括インポート＋ファイル配置テスト
+def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode="1"):
+    """
+        インポート一括処理用
+        ARGS:
+            objdbca: DBConnectWs()
+            objmenu: load_table.bulkLoadTable()
+            workspace_id:
+            execution_no_path: 一時作業用: /tmp/<execution_no>
+            menu_name_rest:
+            menu_id:
+            table_name:
+            dp_mode: 1: 環境移行 / 2:時刻指定
+        RETURN:
+            objmenu
+    """
+    t_comn_menu_column_link = 'T_COMN_MENU_COLUMN_LINK'
+
+    organization_id = g.get("ORGANIZATION_ID")
+    workspace_id = g.get("WORKSPACE_ID")
+
+    pk = objmenu.get_primary_key()
+
+    # DATAファイル確認
+    if os.path.isfile(execution_no_path + '/' + menu_name_rest) is False:
+        # 対象ファイルなし
+        raise AppException("MSG-140003", [menu_name_rest], [menu_name_rest])
+
+    # DATAファイル読み込み
+    sql_data = file_open_read_close(execution_no_path + '/' + menu_name_rest)
+    json_sql_data = json.loads(sql_data)
+    g.applogger.debug(addline_msg('{}'.format(f"{menu_name_rest}, {table_name}, {len(json_sql_data)}")))  # noqa: F405
+    if len(json_sql_data) == 0:
+        g.applogger.info(f"{menu_name_rest}: target 0. next menu..")
+        return objmenu
+
+    # WORKSPACE_IDファイル確認
+    export_workspace_id = ''
+    if os.path.isfile(execution_no_path + '/WORKSPACE_ID'):
+        # エクスポートした環境のワークスペース名を取得
+        export_workspace_id = file_open_read_close(execution_no_path + '/WORKSPACE_ID')
+
+    # パスワードカラムを取得する
+    pass_column = ["8", "25", "26"]
+    pass_column_list = []
+    ret_pass_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s', [menu_id, pass_column])  # noqa: E501
+    pass_column_list = [record['COLUMN_NAME_REST'] for record in ret_pass_column] if len(ret_pass_column) != 0 else []
+
+    # ファイルアップロード系カラムを取得する
+    file_column = ["9", "20"]  # [FileUploadColumn, FileUploadEncryptColumn]
+    file_column_list = []
+    ret_file_column = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COLUMN_CLASS IN %s AND DISUSE_FLAG = %s', [menu_id, file_column, 0])  # noqa: E501
+    file_column_list = [record['COLUMN_NAME_REST'] for record in ret_file_column] if len(ret_file_column) != 0 else []
+
+    # 環境移行、パラメータシートの場合
+    if dp_mode == '1' and table_name.startswith('T_CMDB'):
+        chk_pk_sql = "SELECT COUNT(*) FROM `" + table_name + "` ;"
+        chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
+        record_count = list(chk_pk_record[0].values())[0]
+        # 同一テーブルで処理済みの場合、SKIP
+        if record_count == 0 and len(json_sql_data) == 0:
+            g.applogger.info(f"{menu_name_rest}: target 0. ")
+            return objmenu
+        elif record_count != 0 and record_count == len(json_sql_data):
+            g.applogger.info(f"{menu_name_rest}: already imported. ")
+            return objmenu
+
+    # rest_name -> column_name変換 + 値変換対応(PasswordColumn、ロール名)
+    _json_p_data = []
+    _json_f_data = []
+    for json_record in json_sql_data:
+        file_param = json_record['file']
+        for k, v in file_param.items():
+            if isinstance(v, str):
+                v = v.encode()
+        param = json_record['parameter']
+
+        # 移行先に主キーの重複データが既に存在するか確認
+        if dp_mode == "2" and table_name.endswith("_JNL"):
+            journal_id = param['journal_id']
+            chk_pk_sql = " SELECT * FROM `" + table_name + "` WHERE `JOURNAL_SEQ_NO` = '" + journal_id + "'"
+            chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
+            if len(chk_pk_record) != 0:
+                # 主キーが重複する場合は既存データを削除してからINSERTする
+                delete_table_sql = "DELETE FROM `" + table_name + "` WHERE `JOURNAL_SEQ_NO` = '" + journal_id + "'"
+                objdbca.sql_execute(delete_table_sql, [])
+
+                # 最終更新日時のフォーマット
+                last_update_timestamp = chk_pk_record[0].get('LAST_UPDATE_TIMESTAMP')
+                last_update_date_time = last_update_timestamp.strftime('%Y/%m/%d %H:%M:%S.%f')
+                param['last_update_date_time'] = last_update_date_time
+        elif dp_mode == "2":
+            # 移行先に主キーの重複データが既に存在するか確認
+            ret_t_comn_menu_column_link = objdbca.table_select(t_comn_menu_column_link, 'WHERE MENU_ID = %s AND COL_NAME = %s', [menu_id, pk])  # noqa: E501
+            pk_name = ret_t_comn_menu_column_link[0].get('COLUMN_NAME_REST')
+
+            pk_value = param[pk_name]
+            chk_pk_sql = " SELECT * FROM `" + table_name + "` WHERE `" + pk + "` = '" + pk_value + "'"
+            chk_pk_record = objdbca.sql_execute(chk_pk_sql, [])
+            if len(chk_pk_record) != 0:
+                # 主キーが重複する場合は既存データを削除してからINSERTする
+                delete_table_sql = "DELETE FROM `" + table_name + "` WHERE `" + pk + "` = '" + pk_value + "'"
+                objdbca.sql_execute(delete_table_sql, [])
+                # 最終更新日時のフォーマット
+                last_update_timestamp = chk_pk_record[0].get('LAST_UPDATE_TIMESTAMP')
+                last_update_date_time = last_update_timestamp.strftime('%Y/%m/%d %H:%M:%S.%f')
+                param['last_update_date_time'] = last_update_date_time
+
+        param['last_update_date_time'] = get_timestamp().strftime('%Y/%m/%d %H:%M:%S.%f')
+        param['last_updated_user'] = g.USER_ID
+
+        # PasswordColumn, ロール名置換対象の場合
+        replace_role_menus = ['role_menu_link_list', 'menu_role_creation_info', 'role_menu_link_list_JNL', 'menu_role_creation_info_JNL']
+        if menu_name_rest in replace_role_menus or len(pass_column_list) != 0:
+            # PasswordColumnかを判定
+            for _pass_column in pass_column_list:
+                if _pass_column in param and param[_pass_column] is not None:
+                    param[_pass_column] = ky_encrypt(param[_pass_column])
+
+            # ロール名をインポート先に置換
+            if menu_name_rest in replace_role_menus:
+                param = replace_role_name(workspace_id, export_workspace_id, param)
+
+        colname_parameter = objmenu.convert_restkey_colname(param, [])
+        if isinstance(colname_parameter, dict):
+            colname_parameter = [colname_parameter]
+
+        _json_p_data.append(colname_parameter[0])
+        _json_f_data.append(
+            {
+                "file": json_record.get("file") if isinstance(json_record.get("file"), dict) else {},
+                "file_path": json_record.get("file_path") if isinstance(json_record.get("file_path"), dict) else {}
+            }
+        )
+
+    ### 以下のtryは確認用
+    # LOAD DATA LOCAL INFILE用CSV変換
+    try:
+        _tmp_dir = f"{execution_no_path}/_tmp"
+        os.makedirs(_tmp_dir, exist_ok=True)  if not os.path.isdir(_tmp_dir) else None
+        json_path = f"{_tmp_dir}/{table_name}.json"
+        csv_path = f"/{_tmp_dir}/{table_name}.csv"
+        g.applogger.debug(f"{os.path.isdir(_tmp_dir)} {_tmp_dir=}")
+
+        with open(json_path, 'w') as f :
+            json.dump(_json_p_data, f, ensure_ascii=False, indent=4)
+        json_open = open(json_path, 'r')
+        json_data = json.dumps(json.load(json_open))
+
+        get_column_sql = f"SHOW COLUMNS FROM `{table_name}`"
+        columns_row = objdbca.sql_execute(get_column_sql)
+        column_type = {_r["Field"]:_r["Type"] for _r in columns_row}
+
+        # 予期せぬ小数点付きの値への対応
+        dtyp = {}
+        for ck, cv in column_type.items():
+            dtyp[ck] = "object"
+
+        df = pd.read_json(StringIO(json_data), orient='records', dtype=dtyp)
+        df = df.where(df.notnull(), None) # df.mask(df.astype(str).eq('None') & df.isna(), '')
+        g.applogger.debug(df.dtypes)
+        g.applogger.debug(df)
+        df.to_csv(csv_path, index=False) #  quoting=csv.QUOTE_ALL, na_rep="__NULL__"
+        csv_header = list(pd.read_csv(csv_path, header=0).columns)
+
+        # LOAD DATA LOCAL INFILE
+        query_str = textwrap.dedent("""
+            LOAD DATA LOCAL INFILE  '{csv_path}'
+            INTO TABLE `{table_name}`
+            FIELDS TERMINATED BY ','
+            ENCLOSED BY '"'
+            LINES TERMINATED BY '\n'
+            IGNORE 1 ROWS
+        """).format(csv_path=csv_path, table_name=table_name).strip()
+
+        # add (Colmun,,,,) & add SET Colmun = NULLIF(@{Colmun}, '')
+        set_column_str = "\n("
+        for ck in csv_header:
+            set_column_str = set_column_str +f"@{ck}, \n"
+        set_column_str = set_column_str[:-3]
+        set_column_str = set_column_str + ")\n"
+        set_column_str = set_column_str + "SET\n"
+        for ck in csv_header:
+            set_column_str = set_column_str + f"{ck} =  NULLIF(@{ck}, ''),"
+        set_column_str = set_column_str[:-1]
+        query_str = query_str + set_column_str
+
+        g.applogger.debug(query_str)  # noqa: F405
+        objdbca.sql_execute(query_str)
+
+        # ファイルアップロード系カラムの配置処理
+        if len(file_column_list) == 0:
+            g.applogger.debug(f"{menu_name_rest}: Skip due to 0 file upload targets")
+        else:
+            g.applogger.debug(f"{menu_name_rest}: 'File upload & symlink")
+            # ファイル配置: 各レコード->ファイル項目
+            for _jfd in _json_f_data:
+                for _jfk, _jfv in _jfd["file_path"].items():
+                    if _jfv is None:
+                        # file_pathがNoneの時、SKIP
+                        continue
+                    # if _jfk not in _jfd["file"] or (_jfk in _jfd["file"] and _jfd["file"][_jfk] is None):
+                    #     # file内の対象が空の時、SKIP
+                    #     continue
+
+                    if isinstance(_jfv, dict):
+                        # path
+                        f_src_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['src'].replace(_jfv['name'], '')}"
+                        f_src = f"/storage/{organization_id}/{workspace_id}{_jfv['src']}"
+                        # f_dst_dir = f"/storage/{organization_id}/{workspace_id}{_jfv['dst'].replace(_jfv['name'], '')}"
+                        f_dst = f"/storage/{organization_id}/{workspace_id}{_jfv['dst']}"
+                        tmp_f_src = f_src.replace("/storage/", "/tmp/")
+                        tmp_f_entity = f"{execution_no_path}{_jfv['src']}"
+
+                        g.applogger.debug(f"{os.path.isfile(tmp_f_entity)} {tmp_f_entity}")
+                        if not os.path.isfile(tmp_f_entity):
+                            # KYMファイル解凍後のuploadfiles配下にファイルが無い場合、SKIP
+                            g.applogger.info(f"{tmp_f_entity} does not exist, so it will be skipped")
+                            continue
+
+                        # makedirs -> remove
+                        os.makedirs(f_src_dir) if not os.path.isdir(f_src_dir) else None
+                        os.remove(tmp_f_src) if os.path.isfile(tmp_f_src) else None
+                        os.remove(f_src) if os.path.isfile(f_src) else None
+
+                        # upload_file
+                        if _jfv['class_name'] == "FileUploadEncryptColumn":
+                            objsr = storage_read()
+                            objsr.open(tmp_f_entity, mode="rb")
+                            tmp_f_entity_f = base64.b64encode(objsr.read()).decode()
+                            objsr.close()
+                            encrypt_upload_file(f_src, tmp_f_entity_f, mode="w")
+                        else:
+                            # upload_file(f_src, _jfd["file"][_jfk], "bw")
+                            shutil.copyfile(tmp_f_entity, f_src)
+
+                        # symlink
+                        if os.path.isfile(f_src):
+                            os.unlink(f_dst) if os.path.islink(f_dst) else None
+                            os.symlink(f_src, f_dst)
+
+    except Exception as e:
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        raise e
+    finally:
+        os.remove(csv_path) if os.path.isfile(csv_path) else None
+        os.remove(json_path) if os.path.isfile(json_path) else None
+
+    return objmenu
+
 
 def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles_dir):  # noqa: C901
     """
@@ -916,6 +1178,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         mode = json_storage_item.get('mode')
         abolished_type = json_storage_item.get('abolished_type')
         specified_time = json_storage_item.get('specified_timestamp')
+        journal_type = json_storage_item.get('journal_type', "1")
+
         tmp_msg = "Target record data: {}, {}, {}, {}, {}".format(execution_no, json_storage_item, mode, abolished_type, specified_time)
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
 
@@ -966,7 +1230,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             "menu_groups": menu_group_list,
         }
         menus_data_path = dir_path + '/MENU_GROUPS'
-        file_open_write_close(menus_data_path, 'w', json.dumps(menus_data))
+        file_open_write_close(menus_data_path, 'w', json.dumps(menus_data, indent=4))
 
         menu_group_id_dict = {}
         for menu_group_id in parent_menu_group_id_list:
@@ -981,7 +1245,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
                 menu_group_id_dict[menu_group_id] = menu_group_name_dict
 
         parent_menus_data_path = dir_path + '/PARENT_MENU_GROUPS'
-        file_open_write_close(parent_menus_data_path, 'w', json.dumps(menu_group_id_dict))
+        file_open_write_close(parent_menus_data_path, 'w', json.dumps(menu_group_id_dict, indent=4))
 
         # 更新系テーブル取得
         filter_parameter = {}
@@ -1004,8 +1268,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         for menu in menu_list:
             DB_path = dir_path + '/' + menu
-            objmenu = load_table.loadTable(objdbca, menu)   # noqa: F405
-
+            # objmenu = load_table.loadTable(objdbca, menu)   # noqa: F405
+            objmenu = load_table.bulkLoadTable(objdbca, menu)   # noqa: F405
             if menu == 'movement_list_ansible_legacy':
                 filter_parameter["orchestrator"] = {"LIST": ['Ansible Legacy']}
             elif menu == 'movement_list_ansible_pioneer':
@@ -1017,28 +1281,32 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             elif menu == 'movement_list_terraform_cli':
                 filter_parameter["orchestrator"] = {"LIST": ['Terraform CLI']}
 
+            g.applogger.info(addline_msg('{}'.format(f'{menu}')))
             filter_mode = 'export'
-            status_code, result, msg = objmenu.rest_export_filter(filter_parameter, filter_mode)
+            status_code, result, msg = objmenu.rest_export_filter(filter_parameter, filter_mode, abolished_type, journal_type)
             if status_code != '000-00000':
                 log_msg_args = [msg]
                 api_msg_args = [msg]
                 raise AppException(status_code, log_msg_args, api_msg_args)
 
-            file_open_write_close(DB_path, 'w', json.dumps(result, ensure_ascii=False))
+            _collect_files(objmenu, dir_path, menu, result)
+            file_open_write_close(DB_path, 'w', json.dumps(result, ensure_ascii=False, indent=4))
 
             # 履歴テーブル
             history_flag = objmenu.get_objtable().get('MENUINFO').get('HISTORY_TABLE_FLAG')
             if history_flag == '1':
                 DB_path = dir_path + '/' + menu + '_JNL'
                 filter_mode = 'export_jnl'
-
+                g.applogger.info(addline_msg('{}'.format(f'{menu+ "_JNL"}')))
                 # 廃止を含まない場合、本体のテーブルの廃止状態を確認してデータ取得
-                status_code, result, msg = objmenu.rest_export_filter(filter_parameter_jnl, filter_mode, abolished_type)
+                status_code, result, msg = objmenu.rest_export_filter(filter_parameter_jnl, filter_mode, abolished_type, journal_type)
                 if status_code != '000-00000':
                     log_msg_args = [msg]
                     api_msg_args = [msg]
                     raise AppException(status_code, log_msg_args, api_msg_args)
-                file_open_write_close(DB_path, 'w', json.dumps(result, ensure_ascii=False))
+
+                _collect_files(objmenu, dir_path, menu + '_JNL', result)
+                file_open_write_close(DB_path, 'w', json.dumps(result, ensure_ascii=False, indent=4))
 
         # 対象のDBのテーブル定義を出力（sqldump用
         menu_id_sql = " SELECT * FROM `T_COMN_MENU` WHERE `DISUSE_FLAG` <> 1 AND `MENU_NAME_REST` IN %s "
@@ -1117,7 +1385,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         # インポート時に利用するT_COMN_MENU_DATAを作成する
         t_comn_menu_data_path = dir_path + '/T_COMN_MENU_DATA'
-        objmenu = load_table.loadTable(objdbca, 'menu_list')   # noqa: F405
+        # objmenu = load_table.loadTable(objdbca, 'menu_list')   # noqa: F405
+        objmenu = load_table.bulkLoadTable(objdbca, 'menu_list')   # noqa: F405
         filter_parameter = {"discard": {"LIST": ["0"]}, "menu_name_rest": {"LIST": menu_list}}
         filter_mode = 'export'
         status_code, result, msg = objmenu.rest_export_filter(filter_parameter, filter_mode)
@@ -1125,7 +1394,7 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException(status_code, log_msg_args, api_msg_args)
-        file_open_write_close(t_comn_menu_data_path, 'w', json.dumps(result, ensure_ascii=False))
+        file_open_write_close(t_comn_menu_data_path, 'w', json.dumps(result, ensure_ascii=False, indent=4))
 
         # インポート時に利用するMENU_NAME_REST_LISTを作成する
         menu_name_rest_list = ",".join(menu_list)
@@ -1134,7 +1403,8 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
 
         # インポート時に利用するT_COMN_MENU_TABLE_LINK_DATAを作成する
         t_comn_menu_table_link_data_path = dir_path + '/T_COMN_MENU_TABLE_LINK_DATA'
-        objmenu = load_table.loadTable(objdbca, 'menu_table_link_list')   # noqa: F405
+        # objmenu = load_table.loadTable(objdbca, 'menu_table_link_list')   # noqa: F405
+        objmenu = load_table.bulkLoadTable(objdbca, 'menu_table_link_list')   # noqa: F405
         filter_parameter = {"discard": {"LIST": ["0"]}, "uuid": {"LIST": table_definition_id_list}}
         filter_mode = 'export'
         status_code, result, msg = objmenu.rest_export_filter(filter_parameter, filter_mode)
@@ -1142,16 +1412,17 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
             log_msg_args = [msg]
             api_msg_args = [msg]
             raise AppException(status_code, log_msg_args, api_msg_args)
-        file_open_write_close(t_comn_menu_table_link_data_path, 'w', json.dumps(result, ensure_ascii=False))
+        file_open_write_close(t_comn_menu_table_link_data_path, 'w', json.dumps(result, ensure_ascii=False, indent=4))
 
         # アップロード時に利用するDP_INFOファイルを作成する
         dp_info = {
             "DP_MODE": mode,
             "ABOLISHED_TYPE": abolished_type,
+            "JOURNAL_TYPE": journal_type,
             "SPECIFIED_TIMESTAMP": specified_time
         }
         dp_info_path = dir_path + '/DP_INFO'
-        file_open_write_close(dp_info_path, 'w', json.dumps(dp_info))
+        file_open_write_close(dp_info_path, 'w', json.dumps(dp_info, indent=4))
 
         # ロール-メニュー紐付管理のロール置換用にエクスポート時のWORKSPACE_IDを確保しておく
         workspace_id_path = dir_path + '/WORKSPACE_ID'
@@ -1162,6 +1433,24 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         version_data = _collect_ita_version(common_db)
         version_path = dir_path + '/VERSION'
         file_open_write_close(version_path, 'w', version_data["version"])
+
+        # エクスポート環境のドライバ情報をDRIVERSに確保しておく
+        installed_driver_path = dir_path + '/DRIVERS'
+        installed_driver_list = json.dumps(list(version_data["installed_driver"].keys()), indent=4)
+        file_open_write_close(installed_driver_path, 'w', installed_driver_list)
+
+        # エクスポート環境のワークスペースDB(SQL)を確保しておく
+        wsdb_sql_path = f"{os.getenv('PYTHONPATH')}sql"
+        expoet_db_sql_path = dir_path + '/sql'
+        if os.path.isdir(wsdb_sql_path):
+            shutil.copytree(wsdb_sql_path, expoet_db_sql_path)
+
+        # インポート環境で対応が必要なメニュー-カラム-カラムクラスを確保しておく
+        # 暗号化、ファイル配置、ロール置換
+        action_column_info = _collect_action_column_class(objdbca)
+        installed_driver_path = dir_path + '/ACTION_COLUMN_LIST'
+        installed_driver_list = json.dumps(action_column_info, indent=4)
+        file_open_write_close(installed_driver_path, 'w', installed_driver_list)
 
         # データをtar.gzにまとめる
         gztar_path = dir_path + '.tar.gz'
@@ -1243,6 +1532,50 @@ def menu_export_exec(objdbca, record, workspace_id, export_menu_dir, uploadfiles
         # 異常系リターン
         return False, msg, trace_msg
 
+def _collect_files(objmenu, dir_path, menu, parameters):
+    """ Copy file or decrypt the file and place
+            FileUploadColumn
+            FileUploadEncryptColumn
+    Args:
+        objmenu (object): loadtable
+        dir_path (str): workdir path
+        menu (str): menu_name_rest
+        parameters (list): parameter, [{"parameter":{}, "file":{}, "file_path":{}}]
+    """
+    # ファイルアップロード系の項目
+    fileup_columns = [_k for _k in objmenu.restkey_list if objmenu.get_col_class_name(_k) in ["FileUploadColumn", "FileUploadEncryptColumn"]]
+    if fileup_columns == []:
+        #  ファイルアップロード系がない場合、終了
+        g.applogger.debug(addline_msg('{}'.format(f'FileUploadColumn does not exist, so it will be skipped')))
+        return
+
+    _files_path =  f"{dir_path}"
+    g.applogger.info(addline_msg('{}'.format(f"{menu} {len(parameters)}, {fileup_columns}")))
+    for _p in parameters:
+        for _pk in fileup_columns:
+            _pd =  _p["file_path"].get(_pk)
+            _cnt = list(set(_pd.values())) if _pd is not None else []
+            if len(_cnt) == 0 or (len(_cnt) == 1 and None in _cnt):
+                # 対象ファイルがない場合SKIP
+                g.applogger.debug(addline_msg('{}'.format(f'target file does not exist, so it will be skipped')))
+                continue
+            tmp_file_path = f"{_files_path}{_pd['src']}"
+            tmp_dir_path = tmp_file_path.replace(_pd['name'], "")
+            entity_path = _pd["ori_src"] if _pd["entity"] == "" else _pd["entity"]
+
+            if os.path.isfile(tmp_file_path):
+                # ファイルがない場合SKIP
+                g.applogger.debug(addline_msg('{}'.format(f'File does not exist: {tmp_file_path} ')))
+                continue
+
+            # ファイルをコピー or 複合化して配置
+            os.makedirs(tmp_dir_path, exist_ok=True)
+            g.applogger.debug(addline_msg('{}'.format(f'{_pd["class_name"]} {entity_path} {tmp_file_path}')))
+            if _pd['class_name'] == "FileUploadColumn":
+                shutil.copyfile(entity_path, tmp_file_path)
+            elif _pd['class_name'] == "FileUploadEncryptColumn":
+                file_decode_upload_file(entity_path, tmp_file_path)
+            g.applogger.debug(addline_msg('{}'.format(f'{os.path.isfile(tmp_file_path)} {tmp_file_path}')))
 
 def _collect_ita_version(common_db):
     """
@@ -1274,6 +1607,46 @@ def _collect_ita_version(common_db):
     }
 
     return version_data
+
+def _collect_action_column_class(objdbca):
+    """
+    追加処理ありのカラムクラスの取得
+        Role関連
+            18: "RoleIDColumn"
+        暗号化処理関連
+            8:  "PasswordColumn"
+            16: "SensitiveSingleTextColumn"
+            17: "SensitiveMultiTextColumn"
+        ファイル関連
+            9:  "FileUploadColumn"
+            20: "FileUploadEncryptColumn"
+    """
+    query_str = textwrap.dedent("""
+        SELECT
+            TAB_B.`MENU_NAME_REST`,
+            TAB_A.`COLUMN_NAME_REST`,
+            TAB_C.`COLUMN_CLASS_NAME`
+        FROM
+            `T_COMN_MENU_COLUMN_LINK` TAB_A
+        JOIN `T_COMN_MENU` TAB_B ON
+            (TAB_A.`MENU_ID` = TAB_B.`MENU_ID`)
+        JOIN `T_COMN_COLUMN_CLASS` TAB_C ON
+            (
+                TAB_A.`COLUMN_CLASS` = TAB_C.`COLUMN_CLASS_ID`
+            )
+        WHERE
+            TAB_A.`DISUSE_FLAG` = 0
+        AND TAB_B.`DISUSE_FLAG` = 0
+        AND TAB_A.`COLUMN_CLASS` IN ('18', '8', '16', '17', '9', '20')
+        ;
+    """).format().strip()
+
+    ret = objdbca.sql_execute(query_str)
+    result ={}
+    for _r in ret:
+        result.setdefault(_r["MENU_NAME_REST"],{})
+        result[_r["MENU_NAME_REST"]].setdefault(_r["COLUMN_NAME_REST"], _r["COLUMN_CLASS_NAME"])
+    return result
 
 
 def _create_objmenu(objdbca, menu_name_rest_list, target_menu):
@@ -1817,10 +2190,12 @@ def import_table_and_data(
         objmenu = load_table.loadTable(objdbca, menu_name_rest)
         if history_table_flag == '1':
             rpt.set_time(f"{menu_name_rest}:  register data jnl")
-            objmenu = _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
+            # objmenu = _register_history_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
+            objmenu = _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest + '_JNL', menu_id, table_name + "_JNL", dp_mode)
             rpt.set_time(f"{menu_name_rest}:  register data jnl")
         rpt.set_time(f"{menu_name_rest}: register data")
-        objmenu = _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
+        # objmenu = _register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
+        objmenu = _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_name_rest, menu_id, table_name, dp_mode)
         rpt.set_time(f"{menu_name_rest}: register data")
 
         if objdbca._is_transaction:
@@ -1831,6 +2206,48 @@ def import_table_and_data(
             objdbca._is_transaction = False
 
         g.applogger.info(f"Target Menu: {menu_name_rest} END")
+
+
+def file_decode_upload_file(src_path, dst_path):
+    """
+    Decrypt and place encrypted files
+
+    Arguments:
+        src_path: Decode target filepath
+        dst_path: output target filepath
+    Returns:
+        dst_path string
+    """
+    is_file = os.path.isfile(src_path)
+    if not is_file:
+        return ""
+
+    # #2079 /storage配下は/tmpを経由してアクセスする
+    obj = storage_base()
+    storage_flg = obj.path_check(src_path)
+    if storage_flg is True:
+        # /storage
+        tmp_file_path = obj.make_temp_path(src_path)
+        # /storageから/tmpにコピー
+        shutil.copy2(src_path, tmp_file_path)
+    else:
+        # not /storage
+        tmp_file_path = src_path
+
+    with open(tmp_file_path, "rb") as f:
+        text = f.read().decode()
+    f.close()
+
+    if storage_flg is True:
+        # /tmpゴミ掃除
+        if os.path.isfile(tmp_file_path) is True:
+            os.remove(tmp_file_path)
+
+    text_decrypt = ky_decrypt(text)
+
+    upload_file(dst_path, base64.b64encode(text_decrypt.encode()).decode(), mode="bw")
+
+    return dst_path
 
 class RecordProcessingTimes():
     def __init__(self) -> None:

@@ -669,6 +669,10 @@ export function messageid_en() {
         'FTE07034' : "Unknown menu group",
         'FTE07035' : "Contains menus that cannot be imported.",
         'FTE07036' : "Loading import file",
+        'FTE07037' : "History",
+        'FTE07038' : "History",
+        'FTE07039' : "History available",
+        'FTE07040' : "No history",
 
         // DashBoard
         'FTE08001' : "Menu group",

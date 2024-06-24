@@ -75,7 +75,8 @@ class DBConnectCommon:
                 database=self._db,
                 charset='utf8mb4',
                 collation='utf8mb4_general_ci',
-                cursorclass=pymysql.cursors.DictCursor
+                cursorclass=pymysql.cursors.DictCursor,
+                local_infile = True,
             )
         except pymysql.Error as e:
             raise AppException("999-00002", [self._db, e])

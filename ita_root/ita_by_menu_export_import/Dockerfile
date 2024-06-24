@@ -92,6 +92,9 @@ COPY ./ita_root/ita_by_menu_export_import/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
+COPY ./ita_root/ita_migration/versions/ $APP_PATH/versions/
+COPY ./ita_root/ita_migration/version.list $APP_PATH/version.list
+COPY ./ita_root/ita_api_admin/sql/ $APP_PATH/sql/
 
 #
 # Build for production
@@ -108,6 +111,9 @@ COPY ./ita_root/ita_by_menu_export_import/ $APP_PATH/
 COPY ./ita_root/common_libs/ $APP_PATH/common_libs/
 COPY ./ita_root/messages/ $APP_PATH/messages/
 COPY ./ita_root/backyard/ $APP_PATH/backyard/
+COPY ./ita_root/ita_migration/versions/ $APP_PATH/versions/
+COPY ./ita_root/ita_migration/version.list $APP_PATH/version.list
+COPY ./ita_root/ita_api_admin/sql/ $APP_PATH/sql/
 
 USER root
 RUN chmod a+x $APP_PATH/backyard/entrypoint.sh

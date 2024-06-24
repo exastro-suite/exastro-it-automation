@@ -828,7 +828,7 @@ def create_column_info_trace_history(
 
         # 最後に列をグレーにするために登録不可の行を記憶しておく
         # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合
-        if input_item == '1' or view_item == '0' or not (input_item == '2' and view_item == '2'):
+        if auto_input == '1' or input_item == '0' or (input_item == '2' and view_item == '2'):
             gray_column.append(get_column_letter(column_num))
 
     # フィルター設定
@@ -1633,7 +1633,7 @@ def execute_excel_maintenance(
 
         # 登録更新時に不要な項目
         # issue 2477 INPUT_ITEM:2 and VIEW_ITEM:2の場合
-        if input_item == '1' or view_item == '0' or not (input_item == '2' and view_item == '2'):
+        if auto_input == '1' or input_item == '0' or (input_item == '2' and view_item == '2'):
             register_list.append(column_name_rest)
 
         # カラムクラスIDがファイルアップロードのものは除外する

@@ -14,6 +14,7 @@
 import re
 import os
 import base64
+import textwrap
 from flask import g
 from .column_class import Column
 from common_libs.common import *  # noqa: F403
@@ -264,11 +265,40 @@ class FileUploadColumn(Column):
                 dir_path = path["file_path"]
                 old_file_path = path["old_file_path"]
                 if target_uuid_jnl:
-                    if not os.path.isfile(old_file_path):
-                        return None
                     # target_uuid_jnl指定時
                     # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
                     result = file_encode(old_file_path)  # noqa: F405
+                    # 履歴からファイルの実態まで検索
+                    if isinstance(result, str) and len(result) == 0:
+                        target_uuid_jnls = []
+                        column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
+                        self.set_column_list(column_list)
+                        self.set_primary_key(primary_key_list[0])
+                        query_str = textwrap.dedent("""
+                            SELECT * FROM `{table_name}`
+                            WHERE `{primary_key}` = %s
+                            AND `DISUSE_FLAG` = 0
+                            AND `JOURNAL_REG_DATETIME` <
+                                (
+                                    SELECT `JOURNAL_REG_DATETIME` FROM `{table_name}`
+                                    WHERE `JOURNAL_SEQ_NO` = %s
+                                    ORDER BY `JOURNAL_REG_DATETIME` DESC LIMIT 1
+                                )
+                        """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
+                        query_result = self.objdbca.sql_execute(query_str, [target_uuid, target_uuid_jnl])
+                        target_uuid_jnls = [ _row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
+                        for _tuj in target_uuid_jnls:
+                            if not ret:
+                                path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, _tuj)   # noqa:F405
+                            else:
+                                path = get_upload_file_path_specify(workspace_id, ret, target_uuid, file_name, _tuj)   # noqa:F405
+                            if os.path.isfile(path["old_file_path"]):
+                                old_file_path = path["old_file_path"]
+                                break
+                        result = file_encode(old_file_path)  # noqa: F405
+
+                    if not os.path.isfile(old_file_path):
+                        return None
                 else:
                     if not os.path.isfile(dir_path):
                         return None
@@ -306,6 +336,37 @@ class FileUploadColumn(Column):
                     # target_uuid_jnl指定時
                     # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
                     result = file_decode(old_file_path)  # noqa: F405
+                    # 履歴からファイルの実態まで検索
+                    if isinstance(result, str) and len(result) == 0:
+                        target_uuid_jnls = []
+                        column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
+                        self.set_column_list(column_list)
+                        self.set_primary_key(primary_key_list[0])
+                        query_str = textwrap.dedent("""
+                            SELECT * FROM `{table_name}`
+                            WHERE `{primary_key}` = %s
+                            AND `DISUSE_FLAG` = 0
+                            AND `JOURNAL_REG_DATETIME` <
+                                (
+                                    SELECT `JOURNAL_REG_DATETIME` FROM `{table_name}`
+                                    WHERE `JOURNAL_SEQ_NO` = %s
+                                    ORDER BY `JOURNAL_REG_DATETIME` DESC LIMIT 1
+                                )
+                        """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
+                        query_result = self.objdbca.sql_execute(query_str, [target_uuid, target_uuid_jnl])
+                        target_uuid_jnls = [ _row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
+                        for _tuj in target_uuid_jnls:
+                            if not ret:
+                                path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, _tuj)   # noqa:F405
+                            else:
+                                path = get_upload_file_path_specify(workspace_id, ret, target_uuid, file_name, _tuj)   # noqa:F405
+                            if os.path.isfile(path["old_file_path"]):
+                                old_file_path = path["old_file_path"]
+                                break
+                        result = file_decode(old_file_path)  # noqa: F405
+
+                    if not os.path.isfile(old_file_path):
+                        return None
                 else:
                     # ファイルの中身を読み込んでbase64に変換してreturn　読み込めなかったらFalse
                     result = file_decode(dir_path)  # noqa: F405
@@ -427,3 +488,78 @@ class FileUploadColumn(Column):
                         msg = g.appmsg.get_api_message('MSG-00017', [old_dir_path])
 
         return retBool, msg
+
+
+    def get_file_path_info(self, file_name, target_uuid, target_uuid_jnl='', journal_type='1'):
+        """
+            ファイル配置先のパス情報を取得
+            ARGS:
+                file_name:ファイル名
+                target_uuid: uuid
+                target_uuid_jnl: uuid
+                journal_type:
+                    "1": 全ての履歴 - ファイル配置先(ファイル変更が発生した履歴ID)のパス
+                    "2": 最新の履歴のみ - ファイル配置先(最後に変更した履歴ID)のパス
+            RETRUN:
+                result {} / None
+                {
+                    name: File name
+                    class_name: Column class name
+                    dst: SymbolicLink Path,
+                    src: File Path
+                }
+        """
+        result = None
+        if file_name is not None and len(file_name) != 0:
+            organization_id = g.get("ORGANIZATION_ID")
+            workspace_id = g.get("WORKSPACE_ID")
+            menu_id = self.get_menu()
+            rest_name = self.get_rest_key_name()
+
+            ret = self.get_file_upload_place()
+            if not ret:
+                path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, target_uuid_jnl)   # noqa:F405
+            else:
+                path = get_upload_file_path_specify(workspace_id, ret, target_uuid, file_name, target_uuid_jnl)   # noqa:F405
+
+            dir_path = path["file_path"]
+            old_file_path = path["old_file_path"]
+            entity_file_path = path["old_file_path"]
+
+            # 履歴からファイルの配置先まで検索
+            if os.path.isfile(old_file_path) is False:
+                target_uuid_jnls = []
+                column_list, primary_key_list = self.objdbca.table_columns_get(self.get_table_name())
+                self.set_column_list(column_list)
+                self.set_primary_key(primary_key_list[0])
+                query_str = textwrap.dedent("""
+                    SELECT * FROM `{table_name}`
+                    WHERE `{primary_key}` = %s
+                    AND `DISUSE_FLAG` = 0
+                    ORDER BY `JOURNAL_REG_DATETIME` DESC
+                """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
+                query_result = self.objdbca.sql_execute(query_str, [target_uuid])
+                target_uuid_jnls = [ _row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
+                for _tuj in target_uuid_jnls:
+                    if not ret:
+                        path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, _tuj)   # noqa:F405
+                    else:
+                        path = get_upload_file_path_specify(workspace_id, ret, target_uuid, file_name, _tuj)   # noqa:F405
+                    # 最新のファイル配置先を検索
+                    if os.path.isfile(path["old_file_path"]):
+                        old_file_path = path["old_file_path"]
+                        entity_file_path = path["old_file_path"]
+                        # エクスポート時(履歴なし)、履歴IDを最後に変更した履歴IDに置換
+                        if journal_type == "2":
+                            old_file_path = path["old_file_path"].replace(f"/old/{_tuj}/", f"/old/{target_uuid_jnls[0]}/")
+                        break
+            result = {}
+            result["name"] = file_name
+            result["class_name"] = self.class_name
+            result["dst"] = dir_path.replace(f"/storage/{organization_id}/{workspace_id}", "")
+            result["src"] = old_file_path.replace(f"/storage/{organization_id}/{workspace_id}", "")
+            result["ori_dst"] = dir_path
+            result["ori_src"] = old_file_path
+            result["entity"] = entity_file_path if entity_file_path != "" else old_file_path
+
+        return result

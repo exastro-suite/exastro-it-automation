@@ -63,7 +63,8 @@ FROM common_build
 ARG USERNAME
 ARG GROUPNAME
 
-RUN ansible-galaxy collection install servicenow.servicenow \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    ansible-galaxy collection install servicenow.servicenow \
 &&  pip3.9 install --upgrade pysnow
 
 USER $USERNAME

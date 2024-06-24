@@ -1375,21 +1375,21 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                 column_class = column_data.get('column_class')
                 item_name = column_data.get('item_name')
 
+                # 0,1を文字列のTrue,Falseに変換
+                required = column_data.get('required')
+                if required == '1':
+                    required = 'True'
+                else:
+                    required = 'False'
+
+                uniqued = column_data.get('required')
+                if uniqued == '1':
+                    uniqued = 'True'
+                else:
+                    uniqued = 'False'
+
                 # 「編集」の場合、登録済みレコードとの差分によるバリデーションチェックを行う
                 if type_name == 'edit':
-                    # 0,1を文字列のTrue,Falseに変換
-                    required = column_data.get('required')
-                    if required == '1':
-                        required = 'True'
-                    else:
-                        required = 'False'
-
-                    uniqued = column_data.get('required')
-                    if uniqued == '1':
-                        uniqued = 'True'
-                    else:
-                        uniqued = 'False'
-
                     # カラムクラスのIDと名称の紐付け取得
                     column_class_list = objdbca.table_select(v_menu_column_class, 'ORDER BY DISP_SEQ ASC')
                     column_class_dict = {}

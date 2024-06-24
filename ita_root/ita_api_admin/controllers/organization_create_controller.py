@@ -708,12 +708,13 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
 
                 # create table of workspace-db
+                g.applogger.info(" execute " + ddl_file)
                 ws_db.sqlfile_execute(ddl_file)
-                g.applogger.debug(" executed " + ddl_file)
 
                 # insert initial data of workspace-db
                 ws_db.db_transaction_start()
                 # #2079 /storage配下ではないので対象外
+                g.applogger.info(" execute " + dml_file)
                 with open(dml_file, "r") as f:
                     sql_list = f.read().split(";\n")
                     for sql in sql_list:
@@ -729,7 +730,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
                             sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
 
                         ws_db.sql_execute(sql, prepared_list)
-                g.applogger.debug(" executed " + dml_file)
                 ws_db.db_commit()
                 g.applogger.info(" INSTALLING {} END".format(install_driver))
 

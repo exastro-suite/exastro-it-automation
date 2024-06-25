@@ -20,7 +20,8 @@ ARG USERNAME
 ARG GROUPNAME
 ARG WORK_PATH
 
-RUN dnf install -y \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y \
     openssh-clients \
     python39 \
     python39-devel \
@@ -33,12 +34,20 @@ RUN dnf install -y \
 WORKDIR $WORK_PATH
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/pyproject.toml ./ita_root/ita_by_ansible_execute/ita_ansible_agent/poetry.lock $WORK_PATH/
-RUN poetry install --only first_install
-RUN poetry install
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install --only first_install
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    poetry install
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/centos8.repo /etc/yum.repos.d/centos8.repo
-RUN dnf install -y --enablerepo=baseos expect
-RUN dnf install -y --enablerepo=appstream telnet
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y --enablerepo=baseos expect
+
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    dnf install -y --enablerepo=appstream telnet
 
 COPY ./ita_root/ita_by_ansible_execute/ita_ansible_agent/config/ansible.cfg /etc/ansible/ansible.cfg
 
@@ -54,7 +63,8 @@ FROM common_build
 ARG USERNAME
 ARG GROUPNAME
 
-RUN ansible-galaxy collection install servicenow.servicenow \
+RUN --mount=type=secret,id=host_certificate_file,dst=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+    ansible-galaxy collection install servicenow.servicenow \
 &&  pip3.9 install --upgrade pysnow
 
 USER $USERNAME

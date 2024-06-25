@@ -633,11 +633,11 @@ def organization_update(organization_id, body=None):  # noqa: E501
             g.applogger.info("Updating on workspace(workspace_id = {})".format(workspace_id))
             role_id = f'_{workspace_id}-admin'
 
-            # 追加対象のドライバをループし、SQLファイルを実行する。
             # Workspace DB connect
             ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
             last_update_timestamp = str(get_timestamp())
 
+            # 追加対象のドライバをループし、SQLファイルを実行する。
             for install_driver in add_drivers:
                 g.applogger.info(" INSTALLING {} START".format(install_driver))
                 # SQLファイルを特定する。

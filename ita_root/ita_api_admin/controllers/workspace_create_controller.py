@@ -29,7 +29,7 @@ from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
+from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
 from common_libs.api import app_exception_response, exception_response
@@ -115,7 +115,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         if 'oase' not in no_install_driver:
             mongo_host = mongo_host = os.environ.get('MONGO_HOST', '')
             mongo_owner = bool(orgdb_connect_info['MONGO_OWNER'])
-            mongo_connection_string = orgdb_connect_info['MONGO_CONNECTION_STRING']
+            mongo_connection_string = ky_decrypt(orgdb_connect_info['MONGO_CONNECTION_STRING'])
             if not mongo_host and not mongo_connection_string:
                 # OASEが有効かつ、環境変数「MONGO_HOST」と「MONGO_CONNECTION_STRING」両方に値が無い場合は、workspace作成をできないようにする。
                 org_db.db_disconnect()
@@ -147,7 +147,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             'DB_USER': db_username,
             'DB_PASSWORD': ky_encrypt(db_user_password),
             'DB_DATABASE': ws_db_name,
-            'MONGO_CONNECTION_STRING': mongo_connection_string,
+            'MONGO_CONNECTION_STRING': ky_encrypt(mongo_connection_string),
             'MONGO_DATABASE': ws_mongo_name,
             'MONGO_USER': ws_mongo_user,
             'MONGO_PASSWORD': ky_encrypt(ws_mongo_password),
@@ -279,6 +279,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         if 'oase' not in no_install_driver:
         # OASEのmongo設定（インデックスなど）
             ws_mongo = MONGOConnectWs()
+            # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
             ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
             # # 元イベントデータの保持期限 90日
             # ws_mongo.collection(mongoConst.EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
@@ -385,7 +386,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         org_root_db.user_drop(connect_info['DB_USER'])
         org_root_db.db_disconnect()
 
-        if 'oase' not in no_install_driver:
+        if 'oase' not in no_install_driver and connect_info.get('MONGO_DATABASE'):
             org_mongo = MONGOConnectOrg(org_db)
             org_mongo.drop_database(connect_info['MONGO_DATABASE'])
             if bool(org_connect_info['MONGO_OWNER']) is True:

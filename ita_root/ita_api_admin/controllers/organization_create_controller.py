@@ -629,8 +629,46 @@ def organization_update(organization_id, body=None):  # noqa: E501
         # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
         for workspace_data in workspace_data_list:
             workspace_id = workspace_data['WORKSPACE_ID']
-            g.applogger.info("Updating to workspace(workspace_id = {})".format(workspace_id))
+            g.applogger.info("Updating on workspace(workspace_id = {})".format(workspace_id))
             role_id = f'_{workspace_id}-admin'
+
+            # Workspace DB connect
+            ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
+            last_update_timestamp = str(get_timestamp())
+
+            # 追加対象のドライバをループし、SQLファイルを実行する。
+            for install_driver in add_drivers:
+                g.applogger.info(" INSTALLING {} START".format(install_driver))
+                # SQLファイルを特定する。
+                sql_files = driver_sql[install_driver]
+                ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
+                dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
+
+                # create table of workspace-db
+                g.applogger.info(" execute " + ddl_file)
+                ws_db.sqlfile_execute(ddl_file)
+
+                # insert initial data of workspace-db
+                ws_db.db_transaction_start()
+                # #2079 /storage配下ではないので対象外
+                g.applogger.info(" execute " + dml_file)
+                with open(dml_file, "r") as f:
+                    sql_list = f.read().split(";\n")
+                    for sql in sql_list:
+                        if re.fullmatch(r'[\s\n\r]*', sql):
+                            continue
+
+                        sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
+
+                        prepared_list = []
+                        trg_count = sql.count('__ROLE_ID__')
+                        if trg_count > 0:
+                            prepared_list = list(map(lambda a: role_id, range(trg_count)))
+                            sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
+
+                        ws_db.sql_execute(sql, prepared_list)
+                ws_db.db_commit()
+                g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
 
             # OASEがインストールされる場合 or インストール済みで接続情報を変更したい場合
             if "oase" in add_drivers or ("oase" not in no_install_driver and is_exists_mongo_info is True):
@@ -675,69 +713,17 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 if mongo_connection_string and ("oase" in add_drivers or ky_decrypt(org_connect_info.get('MONGO_CONNECTION_STRING')) == ky_decrypt(workspace_data.get('MONGO_CONNECTION_STRING'))):
                     update_data['MONGO_CONNECTION_STRING'] = ky_encrypt(mongo_connection_string)
 
-                # g.db_connect_info["WS_MONGO_CONNECTION_STRING"] = update_data.get('MONGO_CONNECTION_STRING')
-                # g.db_connect_info["WS_MONGO_DATABASE"] = update_data['MONGO_DATABASE']
-                # g.db_connect_info["WS_MONGO_USER"] = update_data.get('MONGO_USER')
-                # g.db_connect_info["WS_MONGO_PASSWORD"] = update_data.get('MONGO_PASSWORD')
-
-                # # OASEのmongo設定（インデックスなど）
-                # ws_mongo = MONGOConnectWs()
-                # # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
-                # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
-
-                # g.db_connect_info.pop("WS_MONGO_CONNECTION_STRING")
-                # g.db_connect_info.pop("WS_MONGO_DATABASE")
-                # g.db_connect_info.pop("WS_MONGO_USER")
-                # g.db_connect_info.pop("WS_MONGO_PASSWORD")
-
                 org_db.db_transaction_start()
                 org_db.table_update("T_COMN_WORKSPACE_DB_INFO", update_data, "PRIMARY_KEY")
                 org_db.db_commit()
-                g.applogger.info(" Updating connection infomation of mongo end")
-
-            # 追加対象のドライバをループし、SQLファイルを実行する。
-            # Workspace DB connect
-            ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
-            last_update_timestamp = str(get_timestamp())
-
-            for install_driver in add_drivers:
-                g.applogger.info(" INSTALLING {} START".format(install_driver))
-                # SQLファイルを特定する。
-                sql_files = driver_sql[install_driver]
-                ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
-                dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
-
-                # create table of workspace-db
-                g.applogger.info(" execute " + ddl_file)
-                ws_db.sqlfile_execute(ddl_file)
-
-                # insert initial data of workspace-db
-                ws_db.db_transaction_start()
-                # #2079 /storage配下ではないので対象外
-                g.applogger.info(" execute " + dml_file)
-                with open(dml_file, "r") as f:
-                    sql_list = f.read().split(";\n")
-                    for sql in sql_list:
-                        if re.fullmatch(r'[\s\n\r]*', sql):
-                            continue
-
-                        sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
-
-                        prepared_list = []
-                        trg_count = sql.count('__ROLE_ID__')
-                        if trg_count > 0:
-                            prepared_list = list(map(lambda a: role_id, range(trg_count)))
-                            sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
-
-                        ws_db.sql_execute(sql, prepared_list)
-                ws_db.db_commit()
-                g.applogger.info(" INSTALLING {} END".format(install_driver))
+                g.applogger.info(" Updating connection infomation of mongo is ended")
 
         # t_comn_organization_db_infoテーブルのNO_INSTALL_DRIVERを更新する
         if len(update_no_install_driver) > 0:
             update_no_install_driver_json = json.dumps(update_no_install_driver)
         else:
             update_no_install_driver_json = None
+
         common_db.db_transaction_start()
         data = {
             'PRIMARY_KEY': org_connect_info['PRIMARY_KEY'],

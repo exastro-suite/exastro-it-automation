@@ -27,9 +27,10 @@ class storage_base:
     def make_temp_path(self, file_path):
         # ルートパスを/tmpに置き換える
         tmp_dir_path = re.sub(os.environ.get('STORAGEPATH'), "/tmp/", os.path.dirname(file_path))
-        # ディレクトリが無いことを確認
+        # なければディレクトリの作成
         if os.path.isdir(tmp_dir_path) is False:
-            os.makedirs(tmp_dir_path)
+            # exist_ok=Trueのoptionは、issue2432対策。azureストレージの初回アクセス対策
+            os.makedirs(tmp_dir_path, exist_ok=True)
         tmp_file_path = "{}/{}".format(tmp_dir_path, os.path.basename(file_path))
         return tmp_file_path
 

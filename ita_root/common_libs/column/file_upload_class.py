@@ -113,7 +113,7 @@ class FileUploadColumn(Column):
                 elif upload_max_size is None and org_upload_file_size_limit is not None:
                     compare_upload_max_size = org_upload_file_size_limit
                 else:
-                    if upload_max_size < org_upload_file_size_limit:
+                    if int(upload_max_size) < int(org_upload_file_size_limit):
                         compare_upload_max_size = upload_max_size
                     else:
                         compare_upload_max_size = org_upload_file_size_limit

@@ -205,33 +205,35 @@ services:
       platform-migration-1:
         condition: service_completed_successfully
 
-  # platform-job:
-  #   user: 1000:1000
-  #   image: exastro/exastro-platform-job:${PLATFORM_VERSION:-latest}
-  #   volumes:
-  #     - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
-  #   environment:
-  #     - TZ=Asia/Tokyo
-  #     - PYTHONIOENCODING=utf-8
-  #     - DB_HOST=${PLATFORM_DB_HOST:-platform-db}
-  #     - DB_DATABASE=platform
-  #     - DB_USER=app_user
-  #     - DB_PASSWORD=password
-  #     - API_KEYCLOAK_HOST=keycloak
-  #     - API_KEYCLOAK_PROTOCOL=http
-  #     - API_KEYCLOAK_PORT=8080
-  #     - ENCRYPT_KEY=${ENCRYPT_KEY}
-  #     - HTTP_PROXY=${HTTP_PROXY}
-  #     - http_proxy=${HTTP_PROXY}
-  #     - HTTPS_PROXY=${HTTPS_PROXY}
-  #     - https_proxy=${HTTPS_PROXY}
-  #     - NO_PROXY=localhost,127.0.0.1,keycloak,platform-auth,platform-api,platform-web,ita-web,ita-api
-  #     - no_proxy=localhost,127.0.0.1,keycloak,platform-auth,platform-api,platform-web,ita-web,ita-api
-  #     - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-  #     - SSL_CERT_DIR=/etc/ssl/certs
+  platform-job:
+    user: 1000:1000
+    image: exastro/exastro-platform-job:${PLATFORM_VERSION:-latest}
+    volumes:
+      - /usr/share/pki/ca-trust-source/anchors/UserRootCertificate.crt:/etc/ssl/certs/ca-certificates.crt
+    environment:
+      - TZ=Asia/Tokyo
+      - PYTHONIOENCODING=utf-8
+      - DB_HOST=${PLATFORM_DB_HOST:-platform-db}
+      - DB_DATABASE=platform
+      - DB_USER=app_user
+      - DB_PASSWORD=password
+      - API_KEYCLOAK_HOST=keycloak
+      - API_KEYCLOAK_PROTOCOL=http
+      - API_KEYCLOAK_PORT=8080
+      - ENCRYPT_KEY=${ENCRYPT_KEY}
+      - HTTP_PROXY=${HTTP_PROXY}
+      - http_proxy=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - https_proxy=${HTTPS_PROXY}
+      - NO_PROXY=localhost,127.0.0.1,keycloak,platform-auth,platform-api,platform-web,ita-web,ita-api
+      - no_proxy=localhost,127.0.0.1,keycloak,platform-auth,platform-api,platform-web,ita-web,ita-api
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SSL_CERT_DIR=/etc/ssl/certs
 
-  #   networks:
-  #     - exastro
+    networks:
+      - exastro
+    profiles:
+      - ita-oase
 
 networks:
   exastro:

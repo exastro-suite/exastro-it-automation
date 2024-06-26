@@ -163,6 +163,7 @@ def yamlParseAnalysis(strTargetfile):
                             for key4, value4 in php_array(value3['VAR_VALUE']):
                                 if is_num(key4) and type(value4) not in (list, dict):
                                     keyname = '%s[%s]' % (value3['VAR_NAME_PATH'], key4)
+                                    arrVarsList.setdefault(key1, {})
                                     arrVarsList[key1][keyname] = value4
 
     return arrVarsList

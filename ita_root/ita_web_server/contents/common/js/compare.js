@@ -395,13 +395,10 @@ compareSettingEvents() {
 getCompareSettingData() {
     const cp = this;
 
-    const output = cp.$.output.filter(':checked').val(),
-          targetDate1 = cp.$.referenceDate1.val(),
-          targetDate2 = cp.$.referenceDate2.val();
-
-    // if ( output ) cp.compareData.output = output;
-    if ( targetDate1 ) cp.compareData.base_date_1 = targetDate1;
-    if ( targetDate2 ) cp.compareData.base_date_2 = targetDate2;
+    const targetDate1 = fn.cv( cp.$.referenceDate1.val(), '');
+    const targetDate2 = fn.cv( cp.$.referenceDate2.val(), '');
+    cp.compareData.base_date_1 = targetDate1;
+    cp.compareData.base_date_2 = targetDate2;
 }
 /*
 ##################################################
@@ -476,7 +473,8 @@ setCompareResult( info ) {
         const hostName = fn.escape( host ),
               compareData = ( info.compare_data )? info.compare_data[ host ]: null;
         if ( compareData ) {
-            const compareFlag = fn.cv( info.compare_diff_flg[ host ], false );
+            let compareFlag = info.compare_diff_flg[ host ];
+            if ( fn.typeof( compareFlag ) !== 'boolean') compareFlag = false;
             comapreCount++;
 
             const t1Name = fn.cv( info.config.target_menus[0], '', true ),
@@ -512,9 +510,11 @@ setCompareResult( info ) {
                       diff = compareData._data_diff_flg[ colName ];
                 if ( diff === null || diff === undefined) continue;
 
-                const t1Value = fn.cv( compareData.target_data_1[ colName ], '', true ),
-                      t2Value = fn.cv( compareData.target_data_2[ colName ], '', true ),
-                      filediff = fn.cv( compareData._file_compare_execute_flg[ colName ], undefined );
+                const t1Value = fn.cv( compareData.target_data_1[ colName ], '', true );
+                const t2Value = fn.cv( compareData.target_data_2[ colName ], '', true );
+
+                let filediff = compareData._file_compare_execute_flg[ colName ];
+                if ( fn.typeof( filediff ) !== 'boolean') filediff = undefined;
 
                 const diffFlag = ( col.file_flg )? ( diff || filediff )? true: false: diff;
 

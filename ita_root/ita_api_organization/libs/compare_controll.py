@@ -2621,6 +2621,9 @@ def get_col_name_data(compare_data, row_no, target_host, col_name, compare_targe
     # get diff flg
     try:
         val_diff_flg = compare_data.get(target_host).get("_data_diff_flg").get(col_name)
+        file_diff_flg = compare_data.get(target_host, {}).get('_file_compare_execute_flg', {}).get(col_name)
+        val_diff_flg = val_diff_flg or file_diff_flg if file_diff_flg is not None else val_diff_flg
+        val_diff_flg = val_diff_flg if isinstance(val_diff_flg, bool) else False
     except Exception:
         val_diff_flg = False
 
@@ -2896,7 +2899,7 @@ def no_mimetype_is_binary_chk(target_file_path, file_mimetype, encoding):
     encode = encoding
     # /storage配下のファイルアクセスを/tmp経由で行うモジュール
     file_read = storage_access.storage_read_bytes()
-    
+
     if file_mimetype is None:
         # check encode -> check ASCII -08
         fd = file_read.read_bytes(target_file_path)

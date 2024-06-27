@@ -18,7 +18,7 @@ import sys
 sys.path.append('../../')
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
-from common_libs.api import api_filter
+from common_libs.api import api_filter, api_filter_download_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import menu_filter
 
@@ -102,13 +102,13 @@ def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
         # メニューに対するロール権限をチェック
         check_auth_menu(menu, objdbca)
 
-        filter_parameter = {}
-        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
-
-        # ファイルデータなしの場合
+        file_existence = True;
         if file == 'no':
-            for value in result_data:
-                value['file'] = {}
+            file_existence = False;
+
+        filter_parameter = {}
+        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter, file_existence=file_existence)
+
     except Exception as e:
         raise e
     finally:
@@ -117,7 +117,7 @@ def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
 
 
 @api_filter
-def get_journal(organization_id, workspace_id, menu, uuid):  # noqa: E501
+def get_journal(organization_id, workspace_id, menu, uuid, file=None):  # noqa: E501
     """get_journal
 
     レコードの履歴を取得する # noqa: E501
@@ -130,6 +130,8 @@ def get_journal(organization_id, workspace_id, menu, uuid):  # noqa: E501
     :type menu: str
     :param uuid: UUID
     :type uuid: str
+    :param file: ファイルデータ指定
+    :type file: str
 
     :rtype: InlineResponse2003
     """
@@ -150,7 +152,11 @@ def get_journal(organization_id, workspace_id, menu, uuid):  # noqa: E501
         # メニューに対するロール権限をチェック
         check_auth_menu(menu, objdbca)
 
-        result_data = menu_filter.rest_filter_journal(objdbca, menu, uuid)
+        file_existence = True;
+        if file == 'no':
+            file_existence = False;
+
+        result_data = menu_filter.rest_filter_journal(objdbca, menu, uuid, file_existence=file_existence)
     except Exception as e:
         raise e
     finally:
@@ -202,13 +208,13 @@ def post_filter(organization_id, workspace_id, menu, body=None, file=None):  # n
             body = dict(connexion.request.get_json())
             filter_parameter = body
 
-        # メニューのカラム情報を取得
-        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter)
-
-        # ファイルデータなしの場合
+        file_existence = True;
         if file == 'no':
-            for value in result_data:
-                value['file'] = {}
+            file_existence = False;
+
+        # メニューのカラム情報を取得
+        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter, file_existence=file_existence)
+
     except Exception as e:
         raise e
     finally:
@@ -266,8 +272,8 @@ def post_filter_count(organization_id, workspace_id, menu, body=None):  # noqa: 
     return result_data,
 
 
-@api_filter
-def download_file(organization_id, workspace_id, menu, id, column):
+@api_filter_download_file
+def download_file(organization_id, workspace_id, menu, uuid, column):
     """download_file
 
     アップロードされているファイルをダウンロードする # noqa: E501
@@ -293,16 +299,59 @@ def download_file(organization_id, workspace_id, menu, id, column):
         check_menu_info(menu, objdbca)
 
         # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
-        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6', '26', '28']
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6', '28']
         check_sheet_type(menu, sheet_type_list, objdbca)
 
         # メニューに対するロール権限をチェック
         check_auth_menu(menu, objdbca)
 
-        filter_parameter = {}
+        # ファイルデータ取得
+        result_data = menu_filter.get_file_path(objdbca, menu, uuid, column)
+    except Exception as e:
+        raise e
+    finally:
+        objdbca.db_disconnect()
+    return result_data,
+
+
+@api_filter_download_file
+def download_history_file(organization_id, workspace_id, menu, uuid, column, journal_uuid):  # noqa: E501
+    """download_history_file
+
+    履歴のアップロードファイルをダウンロードする # noqa: E501
+
+    :param organization_id: OrganizationID
+    :type organization_id: str
+    :param workspace_id: WorkspaceID
+    :type workspace_id: str
+    :param menu: メニュー名
+    :type menu: str
+    :param uuid: UUID
+    :type uuid: str
+    :param column: カラムREST名
+    :type column: str
+    :param journal_uuid: 履歴のUUID
+    :type journal_uuid: str
+
+    :rtype: InlineResponse2005
+    """
+
+    # DB接続
+    objdbca = DBConnectWs(workspace_id)  # noqa: F405
+
+    try:
+        # メニューの存在確認
+        check_menu_info(menu, objdbca)
+
+        # 『メニュー-テーブル紐付管理』の取得とシートタイプのチェック
+        sheet_type_list = ['0', '1', '2', '3', '4', '5', '6', '28']
+        check_sheet_type(menu, sheet_type_list, objdbca)
+
+        # メニューに対するロール権限をチェック
+        check_auth_menu(menu, objdbca)
 
         # ファイルデータ取得
-        result_data = menu_filter.get_file_data(objdbca, menu, filter_parameter, id, column)
+        result_data = menu_filter.get_history_file_path(objdbca, menu, uuid, column, journal_uuid)
     except Exception as e:
         raise e
     finally:

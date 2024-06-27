@@ -14,7 +14,8 @@
 """
 common_libs api common function module
 """
-from flask import g, request
+import os
+from flask import g, request, Response
 import traceback
 
 from common_libs.common.exception import AppException
@@ -64,6 +65,46 @@ def make_response(data=None, msg="", result_code="000-00000", status_code=200, t
     g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
 
     return res_body, status_code
+
+
+def make_response_file_download(data=None, msg="", result_code="000-00000", status_code=200, ts=None):
+    """
+    make http response(file download)
+
+    Argument:
+        data: data
+        msg: message
+        result_code: xxx-xxxxx
+        status_code: http status code
+    Returns:
+        (flask)response
+    """
+    if result_code == "000-00000" and not msg:
+        msg = "SUCCESS"
+
+    response_chank_byte = 10000
+
+    if data is None or os.path.isfile(data) is False:
+        resp = Response()
+        resp.content_length = 0
+        resp.content_type = "application/octet-stream"
+    else:
+        def __make_response():
+            with open(data, 'rb') as fp:
+                while True:
+                    buf = fp.read(response_chank_byte)
+                    if len(buf) == 0:
+                        break
+                    yield buf
+
+        resp = Response(__make_response())
+        resp.content_length = os.path.getsize(data)
+        resp.content_type = "application/octet-stream"
+
+    log_status = "SUCCESS" if result_code == "000-00000" else "FAILURE"
+    g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
+
+    return resp, status_code
 
 
 def app_exception_response(e, exception_log_need=False):
@@ -168,6 +209,42 @@ def api_filter(func):
             controller_res = func(*args, **kwargs)
 
             return make_response(*controller_res)
+        except AppException as e:
+            # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+            return app_exception_response(e)
+        except Exception as e:
+            # catch - other all error
+            return exception_response(e)
+
+    return wrapper
+
+
+def api_filter_download_file(func):
+    '''
+    wrap api controller
+
+    Argument:
+        func: controller(def)
+    Returns:
+        controller wrapper
+    '''
+
+    def wrapper(*args, **kwargs):
+        '''
+        controller wrapper
+
+        Argument:
+            *args, **kwargs: controller args
+        Returns:
+            (flask)response
+        '''
+        try:
+            g.applogger.debug("[ts={}] controller start -> {}".format(api_timestamp, kwargs))
+
+            # controller execute and make response
+            controller_res = func(*args, **kwargs)
+
+            return make_response_file_download(*controller_res)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
             return app_exception_response(e)

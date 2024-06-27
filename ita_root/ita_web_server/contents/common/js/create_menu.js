@@ -1112,6 +1112,7 @@ if ( menuEditorMode !== 'view') {
 const getColumnHTML = function( columnData = {}, columnID = '') {
 
     const sv = function( v, f = true ) { return fn.cv( columnData[v], '', f ); };
+    const fileMaxSize = fn.cv( menuEditorArray.org_upload_file_size_limit, 104857600 );
 
     return `
 <div id="${columnID}" class="menu-column" data-rowpan="1" data-item-id="${sv('create_column_id')}" style="min-width: 260px;">
@@ -1207,9 +1208,9 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                         <td class="full-body"><input class="input config-number password-max-byte" type="number" data-min="1" data-max="8192" value="${sv('password_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
                     <!-- 最大バイト数 ファイル -->
-                    <tr class="file" title="${textEntities(getMessage.FTE01119,1)}">
+                    <tr class="file" title="${textEntities(getMessage.FTE01119(fileMaxSize),1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01086 + fn.html.required()}</span></th>
-                        <td class="full-body"><input class="input config-number file-max-size" data-min="1" data-max="104857600"  type="number" value="${sv('file_upload_maximum_bytes')}"${modeDisabled}></td>
+                        <td class="full-body"><input class="input config-number file-max-size" data-min="1" data-max="${fileMaxSize}"  type="number" value="${sv('file_upload_maximum_bytes')}"${modeDisabled}></td>
                     </tr>
                     <!-- 初期値 -->
                     <tr class="single" title="${textEntities(getMessage.FTE01121,1)}">

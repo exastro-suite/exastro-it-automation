@@ -64,7 +64,7 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
         api_parameter = json.loads(setting["PARAMETER"]) if setting["PARAMETER"] else None
         json_data = {}
         try:
-            json_data = api_client.call_api(parameter=api_parameter)
+            call_api_result, json_data = api_client.call_api(parameter=api_parameter)
         except AppException as e:
             g.applogger.info(g.appmsg.get_log_message("AGT-10001", [setting["EVENT_COLLECTION_SETTINGS_ID"]]))
             app_exception(e)
@@ -79,29 +79,40 @@ def collect_event(sqliteDB, event_collection_settings, last_fetched_timestamps=N
             continue
 
         # 設定で指定したキーの値を取得
-        json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
-        if json_data is None:
-            g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
-            continue
+        if call_api_result:
+            respons_key_json_data = get_value_from_jsonpath(setting["RESPONSE_KEY"], json_data)
+            if respons_key_json_data is None:
+                # レスポンスキーが未指定、または間違っている場合、受信したイベントで以降処理する。
+                g.applogger.info(g.appmsg.get_log_message("AGT-10002", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
+            else:
+                # レスポンスキーで取得できた場合、レスポンスキーの値で以降処理する。
+                json_data = respons_key_json_data
 
         # RESPONSE_LIST_FLAGの値がリスト形式ではない場合、そのまま辞書に格納する
         if setting["RESPONSE_LIST_FLAG"] == "0":
             # 値がリスト形式かチェック
             if isinstance(json_data, list) is True:
                 g.applogger.info(g.appmsg.get_log_message("AGT-10031", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
-                continue
-            event = init_label(json_data, fetched_time, setting)
-            events.append(event)
+                for data in json_data:
+                    event = init_label(data, fetched_time, setting)
+                    events.append(event)
+            else:
+                if len(json_data) > 0:
+                    event = init_label(json_data, fetched_time, setting)
+                    events.append(event)
 
         # RESPONSE_LIST_FLAの値がリスト形式の場合、1つずつ辞書に格納
         else:
             # 値がリスト形式かチェック
             if isinstance(json_data, list) is False:
                 g.applogger.info(g.appmsg.get_log_message("AGT-10003", [setting["RESPONSE_KEY"], setting["EVENT_COLLECTION_SETTINGS_ID"]]))
-                continue
-            for data in json_data:
-                event = init_label(data, fetched_time, setting)
-                events.append(event)
+                if len(json_data) > 0:
+                    event = init_label(json_data, fetched_time, setting)
+                    events.append(event)
+            else:
+                for data in json_data:
+                    event = init_label(data, fetched_time, setting)
+                    events.append(event)
 
     return events, event_collection_settings_enable
 

@@ -538,21 +538,13 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 add_drivers.insert(0, "terraform_common")
 
         # インストール時に利用するSQLファイル名の一覧
-        driver_sql = {
+        add_driver_sql = {
             "terraform_common": ['terraform_common.sql', 'terraform_common_master.sql'],
             "terraform_cloud_ep": ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
             "terraform_cli": ['terraform_cli.sql', 'terraform_cli_master.sql'],
             "ci_cd": ['cicd.sql', 'cicd_master.sql'],
             "oase": ['oase.sql', 'oase_master.sql'],
         }
-
-        # Organization DB connect
-        org_db = DBConnectOrg(organization_id)  # noqa: F405
-
-        # OrganizationのWorkspace一覧を取得
-        workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
-        g.applogger.info("target workspace_id = {}".format([i.get('WORKSPACE_ID') for i in workspace_data_list]))
-
 
         # OASEが有効な場合
         is_exists_mongo_info = False
@@ -627,6 +619,13 @@ def organization_update(organization_id, body=None):  # noqa: E501
             common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', data, 'PRIMARY_KEY')
             common_db.db_commit()
 
+        # Organization DB connect
+        org_db = DBConnectOrg(organization_id)  # noqa: F405
+
+        # OrganizationのWorkspace一覧を取得
+        workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
+        g.applogger.info("target workspace_id = {}".format([i.get('WORKSPACE_ID') for i in workspace_data_list]))
+
         # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
         for workspace_data in workspace_data_list:
             workspace_id = workspace_data['WORKSPACE_ID']
@@ -641,7 +640,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             for install_driver in add_drivers:
                 g.applogger.info(" INSTALLING {} START".format(install_driver))
                 # SQLファイルを特定する。
-                sql_files = driver_sql[install_driver]
+                sql_files = add_driver_sql[install_driver]
                 ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
                 dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
 

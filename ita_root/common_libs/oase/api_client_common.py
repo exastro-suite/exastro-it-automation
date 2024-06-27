@@ -18,6 +18,8 @@ import requests
 import json
 from urllib.parse import urlparse
 import datetime
+import time
+import copy
 from common_libs.common.exception import AppException
 import jmespath
 
@@ -75,6 +77,9 @@ class APIClientCommon:
         self.respons_key = event_settings["RESPONSE_KEY"]
         self.event_id_key = event_settings["EVENT_ID_KEY"] if "EVENT_ID_KEY" in event_settings else None
 
+        # 重複チェック用イベントIDキー名（イベント直下に格納する項目）
+        self.event_id_key_name = '_exastro_oase_event_id'
+
         g.applogger.debug(g.appmsg.get_log_message("AGT-10042", [self.event_collection_settings_name]))
 
     def call_api(self, parameter):
@@ -111,6 +116,7 @@ class APIClientCommon:
             # g.applogger.debug("proxies............{}".format(proxies))
             # g.applogger.debug("Parameter..........{}".format(parameter))
 
+            # deepcode ignore SSLVerificationBypass: <please specify a reason of ignoring this>
             response = requests.request(
                 method=self.request_method,
                 url=self.url,
@@ -130,18 +136,18 @@ class APIClientCommon:
 
             API_response = response.json()
             g.applogger.debug(g.appmsg.get_log_message("AGT-10043", [API_response]))
-            respons_json = self.get_new_events(API_response)
+            result, respons_json = self.get_new_events(API_response)
             g.applogger.debug(g.appmsg.get_log_message("AGT-10044", [API_response]))
 
-            return respons_json
+            return result, respons_json
 
         except requests.exceptions.InvalidJSONError:
             g.applogger.info(g.appmsg.get_log_message("AGT-10045", []))
-            return API_response
+            return False, API_response
 
         except requests.exceptions.JSONDecodeError:
             g.applogger.info(g.appmsg.get_log_message("AGT-10046", []))
-            return API_response
+            return False, API_response
 
         except Exception as e:
             raise AppException("AGT-10029", [e, "HTTP-API Request"])
@@ -149,74 +155,108 @@ class APIClientCommon:
     # 新規イベント取得
     def get_new_events(self, raw_json):
 
-        result_json = raw_json.copy()
+        # 日時（ミリ秒単位）シリアル値
+        now_time = int(time.time() * 1000000)
 
-        # イベントIDキーを指定していない場合
-        if self.event_id_key is None:
-            return raw_json
+        result_json = copy.deepcopy(raw_json)
 
         if self.respons_key is not None:
-            # レスポンスキーが指定している場合
+            # レスポンスキーを指定
             respons_key_json = self.get_value_from_jsonpath(self.respons_key, result_json)
             if respons_key_json is None:
+                # レスポンスキーが存在しない、または空の場合
                 g.applogger.info(g.appmsg.get_log_message("AGT-10002", [self.respons_key, self.event_collection_settings_id]))
-                return raw_json
+                self.setEventIDforEvent(result_json, now_time)
+                return False, result_json
         else:
-            # レスポンスキーが指定していない場合
+            # レスポンスキーが未指定の場合
             respons_key_json = result_json
 
         # RESPONSE_KEYの値がリスト形式ではない場合、そのまま辞書に格納する
         if self.respons_list_flag == "0":
-            new_enevt_flg, event = self.get_elements_new_event(respons_key_json)
-            if new_enevt_flg and len(event) > 0:
+            # 返却するイベントはオブジェクト
+            if isinstance(respons_key_json, list) is True:
+                # respons_key_jsonが、配列の場合、オブジェクトで返却
+                self.setEventIDforEvent(result_json, now_time)
+                return False, result_json
+
+            event_flg, event = self.get_elements_new_event(respons_key_json)
+            if event_flg == True and len(event) > 0:
+                # 重複チェックで、未登録イベントの場合、追加
+                respons_key_json = event
+            elif event_flg == False and len(event) > 0:
+                # イベントIDキーが未指定、または、間違っているため取得できなかった場合、追加
+                event[self.event_id_key_name] = now_time
                 respons_key_json = event
             else:
+                # 重複チェックで、重複したイベントのため、空空のイベントを返却
                 respons_key_json.clear()
-                result_json.clear()
 
         # RESPONSE_KEYの値がリスト形式の場合、1つずつ辞書に格納
         else:
+            # 返却するイベントは配列
+            new_event_list = []
+
             # 値がリスト形式かチェック
             if isinstance(respons_key_json, list) is False:
+                # respons_key_jsonが配列以外の場合
                 g.applogger.info(g.appmsg.get_log_message("AGT-10003", [self.respons_key, self.event_collection_settings_id]))
-                return raw_json
+                self.setEventIDforEvent(result_json, now_time)
+                return False, result_json
 
-            target_events = []
             for element in respons_key_json:
-                new_enevt_flg, event = self.get_elements_new_event(element)
-                if new_enevt_flg and len(event) > 0:
-                    target_events.append(event)
+                event_flg, event = self.get_elements_new_event(element)
+                if event_flg == True and len(event) > 0:
+                    # イベントIDキーが指定済みで、重複チェックで、重複なしと判定された場合、追加
+                    new_event_list.append(event)
+                elif event_flg == False and len(event) > 0:
+                    # イベントIDキーが未指定、または、間違っているため、イベントIDキーを日時シリアルを設定し追加
+                    event[self.event_id_key_name] = now_time
+                    new_event_list.append(event)
+                    now_time += 1
+                else:
+                    # 重複チェックで、重複したイベントのため、追加しない
+                    pass
 
-            if len(target_events) > 0:
+            if len(new_event_list) > 0:
                 # 全要素を削除
                 for i in reversed(range(len(respons_key_json))):
                     del respons_key_json[i]
                 # 対象イベントを設定
-                respons_key_json.extend(target_events)
+                respons_key_json.extend(new_event_list)
             else:
                 respons_key_json.clear()
 
-        return result_json
+        return True, result_json
 
     # 新規イベント要素作成
-    def get_elements_new_event(self, raw_json):
+    def get_elements_new_event(self, event_json):
 
-        new_enevt_flg = False
+        # イベントフラグ
+        #   True:新しいイベント、
+        #   False:重複イベントか、イベントIDキーが未指定または間違っている
+        enevt_flg = False
         new_event = {}
 
-        event_id = self.get_value_from_jsonpath(self.event_id_key, raw_json)
+        if self.event_id_key is None:
+            # イベントIDキーが未指定
+            return False, event_json
+
+        event_id = self.get_value_from_jsonpath(self.event_id_key, event_json)
         if event_id is None:
+            # イベントIDキーが取得できない場合
             g.applogger.info(g.appmsg.get_log_message("AGT-10030", [self.event_id_key, self.event_collection_settings_id]))
+            return False, event_json
 
         else:
             # 過去のイベントidに存在していない場合
             event_id = str(event_id)
             if event_id not in self.saved_ids:
-                new_enevt_flg = True
-                new_event = raw_json
-                new_event["_exastro_oase_event_id"] = event_id
+                enevt_flg = True
+                new_event = event_json
+                new_event[self.event_id_key_name] = event_id
 
-        return new_enevt_flg, new_event
+        return enevt_flg, new_event
 
     # ドット区切りの文字列で辞書を指定して値を取得
     def get_value_from_jsonpath(self, jsonpath=None, data=None):
@@ -225,3 +265,15 @@ class APIClientCommon:
 
         value = jmespath.search(jsonpath, data)
         return value
+
+
+    def setEventIDforEvent(self, result_json, now_time):
+        """イベントにイベントキー
+            '_exastro_oase_event_id' : <日時シリアル値>
+        """
+        if isinstance(result_json, list) is False:
+            result_json[self.event_id_key_name] = now_time
+
+        else:
+            for event in result_json:
+                event[self.event_id_key_name] = now_time

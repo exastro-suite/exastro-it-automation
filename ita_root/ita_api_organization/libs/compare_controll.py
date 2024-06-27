@@ -2625,6 +2625,11 @@ def get_col_name_data(compare_data, row_no, target_host, col_name, compare_targe
     # get diff flg
     val_diff_flg = compare_data.get(target_host, {}).get('_data_diff_flg', {}).get(col_name)
 
+    # diff_flg override: _data_diff_flg or _file_compare_execute_flg
+    file_diff_flg = compare_data.get(target_host, {}).get('_file_compare_execute_flg', {}).get(col_name)
+    val_diff_flg = val_diff_flg or file_diff_flg if file_diff_flg is not None else val_diff_flg
+    val_diff_flg = val_diff_flg if isinstance(val_diff_flg, bool) else False
+
     if compare_target_flg is True:
         # convert compare diff flg
         if val_diff_flg is True:

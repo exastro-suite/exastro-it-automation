@@ -269,7 +269,7 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                 if ( errorCount === 0 ) {
 
                     if( response.ok ) {
-                        //200の場合
+                        // 200の場合
                         response.json().then(function( result ){
                             if ( option.message ) {
                                 resolve( [ result.data, result.message ] );
@@ -279,53 +279,9 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                         });
                     } else {
                         errorCount++;
-
-                        switch ( response.status ) {
-                            // 呼び出し元に返す
-                            case 498: // メンテナンス中
-                            case 499: // バリデーションエラー
-                                response.json().then(function( result ){
-                                    reject( result );
-                                }).catch(function( e ) {
-                                    cmn.systemErrorAlert();
-                                });
-                            break;
-                            // 権限無しの場合、トップページに戻す
-                            case 401:
-                                response.json().then(function( result ){
-                                    if ( option.authorityErrMove !== false ) {
-                                        if ( !iframeFlag ) {
-                                            fetchController.abort();
-                                            alert(result.message);
-                                            location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
-                                        } else {
-                                            cmn.iframeMessage( result.message );
-                                        }
-                                    } else {
-                                        reject( result );
-                                    }
-                                }).catch(function( e ) {
-                                    cmn.systemErrorAlert();
-                                });
-                            break;
-                            // ワークスペース一覧に飛ばす
-                            case 403:
-                                response.json().then(function( result ){
-                                    if ( !iframeFlag ) {
-                                        fetchController.abort();
-                                        alert(result.message);
-                                        window.location.href = `/${organization_id}/platform/workspaces`;
-                                    } else {
-                                        cmn.iframeMessage( result.message );
-                                    }
-                                }).catch(function( e ) {
-                                    cmn.systemErrorAlert();
-                                });
-                            break;
-                            // その他のエラー
-                            default:
-                                cmn.systemErrorAlert();
-                        }
+                        cmn.fetchResponseError( response, fetchController ).then(function( result ){
+                            reject( result );
+                        });
                     }
                 }
             }).catch(function( error ){
@@ -349,7 +305,62 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
 },
 /*
 ##################################################
-   システムエラーAleat
+    データ読み込み エラー
+##################################################
+*/
+fetchResponseError: function( response, fetchController ) {
+    return new Promise(function( resolve ){
+        switch ( response.status ) {
+            // 呼び出し元に返す
+            case 498: // メンテナンス中
+            case 499: // バリデーションエラー
+                response.json().then(function( result ){
+                    resolve( result );
+                }).catch(function( e ) {
+                    cmn.systemErrorAlert();
+                });
+            break;
+            // 権限無しの場合、トップページに戻す
+            case 401:
+                response.json().then(function( result ){
+                    if ( option.authorityErrMove !== false ) {
+                        if ( !iframeFlag ) {
+                            if ( fetchController ) fetchController.abort();
+                            alert(result.message);
+                            location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
+                        } else {
+                            cmn.iframeMessage( result.message );
+                        }
+                    } else {
+                        resolve( result );
+                    }
+                }).catch(function( e ) {
+                    cmn.systemErrorAlert();
+                });
+            break;
+            // ワークスペース一覧に飛ばす
+            case 403:
+                response.json().then(function( result ){
+                    if ( !iframeFlag ) {
+                        if ( fetchController ) fetchController.abort();
+                        alert(result.message);
+                        window.location.href = `/${organization_id}/platform/workspaces`;
+                    } else {
+                        cmn.iframeMessage( result.message );
+                    }
+                }).catch(function( e ) {
+                    cmn.systemErrorAlert();
+                });
+            break;
+            // その他のエラー
+            default:
+                cmn.systemErrorAlert();
+        }
+    });
+},
+/*
+##################################################
+    システムエラーAleat
 ##################################################
 */
 systemErrorAlert: function() {
@@ -362,7 +373,7 @@ systemErrorAlert: function() {
 },
 /*
 ##################################################
-   編集フラグ
+    編集フラグ
 ##################################################
 */
 editFlag: function( menuInfo ) {
@@ -628,7 +639,7 @@ clipboard: {
    ファイル名のチェック
 ##################################################
 */
-fileNameCheck( fileName ) {
+fileNameCheck: function( fileName ) {
     // \ / : * ? " > < |
     if ( fileName && cmn.typeof( fileName ) === 'string' ) {
         return fileName.replace(/\\|\/|:|\*|\?|\"|>|<\|/g,'_');
@@ -641,7 +652,7 @@ fileNameCheck( fileName ) {
    配列コピー
 ##################################################
 */
-arrayCopy( array ) {
+arrayCopy: function( array ) {
     if ( fn.typeof( structuredClone ) === 'function') {
         return structuredClone( array );
     } else {
@@ -650,87 +661,152 @@ arrayCopy( array ) {
 },
 /*
 ##################################################
+   ダウンロード（バイナリ）
+##################################################
+*/
+getFile: function( endPoint ) {
+    return new Promise( async function( resolve, reject ){
+        try {
+            let progressModal = cmn.progressModal( getMessage.FTE00180 );
+
+            const token = ( cmmonAuthFlag )? CommonAuth.getToken():
+                ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
+
+            const init = {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            };
+
+            // データ読込開始
+            if ( windowFlag ) endPoint = cmn.getRestApiUrl( endPoint );
+            const response = await fetch( endPoint, init );
+
+            if ( response.ok ) {
+                // 成功
+                const reader = response.body.getReader();
+                const contentLength = response.headers.get('Content-Length');
+
+                // データ読込
+                let receivedLength = 0;
+                let chunks = [];
+                while( true ) {
+                    const { done, value } = await reader.read();
+                    if ( done ) break;
+
+                    chunks.push( value );
+                    receivedLength += value.length;
+
+                    const rate = Math.round( receivedLength / contentLength * 100 );
+                    progressModal.$.progressBar.css('width', rate + '%');
+                }
+
+                // Uint8Array連結
+                let chunksAll = new Uint8Array( receivedLength );
+                let position = 0;
+                for ( const chunk of chunks ) {
+                    chunksAll.set( chunk, position );
+                    position += chunk.length;
+                }
+
+                // バーのtransition-duration: .2s;分ずらす
+                setTimeout(function(){
+                    progressModal.close();
+                    progressModal = null;
+                    resolve( chunksAll );
+                }, 200 );
+            } else {
+                // 失敗
+                cmn.fetchResponseError( response ).then(function( result ){
+                    progressModal.close();
+                    progressModal = null;
+                    reject( result );
+                });
+            }
+        } catch ( e ) {
+            reject( e );
+        }
+    });
+},
+/*
+##################################################
    ダウンロード
 ##################################################
 */
-download: function( type, data, fileName = 'noname', endPoint ) {
-
-    if ( endPoint ) {
-        const _this = this;
-
-        return new Promise(function( resolve ){
-            _this.fetch( endPoint ).then(function( result ){
-                _this.download('base64', result, fileName );
-            }).catch(function( error ){
-                window.console.error( error );
-                if ( error.message ) window.alert( error.message );
-            }).then(function(){
-                resolve();
-            });
-        });
-    } else {
-        let url;
-
+download: async function( type, data, fileName = 'noname') {
+    let url;
+    try {
         // URL形式に変換
-        try {
-            switch ( type ) {
+        switch ( type ) {
+            // ファイル
+            case 'file': {
+                // File > BASE64
+                const base64 = await cmn.fileToBase64( data );
+                url = 'data:;base64,' + base64;
+            } break;
 
-                // エクセル
-                case 'excel': {
-                    // BASE64 > Binary > Unicode変換
-                    const binary = window.atob( data ),
-                        decode = new Uint8Array( Array.prototype.map.call( binary, function( c ){ return c.charCodeAt(); }));
+            // エクセル
+            case 'excel': {
+                // BASE64 > Binary > Unicode変換
+                const binary = window.atob( data ),
+                    decode = new Uint8Array( Array.prototype.map.call( binary, function( c ){ return c.charCodeAt(); }));
 
-                    const blob = new Blob([ decode ], {
-                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    });
-                    fileName += '.xlsx';
-                    url = URL.createObjectURL( blob );
-                } break;
+                const blob = new Blob([ decode ], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                fileName += '.xlsx';
+                url = URL.createObjectURL( blob );
+            } break;
 
-                // テキスト
-                case 'text': {
-                    const blob = new Blob([ data ], {'type': 'text/plain'});
-                    fileName += '.txt';
-                    url = URL.createObjectURL( blob );
-                } break;
+            // テキスト
+            case 'text': {
+                const blob = new Blob([ data ], {'type': 'text/plain'});
+                fileName += '.txt';
+                url = URL.createObjectURL( blob );
+            } break;
 
-                // JSON
-                case 'json': {
-                    const blob = new Blob([ JSON.stringify( data, null, '\t') ], {'type': 'application/json'});
-                    fileName += '.json';
-                    url = URL.createObjectURL( blob );
-                } break;
+            // JSON
+            case 'json': {
+                const blob = new Blob([ JSON.stringify( data, null, '\t') ], {'type': 'application/json'});
+                fileName += '.json';
+                url = URL.createObjectURL( blob );
+            } break;
 
-                // BASE64
-                case 'base64': {
-                    url = 'data:;base64,' + data;
-                } break;
+            // BASE64
+            case 'base64': {
+                url = 'data:;base64,' + data;
+            } break;
 
-                // Exceljs
-                case 'exceljs': {
-                    const blob = new Blob([ data ], {
-                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    });
-                    fileName += '.xlsx';
-                    url = URL.createObjectURL( blob );
-                } break;
+            // Exceljs
+            case 'exceljs': {
+                const blob = new Blob([ data ], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                fileName += '.xlsx';
+                url = URL.createObjectURL( blob );
+            } break;
 
-            }
-        } catch ( e ) {
-            window.console.error( e );
+            // バイナリ
+            case 'binary':
+                const blob = new Blob([ data ], {
+                    type: 'application/octet-stream',
+                });
+                url = URL.createObjectURL( blob );
         }
-
-        const a = document.createElement('a');
-
-        fileName = cmn.fileNameCheck( fileName );
-
-        a.href = url;
-        a.download = fileName;
-        a.click();
-
-        if ( type !== 'base64') URL.revokeObjectURL( url );
+    } catch ( e ) {
+        window.console.error( e );
     }
+
+    const a = document.createElement('a');
+
+    fileName = cmn.fileNameCheck( fileName );
+
+    a.href = url;
+    a.download = fileName;
+    a.click();
+
+    if ( type !== 'base64') URL.revokeObjectURL( url );
 },
 /*
 ##################################################
@@ -2076,7 +2152,7 @@ html: {
                   inputClass = ['operationMenuInput'],
                   inputOption = { widthAdjustment: true, before: input.before, after: input.after };
             if ( input.className ) inputClass.push( input.className );
-            itemHtml.push( cmn.html.inputText( inputClass, input.value, null, null, inputOption ) );
+            itemHtml.push( cmn.html.inputText( inputClass, input.value, input.type, null, inputOption ) );
         }
 
         // select
@@ -2235,7 +2311,7 @@ checkHexColorCode: function( code, nullCheckFlag = true ) {
 },
 /*
 ##################################################
-  背景色からテキストカラーを判定
+    背景色からテキストカラーを判定
 ##################################################
 */
 blackOrWhite: function( hexcolor, num ) {
@@ -2249,7 +2325,7 @@ blackOrWhite: function( hexcolor, num ) {
 },
 /*
 ##################################################
-   処理中モーダル
+    処理中モーダル
 ##################################################
 */
 processingModal: function( title ) {
@@ -2269,7 +2345,37 @@ processingModal: function( title ) {
 },
 /*
 ##################################################
-   登録成功モーダル
+    進捗モーダル
+##################################################
+*/
+progressModal: function( title ) {
+    const config = {
+        mode: 'modeless',
+        position: 'center',
+        header: {
+            title: title
+        },
+        width: '320px'
+    };
+
+    const dialog = new Dialog( config );
+    const html = ``
+    + `<div class="progressConteinar">`
+        + `<div class="progressWrap">`
+            + `<div class="progressBar"></div>`
+            + `<div class="progressRate"></div>`
+        + `</div>`
+    + `</div>`;
+    dialog.open( html );
+
+    dialog.$.progressBar = dialog.$.dbody.find('.progressBar');
+    dialog.$.progressRate = dialog.$.dbody.find('.progressRate');
+
+    return dialog;
+},
+/*
+##################################################
+    登録成功モーダル
 ##################################################
 */
 resultModal: function( result ) {
@@ -3905,7 +4011,7 @@ fileOrBase64ToBase64: function( data ) {
    Aceエディター
 ##################################################
 */
-fileEditor( fileData, fileName, mode = 'edit') {
+fileEditor: function( fileData, fileName, mode = 'edit') {
     return new Promise( function( resolve ){
         const fileType = cmn.fileTypeCheck( fileName );
         let fileMode = cmn.fileModeCheck( fileName );

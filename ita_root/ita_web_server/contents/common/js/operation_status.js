@@ -30,11 +30,11 @@ class Status {
     */
     constructor( menu, id, config ) {
         const op = this;
-    
+
         op.menu = menu;
         op.id = id;
         op.config = config;
-    
+
     }
     /*
     ##################################################
@@ -52,7 +52,7 @@ class Status {
     */
     setRestApiUrls() {
         const op = this;
-    
+
         op.rest = {};
         if ( op.id ) {
             op.rest.info = `/menu/${op.menu}/driver/${op.id}/`;
@@ -121,21 +121,21 @@ class Status {
     */
     setup() {
         const op = this;
-    
+
         fn.contentLoadingStart();
-    
+
         op.$ = {};
         op.$.content = $('#content');
         op.$.operation = $('#operationStatus').find('.sectionBody');
         op.$.executeLog = $('#executeLog').find('.sectionBody');
         op.$.errorLog = $('#errorLog').find('.sectionBody');
-    
+
         op.$.tab = op.$.content.find('.contentMenu');
         op.$.executeTab = op.$.tab.find('.executeLogTab');
         op.$.errorTab = op.$.tab.find('.errorLogTab');
-    
+
         op.setRestApiUrls();
-    
+
         // ドライバータイプ
         if ( op.menu.match('_ansible_') ) {
             op.driver = 'ansible';
@@ -146,7 +146,7 @@ class Status {
         } else {
             op.driver = null;
         }
-    
+
         if ( op.rest.info ) {
             history.replaceState( null, null, `?menu=${op.menu}&execution_no=${op.id}`);
             fn.fetch( op.rest.info ).then(function( info ){
@@ -154,10 +154,10 @@ class Status {
                 op.operationStatusInit();
                 op.operationStatus();
                 op.logInit()
-    
+
                 // status_monitoring_cycleごとに更新
                 op.monitoring();
-    
+
             }).catch(function( error ){
                 if ( error.message !== 'Failed to fetch') {
                     alert( error.message );
@@ -180,32 +180,32 @@ class Status {
     */
     monitoring() {
         const op = this;
-    
+
         // 完了、完了(異常)、想定外エラー、緊急停止、予約取消の場合は更新しない
         const stopId = [ '5', '6', '7', '8', '10'];
         if ( stopId.indexOf( op.info.status_id ) !== -1 ) return false;
-    
+
         const cycle = fn.cv( op.info.status_monitoring_cycle, 3000 );
-    
+
         op.timerId = setTimeout( function(){
             fn.fetch( op.rest.info ).then(function( info ){
                 op.info = info;
-    
+
                 // 更新
                 op.operationStatusUpdate();
                 op.executeLogUpdate();
                 op.errorLogUpdate();
-    
+
                 fn.contentLoadingEnd();
                 op.monitoring();
-    
+
             }).catch(function( error ){
                 if ( error.message !== 'Failed to fetch') {
                     console.error( error );
                     alert( error.message );
                 }
             });
-    
+
         }, cycle );
     }
     /*
@@ -215,9 +215,9 @@ class Status {
     */
     operationStatusInit() {
         const op = this;
-    
+
         const html = `<div class="operationStatusContainer"></div>`;
-    
+
         const menu = {
             Main: [
                 { input: { className: 'operationId', value: op.id, before: getMessage.FTE05001 } },
@@ -230,10 +230,10 @@ class Status {
         op.$.operation.html( fn.html.operationMenu( menu ) + html );
         op.$.operationMenu = op.$.operation.find('.operationMenu');
         op.$.operationContainer = op.$.operation.find('.operationStatusContainer');
-    
+
         op.$.button = op.$.operationMenu.find('.operationMenuButton');
-    
-    
+
+
         const $operationNoInput = op.$.operationMenu.find('.operationMenuInput'),
               $operationNoButton = op.$.operationMenu.find('.operationMenuButton[data-type="check"]');
         $operationNoInput.on('input', function(){
@@ -247,18 +247,18 @@ class Status {
         if ( !op.id ) {
             $operationNoButton.prop('disabled', true );
         }
-    
+
         // メニューボタン
         op.$.button.on('click', function(){
             const $button = $( this ),
                   type = $button.attr('data-type');
-    
+
             if ( !fn.checkContentLoading() ) {
-    
+
                 $button.prop('disabled', true );
                 fn.contentLoadingStart();
                 clearTimeout( op.timerId );
-    
+
                 switch ( type ) {
                     // 作業状態確認切替
                     case 'check': {
@@ -313,7 +313,7 @@ class Status {
     */
     operationMessage() {
         const op = this;
-    
+
         const html = `<div class="contentMessage">
             <div class="contentMessageInner">
                 <span class="icon icon-circle_info"></span>` + getMessage.FTE05005 + `<br>
@@ -321,7 +321,7 @@ class Status {
                 <a href="?menu=${Status.string[op.menu].executionListMenu}">` + getMessage.FTE05007 + `</a>` + getMessage.FTE05008 + `
             </div>
         </div>`;
-    
+
         op.$.operationContainer.html( html );
     }
     /*
@@ -329,7 +329,7 @@ class Status {
        Operation status HTML table
     ##################################################
     */
-    operationStatusTable( rows ) {    
+    operationStatusTable( rows ) {
         return ``
         + `<div class="commonBody">`
             + `<table class="commonTable">`
@@ -392,9 +392,9 @@ class Status {
     */
     operationStatus() {
         const op = this;
-    
+
         let html = `<div class="commonSection"><div class="commonBlock">`;
-    
+
         // 作業ステータス
         const workStatus = [
             {
@@ -436,7 +436,7 @@ class Status {
         );
         html += `<div class="commonTitle">${getMessage.FTE05009}</div>`
         + op.operationStatusTable( workStatus );
-    
+
         // 作業状況
         const subStatus = [
             {
@@ -454,7 +454,7 @@ class Status {
         ];
         html += `<div class="commonSubTitle">${getMessage.FTE05017}</div>`
         + op.operationStatusTable( subStatus );
-    
+
         // オペレーション
         const operation = [
             {
@@ -468,7 +468,7 @@ class Status {
         ];
         html += `<div class="commonTitle">${getMessage.FTE05021}</div>`
         + op.operationStatusTable( operation );
-    
+
         // オペレーションボタン
         const operationButton = [];
         if ( op.driver === 'ansible') {
@@ -484,12 +484,12 @@ class Status {
             disabled: 'disabled'
         });
         html += op.operationStatusButtonList( operationButton );
-    
+
         html += `</div><div class="commonBlock">`;
-    
+
         // Movememt
         html += `<div class="commonTitle">${getMessage.FTE05026}</div>`;
-    
+
         html+= ``
         + `<div class="movementArea" data-mode="">`
             + `<div class="movementAreaInner">`
@@ -526,7 +526,7 @@ class Status {
                 + `</div>`
             + `</div>`
         + `</div>`;
-    
+
         const movement = [
             {
                 title: getMessage.FTE05022,
@@ -542,7 +542,7 @@ class Status {
             }
         ];
         html += op.operationStatusTable( movement );
-    
+
         // Movementボタン
         const movementButton = [
             {
@@ -551,7 +551,7 @@ class Status {
             }
         ];
         html += op.operationStatusButtonList( movementButton );
-    
+
         if ( op.driver === 'ansible') {
             // Ansible利用情報
             const ansibleInfo = [
@@ -570,7 +570,7 @@ class Status {
             ];
             html += `<div class="commonSubTitle">` + getMessage.FTE05029 + `</div>`
             + op.operationStatusTable( ansibleInfo );
-    
+
             // Ansible Automation Controller利用情報
             const ansibleControllerInfo = [
                 {
@@ -607,10 +607,10 @@ class Status {
         }
         html += `</div></div>`;
         op.$.operationContainer.html( html );
-    
+
         op.$.movementArea = op.$.operationContainer.find('.movementArea');
         op.$.node = op.$.operationContainer.find('.node');
-    
+
         // コンテンツボタン
         op.$.operationContainer.find('.commonButton').on('click', function(){
             const $button = $( this ),
@@ -636,33 +636,38 @@ class Status {
             }
             fn.modalIframe( target.menu, target.title, { filter: target.filter, iframeMode: target.iframeMode });
         });
-    
+
         // ファイルダウンロード
         op.$.operationContainer.on('click', '.operationStatusFileDownload', function( e ){
             e.preventDefault();
-    
+
             const $link = $( this ),
                   rest = $link.attr('data-rest'),
                   fileName = $link.text();
-            
+
             // 連続でダウンロードさせない
             if ( $link.is('.nowDownload') ) return;
 
             $link.addClass('nowDownload');
-            
+
             const endPoint = `/menu/${Status.string[op.menu].executionListMenu}/${op.id}/${rest}/file/`;
-            fn.download('base64', null, fileName, endPoint ).then(function(){
-                $link.removeClass('nowDownload');
+            fn.getFile( endPoint ).then(function( file ){
+                fn.download('binary', file, fileName ).then(function(){
+                    $link.removeClass('nowDownload');
+                });
+            }).catch(function( e ){
+                console.error( e );
+                alert( getMessage.FTE00179 );
             });
         });
-    
+
         // ノードのアニメーション完了時
         op.$.node.find('.node-result').on('animationend', function(){
             if ( op.$.node.is('.complete') ) {
                 $( this ).off('animationend').addClass('animationEnd');
             }
         });
-    
+
         if ( op.info ) {
             op.operationStatusUpdate();
         }
@@ -674,7 +679,7 @@ class Status {
     */
     operationStatusUpdate() {
         const op = this;
-    
+
         // 値を更新する
         const typeFile = Object.keys( op.info.execution_list.file );
         for( const key in op.info.execution_list.parameter ) {
@@ -682,10 +687,10 @@ class Status {
             if ( value ) {
                 const $data = op.$.operationContainer.find(`.operationStatusData[data-type="${key}"]`),
                       currentValue = $data.eq(0).text();
-                
+
                 // ダウンロードリンク
                 const fileRestName = ['populated_data', 'result_data'];
-                
+
                 // 変更がある場合のみ内容を更新する
                 if ( $data.length && currentValue !== value ) {
                     if ( fileRestName.indexOf( key ) !== -1 && value !== '') {
@@ -697,7 +702,7 @@ class Status {
                 }
             }
         }
-    
+
         /* ステータス
         01 未実行
         02 準備中
@@ -711,14 +716,14 @@ class Status {
         10 予約取消
         */
         const statudId = op.info.status_id;
-    
+
         // ホスト確認、代入値確認ボタン
         if ( ['1', '2', '9', '10'].indexOf( statudId ) !== -1 ) {
             op.$.operationContainer.find('.hostButton, .valueButton').prop('disabled', true );
         } else {
             op.$.operationContainer.find('.hostButton, .valueButton').prop('disabled', false );
         }
-    
+
         // 予約取消、緊急停止ボタン
         if ( ['9'].indexOf( statudId ) !== -1 && op.info.execution_list.parameter.scheduled_date_time !== null ) {
             op.$.operation.attr('data-mode', 'standby');
@@ -727,7 +732,7 @@ class Status {
         } else {
             op.$.operation.attr('data-mode', '');
         }
-    
+
         // ノードの状態を更新する
         switch ( op.info.status_id ) {
             case '2':
@@ -756,10 +761,10 @@ class Status {
                 op.$.node.addClass('complete').find('.node-result').attr('data-result-text', 'CANCEL');
             break;
         }
-    
+
     }
-    
-    
+
+
     /*
     ##################################################
        log
@@ -767,14 +772,14 @@ class Status {
     */
     logInit() {
         const op = this;
-    
+
         // 進行状態表示行数
         if ( op.info ) {
             op.logMax = fn.cv( op.info.number_of_rows_to_display_progress_status, 1000 );
         } else {
             op.logMax = 0;
         }
-    
+
         op.executeLogInit();
         op.errorLogInit();
     }
@@ -785,10 +790,10 @@ class Status {
     */
     executeLogInit() {
         const op = this;
-    
+
         if ( op.info ) {
             op.executeLog = {};
-    
+
             op.$.executeLog.html(`
             <div class="executeLogContainer">
                 <div class="executeLogSelect">
@@ -798,28 +803,28 @@ class Status {
                 <div class="executeLogContent">
                 </div>
             </div>`);
-    
+
             op.$.executeLogSelectList = op.$.executeLog.find('.executeLogSelectList');
             op.$.executeLogContent = op.$.executeLog.find('.executeLogContent');
-    
+
             // ログ切替
             op.$.executeLogSelectList.on('click', '.executeLogSelectLink', function( e ){
                 e.preventDefault();
-    
+
                 const $link = $( this ),
                       file = $link.attr('href');
-    
+
                 op.$.executeLog.find('.logOpen').removeClass('logOpen').removeAttr('tabindex');
                 $link.addClass('logOpen').attr('tabindex', -1 );
                 op.$.executeLog.find( file ).addClass('logOpen');
             });
-    
+
             op.executeLogUpdate();
         }
     }
     executeLogUpdate() {
         const op = this;
-    
+
         if ( op.info.progress.execution_log && op.info.progress.execution_log.exec_log ) {
             if ( Object.keys( op.info.progress.execution_log.exec_log ).length ) {
                 for ( const filename in op.info.progress.execution_log.exec_log ) {
@@ -829,7 +834,7 @@ class Status {
                         op.executeLog[ filename ] = new Log( executeLogId, op.logMax );
                         op.$.executeLogSelectList.append(`<li class="executeLogSelectItem"><a title="${filename}" class="executeLogSelectLink" href="#${executeLogId}">${filename}</a></li>`);
                         op.$.executeLogContent.append( op.executeLog[ filename ].setup('executeLogSection', executeLogId ) );
-    
+
                         if ( firstFlag ) {
                             op.$.executeTab.removeClass('hidden');
                             op.$.executeLogSelectList.find('.executeLogSelectLink').addClass('logOpen').attr('tabindex', -1 );
@@ -848,14 +853,14 @@ class Status {
     */
     errorLogInit() {
         const op = this;
-    
+
         if ( op.info ) {
             op.errorLogUpdate();
         }
     }
     errorLogUpdate() {
         const op = this;
-    
+
         if ( op.info.progress.execution_log && op.info.progress.execution_log.error_log ) {
             if ( !op.errorLog ) {
                 op.$.errorTab.removeClass('hidden');
@@ -865,5 +870,5 @@ class Status {
             op.errorLog.update( op.info.progress.execution_log.error_log );
         }
     }
-    
+
     }

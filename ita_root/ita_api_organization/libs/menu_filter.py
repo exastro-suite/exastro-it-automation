@@ -64,15 +64,14 @@ def rest_count(objdbca, menu, filter_parameter):
     return result
 
 
-def rest_filter(objdbca, menu, filter_parameter):
+def rest_filter(objdbca, menu, filter_parameter, file_existence=True):
     """
         メニューのレコード取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu: メニュー string
             filter_parameter: 検索条件  {}
-            lang: 言語情報 ja / en
-            mode: 本体 / 履歴
+            file_existence: ファイル有無（True:含める、False:含めない）
             wsMongo:DB接続クラス  MONGOConnectWs()
         RETRUN:
             statusCode, {}, msg
@@ -97,7 +96,7 @@ def rest_filter(objdbca, menu, filter_parameter):
         status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
 
     else:
-        status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
+        status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=file_existence)
 
     if status_code != '000-00000':
         log_msg_args = [msg]
@@ -107,15 +106,14 @@ def rest_filter(objdbca, menu, filter_parameter):
     return result
 
 
-def rest_filter_journal(objdbca, menu, uuid):
+def rest_filter_journal(objdbca, menu, uuid, file_existence=True):
     """
         メニューのレコード取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu: メニュー string
-            filter_parameter: 検索条件  {}
-            lang: 言語情報 ja / en
-            mode: 本体 / 履歴
+            uuid: uuid string
+            file_existence: ファイル有無（True:含める、False:含めない） boolean
         RETRUN:
             statusCode, {}, msg
     """
@@ -129,7 +127,7 @@ def rest_filter_journal(objdbca, menu, uuid):
     mode = 'jnl'
     filter_parameter = {}
     filter_parameter.setdefault('JNL', uuid)
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=file_existence)
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]
@@ -138,48 +136,113 @@ def rest_filter_journal(objdbca, menu, uuid):
     return result
 
 
-def get_file_data(objdbca, menu, filter_parameter, uuid, column):
+def get_file_path(objdbca, menu, uuid, column):
     """
-        アップロードされているファイルをダウンロードする
+        アップロードされているファイルのパスを取得する
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu: メニュー string
             uuid: uuid
             column: カラムREST名
         RETRUN:
-            ファイルデータ
+            ファイルパス
     """
-    
-    mode = 'nomal'
+
     objmenu = load_table.loadTable(objdbca, menu)
-    if objmenu.get_objtable() is False:
-        log_msg_args = ["not menu or table"]
-        api_msg_args = ["not menu or table"]
-        raise AppException("401-00001", log_msg_args, api_msg_args) # noqa: F405
 
-    # MongoDB向けの処理はmodeで分岐させているため、対象のシートタイプの場合はmodeを上書き
-    wsMongo = None
-    if objmenu.get_sheet_type() == '26':
-        mode = 'mongo'
+    # FileUploadColumnじゃなければNone
+    if objmenu.get_col_class_name(column) != 'FileUploadColumn':
+        return None
 
-        # MariaDBのコネクションはコントローラーで生成しているため、MongoDBも同様にすべきだが、
-        # アクセスしない場合もコネクションを生成するのは無駄が多いためここで生成することにした。
-        wsMongo = MONGOConnectWs()
-        load_collection = loadCollection(wsMongo, objmenu)
-        status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
+    # 指定されたuuidで検索
+    primary_key = objmenu.get_rest_key(objmenu.get_primary_key())
+    filter_parameter = {primary_key: {'LIST': [uuid]}}
+    mode = 'nomal'
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=False)
+    # レコードが無ければNone
+    if len(result) == 0:
+        return None
 
-    else:
-        status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
+    # columnの値がなければNone
+    file_name = result[0].get('parameter').get(column)
+    if file_name is None:
+        return None
 
+    objcol = objmenu.get_columnclass(column)
+    file_path = objcol.get_file_data_path(file_name, uuid, '', False)
+
+    return file_path
+
+
+def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
+    """
+        アップロードされているファイルのパスを取得する
+        ARGS:
+            objdbca:DB接クラス  DBConnectWs()
+            menu: メニュー string
+            uuid: uuid
+            column: カラムREST名
+            journal_uuid: 履歴のuuid
+        RETRUN:
+            ファイルパス
+    """
+
+    objmenu = load_table.loadTable(objdbca, menu)
+
+    # FileUploadColumnじゃなければNone
+    if objmenu.get_col_class_name(column) != 'FileUploadColumn':
+        return None
+
+    # 指定されたuuidで検索
+    primary_key = objmenu.get_rest_key(objmenu.get_primary_key())
+    filter_parameter = {'JNL': uuid}
+    mode = 'jnl'
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=False)
+    # レコードが無ければNone
+    if len(result) == 0:
+        return None
+
+    # columnの値がなければNone
+    file_name = result[0].get('parameter').get(column)
+    if file_name is None:
+        return None
+
+    # 履歴テーブルがない場合はNone
+    menu_info = objmenu.get_menu_info()
+    if menu_info.get('MENUINFO').get('HISTORY_TABLE_FLAG') != '1':
+        return None
+
+    # 履歴データを確認
+    mode = 'jnl'
+    filter_parameter = {}
+    filter_parameter.setdefault('JNL', uuid)
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=False)
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]
         raise AppException(status_code, log_msg_args, api_msg_args)
-    
-    # ファイルデータ取得
-    primary_key = objmenu.get_primary_key()
-    for value in result:
-        if value['parameter'][primary_key.lower()] == uuid:
-            result = value['file'][column]
 
-    return result
+    # 0件の場合はNone
+    if len(result) == 0:
+        return None
+
+    # journal_datetimeの降順にソート
+    jounal_list = []
+    for data in result:
+        jounal_list.append(data.get('parameter'))
+    jounal_sort_list = sorted(jounal_list, key=lambda x: x['journal_datetime'], reverse=True)
+
+    # 新しい順に確認してファイルパスを取得
+    objcol = objmenu.get_columnclass(column)
+    match_flg = False
+    for sort_data in jounal_sort_list:
+        tmp_journal_id = sort_data.get('journal_id')
+        if match_flg is True or tmp_journal_id == journal_uuid:
+            match_flg = True
+
+            tmp_file_path = objcol.get_file_data_path(file_name, uuid, tmp_journal_id, False)
+            if os.path.isfile(tmp_file_path):
+                file_path = tmp_file_path
+                break
+
+    return file_path

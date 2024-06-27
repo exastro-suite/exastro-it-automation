@@ -281,7 +281,19 @@ def file_encode(file_path):
         # /storage
         tmp_file_path = obj.make_temp_path(file_path)
         # /storageから/tmpにコピー
-        shutil.copy2(file_path, tmp_file_path)
+        i = 0
+        while True:
+            # issue2432対策。azureストレージの初回アクセス時に、不規則に「FileNotFoundError: [Errno 2] No such file or directory」が出るため、一度だけリトライを行う
+            i = i + 1
+            try:
+                shutil.copy2(file_path, tmp_file_path)
+                break
+            except Exception as e:
+                g.applogger.info("copy failed. file_path={}, tmp_file_path={}".format(file_path, tmp_file_path))
+                if i == 2:
+                    raise e
+                t = traceback.format_exc()
+                g.applogger.info(arrange_stacktrace_format(t))
     else:
         # not /storage
         tmp_file_path = file_path

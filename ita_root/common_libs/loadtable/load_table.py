@@ -874,7 +874,7 @@ class loadTable():
         return result
 
     # [filter]:メニューのレコード取得
-    def rest_filter(self, parameter, mode='nomal'):
+    def rest_filter(self, parameter, mode='nomal', file_existence=True):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
@@ -1089,7 +1089,7 @@ class loadTable():
                 for rows in tmp_result:
                     target_uuid = rows.get(primary_key)
                     target_uuid_jnl = rows.get(COLNAME_JNL_SEQ_NO)
-                    rest_parameter, rest_file = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode)
+                    rest_parameter, rest_file = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, file_existence=file_existence)
                     tmp_data = {}
                     tmp_data.setdefault(REST_PARAMETER_KEYNAME, rest_parameter)
                     if mode != 'excel' or mode != 'excel_jnl' or mode != 'excel_jnl_all':
@@ -1772,7 +1772,7 @@ class loadTable():
 
         return result
 
-    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False):
+    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False, file_existence=True):
         """
             []::RESTパラメータへキー変換
             ARGS:
@@ -1844,7 +1844,7 @@ class loadTable():
                             rest_parameter[jsonkey] = jsonval
 
                             if mode not in ['excel', 'excel_jnl']:
-                                if self.get_col_class_name(jsonkey) == 'FileUploadColumn':
+                                if self.get_col_class_name(jsonkey) == 'FileUploadColumn' and file_existence:
                                     objcolumn = self.get_columnclass(jsonkey)
                                     # ファイル取得＋64変換
                                     file_data = objcolumn.get_file_data(jsonval, target_uuid, target_uuid_jnl)
@@ -1914,12 +1914,12 @@ class loadTable():
                             rest_parameter.setdefault(rest_key, col_val)
 
                     if mode not in ['excel', 'excel_jnl']:
-                        if self.get_col_class_name(rest_key) == 'FileUploadColumn':
+                        if self.get_col_class_name(rest_key) == 'FileUploadColumn' and file_existence:
                             objcolumn = self.get_columnclass(rest_key)
                             # ファイル取得＋64変換
                             file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
                             rest_file.setdefault(rest_key, file_data)
-                        elif self.get_col_class_name(rest_key) == 'FileUploadEncryptColumn':
+                        elif self.get_col_class_name(rest_key) == 'FileUploadEncryptColumn' and file_existence:
                             if mode in ['input', 'inner']:
                                 objcolumn = self.get_columnclass(rest_key)
                                 # ファイル取得＋64変換

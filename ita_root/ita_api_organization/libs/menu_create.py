@@ -1173,7 +1173,7 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
             else:
                 required = 'False'
 
-            uniqued = column_data.get('required')
+            uniqued = column_data.get('uniqued')
             if uniqued == '1':
                 uniqued = 'True'
             else:
@@ -1382,7 +1382,7 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
                 else:
                     required = 'False'
 
-                uniqued = column_data.get('required')
+                uniqued = column_data.get('uniqued')
                 if uniqued == '1':
                     uniqued = 'True'
                 else:

@@ -3508,7 +3508,6 @@ const getItemData = function( $column, type, setData, mode = 'registration') {
             // ID
             setData['pulldown_selection_id'] = $column.find('.pulldown-select').val();
             // 名称
-            console.log(menuEditorArray.pulldown_item_list)
             const findItem = menuEditorArray.pulldown_item_list.find(function( item ){
                 return item.link_id === setData['pulldown_selection_id'];
             });

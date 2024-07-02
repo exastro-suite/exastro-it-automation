@@ -1180,7 +1180,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <tr class="select-option" title="${textEntities(getMessage.FTE01117,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01060 + fn.html.required()}</span></th>
                         <td class="full-body">
-                            <select class="input config-select pulldown-select"${modeDisabled}${modeKeepData}>${getPelectPulldownListHTML(sv('pulldown_selection'))}</select>
+                            <select class="input config-select pulldown-select"${modeDisabled}${modeKeepData}>${getPelectPulldownListHTML(sv('pulldown_selection_id'))}</select>
                         </td>
                     </tr>
                     <!-- 参照項目 -->
@@ -1199,7 +1199,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <tr class="param-sheet-ref" title="${textEntities(getMessage.FTE01117,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01060 + fn.html.required()}</span></th>
                         <td class="full-body">
-                            <select class="input config-select reference-parameter-sheet"${modeDisabled}${modeKeepData}>${getParameterSheetReferenceListHTML(sv('parameter_sheet_reference'))}</select>
+                            <select class="input config-select reference-parameter-sheet"${modeDisabled}${modeKeepData}>${getParameterSheetReferenceListHTML(sv('parameter_sheet_reference_id'))}</select>
                         </td>
                     </tr>
                     <!-- 最大バイト数 パスワード -->
@@ -3475,7 +3475,7 @@ const updateUniqueConstraintDispData = function(){
 //  項目タイプ別情報の取得
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-const getItemDate = function( $column, type, setData, mode = 'registration') {
+const getItemData = function( $column, type, setData, mode = 'registration') {
     switch ( type ) {
         case '1':
             setData['single_string_maximum_bytes'] = $column.find('.max-byte').val();
@@ -3504,17 +3504,29 @@ const getItemDate = function( $column, type, setData, mode = 'registration') {
         case '6':
             setData['date_default_value'] = $column.find('.date-default-value').val();
             break;
-        case '7':
-            setData['pulldown_selection'] = $column.find('.pulldown-select').val();
-            setData['pulldown_selection_default_value'] = $column.find('.pulldown-default-select').val();
+        case '7': {
+            // ID
+            setData['pulldown_selection_id'] = $column.find('.pulldown-select').val();
+            // 名称
+            const findItem = menuEditorArray.pulldown_item_list.find(function( item ){
+                return item.link_id === setData['pulldown_selection_id'];
+            });
+            if ( findItem ) {
+                setData['pulldown_selection'] = findItem.link_pulldown;
+            } else {
+                setData['pulldown_selection'] = null;
+            }
+            // 参照項目
             let reference_item = $column.find('.reference-item').attr('data-reference-item-id');
             if ( reference_item ){
                 reference_item = reference_item.split(',');
             } else {
-                reference_item = null
+                reference_item = null;
             }
             setData['reference_item'] = reference_item;
-            break;
+            // 初期値
+            setData['pulldown_selection_default_value'] = $column.find('.pulldown-default-select').val();
+            } break;
         case '8':
             setData['password_maximum_bytes'] = $column.find('.password-max-byte').val();
             break;
@@ -3525,9 +3537,19 @@ const getItemDate = function( $column, type, setData, mode = 'registration') {
             setData['link_maximum_bytes'] = $column.find('.link-max-byte').val();
             setData['link_default_value'] = $column.find('.link-default-value').val();
             break;
-        case '11':
-            setData['parameter_sheet_reference'] = $column.find('.reference-parameter-sheet').val();
-            break;
+        case '11': {
+            // ID
+            setData['parameter_sheet_reference_id'] = $column.find('.reference-parameter-sheet').val();
+            // 名称
+            const findItem = menuEditorArray.parameter_sheet_reference_list.find(function( item ){
+                return item.column_definition_id === setData['parameter_sheet_reference_id'];
+            });
+            if ( findItem ) {
+                setData['parameter_sheet_reference'] = findItem.select_full_name;
+            } else {
+                setData['parameter_sheet_reference'] = null;
+            }
+            } break;
         default:
     }
 };
@@ -3610,7 +3632,7 @@ const createJsonData = function( mode = 'registration'){
                     }
                 }
                 // タイプ別情報
-                getItemDate( $column, columnType, json.column[key], mode );
+                getItemData( $column, columnType, json.column[key], mode );
             } else if ( $column.is('.menu-column-group') ) {
                 // グループ
                 const key = $column.attr('id');

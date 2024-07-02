@@ -255,7 +255,11 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
             # カラムクラス「プルダウン選択」用のパラメータを追加
             if column_class_name == "IDColumn":
-                col_detail["pulldown_selection"] = record.get('OTHER_MENU_LINK_ID')  # プルダウン選択 メニューグループ:メニュー:項目
+                col_detail["pulldown_selection_id"] = record.get('OTHER_MENU_LINK_ID')  # プルダウン選択 選択項目ID
+                # IDから名称を取得
+                other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [col_detail["pulldown_selection_id"], 0])
+                for record in other_menu_link_list:
+                    col_detail["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper()) # プルダウン選択 メニューグループ:メニュー:項目
                 col_detail["pulldown_selection_default_value"] = record.get('OTHER_MENU_LINK_DEFAULT_VALUE')  # プルダウン選択 初期値
                 reference_item = record.get('REFERENCE_ITEM')
                 if reference_item:
@@ -278,7 +282,11 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
 
             # カラムクラス「パラメータシート参照」用のパラメータを追加
             if column_class_name == "ParameterSheetReference":
-                col_detail["parameter_sheet_reference"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照
+                col_detail["parameter_sheet_reference_id"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照 選択項目ID
+                # IDから名称を取得
+                parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [col_detail["parameter_sheet_reference_id"], 0])
+                for record in parameter_sheet_reference_list:
+                    col_detail["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper()) # パラメータシート参照 選択項目名称
 
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = col_detail
@@ -860,14 +868,14 @@ def _insert_t_menu_define(objdbca, menu_data):
 
         # バンドルのkeyが無い場合はFalseを指定
         vertical = menu_data.get('vertical')
-        if vertical == '1':
+        if vertical == '1' or vertical == 'True':
             vertical = "True"
         else:
             vertical = "False"
 
         # ホストグループ利用のkeyが無い場合はFalseを指定
         hostgroup = menu_data.get('hostgroup')
-        if hostgroup == '1':
+        if hostgroup == '1' or hostgroup == 'True':
             hostgroup = "True"
         else:
             hostgroup = "False"
@@ -949,13 +957,13 @@ def _update_t_menu_define(objdbca, current_t_menu_define, menu_data, type_name):
         hostgroup = menu_data.get('hostgroup')
 
         # バンドル有無のkeyが無い場合はFalseを指定
-        if vertical == '1':
+        if vertical == '1' or vertical == 'True':
             vertical = "True"
         else:
             vertical = "False"
 
         # ホストグループ利用有無のkeyが無い場合はFalseを指定
-        if hostgroup == '1':
+        if hostgroup == '1' or hostgroup == 'True':
             hostgroup = "True"
         else:
             hostgroup = "False"
@@ -1168,13 +1176,13 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
         for column_data in column_data_list.values():
             # 0,1を文字列のTrue,Falseに変換
             required = column_data.get('required')
-            if required == '1':
+            if required == '1' or required == 'True':
                 required = 'True'
             else:
                 required = 'False'
 
             uniqued = column_data.get('uniqued')
-            if uniqued == '1':
+            if uniqued == '1' or uniqued == 'True':
                 uniqued = 'True'
             else:
                 uniqued = 'False'
@@ -1248,11 +1256,40 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
                 # カラムクラス「プルダウン選択」用のパラメータを追加
                 if column_class == "IDColumn":
                     parameter["pulldown_selection"] = None
-                    pulldown_selection_id = column_data.get('pulldown_selection')
-                    # IDから名称を取得
-                    other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [pulldown_selection_id, 0])
-                    for record in other_menu_link_list:
-                        parameter["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper())
+                    pulldown_selection_id = column_data.get('pulldown_selection_id') # 選択項目ID
+                    pulldown_selection_name = column_data.get('pulldown_selection') # 選択項目名称
+
+                    if not pulldown_selection_id == '' and not pulldown_selection_id is None:
+                        # IDが指定されている場合、IDから名称を取得
+                        tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [pulldown_selection_id, 0])
+                        if len(tmp_other_menu_link_list) > 0:
+                            for record in tmp_other_menu_link_list:
+                                parameter["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20263', [pulldown_selection_id])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    elif not pulldown_selection_name == '' and not pulldown_selection_name is None:
+                        # IDの指定がなく名称が指定されている場合、名称で処理実行
+                        tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_PULLDOWN_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [pulldown_selection_name, 0])
+                        if len(tmp_other_menu_link_list) > 0:
+                            for record in tmp_other_menu_link_list:
+                                parameter["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20264', [pulldown_selection_name])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    else:
+                        # IDも名称も指定されていない場合
+                        msg = g.appmsg.get_api_message('MSG-20267', [])
+                        log_msg_args = [msg]
+                        api_msg_args = [msg]
+                        raise AppException("499-00201", log_msg_args, api_msg_args)
+
                     parameter["pulldown_selection_default_value"] = column_data.get('pulldown_selection_default_value')  # プルダウン選択 初期値
                     reference_item = column_data.get('reference_item')
                     if reference_item:
@@ -1279,13 +1316,39 @@ def _insert_t_menu_column(objdbca, menu_data, column_data_list):
 
                 # カラムクラス「パラメータシート参照」用のパラメータを追加
                 if column_class == "ParameterSheetReference":
-                    parameter["parameter_sheet_reference"] = column_data.get('parameter_sheet_reference')  # パラメータシート参照
-                    parameter["parameter_sheet_reference"] = None
-                    parameter_sheet_reference_id = column_data.get('parameter_sheet_reference')
-                    # IDから名称を取得
-                    parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [parameter_sheet_reference_id, 0])
-                    for record in parameter_sheet_reference_list:
-                        parameter["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper())
+                    parameter_sheet_reference_id = column_data.get('parameter_sheet_reference_id') # 選択項目ID
+                    parameter_sheet_reference_name = column_data.get('parameter_sheet_reference') # 選択項目名称
+
+                    if not parameter_sheet_reference_id == '' and not parameter_sheet_reference_id is None:
+                        # IDが指定されている場合、IDから名称を取得
+                        tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [parameter_sheet_reference_id, 0])
+                        if len(tmp_parameter_sheet_reference_list) > 0:
+                            for record in tmp_parameter_sheet_reference_list:
+                                parameter["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20265', [parameter_sheet_reference_id])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    elif not parameter_sheet_reference_name == '' and not parameter_sheet_reference_name is None:
+                        # IDの指定がなく名称が指定されている場合、名称で処理実行
+                        tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE SELECT_FULL_NAME_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [parameter_sheet_reference_name, 0])
+                        if len(tmp_parameter_sheet_reference_list) > 0:
+                            for record in tmp_parameter_sheet_reference_list:
+                                parameter["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper())
+                        else:
+                            # IDが存在しない場合はバリデーションエラー
+                            msg = g.appmsg.get_api_message('MSG-20266', [parameter_sheet_reference_name])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
+                    else:
+                        # IDも名称も指定されていない場合
+                        msg = g.appmsg.get_api_message('MSG-20268', [])
+                        log_msg_args = [msg]
+                        api_msg_args = [msg]
+                        raise AppException("499-00201", log_msg_args, api_msg_args)
                 parameters = {
                     "parameter": parameter,
                     "type": "Register"
@@ -1377,13 +1440,13 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                 # 0,1を文字列のTrue,Falseに変換
                 required = column_data.get('required')
-                if required == '1':
+                if required == '1' or required == 'True':
                     required = 'True'
                 else:
                     required = 'False'
 
                 uniqued = column_data.get('uniqued')
-                if uniqued == '1':
+                if uniqued == '1' or uniqued == 'True':
                     uniqued = 'True'
                 else:
                     uniqued = 'False'
@@ -1408,14 +1471,22 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # 「必須」が変更されている場合エラー判定
                     current_required_id = str(target_record.get('REQUIRED'))
-                    update_required_id = column_data.get('required')
-                    if not current_required_id == update_required_id:
+                    # 0,1を文字列のTrue,Falseに変換
+                    if current_required_id == '1' or current_required_id == 'True':
+                        current_required_id = 'True'
+                    else:
+                        current_required_id = 'False'
+                    if not current_required_id == required:
                         raise AppException("499-00706", [item_name, "required"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # 「一意制約」が変更されている場合エラー判定
                     current_uniqued_id = str(target_record.get('UNIQUED'))
-                    update_uniqued_id = column_data.get('uniqued')
-                    if not current_uniqued_id == update_uniqued_id:
+                    # 0,1を文字列のTrue,Falseに変換
+                    if current_uniqued_id == '1' or current_uniqued_id == 'True':
+                        current_uniqued_id = 'True'
+                    else:
+                        current_uniqued_id = 'False'
+                    if not current_uniqued_id == uniqued:
                         raise AppException("499-00706", [item_name, "uniqued"])  # 「編集」の際は既存項目の対象の設定を変更できません。(項目: {}, 対象: {})
 
                     # カラムクラス「文字列(単一行)」の場合のバリデーションチェック
@@ -1475,11 +1546,39 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # カラムクラス「プルダウン選択」の場合のバリデーションチェック
                     if column_class == "IDColumn":
-                        update_pulldown_selection = column_data.get('pulldown_selection')
-                        # IDから名称を取得
-                        tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [update_pulldown_selection, 0])
-                        for record in tmp_other_menu_link_list:
-                            update_pulldown_selection = record.get('LINK_PULLDOWN_' + lang.upper())
+                        update_pulldown_selection_id = column_data.get('pulldown_selection_id') # 選択項目ID
+                        update_pulldown_selection_name = column_data.get('pulldown_selection') # 選択項目名称
+
+                        if not update_pulldown_selection_id == '' and not update_pulldown_selection_id is None:
+                            # IDが指定されている場合、IDから名称を取得
+                            tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [update_pulldown_selection_id, 0])
+                            if len(tmp_other_menu_link_list) > 0:
+                                for record in tmp_other_menu_link_list:
+                                    update_pulldown_selection = record.get('LINK_PULLDOWN_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20263', [update_pulldown_selection_id])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        elif not update_pulldown_selection_name == '' and not update_pulldown_selection_name is None:
+                            # IDの指定がなく名称が指定されている場合、名称で処理実行
+                            tmp_other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_PULLDOWN_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [update_pulldown_selection_name, 0])
+                            if len(tmp_other_menu_link_list) > 0:
+                                for record in tmp_other_menu_link_list:
+                                    update_pulldown_selection = record.get('LINK_PULLDOWN_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20264', [update_pulldown_selection_name])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        else:
+                            # IDも名称も指定されていない場合
+                            msg = g.appmsg.get_api_message('MSG-20267', [])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
 
                         # 現在設定されているlink_pulldownを取得
                         current_other_menu_link_id = target_record.get('OTHER_MENU_LINK_ID')
@@ -1529,11 +1628,39 @@ def _update_t_menu_column(objdbca, menu_data, current_t_menu_column_list, column
 
                     # カラムクラス「パラメータシート参照」の場合のバリデーションチェック
                     if column_class == "ParameterSheetReference":
-                        update_parameter_sheet_reference = column_data.get('parameter_sheet_reference')
-                        # IDから名称を取得
-                        tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [update_parameter_sheet_reference, 0])
-                        for record in tmp_parameter_sheet_reference_list:
-                            update_parameter_sheet_reference = record.get('SELECT_FULL_NAME_' + lang.upper())
+                        update_parameter_sheet_reference_id = column_data.get('parameter_sheet_reference_id') # 選択項目ID
+                        update_parameter_sheet_reference_name = column_data.get('parameter_sheet_reference') # 選択項目名称
+
+                        if not update_parameter_sheet_reference_id == '' and not update_parameter_sheet_reference_id is None:
+                            # IDが指定されている場合、IDから名称を取得
+                            tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [update_parameter_sheet_reference_id, 0])
+                            if len(tmp_parameter_sheet_reference_list) > 0:
+                                for record in tmp_parameter_sheet_reference_list:
+                                    update_parameter_sheet_reference = record.get('SELECT_FULL_NAME_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20265', [update_parameter_sheet_reference_id])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        elif not update_parameter_sheet_reference_name == '' and not update_parameter_sheet_reference_name is None:
+                            # IDの指定がなく名称が指定されている場合、名称で処理実行
+                            tmp_parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE SELECT_FULL_NAME_' + lang.upper() + ' = %s AND DISUSE_FLAG = %s', [update_parameter_sheet_reference_name, 0])
+                            if len(tmp_parameter_sheet_reference_list) > 0:
+                                for record in tmp_parameter_sheet_reference_list:
+                                    update_parameter_sheet_reference = record.get('SELECT_FULL_NAME_' + lang.upper())
+                            else:
+                                # IDが存在しない場合はバリデーションエラー
+                                msg = g.appmsg.get_api_message('MSG-20266', [update_pulldown_selection_name])
+                                log_msg_args = [msg]
+                                api_msg_args = [msg]
+                                raise AppException("499-00201", log_msg_args, api_msg_args)
+                        else:
+                            # IDも名称も指定されていない場合
+                            msg = g.appmsg.get_api_message('MSG-20268', [])
+                            log_msg_args = [msg]
+                            api_msg_args = [msg]
+                            raise AppException("499-00201", log_msg_args, api_msg_args)
 
                         # 現在設定されているparameter_sheet_referenceを取得
                         current_parameter_sheet_reference_id = target_record.get('PARAM_SHEET_LINK_ID')

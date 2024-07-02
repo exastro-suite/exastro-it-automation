@@ -373,6 +373,7 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
+ANS_VENV_PATH,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -397,6 +398,7 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
+ANS_VENV_PATH,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -593,6 +595,7 @@ CREATE TABLE T_ANSL_EXEC_STS_INST
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
     STATUS_ID                       VARCHAR(2),                                 -- ステータス
     EXEC_MODE                       VARCHAR(2),                                 -- 実行エンジン
+    ABORT_EXECUTE_FLAG              VARCHAR(2),                                 -- 緊急停止フラグ
     CONDUCTOR_NAME                  VARCHAR(255),                               -- 呼出元Conductor
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
@@ -603,6 +606,7 @@ CREATE TABLE T_ANSL_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
+    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -635,6 +639,7 @@ CREATE TABLE T_ANSL_EXEC_STS_INST_JNL
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
     STATUS_ID                       VARCHAR(2),                                 -- ステータス
     EXEC_MODE                       VARCHAR(2),                                 -- 実行エンジン
+    ABORT_EXECUTE_FLAG              VARCHAR(2),                                 -- 緊急停止フラグ
     CONDUCTOR_NAME                  VARCHAR(255),                               -- 呼出元Conductor
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
     TIME_REGISTER                   DATETIME(6),                                -- 登録日時
@@ -645,6 +650,7 @@ CREATE TABLE T_ANSL_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
+    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -682,6 +688,7 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
+ANS_VENV_PATH,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -706,6 +713,7 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
+ANS_VENV_PATH,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -965,6 +973,7 @@ CREATE TABLE T_ANSP_EXEC_STS_INST
     EXECUTION_NO                    VARCHAR(40),                                -- 作業番号
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
     STATUS_ID                       VARCHAR(2),                                 -- ステータス
+    ABORT_EXECUTE_FLAG              VARCHAR(2),                                 -- 緊急停止フラグ
     EXEC_MODE                       VARCHAR(2),                                 -- 実行エンジン
     CONDUCTOR_NAME                  VARCHAR(255),                               -- 呼出元Conductor
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
@@ -976,6 +985,7 @@ CREATE TABLE T_ANSP_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
+    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -1007,6 +1017,7 @@ CREATE TABLE T_ANSP_EXEC_STS_INST_JNL
     EXECUTION_NO                    VARCHAR(40),                                -- 作業番号
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
     STATUS_ID                       VARCHAR(2),                                 -- ステータス
+    ABORT_EXECUTE_FLAG              VARCHAR(2),                                 -- 緊急停止フラグ
     EXEC_MODE                       VARCHAR(2),                                 -- 実行エンジン
     CONDUCTOR_NAME                  VARCHAR(255),                               -- 呼出元Conductor
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
@@ -1018,6 +1029,7 @@ CREATE TABLE T_ANSP_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
+    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -1071,6 +1083,7 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
+ANS_VENV_PATH,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -1095,6 +1108,7 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
+ANS_VENV_PATH,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -1330,6 +1344,7 @@ CREATE TABLE T_ANSR_EXEC_STS_INST
     EXECUTION_NO                    VARCHAR(40),                                -- 作業番号
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
     STATUS_ID                       VARCHAR(2),                                 -- ステータス
+    ABORT_EXECUTE_FLAG              VARCHAR(2),                                 -- 緊急停止フラグ
     EXEC_MODE                       VARCHAR(2),                                 -- 実行エンジン
     CONDUCTOR_NAME                  VARCHAR(255),                               -- 呼出元Conductor
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
@@ -1341,6 +1356,7 @@ CREATE TABLE T_ANSR_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
+    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -1372,6 +1388,7 @@ CREATE TABLE T_ANSR_EXEC_STS_INST_JNL
     EXECUTION_NO                    VARCHAR(40),                                -- 作業番号
     RUN_MODE                        VARCHAR(2),                                 -- 実行種別
     STATUS_ID                       VARCHAR(2),                                 -- ステータス
+    ABORT_EXECUTE_FLAG              VARCHAR(2),                                 -- 緊急停止フラグ
     EXEC_MODE                       VARCHAR(2),                                 -- 実行エンジン
     CONDUCTOR_NAME                  VARCHAR(255),                               -- 呼出元Conductor
     EXECUTION_USER                  VARCHAR(255),                               -- 実行ユーザ
@@ -1383,6 +1400,7 @@ CREATE TABLE T_ANSR_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
+    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.

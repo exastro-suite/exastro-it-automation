@@ -756,7 +756,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 try:
                     # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
                     ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
-                    raise Exception("a")
                     g.applogger.info(" Index of mongo is made")
                 except Exception as e:
                     # mongoのインデックス設定に失敗してもインストール作業は続ける

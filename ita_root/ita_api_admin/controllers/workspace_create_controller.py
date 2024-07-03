@@ -24,12 +24,13 @@ import shutil
 import time
 from pathlib import Path
 from pymongo import ASCENDING
+import traceback
 
 from common_libs.api import api_filter_admin, check_request_body_key
 from common_libs.common.mongoconnect.mongoconnect import MONGOConnectOrg, MONGOConnectWs
 from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.dbconnect import *  # noqa: F403
-from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles
+from common_libs.common.util import ky_decrypt, ky_encrypt, get_timestamp, create_dirs, put_uploadfiles, arrange_stacktrace_format
 from libs.admin_common import initial_settings_ansible
 from common_libs.common.exception import AppException
 from common_libs.api import app_exception_response, exception_response
@@ -75,7 +76,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
     workspace_dir = strage_path + "/".join([organization_id, workspace_id]) + "/"
     if not os.path.isdir(workspace_dir):
         os.makedirs(workspace_dir)
-        g.applogger.debug("made workspace_dir")
+        g.applogger.info("made workspace_dir")
     else:
         org_db.db_disconnect()
         return '', "ALREADY EXISTS", "499-00001", 499
@@ -84,14 +85,14 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # make storage directory for workspace job
         create_dir_list = os.path.join(os.environ.get('PYTHONPATH'), "config", "create_dir_list.txt")
         create_dirs(create_dir_list, workspace_dir)
-        g.applogger.debug("make storage directory for workspace job")
+        g.applogger.info("make storage directory for workspace job")
 
         # set initial material
         src_dir = os.path.join(os.environ.get('PYTHONPATH'), "files")
         dest_dir = os.path.join(workspace_dir, "uploadfiles")
         config_file_path = os.path.join(src_dir, "config.json")
         put_uploadfiles(config_file_path, src_dir, dest_dir)
-        g.applogger.debug("set initial material")
+        g.applogger.info("set initial material")
 
         # make workspace-db connect infomation
         ws_db_name, db_username, db_user_password = org_db.userinfo_generate("ITA_WS")
@@ -104,7 +105,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         # create workspace-user and grant user privileges
         org_root_db.user_create(db_username, db_user_password, ws_db_name)
         # print(db_username, db_user_password)
-        g.applogger.debug("created db and db-user")
+        g.applogger.info("created db and db-user")
 
         # OrganizationにてOASEがインストールされている場合のMongo接続情報
         mongo_host = None
@@ -122,23 +123,29 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 org_root_db.db_disconnect()
                 return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
 
-            # make workspace-mongo connect infomation
-            org_mongo = MONGOConnectOrg(org_db)
-            ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
+            try:
+                # make workspace-mongo connect infomation
+                org_mongo = MONGOConnectOrg(org_db)
+                ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
+                g.applogger.info("mongo-db-name is decided")
 
-            # pattern1 pattern3
-            if mongo_owner is True:
-                # create workspace-mongodb-user
-                org_mongo.create_user(
-                    ws_mongo_user,
-                    ws_mongo_password,
-                    ws_mongo_name
-                )
-                g.applogger.debug("created mongo-db-user")
-            # pattern2
-            else:
-                ws_mongo_user = None
-                ws_mongo_password = None
+                # pattern1 pattern3
+                if mongo_owner is True:
+                    # create workspace-mongodb-user
+                    org_mongo.create_user(
+                        ws_mongo_user,
+                        ws_mongo_password,
+                        ws_mongo_name
+                    )
+                    g.applogger.info("created mongo-db-user")
+                # pattern2
+                else:
+                    ws_mongo_user = None
+                    ws_mongo_password = None
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.error(arrange_stacktrace_format(t))
+                raise AppException("490-00002", [e], [])
 
         data = {
             'WORKSPACE_ID': workspace_id,
@@ -199,7 +206,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         last_update_timestamp = str(get_timestamp())
 
         for sql_files in sql_list:
-
             ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
             dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
 
@@ -212,12 +218,13 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 continue
 
             # create table of workspace-db
+            g.applogger.info("execute " + ddl_file)
             ws_db.sqlfile_execute(ddl_file)
-            g.applogger.debug("executed " + ddl_file)
 
             # insert initial data of workspace-db
             ws_db.db_transaction_start()
             # #2079 /storage配下ではないので対象外
+            g.applogger.info("execute " + dml_file)
             with open(dml_file, "r") as f:
                 sql_list = f.read().split(";\n")
                 for sql in sql_list:
@@ -235,7 +242,6 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                         # print(prepared_list)
 
                     ws_db.sql_execute(sql, prepared_list)
-            g.applogger.debug("executed " + dml_file)
             ws_db.db_commit()
 
         # 初期データ設定(ansible)
@@ -244,6 +250,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
             g.WORKSPACE_ID = workspace_id
             initial_settings_ansible(ws_db, json.loads(inistial_data_ansible_if))
             ws_db.db_commit()
+            g.applogger.info("def'initial_settings_ansible' is executed")
 
         # 同時実行数制御用のVIEW作成
         ws_db.db_transaction_start()
@@ -266,6 +273,7 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         view_sql += "WHERE DISUSE_FLAG = %s "
         ws_db.sql_execute(view_sql, [organization_id, workspace_id, ws_db_name, 0])
         ws_db.db_commit()
+        g.applogger.info("sql of ansible-execute is executed")
 
         # 権限付与
         view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSL_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
@@ -274,22 +282,29 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         org_root_db.sql_execute(view_sql, [])
         view_sql = "GRANT SELECT ,UPDATE ON TABLE `{ws_db_name}`.`V_ANSR_EXEC_STS_INST2` TO '{db_user}'@'%'".format(ws_db_name=ws_db_name, db_user=os.getenv("DB_USER"))
         org_root_db.sql_execute(view_sql, [])
-
-
-        if 'oase' not in no_install_driver:
-        # OASEのmongo設定（インデックスなど）
-            ws_mongo = MONGOConnectWs()
-            # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
-            ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
-            # # 元イベントデータの保持期限 90日
-            # ws_mongo.collection(mongoConst.EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
-            # # イベントデータの保持期限 90日
-            # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
+        g.applogger.info("view of ansible-execute is granted")
 
         # register workspace-db connect infomation
         org_db.db_transaction_start()
         org_db.table_insert("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
         org_db.db_commit()
+        g.applogger.info("The data of workspace infomation is made")
+
+        if 'oase' not in no_install_driver:
+        # OASEのmongo設定（インデックスなど）
+            ws_mongo = MONGOConnectWs()
+            try:
+                # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
+                ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+                # # 元イベントデータの保持期限 90日
+                # ws_mongo.collection(mongoConst.EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
+                # # イベントデータの保持期限 90日
+                # ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("exastro_created_at", ASCENDING)], expireAfterSeconds=7776000)
+                g.applogger.info("Index of mongo is made")
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.error(arrange_stacktrace_format(t))
+                raise AppException("490-01002", [e], [e])
 
     except Exception as e:
         shutil.rmtree(workspace_dir)

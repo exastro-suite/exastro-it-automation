@@ -363,16 +363,11 @@ def organization_delete(organization_id):  # noqa: E501
         g.applogger.info("Organization DB and DB_USER(org_id={}) is cleaned".format(organization_id))
 
     except AppException as e:
-        # 廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
         exception_flg = True
-        exception_log_need = True
-        result_list = app_exception_response(e, exception_log_need)
-
+        raise AppException(e)
     except Exception as e:
-        # 廃止されているとexceptionはログを抑止するので、ここでログだけ出力
         exception_flg = True
-        exception_log_need = True
-        result_list = exception_response(e, exception_log_need)
+        raise e
 
     finally:
         if exception_flg is True:
@@ -386,25 +381,14 @@ def organization_delete(organization_id):  # noqa: E501
             db_disuse_set(common_db, connect_info['PRIMARY_KEY'], 'T_COMN_ORGANIZATION_DB_INFO', 0)
             common_db.db_commit()
 
-            if 'common_db' in locals():
-                common_db.db_disconnect()
-            if 'org_root_db' in locals():
-                org_root_db.db_disconnect()
-            if 'org_db' in locals():
-                org_db.db_disconnect()
-            if 'org_mongo' in locals():
-                org_mongo.disconnect()
-
-            return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
-        else:
-            if 'common_db' in locals():
-                common_db.db_disconnect()
-            if 'org_root_db' in locals():
-                org_root_db.db_disconnect()
-            if 'org_db' in locals():
-                org_db.db_disconnect()
-            if 'org_mongo' in locals():
-                org_mongo.disconnect()
+        if 'common_db' in locals():
+            common_db.db_disconnect()
+        if 'org_root_db' in locals():
+            org_root_db.db_disconnect()
+        if 'org_db' in locals():
+            org_db.db_disconnect()
+        if 'org_mongo' in locals():
+            org_mongo.disconnect()
 
     return '',
 

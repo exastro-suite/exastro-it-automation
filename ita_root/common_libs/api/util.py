@@ -287,9 +287,13 @@ def api_filter_admin(func):
             return make_response(*controller_res)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+
+            # DBが廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
             return app_exception_response(e, True)
         except Exception as e:
             # catch - other all error
+
+            # DBが廃止されているとexceptionはログを抑止するので、ここでログだけ出力
             return exception_response(e, True)
 
     return wrapper

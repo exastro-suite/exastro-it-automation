@@ -123,14 +123,14 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                 org_root_db.db_disconnect()
                 return "", "The OASE driver cannot be added because the MongoDB host is not set in the environment variables.", "499-00006", 499
 
-            try:
-                # make workspace-mongo connect infomation
-                org_mongo = MONGOConnectOrg(org_db)
-                ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
-                g.applogger.info("mongo-db-name is decided")
+            # make workspace-mongo connect infomation
+            org_mongo = MONGOConnectOrg(org_db)
+            ws_mongo_name, ws_mongo_user, ws_mongo_password = org_mongo.userinfo_generate("ITA_WS")
+            g.applogger.info("mongo-db-name is decided")
 
-                # pattern1 pattern3
-                if mongo_owner is True:
+            # pattern1 pattern3
+            if mongo_owner is True:
+                try:
                     # create workspace-mongodb-user
                     org_mongo.create_user(
                         ws_mongo_user,
@@ -138,14 +138,14 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
                         ws_mongo_name
                     )
                     g.applogger.info("created mongo-db-user")
-                # pattern2
-                else:
-                    ws_mongo_user = None
-                    ws_mongo_password = None
-            except Exception as e:
-                t = traceback.format_exc()
-                g.applogger.error(arrange_stacktrace_format(t))
-                raise AppException("490-00002", [e], [])
+                except Exception as e:
+                    t = traceback.format_exc()
+                    g.applogger.error(arrange_stacktrace_format(t))
+                    raise AppException("490-00002", [e], [])
+            # pattern2
+            else:
+                ws_mongo_user = None
+                ws_mongo_password = None
 
         data = {
             'WORKSPACE_ID': workspace_id,
@@ -382,6 +382,7 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
     org_db.db_transaction_start()
     org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
     org_db.db_commit()
+    g.applogger.info("Workspace is disused")
 
     try:
         strage_path = os.environ.get('STORAGEPATH')
@@ -400,12 +401,15 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
         org_root_db.database_drop(connect_info['DB_DATABASE'])
         org_root_db.user_drop(connect_info['DB_USER'])
         org_root_db.db_disconnect()
+        g.applogger.info("Workspace DB and DB_USER is cleaned")
 
         if 'oase' not in no_install_driver and connect_info.get('MONGO_DATABASE'):
             org_mongo = MONGOConnectOrg(org_db)
             org_mongo.drop_database(connect_info['MONGO_DATABASE'])
+            g.applogger.info("Workspace MongoDB is cleaned")
             if bool(org_connect_info['MONGO_OWNER']) is True:
                 org_mongo.drop_user(connect_info['MONGO_USER'], connect_info['MONGO_DATABASE'])
+                g.applogger.info("Workspace MongoDB_USER is cleaned")
 
         # delete storage directory for workspace
         while os.path.isdir(workspace_dir):
@@ -416,23 +420,22 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
                 # 削除時にFileNotFoundErrorが出る場合があるので、その場合は再度削除を行う
                 time.sleep(1)
                 continue
+        g.applogger.info("Storage is cleaned")
 
     except AppException as e:
         # スキップファイルが存在する場合は削除する
         if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
             os.remove(workspace_dir + '/skip_all_service_for_ws_del')
-        # 廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
+
         exception_flg = True
-        exception_log_need = True
-        result_list = app_exception_response(e, exception_log_need)
+        raise AppException(e)
     except Exception as e:
         # スキップファイルが存在する場合は削除する
         if os.path.exists(workspace_dir + '/skip_all_service_for_ws_del'):
             os.remove(workspace_dir + '/skip_all_service_for_ws_del')
-        # 廃止されているとexceptionはログを抑止するので、ここでログだけ出力
+
         exception_flg = True
-        exception_log_need = True
-        result_list = exception_response(e, exception_log_need)
+        raise e
     finally:
         if exception_flg is True:
             # 廃止を復活
@@ -443,10 +446,8 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
             org_db.db_transaction_start()
             org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
             org_db.db_commit()
-            org_db.db_disconnect()
+            g.applogger.info("Workspace is reused")
 
-            return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
-        else:
-            org_db.db_disconnect()
+        org_db.db_disconnect()
 
     return '',

@@ -4398,6 +4398,14 @@ paths:
         explode: false
         schema:
           type: string
+      - name: file
+        in: query
+        description: ファイルダウンロード指定
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -6433,7 +6441,7 @@ components:
           type: string
       example:
         result: 000-00000
-        data: 0.80082819046101150206595775671303272247314453125
+        data: 0.8008281904610115
         message: message
     filter_count_body:
       properties:

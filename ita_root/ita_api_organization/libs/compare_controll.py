@@ -151,7 +151,7 @@ def get_compares_data(objdbca, menu):
 
 
 # 比較実行
-def compare_execute(objdbca, menu, parameter, options={}):
+def compare_execute(objdbca, menu, parameter, options={}, file_required=False):
     """
         compare_execute
         ARGS:
@@ -206,7 +206,7 @@ def compare_execute(objdbca, menu, parameter, options={}):
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         # compare data execute
-        retBool, compare_config = _execute_compare_data(objdbca, compare_config, options)
+        retBool, compare_config = _execute_compare_data(objdbca, compare_config, options, file_required)
         if retBool is False:
             tmp_msg = _get_msg(compare_config, "execute_compare")
             status_code = "499-01005"
@@ -616,7 +616,7 @@ def _get_msg(compare_config, key):
 
 
 # 比較実行処理
-def _execute_compare_data(objdbca, compare_config, options):
+def _execute_compare_data(objdbca, compare_config, options, file_required=False):
     """
         execute compare data  [caller:compare_execute]
         ARGS:
@@ -785,6 +785,7 @@ def _execute_compare_data(objdbca, compare_config, options):
                                     target_host,
                                     tmp_col_name,
                                     compare_target_flg,
+                                    file_required,
                                     dict_menu1={
                                         "col_name_menu": col_name_menu_1,
                                         "target_uuid": target_uuid_1,
@@ -942,7 +943,7 @@ def _get_line_values(target_key, origin_data, target_host, input_order, col_name
 
 
 # ファイル比較結果(string:unified形式)
-def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype_1, mimetype_2, data_1, data_2):
+def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype_1, mimetype_2, data_1, data_2, file_required=False):
     """
         get unified diff data: format string
         ARGS:
@@ -956,8 +957,18 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
     str_rdiff = ""
     if mimetype_1 in accept_compare_file_list and mimetype_2 in accept_compare_file_list:
         try:
-            data_1_dec = base64.b64decode(data_1.encode()).decode().splitlines()
-            data_2_dec = base64.b64decode(data_2.encode()).decode().splitlines()
+            if file_required is True:
+                data_1_linebreak = base64.b64decode(data_1.encode()).decode().splitlines()
+                data_2_linebreak = base64.b64decode(data_2.encode()).decode().splitlines()
+            else:
+                chank_byte = 10000
+                data_1_linebreak = []
+                data_2_linebreak = []
+                with open(data_1, "rb") as tmp_data_1, open(data_2, "rb") as tmp_data_2:
+                    while chunk_1:= tmp_data_1.read(chank_byte):
+                        data_1_linebreak.extend(chunk_1.decode().splitlines())
+                    while chunk_2:= tmp_data_2.read(chank_byte):
+                        data_2_linebreak.extend(chunk_2.decode().splitlines())
         except Exception:
             t = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
@@ -968,8 +979,8 @@ def _get_unified_diff(accept_compare_file_list, filename_1, filename_2, mimetype
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
         rdiff = difflib.unified_diff(
-            data_1_dec,
-            data_2_dec,
+            data_1_linebreak,
+            data_2_linebreak,
             filename_1,
             filename_2,
             lineterm='')
@@ -997,7 +1008,7 @@ def _override_col_name_io(col_name, col_name_io, input_order, input_order_lang, 
 
 
 # ファイル比較結果のフラグ、詳細
-def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimetypes, target_host, tmp_col_name, target_flg, dict_menu1, dict_menu2):
+def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimetypes, target_host, tmp_col_name, target_flg, file_required, dict_menu1, dict_menu2):
     """
         get compare file file_compare_info and set diff_flg_file
         ARGS:
@@ -1042,7 +1053,8 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
             col_name_menu_1,
             col_val_menu_1,
             target_uuid_1,
-            column_class_name_1)
+            column_class_name_1,
+            file_required)
         file_mimetypes[tmp_col_name]["target_data_1"].setdefault(col_val_menu_1, tmp_file_mimetype_1)
     else:
         col_val_menu_1 = "no file"
@@ -1055,7 +1067,8 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
             col_name_menu_2,
             col_val_menu_2,
             target_uuid_2,
-            column_class_name_2)
+            column_class_name_2,
+            file_required)
         file_mimetypes[tmp_col_name]["target_data_2"].setdefault(col_val_menu_2, tmp_file_mimetype_2)
     else:
         col_val_menu_2 = "no file"
@@ -1078,19 +1091,21 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
             col_val_menu_2,
             tmp_file_mimetype_1,
             tmp_file_mimetype_2,
-            tmp_file_data_1,
-            tmp_file_data_2)
+            tmp_file_data_1, # file_required=Falseの場合、fileのパスが入る
+            tmp_file_data_2, # file_required=Falseの場合、fileのパスが入る
+            file_required
+        )
 
         if str_rdiff == "":
             compare_config = _set_flg(compare_config, "compare_file", False)
 
         compare_config["unified_diff"]["file_data"].setdefault(
             "menu_1",
-            {"name": col_val_menu_1, "data": tmp_file_data_1}
+            {"name": col_val_menu_1, "data": "" if file_required is False else tmp_file_data_1}
         )
         compare_config["unified_diff"]["file_data"].setdefault(
             "menu_2",
-            {"name": col_val_menu_2, "data": tmp_file_data_2}
+            {"name": col_val_menu_2, "data": "" if file_required is False else tmp_file_data_2}
         )
         compare_config["unified_diff"]["diff_result"] = str_rdiff
         target_compare_file_info = {}
@@ -1103,7 +1118,7 @@ def _get_compare_file_result(objdbca, compare_config, diff_flg_file, file_mimety
         compare_config["target_compare_file_info"] = target_compare_file_info
 
     # set compare file endpoin + parameter
-    endpoint = ("/api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file/".format(
+    endpoint = ("/api/{organization_id}/workspaces/{workspace_id}/ita/menu/{menu}/compare/execute/file?file=no".format(
                 organization_id=g.get("ORGANIZATION_ID"),
                 workspace_id=g.get("WORKSPACE_ID"),
                 menu="compare_execute",
@@ -2294,20 +2309,22 @@ def _chk_parameter_other_options(objdbca, compare_config, options):
 
 
 # ファイルデータ、mimetype取得
-def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uuid, col_class_name='TextColumn'):
+def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uuid, col_class_name='TextColumn', file_required=False):
     """
         get file_data file_mimetype
         ARGS:
             objdbca, objtable, rest_key, file_name, target_uuid, col_class_name
         RETRUN:
-            file_data, file_mimetype
+            file_path(file_data), file_mimetype
     """
     file_data = ""
     file_mimetype = "text/plain"
     try:
         eval_class_str = "{}(objdbca,objtable,rest_key,'')".format(col_class_name)
         objcolumn = eval(eval_class_str)
-        file_data = objcolumn.get_file_data(file_name, target_uuid, None)
+        # ファイルの内容が必要な場合のみ、base64でファイルを取得
+        if file_required is True:
+            file_data = objcolumn.get_file_data(file_name, target_uuid, None)
         file_path = objcolumn.get_file_data_path(file_name, target_uuid, None)
         file_mimetype, encoding = mimetypes.guess_type(file_path, False)
         if file_mimetype is None:
@@ -2322,7 +2339,10 @@ def _get_file_data_columnclass(objdbca, objtable, rest_key, file_name, target_uu
         type_, value, traceback_ = sys.exc_info()
         msg = traceback.format_exception(type_, value, traceback_)
         g.applogger.info(addline_msg('{}{}'.format(msg, sys._getframe().f_code.co_name)))
-    return file_data, file_mimetype
+
+    if file_required is True:
+        return file_data, file_mimetype
+    return file_path, file_mimetype
 
 
 # 代入順序付き項目名
@@ -2397,16 +2417,6 @@ def _create_outputfile(objdbca, compare_config, data, options):
         # save book
         wb.save(file_path)  # noqa: E303
 
-        # get excel base64 data
-        wbEncode = file_encode(file_path)  # noqa: F405 F841
-
-        # clear tmp file
-        if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
-            shutil.rmtree(work_dir_path)
-
-        result["file_name"] = file_name
-        result["file_data"] = wbEncode
-
     except AppException as _app_e:  # noqa: F405
         # clear work_dir
         if work_dir_path is not None and os.path.isdir(work_dir_path) is True:
@@ -2424,7 +2434,7 @@ def _create_outputfile(objdbca, compare_config, data, options):
         api_msg_args = [e]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    return result
+    return file_path
 
 
 # Excel入力値エスケープ処理

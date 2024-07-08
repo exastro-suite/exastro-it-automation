@@ -67,7 +67,7 @@ def make_response(data=None, msg="", result_code="000-00000", status_code=200, t
     return res_body, status_code
 
 
-def make_response_file_download(data=None, msg="", result_code="000-00000", status_code=200, ts=None):
+def make_response_file_download(data=None, msg="", result_code="000-00000", status_code=200, ts=None, remove_file=False):
     """
     make http response(file download)
 
@@ -100,6 +100,13 @@ def make_response_file_download(data=None, msg="", result_code="000-00000", stat
         resp = Response(__make_response())
         resp.content_length = os.path.getsize(data)
         resp.content_type = "application/octet-stream"
+
+
+        if remove_file:
+            @resp.call_on_close
+            def exec_remove():
+                remove_temporary_file(data)
+
 
     log_status = "SUCCESS" if result_code == "000-00000" else "FAILURE"
     g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
@@ -183,6 +190,22 @@ def exception_response(e, exception_log_need=False):
     return make_response(None, api_msg, "999-99999", 500)
 
 
+def remove_temporary_file(file_path):
+
+    tmp_path = "/tmp"
+    storage_path = os.environ.get('STORAGEPATH')
+    print(storage_path)
+
+    try:
+        if file_path.startswith(tmp_path) or file_path.startswith(storage_path):
+            print(file_path)
+            os.remove(file_path)
+            directory_name = os.path.dirname(file_path)
+            os.rmdir(directory_name)
+    except Exception as e:
+        raise e
+
+
 def api_filter(func):
     '''
     wrap api controller
@@ -245,6 +268,41 @@ def api_filter_download_file(func):
             controller_res = func(*args, **kwargs)
 
             return make_response_file_download(*controller_res)
+        except AppException as e:
+            # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+            return app_exception_response(e)
+        except Exception as e:
+            # catch - other all error
+            return exception_response(e)
+
+    return wrapper
+
+
+def api_filter_download_temporary_file(func):
+    '''
+    wrap api controller
+
+    Argument:
+        func: controller(def)
+    Returns:
+        controller wrapper
+    '''
+    def wrapper(*args, **kwargs):
+        '''
+        controller wrapper
+
+        Argument:
+            *args, **kwargs: controller args
+        Returns:
+            (flask)response
+        '''
+        try:
+            g.applogger.debug("[ts={}] controller start -> {}".format(api_timestamp, kwargs))
+
+            # controller execute and make response
+            controller_res = func(*args, **kwargs)
+
+            return make_response_file_download(*controller_res, remove_file=True)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
             return app_exception_response(e)

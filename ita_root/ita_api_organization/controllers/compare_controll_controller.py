@@ -18,7 +18,7 @@ import six  # noqa: F401
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_info
-from common_libs.api import api_filter
+from common_libs.api import api_filter, api_filter_download_temporary_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import compare_controll, menu_filter
 from flask import g
@@ -124,7 +124,7 @@ def post_compare_execute(organization_id, workspace_id, menu, body=None):  # noq
     return result_data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def post_compare_execute_output(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """post_compare_execute_output
 
@@ -178,7 +178,7 @@ def post_compare_execute_output(organization_id, workspace_id, menu, body=None):
 
 
 @api_filter
-def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  # noqa: E501
+def post_compare_execute_file(organization_id, workspace_id, menu, body=None, file=None):  # noqa: E501
     """post_compare_execute
 
     比較実行(ファイル) # noqa: E501
@@ -219,9 +219,16 @@ def post_compare_execute_file(organization_id, workspace_id, menu, body=None):  
             body = dict(connexion.request.get_json())
             parameter = body
 
+        file = "no"
+        file_required = True
+        if file=="no":
+            file_required = False
+        print("file_required file_required file_required file_required file_required file_required file_required ")
+        print(file_required)
+
         options = {}
         options.setdefault("compare_mode", "file")
-        result_data = compare_controll.compare_execute(objdbca, menu, parameter, options)
+        result_data = compare_controll.compare_execute(objdbca, menu, parameter, options, file_required)
     except Exception as e:
         raise e
     finally:

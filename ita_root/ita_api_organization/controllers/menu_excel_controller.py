@@ -17,11 +17,11 @@ import connexion
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_excel
-from common_libs.api import api_filter, check_request_body
+from common_libs.api import api_filter, check_request_body, api_filter_download_temporary_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """get_excel_filter
 
@@ -62,7 +62,7 @@ def get_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E
     return result_data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
     """get_excel_format
 
@@ -102,7 +102,7 @@ def get_excel_format(organization_id, workspace_id, menu):  # noqa: E501
     return result_data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
     """get_excel_journal
 
@@ -142,7 +142,7 @@ def get_excel_journal(organization_id, workspace_id, menu):  # noqa: E501
     return result_data,
 
 
-@api_filter
+@api_filter_download_temporary_file
 def post_excel_filter(organization_id, workspace_id, menu, body=None):  # noqa: E501
     """post_excel_filter
 

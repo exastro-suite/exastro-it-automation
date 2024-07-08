@@ -2628,15 +2628,6 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             if tmp_result[0] is not True:
                 raise Exception()
             result = tmp_result[1]
-
-
-            # ZIPファイル生成＋base64化
-            # tmp_result = self.create_zip_data(conductor_instance_id, data_type, execution_data)
-            # if tmp_result[0] is not True:
-            #     raise Exception()
-
-            # zipdata = tmp_result[1]
-            # result = zipdata
         except Exception:
             t = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))

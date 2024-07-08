@@ -17,6 +17,7 @@ common_libs api common function module
 import os
 from flask import g, request, Response
 import traceback
+import re
 
 from common_libs.common.exception import AppException
 from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
@@ -61,8 +62,11 @@ def make_response(data=None, msg="", result_code="000-00000", status_code=200, t
 
     log_status = "SUCCESS" if result_code == "000-00000" else "FAILURE"
 
-    g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
-    g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
+    # ヘルスチェック用のURLの場合はログを出さない
+    ret = re.search("/internal-api/health-check/liveness$|/internal-api/health-check/readiness$", request.url)
+    if ret is None:
+        g.applogger.debug("[ts={}]response={}".format(api_timestamp, (res_body, status_code)))
+        g.applogger.info("[ts={}][api-end][{}][status_code={}]".format(api_timestamp, log_status, status_code))
 
     return res_body, status_code
 
@@ -341,9 +345,13 @@ def api_filter_admin(func):
             return make_response(*controller_res)
         except AppException as e:
             # catch - raise AppException("xxx-xxxxx", log_format, msg_format)
+
+            # DBが廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
             return app_exception_response(e, True)
         except Exception as e:
             # catch - other all error
+
+            # DBが廃止されているとexceptionはログを抑止するので、ここでログだけ出力
             return exception_response(e, True)
 
     return wrapper

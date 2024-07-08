@@ -284,7 +284,7 @@ class IMAPAuthClient(APIClientCommon):
 
         socks.setdefaultproxy()
 
-        return response
+        return True, response
 
     def _parser(self, header_text, key):
 

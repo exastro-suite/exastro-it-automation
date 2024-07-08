@@ -335,6 +335,7 @@ compareEvents() {
                 cp.getCompareSettingData();
                 cp.$.result.addClass('nowLoading').empty();
                 fn.fetch( cp.rest.compare, null, 'POST', cp.compareData ).then(function( result ){
+                    cp.restExeHost();
                     cp.setCompareResult( result );
                 }).catch(function( error ){
                     if ( fn.typeof( error ) === 'object') {

@@ -133,7 +133,7 @@ def organization_create(body, organization_id):
     organization_dir = strage_path + organization_id + "/"
     if not os.path.isdir(organization_dir):
         os.makedirs(organization_dir)
-        g.applogger.debug("made organization_dir")
+        g.applogger.info("made organization_dir")
     else:
         return '', "ALREADY EXISTS", "499-00001", 499
 
@@ -183,20 +183,26 @@ def organization_create(body, organization_id):
         org_root_db.database_create(org_db_name)
         # create organization-user and grant user privileges
         org_root_db.user_create(username, user_password, org_db_name)
-        g.applogger.debug("created db and db-user")
+        g.applogger.info("created db and db-user")
 
         # connect organization-db
         org_db = DBConnectOrg(organization_id)  # noqa: F405
         # create table of organization-db
         org_db.sqlfile_execute("sql/organization.sql")
-        g.applogger.debug("executed sql/organization.sql")
+        g.applogger.info("executed sql/organization.sql")
 
 
         # make gitlab user and token value
         if (os.environ.get('GITLAB_HOST') is not None) and (len(os.environ.get('GITLAB_HOST')) > 0):
-            gitlab_agent = GitLabAgent()
-            res = gitlab_agent.create_user(org_db_name)
-            g.applogger.debug("GitLab create_user : {}".format(res))
+            try:
+                gitlab_agent = GitLabAgent()
+                res = gitlab_agent.create_user(org_db_name)
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.error("{}".format(arrange_stacktrace_format(t)))
+                raise AppException("490-00001", [e], [])
+            g.applogger.info("GitLab create_user")
+            g.applogger.debug("GitLab response : {}".format(res))
             data["GITLAB_USER"] = res['username']
             data["GITLAB_TOKEN"] = gitlab_agent.create_personal_access_tokens(res['id'], res['username'])
 
@@ -204,6 +210,7 @@ def organization_create(body, organization_id):
         common_db.db_transaction_start()
         common_db.table_insert("T_COMN_ORGANIZATION_DB_INFO", data, "PRIMARY_KEY")
         common_db.db_commit()
+        g.applogger.info("organization is created")
 
         if 'common_db' in locals():
             common_db.db_disconnect()
@@ -281,6 +288,7 @@ def organization_delete(organization_id):  # noqa: E501
     # get workspace info
     workspace_data_list = []
     workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
+    g.applogger.info("target workspace_id_list = {}".format([i.get('WORKSPACE_ID') for i in workspace_data_list]))
 
     # org-db root user connect
     org_root_db = DBConnectOrgRoot(organization_id)  # noqa: F405
@@ -291,10 +299,12 @@ def organization_delete(organization_id):  # noqa: E501
         for workspace_data in workspace_data_list:
             db_disuse_set(org_db, workspace_data['PRIMARY_KEY'], 'T_COMN_WORKSPACE_DB_INFO', 1)
         org_db.db_commit()
+        g.applogger.info("Workspace is disused")
 
         common_db.db_transaction_start()
         db_disuse_set(common_db, connect_info['PRIMARY_KEY'], 'T_COMN_ORGANIZATION_DB_INFO', 1)
         common_db.db_commit()
+        g.applogger.info("Organization is disused")
 
         # get driver info
         no_install_driver_tmp = org_db.get_no_install_driver()
@@ -305,20 +315,27 @@ def organization_delete(organization_id):  # noqa: E501
 
         # delete gitlab user and projects
         if (os.environ.get('GITLAB_HOST') is not None) and (len(os.environ.get('GITLAB_HOST')) > 0):
-            gitlab_agent = GitLabAgent()
-            user_list = gitlab_agent.get_user_by_username(connect_info['GITLAB_USER'])
-            for user in user_list:
-                gitlab_user_id = user['id']
-                projects = gitlab_agent.get_all_project_by_user_id(gitlab_user_id)
-                for project in projects:
-                    gitlab_agent.delete_project(project['id'])
-                gitlab_agent.delete_user(gitlab_user_id)
+            try:
+                gitlab_agent = GitLabAgent()
+                user_list = gitlab_agent.get_user_by_username(connect_info['GITLAB_USER'])
+                for user in user_list:
+                    gitlab_user_id = user['id']
+                    projects = gitlab_agent.get_all_project_by_user_id(gitlab_user_id)
+                    for project in projects:
+                        gitlab_agent.delete_project(project['id'])
+                    gitlab_agent.delete_user(gitlab_user_id)
+            except Exception as e:
+                t = traceback.format_exc()
+                g.applogger.error("{}".format(arrange_stacktrace_format(t)))
+                raise AppException("490-00001", [e], [])
+            g.applogger.info("Gitlab is cleaned")
 
         # delete storage directory for organization
         strage_path = os.environ.get('STORAGEPATH')
         organization_dir = strage_path + organization_id + "/"
         if os.path.isdir(organization_dir):
             shutil.rmtree(organization_dir)
+        g.applogger.info("Storage is cleaned")
 
         if 'oase' not in no_install_driver:
             org_mongo = MONGOConnectOrg(org_db)
@@ -329,29 +346,28 @@ def organization_delete(organization_id):  # noqa: E501
             org_root_db.connection_kill(workspace_data['DB_DATABASE'], workspace_data['DB_USER'])
             org_root_db.database_drop(workspace_data['DB_DATABASE'])
             org_root_db.user_drop(workspace_data['DB_USER'])
-            # drop ws-mongodb and ws-mongodb-user
+            g.applogger.info("Workspace DB and DB_USER(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
 
+            # drop ws-mongodb and ws-mongodb-user
             if 'oase' not in no_install_driver and workspace_data.get('MONGO_DATABASE'):
                 org_mongo.drop_database(workspace_data['MONGO_DATABASE'])
+                g.applogger.info("Workspace MongoDB(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
                 if mongo_owner is True:
                     org_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
+                    g.applogger.info("Workspace MongoDB_USER(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
 
         # drop org-db and org-db-user
         org_root_db.connection_kill(connect_info['DB_DATABASE'], connect_info['DB_USER'])
         org_root_db.database_drop(connect_info['DB_DATABASE'])
         org_root_db.user_drop(connect_info['DB_USER'])
+        g.applogger.info("Organization DB and DB_USER(org_id={}) is cleaned".format(organization_id))
 
     except AppException as e:
-        # 廃止されているとapp_exceptionはログを抑止するので、ここでログだけ出力
         exception_flg = True
-        exception_log_need = True
-        result_list = app_exception_response(e, exception_log_need)
-
+        raise AppException(e)
     except Exception as e:
-        # 廃止されているとexceptionはログを抑止するので、ここでログだけ出力
         exception_flg = True
-        exception_log_need = True
-        result_list = exception_response(e, exception_log_need)
+        raise e
 
     finally:
         if exception_flg is True:
@@ -365,25 +381,14 @@ def organization_delete(organization_id):  # noqa: E501
             db_disuse_set(common_db, connect_info['PRIMARY_KEY'], 'T_COMN_ORGANIZATION_DB_INFO', 0)
             common_db.db_commit()
 
-            if 'common_db' in locals():
-                common_db.db_disconnect()
-            if 'org_root_db' in locals():
-                org_root_db.db_disconnect()
-            if 'org_db' in locals():
-                org_db.db_disconnect()
-            if 'org_mongo' in locals():
-                org_mongo.disconnect()
-
-            return '', result_list[0]['message'], result_list[0]['result'], result_list[1]
-        else:
-            if 'common_db' in locals():
-                common_db.db_disconnect()
-            if 'org_root_db' in locals():
-                org_root_db.db_disconnect()
-            if 'org_db' in locals():
-                org_db.db_disconnect()
-            if 'org_mongo' in locals():
-                org_mongo.disconnect()
+        if 'common_db' in locals():
+            common_db.db_disconnect()
+        if 'org_root_db' in locals():
+            org_root_db.db_disconnect()
+        if 'org_db' in locals():
+            org_db.db_disconnect()
+        if 'org_mongo' in locals():
+            org_mongo.disconnect()
 
     return '',
 
@@ -626,6 +631,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
         workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
         g.applogger.info("target workspace_id = {}".format([i.get('WORKSPACE_ID') for i in workspace_data_list]))
 
+        # mongoのインデックス設定が一つでも失敗したら、Falseにする（失敗してもインストールを続行する）
+        mongo_index_flg = True
         # 対象のワークスペースをループし、追加するドライバについてのデータベース処理（SQLを実行しテーブルやレコードを作成）を行う
         for workspace_data in workspace_data_list:
             workspace_id = workspace_data['WORKSPACE_ID']
@@ -684,12 +691,17 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
                 # pattern1 pattern3
                 if mongo_owner is True:
-                    # create workspace-mongodb-user
-                    org_mongo.create_user(
-                        ws_mongo_user,
-                        ws_mongo_password,
-                        ws_mongo_name
-                    )
+                    try:
+                        # create workspace-mongodb-user
+                        org_mongo.create_user(
+                            ws_mongo_user,
+                            ws_mongo_password,
+                            ws_mongo_name
+                        )
+                    except Exception as e:
+                        t = traceback.format_exc()
+                        g.applogger.error(arrange_stacktrace_format(t))
+                        raise AppException("490-00002", [e], [])
                 # pattern2
                 else:
                     ws_mongo_user = None
@@ -728,11 +740,14 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 try:
                     # db.labeled_event_collection.createIndex({"labels._exastro_fetched_time":1,"labels._exastro_end_time":1,"_id":1}, {"name": "default_sort"})
                     ws_mongo.collection(mongoConst.LABELED_EVENT_COLLECTION).create_index([("labels._exastro_fetched_time", ASCENDING), ("labels._exastro_end_time", ASCENDING), ("_id", ASCENDING)], name="default_sort")
+                    g.applogger.info(" Index of mongo is made")
                 except Exception as e:
+                    # mongoのインデックス設定に失敗してもインストール作業は続ける
+                    mongo_index_flg = False
+                    mongo_error = e
                     t = traceback.format_exc()
-                    g.applogger.error("The problem is occured in documentDB.See below logs...(organization_id='{}' workspace_id='{}')".format(organization_id, workspace_id))
+                    g.applogger.error("The problem is occured in MongoDB.See below logs...(organization_id='{}' workspace_id='{}')".format(organization_id, workspace_id))
                     g.applogger.error(arrange_stacktrace_format(t))
-                g.applogger.info(" Index of mongo is made")
 
                 g.db_connect_info.pop("WS_MONGO_CONNECTION_STRING")
                 g.db_connect_info.pop("WS_MONGO_DATABASE")
@@ -759,6 +774,9 @@ def organization_update(organization_id, body=None):  # noqa: E501
             org_db.db_disconnect()
         if 'org_mongo' in locals():
             org_mongo.disconnect()
+
+    if mongo_index_flg is False:
+        raise AppException("490-01001", [mongo_error], [mongo_error])
 
     return '',
 

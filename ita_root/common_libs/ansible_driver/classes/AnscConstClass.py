@@ -165,16 +165,18 @@ class AnscConst:
     LC_RUN_MODE_VARFILE = "1"  # 変数定義ファイルの構造チェック
 
     # ステータス定義(DBの値と同期させること)
-    NOT_YET = '1'          # 未実行
-    PREPARE = '2'          # 準備中
-    PROCESSING = '3'       # 実行中
-    PROCESS_DELAYED = '4'  # 実行中(遅延)
-    COMPLETE = '5'         # 完了
-    FAILURE = '6'          # 完了(異常)
-    EXCEPTION = '7'        # 想定外エラー
-    SCRAM = '8'            # 緊急停止
-    RESERVE = '9'          # 未実行(予約中)
-    RESERVE_CANCEL = '10'  # 予約取消
+    NOT_YET = '1'           # 未実行
+    PREPARE = '2'           # 準備中
+    PROCESSING = '3'        # 実行中
+    PROCESS_DELAYED = '4'   # 実行中(遅延)
+    COMPLETE = '5'          # 完了
+    FAILURE = '6'           # 完了(異常)
+    EXCEPTION = '7'         # 想定外エラー
+    SCRAM = '8'             # 緊急停止
+    RESERVE = '9'           # 未実行(予約中)
+    RESERVE_CANCEL = '10'   # 予約取消
+    PREPARE_COMPLETE = "11" # 準備完了
+    PROCESSING_WAIT = "12"  # 実行待ち
 
     DRY_RUN = '2'  # 実行モード(ドライラン=チェック)
     CHK_PARA = '3'  # 実行モード(パラメータ確認)

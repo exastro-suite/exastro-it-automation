@@ -31,3 +31,21 @@ UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET VALIDATE_OPTION = NULL, LAST_UPDATE_TIMES
 
 UPDATE T_COMN_MENU_COLUMN_LINK SET COLUMN_CLASS = '3',  LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '1020206';
 UPDATE T_COMN_MENU_COLUMN_LINK_JNL SET COLUMN_CLASS = '3',  LAST_UPDATE_TIMESTAMP = _____DATE_____ WHERE COLUMN_DEFINITION_ID = '1020206';
+
+-- ------------------------------------------------------------
+-- - ▼ メニュー・カラム紐づけ
+-- -   Movement一覧
+-- -    ANS_VENV_PATH:　仮想環境パス追加
+-- ------------------------------------------------------------
+INSERT INTO T_COMN_MENU_COLUMN_LINK (COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('1020218','10202','仮想環境パス','Venv path','venv_path','1020202','1',105,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'ANS_VENV_PATH',NULL,'0','1','1','0','0','1','0',NULL,'{
+"min_length": 0,
+"max_length": 255
+}',NULL,NULL,NULL,'Ansible agentサーバにvenv環境で構築したansible実行環境で作業実行したい場合に、venv環境の絶対パスを入力します。
+未入力の場合は、Ansible agentサーバにインストール済みのAnsible実行環境が使用されます。','If you want to perform operations in an ansible execution environment built in a venv environment on the Ansible agent server, enter the absolute path to the venv environment.
+If left blank, the Ansible execution environment installed on the Ansible agent server will be used.',NULL,'0',_____DATE_____,1);
+INSERT INTO T_COMN_MENU_COLUMN_LINK_JNL (JOURNAL_SEQ_NO,JOURNAL_REG_DATETIME,JOURNAL_ACTION_CLASS,COLUMN_DEFINITION_ID,MENU_ID,COLUMN_NAME_JA,COLUMN_NAME_EN,COLUMN_NAME_REST,COL_GROUP_ID,COLUMN_CLASS,COLUMN_DISP_SEQ,REF_TABLE_NAME,REF_PKEY_NAME,REF_COL_NAME,REF_SORT_CONDITIONS,REF_MULTI_LANG,REFERENCE_ITEM,SENSITIVE_COL_NAME,FILE_UPLOAD_PLACE,BUTTON_ACTION,COL_NAME,SAVE_TYPE,AUTO_INPUT,INPUT_ITEM,VIEW_ITEM,UNIQUE_ITEM,REQUIRED_ITEM,AUTOREG_HIDE_ITEM,AUTOREG_ONLY_ITEM,INITIAL_VALUE,VALIDATE_OPTION,VALIDATE_REG_EXP,BEFORE_VALIDATE_REGISTER,AFTER_VALIDATE_REGISTER,DESCRIPTION_JA,DESCRIPTION_EN,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES(1020218,_____DATE_____,'INSERT','1020218','10202','仮想環境パス','Venv path','venv_path','1020202','1',105,NULL,NULL,NULL,NULL,'0',NULL,NULL,NULL,NULL,'ANS_VENV_PATH',NULL,'0','1','1','0','0','1','0',NULL,'{
+"min_length": 0,
+"max_length": 255
+}',NULL,NULL,NULL,'Ansible agentサーバにvenv環境で構築したansible実行環境で作業実行したい場合に、venv環境の絶対パスを入力します。
+未入力の場合は、Ansible agentサーバにインストール済みのAnsible実行環境が使用されます。','If you want to perform operations in an ansible execution environment built in a venv environment on the Ansible agent server, enter the absolute path to the venv environment.
+If left blank, the Ansible execution environment installed on the Ansible agent server will be used.',NULL,'0',_____DATE_____,1);

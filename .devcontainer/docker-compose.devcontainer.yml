@@ -3,6 +3,8 @@ services:
   ita-api-organization:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     command: "python3 -m debugpy --listen 5678 /exastro/api.py"
     volumes:
       - ..:/workspace:cached
@@ -36,6 +38,8 @@ services:
   ita-api-admin:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     command: "python3 -m debugpy --listen 5678 /exastro/api.py"
     # command: bash -c "chmod -R 777 /storage && python3 -m debugpy --listen 5678 /exastro/api.py"
     volumes:
@@ -68,6 +72,9 @@ services:
       - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
   ita-web-server:
+    build:
+      secrets:
+        - host_certificate_file
     volumes:
       - ../ita_root/ita_web_server/contents/:/var/www/html/:cached
       - ../ita_root/ita_web_server/config/httpd.conf/httpd.conf:/etc/httpd/conf/httpd.conf:cached
@@ -93,6 +100,8 @@ services:
   ita-by-ansible-execute:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_execute/common_libs:cached
@@ -125,6 +134,8 @@ services:
   ita-by-ansible-legacy-role-vars-listup:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_legacy_role_vars_listup/common_libs:cached
@@ -157,6 +168,8 @@ services:
   ita-by-ansible-legacy-vars-listup:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_legacy_vars_listup/common_libs:cached
@@ -189,6 +202,8 @@ services:
   ita-by-ansible-pioneer-vars-listup:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_pioneer_vars_listup/common_libs:cached
@@ -221,6 +236,8 @@ services:
   ita-by-ansible-towermaster-sync:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_ansible_towermaster_sync/common_libs:cached
@@ -253,6 +270,8 @@ services:
   ita-by-collector:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_collector/common_libs:cached
@@ -285,6 +304,8 @@ services:
   ita-by-conductor-synchronize:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_conductor_synchronize/common_libs:cached
@@ -317,6 +338,8 @@ services:
   ita-by-conductor-regularly:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_conductor_regularly/common_libs:cached
@@ -349,6 +372,8 @@ services:
   ita-by-menu-create:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_menu_create/common_libs:cached
@@ -381,6 +406,8 @@ services:
   ita-by-menu-export-import:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_menu_export_import/common_libs:cached
@@ -413,6 +440,8 @@ services:
   ita-by-excel-export-import:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_excel_export_import/common_libs:cached
@@ -445,6 +474,8 @@ services:
   ita-by-terraform-cloud-ep-execute:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_execute/common_libs:cached
@@ -477,6 +508,8 @@ services:
   ita-by-terraform-cloud-ep-vars-listup:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cloud_ep_vars_listup/common_libs:cached
@@ -509,6 +542,8 @@ services:
   ita-by-terraform-cli-execute:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_execute/common_libs:cached
@@ -541,6 +576,8 @@ services:
   ita-by-terraform-cli-vars-listup:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_terraform_cli_vars_listup/common_libs:cached
@@ -573,6 +610,8 @@ services:
   ita-by-hostgroup-split:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_hostgroup_split/common_libs:cached
@@ -605,6 +644,8 @@ services:
   ita-by-cicd-for-iac:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_cicd_for_iac/common_libs:cached
@@ -637,6 +678,8 @@ services:
   ita-by-execinstance-dataautoclean:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_execinstance_dataautoclean/common_libs:cached
@@ -669,6 +712,8 @@ services:
   ita-by-file-autoclean:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_file_autoclean/common_libs:cached
@@ -701,6 +746,8 @@ services:
   ita-migration:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_migration/common_libs:cached
@@ -732,6 +779,8 @@ services:
   ita-api-oase-receiver:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     command: "python3 -m debugpy --listen 5678 /exastro/api.py"
     volumes:
       - ..:/workspace:cached
@@ -766,6 +815,8 @@ services:
   ita-by-oase-conclusion:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_by_oase_conclusion/common_libs:cached
@@ -804,6 +855,8 @@ services:
         - http_proxy=${HTTP_PROXY}
         - HTTPS_PROXY=${HTTPS_PROXY}
         - https_proxy=${HTTPS_PROXY}
+      secrets:
+        - host_certificate_file
     hostname: ita-oase-mailserver
     environment:
       - TZ=Asia/Tokyo
@@ -826,6 +879,8 @@ services:
   ita-ag-oase:
     build:
       target: develop_build
+      secrets:
+        - host_certificate_file
     volumes:
       - ..:/workspace:cached
       - ../ita_root/common_libs:/workspace/ita_root/ita_ag_oase/common_libs:cached
@@ -870,3 +925,7 @@ services:
   #     - ita-oase
   #   networks:
   #     - exastro
+
+secrets:
+  host_certificate_file:
+    file: ${HOST_CERTIFICATE_FILE:-/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem}

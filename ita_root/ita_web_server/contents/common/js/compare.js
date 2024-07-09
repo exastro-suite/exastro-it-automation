@@ -335,6 +335,7 @@ compareEvents() {
                 cp.getCompareSettingData();
                 cp.$.result.addClass('nowLoading').empty();
                 fn.fetch( cp.rest.compare, null, 'POST', cp.compareData ).then(function( result ){
+                    cp.restExeHost();
                     cp.setCompareResult( result );
                 }).catch(function( error ){
                     if ( fn.typeof( error ) === 'object') {
@@ -395,13 +396,10 @@ compareSettingEvents() {
 getCompareSettingData() {
     const cp = this;
 
-    const output = cp.$.output.filter(':checked').val(),
-          targetDate1 = cp.$.referenceDate1.val(),
-          targetDate2 = cp.$.referenceDate2.val();
-
-    // if ( output ) cp.compareData.output = output;
-    if ( targetDate1 ) cp.compareData.base_date_1 = targetDate1;
-    if ( targetDate2 ) cp.compareData.base_date_2 = targetDate2;
+    const targetDate1 = fn.cv( cp.$.referenceDate1.val(), '');
+    const targetDate2 = fn.cv( cp.$.referenceDate2.val(), '');
+    cp.compareData.base_date_1 = targetDate1;
+    cp.compareData.base_date_2 = targetDate2;
 }
 /*
 ##################################################

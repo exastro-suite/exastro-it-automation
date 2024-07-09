@@ -198,11 +198,9 @@ def remove_temporary_file(file_path):
 
     tmp_path = "/tmp"
     storage_path = os.environ.get('STORAGEPATH')
-    print(storage_path)
 
     try:
         if file_path.startswith(tmp_path) or file_path.startswith(storage_path):
-            print(file_path)
             os.remove(file_path)
             directory_name = os.path.dirname(file_path)
             os.rmdir(directory_name)

@@ -2604,6 +2604,13 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
             t = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             retBool = False
+        finally:
+            # 一時作業ディレクトリ掃除
+            if tmp_work_dir_path != '':
+                if os.path.isdir(tmp_work_dir_path + "/input") is True:  # noqa: F405
+                    shutil.rmtree(tmp_work_dir_path + "/input")
+                elif os.path.isdir(tmp_work_dir_path + "/result") is True:  # noqa: F405
+                    shutil.rmtree(tmp_work_dir_path + "/result")
 
         return retBool, result,
 

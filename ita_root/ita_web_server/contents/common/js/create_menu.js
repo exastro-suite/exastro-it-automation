@@ -2199,6 +2199,7 @@ const resetSelect2 = function( $target ) {
     if ( $target.find('.select2-container').length ) {
       // select2要素を削除
       $target.find('.config-select').removeClass('select2-hidden-accessible').removeAttr('tabindex aria-hidden data-select2-id');
+      $target.find('option').removeAttr('data-select2-id');
       $target.find('.select2-container').remove();
       // select2を再適用
       $target.find('.config-select').select2();
@@ -2207,12 +2208,6 @@ const resetSelect2 = function( $target ) {
 
 $menuEditor.on('click', '.menu-column-copy', function(){
   const $column = $( this ).closest('.menu-column, .menu-column-group');
-
-  // リピートを含む要素はコピーできないようにする
-  if ( $column.find('.menu-column-repeat').length ) {
-    alert(getMessage.FTE01079);
-    return false;
-  }
 
   const $clone = $column.clone();
   $column.after( $clone );
@@ -2230,7 +2225,6 @@ $menuEditor.on('click', '.menu-column-copy', function(){
 
       if ( $eachColumn.is('.menu-column') ) {
         const i = itemCounter++;
-        //$input.val( title + '(' + i + ')' );
         $input.val( title );
         $eachColumn.attr({
           'id': 'c' + i,
@@ -2247,6 +2241,11 @@ $menuEditor.on('click', '.menu-column-copy', function(){
       $input.attr('value', $input.val() );
       titleInputChange( $input );
     });
+
+    // 複製した項目の無効状態を解除する
+    $clone.find(':disabled').prop('disabled', false );
+    $clone.find('.disabled-checkbox').removeClass('disabled-checkbox');
+    $clone.find('.required-label, .unique-label').removeAttr('disabled').addClass('on-hover');
 
     resetSelect2( $clone );
 
@@ -2344,8 +2343,8 @@ const sortMark = '<span class="sortMarkWrap"><span class="sortNotSelected"></spa
         + '<th colspan="4" class="tHeadGroup tHeadTh th"><div class="ci">' + getMessage.FTE01066 + '</div></th>'
         + '<th colspan="{{colspan}}" class="tHeadGroup tHeadTh th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',
       tHeadOperationrHeaderLeftHTML = ''
-        + '<th colspan="4" class="tHeadTh th"><div class="ci">' + getMessage.FTE01066 + '</div></th>'
-        + '<th colspan="{{colspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',
+        + '<th colspan="4" class="tHeadGroup tHeadTh th"><div class="ci">' + getMessage.FTE01066 + '</div></th>'
+        + '<th colspan="{{colspan}}" class="tHeadGroup tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01067 + '</div></th>',
       tHeadParameterOpeHeaderLeftHTML = ''
         + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01068 + '</div></th>'
         + '<th rowspan="{{rowspan}}" class="tHeadTh tHeadSort th"><div class="ci">' + getMessage.FTE01069 + '</div></th>'

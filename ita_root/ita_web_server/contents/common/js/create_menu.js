@@ -952,7 +952,7 @@ const listIdName = function( type, id ) {
     const listLength = list.length;
     for ( let i = 0; i < listLength; i++ ) {
         if( type !== 'role' ){
-            if ( Number( list[i][idKey] ) === Number( id ) ) {
+            if ( String( list[i][idKey] ) === String( id ) ) {
                 name = list[i][nameKey];
                 return name;
             }
@@ -1230,7 +1230,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <tr class="date-time" title="${textEntities(getMessage.FTE01124,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
                         <td class="full-body">${( modeDisabled === '')?
-                            fn.html.dateInput( true, 'callDateTimePicker datetime-default-value config-text', '', 'dateTime'):
+                            fn.html.dateInput( true, 'callDateTimePicker datetime-default-value config-text', sv('datetime_default_value'), 'dateTime'):
                             `<input class="input datetime-default-value config-text" value="${sv('datetime_default_value')}"${modeDisabled}>`
                         }</td>
                     </tr>
@@ -1238,7 +1238,7 @@ const getColumnHTML = function( columnData = {}, columnID = '') {
                     <tr class="date" title="${textEntities(getMessage.FTE01124,1)}">
                         <th class="full-head"><span class="config-title">${getMessage.FTE01094}</span></th>
                         <td class="full-body">${( modeDisabled === '')?
-                            fn.html.dateInput( false, 'callDateTimePicker date-default-value config-text', '', 'date'):
+                            fn.html.dateInput( false, 'callDateTimePicker date-default-value config-text', sv('date_default_value'), 'date'):
                             `<input class="input date-default-value config-text" value="${sv('date_default_value')}"${modeDisabled}>`
                         }</td>
                     </tr>

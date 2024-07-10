@@ -105,7 +105,7 @@ def make_response_file_download(data=None, msg="", result_code="000-00000", stat
         resp.content_length = os.path.getsize(data)
         resp.content_type = "application/octet-stream"
         file_name = os.path.basename(data)
-        resp.headers["Content-Diposition"] = f"attachment; filename={file_name}"
+        resp.headers["Content-Disposition"] = f"attachment; filename={file_name}"
 
 
         if remove_file:

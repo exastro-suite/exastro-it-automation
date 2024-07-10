@@ -661,10 +661,11 @@ arrayCopy: function( array ) {
 },
 /*
 ##################################################
-   ダウンロード（バイナリ）
+   ファイルの取得
+   option.fileName: true ファイル名も返す
 ##################################################
 */
-getFile: function( endPoint ) {
+getFile: function( endPoint, method = 'GET', data, option = {} ) {
     return new Promise( async function( resolve, reject ){
         try {
             let progressModal = cmn.progressModal( getMessage.FTE00180 );
@@ -673,11 +674,24 @@ getFile: function( endPoint ) {
                 ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
 
             const init = {
-                method: 'GET',
+                method: method,
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             };
+
+            // body
+            if ( ( method === 'POST' || method === 'PATCH' ) && data !== undefined ) {
+                if ( !option.multipart ) {
+                    try {
+                        init.body = JSON.stringify( data );
+                    } catch ( e ) {
+                        reject( e );
+                    }
+                } else {
+                    init.body = data;
+                }
+            }
 
             // データ読込開始
             if ( windowFlag ) endPoint = cmn.getRestApiUrl( endPoint );
@@ -687,6 +701,17 @@ getFile: function( endPoint ) {
                 // 成功
                 const reader = response.body.getReader();
                 const contentLength = response.headers.get('Content-Length');
+
+                // ファイル名
+                const disposition = response.headers.get('Content-Disposition');
+                let fileName = 'noname';
+                if ( disposition && disposition.indexOf('attachment') !== -1 ) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec( disposition );
+                    if ( matches != null && matches[1] ) {
+                        fileName = decodeURIComponent(matches[1].replace(/['"]/g, ''));
+                    }
+                }
 
                 // データ読込
                 let receivedLength = 0;
@@ -699,7 +724,7 @@ getFile: function( endPoint ) {
                     receivedLength += value.length;
 
                     const rate = Math.round( receivedLength / contentLength * 100 );
-                    progressModal.$.progressBar.css('width', rate + '%');
+                    progressModal.progress( rate );
                 }
 
                 // Uint8Array連結
@@ -714,7 +739,14 @@ getFile: function( endPoint ) {
                 setTimeout(function(){
                     progressModal.close();
                     progressModal = null;
-                    resolve( chunksAll );
+                    if ( option.fileName ) {
+                        resolve({
+                            file: chunksAll,
+                            fileName: fileName
+                         });
+                    } else {
+                        resolve( chunksAll );
+                    }
                 }, 200 );
             } else {
                 // 失敗
@@ -727,6 +759,60 @@ getFile: function( endPoint ) {
         } catch ( e ) {
             reject( e );
         }
+    });
+},
+/*
+##################################################
+   データ登録（進捗表示）
+##################################################
+*/
+xhr: function( url, formData ) {
+    return new Promise(function( resolve, reject ){
+        let progressModal = cmn.progressModal( getMessage.FTE00181 );
+
+        const token = ( cmmonAuthFlag )? CommonAuth.getToken():
+            ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;
+
+        if ( windowFlag ) url = cmn.getRestApiUrl( url );
+
+        const progress = function( e ) {
+            const rate = Math.round( e.loaded / e.total * 100 );
+            progressModal.progress( rate );
+        };
+
+        $.ajax({
+            url: url,
+            method: 'post',
+            dataType: 'json',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                Authorization: 'Bearer ' + token,
+            },
+            async: true,
+            xhr: function() {
+                const xhr = $.ajaxSettings.xhr();
+                xhr.upload.addEventListener('progress', progress );
+                return xhr;
+            }
+        }).done(function( result, status, jqXHR ){
+            if ( status === 'success') {
+                progressModal.close();
+                progressModal = null;
+                resolve( result.data, progressModal );
+            } else {
+                reject( null );
+            }
+        }).fail(function( jqXHR ){
+            setTimeout(function(){
+                cmn.responseError( jqXHR.status, jqXHR.responseJSON ).then(function( result ){
+                    progressModal.close();
+                    progressModal = null;
+                    reject( result );
+                });
+            }, 200 );
+        });
     });
 },
 /*
@@ -2363,13 +2449,16 @@ progressModal: function( title ) {
     + `<div class="progressConteinar">`
         + `<div class="progressWrap">`
             + `<div class="progressBar"></div>`
-            + `<div class="progressRate"></div>`
+            + `<div class="progressPercentage">0<span>%</span></div>`
         + `</div>`
     + `</div>`;
     dialog.open( html );
 
-    dialog.$.progressBar = dialog.$.dbody.find('.progressBar');
-    dialog.$.progressRate = dialog.$.dbody.find('.progressRate');
+    dialog.progress = function( percentage ) {
+        const text = percentage + '%';
+        dialog.$.dbody.find('.progressBar').css('width', text);
+        dialog.$.dbody.find('.progressPercentage').text( text );
+    };
 
     return dialog;
 },

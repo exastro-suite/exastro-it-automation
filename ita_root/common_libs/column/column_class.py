@@ -676,7 +676,7 @@ class Column():
                                         tmp_result = self.convert_value_input(val)
                                         if tmp_result[0] is True:
                                             convert_val = tmp_result[2]
-                                        if jsonval == convert_val:
+                                        if str(jsonval) == str(convert_val):
                                             tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
                                             retBool = False
                                     else:
@@ -685,7 +685,7 @@ class Column():
                                             tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
                                             retBool = False
                                         else:
-                                            if jsonval == val:
+                                            if str(jsonval) == str(val):
                                                 tmp_uuids.append(tmp_rows.get(primary_key_list[0]))
                                                 retBool = False
 

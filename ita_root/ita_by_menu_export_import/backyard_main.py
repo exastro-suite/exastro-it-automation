@@ -1055,7 +1055,7 @@ def _bulk_register_data(objdbca, objmenu, workspace_id, execution_no_path, menu_
         with open(json_path, 'w') as f :
             json.dump(_json_p_data, f, ensure_ascii=False, indent=4)
         json_open = open(json_path, 'r')
-        json_data = json.dumps(json.load(json_open))
+        json_data = json.dumps(json.load(json_open)).replace(r'\\',r'\\\\')
 
         get_column_sql = f"SHOW COLUMNS FROM `{table_name}`"
         columns_row = objdbca.sql_execute(get_column_sql)

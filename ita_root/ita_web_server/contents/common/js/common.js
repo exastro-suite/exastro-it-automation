@@ -676,20 +676,17 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
             const init = {
                 method: method,
                 headers: {
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             };
 
             // body
             if ( ( method === 'POST' || method === 'PATCH' ) && data !== undefined ) {
-                if ( !option.multipart ) {
-                    try {
-                        init.body = JSON.stringify( data );
-                    } catch ( e ) {
-                        reject( e );
-                    }
-                } else {
-                    init.body = data;
+                try {
+                    init.body = JSON.stringify( data );
+                } catch ( e ) {
+                    reject( e );
                 }
             }
 
@@ -3119,12 +3116,14 @@ gotoErrPage: function( message ) {
     // windowFlagでWorker内か判定
     if ( windowFlag ) {
         controller.abort();
-        if ( message ) {
-            window.alert( message );
-        } else {
-            window.alert('Unknown error.');
+        if ( message !== 'Failed to fetch') {
+            if ( message ) {
+                window.alert( message );
+            } else {
+                window.alert('Unknown error.');
+            }
+            window.location.href = './system_error/';
         }
-        window.location.href = './system_error/';
     } else {
         if ( message ) {
             console.error( message );

@@ -91,7 +91,14 @@ class SubValueAutoReg():
     代入値自動登録とパラメータシートを抜くclass
     """
 
+    # ホスト名のマスタ
+    HostMaster_IDMap = {}
+    # オペレーション名のマスタ
+    OpeMaster_IDMap = {}
+    # カラムクラスのマスタ
     ColumnClassMaster_IDMap = {}
+    # フラグ名のマスタ
+    BooleanFlagMaster_IDMap = {}
 
     def __init__(self, in_driver_name="", ws_db=None):
 
@@ -107,6 +114,11 @@ class SubValueAutoReg():
 
         self.in_driver_name = in_driver_name
         self.ws_db = ws_db
+
+        self.getFromHostMaster(None, ws_db)
+        self.getFromOpeMaster(None, ws_db)
+        self.getFromColumnClassMaster(None, ws_db)
+        self.getFromBooleanFlagMaster(None, ws_db)
 
     def get_data_from_parameter_sheet(self, operation_id="", movement_id="", execution_no=""):
         """
@@ -177,6 +189,15 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
+        if self.in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "subst_value_list_ansible_role")
+        elif self.in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "subst_value_list_ansible_legacy")
+        elif self.in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "subst_value_list_ansible_pioneer")
+
+        var_extractor = WrappedStringReplaceAdmin(self.ws_db)
+
         for varsAssRecord in lv_varsAssList.values():
             # 処理対象外のデータかを判定
             if 'TABLE_NAME' not in varsAssRecord:
@@ -189,7 +210,7 @@ class SubValueAutoReg():
             # 代入値管理に具体値を登録
             # 項目なしの場合はスキップ
             if not varsAssRecord['STATUS'] == 'skip':
-                ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, self.in_driver_name, self.ws_db)
+                ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, self.in_driver_name, obj_load_table, var_extractor, self.ws_db)
                 if ret == 0:
                     error_flag = 1
                     raise ValidationException("MSG-10466")
@@ -218,7 +239,7 @@ class SubValueAutoReg():
             # 代入値管理に具体値を登録
             # 項目なしの場合はスキップ
             if not varsAssRecord['STATUS'] == 'skip':
-                ret = self.addStg1ArrayVarsAssign(varsAssRecord, execution_no, self.in_driver_name, self.ws_db)
+                ret = self.addStg1ArrayVarsAssign(varsAssRecord, execution_no, self.in_driver_name, obj_load_table, var_extractor, self.ws_db)
                 if ret == 0:
                     error_flag = 1
                     raise ValidationException("MSG-10441")
@@ -684,13 +705,15 @@ class SubValueAutoReg():
 
         return inout_varsAssList
 
-    def addStg1StdListVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, WS_DB):
+    def addStg1StdListVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, obj_load_table, var_extractor, WS_DB):
         """
         代入値管理（一般変数・複数具体値変数）を更新する。
 
         Arguments:
             in_varsAssignList: 代入値管理更新情報配列
             in_tableNameToMenuIdList: テーブル名配列
+            obj_load_table: load_table.loadTableインスタンス
+            var_extractor: WrappedStringReplaceAdminインスタンス
 
         Returns:
             is success:(bool)
@@ -702,13 +725,6 @@ class SubValueAutoReg():
 
         arrayValue = arrayValueTmplOfVarAss
         db_valautostup_user_id = g.USER_ID
-
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_legacy")
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_pioneer")
 
         tgt_row = arrayValue
         # 登録する情報設定
@@ -723,7 +739,7 @@ class SubValueAutoReg():
         VARS_ENTRY_USE_TPFVARS = "0"
         if type(in_varsAssignList['VARS_ENTRY']) is str:
             vars_line_array = []
-            var_extractor = WrappedStringReplaceAdmin(WS_DB)
+            # var_extractor = WrappedStringReplaceAdmin(WS_DB)
             is_success, vars_line_array = var_extractor.SimpleFillterVerSearch("TPF_", in_varsAssignList['VARS_ENTRY'], vars_line_array, [], [])
             if len(vars_line_array) == 1:
                 # テンプレート変数が記述されていることを記録
@@ -770,7 +786,7 @@ class SubValueAutoReg():
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
             parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
 
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
+        retAry = obj_load_table.exec_maintenance(parameters, "", "", False, False, True)
 
         result = retAry[0]
         if result is False:
@@ -778,7 +794,7 @@ class SubValueAutoReg():
 
         return True
 
-    def addStg1ArrayVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, WS_DB):
+    def addStg1ArrayVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, obj_load_table, var_extractor, WS_DB):
         """
         代入値管理（多次元配列変数）の廃止レコードの復活またき新規レコード追加
 
@@ -786,6 +802,8 @@ class SubValueAutoReg():
             in_varsAssignList: 代入値管理更新情報配列
             in_tableNameToMenuIdList: テーブル名配列
             WS_DB: WorkspaceDBインスタンス
+            obj_load_table: load_table.loadTableインスタンス
+            var_extractor: WrappedStringReplaceAdminインスタンス
 
         Returns:
             is success:(bool)
@@ -797,13 +815,6 @@ class SubValueAutoReg():
 
         arrayValue = arrayValueTmplOfVarAss
         db_valautostup_user_id = g.USER_ID
-
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_legacy")
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_pioneer")
 
         tgt_row = arrayValue
 
@@ -822,7 +833,7 @@ class SubValueAutoReg():
         VARS_ENTRY_USE_TPFVARS = "0"
         if type(in_varsAssignList['VARS_ENTRY']) is str:
             vars_line_array = []
-            var_extractor = WrappedStringReplaceAdmin(WS_DB)
+            # var_extractor = WrappedStringReplaceAdmin(WS_DB)
             is_success, vars_line_array = var_extractor.SimpleFillterVerSearch("TPF_", in_varsAssignList['VARS_ENTRY'], vars_line_array, [], [])
             if len(vars_line_array) == 1:
                 # テンプレート変数が記述されていることを記録
@@ -871,7 +882,7 @@ class SubValueAutoReg():
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
             parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
 
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
+        retAry = obj_load_table.exec_maintenance(parameters, "", "", False, False, True)
 
         result = retAry[0]
         if result is False:
@@ -947,44 +958,25 @@ class SubValueAutoReg():
 
         dict_objmenu = {}
 
-        # カラムクラスのマスタを保存しておく
-        self.getColumnClassMaster(WS_DB)
-
-        # HOST_IDからHOST_NAMEを引ける辞書を作成
-        host_name_id_map = {}
-        sql = "SELECT SYSTEM_ID, HOST_NAME FROM T_ANSC_DEVICE WHERE DISUSE_FLAG = '0'"
-        host_data_list = WS_DB.sql_execute(sql, [])
-        for host_data in host_data_list:
-            host_name_id_map[host_data['SYSTEM_ID']] = host_data['HOST_NAME']
-        host_data_list = []
-
-        # OPERATION_IDからOPERATION_NAMEを引ける辞書を作成
-        ope_name_id_map = {}
-        sql = "SELECT OPERATION_ID, OPERATION_NAME FROM T_COMN_OPERATION WHERE DISUSE_FLAG = '0'"
-        ope_data_list = WS_DB.sql_execute(sql, [])
-        for ope_data in ope_data_list:
-            ope_name_id_map[ope_data['OPERATION_ID']] = ope_data['OPERATION_NAME']
-        ope_data_list = []
-
-
         # 紐付メニューの入力用メニューのメニューID取得用の辞書を作成
         upload_menu_id_map = {}
         sql = "SELECT \
                     TBL_A.MENU_ID AS MENU_ID, \
+                    TBL_A.MENU_NAME_REST, \
                     TBL_B.MENU_ID AS OUT_MENU_ID, \
-                    TBL_B.MENU_NAME_REST \
+                    TBL_B.OUT_MENU_NAME_REST \
                 FROM \
                     T_COMN_MENU TBL_A \
                 INNER JOIN \
                     (SELECT \
                         MENU_ID, \
-                        MENU_NAME_REST \
+                        CONCAT(MENU_NAME_REST, '_subst') AS OUT_MENU_NAME_REST \
                     FROM \
                         T_COMN_MENU \
                     WHERE \
                         DISUSE_FLAG = '0' ) AS TBL_B \
-                    ON \
-                        TBL_B.MENU_NAME_REST = RIGHT(TBL_A.MENU_NAME_REST, 6) \
+                ON \
+                    TBL_B.OUT_MENU_NAME_REST = TBL_A.MENU_NAME_REST \
                 WHERE \
                     TBL_A.DISUSE_FLAG = '0'"
         data_list = WS_DB.sql_execute(sql, [])
@@ -1097,8 +1089,8 @@ class SubValueAutoReg():
                                 # 縦メニューの場合
                                 if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
                                     if row["INPUT_ORDER"] == col_data["COLUMN_ASSIGN_SEQ"]:
-                                        for parameters in tmp_result:
-                                            parameter = parameters["parameter"]
+                                        for tmp_result_child in tmp_result:
+                                            parameter = tmp_result_child["parameter"]
                                             if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"] \
                                                 and row["INPUT_ORDER"] == parameter["input_order"]:
                                                 # 項目なしは対象外
@@ -1134,14 +1126,16 @@ class SubValueAutoReg():
                                         exec_flag = True
                                 elif col_data["COLUMN_ASSIGN_SEQ"] is None:
                                     # ホスト名取得
-                                    host_name = host_name_id_map[row['HOST_ID']]
+                                    host_name = self.getFromHostMaster(row['HOST_ID'])
                                     # オペレーション名取得
-                                    ope_name = ope_name_id_map[row['OPERATION_ID']]
+                                    ope_name = self.getFromOpeMaster(row['OPERATION_ID'])
 
                                     for tmp_result_child in tmp_result:
-                                        if tmp_result_child["host_name"] == host_name and tmp_result_child["operation_name_disp"] == ope_name:
-                                            parameter = tmp_result_child['parameter']
+                                        parameter = tmp_result_child['parameter']
+                                        if parameter["host_name"] == host_name and parameter["operation_name_disp"] == ope_name:
                                             break
+                                        else:
+                                            parameter = {}
 
                                     # 項目なしは対象外
                                     if col_data['COL_GROUP_ID'] is None:
@@ -1172,7 +1166,7 @@ class SubValueAutoReg():
 
                                     exec_flag = True
 
-                            col_class = self.ColumnClassMaster_IDMap[col_data['COLUMN_CLASS']]
+                            col_class = self.getFromColumnClassMaster(col_data['COLUMN_CLASS'])
                             col_name_rest = col_data['COLUMN_NAME_REST']
                             col_filepath = ""
                             col_file_md5 = ""
@@ -1413,11 +1407,7 @@ class SubValueAutoReg():
         """
 
         # オペレーション名
-        sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
-
-        data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
-        for data in data_list:
-            row['OPERATION_NAME'] = data['OPERATION_NAME']
+        row['OPERATION_NAME'] = self.getFromOpeMaster(row['OPERATION_ID'])
 
         # Movement名
         if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
@@ -1428,15 +1418,10 @@ class SubValueAutoReg():
             sql = "SELECT MOVEMENT_NAME FROM V_ANSP_MOVEMENT WHERE MOVEMENT_ID = %s"
 
         data_list = WS_DB.sql_execute(sql, [row['MOVEMENT_ID']])
-        for data in data_list:
-            row['MOVEMENT_NAME'] = data['MOVEMENT_NAME']
+        row['MOVEMENT_NAME'] = data_list[0]['MOVEMENT_NAME']
 
         # ホスト名
-        sql = "SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE SYSTEM_ID = %s"
-
-        data_list = WS_DB.sql_execute(sql, [row['SYSTEM_ID']])
-        for data in data_list:
-            row['HOST_NAME'] = data['HOST_NAME']
+        row['HOST_NAME'] = self.getFromHostMaster(row['SYSTEM_ID'])
 
         # 代入値管理用のデータ取得
         if exe_flag == 1:
@@ -1449,23 +1434,17 @@ class SubValueAutoReg():
                 sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSP_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
 
             data_list = WS_DB.sql_execute(sql, [row['MVMT_VAR_LINK_ID']])
-            for data in data_list:
-                row['VARS_NAME'] = data['MOVEMENT_VARS_NAME']
+            row['VARS_NAME'] = data_list[0]['MOVEMENT_VARS_NAME']
 
             if row['COL_SEQ_COMBINATION_ID'] is not None and not row['COL_SEQ_COMBINATION_ID'] == "":
                 sql = "SELECT MOVEMENT_VARS_COL_COMBINATION_MEMBER FROM V_ANSR_VAL_COL_SEQ_COMBINATION WHERE COL_SEQ_COMBINATION_ID = %s"
                 data_list = WS_DB.sql_execute(sql, [row['COL_SEQ_COMBINATION_ID']])
-                for data in data_list:
-                    row['COL_COMBINATION_MEMBER_ALIAS'] = data['MOVEMENT_VARS_COL_COMBINATION_MEMBER']
+                row['COL_COMBINATION_MEMBER_ALIAS'] = data_list[0]['MOVEMENT_VARS_COL_COMBINATION_MEMBER']
             else:
                 row['COL_COMBINATION_MEMBER_ALIAS'] = ""
 
             # Sensitive設定
-            sql = "SELECT FLAG_NAME FROM T_COMN_BOOLEAN_FLAG WHERE FLAG_ID = %s"
-
-            data_list = WS_DB.sql_execute(sql, [row['SENSITIVE_FLAG']])
-            for data in data_list:
-                row['FLAG_NAME'] = data['FLAG_NAME']
+            row['FLAG_NAME'] = self.getFromBooleanFlagMaster(row['SENSITIVE_FLAG'])
 
         return row
 
@@ -1551,14 +1530,20 @@ class SubValueAutoReg():
 
         return True
 
-    def getColumnClassMaster(self, WS_DB):
+    def getFromColumnClassMaster(self, column_class, WS_DB=None):
         """
-        カラムクラス名のマスタ
+        カラムクラス名のマスタから名前をひく
 
         Arguments:
+            column_class
             WS_DB: WorkspaceDBインスタンス
 
         """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.ColumnClassMaster_IDMap[column_class]
+
+        # マスタがなければ保持しておく
         data_dict = {}
 
         sql = " SELECT COLUMN_CLASS_ID, COLUMN_CLASS_NAME"
@@ -1571,6 +1556,84 @@ class SubValueAutoReg():
             data_dict[data['COLUMN_CLASS_ID']] = data['COLUMN_CLASS_NAME']
 
         self.ColumnClassMaster_IDMap = data_dict
+
+    def getFromHostMaster(self, host_id, WS_DB=None):
+        """
+        HOST_IDからHOST_NAMEを引ける辞書を作成
+
+        Arguments:
+            host_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.HostMaster_IDMap[host_id]
+
+        # マスタがなければ保持しておく
+        data_dict = {}
+
+        sql = " SELECT SYSTEM_ID, HOST_NAME"
+        sql += " FROM T_ANSC_DEVICE"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql)
+
+        for data in data_list:
+            data_dict[data['SYSTEM_ID']] = data['HOST_NAME']
+
+        self.HostMaster_IDMap = data_dict
+
+    def getFromOpeMaster(self, ope_id, WS_DB=None):
+        """
+        OPERATION_IDからOPERATION_NAMEを引ける辞書を作成
+
+        Arguments:
+            ope_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.OpeMaster_IDMap[ope_id]
+
+        # マスタがなければ保持しておく
+        data_dict = {}
+
+        sql = " SELECT OPERATION_ID, OPERATION_NAME"
+        sql += " FROM T_COMN_OPERATION"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql)
+
+        for data in data_list:
+            data_dict[data['OPERATION_ID']] = data['OPERATION_NAME']
+
+        self.OpeMaster_IDMap = data_dict
+
+    def getFromBooleanFlagMaster(self, flag_id, WS_DB=None):
+        """
+        FLAG_IDからFLAG_NAMEを引ける辞書を作成
+
+        Arguments:
+            flag_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.BooleanFlagMaster_IDMap[flag_id]
+
+        # マスタがなければ保持しておく
+        data_dict = {}
+
+        sql = " SELECT FLAG_ID, FLAG_NAME"
+        sql += " FROM T_COMN_BOOLEAN_FLAG"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql)
+
+        for data in data_list:
+            data_dict[data['FLAG_ID']] = data['FLAG_NAME']
+
+        self.BooleanFlagMaster_IDMap = data_dict
 
     def getNullDataHandlingID(self, in_null_data_handling_flg, WS_DB):
         """

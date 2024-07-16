@@ -1215,13 +1215,7 @@ def collect_excel_journal(
                 ws.cell(row=startRow + row_j + 2, column=col_i).fill = fill_gr
 
     wb.save(file_path)  # noqa: E303
-
-    # 編集してきたエクセルファイルをエンコードする
-    wbEncode = file_encode(file_path)  # noqa: F405 F841
-    # エンコード後wbは削除する
-    os.remove(file_path)    # noqa: F405
-
-    return wbEncode
+    return file_path
 
 
 def collect_excel_filter(
@@ -1511,15 +1505,7 @@ def collect_excel_filter(
 
     wb.save(file_path)  # noqa: E303
 
-    if backyard_exec == 1:
-        return file_path
-
-    # 編集してきたエクセルファイルをエンコードする
-    wbEncode = file_encode(file_path)  # noqa: F405 F841
-    # エンコード後wbは削除する
-    os.remove(file_path)    # noqa: F405
-
-    return wbEncode
+    return file_path
 
 
 def execute_excel_maintenance(

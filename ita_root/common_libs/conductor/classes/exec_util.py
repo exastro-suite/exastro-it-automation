@@ -2597,26 +2597,20 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
                         _nest(tmp_work_path)
 
-                obj = storage_access.storage_read()
-                obj.open(zip_file_path, "rb")
-                zip_base64_str = base64.b64encode(obj.read()).decode('utf-8')  # noqa: F405
-                obj.close()
-                result.setdefault('file_name', zip_file_name)
-                result.setdefault('file_data', zip_base64_str)
-
-                if os.path.isfile(zip_file_path) is True:  # noqa: F405
-                    os.remove(zip_file_path)  # noqa: F405
+                # Zipファイルが作成されたpathを返却
+                result = zip_file_path
 
         except Exception:
             t = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
             retBool = False
-
         finally:
             # 一時作業ディレクトリ掃除
             if tmp_work_dir_path != '':
-                if os.path.isdir(tmp_work_dir_path) is True:  # noqa: F405
-                    shutil.rmtree(tmp_work_dir_path)
+                if os.path.isdir(tmp_work_dir_path + "/input") is True:  # noqa: F405
+                    shutil.rmtree(tmp_work_dir_path + "/input")
+                elif os.path.isdir(tmp_work_dir_path + "/result") is True:  # noqa: F405
+                    shutil.rmtree(tmp_work_dir_path + "/result")
 
         return retBool, result,
 
@@ -2636,13 +2630,11 @@ class ConductorExecuteBkyLibs(ConductorExecuteLibs):
 
             execution_data = tmp_result[1]
 
-            # ZIPファイル生成＋base64化
+            # ZIPファイル生成 + pathを取得
             tmp_result = self.create_zip_data(conductor_instance_id, data_type, execution_data)
             if tmp_result[0] is not True:
                 raise Exception()
-
-            zipdata = tmp_result[1]
-            result = zipdata
+            result = tmp_result[1]
         except Exception:
             t = traceback.format_exc()
             g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))

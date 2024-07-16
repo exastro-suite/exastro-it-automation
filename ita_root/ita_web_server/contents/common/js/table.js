@@ -1320,6 +1320,7 @@ filterHtml( filterHeaderFlag = true ) {
         if ( tb.option.dataType === 'n') {
             menuList.push({ name: 'excel', title: getMessage.FTE00046, action: 'default', separate: true, disabled: true });
             menuList.push({ name: 'json', title: getMessage.FTE00047, action: 'default', disabled: true });
+            menuList.push({ name: 'jsonNoFile', title: getMessage.FTE00183, action: 'default', disabled: true });
         }
     };
 
@@ -1345,7 +1346,7 @@ filterDownloadButtonCheck() {
     const $filterTarget = ( tb.option.sheetType !== 'reference')? tb.$.thead: tb.$.header;
 
     const $excel = $filterTarget.find('.filterMenuButton[data-type="excel"]'),
-          $json =  $filterTarget.find('.filterMenuButton[data-type="json"]');
+          $json =  $filterTarget.find('.filterMenuButton[data-type="json"], .filterMenuButton[data-type="jsonNoFile"]');
 
     const excelLimit = tb.info.menu_info.xls_print_limit;
 
@@ -1558,20 +1559,19 @@ setTableEvents() {
         });
 
         // フィルター欄、ファイルダウンロード
-        const downloadFile = function( $button, type, url ){
+        const downloadFile = async function( $button, type, url ){
             tb.filterParams = tb.getFilterParameter();
-            const fileName = fn.cv( tb.info.menu_info.menu_name, 'file') + '_filter';
+            const ext = ( type === 'excel')? '.xlsx': '.json';
+            const fileName = fn.cv( tb.info.menu_info.menu_name, 'file') + '_filter' + ext;
 
             $button.prop('disabled', true );
-
-            // filter
-            fn.fetch( url, null, 'POST', tb.filterParams ).then(function( result ){
-                fn.download( type, result, fileName );
-            }).catch(function( error ){
+            try {
+                const file = await fn.getFile( url, 'POST', tb.filterParams );
+                fn.download('binary', file, fileName );
+            } catch ( error ) {
                 fn.gotoErrPage( error.message );
-            }).then(function(){
-                fn.disabledTimer( $button, false, 1000 );
-            });
+            }
+            fn.disabledTimer( $button, false, 1000 );
         };
 
         // オートフィルター
@@ -1614,7 +1614,12 @@ setTableEvents() {
                         downloadFile( $button, 'excel', tb.rest.excelDownload );
                     break;
                     case 'json':
-                        downloadFile( $button, 'json', tb.rest.jsonDownload );
+                        if ( window.confirm( getMessage.FTE00181 ) ) {
+                            downloadFile( $button, 'json', tb.rest.jsonDownload );
+                        }
+                    break;
+                    case 'jsonNoFile':
+                        downloadFile( $button, 'json', tb.rest.jsonDownload + '?file=no');
                     break;
                 }
             }
@@ -2146,12 +2151,9 @@ setTableEvents() {
                               method = $button.attr('data-method'),
                               nameKey = $button.attr('data-filename'),
                               dataKey = $button.attr('data-filedata');
-                        fn.fetch( url, null, method ).then(function( result ){
-                            if ( result[ dataKey ] && result[ nameKey] ) {
-                                fn.download('base64', result[ dataKey ], result[ nameKey]);
-                            } else {
-                                alert('Download error.');
-                            }
+                        fn.getFile( url, method, null, { fileName: true }).then(function( result ){
+                            const fileName = fn.cv( result.fileName, '');
+                            fn.download('binary', result.file, fileName );
                         }).catch(function( error ){
                             alert( error.message );
                             window.console.error( error );
@@ -4960,7 +4962,7 @@ editOk() {
         // アップロードの間はSession Timeoutしないように設定
         CommonAuth.tokenRefreshPermanently( true );
 
-        fn.fetch( tb.rest.maintenance, null, 'POST', formData, { multipart: true } )
+        fn.xhr( tb.rest.maintenance, formData )
             .then(function( result ){
                 resolve( result );
             })

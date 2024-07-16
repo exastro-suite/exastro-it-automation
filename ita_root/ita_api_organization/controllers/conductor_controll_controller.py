@@ -20,7 +20,7 @@ import six  # noqa: F401
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectWs
 from common_libs.common import menu_info
-from common_libs.api import api_filter
+from common_libs.api import api_filter, api_filter_download_temporary_file
 from libs.organization_common import check_menu_info, check_auth_menu, check_sheet_type
 from libs import conductor_controll, menu_filter
 
@@ -703,7 +703,7 @@ def patch_conductor_scram(organization_id, workspace_id, menu, conductor_instanc
 
 
 # Conductor作業確認一覧個別関連
-@api_filter
+@api_filter_download_temporary_file
 def get_conductor_input_data(organization_id, workspace_id, menu, conductor_instance_id):  # noqa: E501
     """get_conductor_input_data
 
@@ -749,7 +749,7 @@ def get_conductor_input_data(organization_id, workspace_id, menu, conductor_inst
         objdbca.db_disconnect()
     return result_data,
 
-@api_filter
+@api_filter_download_temporary_file
 def get_conductor_result_data(organization_id, workspace_id, menu, conductor_instance_id):  # noqa: E501
     """get_conductor_result_data
 

@@ -216,6 +216,10 @@ export function messageid_en() {
         'FTE00178' : "Item menu",
         'FTE00179' : "Failed to get file.",
         'FTE00180' : "Loading file",
+        'FTE00181' : "WARNING: Downloading JSON file.\nLarge file within the records may overload the memory, leading to possible system failure.\nWould you like to continue?",
+        'FTE00182' : "Download all (JSON:No File)",
+        'FTE00183' : "JSON download (No File)",
+        'FTE00184' : "Editing reflected",
 
         // Create parameter sheet
         'FTE01001' : "Item",

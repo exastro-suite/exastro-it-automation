@@ -91,6 +91,21 @@ class SubValueAutoReg():
     代入値自動登録とパラメータシートを抜くclass
     """
 
+    # ホスト名のマスタ
+    HostMaster_IDMap = {}
+    # オペレーション名のマスタ
+    OpeMaster_IDMap = {}
+    # カラムクラスのマスタ
+    ColumnClassMaster_IDMap = {}
+    # フラグ名のマスタ
+    BooleanFlagMaster_IDMap = {}
+    # Movement名のマスタ
+    MovementMaster_IDMap = {}
+    # 代入値管理用のデータのマスタ
+    MovementVarsNameMaster_IDMap = {}
+    # 多段変数
+    MovementVarsColCombinationMaster_IDMap = {}
+
     def __init__(self, in_driver_name="", ws_db=None):
 
         """
@@ -105,6 +120,11 @@ class SubValueAutoReg():
 
         self.in_driver_name = in_driver_name
         self.ws_db = ws_db
+
+        self.getFromHostMaster(None, ws_db)
+        self.getFromOpeMaster(None, ws_db)
+        self.getFromColumnClassMaster(None, ws_db)
+        self.getFromBooleanFlagMaster(None, ws_db)
 
     def get_data_from_parameter_sheet(self, operation_id="", movement_id="", execution_no=""):
         """
@@ -175,6 +195,16 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
+        if self.in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "subst_value_list_ansible_role")
+        elif self.in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "subst_value_list_ansible_legacy")
+        elif self.in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "subst_value_list_ansible_pioneer")
+
+        # 変数抜出及び変数具体値置き換モジュール
+        var_extractor = WrappedStringReplaceAdmin(self.ws_db)
+
         for varsAssRecord in lv_varsAssList.values():
             # 処理対象外のデータかを判定
             if 'TABLE_NAME' not in varsAssRecord:
@@ -187,7 +217,7 @@ class SubValueAutoReg():
             # 代入値管理に具体値を登録
             # 項目なしの場合はスキップ
             if not varsAssRecord['STATUS'] == 'skip':
-                ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, self.in_driver_name, self.ws_db)
+                ret = self.addStg1StdListVarsAssign(varsAssRecord, execution_no, self.in_driver_name, obj_load_table, var_extractor, self.ws_db)
                 if ret == 0:
                     error_flag = 1
                     raise ValidationException("MSG-10466")
@@ -216,7 +246,7 @@ class SubValueAutoReg():
             # 代入値管理に具体値を登録
             # 項目なしの場合はスキップ
             if not varsAssRecord['STATUS'] == 'skip':
-                ret = self.addStg1ArrayVarsAssign(varsAssRecord, execution_no, self.in_driver_name, self.ws_db)
+                ret = self.addStg1ArrayVarsAssign(varsAssRecord, execution_no, self.in_driver_name, obj_load_table, var_extractor, self.ws_db)
                 if ret == 0:
                     error_flag = 1
                     raise ValidationException("MSG-10441")
@@ -234,8 +264,6 @@ class SubValueAutoReg():
         del lv_arrayVarsAssList
 
         # コミット(レコードロックを解除)
-        self.ws_db.db_commit()
-
         # トランザクション終了
         self.ws_db.db_transaction_end(True)
 
@@ -252,17 +280,28 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
+        if self.in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "target_host_ansible_role")
+        elif self.in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "target_host_ansible_legacy")
+        elif self.in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "target_host_ansible_pioneer")
+
         for ope_id, ptn_list in lv_phoLinkList.items():
             for ptn_id, host_list in ptn_list.items():
                 for host_id, access_auth in host_list.items():
                     lv_phoLinkData = {'OPERATION_ID': ope_id, 'MOVEMENT_ID': ptn_id, 'SYSTEM_ID': host_id}
-                    ret = self.addStg1PhoLink(lv_phoLinkData, execution_no, self.in_driver_name, self.ws_db)
+                    ret = self.addStg1PhoLink(lv_phoLinkData, execution_no, self.in_driver_name, obj_load_table, self.ws_db)
 
                     if ret == 0:
                         error_flag = 1
                         raise ValidationException("MSG-10373")
 
         del lv_phoLinkList
+
+        self.MovementMaster_IDMap = {}
+        self.MovementVarsNameMaster_IDMap = {}
+        self.MovementVarsColCombinationMaster_IDMap = {}
 
         # コミット(レコードロックを解除)
         # トランザクション終了
@@ -345,12 +384,15 @@ class SubValueAutoReg():
         file = in_dir + '/' + in_pkey.rjust(intNumPadding, '0') + '/' + in_filename
         return file
 
-    def addStg1PhoLink(self, in_phoLinkData, execution_no, in_driver_name, WS_DB):
+    def addStg1PhoLink(self, in_phoLinkData, execution_no, in_driver_name, obj_load_table, WS_DB):
         """
         作業対象ホストの廃止レコードを復活または新規レコード追加
 
         Arguments:
             in_phoLinkData: 作業対象ホスト更新情報配列
+            execution_no
+            in_driver_name
+            obj_load_table: load_table.loadTableインスタンス
             WS_DB: WorkspaceDBインスタンス
 
         Returns:
@@ -371,12 +413,7 @@ class SubValueAutoReg():
         key += in_phoLinkData["MOVEMENT_ID"] + "_"
         key += in_phoLinkData["SYSTEM_ID"] + "_1"
 
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_role")
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_legacy")
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_pioneer")
+
         tgt_row = arrayValue
 
         # 更新対象の作業対象ホスト管理主キー値を退避
@@ -409,7 +446,7 @@ class SubValueAutoReg():
             "file": {},
             "type": "Register"
         }
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
+        retAry = obj_load_table.exec_maintenance(parameters, "", "", False, False, True)
 
         result = retAry[0]
         if result is False:
@@ -464,10 +501,10 @@ class SubValueAutoReg():
                 # エラーがあるのでスキップ
                 msgstr = g.appmsg.get_api_message("MSG-10356", [in_tableNameToMenuIdList[table_name]])
                 frame = inspect.currentframe().f_back
-                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                 # 次のテーブルへ
                 continue
-            
+
             # パラメータシートのテーブル構成確認
             where = "WHERE DISUSE_FLAG = '0'"
             ret = WS_DB.table_select(table_name, where, [])
@@ -481,7 +518,7 @@ class SubValueAutoReg():
             make_sql += hostid_chk_sql + " \n "
             make_sql += " TBL_A." + pkey_name + " AS %s   \n "
             make_sql += ", TBL_A.HOST_ID \n "
-            for tmp_col_value in col_value.values():                
+            for tmp_col_value in col_value.values():
                 # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出してスキップする。
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is False:
                     msgstr = g.appmsg.get_api_message("MSG-10939", [tmp_col_value["COLUMN_ID"]])
@@ -493,15 +530,15 @@ class SubValueAutoReg():
                     frame = inspect.currentframe().f_back
                     g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                     continue
-                
+
                 # パラメータシートに縦メニュー用代入順序があるか判定
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is True:
                     make_sql += ", TBL_A.INPUT_ORDER \n "
                 else:
                     make_sql += ", '' AS INPUT_ORDER \n "
-                    
+
                 data_cnt += 1
-            
+
             # 代入値自動登録管理とパラメータシートで縦メニュー用代入順序の差異がある場合ログを出してスキップする。
             if data_cnt == 0:
                 if tmp_col_value["COLUMN_ASSIGN_SEQ"] is not None and input_order_flg is False:
@@ -682,13 +719,17 @@ class SubValueAutoReg():
 
         return inout_varsAssList
 
-    def addStg1StdListVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, WS_DB):
+    def addStg1StdListVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, obj_load_table, var_extractor, WS_DB):
         """
         代入値管理（一般変数・複数具体値変数）を更新する。
 
         Arguments:
             in_varsAssignList: 代入値管理更新情報配列
-            in_tableNameToMenuIdList: テーブル名配列
+            execution_no
+            in_driver_name
+            obj_load_table: load_table.loadTableインスタンス
+            var_extractor: WrappedStringReplaceAdminインスタンス
+            WS_DB: WorkspaceDBインスタンス
 
         Returns:
             is success:(bool)
@@ -700,13 +741,6 @@ class SubValueAutoReg():
 
         arrayValue = arrayValueTmplOfVarAss
         db_valautostup_user_id = g.USER_ID
-
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_legacy")
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_pioneer")
 
         tgt_row = arrayValue
         # 登録する情報設定
@@ -721,7 +755,7 @@ class SubValueAutoReg():
         VARS_ENTRY_USE_TPFVARS = "0"
         if type(in_varsAssignList['VARS_ENTRY']) is str:
             vars_line_array = []
-            var_extractor = WrappedStringReplaceAdmin(WS_DB)
+            # var_extractor = WrappedStringReplaceAdmin(WS_DB)
             is_success, vars_line_array = var_extractor.SimpleFillterVerSearch("TPF_", in_varsAssignList['VARS_ENTRY'], vars_line_array, [], [])
             if len(vars_line_array) == 1:
                 # テンプレート変数が記述されていることを記録
@@ -768,7 +802,7 @@ class SubValueAutoReg():
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
             parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
 
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
+        retAry = obj_load_table.exec_maintenance(parameters, "", "", False, False, True)
 
         result = retAry[0]
         if result is False:
@@ -776,13 +810,16 @@ class SubValueAutoReg():
 
         return True
 
-    def addStg1ArrayVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, WS_DB):
+    def addStg1ArrayVarsAssign(self, in_varsAssignList, execution_no, in_driver_name, obj_load_table, var_extractor, WS_DB):
         """
         代入値管理（多次元配列変数）の廃止レコードの復活またき新規レコード追加
 
         Arguments:
             in_varsAssignList: 代入値管理更新情報配列
-            in_tableNameToMenuIdList: テーブル名配列
+            execution_no
+            in_driver_name
+            obj_load_table: load_table.loadTableインスタンス
+            var_extractor: WrappedStringReplaceAdminインスタンス
             WS_DB: WorkspaceDBインスタンス
 
         Returns:
@@ -795,13 +832,6 @@ class SubValueAutoReg():
 
         arrayValue = arrayValueTmplOfVarAss
         db_valautostup_user_id = g.USER_ID
-
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_role")
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_legacy")
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "subst_value_list_ansible_pioneer")
 
         tgt_row = arrayValue
 
@@ -820,7 +850,7 @@ class SubValueAutoReg():
         VARS_ENTRY_USE_TPFVARS = "0"
         if type(in_varsAssignList['VARS_ENTRY']) is str:
             vars_line_array = []
-            var_extractor = WrappedStringReplaceAdmin(WS_DB)
+            # var_extractor = WrappedStringReplaceAdmin(WS_DB)
             is_success, vars_line_array = var_extractor.SimpleFillterVerSearch("TPF_", in_varsAssignList['VARS_ENTRY'], vars_line_array, [], [])
             if len(vars_line_array) == 1:
                 # テンプレート変数が記述されていることを記録
@@ -869,7 +899,7 @@ class SubValueAutoReg():
             parameter["file"] = in_varsAssignList['VARS_ENTRY']
             parameters["file"] = {"file": tgt_row['VARS_ENTRY_FILE']}
 
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
+        retAry = obj_load_table.exec_maintenance(parameters, "", "", False, False, True)
 
         result = retAry[0]
         if result is False:
@@ -945,6 +975,34 @@ class SubValueAutoReg():
 
         dict_objmenu = {}
 
+        # 紐付メニューの入力用メニューのメニューID取得用の辞書を作成
+        upload_menu_id_map = {}
+        sql = "SELECT \
+                    TBL_A.MENU_ID AS MENU_ID, \
+                    TBL_A.MENU_NAME_REST, \
+                    TBL_B.MENU_ID AS OUT_MENU_ID, \
+                    TBL_B.OUT_MENU_NAME_REST \
+                FROM \
+                    T_COMN_MENU TBL_A \
+                INNER JOIN \
+                    (SELECT \
+                        MENU_ID, \
+                        CONCAT(MENU_NAME_REST, '_subst') AS OUT_MENU_NAME_REST \
+                    FROM \
+                        T_COMN_MENU \
+                    WHERE \
+                        DISUSE_FLAG = '0' ) AS TBL_B \
+                ON \
+                    TBL_B.OUT_MENU_NAME_REST = TBL_A.MENU_NAME_REST \
+                WHERE \
+                    TBL_A.DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql, [])
+        for data in data_list:
+            if data['MENU_ID'] not in in_tableNameToMenuIdList:
+                continue
+            upload_menu_id_map[data['MENU_ID']] = data['OUT_MENU_ID']
+        data_list = []
+
         idx = 0
         for table_name, sql in in_tableNameToSqlList.items():
             # トレースメッセージ
@@ -962,7 +1020,7 @@ class SubValueAutoReg():
             if len(data_list) == 0:
                 msgstr = g.appmsg.get_api_message("MSG-10368", [in_tableNameToMenuIdList[table_name]])
                 frame = inspect.currentframe().f_back
-                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                 # 次のテーブルへ
                 continue
 
@@ -973,7 +1031,7 @@ class SubValueAutoReg():
                     # オペレーションID未登録
                     msgstr = g.appmsg.get_api_message("MSG-10360", [in_tableNameToMenuIdList[table_name], row[AnscConst.DF_ITA_LOCAL_PKEY]])
                     frame = inspect.currentframe().f_back
-                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                     warning_flag = 1
                     # 次のデータへ
@@ -986,7 +1044,7 @@ class SubValueAutoReg():
                     # ホストIDの紐付不正
                     msgstr = g.appmsg.get_api_message("MSG-10359", [in_tableNameToMenuIdList[table_name], row[AnscConst.DF_ITA_LOCAL_PKEY], row['HOST_ID']])
                     frame = inspect.currentframe().f_back
-                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                     warning_flag = 1
                     # 次のデータへ
@@ -996,7 +1054,7 @@ class SubValueAutoReg():
                 if row['HOST_ID'] is None or len(row['HOST_ID']) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10361", [in_tableNameToMenuIdList[table_name], row[AnscConst.DF_ITA_LOCAL_PKEY]])
                     frame = inspect.currentframe().f_back
-                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                     warning_flag = 1
                     # 次のデータへ
@@ -1017,85 +1075,75 @@ class SubValueAutoReg():
                     host_ary.append(row['HOST_ID'])
 
                 parameter = {}
-            
+
             for tmp_table_name, tmp_value in tmp_ary_data.items():
                 registered_data_cnt = 0
                 registered_host_ary = []
                 for row in tmp_value.values():
                     for table_name, ary_col_data in in_tabColNameToValAssRowList.items():
+                        # パラメータシートごとの処理
                         for col_data in ary_col_data[col_name].values():
+                            # 代入値自動登録のレコードごとの処理
                             col_val = ""
                             exec_flag = False
                             menu_name_rest = col_data["MENU_NAME_REST"]
                             host_id = row['HOST_ID']
+
+                            # パラメータシートから値を取得
+                            if menu_name_rest not in dict_objmenu:
+                                obj_load_table = load_table.loadTable(WS_DB, menu_name_rest)
+
+                                tmp_result = self.rest_filter(WS_DB, obj_load_table)
+
+                                dict_objmenu[menu_name_rest] = tmp_result
+                            else:
+                                # キャッシュあり
+                                tmp_result = dict_objmenu[menu_name_rest]
+
                             if tmp_table_name == table_name:
                                 # 縦メニューの場合
                                 if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
                                     if row["INPUT_ORDER"] == col_data["COLUMN_ASSIGN_SEQ"]:
-                                        # パラメータシートから値を取得
-                                        if menu_name_rest not in dict_objmenu:
-                                            dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
-                                        mode = "inner"
-                                        filter_parameter = {"discard": {"LIST": ["0"]}}
-                                        status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
-                                        for parameters in tmp_result:
-                                            parameter = parameters["parameter"]
-                                            if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"]:
-                                                if row["INPUT_ORDER"] == parameter["input_order"]:
-                                                    # 項目なしは対象外
-                                                    if col_data['COL_GROUP_ID'] is None:
-                                                        ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
-                                                                                'OPERATION_ID': operation_id,
-                                                                                'MOVEMENT_ID': col_data['MOVEMENT_ID'],
-                                                                                'SYSTEM_ID': host_id,
-                                                                                'VARS_ENTRY': None,
-                                                                                'MVMT_VAR_LINK_ID': None,
-                                                                                'STATUS': 'skip'}
-                                                        idx += 1
-                                                        continue
+                                        for parameter in tmp_result:
+                                            if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"] \
+                                                and row["INPUT_ORDER"] == parameter["input_order"]:
+                                                # 項目なしは対象外
+                                                if col_data['COL_GROUP_ID'] is None:
+                                                    ina_vars_ass_list[idx] = {'TABLE_NAME': table_name,
+                                                                            'OPERATION_ID': operation_id,
+                                                                            'MOVEMENT_ID': col_data['MOVEMENT_ID'],
+                                                                            'SYSTEM_ID': host_id,
+                                                                            'VARS_ENTRY': None,
+                                                                            'MVMT_VAR_LINK_ID': None,
+                                                                            'STATUS': 'skip'}
+                                                    idx += 1
+                                                    continue
+                                                else:
+                                                    # 項目が削除されていないか確認
+                                                    exit_flag = False
+                                                    if col_data['COLUMN_NAME_REST'] in parameter:
+                                                        col_val = parameter[col_data['COLUMN_NAME_REST']]
                                                     else:
-                                                        # 項目が削除されていないか確認
-                                                        exit_flag = False
-                                                        if col_data['COLUMN_NAME_REST'] in parameter:
-                                                            col_val = parameter[col_data['COLUMN_NAME_REST']]
-                                                        else:
-                                                            exit_flag = True
-                                                            continue
+                                                        exit_flag = True
+                                                        continue
 
-                                                    # TPF/CPF変数カラム判定
-                                                    if col_data['REF_TABLE_NAME'] in VariableColumnAry:
-                                                        if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                                            if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
-                                                                col_val = "'{{ " + col_val + " }}'"
-                                                            else:
-                                                                continue
+                                                # TPF/CPF変数カラム判定
+                                                if col_data['REF_TABLE_NAME'] in VariableColumnAry and col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
+                                                    if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
+                                                        col_val = "'{{ " + col_val + " }}'"
+                                                    else:
+                                                        continue
                                         # 項目が削除されていないか確認
                                         if exit_flag is True:
                                             continue
 
                                         exec_flag = True
                                 elif col_data["COLUMN_ASSIGN_SEQ"] is None:
-                                    # パラメータシートから値を取得
-                                    if menu_name_rest not in dict_objmenu:
-                                        dict_objmenu[menu_name_rest] = load_table.loadTable(WS_DB, menu_name_rest)
-
-                                    # ホスト名取得
-                                    sql = "SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE SYSTEM_ID = %s"
-
-                                    host_data_list = WS_DB.sql_execute(sql, [row['HOST_ID']])
-                                    for host_data in host_data_list:
-                                        host_name = host_data['HOST_NAME']
-
-                                    # オペレーション名取得
-                                    sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
-
-                                    ope_data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
-                                    for ope_data in ope_data_list:
-                                        ope_name = ope_data['OPERATION_NAME']
-                                    mode = "inner"
-                                    filter_parameter = {"host_name": {"LIST": [host_name]}, "operation_name_disp": {"LIST": [ope_name]}, "discard": {"LIST": ["0"]}}
-                                    status_code, tmp_result, msg = dict_objmenu[menu_name_rest].rest_filter(filter_parameter, mode)
-                                    parameter = tmp_result[0]['parameter']
+                                    for parameter in tmp_result:
+                                        if parameter["HOST_ID"] == row['HOST_ID'] and parameter["OPERATION_ID"] == row['OPERATION_ID']:
+                                            break
+                                        else:
+                                            parameter = {}
 
                                     # 項目なしは対象外
                                     if col_data['COL_GROUP_ID'] is None:
@@ -1116,61 +1164,61 @@ class SubValueAutoReg():
                                             continue
 
                                     # TPF/CPF変数カラム判定
-                                    if col_data['REF_TABLE_NAME'] in VariableColumnAry:
-                                        if col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']]:
-                                            if col_val is not None:
-                                                if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
-                                                    col_val = "'{{ " + col_val + " }}'"
-                                                else:
-                                                    continue
+                                    if col_data['REF_TABLE_NAME'] in VariableColumnAry \
+                                        and col_data['REF_COL_NAME'] in VariableColumnAry[col_data['REF_TABLE_NAME']] \
+                                            and col_val is not None:
+                                        if 'ID変換失敗' not in col_val and 'Failed to exchange ID' not in col_val:
+                                            col_val = "'{{ " + col_val + " }}'"
+                                        else:
+                                            continue
 
                                     exec_flag = True
 
-                            col_class = self.getColumnClass(col_data['COLUMN_CLASS'], WS_DB)
+                            col_class = self.getFromColumnClassMaster(col_data['COLUMN_CLASS'])
                             col_name_rest = col_data['COLUMN_NAME_REST']
                             col_filepath = ""
                             col_file_md5 = ""
-                            if col_data['COL_TYPE'] == AnscConst.DF_COL_TYPE_VAL:
-                                if col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20":
-                                    # メニューID取得
-                                    upload_menu_id = self.getUploadfilesMenuID(in_tableNameToMenuIdList[table_name], WS_DB)
-                                    col_filepath = ""
-                                    if col_val is not None and not col_val == "":
-                                        storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
-                                        col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
-                                        if not os.path.exists(col_filepath):
-                                            msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
-                                            frame = inspect.currentframe().f_back
-                                            g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
-                                            warning_flag = 1
-                                            # 次のデータへ
-                                            continue
+                            if col_data['COL_TYPE'] == AnscConst.DF_COL_TYPE_VAL and (col_data['COLUMN_CLASS'] == "9" or col_data['COLUMN_CLASS'] == "20"):
+                                # メニューID取得
+                                upload_menu_id = upload_menu_id_map[in_tableNameToMenuIdList[table_name]] if in_tableNameToMenuIdList[table_name] in upload_menu_id_map else ""
 
-                                        col_filepath = col_filepath + "/" + col_val
-                                        col_file_md5 = self.md5_file(col_filepath)
+                                col_filepath = ""
+                                if col_val is not None and not col_val == "":
+                                    storage_path = os.environ.get('STORAGEPATH') + g.get('ORGANIZATION_ID') + "/" + g.get('WORKSPACE_ID')
+                                    col_filepath = storage_path + "/uploadfiles/" + upload_menu_id + "/" + col_name_rest + "/" + row[AnscConst.DF_ITA_LOCAL_PKEY]
+                                    if not os.path.exists(col_filepath):
+                                        msgstr = g.appmsg.get_api_message("MSG-10166", [table_name, col_name, col_row_id, col_filepath])
+                                        frame = inspect.currentframe().f_back
+                                        g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                        warning_flag = 1
+                                        # 次のデータへ
+                                        continue
+
+                                    col_filepath = col_filepath + "/" + col_val
+                                    col_file_md5 = self.md5_file(col_filepath)
 
                             # 代入値管理の登録に必要な情報を生成
                             if exec_flag == 1:
                                 # 同一登録データがある場合はスキップ
                                 skip_flag = False
                                 for ina_vars_ass_list_value in ina_vars_ass_list.values():
-                                    if len(ina_vars_ass_list_value) > 0:
-                                        if operation_id == ina_vars_ass_list_value['OPERATION_ID']:
-                                            if host_id == ina_vars_ass_list_value['SYSTEM_ID']:
-                                                if col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID']:
-                                                    if col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID']:
-                                                        if col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
-                                                            if col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
+                                    if len(ina_vars_ass_list_value) > 0 \
+                                        and operation_id == ina_vars_ass_list_value['OPERATION_ID'] \
+                                            and host_id == ina_vars_ass_list_value['SYSTEM_ID'] \
+                                                and col_data['MOVEMENT_ID'] == ina_vars_ass_list_value['MOVEMENT_ID'] \
+                                                    and col_data['MVMT_VAR_LINK_ID'] == ina_vars_ass_list_value['MVMT_VAR_LINK_ID'] \
+                                                        and col_data['COL_SEQ_COMBINATION_ID'] == ina_vars_ass_list_value['COL_SEQ_COMBINATION_ID'] \
+                                                            and col_data['ASSIGN_SEQ'] == ina_vars_ass_list_value['ASSIGN_SEQ']:
                                                                 skip_flag = True
 
                                 for ina_array_vars_ass_list_value in ina_array_vars_ass_list.values():
-                                    if len(ina_array_vars_ass_list_value) > 0:
-                                        if operation_id == ina_array_vars_ass_list_value['OPERATION_ID']:
-                                            if host_id == ina_array_vars_ass_list_value['SYSTEM_ID']:
-                                                if col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID']:
-                                                    if col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID']:
-                                                        if col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID']:
-                                                            if col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
+                                    if len(ina_array_vars_ass_list_value) > 0 \
+                                        and operation_id == ina_array_vars_ass_list_value['OPERATION_ID'] \
+                                            and host_id == ina_array_vars_ass_list_value['SYSTEM_ID'] \
+                                                and col_data['MOVEMENT_ID'] == ina_array_vars_ass_list_value['MOVEMENT_ID'] \
+                                                    and col_data['MVMT_VAR_LINK_ID'] == ina_array_vars_ass_list_value['MVMT_VAR_LINK_ID'] \
+                                                        and col_data['COL_SEQ_COMBINATION_ID'] == ina_array_vars_ass_list_value['COL_SEQ_COMBINATION_ID'] \
+                                                            and col_data['ASSIGN_SEQ'] == ina_array_vars_ass_list_value['ASSIGN_SEQ']:
                                                                 skip_flag = True
 
                                 if skip_flag == 0:
@@ -1216,11 +1264,13 @@ class SubValueAutoReg():
                         if col_data["COLUMN_ASSIGN_SEQ"] is not None:
                             if col_data["COLUMN_ASSIGN_SEQ"] == row["INPUT_ORDER"]:
                                 chk_flag = True
+                        else:
+                            chk_flag = True
 
-                    if chk_flag == 0:
+                    if chk_flag is False:
                         msgstr = g.appmsg.get_api_message("MSG-10902", [col_data["COLUMN_ID"]])
                         frame = inspect.currentframe().f_back
-                        g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                        g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
                         warning_flag = 1
 
         # オブジェクト解放
@@ -1365,59 +1415,26 @@ class SubValueAutoReg():
         """
 
         # オペレーション名
-        sql = "SELECT OPERATION_NAME FROM T_COMN_OPERATION WHERE OPERATION_ID = %s"
-
-        data_list = WS_DB.sql_execute(sql, [row['OPERATION_ID']])
-        for data in data_list:
-            row['OPERATION_NAME'] = data['OPERATION_NAME']
+        row['OPERATION_NAME'] = self.getFromOpeMaster(row['OPERATION_ID'])
 
         # Movement名
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            sql = "SELECT MOVEMENT_NAME FROM V_ANSR_MOVEMENT WHERE MOVEMENT_ID = %s"
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            sql = "SELECT MOVEMENT_NAME FROM V_ANSL_MOVEMENT WHERE MOVEMENT_ID = %s"
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            sql = "SELECT MOVEMENT_NAME FROM V_ANSP_MOVEMENT WHERE MOVEMENT_ID = %s"
-
-        data_list = WS_DB.sql_execute(sql, [row['MOVEMENT_ID']])
-        for data in data_list:
-            row['MOVEMENT_NAME'] = data['MOVEMENT_NAME']
+        row['MOVEMENT_NAME'] = self.getFromMovementMaster(in_driver_name, row['MOVEMENT_ID'], WS_DB)
 
         # ホスト名
-        sql = "SELECT HOST_NAME FROM T_ANSC_DEVICE WHERE SYSTEM_ID = %s"
-
-        data_list = WS_DB.sql_execute(sql, [row['SYSTEM_ID']])
-        for data in data_list:
-            row['HOST_NAME'] = data['HOST_NAME']
+        row['HOST_NAME'] = self.getFromHostMaster(row['SYSTEM_ID'])
 
         # 代入値管理用のデータ取得
         if exe_flag == 1:
             # 変数名
-            if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSR_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
-            elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSL_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
-            elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSP_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
-
-            data_list = WS_DB.sql_execute(sql, [row['MVMT_VAR_LINK_ID']])
-            for data in data_list:
-                row['VARS_NAME'] = data['MOVEMENT_VARS_NAME']
+            row['VARS_NAME'] = self.getFromMovementVarsNameMaster(in_driver_name, row['MVMT_VAR_LINK_ID'], WS_DB)
 
             if row['COL_SEQ_COMBINATION_ID'] is not None and not row['COL_SEQ_COMBINATION_ID'] == "":
-                sql = "SELECT MOVEMENT_VARS_COL_COMBINATION_MEMBER FROM V_ANSR_VAL_COL_SEQ_COMBINATION WHERE COL_SEQ_COMBINATION_ID = %s"
-                data_list = WS_DB.sql_execute(sql, [row['COL_SEQ_COMBINATION_ID']])
-                for data in data_list:
-                    row['COL_COMBINATION_MEMBER_ALIAS'] = data['MOVEMENT_VARS_COL_COMBINATION_MEMBER']
+                row['COL_COMBINATION_MEMBER_ALIAS'] = self.getFromMovementVarsColCombinationMaster(row['COL_SEQ_COMBINATION_ID'], WS_DB)
             else:
                 row['COL_COMBINATION_MEMBER_ALIAS'] = ""
 
             # Sensitive設定
-            sql = "SELECT FLAG_NAME FROM T_COMN_BOOLEAN_FLAG WHERE FLAG_ID = %s"
-
-            data_list = WS_DB.sql_execute(sql, [row['SENSITIVE_FLAG']])
-            for data in data_list:
-                row['FLAG_NAME'] = data['FLAG_NAME']
+            row['FLAG_NAME'] = self.getFromBooleanFlagMaster(row['SENSITIVE_FLAG'])
 
         return row
 
@@ -1443,8 +1460,8 @@ class SubValueAutoReg():
             # not /storage
             tmp_file_path = file
         with open(tmp_file_path, 'rb') as f:
-             for block in iter(lambda: f.read(65536), b''):
-                 md5.update(block)
+            for block in iter(lambda: f.read(65536), b''):
+                md5.update(block)
         f.close()
 
         if storage_flg is True:
@@ -1474,7 +1491,7 @@ class SubValueAutoReg():
             if not self.getNullDataHandlingID(in_null_data_handling_flg, WS_DB) == '1':
                 msgstr = g.appmsg.get_api_message("MSG-10375", [in_menu_id, in_row_id, in_menu_title])
                 frame = inspect.currentframe().f_back
-                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
                 return False
 
@@ -1497,73 +1514,218 @@ class SubValueAutoReg():
         if in_col_val is None:
             msgstr = g.appmsg.get_api_message("MSG-10377", [in_menu_id, in_row_id, in_menu_title])
             frame = inspect.currentframe().f_back
-            g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+            g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
 
             return False
 
         return True
 
-    def getColumnClass(self, in_col_name, WS_DB):
+    def getFromColumnClassMaster(self, column_class, WS_DB=None):
         """
-        マスタからカラムクラス名を取得する
+        カラムクラス名のマスタから名前をひく
 
         Arguments:
-            in_menu_id: 紐付メニューID
-            in_col_name: カラム名
+            column_class
             WS_DB: WorkspaceDBインスタンス
 
-        Returns:
-            column_class: カラムクラス
         """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.ColumnClassMaster_IDMap[column_class]
 
-        column_class = ""
+        # マスタがなければ保持しておく
+        data_dict = {}
 
-        sql = " SELECT COLUMN_CLASS_NAME "
-        sql += " FROM T_COMN_COLUMN_CLASS "
-        sql += " WHERE COLUMN_CLASS_ID = %s "
-        sql += " AND DISUSE_FLAG = '0'"
+        sql = "SELECT COLUMN_CLASS_ID, COLUMN_CLASS_NAME"
+        sql += " FROM T_COMN_COLUMN_CLASS"
+        sql += " WHERE DISUSE_FLAG = '0'"
 
-        data_list = WS_DB.sql_execute(sql, [in_col_name])
+        data_list = WS_DB.sql_execute(sql)
 
         for data in data_list:
-            column_class = data['COLUMN_CLASS_NAME']
+            data_dict[data['COLUMN_CLASS_ID']] = data['COLUMN_CLASS_NAME']
 
-        return column_class
+        self.ColumnClassMaster_IDMap = data_dict
 
-    def getUploadfilesMenuID(self, in_menu_id, WS_DB):
+    def getFromHostMaster(self, host_id, WS_DB=None):
         """
-        紐付メニューの入力用メニューのメニューID取得
+        HOST_IDからHOST_NAMEを引ける辞書を作成
 
         Arguments:
-            in_menu_id: 紐付メニューID
+            host_id
             WS_DB: WorkspaceDBインスタンス
 
-        Returns:
-            out_menu_id: 入力用メニューID
         """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.HostMaster_IDMap[host_id]
 
-        out_menu_id = ""
+        # マスタがなければ保持しておく
+        data_dict = {}
 
-        sql = " SELECT TBL_A.MENU_NAME_REST "
-        sql += " FROM T_COMN_MENU TBL_A "
-        sql += " WHERE TBL_A.MENU_ID = %s "
-
-        data_list = WS_DB.sql_execute(sql, [in_menu_id])
-
-        for data in data_list:
-            menu_name_rest = data['MENU_NAME_REST']
-            menu_name_rest = menu_name_rest[:-6]
-
-        sql = " SELECT TBL_A.MENU_ID "
-        sql += " FROM T_COMN_MENU TBL_A "
-        sql += " WHERE TBL_A.MENU_NAME_REST = %s "
-
-        data_list = WS_DB.sql_execute(sql, [menu_name_rest])
+        sql = "SELECT SYSTEM_ID, HOST_NAME"
+        sql += " FROM T_ANSC_DEVICE"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql)
 
         for data in data_list:
-            out_menu_id = data['MENU_ID']
+            data_dict[data['SYSTEM_ID']] = data['HOST_NAME']
 
-        return out_menu_id
+        self.HostMaster_IDMap = data_dict
+
+    def getFromOpeMaster(self, ope_id, WS_DB=None):
+        """
+        OPERATION_IDからOPERATION_NAMEを引ける辞書を作成
+
+        Arguments:
+            ope_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.OpeMaster_IDMap[ope_id]
+
+        # マスタがなければ保持しておく
+        data_dict = {}
+
+        sql = "SELECT OPERATION_ID, OPERATION_NAME"
+        sql += " FROM T_COMN_OPERATION"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql)
+
+        for data in data_list:
+            data_dict[data['OPERATION_ID']] = data['OPERATION_NAME']
+
+        self.OpeMaster_IDMap = data_dict
+
+    def getFromBooleanFlagMaster(self, flag_id, WS_DB=None):
+        """
+        FLAG_IDからFLAG_NAMEを引ける辞書を作成
+
+        Arguments:
+            flag_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if WS_DB is None:
+        # 取得済みとみなす
+            return self.BooleanFlagMaster_IDMap[flag_id]
+
+        # マスタがなければ保持しておく
+        data_dict = {}
+
+        sql = "SELECT FLAG_ID, FLAG_NAME"
+        sql += " FROM T_COMN_BOOLEAN_FLAG"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql)
+
+        for data in data_list:
+            data_dict[data['FLAG_ID']] = data['FLAG_NAME']
+
+        self.BooleanFlagMaster_IDMap = data_dict
+
+    def getFromMovementMaster(self, in_driver_name, movement_id, WS_DB=None):
+        """
+        MOVEMENT_IDからMOVEMENT_NAMEを引ける辞書を作成
+
+        Arguments:
+            in_driver_name
+            movement_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if in_driver_name in self.MovementMaster_IDMap:
+        # 取得済みとみなす
+            return self.MovementMaster_IDMap[in_driver_name][movement_id]
+        else:
+        # マスタがなければ保持しておく
+            data_dict = {}
+            data_dict[in_driver_name] = {}
+
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            v_name = "V_ANSR_MOVEMENT"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            v_name = "V_ANSL_MOVEMENT"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            v_name = "V_ANSP_MOVEMENT"
+
+        sql = "SELECT MOVEMENT_ID, MOVEMENT_NAME"
+        sql += " FROM {}".format(v_name)
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql, [])
+
+        for data in data_list:
+            data_dict[in_driver_name][data['MOVEMENT_ID']] = data['MOVEMENT_NAME']
+
+        self.MovementMaster_IDMap = data_dict
+
+        return self.MovementMaster_IDMap[in_driver_name][movement_id]
+
+    def getFromMovementVarsNameMaster(self, in_driver_name, mvmt_var_link_id, WS_DB=None):
+        """
+        MVMT_VAR_LINK_IDからMOVEMENT_VARS_NAMEを引ける辞書を作成
+
+        Arguments:
+            in_driver_name
+            mvmt_var_link_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if in_driver_name in self.MovementVarsNameMaster_IDMap:
+        # 取得済みとみなす
+            return self.MovementVarsNameMaster_IDMap[in_driver_name][mvmt_var_link_id]
+        else:
+        # マスタがなければ保持しておく
+            data_dict = {}
+            data_dict[in_driver_name] = {}
+
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            v_name = "V_ANSR_VAL_VARS_LINK"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            v_name = "V_ANSL_VAL_VARS_LINK"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            v_name = "V_ANSP_VAL_VARS_LINK"
+
+        sql = "SELECT MVMT_VAR_LINK_ID, MOVEMENT_VARS_NAME"
+        sql += " FROM {}".format(v_name)
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql, [])
+
+        for data in data_list:
+            data_dict[in_driver_name][data['MVMT_VAR_LINK_ID']] = data['MOVEMENT_VARS_NAME']
+
+        self.MovementVarsNameMaster_IDMap = data_dict
+
+        return self.MovementVarsNameMaster_IDMap[in_driver_name][mvmt_var_link_id]
+
+    def getFromMovementVarsColCombinationMaster(self, col_seq_combination_id, WS_DB=None):
+        """
+        COL_SEQ_COMBINATION_IDからMOVEMENT_VARS_COL_COMBINATION_MEMBERを引ける辞書を作成
+
+        Arguments:
+            mvmt_var_link_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if len(self.MovementVarsColCombinationMaster_IDMap) > 0:
+        # 取得済みとみなす
+            return self.MovementVarsColCombinationMaster_IDMap[col_seq_combination_id]
+
+        # マスタがなければ保持しておく
+        data_dict = {}
+
+        sql = "SELECT COL_SEQ_COMBINATION_ID, MOVEMENT_VARS_COL_COMBINATION_MEMBER"
+        sql += " FROM V_ANSR_VAL_COL_SEQ_COMBINATION"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql, [])
+
+        for data in data_list:
+            data_dict[data['COL_SEQ_COMBINATION_ID']] = data['MOVEMENT_VARS_COL_COMBINATION_MEMBER']
+
+        self.MovementVarsColCombinationMaster_IDMap = data_dict
+
+        return self.MovementVarsColCombinationMaster_IDMap[col_seq_combination_id]
 
     def getNullDataHandlingID(self, in_null_data_handling_flg, WS_DB):
         """
@@ -1665,7 +1827,7 @@ class SubValueAutoReg():
 
                                 msgstr = g.appmsg.get_api_message("MSG-10369", [dup_info['COLUMN_ID'], in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
                                 frame = inspect.currentframe().f_back
-                                g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
             if chk_flg == 1:
                 chk_status = True
                 # オペ+作業+ホスト+変数+メンバ変数の組合せの代入順序退避
@@ -1711,7 +1873,7 @@ class SubValueAutoReg():
 
                                     msgstr = g.appmsg.get_api_message("MSG-10369", [dup_info['COLUMN_ID'], in_column_id, in_column_id, in_operation_id, in_host_id, keyValueType])
                                     frame = inspect.currentframe().f_back
-                                    g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
+                                    g.applogger.info(os.path.basename(__file__) + str(frame.f_lineno) + msgstr)
             if chk_flg == 1:
                 chk_status = True
                 # オペ+作業+ホスト+変数+メンバ変数の組合せの代入順序退避
@@ -2179,19 +2341,19 @@ class SubValueAutoReg():
         # 変数の選択判定
         if row[in_vars_link_id] is None or len(row[in_vars_link_id]) == 0:
             msgstr = g.appmsg.get_api_message("MSG-10354", [row['COLUMN_ID'], in_col_type])
-            g.applogger.debug(msgstr)
+            g.applogger.info(msgstr)
             return False, inout_vars_attr
 
         # 変数が作業パターン変数紐付にあるか判定
         if row[in_ptn_vars_link_cnt] is None or row[in_ptn_vars_link_cnt] == 0:
             msgstr = g.appmsg.get_api_message("MSG-10348", [row['COLUMN_ID'], in_col_type])
-            g.applogger.debug(msgstr)
+            g.applogger.info(msgstr)
             return False, inout_vars_attr
 
         # 設定されている変数が変数一覧にあるか判定
         if row[in_vars_name] is None or len(str(row[in_vars_name])) == 0:
             msgstr = g.appmsg.get_api_message("MSG-10345", [row['COLUMN_ID'], in_col_type])
-            g.applogger.debug(msgstr)
+            g.applogger.info(msgstr)
             return False, inout_vars_attr
 
         # ロールのみ変数タイプの判定
@@ -2200,7 +2362,7 @@ class SubValueAutoReg():
                 inout_vars_attr = row[in_vars_attribute_01]
             else:
                 msgstr = g.appmsg.get_api_message("MSG-10439", [row['COLUMN_ID'], in_col_type])
-                g.applogger.debug(msgstr)
+                g.applogger.info(msgstr)
                 return False, inout_vars_attr
 
             # メンバー変数がメンバー変数一覧にあるか判定
@@ -2208,31 +2370,31 @@ class SubValueAutoReg():
                 # メンバー変数の選択判定
                 if row[in_col_seq_combination_id] is None or len(row[in_col_seq_combination_id]) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10419", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
 
                 # カラムタイプ型に設定されているメンバー変数がメンバー変数一覧にあるか判定
                 if row[in_col_combination_member_alias] is None or len(row[in_col_combination_member_alias]) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10349", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
             else:
                 if not row[in_col_seq_combination_id] is None and not len(row[in_col_seq_combination_id]) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10418", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
 
             if inout_vars_attr == AnscConst.GC_VARS_ATTR_LIST:
                 if row[in_assign_seq] is None or len(str(row[in_assign_seq])) == 0:
                     msgstr = g.appmsg.get_api_message("MSG-10350", [row['COLUMN_ID'], in_col_type])
-                    g.applogger.debug(msgstr)
+                    g.applogger.info(msgstr)
                     return False, inout_vars_attr
 
             elif inout_vars_attr == AnscConst.GC_VARS_ATTR_M_ARRAY:
                 if row[in_assign_seq_need] == 1:
                     if row[in_assign_seq] is None or row[in_assign_seq] == 0:
                         msgstr = g.appmsg.get_api_message("MSG-10350", [row['COLUMN_ID'], in_col_type])
-                        g.applogger.debug(msgstr)
+                        g.applogger.info(msgstr)
                         return False, inout_vars_attr
         else:
             # Legacy・Pioneerは一般変数として処理
@@ -2267,3 +2429,32 @@ class SubValueAutoReg():
         host_list[movement_id][operation_id][varsAssRecord['SYSTEM_ID']] = 0
 
         return template_list, host_list
+
+    def rest_filter(self, WS_DB, obj_load_table):
+        res = []
+
+        view_name = obj_load_table.get_view_name()
+        if view_name:
+            l_table_name = view_name
+        else:
+            l_table_name = obj_load_table.get_table_name()
+        tmp_result = WS_DB.table_select(l_table_name, "WHERE DISUSE_FLAG = '0'", [])
+
+        for tmp_result_child in tmp_result:
+            parameter = {}
+            parameter["uuid"] = tmp_result_child["ROW_ID"]
+            if "INPUT_ORDER" in tmp_result_child:
+                parameter["input_order"] = tmp_result_child["INPUT_ORDER"]
+            # parameter["host_name"] = tmp_result_child["HOST_ID"]
+            # parameter["operation_name_disp"] = tmp_result_child["OPERATION_ID"]
+            parameter["HOST_ID"] = tmp_result_child["HOST_ID"]
+            parameter["OPERATION_ID"] = tmp_result_child["OPERATION_ID"]
+
+            # 作成したカラム
+            column_data = {"DATA_JSON" : tmp_result_child["DATA_JSON"]}
+            rest_parameter, rest_file = obj_load_table.convert_colname_restkey(column_data, '', '', 'inner')
+
+            parameter.update(rest_parameter)  # マージ
+            res.append(parameter)
+
+        return res

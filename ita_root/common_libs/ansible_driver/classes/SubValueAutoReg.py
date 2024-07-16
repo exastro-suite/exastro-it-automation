@@ -99,6 +99,12 @@ class SubValueAutoReg():
     ColumnClassMaster_IDMap = {}
     # フラグ名のマスタ
     BooleanFlagMaster_IDMap = {}
+    # Movement名のマスタ
+    MovementMaster_IDMap = {}
+    # 代入値管理用のデータのマスタ
+    MovementVarsNameMaster_IDMap = {}
+    # 多段変数
+    MovementVarsColCombinationMaster_IDMap = {}
 
     def __init__(self, in_driver_name="", ws_db=None):
 
@@ -196,6 +202,7 @@ class SubValueAutoReg():
         elif self.in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
             obj_load_table = load_table.loadTable(self.ws_db, "subst_value_list_ansible_pioneer")
 
+        # 変数抜出及び変数具体値置き換モジュール
         var_extractor = WrappedStringReplaceAdmin(self.ws_db)
 
         for varsAssRecord in lv_varsAssList.values():
@@ -257,8 +264,6 @@ class SubValueAutoReg():
         del lv_arrayVarsAssList
 
         # コミット(レコードロックを解除)
-        self.ws_db.db_commit()
-
         # トランザクション終了
         self.ws_db.db_transaction_end(True)
 
@@ -275,17 +280,28 @@ class SubValueAutoReg():
         frame = inspect.currentframe().f_back
         g.applogger.debug(os.path.basename(__file__) + str(frame.f_lineno) + traceMsg)
 
+        if self.in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "target_host_ansible_role")
+        elif self.in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "target_host_ansible_legacy")
+        elif self.in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            obj_load_table = load_table.loadTable(self.ws_db, "target_host_ansible_pioneer")
+
         for ope_id, ptn_list in lv_phoLinkList.items():
             for ptn_id, host_list in ptn_list.items():
                 for host_id, access_auth in host_list.items():
                     lv_phoLinkData = {'OPERATION_ID': ope_id, 'MOVEMENT_ID': ptn_id, 'SYSTEM_ID': host_id}
-                    ret = self.addStg1PhoLink(lv_phoLinkData, execution_no, self.in_driver_name, self.ws_db)
+                    ret = self.addStg1PhoLink(lv_phoLinkData, execution_no, self.in_driver_name, obj_load_table, self.ws_db)
 
                     if ret == 0:
                         error_flag = 1
                         raise ValidationException("MSG-10373")
 
         del lv_phoLinkList
+
+        self.MovementMaster_IDMap = {}
+        self.MovementVarsNameMaster_IDMap = {}
+        self.MovementVarsColCombinationMaster_IDMap = {}
 
         # コミット(レコードロックを解除)
         # トランザクション終了
@@ -368,12 +384,15 @@ class SubValueAutoReg():
         file = in_dir + '/' + in_pkey.rjust(intNumPadding, '0') + '/' + in_filename
         return file
 
-    def addStg1PhoLink(self, in_phoLinkData, execution_no, in_driver_name, WS_DB):
+    def addStg1PhoLink(self, in_phoLinkData, execution_no, in_driver_name, obj_load_table, WS_DB):
         """
         作業対象ホストの廃止レコードを復活または新規レコード追加
 
         Arguments:
             in_phoLinkData: 作業対象ホスト更新情報配列
+            execution_no
+            in_driver_name
+            obj_load_table: load_table.loadTableインスタンス
             WS_DB: WorkspaceDBインスタンス
 
         Returns:
@@ -394,12 +413,7 @@ class SubValueAutoReg():
         key += in_phoLinkData["MOVEMENT_ID"] + "_"
         key += in_phoLinkData["SYSTEM_ID"] + "_1"
 
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_role")
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_legacy")
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            objmenu = load_table.loadTable(WS_DB, "target_host_ansible_pioneer")
+
         tgt_row = arrayValue
 
         # 更新対象の作業対象ホスト管理主キー値を退避
@@ -432,7 +446,7 @@ class SubValueAutoReg():
             "file": {},
             "type": "Register"
         }
-        retAry = objmenu.exec_maintenance(parameters, "", "", False, False, True)
+        retAry = obj_load_table.exec_maintenance(parameters, "", "", False, False, True)
 
         result = retAry[0]
         if result is False:
@@ -711,9 +725,11 @@ class SubValueAutoReg():
 
         Arguments:
             in_varsAssignList: 代入値管理更新情報配列
-            in_tableNameToMenuIdList: テーブル名配列
+            execution_no
+            in_driver_name
             obj_load_table: load_table.loadTableインスタンス
             var_extractor: WrappedStringReplaceAdminインスタンス
+            WS_DB: WorkspaceDBインスタンス
 
         Returns:
             is success:(bool)
@@ -800,10 +816,11 @@ class SubValueAutoReg():
 
         Arguments:
             in_varsAssignList: 代入値管理更新情報配列
-            in_tableNameToMenuIdList: テーブル名配列
-            WS_DB: WorkspaceDBインスタンス
+            execution_no
+            in_driver_name
             obj_load_table: load_table.loadTableインスタンス
             var_extractor: WrappedStringReplaceAdminインスタンス
+            WS_DB: WorkspaceDBインスタンス
 
         Returns:
             is success:(bool)
@@ -1076,9 +1093,7 @@ class SubValueAutoReg():
                             if menu_name_rest not in dict_objmenu:
                                 obj_load_table = load_table.loadTable(WS_DB, menu_name_rest)
 
-                                mode = "inner"
-                                filter_parameter = {"discard": {"LIST": ["0"]}}
-                                status_code, tmp_result, msg = obj_load_table.rest_filter(filter_parameter, mode)
+                                tmp_result = self.rest_filter(WS_DB, obj_load_table)
 
                                 dict_objmenu[menu_name_rest] = tmp_result
                             else:
@@ -1089,8 +1104,7 @@ class SubValueAutoReg():
                                 # 縦メニューの場合
                                 if row["INPUT_ORDER"] is not None and not row["INPUT_ORDER"] == "":
                                     if row["INPUT_ORDER"] == col_data["COLUMN_ASSIGN_SEQ"]:
-                                        for tmp_result_child in tmp_result:
-                                            parameter = tmp_result_child["parameter"]
+                                        for parameter in tmp_result:
                                             if row[AnscConst.DF_ITA_LOCAL_PKEY] == parameter["uuid"] \
                                                 and row["INPUT_ORDER"] == parameter["input_order"]:
                                                 # 項目なしは対象外
@@ -1125,14 +1139,8 @@ class SubValueAutoReg():
 
                                         exec_flag = True
                                 elif col_data["COLUMN_ASSIGN_SEQ"] is None:
-                                    # ホスト名取得
-                                    host_name = self.getFromHostMaster(row['HOST_ID'])
-                                    # オペレーション名取得
-                                    ope_name = self.getFromOpeMaster(row['OPERATION_ID'])
-
-                                    for tmp_result_child in tmp_result:
-                                        parameter = tmp_result_child['parameter']
-                                        if parameter["host_name"] == host_name and parameter["operation_name_disp"] == ope_name:
+                                    for parameter in tmp_result:
+                                        if parameter["HOST_ID"] == row['HOST_ID'] and parameter["OPERATION_ID"] == row['OPERATION_ID']:
                                             break
                                         else:
                                             parameter = {}
@@ -1410,15 +1418,7 @@ class SubValueAutoReg():
         row['OPERATION_NAME'] = self.getFromOpeMaster(row['OPERATION_ID'])
 
         # Movement名
-        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-            sql = "SELECT MOVEMENT_NAME FROM V_ANSR_MOVEMENT WHERE MOVEMENT_ID = %s"
-        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-            sql = "SELECT MOVEMENT_NAME FROM V_ANSL_MOVEMENT WHERE MOVEMENT_ID = %s"
-        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-            sql = "SELECT MOVEMENT_NAME FROM V_ANSP_MOVEMENT WHERE MOVEMENT_ID = %s"
-
-        data_list = WS_DB.sql_execute(sql, [row['MOVEMENT_ID']])
-        row['MOVEMENT_NAME'] = data_list[0]['MOVEMENT_NAME']
+        row['MOVEMENT_NAME'] = self.getFromMovementMaster(in_driver_name, row['MOVEMENT_ID'], WS_DB)
 
         # ホスト名
         row['HOST_NAME'] = self.getFromHostMaster(row['SYSTEM_ID'])
@@ -1426,20 +1426,10 @@ class SubValueAutoReg():
         # 代入値管理用のデータ取得
         if exe_flag == 1:
             # 変数名
-            if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
-                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSR_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
-            elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
-                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSL_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
-            elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
-                sql = "SELECT MOVEMENT_VARS_NAME FROM V_ANSP_VAL_VARS_LINK WHERE MVMT_VAR_LINK_ID = %s"
-
-            data_list = WS_DB.sql_execute(sql, [row['MVMT_VAR_LINK_ID']])
-            row['VARS_NAME'] = data_list[0]['MOVEMENT_VARS_NAME']
+            row['VARS_NAME'] = self.getFromMovementVarsNameMaster(in_driver_name, row['MVMT_VAR_LINK_ID'], WS_DB)
 
             if row['COL_SEQ_COMBINATION_ID'] is not None and not row['COL_SEQ_COMBINATION_ID'] == "":
-                sql = "SELECT MOVEMENT_VARS_COL_COMBINATION_MEMBER FROM V_ANSR_VAL_COL_SEQ_COMBINATION WHERE COL_SEQ_COMBINATION_ID = %s"
-                data_list = WS_DB.sql_execute(sql, [row['COL_SEQ_COMBINATION_ID']])
-                row['COL_COMBINATION_MEMBER_ALIAS'] = data_list[0]['MOVEMENT_VARS_COL_COMBINATION_MEMBER']
+                row['COL_COMBINATION_MEMBER_ALIAS'] = self.getFromMovementVarsColCombinationMaster(row['COL_SEQ_COMBINATION_ID'], WS_DB)
             else:
                 row['COL_COMBINATION_MEMBER_ALIAS'] = ""
 
@@ -1546,7 +1536,7 @@ class SubValueAutoReg():
         # マスタがなければ保持しておく
         data_dict = {}
 
-        sql = " SELECT COLUMN_CLASS_ID, COLUMN_CLASS_NAME"
+        sql = "SELECT COLUMN_CLASS_ID, COLUMN_CLASS_NAME"
         sql += " FROM T_COMN_COLUMN_CLASS"
         sql += " WHERE DISUSE_FLAG = '0'"
 
@@ -1573,7 +1563,7 @@ class SubValueAutoReg():
         # マスタがなければ保持しておく
         data_dict = {}
 
-        sql = " SELECT SYSTEM_ID, HOST_NAME"
+        sql = "SELECT SYSTEM_ID, HOST_NAME"
         sql += " FROM T_ANSC_DEVICE"
         sql += " WHERE DISUSE_FLAG = '0'"
         data_list = WS_DB.sql_execute(sql)
@@ -1599,7 +1589,7 @@ class SubValueAutoReg():
         # マスタがなければ保持しておく
         data_dict = {}
 
-        sql = " SELECT OPERATION_ID, OPERATION_NAME"
+        sql = "SELECT OPERATION_ID, OPERATION_NAME"
         sql += " FROM T_COMN_OPERATION"
         sql += " WHERE DISUSE_FLAG = '0'"
         data_list = WS_DB.sql_execute(sql)
@@ -1625,7 +1615,7 @@ class SubValueAutoReg():
         # マスタがなければ保持しておく
         data_dict = {}
 
-        sql = " SELECT FLAG_ID, FLAG_NAME"
+        sql = "SELECT FLAG_ID, FLAG_NAME"
         sql += " FROM T_COMN_BOOLEAN_FLAG"
         sql += " WHERE DISUSE_FLAG = '0'"
         data_list = WS_DB.sql_execute(sql)
@@ -1634,6 +1624,108 @@ class SubValueAutoReg():
             data_dict[data['FLAG_ID']] = data['FLAG_NAME']
 
         self.BooleanFlagMaster_IDMap = data_dict
+
+    def getFromMovementMaster(self, in_driver_name, movement_id, WS_DB=None):
+        """
+        MOVEMENT_IDからMOVEMENT_NAMEを引ける辞書を作成
+
+        Arguments:
+            in_driver_name
+            movement_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if in_driver_name in self.MovementMaster_IDMap:
+        # 取得済みとみなす
+            return self.MovementMaster_IDMap[in_driver_name][movement_id]
+        else:
+        # マスタがなければ保持しておく
+            data_dict = {}
+            data_dict[in_driver_name] = {}
+
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            v_name = "V_ANSR_MOVEMENT"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            v_name = "V_ANSL_MOVEMENT"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            v_name = "V_ANSP_MOVEMENT"
+
+        sql = "SELECT MOVEMENT_ID, MOVEMENT_NAME"
+        sql += " FROM {}".format(v_name)
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql, [])
+
+        for data in data_list:
+            data_dict[in_driver_name][data['MOVEMENT_ID']] = data['MOVEMENT_NAME']
+
+        self.MovementMaster_IDMap = data_dict
+
+        return self.MovementMaster_IDMap[in_driver_name][movement_id]
+
+    def getFromMovementVarsNameMaster(self, in_driver_name, mvmt_var_link_id, WS_DB=None):
+        """
+        MVMT_VAR_LINK_IDからMOVEMENT_VARS_NAMEを引ける辞書を作成
+
+        Arguments:
+            in_driver_name
+            mvmt_var_link_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if in_driver_name in self.MovementVarsNameMaster_IDMap:
+        # 取得済みとみなす
+            return self.MovementVarsNameMaster_IDMap[in_driver_name][mvmt_var_link_id]
+        else:
+        # マスタがなければ保持しておく
+            data_dict = {}
+            data_dict[in_driver_name] = {}
+
+        if in_driver_name == AnscConst.DF_LEGACY_ROLE_DRIVER_ID:
+            v_name = "V_ANSR_VAL_VARS_LINK"
+        elif in_driver_name == AnscConst.DF_LEGACY_DRIVER_ID:
+            v_name = "V_ANSL_VAL_VARS_LINK"
+        elif in_driver_name == AnscConst.DF_PIONEER_DRIVER_ID:
+            v_name = "V_ANSP_VAL_VARS_LINK"
+
+        sql = "SELECT MVMT_VAR_LINK_ID, MOVEMENT_VARS_NAME"
+        sql += " FROM {}".format(v_name)
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql, [])
+
+        for data in data_list:
+            data_dict[in_driver_name][data['MVMT_VAR_LINK_ID']] = data['MOVEMENT_VARS_NAME']
+
+        self.MovementVarsNameMaster_IDMap = data_dict
+
+        return self.MovementVarsNameMaster_IDMap[in_driver_name][mvmt_var_link_id]
+
+    def getFromMovementVarsColCombinationMaster(self, col_seq_combination_id, WS_DB=None):
+        """
+        COL_SEQ_COMBINATION_IDからMOVEMENT_VARS_COL_COMBINATION_MEMBERを引ける辞書を作成
+
+        Arguments:
+            mvmt_var_link_id
+            WS_DB: WorkspaceDBインスタンス
+
+        """
+        if len(self.MovementVarsColCombinationMaster_IDMap) > 0:
+        # 取得済みとみなす
+            return self.MovementVarsColCombinationMaster_IDMap[col_seq_combination_id]
+
+        # マスタがなければ保持しておく
+        data_dict = {}
+
+        sql = "SELECT COL_SEQ_COMBINATION_ID, MOVEMENT_VARS_COL_COMBINATION_MEMBER"
+        sql += " FROM V_ANSR_VAL_COL_SEQ_COMBINATION"
+        sql += " WHERE DISUSE_FLAG = '0'"
+        data_list = WS_DB.sql_execute(sql, [])
+
+        for data in data_list:
+            data_dict[data['COL_SEQ_COMBINATION_ID']] = data['MOVEMENT_VARS_COL_COMBINATION_MEMBER']
+
+        self.MovementVarsColCombinationMaster_IDMap = data_dict
+
+        return self.MovementVarsColCombinationMaster_IDMap[col_seq_combination_id]
 
     def getNullDataHandlingID(self, in_null_data_handling_flg, WS_DB):
         """
@@ -2337,3 +2429,32 @@ class SubValueAutoReg():
         host_list[movement_id][operation_id][varsAssRecord['SYSTEM_ID']] = 0
 
         return template_list, host_list
+
+    def rest_filter(self, WS_DB, obj_load_table):
+        res = []
+
+        view_name = obj_load_table.get_view_name()
+        if view_name:
+            l_table_name = view_name
+        else:
+            l_table_name = obj_load_table.get_table_name()
+        tmp_result = WS_DB.table_select(l_table_name, "WHERE DISUSE_FLAG = '0'", [])
+
+        for tmp_result_child in tmp_result:
+            parameter = {}
+            parameter["uuid"] = tmp_result_child["ROW_ID"]
+            if "INPUT_ORDER" in tmp_result_child:
+                parameter["input_order"] = tmp_result_child["INPUT_ORDER"]
+            # parameter["host_name"] = tmp_result_child["HOST_ID"]
+            # parameter["operation_name_disp"] = tmp_result_child["OPERATION_ID"]
+            parameter["HOST_ID"] = tmp_result_child["HOST_ID"]
+            parameter["OPERATION_ID"] = tmp_result_child["OPERATION_ID"]
+
+            # 作成したカラム
+            column_data = {"DATA_JSON" : tmp_result_child["DATA_JSON"]}
+            rest_parameter, rest_file = obj_load_table.convert_colname_restkey(column_data, '', '', 'inner')
+
+            parameter.update(rest_parameter)  # マージ
+            res.append(parameter)
+
+        return res

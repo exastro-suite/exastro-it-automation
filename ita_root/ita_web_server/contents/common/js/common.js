@@ -276,11 +276,17 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
                             } else {
                                 resolve( result.data );
                             }
+                        }).catch(function( error ){
+                            cmn.systemErrorAlert();
                         });
                     } else {
                         errorCount++;
-                        cmn.fetchResponseError( response, fetchController ).then(function( result ){
-                            reject( result );
+                        response.json().then(function( json ){
+                            cmn.responseError( response.status, json, fetchController, option ).then(function( result ){
+                                reject( result );
+                            });
+                        }).catch(function( error ){
+                            cmn.systemErrorAlert();
                         });
                     }
                 }
@@ -308,49 +314,37 @@ fetch: function( url, token, method = 'GET', data, option = {} ) {
     データ読み込み エラー
 ##################################################
 */
-fetchResponseError: function( response, fetchController ) {
+responseError: function( status, responseJson, fetchController, option = {}) {
     return new Promise(function( resolve ){
-        switch ( response.status ) {
+        switch ( status ) {
             // 呼び出し元に返す
             case 498: // メンテナンス中
             case 499: // バリデーションエラー
-                response.json().then(function( result ){
-                    resolve( result );
-                }).catch(function( e ) {
-                    cmn.systemErrorAlert();
-                });
+                resolve( responseJson );
             break;
             // 権限無しの場合、トップページに戻す
             case 401:
-                response.json().then(function( result ){
-                    if ( option.authorityErrMove !== false ) {
-                        if ( !iframeFlag ) {
-                            if ( fetchController ) fetchController.abort();
-                            alert(result.message);
-                            location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
-                        } else {
-                            cmn.iframeMessage( result.message );
-                        }
+                if ( option.authorityErrMove !== false ) {
+                    if ( !iframeFlag ) {
+                        if ( fetchController ) fetchController.abort();
+                        alert( responseJson.message );
+                        location.replace('/' + organization_id + '/workspaces/' + workspace_id + '/ita/');
                     } else {
-                        resolve( result );
+                        cmn.iframeMessage( responseJson.message );
                     }
-                }).catch(function( e ) {
-                    cmn.systemErrorAlert();
-                });
+                } else {
+                    resolve( responseJson );
+                }
             break;
             // ワークスペース一覧に飛ばす
             case 403:
-                response.json().then(function( result ){
-                    if ( !iframeFlag ) {
-                        if ( fetchController ) fetchController.abort();
-                        alert(result.message);
-                        window.location.href = `/${organization_id}/platform/workspaces`;
-                    } else {
-                        cmn.iframeMessage( result.message );
-                    }
-                }).catch(function( e ) {
-                    cmn.systemErrorAlert();
-                });
+                if ( !iframeFlag ) {
+                    if ( fetchController ) fetchController.abort();
+                    alert( responseJson.message );
+                    window.location.href = `/${organization_id}/platform/workspaces`;
+                } else {
+                    cmn.iframeMessage( responseJson.message );
+                }
             break;
             // その他のエラー
             default:
@@ -747,10 +741,14 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
                 }, 200 );
             } else {
                 // 失敗
-                cmn.fetchResponseError( response ).then(function( result ){
-                    progressModal.close();
-                    progressModal = null;
-                    reject( result );
+                response.json().then(function( json ){
+                    cmn.responseError( response.status, json ).then(function( result ){
+                        progressModal.close();
+                        progressModal = null;
+                        reject( result );
+                    });
+                }).catch(function( error ){
+                    cmn.systemErrorAlert();
                 });
             }
         } catch ( e ) {
@@ -765,7 +763,7 @@ getFile: function( endPoint, method = 'GET', data, option = {} ) {
 */
 xhr: function( url, formData ) {
     return new Promise(function( resolve, reject ){
-        let progressModal = cmn.progressModal( getMessage.FTE00181 );
+        let progressModal = cmn.progressModal( getMessage.FTE00184 );
 
         const token = ( cmmonAuthFlag )? CommonAuth.getToken():
             ( iframeFlag && window.parent.getToken )? window.parent.getToken(): null;

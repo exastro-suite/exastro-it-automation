@@ -94,7 +94,7 @@ def make_master_sheet(wb, menu_table_link_record, column_list, pulldown_list):  
     # プルダウンリストをソートする
     sorted_pulldown_list = {}
     for key, value in pulldown_list.items():
-        sorted_value_list = dict(sorted(value.items(), key=lambda x: x[1]))
+        sorted_value_list = dict(sorted(value.items(), key=lambda x: str(x[1])))
         sorted_pulldown_list[key] = sorted_value_list
 
     name_define_list = []

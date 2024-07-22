@@ -53,8 +53,14 @@ class JsonPasswordIDColumn(IDColumn):
                     values[record[ref_pkey_name]] = value
                     break
 
+        # 自テーブル名と参照先テーブル名が同一の場合、data_list_set_flgをFalseに設定する
+        if self.table_name == ref_table_name:
+            self.data_list_set_flg = False
+        else:
+            self.data_list_set_flg = True
+
         return values
-    
+
     def convert_value_output(self, val=''):
         """
             値を暗号化

@@ -139,5 +139,9 @@
         {"Windows_win_updates_all.yml":["/playbook_file/1060/old/1060/","/playbook_file/1060/"]},
         {"Windows_win_updates_partial.yml":["/playbook_file/1070/old/1070/","/playbook_file/1070/"]},
         {"Windows_win_service_started.yml":["/playbook_file/1080/old/1080/","/playbook_file/1080/"]}
+    ],
+    "20110":
+    [
+        {"execution-environment.j2":["/template_file/1/old/1/","/template_file/1/"]}
     ]
 }

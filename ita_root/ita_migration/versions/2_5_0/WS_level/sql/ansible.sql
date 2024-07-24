@@ -20,28 +20,85 @@ ALTER TABLE T_ANSL_VALUE_AUTOREG_JNL ADD  COLUMN MENU_NAME_REST VARCHAR(40)  AFT
 ALTER TABLE T_ANSP_VALUE_AUTOREG_JNL ADD  COLUMN MENU_NAME_REST VARCHAR(40)  AFTER COLUMN_ID;
 ALTER TABLE T_ANSR_VALUE_AUTOREG_JNL ADD  COLUMN MENU_NAME_REST VARCHAR(40)  AFTER COLUMN_ID;
 
--- ---------------------------------------------------
--- - ▼legacy pioneer role 作業管理
--- -   ABORT_EXECUTE_FLAG: 緊急停止フラグ　追加
--- -   I_ANS_VENT_PATH: 仮想環境パス　追加
--- ---------------------------------------------------
-ALTER TABLE T_ANSL_EXEC_STS_INST     ADD  ABORT_EXECUTE_FLAG    VARCHAR(2)    AFTER EXEC_MODE;
-ALTER TABLE T_ANSL_EXEC_STS_INST     ADD  I_ANS_VENT_PATH       VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
-ALTER TABLE T_ANSP_EXEC_STS_INST     ADD  ABORT_EXECUTE_FLAG    VARCHAR(2)    AFTER EXEC_MODE;
-ALTER TABLE T_ANSP_EXEC_STS_INST     ADD  I_ANS_VENT_PATH       VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
-ALTER TABLE T_ANSR_EXEC_STS_INST     ADD  ABORT_EXECUTE_FLAG    VARCHAR(2)    AFTER EXEC_MODE;
-ALTER TABLE T_ANSR_EXEC_STS_INST     ADD  I_ANS_VENT_PATH       VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
-ALTER TABLE T_ANSL_EXEC_STS_INST_JNL ADD  ABORT_EXECUTE_FLAG    VARCHAR(2)    AFTER EXEC_MODE;
-ALTER TABLE T_ANSL_EXEC_STS_INST_JNL ADD  I_ANS_VENT_PATH       VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
-ALTER TABLE T_ANSP_EXEC_STS_INST_JNL ADD  ABORT_EXECUTE_FLAG    VARCHAR(2)    AFTER EXEC_MODE;
-ALTER TABLE T_ANSP_EXEC_STS_INST_JNL ADD  I_ANS_VENT_PATH       VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
-ALTER TABLE T_ANSR_EXEC_STS_INST_JNL ADD  ABORT_EXECUTE_FLAG    VARCHAR(2)    AFTER EXEC_MODE;
-ALTER TABLE T_ANSR_EXEC_STS_INST_JNL ADD  I_ANS_VENT_PATH       VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
+-- ------------------------------------------------------------
+-- - ▲ 20110 実行環境定義テンプレート管理　追加
+-- ------------------------------------------------------------
+CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE
+(
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    TEMPLATE_NAME                   VARCHAR(255),                               -- テンプレート名
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレートファイル
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
--- ----------------------------------------------------
--- - ▼Legacy Movemnet一覧
--- -   ANS_VENV_PATH:　仮想環境パス追加
--- ---------------------------------------------------
+CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    TEMPLATE_NAME                   VARCHAR(255),                               -- テンプレート名
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレートファイル
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+-- ------------------------------------------------------------
+-- - ▲ 20111 実行環境管理　追加
+-- ------------------------------------------------------------
+CREATE TABLE T_ANSC_EXECDEV
+(
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    EXECUTION_ENVIRONMENT_NAME      VARCHAR(255),                               -- 実行環境名
+    BUILD_TYPE                      VARCHAR(40),                                -- 実行環境構築方法
+    TAG_NAME                        VARCHAR(255),                               -- タグ名
+    EXECUTION_ENVIRONMENT_ID        VARCHAR(100),                               -- 実行環境定義名
+    TEMPLATE_ID                     VARCHAR(40),                                -- テンプレート名
+    BASE_IMAGE_OS_TYPE              VARCHAR(40),                                -- ベースイメージOS種別
+    USER_NAME                       VARCHAR(255),                               -- ユーザー
+    PASSWORD                        TEXT,                                       -- パスワード
+    ATTACH_REPOSITORY               VARCHAR(255),                               -- アタッチリポジトリ
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_ANSC_EXECDEV_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    EXECUTION_ENVIRONMENT_NAME      VARCHAR(255),                               -- 実行環境名
+    BUILD_TYPE                      VARCHAR(40),                                -- 実行環境構築方法
+    TAG_NAME                        VARCHAR(255),                               -- タグ名
+    EXECUTION_ENVIRONMENT_ID        VARCHAR(100),                               -- 実行環境定義名
+    TEMPLATE_ID                     VARCHAR(40),                                -- テンプレート名
+    BASE_IMAGE_OS_TYPE              VARCHAR(40),                                -- ベースイメージOS種別
+    USER_NAME                       VARCHAR(255),                               -- ユーザー
+    PASSWORD                        TEXT,                                       -- パスワード
+    ATTACH_REPOSITORY               VARCHAR(255),                               -- アタッチリポジトリ
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+-- ------------------------------------------------------------
+-- - ▲ Legacy Movement一覧
+-- -    AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
+-- -    AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加
+-- ------------------------------------------------------------
 CREATE OR REPLACE VIEW V_ANSL_MOVEMENT AS
 SELECT
 MOVEMENT_ID,
@@ -53,7 +110,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -64,7 +122,6 @@ FROM
   T_COMN_MOVEMENT
 WHERE
   ITA_EXT_STM_ID = 1;
-
 CREATE OR REPLACE VIEW V_ANSL_MOVEMENT_JNL AS
 SELECT
 JOURNAL_SEQ_NO,
@@ -79,7 +136,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -91,11 +149,24 @@ FROM
 WHERE
   ITA_EXT_STM_ID = 1;
 
+-- ------------------------------------------------------------
+-- - ▲ Legacy 作業管理
+-- -    ABORT_EXECUTE_FLAG:              緊急停止フラグ　追加
+-- -    I_AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
+-- -    I_AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加
+-- ------------------------------------------------------------
+ALTER TABLE T_ANSL_EXEC_STS_INST     ADD  ABORT_EXECUTE_FLAG               VARCHAR(2)    AFTER EXEC_MODE;
+ALTER TABLE T_ANSL_EXEC_STS_INST     ADD  I_AG_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSL_EXEC_STS_INST     ADD  I_AG_BUILDER_OPTIONS             TEXT          AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSL_EXEC_STS_INST_JNL ADD  ABORT_EXECUTE_FLAG               VARCHAR(2)    AFTER EXEC_MODE;
+ALTER TABLE T_ANSL_EXEC_STS_INST_JNL ADD  I_AG_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSL_EXEC_STS_INST_JNL ADD  I_AG_BUILDER_OPTIONS             TEXT          AFTER I_ANS_PLAYBOOK_HED_DEF;
 
--- ---------------------------------------------------
--- - ▼Pionner Movemnet一覧
--- -   ANS_VENV_PATH:　仮想環境パス追加
--- ---------------------------------------------------
+-- ------------------------------------------------------------
+-- - ▲ pioneer Movement一覧
+-- -    AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
+-- -    AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加
+-- ------------------------------------------------------------
 CREATE OR REPLACE VIEW V_ANSP_MOVEMENT AS
 SELECT
 MOVEMENT_ID,
@@ -107,7 +178,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -133,7 +205,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -145,10 +218,25 @@ FROM
 WHERE
   ITA_EXT_STM_ID = 2;
 
--- ---------------------------------------------------
--- - ▼Role Movemnet一覧
--- -   ANS_VENV_PATH:　仮想環境パス追加
--- ---------------------------------------------------
+-- ------------------------------------------------------------
+-- - ▲ pioneer 作業管理
+        削除
+-- -    ABORT_EXECUTE_FLAG:              緊急停止フラグ　追加
+-- -    I_AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
+-- -    I_AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加
+-- ------------------------------------------------------------
+ALTER TABLE T_ANSP_EXEC_STS_INST     ADD  ABORT_EXECUTE_FLAG               VARCHAR(2)    AFTER EXEC_MODE;
+ALTER TABLE T_ANSP_EXEC_STS_INST     ADD  I_AG_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSP_EXEC_STS_INST     ADD  I_AG_BUILDER_OPTIONS             TEXT          AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSP_EXEC_STS_INST_JNL ADD  ABORT_EXECUTE_FLAG               VARCHAR(2)    AFTER EXEC_MODE;
+ALTER TABLE T_ANSP_EXEC_STS_INST_JNL ADD  I_AG_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSP_EXEC_STS_INST_JNL ADD  I_AG_BUILDER_OPTIONS             TEXT          AFTER I_ANS_PLAYBOOK_HED_DEF;
+
+-- ------------------------------------------------------------
+-- - ▲ Legacy-role Movement一覧
+-- -    AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
+-- -    AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加
+-- ------------------------------------------------------------
 CREATE OR REPLACE VIEW V_ANSR_MOVEMENT AS
 SELECT
 MOVEMENT_ID,
@@ -160,7 +248,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -186,7 +275,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -198,3 +288,47 @@ FROM
 WHERE
   ITA_EXT_STM_ID = 3;
 
+-- ------------------------------------------------------------
+-- - ▲ Legacy-role 作業管理
+        削除
+-- -    ABORT_EXECUTE_FLAG:              緊急停止フラグ　追加
+-- -    I_AG_EXECUTION_ENVIRONMENT_NAME  実行環境                    追加
+-- -    I_AG_BUILDER_OPTIONS             ansible-builder パラメータ  追加
+-- ------------------------------------------------------------
+ALTER TABLE T_ANSR_EXEC_STS_INST     ADD  ABORT_EXECUTE_FLAG               VARCHAR(2)    AFTER EXEC_MODE;
+ALTER TABLE T_ANSR_EXEC_STS_INST     ADD  I_AG_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSR_EXEC_STS_INST     ADD  I_AG_BUILDER_OPTIONS             TEXT          AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSR_EXEC_STS_INST_JNL ADD  ABORT_EXECUTE_FLAG               VARCHAR(2)    AFTER EXEC_MODE;
+ALTER TABLE T_ANSR_EXEC_STS_INST_JNL ADD  I_AG_EXECUTION_ENVIRONMENT_NAME  VARCHAR(255)  AFTER I_ANS_PLAYBOOK_HED_DEF;
+ALTER TABLE T_ANSR_EXEC_STS_INST_JNL ADD  I_AG_BUILDER_OPTIONS             TEXT          AFTER I_ANS_PLAYBOOK_HED_DEF;
+
+
+-- ------------------------------------------------------------
+-- - ▲ M017_実行環境構築方法マスタ
+-- ------------------------------------------------------------
+CREATE TABLE T_ANSC_EXECDEV_BUILD_TYPE
+(
+    ROW_ID                          VARCHAR(2),                                 -- ROW_ID
+    NAME                            VARCHAR(64),                                -- 構築方法名
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+-- ------------------------------------------------------------
+-- - ▲ M018_ベースイメージOS種別マスタ
+-- ------------------------------------------------------------
+CREATE TABLE T_ANSC_BASE_IMAGE_OS_TYPE
+(
+    ROW_ID                          VARCHAR(2),                                 -- ROW_ID
+    NAME                            VARCHAR(255),                               -- OS種別名
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;

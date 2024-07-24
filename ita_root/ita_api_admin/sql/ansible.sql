@@ -361,6 +361,80 @@ CREATE TABLE T_ANSC_CMDB_LINK_JNL
 
 
 
+-- 20110 実行環境定義テンプレート管理
+CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE
+(
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    TEMPLATE_NAME                   VARCHAR(255),                               -- テンプレート名
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレートファイル
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_ANSC_EXECDEV_TEMPLATE_FILE_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    TEMPLATE_NAME                   VARCHAR(255),                               -- テンプレート名
+    TEMPLATE_FILE                   VARCHAR(255),                               -- テンプレートファイル
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+-- 20111 実行環境管理
+CREATE TABLE T_ANSC_EXECDEV
+(
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    EXECUTION_ENVIRONMENT_NAME      VARCHAR(255),                               -- 実行環境名
+    BUILD_TYPE                      VARCHAR(40),                                -- 実行環境構築方法
+    TAG_NAME                        VARCHAR(255),                               -- タグ名
+    EXECUTION_ENVIRONMENT_ID        VARCHAR(100),                               -- 実行環境定義名
+    TEMPLATE_ID                     VARCHAR(40),                                -- テンプレート名
+    BASE_IMAGE_OS_TYPE              VARCHAR(40),                                -- ベースイメージOS種別
+    USER_NAME                       VARCHAR(255),                               -- ユーザー
+    PASSWORD                        TEXT,                                       -- パスワード
+    ATTACH_REPOSITORY               VARCHAR(255),                               -- アタッチリポジトリ
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+CREATE TABLE T_ANSC_EXECDEV_JNL
+(
+    JOURNAL_SEQ_NO                  VARCHAR(40),                                -- 履歴用シーケンス
+    JOURNAL_REG_DATETIME            DATETIME(6),                                -- 履歴用変更日時
+    JOURNAL_ACTION_CLASS            VARCHAR (8),                                -- 履歴用変更種別
+    ROW_ID                          VARCHAR(40),                                -- 項番
+    EXECUTION_ENVIRONMENT_NAME      VARCHAR(255),                               -- 実行環境名
+    BUILD_TYPE                      VARCHAR(40),                                -- 実行環境構築方法
+    TAG_NAME                        VARCHAR(255),                               -- タグ名
+    EXECUTION_ENVIRONMENT_ID        VARCHAR(100),                               -- 実行環境定義名
+    TEMPLATE_ID                     VARCHAR(40),                                -- テンプレート名
+    BASE_IMAGE_OS_TYPE              VARCHAR(40),                                -- ベースイメージOS種別
+    USER_NAME                       VARCHAR(255),                               -- ユーザー
+    PASSWORD                        TEXT,                                       -- パスワード
+    ATTACH_REPOSITORY               VARCHAR(255),                               -- アタッチリポジトリ
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(JOURNAL_SEQ_NO)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
 -- 20201 Legacy Movemnet一覧
 CREATE VIEW V_ANSL_MOVEMENT AS
 SELECT 
@@ -373,7 +447,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -398,7 +473,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -606,7 +682,8 @@ CREATE TABLE T_ANSL_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
+    I_AG_EXECUTION_ENVIRONMENT_NAME VARCHAR(255),                               -- Movement/Ansible Agent利用情報/実行環境
+    I_AG_BUILDER_OPTIONS            TEXT,                                       -- Movement/Ansible Agent利用情報/ansible-builder パラメータ
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -650,7 +727,8 @@ CREATE TABLE T_ANSL_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
+    I_AG_EXECUTION_ENVIRONMENT_NAME VARCHAR(255),                               -- Movement/Ansible Agent利用情報/実行環境
+    I_AG_BUILDER_OPTIONS            TEXT,                                       -- Movement/Ansible Agent利用情報/ansible-builder パラメータ
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -688,7 +766,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -713,7 +792,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -985,7 +1065,8 @@ CREATE TABLE T_ANSP_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
+    I_AG_EXECUTION_ENVIRONMENT_NAME VARCHAR(255),                               -- Movement/Ansible Agent利用情報/実行環境
+    I_AG_BUILDER_OPTIONS            TEXT,                                       -- Movement/Ansible Agent利用情報/ansible-builder パラメータ
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -1029,7 +1110,8 @@ CREATE TABLE T_ANSP_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
+    I_AG_EXECUTION_ENVIRONMENT_NAME VARCHAR(255),                               -- Movement/Ansible Agent利用情報/実行環境
+    I_AG_BUILDER_OPTIONS            TEXT,                                       -- Movement/Ansible Agent利用情報/ansible-builder パラメータ
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -1083,7 +1165,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -1108,7 +1191,8 @@ ANS_PARALLEL_EXE,
 ANS_WINRM_ID,
 ANS_PLAYBOOK_HED_DEF,
 ANS_EXEC_OPTIONS,
-ANS_VENV_PATH,
+AG_EXECUTION_ENVIRONMENT_NAME,
+AG_BUILDER_OPTIONS,
 ANS_EXECUTION_ENVIRONMENT_NAME,
 ANS_ANSIBLE_CONFIG_FILE,
 NOTE,
@@ -1356,7 +1440,8 @@ CREATE TABLE T_ANSR_EXEC_STS_INST
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
+    I_AG_EXECUTION_ENVIRONMENT_NAME VARCHAR(255),                               -- Movement/Ansible Agent利用情報/実行環境
+    I_AG_BUILDER_OPTIONS            TEXT,                                       -- Movement/Ansible Agent利用情報/ansible-builder パラメータ
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -1400,7 +1485,8 @@ CREATE TABLE T_ANSR_EXEC_STS_INST_JNL
     I_ANS_PARALLEL_EXE              INT,                                        -- Movement/Ansible利用情報/並列実行数
     I_ANS_WINRM_ID                  VARCHAR(2),                                 -- Movement/Ansible利用情報/WinRM接続
     I_ANS_PLAYBOOK_HED_DEF          TEXT,                                       -- Movement/Ansible利用情報/ヘッダーセクション
-    I_ANS_VENT_PATH                 VARCHAR(255),                               -- Movement/Ansible Core利用情報/仮想環境パス
+    I_AG_EXECUTION_ENVIRONMENT_NAME VARCHAR(255),                               -- Movement/Ansible Agent利用情報/実行環境
+    I_AG_BUILDER_OPTIONS            TEXT,                                       -- Movement/Ansible Agent利用情報/ansible-builder パラメータ
     I_EXECUTION_ENVIRONMENT_NAME    VARCHAR(255),                               -- Movement/Ansible Automation Controller利用情報/実行環境
     I_ANSIBLE_CONFIG_FILE           VARCHAR(255),                               -- Movement/ansible.cfg
     OPERATION_ID                    VARCHAR(40),                                -- オペレーション/No.
@@ -1730,6 +1816,38 @@ CREATE TABLE T_ANSC_PARSE_TYPE
     LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
     LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
     PRIMARY KEY(PARSE_TYPE_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- M017_実行環境構築方法マスタ
+CREATE TABLE T_ANSC_EXECDEV_BUILD_TYPE
+(
+    ROW_ID                          VARCHAR(2),                                 -- ROW_ID
+    NAME                            VARCHAR(64),                                -- 構築方法名
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
+)ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
+
+
+
+
+-- M018_ベースイメージOS種別マスタ
+CREATE TABLE T_ANSC_BASE_IMAGE_OS_TYPE
+(
+    ROW_ID                          VARCHAR(2),                                 -- ROW_ID
+    NAME                            VARCHAR(255),                               -- OS種別名
+    DISP_SEQ                        INT,                                        -- 表示順序
+    NOTE                            TEXT,                                       -- 備考
+    DISUSE_FLAG                     VARCHAR(1),                                 -- 廃止フラグ
+    LAST_UPDATE_TIMESTAMP           DATETIME(6),                                -- 最終更新日時
+    LAST_UPDATE_USER                VARCHAR(40),                                -- 最終更新者
+    PRIMARY KEY(ROW_ID)
 )ENGINE = InnoDB, CHARSET = utf8mb4, COLLATE = utf8mb4_bin, ROW_FORMAT=COMPRESSED ,KEY_BLOCK_SIZE=8;
 
 

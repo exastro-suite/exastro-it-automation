@@ -34,6 +34,6 @@ def main(work_dir_path, wsdb):
 
     wsdb.db_commit()
 
-    return 1
+    return 0
 
 

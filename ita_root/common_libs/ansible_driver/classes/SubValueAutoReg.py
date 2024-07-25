@@ -2122,29 +2122,26 @@ class SubValueAutoReg():
 
         json_cols_base_key = list(data_json_parameter.keys())
 
-        try:
-            json_rows = json.loads(data_json)
-        except Exception:
-            json_rows = data_json
+        json_rows = data_json if data_json is None else json.loads(data_json)
+        if json_rows:
+            for jsonkey, jsonval in json_rows.items():
+                if jsonkey in json_cols_base_key:
+                    objcolumn = obj_load_table.get_columnclass(jsonkey)
+                    # ID → VALUE 変換処理不要ならVALUE変更無し
+                    if obj_load_table.get_col_class_name(jsonkey) in ['PasswordColumn']:
+                        if jsonval is not None:
+                            pass
+                    elif obj_load_table.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:
+                        if jsonval is not None:
+                            # base64した値をそのまま返却
+                            result = objcolumn.get_values_by_key([jsonval])
+                            jsonval = result.get(jsonval)
+                    else:
+                        tmp_exec = objcolumn.convert_value_output(jsonval)
+                        if tmp_exec[0] is True:
+                            jsonval = tmp_exec[2]
 
-        for jsonkey, jsonval in json_rows.items():
-            if jsonkey in json_cols_base_key:
-                objcolumn = obj_load_table.get_columnclass(jsonkey)
-                # ID → VALUE 変換処理不要ならVALUE変更無し
-                if obj_load_table.get_col_class_name(jsonkey) in ['PasswordColumn']:
-                    if jsonval is not None:
-                        pass
-                elif obj_load_table.get_col_class_name(jsonkey) in ['PasswordIDColumn', 'JsonPasswordIDColumn']:
-                    if jsonval is not None:
-                        # base64した値をそのまま返却
-                        result = objcolumn.get_values_by_key([jsonval])
-                        jsonval = result.get(jsonval)
-                else:
-                    tmp_exec = objcolumn.convert_value_output(jsonval)
-                    if tmp_exec[0] is True:
-                        jsonval = tmp_exec[2]
-
-                data_json_parameter[jsonkey] = jsonval
+                    data_json_parameter[jsonkey] = jsonval
 
         return data_json_parameter
 

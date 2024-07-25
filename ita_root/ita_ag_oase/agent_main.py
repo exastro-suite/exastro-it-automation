@@ -17,19 +17,18 @@ import os
 import datetime
 import time
 import sqlite3
+import traceback
 
 from common_libs.common import *  # noqa F403
-from common_libs.ci.util import app_exception, exception
+from common_libs.common.util import arrange_stacktrace_format
+from common_libs.common.util import get_iso_datetime
+from common_libs.common.util import print_exception_msg
+from common_libs.ag.util import app_exception, exception
 from common_libs.oase.const import oaseConst
 from agent.libs.exastro_api import Exastro_API
 from libs.collect_event import collect_event
 from libs.sqlite_connect import sqliteConnect
 from libs.event_collection_settings import set_dir, create_file, remove_file, get_settings
-
-import traceback
-from common_libs.common.util import arrange_stacktrace_format
-from common_libs.common.util import get_iso_datetime
-from common_libs.common.util import print_exception_msg
 
 
 def agent_main(organization_id, workspace_id, loop_count, interval):
@@ -184,6 +183,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
     send_to_ita_flag = False
 
     # event_collection_settings_nameとfetched_timeの組み合わせで辞書を作成
+    # 設定名ごとに未送信の「取得回」を取得
     for name in setting_name_list:
         try:
             sqliteDB.db_cursor.execute(
@@ -203,7 +203,7 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         else:
             send_to_ita_flag = True
 
-        # 作成した辞書を使用してイベントをDBから検索
+        # 作成した辞書を使用して「イベント」をDBから検索
         for item in unsent_timestamp:
             unsent_event = {}
             event_collection_settings_name = item[1]
@@ -269,12 +269,12 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
         g.applogger.info(g.appmsg.get_log_message("AGT-10021", []))
 
     # 不要なレコードのDELETE（1世代前までのイベントは残す）
+    g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
     to_delete_timestamp_rowids = []  # sent_timestampテーブルから削除するレコードのrowids
     to_delete_events_rowids = []  # eventsテーブルから削除するレコードのrowids
     remain_events_dict = {}  # eventsテーブルに残すレコードの{event_collection_settings_name: [...fetched_time]}
-    g.applogger.debug(g.appmsg.get_log_message("AGT-10022", []))
-    for name in setting_name_list:
 
+    for name in setting_name_list:
         try:
             # sent_timestampテーブルから送信済みフラグが1のレコードを全件取得
             sqliteDB.db_cursor.execute(
@@ -302,8 +302,8 @@ def collection_logic(sqliteDB, organization_id, workspace_id):
 
         except sqlite3.OperationalError as e:
             # テーブルが作られていない（イベントが無い）場合、処理を終了
-            t = traceback.format_exc()
-            g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
+            # t = traceback.format_exc()
+            # g.applogger.info("[ts={}] {}".format(get_iso_datetime(), arrange_stacktrace_format(t)))
             print_exception_msg(e)
             return
 

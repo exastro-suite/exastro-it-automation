@@ -19,8 +19,8 @@ from common_libs.common.dbconnect import *  # noqa: F403
 from common_libs.common.logger import AppLog
 from common_libs.common.message_class import MessageTemplate
 from common_libs.ci.util import exception
+from common_libs.migration import *
 from libs.functions import util
-from libs.classes.MigrationClass import Migration
 
 ITA_INIT_USER_ID = 1
 

@@ -28,7 +28,7 @@ from common_libs.common.storage_access import *  # noqa: F403
 from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.column import *  # noqa: F403
-from libs.classes.ImportMigrationClass import ImportMigration
+from common_libs.migration import *  # noqa: F403
 from libs.functions.util import *
 from pathlib import Path
 import shutil
@@ -2618,7 +2618,7 @@ def exec_ws_migration(import_info, objdbca, mode="db"):
             g.APPPATH = os.path.dirname(__file__)
             version_dir = version.replace('.', '_')
             version_dir_path = os.path.join(g.APPPATH, "versions", version_dir)
-            ws_worker = ImportMigration(
+            ws_worker = Migration(
                 os.path.join(version_dir_path, "WS_level"),
                 os.path.join(os.environ.get('STORAGEPATH'), g.ORGANIZATION_ID, g.WORKSPACE_ID),
                 objdbca,
@@ -2640,7 +2640,7 @@ def migration_execute(ws_worker, mode="db"):
     """
     migration実行処理振り分け
     Args:
-        ws_worker: ImportMigration()
+        ws_worker: Migration()
         mode: db:DBパッチ, file:ファイル配置, specific:特別処理
     """
     g.applogger.info("[Trace] Begin WS migrate.")

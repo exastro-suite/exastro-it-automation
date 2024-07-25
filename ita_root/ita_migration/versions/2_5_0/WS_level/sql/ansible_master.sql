@@ -973,3 +973,9 @@ INSERT INTO T_ANSC_BASE_IMAGE_OS_TYPE (ROW_ID,NAME,NOTE,DISUSE_FLAG,LAST_UPDATE_
 -- ---------------------------------------------------
 INSERT INTO T_ANSC_EXEC_STATUS (EXEC_STATUS_ID,EXEC_STATUS_NAME_JA,EXEC_STATUS_NAME_EN,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('11','準備完了','Preparing　Completed',11,NULL,'0',_____DATE_____,1);
 INSERT INTO T_ANSC_EXEC_STATUS (EXEC_STATUS_ID,EXEC_STATUS_NAME_JA,EXEC_STATUS_NAME_EN,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('12','実行待ち','Executing　wiat',12,NULL,'0',_____DATE_____,1);
+
+-- ----------------------------------------------------
+-- - ▼M008_Ansible実行区分マスタ
+-- -   Ansible Execution Agent　追加
+-- ---------------------------------------------------
+INSERT INTO T_ANSC_EXEC_ENGINE (ID,NAME,DISP_SEQ,NOTE,DISUSE_FLAG,LAST_UPDATE_TIMESTAMP,LAST_UPDATE_USER) VALUES('3','Ansible Execution Agent',3,NULL,'0',_____DATE_____,1);

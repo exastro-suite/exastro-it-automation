@@ -948,8 +948,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
-            # ホストグループ利用時、入力用メニューのテーブル変更
-            if hostgroup_flag and substitution_value_link_flag == "1":
+            # ホストグループ利用時、代入値自動登録用メニューと参照用メニューのテーブル変更
+            if hostgroup_flag and (substitution_value_link_flag == "1" or sheet_type in ["5", "6"]):
                 data_list["TABLE_NAME"] = sv_create_table_name
                 data_list["VIEW_NAME"] = sv_create_view_name
             elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":
@@ -985,8 +985,8 @@ def _insert_or_update_t_comn_menu_table_link(objdbca, sheet_type, vertical_flag,
                 "DISUSE_FLAG": "0",
                 "LAST_UPDATE_USER": g.get('USER_ID')
             }
-            # ホストグループ利用時、入力用メニューのテーブル変更
-            if hostgroup_flag and substitution_value_link_flag == "1":
+            # ホストグループ利用時、代入値自動登録用メニューと参照用メニューのテーブル変更
+            if hostgroup_flag and (substitution_value_link_flag == "1" or sheet_type in ["5", "6"]):
                 data_list["TABLE_NAME"] = sv_create_table_name
                 data_list["VIEW_NAME"] = sv_create_view_name
             elif hostgroup_flag and substitution_value_link_flag == "0" and row_insert_flag == "1":

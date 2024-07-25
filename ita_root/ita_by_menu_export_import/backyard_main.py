@@ -23,6 +23,7 @@ from packaging import version
 from flask import g
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import *  # noqa: F403
+from common_libs.common.dbconnect.dbconnect_ws_sandbox import DBConnectWsSandbox  # noqa: F401
 from common_libs.common.storage_access import *  # noqa: F403
 from common_libs.common.util import get_iso_datetime, arrange_stacktrace_format
 from common_libs.loadtable import *  # noqa: F403
@@ -183,7 +184,7 @@ def backyard_main(organization_id, workspace_id):
 
             # 「メニューエクスポート・インポート管理」ステータスを「4:完了(異常)」に更新
             objdbca.db_transaction_start()
-            status = 1 ####
+            status = 4
             user_language = record.get('LANGUAGE')
             execute_log = record.get('EXECUTE_LOG')
             if not execute_log:
@@ -2936,8 +2937,6 @@ def import_from_sandbox_to_maindb(
     # インポート対象メニューを分類(LoadTable関連、ITA標準, パラメータシート作成)
     base_menu_name_list, base_table_list = (list(ita_lb_menu_info.keys()), list(ita_lb_menu_info.values()))
     ita_lb_menus = [_r for _r in t_comn_menu_table_link_data_json if _r['parameter'].get('table_name') is not None and _r['parameter'].get('table_name') in base_table_list]
-    ### _menu_list = [_r for _r in t_comn_menu_table_link_data_json if _r['parameter'].get('table_name') == ita_lb_menu_info["menu_list"]]
-    ### ita_menu = ita_lb_menus.pop(ita_lb_menus.index(_menu_list))
     ita_default_menus = [_r for _r in t_comn_menu_table_link_data_json if _r['parameter'].get('table_name') is not None and not _r['parameter'].get('table_name').startswith('T_CMDB')]
     ita_create_menus =  [_r for _r in t_comn_menu_table_link_data_json if _r['parameter'].get('table_name') is not None and _r['parameter'].get('table_name').startswith('T_CMDB')]
     ita_create_menus = sorted(ita_create_menus, key=lambda x: x['parameter']['table_name'])

@@ -831,6 +831,46 @@ def put_uploadfiles(config_file_path, src_dir, dest_dir):
     return True
 
 
+def put_uploadfiles_not_override(config_file_path, src_dir, dest_dir):
+    """
+    config_file_pathのファイルに記載されているファイルをdest_dir配下に作成する
+    ファイル、リンクありの場合配置しない
+
+    Arguments:
+        config_file_path: 設定ファイル
+        src_dir: コピー元のファイル格納ディレクトリ
+        dest_dir: 作成するディレクトリ
+    Returns:
+        is success:(bool)
+    """
+    # #2079 /storage配下ではないので対象外
+    with open(config_file_path, 'r') as material_conf_json:
+        material_conf = json.load(material_conf_json)
+        for menu_id, file_info_list in material_conf.items():
+            for file_info in file_info_list:
+                for file, copy_cfg in file_info.items():
+                    # org_file = src_dir + "/".join([menu_id, file])
+                    org_file = os.path.join(os.path.join(src_dir, menu_id), file)
+                    old_file_path = os.path.join(dest_dir, menu_id) + copy_cfg[0]
+                    file_path = os.path.join(dest_dir, menu_id) + copy_cfg[1]
+
+                    if os.path.isfile(old_file_path + file) and os.path.islink(file_path + file):
+                        # ファイル、リンクありの場合配置しない
+                        continue
+
+                    if not os.path.isdir(old_file_path):
+                        os.makedirs(old_file_path)
+
+                    shutil.copy(org_file, old_file_path + file)
+
+                    try:
+                        os.symlink(old_file_path + file, file_path + file)
+                    except FileExistsError:
+                        pass
+
+    return True
+
+
 def get_maintenance_mode_setting():
     """
     メンテナンスモードの状態を取得する
@@ -900,3 +940,48 @@ def print_exception_msg(e):
     exception_msg = "exception_msg='{}'".format(e)
     g.applogger.info('[timestamp={}] {} {}'.format(get_iso_datetime(), exception_msg, msg_line))
 
+
+def get_ita_version(common_db):
+    """
+        ITAのバージョン、ドライバ情報を取得する
+        ARGS:
+            common_db:DB接クラス  DBConnectCommon()
+        RETRUN:
+            version_data
+    """
+
+    # 変数定義
+    lang = g.get('LANGUAGE')
+
+    # 『バージョン情報』テーブルからバージョン情報を取得
+    ret = common_db.table_select('T_COMN_VERSION', 'WHERE DISUSE_FLAG = %s', [0])
+
+    # 件数確認
+    if len(ret) != 1:
+        raise AppException("499-00601")
+
+    version = ret[0].get('VERSION')
+    installed_driver_ja = json.loads(ret[0].get('INSTALLED_DRIVER_JA'))
+    installed_driver_en = json.loads(ret[0].get('INSTALLED_DRIVER_EN'))
+    installed_driver =  installed_driver_ja if lang == 'ja' else installed_driver_en
+
+    # NO_INSTALL_DRIVERを取得
+    _nid = common_db.table_select('T_COMN_ORGANIZATION_DB_INFO', 'WHERE ORGANIZATION_ID = %s AND DISUSE_FLAG = %s', [g.get('ORGANIZATION_ID'),0])
+    # 件数確認
+    if len(ret) != 1:
+        raise AppException("499-00601")
+
+    no_installed_driver = json.loads(_nid[0]["NO_INSTALL_DRIVER"]) \
+        if _nid[0].get("NO_INSTALL_DRIVER", None) is not None else []
+
+    default_installed_driver = ["paramer_sheet", "hostgroup", "ansible"]
+    version_data = {
+        "version": version,
+        "installed_driver": installed_driver,
+        "installed_driver_ja": installed_driver_ja,
+        "installed_driver_en": installed_driver_en,
+        "no_installed_driver": no_installed_driver,
+        "default_installed_driver": default_installed_driver
+    }
+
+    return version_data

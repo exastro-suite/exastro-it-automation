@@ -287,6 +287,7 @@ class FileUploadColumn(Column):
                         """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
                         query_result = self.objdbca.sql_execute(query_str, [target_uuid, target_uuid_jnl])
                         target_uuid_jnls = [ _row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
+                        target_uuid_jnls.append('00000000-0000-0000-0000-000000000000')   # 2.3.0 以下対応
                         for _tuj in target_uuid_jnls:
                             if not ret:
                                 path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, _tuj)   # noqa:F405
@@ -355,6 +356,7 @@ class FileUploadColumn(Column):
                         """).format(table_name=f"{self.get_table_name()}_JNL", primary_key=self.get_primary_key()).strip()
                         query_result = self.objdbca.sql_execute(query_str, [target_uuid, target_uuid_jnl])
                         target_uuid_jnls = [ _row["JOURNAL_SEQ_NO"] for _row in query_result] if isinstance(query_result, list) else []
+                        target_uuid_jnls.append('00000000-0000-0000-0000-000000000000')   # 2.3.0 以下対応
                         for _tuj in target_uuid_jnls:
                             if not ret:
                                 path = get_upload_file_path(workspace_id, menu_id, target_uuid, rest_name, file_name, _tuj)   # noqa:F405

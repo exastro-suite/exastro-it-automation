@@ -423,7 +423,7 @@ services:
       - ../ita_root/messages:/exastro/messages:cached
       - ../ita_root/backyard:/exastro/backyard:cached
       - ../ita_root/ita_migration/versions:/exastro/versions:cached
-      - ../ita_root/ita_migration/version.list:/exastro/version.list
+      - ../ita_root/ita_migration/version.list:/exastro/version.list:cached
       - ../ita_root/ita_api_admin/sql:/exastro/sql:cached
       - ~/.netrc:/home/app_user/.netrc
       - ~/.gitconfig:/home/app_user/.gitconfig

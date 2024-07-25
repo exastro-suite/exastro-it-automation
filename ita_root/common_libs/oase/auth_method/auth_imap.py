@@ -75,7 +75,7 @@ class IMAPAuthClient(APIClientCommon):
         logged_in = self.imap_login()
 
         if logged_in is False:
-            return response
+            return False, response
 
         # メールボックスの選択
         if self.mailbox_name is None:
@@ -92,7 +92,7 @@ class IMAPAuthClient(APIClientCommon):
             # 取得したIDのメールの内容を取得
             mail_dict = self.client.fetch(message_ids, ['ENVELOPE', 'RFC822.HEADER', 'RFC822.TEXT'])
             if mail_dict == {}:
-                return response
+                return False, response
 
             # メールの内容を辞書型にまとめる
             for mid, d in mail_dict.items():

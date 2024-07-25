@@ -17,9 +17,9 @@ import datetime
 import jmespath
 import json
 import sqlite3
-from common_libs.oase.get_api_client import get_auth_client
 from common_libs.common.exception import AppException
-from common_libs.ci.util import app_exception
+from common_libs.ag.util import app_exception
+from common_libs.oase.get_api_client import get_auth_client
 from common_libs.oase.encrypt import agent_decrypt
 
 

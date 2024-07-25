@@ -20,8 +20,9 @@ from urllib.parse import urlparse
 import datetime
 import time
 import copy
-from common_libs.common.exception import AppException
 import jmespath
+
+from common_libs.common.exception import AppException
 
 class APIClientCommon:
     """

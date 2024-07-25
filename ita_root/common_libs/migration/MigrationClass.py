@@ -16,7 +16,7 @@ import json
 import os
 import re
 from flask import g
-from common_libs.common.util import create_dirs, put_uploadfiles, get_timestamp
+from common_libs.common.util import create_dirs, put_uploadfiles, put_uploadfiles_not_override, get_timestamp
 from importlib import import_module
 
 
@@ -51,12 +51,32 @@ class Migration:
         g.applogger.info(f"[Trace] work_dir_path:{self._work_dir_path}")
 
         # DBパッチ
+        self.migrate_db()
+
+        # FILE処理
+        self.migrate_file()
+
+        # 特別処理
+        self.migrate_specific()
+
+    def migrate_db(self):
+        """
+        migrate db
+        """
+        g.applogger.info(f"[Trace] work_dir_path:{self._work_dir_path}")
+
+        # DBパッチ
         sql_dir = os.path.join(self._resource_dir_path, "sql")
         if os.path.isdir(sql_dir):
             g.applogger.info("[Trace] migrate db start")
             self._db_migrate(sql_dir)
         g.applogger.info("[Trace] migrate db complete")
 
+    def migrate_file(self):
+        """
+        migrate file
+        """
+        # FILE処理
         # ディレクトリ作成
         config_file_path = os.path.join(self._resource_dir_path, "create_dir_list.txt")
         if os.path.isfile(config_file_path):
@@ -74,6 +94,34 @@ class Migration:
             put_uploadfiles(config_file_path, src_dir, dest_dir)
             g.applogger.info("[Trace] delivery files complete")
 
+    def migrate_file_not_override(self):
+        """
+        migrate file: not override
+        (Forked from migrate_file)
+        """
+        # FILE処理:上書きしない
+        # ディレクトリ作成
+        config_file_path = os.path.join(self._resource_dir_path, "create_dir_list.txt")
+        if os.path.isfile(config_file_path):
+            create_dirs(config_file_path, self._work_dir_path)
+            g.applogger.info("[Trace] create dir complete")
+
+        # ファイル配置 (uploadfiles only)
+        src_dir = os.path.join(self._resource_dir_path, "files")
+        dest_dir = os.path.join(self._work_dir_path, "uploadfiles")
+        config_file_path = os.path.join(src_dir, "config.json")
+        g.applogger.info(f"[Trace] src_dir={src_dir}")
+        g.applogger.info(f"[Trace] dest_dir={dest_dir}")
+        g.applogger.info(f"[Trace] config_file_path={config_file_path}")
+        if os.path.isfile(config_file_path):
+            # ファイルが無い場合にのみ配置し、上書きはしない
+            put_uploadfiles_not_override(config_file_path, src_dir, dest_dir)
+            g.applogger.info("[Trace] delivery files complete")
+
+    def migrate_specific(self):
+        """
+        migrate specific
+        """
         # 特別処理
         # migrationを呼出す
         src_dir = os.path.join(self._resource_dir_path, "specific")

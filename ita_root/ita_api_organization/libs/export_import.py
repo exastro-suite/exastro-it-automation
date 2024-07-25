@@ -26,13 +26,14 @@ import datetime
 import tarfile
 import mimetypes
 import secrets
+from packaging import version
 
 from common_libs.common import *  # noqa: F403
 from common_libs.common.dbconnect import DBConnectCommon
 from common_libs.loadtable import *  # noqa: F403
 from common_libs.common import storage_access
 from common_libs.column import *  # noqa: F403
-from common_libs.common.util import print_exception_msg
+from common_libs.common.util import print_exception_msg, get_ita_version
 
 def get_menu_export_list(objdbca, organization_id, workspace_id):
     """
@@ -1285,15 +1286,58 @@ def post_menu_import_upload(objdbca, organization_id, workspace_id, menu, body):
         api_msg_args = [valid_result[1]]
         raise AppException("499-01502", log_msg_args, api_msg_args)  # noqa: F405
 
-    # アップロードファイルbase64変換処理
-    _decode_zip_file(file_path, body['base64'])
+    try:
+        # アップロードファイルbase64変換処理
+        _decode_zip_file(file_path, body['base64'])
 
-    # zip解凍
-    with tarfile.open(file_path, 'r:gz') as tar:
-        tar.extractall(path=upload_id_path)
+        # zip解凍
+        with tarfile.open(file_path, 'r:gz') as tar:
+            tar.extractall(path=upload_id_path)
+    except Exception as e:
+        # アップロードファイルのbase64変換～zip解凍時
+        trace_msg = traceback.format_exc()
+        g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(trace_msg)))
+        log_msg_args = [body['name']]
+        api_msg_args = [body['name']]
+        raise AppException("499-01503", log_msg_args, api_msg_args)  # noqa: F405
 
     # zipファイルの中身を確認する
     _check_zip_file(upload_id, organization_id, workspace_id)
+
+    # インストールドライバと、kymのドライバ確認
+    # DRIVERSファイル読み込み
+    if os.path.isfile(import_id_path + '/DRIVERS') is False:
+        log_msg_args = ["DRIVERS", body['name']]
+        api_msg_args = ["DRIVERS", body['name']]
+        # 対象ファイルなし
+        raise AppException("499-01504", log_msg_args, api_msg_args)  # noqa: F405
+
+    file_read = storage_access.storage_read()
+    file_read.open(import_id_path + '/DRIVERS')
+    kym_drivers = json.loads(file_read.read())
+    file_read.close()
+
+    # インストールドライバを取得
+    common_db = DBConnectCommon()
+    version_data = get_ita_version(common_db)
+    ita_drivers = list(version_data["installed_driver_en"].keys())
+    no_installed_driver = version_data["no_installed_driver"] if "no_installed_driver" in version_data else []
+    [ita_drivers.remove(nid) for nid in no_installed_driver if nid in ita_drivers]
+    default_installed_driver = version_data["default_installed_driver"] if "default_installed_driver" in version_data else []
+    common_db.db_disconnect()
+
+    # ドライバ確認
+    no_kym_driver = [_d for _d in kym_drivers if _d not in ita_drivers] \
+        if isinstance(kym_drivers, list) and isinstance(ita_drivers, list) else []
+
+    # インストールドライバが不足している場合
+    if len(no_kym_driver) != 0:
+        [no_kym_driver.remove(_dd) for _dd in default_installed_driver if _dd in no_kym_driver]
+        no_kym_driver_log = ",".join(no_kym_driver)
+        no_kym_driver_lang = "\n".join([f'・{version_data["installed_driver"].get(ndk)}' for ndk in no_kym_driver])
+        log_msg_args = [no_kym_driver_log]
+        api_msg_args = [no_kym_driver_lang]
+        raise AppException("499-01505",log_msg_args, api_msg_args)  # noqa: F405
 
     # MENU_GROUPSファイル読み込み
     if os.path.isfile(import_id_path + '/MENU_GROUPS') is False:
@@ -1713,14 +1757,20 @@ def _check_zip_file(upload_id, organization_id, workspace_id):
         # エクスポート時のバージョンを取得
         export_version = file_read_text.read_text(uploadPath + upload_id + '/VERSION')
 
-
-    if version_data["version"] != export_version:
-        # エクスポート時のバージョンとインポートする環境のバージョンが違う場合はエラー
+    # バージョン確認
+    ita_version = version_data["version"]
+    kym_version = export_version
+    # 2.5.0以下の場合
+    if not (version.parse("2.5.0") <= version.parse(kym_version)):
         shutil.rmtree(uploadPath + upload_id)
-        msgstr = g.appmsg.get_api_message("MSG-30035")
+        msgstr = g.appmsg.get_api_message("MSG-140012", [kym_version])
         log_msg_args = [msgstr]
         api_msg_args = [msgstr]
         raise AppException("499-00701", log_msg_args, api_msg_args)
+    # KYM > ITAの場合
+    if (version.parse(ita_version) < version.parse(kym_version)):
+        shutil.rmtree(uploadPath + upload_id)
+        raise AppException("499-01506", [kym_version, ita_version], [kym_version, ita_version])
 
     # ファイル移動
     if not os.path.exists(importPath):

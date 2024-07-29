@@ -2830,7 +2830,7 @@ class bulkLoadTable(loadTable):
                     str_orderby = ''
                     where_str = where_str + str_orderby
 
-            if abolished_type == "2":
+            if abolished_type == "2" and mode == 'export_jnl'and self.get_history_flg():
                 query_str = textwrap.dedent("""
                     SELECT `TAB_A`.* FROM `{}` `TAB_A`
                     LEFT JOIN `{}` `TAB_B` ON ( `TAB_A`.`{}` = `TAB_B`.`{}` )

@@ -15,6 +15,7 @@
 import connexion
 from flask import g
 import sys
+import datetime
 
 sys.path.append('../../')
 from common_libs.common import *  # noqa: F403
@@ -54,6 +55,8 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
     objdbca = DBConnectWs(workspace_id)  # noqa: F405
 
     try:
+        tmp_path = '/tmp/' + datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+
         # メニューの存在確認
         check_menu_info(menu, objdbca)
 
@@ -71,7 +74,9 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
             api_msg_args = [menu]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        retBool, parameters, = menu_maintenance_all.create_maintenance_parameters(connexion.request)
+        os.mkdir(tmp_path)
+        retBool, parameters, file_paths = menu_maintenance_all.create_maintenance_parameters(connexion.request, tmp_path)
+
         if retBool is False:
             status_code = "400-00003"
             request_content_type = connexion.request.content_type.lower()
@@ -79,9 +84,11 @@ def maintenance_all(organization_id, workspace_id, menu, body=None, **kwargs):  
             api_msg_args = [request_content_type]
             raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-        result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters)
+        result_data = menu_maintenance_all.rest_maintenance_all(objdbca, menu, parameters, file_paths)
     except Exception as e:
         raise e
     finally:
+        if os.path.isdir(tmp_path):
+            shutil.rmtree(tmp_path)
         objdbca.db_disconnect()
     return result_data,

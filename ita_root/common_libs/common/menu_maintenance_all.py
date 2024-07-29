@@ -20,15 +20,14 @@ from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 
 
-def rest_maintenance_all(objdbca, menu, parameters):
+def rest_maintenance_all(objdbca, menu, parameters, file_paths={}):
     """
         メニューのレコード登録/更新(更新/廃止/復活)
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu:メニュー名 string
             parameter:パラメータ  {}
-            target_uuid: 対象レコードID UUID
-            lang: 言語情報 ja / en
+            file_paths:ファイルのパス
         RETRUN:
             statusCode, {}, msg
     """
@@ -42,7 +41,7 @@ def rest_maintenance_all(objdbca, menu, parameters):
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    status_code, result, msg = objmenu.rest_maintenance_all(parameters)
+    status_code, result, msg = objmenu.rest_maintenance_all(parameters, file_paths)
 
     if status_code != '000-00000':
         if status_code is None:
@@ -60,7 +59,7 @@ def rest_maintenance_all(objdbca, menu, parameters):
     return result
 
 
-def create_maintenance_parameters(connexion_request):
+def create_maintenance_parameters(connexion_request, tmp_path):
     """
     create_maintenance_parameters
         Use connexion.request
@@ -76,10 +75,11 @@ def create_maintenance_parameters(connexion_request):
     Arguments:
         connexion_request: connexion.request
     Returns:
-        bool, parameters,
+        bool, parameters, file_paths
     """
 
     parameters = []
+    file_paths = {}
 
     # get parameters
     if connexion_request.is_json:
@@ -97,12 +97,12 @@ def create_maintenance_parameters(connexion_request):
 
                 parameters = connexion_request.form['json_parameters']
                 if isinstance(parameters, (list, dict)) is False:
-                    return False, [],
+                    return False, [], file_paths
 
             # check key : parameter
             for _parameter in parameters:
                 if 'parameter' not in _parameter:
-                    return False, [],
+                    return False, [], file_paths
 
             # use check index parameters :0-x
             _cnt_parameters = len(parameters) - 1
@@ -116,16 +116,31 @@ def create_maintenance_parameters(connexion_request):
                     _list_key = str(_tmp_keys[1])
                     # check parameters index
                     if _cnt_parameters >= _list_num:
-                        # set listno->file->rest_key_name->filedata(base64)
                         _file_data = connexion_request.files[_file_key]
-                        _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
-                        parameters[_list_num].setdefault('file', {})
-                        parameters[_list_num]['file'][_list_key] = _str_b64_file_data
+                        file_name = _file_data.filename
+                        if _list_num not in file_paths:
+                            file_paths[_list_num] = {}
+                        tmp_file_path = os.path.join(tmp_path, str(_list_num), _list_key)
+                        os.makedirs(tmp_file_path)
+                        file_path = os.path.join(tmp_file_path, file_name)
+                        file_paths[_list_num][_list_key] = file_path
+
+                        f = open(file_path, 'wb')
+                        while True:
+                            # fileの読み込み
+                            buf = _file_data.stream.read(1000000)
+                            if len(buf) == 0:
+                                break
+                            # yield buf
+                            # fileの書き込み
+                            f.write(buf)
+                        f.close()
+
         else:
-            return False, [],
+            return False, [], file_paths
 
     # check parameters
     if len(parameters) == 0:
-        return False, [],
+        return False, [], file_paths
 
-    return True, parameters,
+    return True, parameters, file_paths

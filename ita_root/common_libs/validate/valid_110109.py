@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import base64
 
 from common_libs.notification import validator
@@ -104,12 +105,21 @@ def external_valid_menu_before(objdbca, objtable, option):
         file_name = entry_parameter.get('before_notification')
         if file_name:
             # ファイルの中身を取得
-            target["before_notification"] = option.get('entry_parameter', {}).get('file', {}).get('before_notification', '')
+            file_path =  option.get('entry_parameter', {}).get('file_path', {}).get('before_notification', '')
+            if file_path is not None and os.path.isfile(file_path):
+                with open(file_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+                    template_data_binary = f.read()
+            target["before_notification"] = template_data_binary
+
         # ファイルがUpdadeされているかチェック
         file_name = entry_parameter.get('after_notification')
         if file_name:
             # ファイルの中身を取得
-            target["after_notification"] = option.get('entry_parameter', {}).get('file', {}).get('after_notification', '')
+            file_path =  option.get('entry_parameter', {}).get('file', {}).get('after_notification', '')
+            if file_path is not None and os.path.isfile(file_path):
+                with open(file_path, 'rb') as f:  # バイナリファイルとしてファイルをオープン
+                    template_data_binary = f.read()
+            target["after_notification"] = template_data_binary
 
     # テンプレートのアップロードが無い場合は以降のチェックが不要となるためこの時点で返却する
     if len(target) == 0:
@@ -132,7 +142,7 @@ def external_valid_menu_before(objdbca, objtable, option):
         tmp_bool = True
         # 複数メッセージの返却を考慮し、配列で定義し直す。
 
-        template_data_binary = base64.b64decode(value)
+        template_data_binary = value
 
         # 文字コードをチェック バイナリファイルの場合、encode['encoding']はNone
         if validator.is_binary_file(template_data_binary):

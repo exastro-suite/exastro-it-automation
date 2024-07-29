@@ -102,12 +102,12 @@ def get_filter(organization_id, workspace_id, menu, file=None):  # noqa: E501
         # メニューに対するロール権限をチェック
         check_auth_menu(menu, objdbca)
 
-        file_existence = True;
+        base64_file_flg = True;
         if file == 'no':
-            file_existence = False;
+            base64_file_flg = False;
 
         filter_parameter = {}
-        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter, file_existence=file_existence)
+        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter, base64_file_flg=base64_file_flg)
 
     except Exception as e:
         raise e
@@ -152,11 +152,11 @@ def get_journal(organization_id, workspace_id, menu, uuid, file=None):  # noqa: 
         # メニューに対するロール権限をチェック
         check_auth_menu(menu, objdbca)
 
-        file_existence = True;
+        base64_file_flg = True;
         if file == 'no':
-            file_existence = False;
+            base64_file_flg = False;
 
-        result_data = menu_filter.rest_filter_journal(objdbca, menu, uuid, file_existence=file_existence)
+        result_data = menu_filter.rest_filter_journal(objdbca, menu, uuid, base64_file_flg=base64_file_flg)
     except Exception as e:
         raise e
     finally:
@@ -208,12 +208,12 @@ def post_filter(organization_id, workspace_id, menu, body=None, file=None):  # n
             body = dict(connexion.request.get_json())
             filter_parameter = body
 
-        file_existence = True;
+        base64_file_flg = True;
         if file == 'no':
-            file_existence = False;
+            base64_file_flg = False;
 
         # メニューのカラム情報を取得
-        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter, file_existence=file_existence)
+        result_data = menu_filter.rest_filter(objdbca, menu, filter_parameter, base64_file_flg=base64_file_flg)
 
     except Exception as e:
         raise e

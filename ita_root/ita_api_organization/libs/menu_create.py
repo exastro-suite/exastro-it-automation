@@ -285,8 +285,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 col_detail["parameter_sheet_reference_id"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照 選択項目ID
                 # IDから名称を取得
                 parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [col_detail["parameter_sheet_reference_id"], 0])
-                for record in parameter_sheet_reference_list:
-                    col_detail["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper()) # パラメータシート参照 選択項目名称
+                for parameter_sheet_reference_list_record in parameter_sheet_reference_list:
+                    col_detail["parameter_sheet_reference"] = parameter_sheet_reference_list_record.get('SELECT_FULL_NAME_' + lang.upper()) # パラメータシート参照 選択項目名称
 
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = col_detail

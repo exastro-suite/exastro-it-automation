@@ -20,7 +20,7 @@ from common_libs.common import *  # noqa: F403
 from common_libs.loadtable import *  # noqa: F403
 
 
-def rest_maintenance(objdbca, menu, parameter, target_uuid):
+def rest_maintenance(objdbca, menu, parameter, target_uuid, file_paths={}):
     """
         メニューのレコード登録/更新(更新/廃止/復活)
         ARGS:
@@ -28,7 +28,7 @@ def rest_maintenance(objdbca, menu, parameter, target_uuid):
             menu:メニュー名 string
             parameter:パラメータ  {}
             target_uuid: 対象レコードID UUID
-            lang: 言語情報 ja / en
+            file_paths:ファイルのパス
         RETRUN:
             statusCode, {}, msg
     """
@@ -41,7 +41,7 @@ def rest_maintenance(objdbca, menu, parameter, target_uuid):
         api_msg_args = [menu]
         raise AppException(status_code, log_msg_args, api_msg_args)  # noqa: F405
 
-    status_code, result, msg = objmenu.rest_maintenance(parameter, target_uuid)
+    status_code, result, msg = objmenu.rest_maintenance(parameter, target_uuid, file_paths)
     if status_code != '000-00000':
         if status_code is None:
             status_code = '999-99999'
@@ -58,7 +58,7 @@ def rest_maintenance(objdbca, menu, parameter, target_uuid):
     return result
 
 
-def create_maintenance_parameters(connexion_request, cmd_type='Register'):
+def create_maintenance_parameters(connexion_request, cmd_type='Register', tmp_path=""):
     """
     create_maintenance_parameters
         Use connexion.request
@@ -79,6 +79,8 @@ def create_maintenance_parameters(connexion_request, cmd_type='Register'):
     """
 
     parameters = []
+    file_paths = {}
+
     # get parameters
     if connexion_request.is_json:
         # application/json
@@ -93,10 +95,10 @@ def create_maintenance_parameters(connexion_request, cmd_type='Register'):
             except:   # noqa: E722
                 parameters = connexion_request.form['json_parameters']
                 if isinstance(parameters, (list, dict)) is False:
-                    return False, [],
+                    return False, [], file_paths
             # check key : parameter
             if 'parameter' not in parameters:
-                return False, [],
+                return False, [], file_paths
 
             # set cmd_type
             parameters.setdefault('type', cmd_type)
@@ -104,16 +106,29 @@ def create_maintenance_parameters(connexion_request, cmd_type='Register'):
             # set parameter['file'][rest_name]
             if connexion_request.files:
                 for _file_key in connexion_request.files:
-                    # set file->rest_key_name->filedata(base64)
                     _file_data = connexion_request.files[_file_key]
-                    _str_b64_file_data = base64.b64encode(_file_data.stream.read()).decode()
-                    parameters.setdefault('file', {})
-                    parameters['file'][_file_key] = _str_b64_file_data
+                    file_name = _file_data.filename
+                    tmp_file_path = os.path.join(tmp_path, _file_key)
+                    os.makedirs(tmp_file_path)
+                    file_path = os.path.join(tmp_file_path, file_name)
+                    file_paths[_file_key] = file_path
+
+                    f = open(file_path, 'wb')
+                    while True:
+                        # fileの読み込み
+                        buf = _file_data.stream.read(1000000)
+                        if len(buf) == 0:
+                            break
+                        # yield buf
+                        # fileの書き込み
+                        f.write(buf)
+                    f.close()
+
         else:
-            return False, [],
+            return False, [], file_paths
 
     # check parameters
     if len(parameters) == 0:
-        return False, [],
+        return False, [], file_paths
 
-    return True, parameters,
+    return True, parameters, file_paths

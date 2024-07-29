@@ -874,7 +874,7 @@ class loadTable():
         return result
 
     # [filter]:メニューのレコード取得
-    def rest_filter(self, parameter, mode='nomal', file_existence=True):
+    def rest_filter(self, parameter, mode='nomal', base64_file_flg=True):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
@@ -1089,7 +1089,7 @@ class loadTable():
                 for rows in tmp_result:
                     target_uuid = rows.get(primary_key)
                     target_uuid_jnl = rows.get(COLNAME_JNL_SEQ_NO)
-                    rest_parameter, rest_file = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, file_existence=file_existence)
+                    rest_parameter, rest_file, rest_file_path = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, base64_file_flg=base64_file_flg)
                     tmp_data = {}
                     tmp_data.setdefault(REST_PARAMETER_KEYNAME, rest_parameter)
                     if mode != 'excel' or mode != 'excel_jnl' or mode != 'excel_jnl_all':
@@ -1107,12 +1107,13 @@ class loadTable():
         return status_code, result, msg,
 
     # [maintenance]:メニューのレコード操作
-    def rest_maintenance(self, parameters, target_uuid=''):
+    def rest_maintenance(self, parameters, target_uuid='', file_paths={}):
         """
             RESTAPI[filter]:メニューのレコード操作
             ARGS:
                 parameters:パラメータ
                 cmd_type: 登録/更新/廃止/復活
+                file_paths: 登録/更新/廃止/復活するファイルのパス
             RETRUN:
                 status_code, result, msg,
         """
@@ -1143,7 +1144,7 @@ class loadTable():
             else:
                 tmp_result = self.objdbca.table_lock([self.get_table_name()])
             # maintenance呼び出し
-            tmp_result = self.exec_maintenance(parameters, target_uuid, cmd_type)
+            tmp_result = self.exec_maintenance(parameters, target_uuid, cmd_type, record_file_paths=file_paths)
 
             # 実行結果、一時保存
             result_data.append(tmp_result[1])
@@ -1176,12 +1177,12 @@ class loadTable():
         return status_code, result, msg,
 
     # [maintenance]:メニューのレコード登録
-    def rest_maintenance_all(self, list_parameters):
+    def rest_maintenance_all(self, list_parameters, file_paths={}):
         """
             RESTAPI[filter]:メニューのレコード取得
             ARGS:
                 parameters:パラメータ
-                mode: 登録/更新/廃止/復活
+                file_paths: 登録/更新/廃止/復活するファイルのパス
             RETRUN:
                 status_code, result, msg,
         """
@@ -1213,10 +1214,15 @@ class loadTable():
             else:
                 tmp_result = self.objdbca.table_lock([self.get_table_name()])
 
+            file_index = 0
             for tmp_parameters in list_parameters:
                 cmd_type = tmp_parameters.get("type")
 
                 parameters = tmp_parameters
+                if len(file_paths) == 0:
+                    record_file_paths = {}
+                else:
+                    record_file_paths = file_paths.get(file_index, {})
 
                 # テーブル情報（カラム、PK取得）
                 column_list = self.get_column_list()
@@ -1228,10 +1234,12 @@ class loadTable():
                     target_uuid = ''
 
                 # maintenance呼び出し
-                tmp_result = self.exec_maintenance(parameters, target_uuid, cmd_type)
+                tmp_result = self.exec_maintenance(parameters, target_uuid, cmd_type, record_file_paths=record_file_paths)
 
                 # エラーメッセージ保存
                 self.set_error_message()
+
+                file_index += 1
 
             # エラーなし
             if self.get_error_message_count() == 0:
@@ -1260,7 +1268,7 @@ class loadTable():
         return status_code, result, msg,
 
     # [maintenance]:メニューのレコード操作
-    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False, import_mode=False):
+    def exec_maintenance(self, parameters, target_uuid='', cmd_type='', pk_use_flg=False, auth_check=True, inner_mode=False, force_conv=False, import_mode=False, record_file_paths={}):
         """
             RESTAPI[filter]:メニューのレコード操作
             ARGS:
@@ -1276,6 +1284,7 @@ class loadTable():
         primary_key = self.get_primary_key()
         sheet_type = self.get_sheet_type()
         history_flg = self.get_history_flg()
+        restkey_list = self.get_restkey_list()
 
         # 各カラム単位の基本処理（前）、個別処理（前）を実施
         # REST用キーのパラメータ、ファイル(base64)
@@ -1297,20 +1306,37 @@ class loadTable():
         # 実行種別簡易判定、補完 (パラメータ内にPK無し:登録,有:更新)
         target_uuid_key = self.get_rest_key(primary_key)
 
+        if cmd_type not in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
+            # 実行種別エラー
+            retBool = False
+            status_code = 'MSG-00027'
+            msg_args = [cmd_type]
+            msg = g.appmsg.get_api_message(status_code, msg_args)
+            dict_msg = {
+                'status_code': status_code,
+                'msg_args': msg_args,
+                'msg': msg,
+            }
+            self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+            return retBool, result
+
         # 登録時は入力されたUUIDを無視する
         if cmd_type == CMD_REGISTER:
             target_uuid = ''
 
-        if cmd_type in [CMD_REGISTER, CMD_UPDATE, CMD_DISCARD, CMD_RESTORE]:
-            # テーブル情報（カラム、PK取得）
-            column_list = self.get_column_list()
-            primary_key = self.get_primary_key()
-            target_uuid_key = self.get_rest_key(primary_key)
-            target_jnls = []
-            current_row = {}
-            current_parametr = {}
-            current_file = {}
+        # テーブル情報（カラム、PK取得）
+        column_list = self.get_column_list()
+        primary_key = self.get_primary_key()
+        target_uuid_key = self.get_rest_key(primary_key)
+        target_jnls = []
+        current_row = {}
+        current_parameter = {}
+        current_file = {}
+        current_file_path = {}
+        tmp_path = '/tmp/' + datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        os.mkdir(tmp_path)
 
+        try:
             # 更新時
             if cmd_type != CMD_REGISTER:
                 tmp_rows = self.get_target_rows(target_uuid)
@@ -1329,9 +1355,9 @@ class loadTable():
                     current_row = tmp_rows[0]
                     target_uuid = current_row.get(primary_key)
                     target_uuid_jnl = current_row.get(COLNAME_JNL_SEQ_NO)
-                    current_parametr, current_file = self.convert_colname_restkey(current_row, target_uuid, '', 'input')
+                    current_parameter, current_file, current_file_path = self.convert_colname_restkey(current_row, target_uuid, '', 'input', base64_file_flg=False, file_path_flg=True)
                     # 更新系の追い越し判定
-                    self.chk_lastupdatetime(target_uuid, current_parametr, entry_parameter)
+                    self.chk_lastupdatetime(target_uuid, current_parameter, entry_parameter)
                     if import_mode is False:
                         # 更新系処理の場合、廃止フラグから処理種別判定、変更
                         cmd_type = self.convert_cmd_type(cmd_type, target_uuid, current_row, entry_parameter)
@@ -1366,7 +1392,6 @@ class loadTable():
                 target_uuid_key = self.get_rest_key(primary_key)
                 entry_parameter[target_uuid_key] = target_uuid
 
-            none_file_list = {}
             # 各カラム単位の基本処理（前）、個別処理（前）を実施
             for rest_key, rest_val in list(entry_parameter.items()):
                 objcol = self.get_objcol(rest_key)
@@ -1376,47 +1401,53 @@ class loadTable():
                 # INPUT_ITEMが1の場合
                 if input_item in ['1', '3'] or force_conv is True:
                     if rest_key in self.restkey_list:
+
                         target_col_option = {
                             'uuid': target_uuid,
                             'uuid_jnl': '',
                             'cmd_type': cmd_type,
                             'rest_key_name': rest_key,
                             'col_name': self.get_col_name(rest_key),
-                            'file_name': '',
-                            'file_data': '',
+                            'file_name': None,
+                            'file_path': None,
                             'entry_parameter': {
                                 'parameter': entry_parameter,
-                                'file': entry_file,
+                                'file_path': record_file_paths
                             },
                             'current_parameter': {
-                                'parameter': current_parametr,
-                                'file': current_file,
+                                'parameter': current_parameter,
+                                'file_path': current_file_path
                             },
                             'user': self.user
                         }
+
                         # ファイル有無
                         if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
-                            if entry_file is not None:
-                                if rest_key in entry_file:
-                                    target_col_option['file_name'] = rest_val
-                                    target_col_option['file_data'] = entry_file.get(rest_key)
-                                    # update時 entryにファイルがNone
-                                    if cmd_type == CMD_UPDATE and entry_file.get(rest_key) is None:
-                                        none_file_list.setdefault(rest_key, rest_val)
-                                else:
-                                    # update時 entryにファイルがなければ
-                                    if cmd_type == CMD_UPDATE and entry_file.get(rest_key) is None:
-                                        none_file_list.setdefault(rest_key, rest_val)
-                            else:
-                                # update時 entryにファイルがなければ
-                                if cmd_type == CMD_UPDATE:
-                                    none_file_list.setdefault(rest_key, rest_val)
 
-                            # update時 entryにファイルがなければ、currentの値を仮設定
-                            if rest_key in list(none_file_list.keys()):
-                                if rest_val is not None:
-                                    entry_file[rest_key] = current_file.get(rest_key)
-                                    target_col_option['file_data'] = current_file.get(rest_key)
+                            # ファイルがbase64で来た場合、tmpにファイルを作成する
+                            if isinstance(entry_file, dict) and rest_key in entry_file and isinstance(entry_file[rest_key], str) and len(rest_val) > 0:
+                                # base64かどうかチェック
+                                try:
+                                    base64.b64decode(entry_file[rest_key].encode())
+                                except Exception:
+                                    dict_msg = {
+                                        'status_code': '',
+                                        'msg_args': '',
+                                        'msg': g.appmsg.get_api_message('MSG-00011')
+                                    }
+                                    self.set_message(dict_msg, rest_key, MSG_LEVEL_ERROR)
+                                    continue
+
+                                tmp_file_dir = os.path.join(tmp_path, rest_key)
+                                os.mkdir(tmp_file_dir)
+                                tmp_file_path = os.path.join(tmp_file_dir, rest_val)
+                                upload_file(tmp_file_path, entry_file[rest_key])
+                                record_file_paths[rest_key] = tmp_file_path
+
+                            target_col_option['file_name'] = rest_val
+                            # ファイルのパスがあるの場合
+                            if rest_key in record_file_paths:
+                                target_col_option['file_path'] = record_file_paths.get(rest_key)
 
                         # カラムクラス呼び出し
                         objcolumn = self.get_columnclass(rest_key, cmd_type)
@@ -1434,7 +1465,7 @@ class loadTable():
                             else:
                                 tmp_target_col_option = tmp_exec[3]
                                 entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
-                                entry_file = tmp_target_col_option.get('entry_parameter').get('file')
+                                record_file_paths = tmp_target_col_option.get('entry_parameter').get('file_path')
                                 rest_val = entry_parameter.get(rest_key)
                                 # entry_file[rest_key] = target_col_option.get('file_data')
 
@@ -1475,8 +1506,8 @@ class loadTable():
                 self.exec_unique_constraint(entry_parameter, target_uuid)
 
             # 復活時にバリデーション＋組み合わせ(current,entryを使用)
-            current_data = {'parameter': current_parametr, 'file': current_file}
-            entry_data = {'parameter': entry_parameter, 'file': entry_file}
+            current_data = {'parameter': current_parameter, 'file': current_file, 'file_path': current_file_path}
+            entry_data = {'parameter': entry_parameter, 'file': entry_file, 'file_path': record_file_paths}
             self.exec_restore_validate(cmd_type, target_uuid, current_data, entry_data)
 
             # メニュー、カラム個別処理:レコード操作前
@@ -1487,14 +1518,13 @@ class loadTable():
                     'cmd_type': cmd_type,
                     'rest_key_name': '',
                     'col_name': '',
-                    'file_data': '',
                     'entry_parameter': {
                         'parameter': entry_parameter,
-                        'file': entry_file,
+                        'file_path': record_file_paths,
                     },
                     'current_parameter': {
-                        'parameter': current_parametr,
-                        'file': current_file,
+                        'parameter': current_parameter,
+                        'file_path': current_file_path,
                     },
                     'user': self.user
                 }
@@ -1547,25 +1577,8 @@ class loadTable():
                     self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
                     return retBool, status_code, msg
 
-            tmp_entry_parameter = copy.deepcopy(entry_parameter)
-            # 更新 ファイル同一時、除外
-            if cmd_type == CMD_UPDATE:
-                for rest_key, rest_val in list(entry_parameter.items()):
-                    if rest_key in self.restkey_list:
-                        # ファイル有無
-                        if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
-                            # ファイル名、データ一致時、除外
-                            if rest_val == current_parametr.get(rest_key):
-                                if current_file.get(rest_key) == entry_file.get(rest_key):
-                                    del tmp_entry_parameter[rest_key]
-            # currentの値を仮設定時、除外
-            for rest_key, rest_val in none_file_list.items():
-                # ファイル名None以外ファイル名除外
-                if tmp_entry_parameter.get(rest_key) is not None:
-                    del tmp_entry_parameter[rest_key]
-
             # rest_key → カラム名に変換
-            colname_parameter = self.convert_restkey_colname(tmp_entry_parameter, current_row)
+            colname_parameter = self.convert_restkey_colname(entry_parameter, current_row)
 
             if import_mode is True:
                 # 登録・更新処理
@@ -1608,6 +1621,7 @@ class loadTable():
                 else:
                     result_uuid_jnl = result_uuid
 
+                # 主キーのカラム名をitem_name_restに変更
                 temp_rows = {primary_key: result[0].get(primary_key)}
                 tmp_result = self.convert_colname_restkey(temp_rows)
                 result = tmp_result[0]
@@ -1631,37 +1645,25 @@ class loadTable():
                     'rest_key_name': rest_key,
                     'col_name': self.get_col_name(rest_key),
                     'file_name': '',
-                    'file_data': '',
+                    'file_path': '',
                     'entry_parameter': {
                         'parameter': entry_parameter,
                         'file': entry_file,
+                        'file_path': record_file_paths,
                     },
                     'current_parameter': {
-                        'parameter': current_parametr,
+                        'parameter': current_parameter,
                         'file': current_file,
+                        'file_path': current_file_path,
                     },
                     'user': self.user
                 }
                 # ファイル有無
-                if entry_file is not None:
-                    if rest_key in entry_file:
-                        target_col_option['file_name'] = rest_val
-                        target_col_option['file_data'] = entry_file.get(rest_key)
-
-                # ファイル同一時、除外
-                if cmd_type == CMD_UPDATE:
-                    if rest_key in self.restkey_list:
-                        # ファイル有無
-                        if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
-                            # ファイル名、データ一致時、除外
-                            if rest_val == current_parametr.get(rest_key):
-                                if current_file.get(rest_key) == entry_file.get(rest_key):
-                                    rest_val = None
-                    # currentの値を仮設定時、除外
-                    if rest_key in list(none_file_list.keys()):
-                        # ファイル名None以外ファイル名除外
-                        if tmp_target_col_option['entry_parameter'].get(rest_key) is not None:
-                            rest_val = None
+                if self.get_col_class_name(rest_key) in ['FileUploadColumn', 'FileUploadEncryptColumn']:
+                    target_col_option['file_name'] = rest_val
+                    # ファイルのパスがあるの場合
+                    if rest_key in record_file_paths:
+                        target_col_option['file_path'] = record_file_paths.get(rest_key)
 
                 # カラムクラス毎の処理:レコード操作後 ,カラム毎の個別処理:レコード操作後
                 tmp_exec = objcolumn.after_iud_action(rest_val, copy.deepcopy(target_col_option))
@@ -1675,7 +1677,7 @@ class loadTable():
                 else:
                     tmp_target_col_option = tmp_exec[3]
                     entry_parameter = tmp_target_col_option.get('entry_parameter').get('parameter')
-                    entry_file = tmp_target_col_option.get('entry_parameter').get('file')
+                    record_file_paths = tmp_target_col_option.get('entry_parameter').get('file_path')
 
             # テーブル単位の個別処理後を実行
             # メニュー、カラム個別処理:レコード操作後
@@ -1683,7 +1685,7 @@ class loadTable():
                 target_menu_option['uuid'] = result_uuid
                 target_menu_option['uuid_jnl'] = result_uuid_jnl
                 target_menu_option['entry_parameter']['parameter'] = entry_parameter
-                target_menu_option['entry_parameter']['file'] = entry_file
+                target_menu_option['entry_parameter']['file_path'] = record_file_paths
 
                 tmp_exec = self.exec_menu_after_validate(copy.deepcopy(target_menu_option))
                 if tmp_exec[0] is not True:
@@ -1716,18 +1718,11 @@ class loadTable():
             # 実行種別件数カウントアップ
             self.set_exec_count_up(cmd_type)
 
-        else:
-            # 実行種別エラー
-            retBool = False
-            status_code = 'MSG-00027'
-            msg_args = [cmd_type]
-            msg = g.appmsg.get_api_message(status_code, msg_args)
-            dict_msg = {
-                'status_code': status_code,
-                'msg_args': msg_args,
-                'msg': msg,
-            }
-            self.set_message(dict_msg, g.appmsg.get_api_message("MSG-00004", []), MSG_LEVEL_ERROR)
+        except Exception as e:
+            raise e
+        finally:
+            if os.path.isdir(tmp_path):
+                shutil.rmtree(tmp_path)
 
         return retBool, result
 
@@ -1772,7 +1767,7 @@ class loadTable():
 
         return result
 
-    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False, file_existence=True):
+    def convert_colname_restkey(self, rows, target_uuid='', target_uuid_jnl='', mode='normal', force_export=False, base64_file_flg=True, file_path_flg=False):
         """
             []::RESTパラメータへキー変換
             ARGS:
@@ -1783,6 +1778,7 @@ class loadTable():
         """
         rest_parameter = self.get_json_cols_base()
         rest_file = {}
+        rest_file_path = {}
         json_cols_base_key = list(rest_parameter.keys())
         for col_name, col_val in rows.items():
             # パラメータシート作成パラメータDATA_JSON構造
@@ -1844,11 +1840,15 @@ class loadTable():
                             rest_parameter[jsonkey] = jsonval
 
                             if mode not in ['excel', 'excel_jnl']:
-                                if self.get_col_class_name(jsonkey) == 'FileUploadColumn' and file_existence:
+                                if self.get_col_class_name(jsonkey) == 'FileUploadColumn':
                                     objcolumn = self.get_columnclass(jsonkey)
-                                    # ファイル取得＋64変換
-                                    file_data = objcolumn.get_file_data(jsonval, target_uuid, target_uuid_jnl)
-                                    rest_file.setdefault(jsonkey, file_data)
+                                    if base64_file_flg:
+                                        # ファイル取得＋64変換
+                                        file_data = objcolumn.get_file_data(jsonval, target_uuid, target_uuid_jnl)
+                                        rest_file.setdefault(jsonkey, file_data)
+                                    if file_path_flg:
+                                        data_file_path = objcolumn.get_file_data_path(jsonval, target_uuid, target_uuid_jnl)
+                                        rest_file_path[jsonkey] = data_file_path
             else:
                 rest_key = self.get_rest_key(col_name)
                 if len(rest_key) > 0:
@@ -1914,24 +1914,36 @@ class loadTable():
                             rest_parameter.setdefault(rest_key, col_val)
 
                     if mode not in ['excel', 'excel_jnl']:
-                        if self.get_col_class_name(rest_key) == 'FileUploadColumn' and file_existence:
+                        if self.get_col_class_name(rest_key) == 'FileUploadColumn':
                             objcolumn = self.get_columnclass(rest_key)
-                            # ファイル取得＋64変換
-                            file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
-                            rest_file.setdefault(rest_key, file_data)
-                        elif self.get_col_class_name(rest_key) == 'FileUploadEncryptColumn' and file_existence:
-                            if mode in ['input', 'inner']:
-                                objcolumn = self.get_columnclass(rest_key)
+                            if base64_file_flg:
                                 # ファイル取得＋64変換
                                 file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
                                 rest_file.setdefault(rest_key, file_data)
+                            if file_path_flg:
+                                data_file_path = objcolumn.get_file_data_path(col_val, target_uuid, target_uuid_jnl)
+                                rest_file_path[rest_key] = data_file_path
+                        elif self.get_col_class_name(rest_key) == 'FileUploadEncryptColumn' and base64_file_flg:
+                            if mode in ['input', 'inner']:
+                                objcolumn = self.get_columnclass(rest_key)
+                                if base64_file_flg:
+                                    # ファイル取得＋64変換
+                                    file_data = objcolumn.get_file_data(col_val, target_uuid, target_uuid_jnl)
+                                    rest_file.setdefault(rest_key, file_data)
+                                if file_path_flg:
+                                    data_file_path = objcolumn.get_file_data_path(col_val, target_uuid, target_uuid_jnl)
+                                    rest_file_path[rest_key] = data_file_path
                             elif mode in ['export', 'export_jnl']:
                                 objcolumn = self.get_columnclass(rest_key)
-                                # ファイル取得＋複合化＋64変換
-                                file_data = objcolumn.get_decrypt_file_data(col_val, target_uuid, target_uuid_jnl)
-                                rest_file.setdefault(rest_key, file_data)
+                                if base64_file_flg:
+                                    # ファイル取得＋複合化＋64変換
+                                    file_data = objcolumn.get_decrypt_file_data(col_val, target_uuid, target_uuid_jnl)
+                                    rest_file.setdefault(rest_key, file_data)
+                                if file_path_flg:
+                                    data_file_path = objcolumn.get_file_data_path(col_val, target_uuid, target_uuid_jnl)
+                                    rest_file_path[rest_key] = data_file_path
 
-        return rest_parameter, rest_file
+        return rest_parameter, rest_file, rest_file_path
 
     # []:組み合わせ一意制約の実施
     def exec_unique_constraint(self, parameter, target_uuid):
@@ -2394,11 +2406,11 @@ class loadTable():
                 entry_data: {'parameter':{},'file:{}'}
         """
         if cmd_type == CMD_RESTORE:
-            current_parametr = current_data.get('parameter')
+            current_parameter = current_data.get('parameter')
             current_file = current_data.get('file')
             entry_parameter = entry_data.get('parameter')
             entry_file = entry_data.get('file')
-            restore_chk_parameter = dict(current_parametr, **entry_parameter)
+            restore_chk_parameter = dict(current_parameter, **entry_parameter)
             restore_chk_file = dict(current_file, **entry_file)
 
             # バリデーション
@@ -2428,7 +2440,7 @@ class loadTable():
                                 'file': restore_chk_file,
                             },
                             'current_parameter': {
-                                'parameter': current_parametr,
+                                'parameter': current_parameter,
                                 'file': current_file,
                             },
                             'user': self.user
@@ -2643,7 +2655,7 @@ class loadTable():
             for rows in tmp_result:
                 target_uuid = rows.get(primary_key)
                 target_uuid_jnl = rows.get(COLNAME_JNL_SEQ_NO)
-                rest_parameter, rest_file = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, force_export=True)
+                rest_parameter, rest_file, rest_file_path = self.convert_colname_restkey(rows, target_uuid, target_uuid_jnl, mode, force_export=True)
                 tmp_data = {}
                 tmp_data.setdefault(REST_PARAMETER_KEYNAME, rest_parameter)
                 tmp_data.setdefault(REST_FILE_KEYNAME, rest_file)

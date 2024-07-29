@@ -34,34 +34,19 @@ def external_valid_menu_before(objdbca, objtable, option):
     if cmd_type in ["Register", "Update"]:
         # 拡張子が「.tf」の場合、パース処理が実行可能かどうかをチェック
         file_name = option.get('entry_parameter', {}).get('parameter', {}).get('module_file')
+        file_path = option.get('entry_parameter', {}).get('file_path', {}).get('module_file')
         if file_name:
             pattern = r'\.tf$'
             match = re.findall(pattern, file_name)
             if match:
-                # 一時利用ディレクトリ(/tmpを使用する)
-                # base_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(g.get('ORGANIZATION_ID'), g.get('WORKSPACE_ID'))
-                # temp_dir = base_dir + TFCloudEPConst.DIR_TEMP
-                temp_dir = '/tmp'
-
-                # ファイルを一時ディレクトリに格納
-                tf_data = option.get('entry_parameter', {}).get('file', {}).get('module_file', '')
-                tf_data_binary = base64.b64decode(tf_data)
-                tf_data_decoded = tf_data_binary.decode('utf-8')
-                filepath_tmp = "%s/80105_tf_file_%s.tf" % (temp_dir, os.getpid())
-                #  #2079 /storage配下ではないので対象外
-                with open(filepath_tmp, "w") as fd:
-                    fd.write(tf_data_decoded)
-
-                # tfファイルパース処理を実行する。
-                hcl2json = HCL2JSONParse(filepath_tmp)
-                hcl2json.executeParse(True)
-                result = hcl2json.getParseResult()
-                if result.get('res') is False:
-                    # パースに失敗した場合、バリデーションエラーとする
-                    retBool = False
-                    msg = g.appmsg.get_api_message("MSG-80007", [result.get('error_msg')])
-
-                # 一時利用ファイルを削除
-                os.remove(filepath_tmp)
+                if file_path:
+                    # tfファイルパース処理を実行する。
+                    hcl2json = HCL2JSONParse(file_path)
+                    hcl2json.executeParse(True)
+                    result = hcl2json.getParseResult()
+                    if result.get('res') is False:
+                        # パースに失敗した場合、バリデーションエラーとする
+                        retBool = False
+                        msg = g.appmsg.get_api_message("MSG-80007", [result.get('error_msg')])
 
     return retBool, msg, option,

@@ -64,14 +64,14 @@ def rest_count(objdbca, menu, filter_parameter):
     return result
 
 
-def rest_filter(objdbca, menu, filter_parameter, file_existence=True):
+def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
     """
         メニューのレコード取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu: メニュー string
             filter_parameter: 検索条件  {}
-            file_existence: ファイル有無（True:含める、False:含めない）
+            base64_file_flg: ファイル有無（True:含める、False:含めない）
             wsMongo:DB接続クラス  MONGOConnectWs()
         RETRUN:
             statusCode, {}, msg
@@ -96,7 +96,7 @@ def rest_filter(objdbca, menu, filter_parameter, file_existence=True):
         status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
 
     else:
-        status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=file_existence)
+        status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, base64_file_flg=base64_file_flg)
 
     if status_code != '000-00000':
         log_msg_args = [msg]
@@ -106,14 +106,14 @@ def rest_filter(objdbca, menu, filter_parameter, file_existence=True):
     return result
 
 
-def rest_filter_journal(objdbca, menu, uuid, file_existence=True):
+def rest_filter_journal(objdbca, menu, uuid, base64_file_flg=True):
     """
         メニューのレコード取得
         ARGS:
             objdbca:DB接クラス  DBConnectWs()
             menu: メニュー string
             uuid: uuid string
-            file_existence: ファイル有無（True:含める、False:含めない） boolean
+            base64_file_flg: ファイル有無（True:含める、False:含めない） boolean
         RETRUN:
             statusCode, {}, msg
     """
@@ -127,7 +127,7 @@ def rest_filter_journal(objdbca, menu, uuid, file_existence=True):
     mode = 'jnl'
     filter_parameter = {}
     filter_parameter.setdefault('JNL', uuid)
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=file_existence)
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, base64_file_flg=base64_file_flg)
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]
@@ -158,7 +158,7 @@ def get_file_path(objdbca, menu, uuid, column):
     primary_key = objmenu.get_rest_key(objmenu.get_primary_key())
     filter_parameter = {primary_key: {'LIST': [uuid]}}
     mode = 'nomal'
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=False)
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, base64_file_flg=False)
     # レコードが無ければNone
     if len(result) == 0:
         return None
@@ -197,7 +197,7 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
     primary_key = objmenu.get_rest_key(objmenu.get_primary_key())
     filter_parameter = {'JNL': uuid}
     mode = 'jnl'
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=False)
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, base64_file_flg=False)
     # レコードが無ければNone
     if len(result) == 0:
         return None
@@ -216,7 +216,7 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
     mode = 'jnl'
     filter_parameter = {}
     filter_parameter.setdefault('JNL', uuid)
-    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, file_existence=False)
+    status_code, result, msg = objmenu.rest_filter(filter_parameter, mode, base64_file_flg=False)
     if status_code != '000-00000':
         log_msg_args = [msg]
         api_msg_args = [msg]
@@ -235,12 +235,13 @@ def get_history_file_path(objdbca, menu, uuid, column, journal_uuid):
     # 新しい順に確認してファイルパスを取得
     objcol = objmenu.get_columnclass(column)
     match_flg = False
+    file_path = None
     for sort_data in jounal_sort_list:
         tmp_journal_id = sort_data.get('journal_id')
         if match_flg is True or tmp_journal_id == journal_uuid:
             match_flg = True
 
-            tmp_file_path = objcol.get_file_data_path(file_name, uuid, tmp_journal_id, False)
+            tmp_file_path = objcol.get_file_data_path(sort_data[column], uuid, tmp_journal_id, False)
             if os.path.isfile(tmp_file_path):
                 file_path = tmp_file_path
                 break

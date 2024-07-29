@@ -258,8 +258,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 col_detail["pulldown_selection_id"] = record.get('OTHER_MENU_LINK_ID')  # プルダウン選択 選択項目ID
                 # IDから名称を取得
                 other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [col_detail["pulldown_selection_id"], 0])
-                for record in other_menu_link_list:
-                    col_detail["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper()) # プルダウン選択 メニューグループ:メニュー:項目
+                for other_menu_link_list_record in other_menu_link_list:
+                    col_detail["pulldown_selection"] = other_menu_link_list_record.get('LINK_PULLDOWN_' + lang.upper()) # プルダウン選択 メニューグループ:メニュー:項目
                 col_detail["pulldown_selection_default_value"] = record.get('OTHER_MENU_LINK_DEFAULT_VALUE')  # プルダウン選択 初期値
                 reference_item = record.get('REFERENCE_ITEM')
                 if reference_item:
@@ -285,8 +285,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 col_detail["parameter_sheet_reference_id"] = record.get('PARAM_SHEET_LINK_ID')  # パラメータシート参照 選択項目ID
                 # IDから名称を取得
                 parameter_sheet_reference_list = objdbca.table_select('V_MENU_PARAMETER_SHEET_REFERENCE_ITEM', 'WHERE COLUMN_DEFINITION_ID = %s AND DISUSE_FLAG = %s', [col_detail["parameter_sheet_reference_id"], 0])
-                for record in parameter_sheet_reference_list:
-                    col_detail["parameter_sheet_reference"] = record.get('SELECT_FULL_NAME_' + lang.upper()) # パラメータシート参照 選択項目名称
+                for parameter_sheet_reference_list_record in parameter_sheet_reference_list:
+                    col_detail["parameter_sheet_reference"] = parameter_sheet_reference_list_record.get('SELECT_FULL_NAME_' + lang.upper()) # パラメータシート参照 選択項目名称
 
             col_num = 'c{}'.format(count)
             column_info_data[col_num] = col_detail

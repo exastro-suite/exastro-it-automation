@@ -258,8 +258,8 @@ def collect_exist_menu_create_data(objdbca, menu_create):  # noqa: C901
                 col_detail["pulldown_selection_id"] = record.get('OTHER_MENU_LINK_ID')  # プルダウン選択 選択項目ID
                 # IDから名称を取得
                 other_menu_link_list = objdbca.table_select('V_MENU_OTHER_LINK', 'WHERE LINK_ID = %s AND DISUSE_FLAG = %s', [col_detail["pulldown_selection_id"], 0])
-                for record in other_menu_link_list:
-                    col_detail["pulldown_selection"] = record.get('LINK_PULLDOWN_' + lang.upper()) # プルダウン選択 メニューグループ:メニュー:項目
+                for other_menu_link_list_record in other_menu_link_list:
+                    col_detail["pulldown_selection"] = other_menu_link_list_record.get('LINK_PULLDOWN_' + lang.upper()) # プルダウン選択 メニューグループ:メニュー:項目
                 col_detail["pulldown_selection_default_value"] = record.get('OTHER_MENU_LINK_DEFAULT_VALUE')  # プルダウン選択 初期値
                 reference_item = record.get('REFERENCE_ITEM')
                 if reference_item:

@@ -87,7 +87,7 @@ class APIClientCommon:
         API_response = None
         self.parameter = parameter  # APIのパラメータ
         if self.parameter is not None:
-            # パラメータ中の"EXSASTRO_LAST_FETCHED_TIME"を前回イベント収集日時（初回はシステム日時）に置換
+            # パラメータ中の"EXASTRO_LAST_FETCHED_TIME"を前回イベント収集日時（初回はシステム日時）に置換
             last_fetched_time = datetime.datetime.utcfromtimestamp(self.last_fetched_timestamp)
             last_fetched_ymd = last_fetched_time.strftime('%Y/%m/%d %H:%M:%S')
             last_fetched_dmy = last_fetched_time.strftime('%d/%m/%y %H:%M:%S')
@@ -95,9 +95,9 @@ class APIClientCommon:
 
             for key, value in self.parameter.items():
                 if type(value) is str:
-                    value = value.replace("EXSASTRO_LAST_FETCHED_YY_MM_DD", last_fetched_ymd)
-                    value = value.replace("EXSASTRO_LAST_FETCHED_DD_MM_YY", last_fetched_dmy)
-                    value = value.replace("EXSASTRO_LAST_FETCHED_TIMESTAMP", last_fetched_timestamp)
+                    value = value.replace("EXASTRO_LAST_FETCHED_YY_MM_DD", last_fetched_ymd)
+                    value = value.replace("EXASTRO_LAST_FETCHED_DD_MM_YY", last_fetched_dmy)
+                    value = value.replace("EXASTRO_LAST_FETCHED_TIMESTAMP", last_fetched_timestamp)
                     self.parameter[key] = value
 
         try:

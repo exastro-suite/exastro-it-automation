@@ -24,7 +24,7 @@ class JsonIDColumn(IDColumn):
     """
     カラムクラス個別処理(JsonIDColumn)
     """
-    
+
     def search_id_data_list(self):
         """
             データリストを検索する
@@ -53,5 +53,11 @@ class JsonIDColumn(IDColumn):
                 if key == column_name_rest:
                     values[record[ref_pkey_name]] = value
                     break
+
+        # 自テーブル名と参照先テーブル名が同一の場合、data_list_set_flgをFalseに設定する
+        if self.table_name == ref_table_name:
+            self.data_list_set_flg = False
+        else:
+            self.data_list_set_flg = True
 
         return values

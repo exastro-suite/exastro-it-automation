@@ -31,7 +31,6 @@ from common_libs.common.mongoconnect.const import Const as mongoConst
 from common_libs.common.util import ky_encrypt, ky_decrypt, get_timestamp, url_check, arrange_stacktrace_format
 from common_libs.ansible_driver.classes.gitlab import GitLabAgent
 from common_libs.common.exception import AppException
-from common_libs.api import app_exception_response, exception_response
 
 
 @api_filter_admin
@@ -468,11 +467,11 @@ def organization_info(organization_id):  # noqa: E501
 def organization_update(organization_id, body=None):  # noqa: E501
     """organization_update
 
-    Organizationにドライバを追加する # noqa: E501
+    Organizationへドライバを追加・削除する # noqa: E501
 
     :param organization_id: OrganizationID
     :type organization_id: str
-    :param body: 追加でインストールするドライバはtrueを選択する
+    :param body: 追加でインストールするドライバはtrue、アンインストールするドライバはfalseを設定する
     :type body: dict | bytes
 
     :rtype: InlineResponse2001
@@ -507,49 +506,68 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 if driver_name not in driver_list:
                     return '', "Value of key[drivers] is invalid.", "499-00004", 499
 
-            # インストール済みのドライバをfalseに指定した際にエラーとする。
-            to_false_driver = []
+            # インストール済みのドライバをtrue、インストールしていないドライバをfalseに指定した際にエラーとする。
             for driver_name, driver_bool in drivers.items():
-                if driver_name not in no_install_driver and driver_bool is False:
-                    to_false_driver.append(driver_name)
-
-            if len(to_false_driver) > 0:
-                return '', "Installed drivers cannot be set to false. {}".format(json.dumps(to_false_driver)), "499-00007", 499
+                if driver_name not in no_install_driver and driver_bool is True:
+                    return '', "{} is already installed. ".format(json.dumps(driver_name)), "499-00007", 499
+                elif driver_name in no_install_driver and driver_bool is False:
+                    return '', "{} is already uninstalled.".format(json.dumps(driver_name)), "499-00007", 499
 
         else:
-            drivers = {
-                'terraform_cloud_ep': True,
-                'terraform_cli': True,
-                'ci_cd': True,
-                'oase': True
-            }
-
-        # keyの指定がない対象はTrueを設定する
-        for driver_name in driver_list:
-            if driver_name not in drivers:
-                drivers[driver_name] = True
+            # body内でdriverが指定されていないためエラーとする。
+            return '', "Body paramater 'drivers' is required.", "499-00004", 499
 
         # 追加するドライバの対象が、no_install_driverに含まれていない（すでにインストール済み）場合は追加対象から除外する
+        # 削除するドライバの対象が、no_install_driverに含まれている場合は削除対象から除外する
         add_drivers = []
+        remove_drivers = []
         for driver_name, driver_bool in drivers.items():
             if driver_name in no_install_driver and driver_bool is True:
                 add_drivers.append(driver_name)
                 update_no_install_driver.remove(driver_name)
+            elif driver_name not in no_install_driver and driver_bool is False:
+                remove_drivers.append(driver_name)
+                update_no_install_driver.append(driver_name)
         g.applogger.info("plan to add these drivers({})".format(add_drivers))
-
-        # Terraformについて、terraform_cloud_ep, terraform_cliどちらもインストールされていない状態の場合、下記のsqlファイルを実行するため、terraform_commonを対象に追加する。
-        if "terraform_cloud_ep" in add_drivers or "terraform_cli" in add_drivers:
-            if "terraform_cloud_ep" in no_install_driver and "terraform_cli" in no_install_driver:
-                add_drivers.insert(0, "terraform_common")
+        g.applogger.info("plan to remove these drivers({})".format(remove_drivers))
 
         # インストール時に利用するSQLファイル名の一覧
         add_driver_sql = {
-            "terraform_common": ['terraform_common.sql', 'terraform_common_master.sql'],
-            "terraform_cloud_ep": ['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql'],
-            "terraform_cli": ['terraform_cli.sql', 'terraform_cli_master.sql'],
-            "ci_cd": ['cicd.sql', 'cicd_master.sql'],
-            "oase": ['oase.sql', 'oase_master.sql'],
+            "terraform_cloud_ep": [['terraform_cloud_ep.sql', 'terraform_cloud_ep_master.sql']],
+            "terraform_cli": [['terraform_cli.sql', 'terraform_cli_master.sql']],
+            "ci_cd": [['cicd.sql', 'cicd_master.sql']],
+            "oase": [['oase.sql', 'oase_master.sql']],
         }
+
+        # アンインストール時に利用するSQLファイル名の一覧
+        remove_driver_sql = {
+            "terraform_cloud_ep": [['terraform_cloud_ep.drop.sql', 'terraform_cloud_ep_master.delete.sql']],
+            "terraform_cli": [['terraform_cli.drop.sql', 'terraform_cli_master.delete.sql']],
+            "ci_cd": [['cicd.drop.sql', 'cicd_master.delete.sql']],
+            "oase": [['oase.drop.sql', 'oase_master.delete.sql']],
+        }
+
+        # アンインストール時に利用する削除対象ディレクトリのパスの一覧
+        remove_driver_files = {
+            "terraform_cloud_ep": [['/driver/terraform_cloud_ep/', '/uploadfiles/80105'], ['', '/uploadfiles/80106'], ['', '/uploadfiles/80114']],
+            "terraform_cli": [['/driver/terraform_cli/', '/uploadfiles/90104'], ['', '/uploadfiles/90109']],
+            "ci_cd": [['/driver/cicd/repositories/', '']],
+            "oase": [['', '/uploadfiles/110109']],
+        }
+
+        # terraform_commonの追加について
+        if "terraform_cli" in add_drivers and ("terraform_cloud_ep" in no_install_driver):
+            add_driver_sql["terraform_cli"].append(['terraform_common.sql', 'terraform_common_master.sql'])
+        elif "terraform_cloud_ep" in add_drivers and "terraform_cli" in no_install_driver:
+            add_driver_sql["terraform_cloud_ep"].append(['terraform_common.sql', 'terraform_common_master.sql'])
+        # terraform_commonの削除について
+        elif "terraform_cli" in remove_drivers and ("terraform_cloud_ep" in no_install_driver or "terraform_cloud_ep" in remove_drivers):
+            remove_driver_sql["terraform_cli"].append(['terraform_common.drop.sql', ''])
+        elif "terraform_cloud_ep" in remove_drivers and "terraform_cli" in no_install_driver:
+            remove_driver_sql["terraform_cloud_ep"].append(['terraform_common.drop.sql', ''])
+
+        # Organization DB connect
+        org_db = DBConnectOrg(organization_id)  # noqa: F405
 
         # OASEが有効な場合
         is_exists_mongo_info = False
@@ -624,8 +642,14 @@ def organization_update(organization_id, body=None):  # noqa: E501
             common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', data, 'PRIMARY_KEY')
             common_db.db_commit()
 
-        # Organization DB connect
-        org_db = DBConnectOrg(organization_id)  # noqa: F405
+        # MongoのDB削除用情報
+        elif 'oase' in remove_drivers:
+            g.db_connect_info["ORG_MONGO_OWNER"] = org_connect_info['MONGO_OWNER']
+            g.db_connect_info["ORG_MONGO_CONNECTION_STRING"] = org_connect_info['MONGO_CONNECTION_STRING']
+            g.db_connect_info["ORG_MONGO_ADMIN_USER"] = org_connect_info['MONGO_ADMIN_USER']
+            g.db_connect_info["ORG_MONGO_ADMIN_PASSWORD"] = org_connect_info['MONGO_ADMIN_PASSWORD']
+            org_mongo = MONGOConnectOrg(org_db)
+            mongo_owner = bool(org_connect_info['MONGO_OWNER'])
 
         # OrganizationのWorkspace一覧を取得
         workspace_data_list = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0")
@@ -638,6 +662,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
             workspace_id = workspace_data['WORKSPACE_ID']
             g.applogger.info("Updating on workspace(workspace_id = {})".format(workspace_id))
             role_id = f'_{workspace_id}-admin'
+            workspace_dir = os.environ.get('STORAGEPATH') + "{}/{}".format(organization_id, workspace_id)
 
             # Workspace DB connect
             ws_db = DBConnectWs(workspace_id, organization_id)  # noqa: F405
@@ -647,35 +672,109 @@ def organization_update(organization_id, body=None):  # noqa: E501
             for install_driver in add_drivers:
                 g.applogger.info(" INSTALLING {} START".format(install_driver))
                 # SQLファイルを特定する。
-                sql_files = add_driver_sql[install_driver]
-                ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
-                dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
+                sql_files_list = add_driver_sql[install_driver]
+                for sql_files in sql_files_list:
+                    ddl_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[0]
+                    dml_file = os.environ.get('PYTHONPATH') + "sql/" + sql_files[1]
 
-                # create table of workspace-db
-                g.applogger.info(" execute " + ddl_file)
-                ws_db.sqlfile_execute(ddl_file)
+                    # create table of workspace-db
+                    g.applogger.info(" execute " + ddl_file)
+                    ws_db.sqlfile_execute(ddl_file)
 
-                # insert initial data of workspace-db
-                ws_db.db_transaction_start()
-                # #2079 /storage配下ではないので対象外
-                g.applogger.info(" execute " + dml_file)
-                with open(dml_file, "r") as f:
-                    sql_list = f.read().split(";\n")
-                    for sql in sql_list:
-                        if re.fullmatch(r'[\s\n\r]*', sql):
-                            continue
+                    # insert initial data of workspace-db
+                    ws_db.db_transaction_start()
+                    # #2079 /storage配下ではないので対象外
+                    g.applogger.info(" execute " + dml_file)
+                    with open(dml_file, "r") as f:
+                        sql_list = f.read().split(";\n")
+                        for sql in sql_list:
+                            if re.fullmatch(r'[\s\n\r]*', sql):
+                                continue
 
-                        sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
+                            sql = sql.replace("_____DATE_____", "STR_TO_DATE('" + last_update_timestamp + "','%Y-%m-%d %H:%i:%s.%f')")
 
-                        prepared_list = []
-                        trg_count = sql.count('__ROLE_ID__')
-                        if trg_count > 0:
-                            prepared_list = list(map(lambda a: role_id, range(trg_count)))
-                            sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
+                            prepared_list = []
+                            trg_count = sql.count('__ROLE_ID__')
+                            if trg_count > 0:
+                                prepared_list = list(map(lambda a: role_id, range(trg_count)))
+                                sql = ws_db.prepared_val_escape(sql).replace('\'__ROLE_ID__\'', '%s')
 
-                        ws_db.sql_execute(sql, prepared_list)
-                ws_db.db_commit()
-                g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
+                            ws_db.sql_execute(sql, prepared_list)
+                    ws_db.db_commit()
+                if install_driver != "oase":
+                    g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
+
+            # 削除対象のドライバをループし、SQLファイルを実行・必要のないディレクトリの削除・MongoDBの削除を実行する。
+            for uninstall_driver in remove_drivers:
+                g.applogger.info(" UNINSTALLING {} START".format(uninstall_driver))
+                # SQLファイルを特定する。
+                sql_files_list = remove_driver_sql[uninstall_driver]
+                for sql_files in sql_files_list:
+                    dml_file = os.environ.get('PYTHONPATH') + "sql/uninstall/" + sql_files[1]
+                    ddl_file = os.environ.get('PYTHONPATH') + "sql/uninstall/" + sql_files[0]
+
+                    if sql_files[1] != '':
+                        # delete data in workspace-db
+                        ws_db.db_transaction_start()
+                        g.applogger.info(" execute " + dml_file)
+                        with open(dml_file, "r") as f:
+                            sql_list = f.read().split(";\n")
+                            for sql in sql_list:
+                                if re.fullmatch(r'[\s\n\r]*', sql):
+                                    continue
+                                prepared_list = []
+                                ws_db.sql_execute(sql, prepared_list)
+                        ws_db.db_commit()
+
+                    # delete tables in workspace-db
+                    g.applogger.info(" execute " + ddl_file)
+                    ws_db.sqlfile_execute(ddl_file)
+
+                # ディレクトリの削除を実行する
+                remove_files_list = remove_driver_files[uninstall_driver]
+                for remove_files in remove_files_list:
+                    # /driver配下
+                    if remove_files[0] != '':
+                        remove_path = workspace_dir + remove_files[0]
+                        if os.path.isdir(remove_path):
+                            # /driver配下のディレクトリを作成する
+                            g.applogger.info(" remove " + remove_path)
+                            shutil.rmtree(remove_path)
+                            g.applogger.info(" remake " + remove_path)
+                            os.mkdir(remove_path)
+
+                    # /uploadfiles配下
+                    if remove_files[1] != '':
+                        remove_path_uploadfiles = workspace_dir + remove_files[1]
+                        if os.path.isdir(remove_path_uploadfiles):
+                            g.applogger.info(" remove " + remove_path_uploadfiles)
+                            shutil.rmtree(remove_path_uploadfiles)
+
+                    # MongoのDBがあれば削除
+                    if uninstall_driver == "oase":
+                        if workspace_data.get('MONGO_DATABASE'):
+                            # drop ws-mongodb and ws-mongodb-user
+                            org_mongo.drop_database(workspace_data['MONGO_DATABASE'])
+                            g.applogger.info(" Workspace MongoDB(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
+                            if mongo_owner is True:
+                                org_mongo.drop_user(workspace_data['MONGO_USER'], workspace_data['MONGO_DATABASE'])
+                                g.applogger.info(" Workspace MongoDB_USER(ws_id={}) is cleaned".format(workspace_data['WORKSPACE_ID']))
+                            ws_primary_key = workspace_data['PRIMARY_KEY']
+                            data = {
+                                "PRIMARY_KEY": ws_primary_key,
+                                "MONGO_CONNECTION_STRING": '',
+                                "MONGO_DATABASE": None,
+                                "MONGO_USER": None,
+                                "MONGO_PASSWORD": ''
+                            }
+
+                            org_db.db_transaction_start()
+                            org_db.table_update("T_COMN_WORKSPACE_DB_INFO", data, "PRIMARY_KEY")
+                            org_db.db_commit()
+
+                            g.applogger.info(" Updating infomation of mongo on workspace(workspace_id = {})".format(workspace_id))
+
+                g.applogger.info(" UNINSTALLING {} IS ENDED".format(uninstall_driver))
 
             # OASEがインストールされる場合 or インストール済みで接続情報を変更したい場合
             if "oase" in add_drivers or ("oase" not in no_install_driver and is_exists_mongo_info is True):
@@ -753,8 +852,9 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 g.db_connect_info.pop("WS_MONGO_DATABASE")
                 g.db_connect_info.pop("WS_MONGO_USER")
                 g.db_connect_info.pop("WS_MONGO_PASSWORD")
+                g.applogger.info(" INSTALLING oase IS ENDED")
 
-        # t_comn_organization_db_infoテーブルのNO_INSTALL_DRIVERを更新する
+        # t_comn_organization_db_infoテーブルのMONGODB接続情報, NO_INSTALL_DRIVERを更新する
         if len(update_no_install_driver) > 0:
             update_no_install_driver_json = json.dumps(update_no_install_driver)
         else:
@@ -765,6 +865,11 @@ def organization_update(organization_id, body=None):  # noqa: E501
             'PRIMARY_KEY': org_connect_info['PRIMARY_KEY'],
             'NO_INSTALL_DRIVER': update_no_install_driver_json,
         }
+        if "oase" in remove_drivers:
+            data["MONGO_OWNER"] = None
+            data["MONGO_CONNECTION_STRING"] = ""
+            data['MONGO_ADMIN_USER'] = None
+            data["MONGO_ADMIN_PASSWORD"] = ""
         common_db.table_update('T_COMN_ORGANIZATION_DB_INFO', data, 'PRIMARY_KEY')
         common_db.db_commit()
     finally:

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Exastro IT Automation API (System Management)
   description: Exastro IT Automation API for System Manager
-  version: "2.4"
+  version: "2.5"
 
 servers:
   - url: "https://{host}"
@@ -205,7 +205,7 @@ paths:
     patch:
       tags:
         - Organization Create
-      description: Organizationにドライバを追加する
+      description: Organizationへドライバを追加・削除する
       operationId: organizationUpdate
       x-openapi-router-controller: controllers.organization_create_controller
       parameters:
@@ -216,7 +216,7 @@ paths:
           schema:
             type: string
       requestBody:
-        description: "追加でインストールするドライバはtrueを選択する"
+        description: "追加でインストールするドライバはtrue、アンインストールするドライバはfalseを設定する"
         required: false
         content:
           application/json:
@@ -320,7 +320,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ERROR_TEMPLATE'
-
   /api/{organization_id}/workspaces/{workspace_id}/ita/:
     post:
       tags:

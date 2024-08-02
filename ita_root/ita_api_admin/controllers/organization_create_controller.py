@@ -501,14 +501,12 @@ def organization_update(organization_id, body=None):  # noqa: E501
         # bodyから「drivers」keyの値を取得
         if body is not None and len(body) > 0:
             drivers = body.get('drivers')
-            # bodyのdriversに指定のドライバ名以外のkeyがないかをチェック
             for driver_name, driver_bool in drivers.items():
+                # bodyのdriversに指定のドライバ名以外のkeyがある際にエラーとする。
                 if driver_name not in driver_list:
                     return '', "Value of key[drivers] is invalid.", "499-00004", 499
-
-            # インストール済みのドライバをtrue、インストールしていないドライバをfalseに指定した際にエラーとする。
-            for driver_name, driver_bool in drivers.items():
-                if driver_name not in no_install_driver and driver_bool is True:
+                # インストール済みのドライバをtrue、インストールしていないドライバをfalseに指定した際にエラーとする。
+                elif driver_name not in no_install_driver and driver_bool is True:
                     return '', "{} is already installed. ".format(json.dumps(driver_name)), "499-00007", 499
                 elif driver_name in no_install_driver and driver_bool is False:
                     return '', "{} is already uninstalled.".format(json.dumps(driver_name)), "499-00007", 499
@@ -701,8 +699,7 @@ def organization_update(organization_id, body=None):  # noqa: E501
 
                             ws_db.sql_execute(sql, prepared_list)
                     ws_db.db_commit()
-                if install_driver != "oase":
-                    g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
+                g.applogger.info(" INSTALLING {} IS ENDED".format(install_driver))
 
             # 削除対象のドライバをループし、SQLファイルを実行・必要のないディレクトリの削除・MongoDBの削除を実行する。
             for uninstall_driver in remove_drivers:
@@ -852,7 +849,6 @@ def organization_update(organization_id, body=None):  # noqa: E501
                 g.db_connect_info.pop("WS_MONGO_DATABASE")
                 g.db_connect_info.pop("WS_MONGO_USER")
                 g.db_connect_info.pop("WS_MONGO_PASSWORD")
-                g.applogger.info(" INSTALLING oase IS ENDED")
 
         # t_comn_organization_db_infoテーブルのMONGODB接続情報, NO_INSTALL_DRIVERを更新する
         if len(update_no_install_driver) > 0:

@@ -51,7 +51,10 @@ def rest_count(objdbca, menu, filter_parameter):
         # MariaDBのコネクションはコントローラーで生成しているため、MongoDBも同様にすべきだが、
         # アクセスしない場合もコネクションを生成するのは無駄が多いためここで生成することにした。
         wsMongo = MONGOConnectWs()
-        load_collection = loadCollection(wsMongo, objmenu)
+        try:
+            load_collection = loadCollection(wsMongo, objmenu)
+        finally:
+            wsMongo.disconnect()
         status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
     else:
         status_code, result, msg = objmenu.rest_filter(filter_parameter, mode)
@@ -92,7 +95,10 @@ def rest_filter(objdbca, menu, filter_parameter, base64_file_flg=True):
         # MariaDBのコネクションはコントローラーで生成しているため、MongoDBも同様にすべきだが、
         # アクセスしない場合もコネクションを生成するのは無駄が多いためここで生成することにした。
         wsMongo = MONGOConnectWs()
-        load_collection = loadCollection(wsMongo, objmenu)
+        try:
+            load_collection = loadCollection(wsMongo, objmenu)
+        finally:
+            wsMongo.disconnect()
         status_code, result, msg = load_collection.rest_filter(filter_parameter, mode)
 
     else:

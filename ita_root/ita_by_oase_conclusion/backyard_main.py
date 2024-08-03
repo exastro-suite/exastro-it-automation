@@ -50,14 +50,14 @@ def backyard_main(organization_id, workspace_id):
     # connect MariaDB
     wsDb = DBConnectWs(workspace_id)  # noqa: F405
 
-    # 処理時間
-    judgeTime = int(datetime.datetime.now().timestamp())
-    # イベント操作クラス
-    EventObj = ManageEvents(wsMongo, judgeTime)
-    # アクション　クラス生成
-    actionObj = Action(wsDb, EventObj)
-
     try:
+        # 処理時間
+        judgeTime = int(datetime.datetime.now().timestamp())
+        # イベント操作クラス
+        EventObj = ManageEvents(wsMongo, judgeTime)
+        # アクション　クラス生成
+        actionObj = Action(wsDb, EventObj)
+
         # ルール判定
         tmp_msg = g.appmsg.get_log_message("BKY-90001", ['Started'])
         g.applogger.debug(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
@@ -90,6 +90,10 @@ def backyard_main(organization_id, workspace_id):
         g.applogger.info("[timestamp={}] {}".format(str(get_iso_datetime()), arrange_stacktrace_format(t)))
         tmp_msg = g.appmsg.get_log_message("BKY-90003", [])
         g.applogger.info(addline_msg('{}'.format(tmp_msg)))  # noqa: F405
+    finally:
+        wsDb.db_transaction_end(False)
+        wsDb.db_disconnect()
+        wsMongo.disconnect()
 
     # メイン処理終了
     tmp_msg = g.appmsg.get_log_message("BKY-90000", ['Ended'])

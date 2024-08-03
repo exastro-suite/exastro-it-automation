@@ -336,6 +336,9 @@ def workspace_create(organization_id, workspace_id, body=None):  # noqa: E501
         if 'org_mongo' in locals():
             org_mongo.disconnect()
 
+        if 'ws_mongo' in locals():
+            ws_mongo.disconnect()
+
     return '',
 
 
@@ -449,5 +452,15 @@ def workspace_delete(organization_id, workspace_id):  # noqa: E501
             g.applogger.info("Workspace is reused")
 
         org_db.db_disconnect()
+
+
+        if 'org_db' in locals():
+            org_db.db_disconnect()
+
+        if 'org_root_db' in locals():
+            org_root_db.db_disconnect()
+
+        if 'org_mongo' in locals():
+            org_mongo.disconnect()
 
     return '',

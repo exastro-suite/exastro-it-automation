@@ -38,7 +38,7 @@ def is_db_disuse():
         if len(org_rows) == 0:
             g.applogger.debug("is_db_disuse.org_rows={}".format(org_rows))
             return True
-        ita_db.db_disconnect
+        ita_db.db_disconnect()
 
         org_db = DBConnectOrg(organization_id)
         wk_rows = org_db.table_select("T_COMN_WORKSPACE_DB_INFO", "WHERE `DISUSE_FLAG`=0 AND `WORKSPACE_ID`=%s", [workspace_id])
@@ -47,7 +47,7 @@ def is_db_disuse():
         if len(wk_rows) == 0:
             g.applogger.debug("is_db_disuse.wk_rows={}".format(wk_rows))
             return True
-        org_db.db_disconnect
+        org_db.db_disconnect()
 
         return False
 

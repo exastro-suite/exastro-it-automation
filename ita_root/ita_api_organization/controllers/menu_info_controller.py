@@ -196,4 +196,7 @@ def get_search_candidates(organization_id, workspace_id, menu, column):  # noqa:
         raise e
     finally:
         objdbca.db_disconnect()
+
+        if 'wsMongo' in locals():
+            wsMongo.disconnect()
     return data,

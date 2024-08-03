@@ -233,6 +233,8 @@ def organization_create(body, organization_id):
             for user in user_list:
                 gitlab_agent.delete_user(user['id'])
 
+        raise e
+    finally:
         if 'common_db' in locals():
             common_db.db_disconnect()
         if 'org_root_db' in locals():
@@ -241,8 +243,6 @@ def organization_create(body, organization_id):
             org_db.db_disconnect()
         if 'org_mongo' in locals():
             org_mongo.disconnect()
-
-        raise e
 
     return '',
 
@@ -875,6 +875,8 @@ def organization_update(organization_id, body=None):  # noqa: E501
             org_db.db_disconnect()
         if 'org_mongo' in locals():
             org_mongo.disconnect()
+        if 'ws_mongo' in locals():
+            ws_mongo.disconnect()
 
     if mongo_index_flg is False:
         raise AppException("490-01001", [mongo_error], [mongo_error])

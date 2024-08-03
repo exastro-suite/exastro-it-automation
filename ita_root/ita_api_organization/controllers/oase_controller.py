@@ -135,8 +135,6 @@ def post_oase_history(organization_id, workspace_id, body=None):  # noqa: E501
 
         history_data = oase.create_history_list(event_history, action_history)
     except Exception as e:
-        wsDb.db_disconnect()
-        wsMongo.disconnect()
         raise e
     finally:
         wsDb.db_disconnect()

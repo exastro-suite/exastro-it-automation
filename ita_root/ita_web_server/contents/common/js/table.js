@@ -1425,16 +1425,6 @@ getFileData( id, name, type ) {
 }
 /*
 ##################################################
-   登録済みデータを取得する
-##################################################
-*/
-getBinalyData() {
-    const tb = this;
-
-
-}
-/*
-##################################################
    Set table events
 ##################################################
 */
@@ -1521,9 +1511,9 @@ setTableEvents() {
                     endPoint += `journal/${journalId}/`;
                 }
                 try {
-                    const binaly = await fn.getFile( endPoint );
-                    const binalyString = String.fromCharCode( ...binaly );
-                    file = btoa(binalyString);
+                    const binary = await fn.getFile( endPoint );
+                    const binaryString = String.fromCharCode( ...binary );
+                    file = btoa(binaryString);
                 } catch ( e ) {
                     console.error( e );
                     alert( getMessage.FTE00179 );
@@ -1782,23 +1772,28 @@ setTableEvents() {
             let file = tb.getFileData( id, rest );
             let fileName = $fileBox.text();
 
-            if ( tb.option.fileFlag === false && fileName !== '' && file === undefined ) {
-                const endPoint = `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`;
+            const fileType = fn.fileTypeCheck( fileName );
+            const option = {
+                endPoint: `/menu/${tb.params.menuNameRest}/${id}/${rest}/file/`
+            };
+
+            // ファイルが空、かつ編集可能の場合はファイルを取得する
+            if ( tb.option.fileFlag === false && fileName !== '' && file === undefined && ( fileType === 'text' || fileType === 'image') ) {
                 try {
-                    const binaly = await fn.getFile( endPoint );
-                    const binalyString = String.fromCharCode( ...binaly );
-                    file = btoa( binalyString );
+                    const binary = await fn.getFile( option.endPoint );
+                    const binaryString = String.fromCharCode( ...binary );
+                    file = btoa( binaryString );
                 } catch ( e ) {
                     console.error( e );
                     alert( getMessage.FTE00179 );
-                    file = '';
+                    file = null;
                 }
             } else {
-                if ( !file ) file = '';
+                if ( !file ) file = null;
             }
             if ( !fileName ) fileName = 'noname.txt';
 
-            fn.fileEditor( file, fileName ).then(function( result ){
+            fn.fileEditor( file, fileName, 'edit', option ).then(function( result ){
                 if ( result !== null ) {
                     const changeFlag = tb.setInputFile( result.name, result.file, id, rest, tb.data.body );
 
@@ -4752,8 +4747,6 @@ reflectEdits() {
             modal = null;
             modalTable = null;
         };
-
-        console.log( diffData );
 
         // メニューボタン
         modalTable.$.header.find('.itaButton').on('click', function(){

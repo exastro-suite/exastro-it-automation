@@ -3968,9 +3968,7 @@ fileTypeCheck: function( fileName ) {
 
     const fileTypes = {
         image: ['gif','jpe','jpg','jpeg','png','svg','webp','bmp','ico'],
-        text: ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2'],
-        style: ['css'],
-        script: ['js']
+        text: ['txt','yaml','yml','json','hc','hcl','tf','sentinel','py','j2','css','html','htm']
     }
 
     for ( const fileType in fileTypes ) {
@@ -4097,7 +4095,7 @@ fileOrBase64ToBase64: function( data ) {
    Aceエディター
 ##################################################
 */
-fileEditor: function( fileData, fileName, mode = 'edit') {
+fileEditor: function( fileData, fileName, mode = 'edit', option = {} ) {
     return new Promise( function( resolve ){
         const fileType = cmn.fileTypeCheck( fileName );
         let fileMode = cmn.fileModeCheck( fileName );
@@ -4190,6 +4188,7 @@ fileEditor: function( fileData, fileName, mode = 'edit') {
         let modal = new Dialog( config, funcs );
 
         if ( fileType === 'text') {
+            if ( fileData === null ) fileData = '';
             cmn.fileOrBase64ToText( fileData ).then(function( text ){
                 modal.open( modalHtmlSelect() );
                 if ( mode === 'edit') {
@@ -4300,7 +4299,8 @@ fileEditor: function( fileData, fileName, mode = 'edit') {
                     });
                 };
             });
-        } else {
+        } else if ( fileType === 'image') {
+            if ( fileData === null ) fileData = '';
             cmn.fileOrBase64ToBase64( fileData ).then(function( base64 ){
                 // ダウンロード
                 modal.btnFn.download = function() {
@@ -4336,6 +4336,44 @@ fileEditor: function( fileData, fileName, mode = 'edit') {
                     modal.$.dbody.find('.editorImage').attr('src', src );
                 }
             });
+        } else {
+            // 編集不可ファイル
+            // ファイル名のみ変更可能
+
+            // ダウンロード
+            modal.btnFn.download = async function() {
+                if ( mode === 'edit') {
+                    fileName = modal.$.dbody.find('.editorFileName').val();
+                }
+                if ( fileData !== null ) {
+                    cmn.download('file', fileData, fileName );
+                } else {
+                    try {
+                        const binary = await fn.getFile( option.endPoint );
+                        cmn.download('binary', binary, fileName );
+                    } catch ( e ) {
+                        console.error( e );
+                        alert( getMessage.FTE00179 );
+                    }
+                }
+            };
+
+            modal.open( modalHtmlSelect() );
+            if ( mode === 'edit') {
+                modal.$.dbody.find('.editorFileName').val( fileName );
+
+                // 更新
+                modal.btnFn.update = function() {
+                    fileName = modal.$.dbody.find('.editorFileName').val();
+                    modal.close();
+                    modal = null;
+
+                    resolve({
+                        name: fileName,
+                        file: fileData
+                    });
+                };
+            }            
         }
     });
 

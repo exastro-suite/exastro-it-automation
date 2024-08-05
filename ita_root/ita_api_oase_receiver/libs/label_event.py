@@ -121,11 +121,19 @@ def label_event(wsDb, wsMongo, events):  # noqa: C901
         del exastro_labeled_event["event"]["_exastro_fetched_time"]
         del exastro_labeled_event["event"]["_exastro_end_time"]
         del exastro_labeled_event["event"]["_exastro_created_at"]
+        # ラベルをつけないイベント
+        if "_exastro_not_available" in single_event:
+            exastro_labeled_event["labels"]["_exastro_not_available"] = single_event["_exastro_not_available"]
+            del exastro_labeled_event["event"]["_exastro_not_available"]
         labeled_events.append(exastro_labeled_event)
     events = []
 
     # exastro用ラベルを貼った後のデータをイベント単位でループ
     for labeled_event in labeled_events:
+        # ラベルをつけないイベント
+        if "_exastro_not_available" in labeled_event["labels"]:
+            continue
+
         labeled_event["exastro_labeling_settings"] = {}
         labeled_event["exastro_label_key_inputs"] = {}
 

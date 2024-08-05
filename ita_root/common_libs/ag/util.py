@@ -40,7 +40,7 @@ def app_exception(e):
 
     # catch - other all error
     t = traceback.format_exc()
-    g.applogger.info(arrange_stacktrace_format(t), True)
+    g.applogger.info(arrange_stacktrace_format(t))
 
     # catch - raise AppException("xxx-xxxxx", log_format), and get message
     result_code, log_msg_args, api_msg_args = args

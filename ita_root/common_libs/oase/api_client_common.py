@@ -76,7 +76,7 @@ class APIClientCommon:
 
         self.respons_list_flag = event_settings["RESPONSE_LIST_FLAG"]
         self.respons_key = event_settings["RESPONSE_KEY"]
-        self.event_id_key = event_settings["EVENT_ID_KEY"] if "EVENT_ID_KEY" in event_settings else None
+        self.event_id_key = event_settings["EVENT_ID_KEY"]
 
         # 重複チェック用イベントIDキー名（イベント直下に格納する項目）
         self.event_id_key_name = '_exastro_oase_event_id'
@@ -162,60 +162,62 @@ class APIClientCommon:
         result_json = copy.deepcopy(raw_json)
 
         if self.respons_key is not None:
-            # レスポンスキーを指定
+            # 設定で指定したキーの値でレスポンスを取得
             respons_key_json = self.get_value_from_jsonpath(self.respons_key, result_json)
             if respons_key_json is None:
-                # レスポンスキーが存在しない、または空の場合
-                g.applogger.info(g.appmsg.get_log_message("AGT-10002", [self.respons_key, self.event_collection_settings_id]))
+            # レスポンスキーの指定が間違っている場合
+            # これ以降でIDを正当につけられないはずなので、この時点でつける
                 self.setEventIDforEvent(result_json, now_time)
                 return False, result_json
+            else:
+            # レスポンスキーで取得できた場合
+                pass
         else:
             # レスポンスキーが未指定の場合
             respons_key_json = result_json
 
-        # RESPONSE_KEYの値がリスト形式ではない場合、そのまま辞書に格納する
+        # RESPONSE_LIST_FLAGの値がリスト形式ではない場合
+        # 返却するイベントはオブジェクト
         if self.respons_list_flag == "0":
-            # 返却するイベントはオブジェクト
             if isinstance(respons_key_json, list) is True:
+            # 実際の値はリスト（設定間違い）
                 # respons_key_jsonが、配列の場合、オブジェクトで返却
                 self.setEventIDforEvent(result_json, now_time)
                 return False, result_json
 
             event_flg, event = self.get_elements_new_event(respons_key_json)
             if event_flg == True and len(event) > 0:
-                # 重複チェックで、未登録イベントの場合、追加
+            # 重複チェックで、未登録イベントの場合、追加
                 respons_key_json = event
             elif event_flg == False and len(event) > 0:
-                # イベントIDキーが未指定、または、間違っているため取得できなかった場合、追加
+            # イベントIDキーが未指定、または、間違っている場合、IDに日時シリアルを設定し追加
                 event[self.event_id_key_name] = now_time
                 respons_key_json = event
             else:
-                # 重複チェックで、重複したイベントのため、空空のイベントを返却
+            # 重複チェックで、重複したイベントのため、空を返却
                 respons_key_json.clear()
 
-        # RESPONSE_KEYの値がリスト形式の場合、1つずつ辞書に格納
+        # RESPONSE_LIST_FLGの値がリスト形式の場合（分割処理して格納）
+        # 返却するイベントは配列
         else:
-            # 返却するイベントは配列
             new_event_list = []
-
-            # 値がリスト形式かチェック
             if isinstance(respons_key_json, list) is False:
-                # respons_key_jsonが配列以外の場合
+            # 実際の値はリストではない（設定間違い）
                 self.setEventIDforEvent(result_json, now_time)
                 return False, result_json
 
             for element in respons_key_json:
                 event_flg, event = self.get_elements_new_event(element)
                 if event_flg == True and len(event) > 0:
-                    # イベントIDキーが指定済みで、重複チェックで、重複なしと判定された場合、追加
+                # イベントIDキーが指定済みで、重複チェックで、重複なしと判定された場合、追加
                     new_event_list.append(event)
                 elif event_flg == False and len(event) > 0:
-                    # イベントIDキーが未指定、または、間違っているため、イベントIDキーを日時シリアルを設定し追加
+                # イベントIDキーが未指定、または、間違っている場合、IDに日時シリアルを設定し追加
                     event[self.event_id_key_name] = now_time
                     new_event_list.append(event)
                     now_time += 1
                 else:
-                    # 重複チェックで、重複したイベントのため、追加しない
+                # 重複チェックで、重複したイベントのため、追加しない
                     pass
 
             if len(new_event_list) > 0:
@@ -239,16 +241,15 @@ class APIClientCommon:
         new_event = {}
 
         if self.event_id_key is None:
-            # イベントIDキーが未指定
+        # イベントIDキーが未指定
             return False, event_json
 
         event_id = self.get_value_from_jsonpath(self.event_id_key, event_json)
         if event_id is None:
-            # イベントIDキーが取得できない場合
-            g.applogger.info(g.appmsg.get_log_message("AGT-10030", [self.event_id_key, self.event_collection_settings_id]))
+        # イベントIDキーが取得できない場合
             return False, event_json
         else:
-            # 過去のイベントidに存在していない場合
+        # 過去のイベントidに存在していない場合
             event_id = str(event_id)
             if event_id not in self.saved_ids:
                 enevt_flg = True
